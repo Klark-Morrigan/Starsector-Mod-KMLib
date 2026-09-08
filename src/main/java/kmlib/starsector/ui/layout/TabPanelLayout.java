@@ -263,7 +263,8 @@ public final class TabPanelLayout {
                 bandTopY,
                 buttonStyle,
                 measurer),
-            buttonStyle);
+            buttonStyle,
+            bandButtonSpec.icon());
     }
 
     // The whole band the panel flies: its tabs, plus the button standing after them where it has one. One

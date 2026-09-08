@@ -6,6 +6,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -105,20 +106,25 @@ final class TabPanelLayoutTest {
     // the panel's band, and a style agreeing with it by coincidence could not show that.
     private static final float BAND_BUTTON_STYLE_BAND_HEIGHT = 33f;
 
-    // A band button, unlit because it is a button rather than a tab, and snapped rather than boxed - which
-    // is the difference from TABS that the width assertions turn on, the panel's own style below being a
-    // fixed-width one. "Edit" is 4 chars, so it snaps to the minimum tab width.
+    // The button's own box: a width of its own, and a height deliberately short of the panel's band so the
+    // icon box - which hangs from the band's top at the tab's height - cannot be mistaken for the bounds.
+    private static final float BAND_BUTTON_WIDTH = 29f;
+    private static final float BAND_BUTTON_HEIGHT = 15f;
+
+    // The mark a band button carries in place of a word, which is why its label is empty: an image is
+    // sized by the box the style states rather than measured like text.
+    private static final ImageSpan BAND_BUTTON_ICON = new ImageSpan("graphics/icons/x.png", null);
+
     private static final BandButtonSpec BAND_BUTTON = new BandButtonSpec(
         new ControlSpec.Tabs(
-            List.of("Edit"),
+            List.of(""),
             List.of(),
             ControlSpec.NO_SELECTION,
             ControlAction.NONE),
-        TabStyles.buildAtBandHeightInBox(BAND_BUTTON_STYLE_BAND_HEIGHT, TabBox.SNAPPED));
-
-    private static final float BAND_BUTTON_WIDTH = Math.max(
-        4 * WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING,
-        TabsControlLayout.MIN_TAB_WIDTH);
+        TabStyles.buildAtBandHeightInBox(
+            BAND_BUTTON_STYLE_BAND_HEIGHT,
+            new TabBox(BAND_BUTTON_WIDTH, BAND_BUTTON_HEIGHT, 0f)),
+        BAND_BUTTON_ICON);
 
     // A tab box wide enough that a button inheriting it would be visibly padded out, so the case about the
     // button keeping its own box cannot pass on two numbers that happen to be close.
@@ -627,11 +633,10 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementSnapsTheBandButtonToItsWordBesideFixedWidthTabs() {
+        void computePlacementSizesTheBandButtonToItsOwnBoxBesideWiderTabs() {
             // The button wears its own box, not the row's. Under a fixed-width tab style - the sector map's,
             // whose boxes are wide enough for a layer name - a button that inherited the row would stand in
-            // a box several times the width of its word, which is what makes it read as a tab rather than
-            // as a control that ends where its label does.
+            // a box several times the width of the mark it carries.
             var fixedWidthTabs = TabStyles.buildAtBandHeightInBox(
                 DEFAULT_BAND_HEIGHT,
                 new TabBox(FIXED_TAB_WIDTH, 0f, 0f));
@@ -642,6 +647,32 @@ final class TabPanelLayoutTest {
                 .isCloseTo(BAND_BUTTON_WIDTH, within(TOLERANCE));
             assertThat(button.width())
                 .isLessThan(FIXED_TAB_WIDTH);
+        }
+
+        @Test
+        void computePlacementCarriesTheBandButtonsIconOverToItsPlacement() {
+            // The mark travels with the laid-out button rather than being looked up again at the draw, so
+            // the pass that paints it cannot be handed one image while the box was sized for another.
+            assertThat(placeWithBandButton(BODY).bandButton().icon())
+                .isSameAs(BAND_BUTTON_ICON);
+        }
+
+        @Test
+        void computePlacementBoxesTheIconAtTheButtonsTabRatherThanItsBand() {
+            // The image fills the tab, and the tab is shorter than the band it hangs in - a chrome keeps the
+            // difference for the line its tabs stand on, so an image drawn over the whole bounds would sit a
+            // pixel low and cover that rule.
+            var bandButton = placeWithBandButton(BODY).bandButton();
+            var bounds = bandButton.control().bounds();
+            var iconBox = bandButton.computeIconBox();
+
+            assertThat(iconBox.height())
+                .isCloseTo(BAND_BUTTON_HEIGHT, within(TOLERANCE));
+            assertThat(iconBox.width())
+                .isCloseTo(BAND_BUTTON_WIDTH, within(TOLERANCE));
+            assertThat(iconBox.y() + iconBox.height())
+                .as("the icon hangs from the band's top edge")
+                .isCloseTo(bounds.y() + bounds.height(), within(TOLERANCE));
         }
 
         @Test

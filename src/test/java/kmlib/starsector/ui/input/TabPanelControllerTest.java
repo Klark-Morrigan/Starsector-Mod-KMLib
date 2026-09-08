@@ -13,6 +13,7 @@ import kmlib.starsector.ui.sound.PointerArrivalVolumes;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundCue;
 import kmlib.starsector.ui.sound.UiSoundScheme;
+import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -74,6 +75,10 @@ final class TabPanelControllerTest {
     // button carries the style it was measured against.
     private static final TabStyle BAND_BUTTON_STYLE =
         TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT);
+
+    // No mark on it either, for the same reason: what a button is drawn as says nothing about what a
+    // press on it reaches.
+    private static final ImageSpan NO_ICON = null;
 
     // The framed body, standing beneath the row and meeting its bottom edge, as the layout lays it. Apart
     // from the row on the y axis, so a point on the tabs is a point the body does not also claim - which is
@@ -2381,7 +2386,8 @@ final class TabPanelControllerTest {
                     buildBandButtonSpec(buttonAction),
                     BAND_BUTTON_BOX,
                     List.of(BAND_BUTTON_BOX)),
-                BAND_BUTTON_STYLE),
+                BAND_BUTTON_STYLE,
+                NO_ICON),
             BAND_WITH_BUTTON,
             buildBody(BODY_BOX, List.of(buildBodyControl())),
             new BoxBorder(BORDER_WIDTH),

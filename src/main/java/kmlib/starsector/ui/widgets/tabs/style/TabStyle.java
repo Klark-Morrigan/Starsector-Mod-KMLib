@@ -97,9 +97,29 @@ public record TabStyle(
      * @return this style at that band height
      */
     public TabStyle withHeaderBandHeight(float bandHeight) {
+        return rebuildAt(bandHeight, tabBox);
+    }
+
+    /**
+     * This style standing its tabs in a different box, everything else about it carried over. What a
+     * caller wants where a row is to be drawn in another row's chrome and colours at a width of its own -
+     * a panel's band button wearing the tabs' look while sizing to the image it carries rather than to
+     * the fixed box a layer name needs.
+     *
+     * @param tabBox the box the tabs are to stand in
+     * @return this style over that box
+     */
+    public TabStyle withTabBox(TabBox tabBox) {
+        return rebuildAt(headerBandHeight, tabBox);
+    }
+
+    // This style with the band and the box replaced, which is the whole of what either refinement above
+    // varies. One rebuild rather than two, since a record of eight components restated twice is a
+    // component eventually carried over wrongly in one of them.
+    private TabStyle rebuildAt(float headerBandHeight, TabBox tabBox) {
         return new TabStyle(
             chrome,
-            bandHeight,
+            headerBandHeight,
             tabBox,
             palette,
             hotkey,

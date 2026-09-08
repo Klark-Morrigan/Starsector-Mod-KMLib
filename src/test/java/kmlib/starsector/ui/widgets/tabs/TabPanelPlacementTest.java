@@ -268,7 +268,9 @@ final class TabPanelPlacementTest {
                         ControlAction.NONE),
                     BAND_BUTTON_BOX,
                     List.of(BAND_BUTTON_BOX)),
-                TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT)),
+                TabStyles.buildAtBandHeight(TabStyle.DEFAULT_HEADER_BAND_HEIGHT),
+                // No mark on it: what the button shows says nothing about where the pointer is.
+                null),
             placement.drawnHeaderBand(),
             placement.body(),
             placement.border(),

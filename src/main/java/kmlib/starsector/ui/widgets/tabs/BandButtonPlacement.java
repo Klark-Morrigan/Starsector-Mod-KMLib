@@ -1,6 +1,8 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
+import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 /**
@@ -16,10 +18,33 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * @param control the laid-out one-cell control - its bounds the button's box, its single segment the hit
  *                target
  * @param style   the chrome, box, palette and face it was laid at and is painted in
+ * @param icon    the image drawn into the button's box in place of a word, or null for a button showing
+ *                its label
  */
 public record BandButtonPlacement(
     Control control,
-    TabStyle style) {
+    TabStyle style,
+    ImageSpan icon) {
+
+    /**
+     * The box the icon is drawn into: the tab this button stands as, hung from the band's top. Not the
+     * button's whole bounds, which is the band it stands in - a chrome whose tabs are shorter than their
+     * band keeps the difference for the line they stand on, and an image drawn over that would sit a
+     * pixel low and cover the rule.
+     *
+     * @return the icon's rectangle in UI coordinates
+     */
+    public Rectangle computeIconBox() {
+
+        var bounds = control.bounds();
+        var tabHeight = style.resolveTabHeight();
+
+        return new Rectangle(
+            bounds.x(),
+            bounds.y() + bounds.height() - tabHeight,
+            bounds.width(),
+            tabHeight);
+    }
 
     /**
      * Whether the point lands on the button. Geometry alone: whether the panel is presenting its band at

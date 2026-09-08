@@ -6,6 +6,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiScissor;
+import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
 import kmlib.starsector.ui.render.gl.panel.NotchRenderer;
 import kmlib.starsector.ui.render.gl.panel.NotchState;
@@ -13,6 +14,7 @@ import kmlib.starsector.ui.render.gl.panel.PanelRenderer;
 import kmlib.starsector.ui.render.gl.style.WidgetStyle;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelAlpha;
+import kmlib.starsector.ui.widgets.tabs.BandButtonPlacement;
 import kmlib.starsector.ui.widgets.tabs.TabInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelInteractionSources;
 import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
@@ -174,6 +176,7 @@ public final class TabPanelRenderer {
                         style.withTabStyle(bandButton.style()),
                         interactions.resolveBandButtonSources(),
                         alpha);
+                    drawBandButtonIcon(bandButton, alpha);
                 }
             }));
     }
@@ -200,6 +203,25 @@ public final class TabPanelRenderer {
             bandButton.style().chrome(),
             bandButton.control().bounds(),
             bandButton.style().resolveTabHeight()));
+    }
+
+    // The mark a band button carries in place of a word, drawn over the chrome that was just laid under it
+    // and sized to the tab box the layout reserved for it - the box being as wide as the image asked to be,
+    // so the picture fills it rather than being letterboxed inside it.
+    //
+    // The chrome channel, like the row's own words: the button stands opaque on a see-through body and goes
+    // with the panel as it arrives and leaves.
+    private static void drawBandButtonIcon(BandButtonPlacement bandButton, PanelAlpha alpha) {
+
+        var icon = bandButton.icon();
+        if (icon == null) {
+            return;
+        }
+        UiSprite.renderImage(
+            icon.spritePath(),
+            bandButton.computeIconBox(),
+            alpha.resolveChromeAlpha(),
+            icon.tintColour());
     }
 
     // One control of the header band, drawn as the chrome it is. Both the tabs and the button beside them go
