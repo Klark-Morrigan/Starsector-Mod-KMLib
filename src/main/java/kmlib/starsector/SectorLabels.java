@@ -21,26 +21,38 @@ public final class SectorLabels {
 
     private static final String SEED_AND_PLAYER_SEPARATOR = " - ";
 
+    // What a sector with neither half to give is called. A label has to be
+    // something, since it is what a row is grouped under: a caller handed
+    // nothing would have to invent a name of its own, and every caller would
+    // invent a different one.
+    private static final String UNDESCRIBED_SECTOR_LABEL = "unnamed sector";
+
     private SectorLabels() {
     }
 
     /**
      * Describes {@code sector} as its seed with the player's name beside it.
      *
-     * <p>The seed alone where there is no player: a sector generated but not yet
-     * played into has nobody's name to give, and the seed still says which game
-     * it is.
+     * <p>Either half alone where the other is missing: a sector generated but
+     * not yet played into has nobody's name to give, and one the game never
+     * generated - built in memory rather than loaded from a save - has no seed,
+     * leaving the player as all a reader can tell it by. Never empty, whatever
+     * the sector answers.
      *
      * @param sector the sector being described
      * @return what a reader matches back to a save
      */
     public static String describeSector(SectorAPI sector) {
 
+        var seed = sector.getSeedString();
         var playerName = readPlayerName(sector);
 
+        if (!KmlibStrings.hasText(seed)) {
+            return KmlibStrings.hasText(playerName) ? playerName : UNDESCRIBED_SECTOR_LABEL;
+        }
         return KmlibStrings.hasText(playerName)
-            ? sector.getSeedString() + SEED_AND_PLAYER_SEPARATOR + playerName
-            : sector.getSeedString();
+            ? seed + SEED_AND_PLAYER_SEPARATOR + playerName
+            : seed;
     }
 
     // Absent before a character exists, which is every sector generated and not

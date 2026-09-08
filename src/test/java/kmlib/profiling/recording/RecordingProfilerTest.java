@@ -465,6 +465,20 @@ final class RecordingProfilerTest {
                 .extracting(CountTotals::getTotal)
                 .isEqualTo(3L);
         }
+
+        @Test
+        void opensARootFinerThanTheCaptureSilentlyAndNamesNoOrigin() {
+            // A root is gated like any other section, and the origin goes with the span it would
+            // have grouped: an origin standing in the snapshot with no row under it would read as
+            // a game that was measured and found to do nothing.
+            var section = ProfileSection.registerSection(FINE_SECTION, ProfileLevel.FINE);
+            var profiler = new RecordingProfiler(ProfileLevel.COARSE, new ScriptedClock());
+
+            profiler.openRoot(FIRST_ORIGIN, section).close();
+
+            assertThat(profiler.snapshot())
+                .isEmpty();
+        }
     }
 
     @Nested

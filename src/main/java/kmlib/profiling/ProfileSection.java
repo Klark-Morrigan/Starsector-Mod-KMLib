@@ -43,10 +43,6 @@ public final class ProfileSection {
     private final ProfileLevel level;
     private final ProfileBudget budget;
 
-    private ProfileSection(String name) {
-        this(name, ProfileLevel.COARSE, ProfileBudget.NO_BUDGET);
-    }
-
     private ProfileSection(String name, ProfileLevel level, ProfileBudget budget) {
         this.name = name;
         this.level = level;
@@ -65,7 +61,7 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name) {
-        return SECTIONS_BY_NAME.resolveByName(name, ProfileSection::new);
+        return resolveSection(name, ProfileLevel.COARSE, ProfileBudget.NO_BUDGET);
     }
 
     /**
@@ -81,8 +77,7 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name, ProfileLevel level) {
-        return SECTIONS_BY_NAME.resolveByName(
-            name, resolvedName -> new ProfileSection(resolvedName, level, ProfileBudget.NO_BUDGET));
+        return resolveSection(name, level, ProfileBudget.NO_BUDGET);
     }
 
     /**
@@ -94,8 +89,7 @@ public final class ProfileSection {
      * @return the one section carrying that name
      */
     public static ProfileSection registerSection(String name, ProfileBudget budget) {
-        return SECTIONS_BY_NAME.resolveByName(
-            name, resolvedName -> new ProfileSection(resolvedName, ProfileLevel.COARSE, budget));
+        return resolveSection(name, ProfileLevel.COARSE, budget);
     }
 
     public String getName() {
@@ -124,5 +118,17 @@ public final class ProfileSection {
     @Override
     public String toString() {
         return name;
+    }
+
+    // The one place a name becomes a section, so that what a caller left unsaid
+    // is defaulted once rather than at each way in - and so that first
+    // registration winning is one rule rather than three alike.
+    private static ProfileSection resolveSection(
+            String name,
+            ProfileLevel level,
+            ProfileBudget budget) {
+
+        return SECTIONS_BY_NAME.resolveByName(
+            name, resolvedName -> new ProfileSection(resolvedName, level, budget));
     }
 }

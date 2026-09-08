@@ -101,10 +101,14 @@ No Starsector API on the signature.
   call by, and the sections whose calls run a loop, declared with the steps one
   turn is split into and opened as a scope that counts the turns and charges
   each step to its slot. A root names the origin it and everything under it was
-  measured
-  in, and a section opened under no root lands in a reserved group rather than
-  being dropped. A shared read holding no scope of its own counts onto whatever
-  section is open, and onto a reserved row of that group when none is. A
+  measured in, and a section opened under no root lands in a reserved group
+  rather than being dropped. A shared read holding no scope of its own counts
+  onto whatever section is open, and onto a reserved row of that group when
+  none is. A section states the level of detail it is worth timing at and a
+  profiler the finest it keeps, so a section on a per-item path costs a
+  comparison rather than a clock read under a capture taken to read whole
+  frames - and the turns of a loop, being the finest thing one offers, are
+  measured only by a capture keeping that. A
   section may state what one of its calls is allowed - an amount of a counter,
   a duration read as the call closes, or both - and a call that breaks it is
   warned about once and becomes the row's worst call whatever it took. A
