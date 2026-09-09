@@ -12,7 +12,7 @@ import java.util.function.BiPredicate;
 /**
  * Reads how one faction stands with another: the whole relation as a {@link FactionRelation}, and
  * the one question a surface asks of it often enough to be worth a predicate of its own - whether
- * that standing is above the base game's own neutral, {@link RepLevel#FAVORABLE} or better, which
+ * that relation is above the base game's own neutral, {@link RepLevel#FAVORABLE} or better, which
  * is every disposition warmer than indifference and no others.
  *
  * <p>That cut is a landmark the game itself names, shows the player on every faction screen, and
@@ -30,6 +30,10 @@ import java.util.function.BiPredicate;
  * opposite facts, and a caller folding relations across several factions has to be able to skip the
  * first without dragging the scale's centre into its answer.
  *
+ * <p>A pair the observer answers for is never absent, however little it answers. A faction naming no
+ * level still reports the raw relationship, and the scale covers the whole float range - so the level
+ * is reconstructed from the number rather than read as no relation at all.
+ *
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} propagates to
  * the caller rather than degrading silently. Stateless - every entry point is a static method, no
  * instance needed.
@@ -46,7 +50,7 @@ public final class StarsectorFactionRelations {
      * faction asks the same question of every pair, and the number, the level and the colour all
      * come off the one lookup here rather than being walked separately by whoever wants each.
      *
-     * @param observer  the faction whose standing is read; nothing is read of no faction, so it
+     * @param observer  the faction whose relation is read; nothing is read of no faction, so it
      *                  holds no relation
      * @param subjectId the faction it is measured against; an id with no text names nobody to hold
      *                  a relation with
@@ -58,13 +62,9 @@ public final class StarsectorFactionRelations {
             return Optional.empty();
         }
         var relationship = observer.getRelationship(subjectId);
-        var level = observer.getRelationshipLevel(subjectId);
 
-        // A faction that names no level for the pair still reports the raw relationship, and the
-        // scale covers the whole float range - so the level is reconstructed from the number rather
-        // than leaving the relation without one.
         return Optional.of(new FactionRelation(
-            level == null ? RepLevel.getLevelFor(relationship) : level,
+            resolveRelationLevel(observer, subjectId, relationship),
             RepLevel.getRepInt(relationship),
             StarsectorRelationColours.resolveRelationColour(observer, subjectId, relationship)));
     }
@@ -72,30 +72,24 @@ public final class StarsectorFactionRelations {
     /**
      * Whether one faction is disposed above neutral toward another.
      *
-     * <p>Asked of the standing itself rather than of the raw reputation float, so the threshold is
-     * the scale's own step from indifference to goodwill rather than a number this class picks.
+     * <p>Asked of the level rather than of the raw reputation float, so the threshold is the scale's
+     * own step from indifference to goodwill rather than a number this class picks. Nothing is read
+     * of a pair that names nobody, and goodwill is a positive claim: the unreadable pair answers
+     * false rather than taking the benefit of the doubt, so nothing reports warmth it never read.
      *
      * @param faction        the faction whose disposition is read; nothing is read of no faction,
      *                       so it is not above neutral with anyone
      * @param otherFactionId the faction it is disposed toward; an id with no text names nobody to
      *                       be disposed toward
-     * @return true where the standing is {@link RepLevel#FAVORABLE} or better
+     * @return true where the relation is {@link RepLevel#FAVORABLE} or better
      */
     public static boolean isDispositionAboveNeutral(FactionAPI faction, String otherFactionId) {
 
         if (faction == null || !KmlibStrings.hasText(otherFactionId)) {
             return false;
         }
-        var level = faction.getRelationshipLevel(otherFactionId);
-
-        // A faction that answers no level at all has no standing to be above anything, and goodwill
-        // is a positive claim: the absent answer is "not above neutral" rather than the benefit of
-        // the doubt, so nothing reports warmth it never read.
-        //
-        // Asked through the engine's own name for the cut, the same one FactionRelation reads, so
-        // the two ways this package states "above neutral" cannot drift apart.
-        return level != null
-            && level.isPositive();
+        return resolveRelationLevel(faction, otherFactionId, faction.getRelationship(otherFactionId))
+            .isPositive();
     }
 
     /**
@@ -110,7 +104,7 @@ public final class StarsectorFactionRelations {
      *
      * <p>Bound to the sector handed in rather than to the game's current one, so a caller drawing
      * over a second sector reports that sector's relations. The sector is read per call, not
-     * captured as a faction, since a reader outlives the standings it is asked about.
+     * captured as a faction, since a reader outlives the relations it is asked about.
      *
      * @param sector the sector the factions are looked up in; nothing is read of no sector, so no
      *               pair is above neutral
@@ -124,5 +118,19 @@ public final class StarsectorFactionRelations {
         return (factionId, otherFactionId) -> isDispositionAboveNeutral(
             sector.getFaction(factionId),
             otherFactionId);
+    }
+
+    // The level the observer holds the pair at, taken from the faction where it names one and
+    // reconstructed from the raw relationship where it does not. The one statement of how a level is
+    // read, so the whole-relation read and the disposition predicate cannot answer a pair
+    // differently - held apart, one would report goodwill the other declined to see.
+    private static RepLevel resolveRelationLevel(
+            FactionAPI observer, String subjectId, float relationship) {
+
+        var level = observer.getRelationshipLevel(subjectId);
+
+        return level == null
+            ? RepLevel.getLevelFor(relationship)
+            : level;
     }
 }

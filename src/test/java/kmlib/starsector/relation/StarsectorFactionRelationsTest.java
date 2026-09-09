@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 /**
  * Pins where the threshold falls: {@code FAVORABLE} is above neutral and {@code NEUTRAL} itself is
  * not, which is the whole of what a caller sorting factions by disposition relies on. The level is
- * stubbed rather than the answer, so the step from a standing to "above neutral" is the thing being
+ * stubbed rather than the answer, so the step from a relation to "above neutral" is the thing being
  * fixed here.
  *
  * <p>The pair form is pinned on the two things it adds over that threshold and nothing else: which
@@ -31,7 +31,9 @@ import static org.mockito.Mockito.when;
  *
  * <p>The whole-relation read is pinned on what it composes: which facets come off the faction
  * directly, which are reconstructed when it answers nothing, and that an unreadable pair is absent
- * rather than indifferent.
+ * rather than indifferent. The reconstruction is pinned from both sides, since the two entry points
+ * read a level through one rule and a case proving only the indifferent half would hold whether or
+ * not they did.
  */
 class StarsectorFactionRelationsTest {
 
@@ -75,11 +77,25 @@ class StarsectorFactionRelationsTest {
         }
 
         @Test
-        void readsAFactionAnsweringNoLevelAsNotAboveNeutral() {
-            // A modded faction can answer nothing at all, and goodwill is a positive claim - the
-            // absent answer must not be read as warmth.
+        void readsAFactionAnsweringNoLevelByTheIndifferentNumberItReports() {
+            // A modded faction can name no level and still report the raw relationship, so the level
+            // is reconstructed from the number. This one reports nought, which is indifference.
             assertThat(isDispositionAboveNeutral(buildFactionAt(null), "tritachyon"))
                 .isFalse();
+        }
+
+        @Test
+        void readsAFactionAnsweringNoLevelByTheFavourableNumberItReports() {
+            // The half the reconstruction is actually for, and the case that pins this predicate to
+            // the same reading readRelation makes: goodwill the faction reports only as a number is
+            // still goodwill, and reading the absent level as "not above neutral" would deny it.
+            var factionMock = buildFactionAt(null);
+
+            when(factionMock.getRelationship("tritachyon"))
+                .thenReturn(0.6f);
+
+            assertThat(isDispositionAboveNeutral(factionMock, "tritachyon"))
+                .isTrue();
         }
 
         @Test
@@ -91,7 +107,7 @@ class StarsectorFactionRelationsTest {
         @Test
         void readsAnUnnamedOtherFactionAsNotAboveNeutralWithoutAskingTheFaction() {
             // Nobody named on the other side, so there is nobody to be disposed toward. Pinned as
-            // "never asked" rather than on the answer alone: a faction holding no standing for an
+            // "never asked" rather than on the answer alone: a faction holding no relation for an
             // unnamed id reads false either way, so the answer cannot fail if the guard goes and
             // the unnamed id is put to a live faction that faults on one.
             var factionMock = buildFactionAt(RepLevel.COOPERATIVE);
@@ -155,7 +171,7 @@ class StarsectorFactionRelationsTest {
 
         @Test
         void readsTheSectorPerCallRatherThanCapturingWhatItAnsweredFirst() {
-            // A reader outlives the standings it is asked about - a hover box holds one for a whole
+            // A reader outlives the relations it is asked about - a hover box holds one for a whole
             // paint while the game goes on running - so a faction re-registered between two calls
             // has to answer as it stands then, not as it stood when the reader was built.
             var sourMock = buildFactionAt(RepLevel.VENGEFUL);
@@ -215,7 +231,7 @@ class StarsectorFactionRelationsTest {
 
         @Test
         void readsIndifferenceAsARelationRatherThanAsAbsence() {
-            // A pair with no history reports nought, which is a standing on the scale - only a pair
+            // A pair with no history reports nought, which is a relation on the scale - only a pair
             // that cannot be looked up at all answers nothing, which is what lets a caller folding
             // several factions skip the unreadable ones without dragging the centre into its answer.
             var factionMock = mock(FactionAPI.class);
@@ -237,13 +253,13 @@ class StarsectorFactionRelationsTest {
         @Test
         void readsAnUnnamedOtherFactionAsNoRelation() {
             // Nobody named on the other side, so there is nobody to hold a relation with - and an
-            // indifferent-looking answer would be indistinguishable from a real standing at nought.
+            // indifferent-looking answer would be indistinguishable from a real relation at nought.
             assertThat(readRelation(mock(FactionAPI.class), " "))
                 .isEmpty();
         }
     }
 
-    // A faction standing at one level toward tritachyon and holding no other standing, so a suite
+    // A faction standing at one level toward tritachyon and holding no other, so a suite
     // states the disposition under examination in a line.
     private static FactionAPI buildFactionAt(RepLevel level) {
 

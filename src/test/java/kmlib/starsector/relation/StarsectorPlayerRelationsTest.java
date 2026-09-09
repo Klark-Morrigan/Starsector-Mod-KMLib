@@ -14,25 +14,25 @@ import org.mockito.Mockito;
 
 import java.awt.Color;
 
-import static kmlib.starsector.relation.StarsectorPlayerStandings.readPlayerStanding;
+import static kmlib.starsector.relation.StarsectorPlayerRelations.readPlayerRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class StarsectorPlayerStandingsTest {
+class StarsectorPlayerRelationsTest {
 
     private static final Color BLUE = new Color(50, 90, 200);
     private static final Color GREEN = new Color(60, 180, 60);
     private static final Color RED = new Color(200, 50, 50);
 
     @Nested
-    class ReadPlayerStanding {
+    class ReadPlayerRelation {
 
         @Test
-        void returnsNoStandingForNullFaction() {
+        void returnsNoRelationForNullFaction() {
 
-            assertThat(readPlayerStanding(null))
+            assertThat(readPlayerRelation(null))
                 .isEmpty();
         }
 
@@ -53,7 +53,7 @@ class StarsectorPlayerStandingsTest {
             when(factionMock.getRelToPlayer())
                 .thenReturn(relationshipMock);
 
-            assertThat(readPlayerStanding(factionMock))
+            assertThat(readPlayerRelation(factionMock))
                 .contains(new FactionRelation(RepLevel.VENGEFUL, -100, RED));
         }
 
@@ -75,12 +75,12 @@ class StarsectorPlayerStandingsTest {
             when(factionMock.getRelColor(Factions.PLAYER))
                 .thenReturn(GREEN);
 
-            assertThat(readPlayerStanding(factionMock))
+            assertThat(readPlayerRelation(factionMock))
                 .contains(new FactionRelation(RepLevel.FRIENDLY, 60, GREEN));
         }
 
         @Test
-        void reconstructsTheStandingFromTheRawReputationWhenThereIsNoRelationshipObject() {
+        void reconstructsTheRelationFromTheRawReputationWhenThereIsNoRelationshipObject() {
 
             var factionMock = mock(FactionAPI.class);
 
@@ -91,8 +91,29 @@ class StarsectorPlayerStandingsTest {
             when(factionMock.getRelColor(Factions.PLAYER))
                 .thenReturn(BLUE);
 
-            assertThat(readPlayerStanding(factionMock))
+            assertThat(readPlayerRelation(factionMock))
                 .contains(new FactionRelation(RepLevel.FRIENDLY, 60, BLUE));
+        }
+
+        @Test
+        void fallsThroughToTheGeneralReadWhenTheRelationshipObjectNamesNoLevel() {
+
+            // The other way the player tier comes up empty, and the one the object being present
+            // hides: a relationship that answers no level has nothing to add over the general read,
+            // so the whole relation comes off the faction rather than half off each.
+            var relationshipMock = mock(RelationshipAPI.class);
+
+            var factionMock = mock(FactionAPI.class);
+
+            when(factionMock.getRelToPlayer())
+                .thenReturn(relationshipMock);
+            when(factionMock.getRelationship(Factions.PLAYER))
+                .thenReturn(-0.5f);
+            when(factionMock.getRelColor(Factions.PLAYER))
+                .thenReturn(RED);
+
+            assertThat(readPlayerRelation(factionMock))
+                .contains(new FactionRelation(RepLevel.HOSTILE, -50, RED));
         }
 
         @Test
@@ -121,7 +142,7 @@ class StarsectorPlayerStandingsTest {
                 miscMock.when(() -> Misc.getRelColor(-0.2f))
                     .thenReturn(RED);
 
-                assertThat(readPlayerStanding(factionMock))
+                assertThat(readPlayerRelation(factionMock))
                     .contains(new FactionRelation(RepLevel.SUSPICIOUS, -20, RED));
             } finally {
                 StarsectorSettingsFake.clearSettings();
@@ -129,18 +150,18 @@ class StarsectorPlayerStandingsTest {
         }
 
         @Test
-        void readsTheNeutralStandingAsAStandingRatherThanAsAbsence() {
+        void readsTheNeutralRelationAsARelationRatherThanAsAbsence() {
 
             var factionMock = mock(FactionAPI.class);
 
-            // A faction the player has no history with reports nought, which is a standing on the
-            // scale - only a faction that cannot be looked up at all answers no standing.
+            // A faction the player has no history with reports nought, which is a relation on the
+            // scale - only a faction that cannot be looked up at all answers no relation.
             when(factionMock.getRelationship(Factions.PLAYER))
                 .thenReturn(0.0f);
             when(factionMock.getRelColor(Factions.PLAYER))
                 .thenReturn(GREEN);
 
-            assertThat(readPlayerStanding(factionMock))
+            assertThat(readPlayerRelation(factionMock))
                 .contains(new FactionRelation(RepLevel.NEUTRAL, 0, GREEN));
         }
     }

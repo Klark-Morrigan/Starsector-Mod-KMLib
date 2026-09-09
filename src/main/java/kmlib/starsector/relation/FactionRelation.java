@@ -6,8 +6,8 @@ import java.awt.Color;
 
 /**
  * Where one faction stands with another, as the three facets the game itself keeps of that one
- * relation: the level it names the standing, the reputation it counts it at, and the colour it
- * paints both in.
+ * relation: the level it calls the pair, the reputation it counts them at, and the colour it paints
+ * both in.
  *
  * <p>Carried as one value because all three come off a single lookup. Read separately, a surface
  * wanting the number and a surface wanting the colour each walk the relation again, and the two

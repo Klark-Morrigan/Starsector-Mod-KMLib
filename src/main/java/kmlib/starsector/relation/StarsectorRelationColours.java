@@ -9,20 +9,20 @@ import kmlib.starsector.factions.FactionPalette;
 import java.awt.Color;
 
 /**
- * What colour a relation is painted in, asked either of a raw relationship value or of the faction
- * pair holding it.
+ * What colour a relation is painted in: the continuous ramp from the negative highlight at -1,
+ * through a neutral grey, to the positive highlight at +1.
  *
- * <p>Underneath both is one continuous ramp: from the negative highlight at -1, through a neutral
- * grey, to the positive highlight at +1. It delegates to {@link Misc#getRelColor(float)} rather
- * than interpolating between the two highlights here, so three things stay the engine's rather than
- * becoming ours - the floor that keeps a barely-signed relationship from reading as plain grey, the
- * clamp past the ends of the scale, and the swap of the negative highlight to blue under colourblind
- * mode. Reimplementing the lerp is a handful of lines and silently drops all three.
+ * <p>Delegates to {@link Misc#getRelColor(float)} rather than interpolating between the two
+ * highlights here, so three things stay the engine's rather than becoming ours - the floor that
+ * keeps a barely-signed relationship from reading as plain grey, the clamp past the ends of the
+ * scale, and the swap of the negative highlight to blue under colourblind mode. Reimplementing the
+ * lerp is a handful of lines and silently drops all three.
  *
- * <p>The pair form asks the faction first, because a faction may paint a particular pair in a shade
- * of its own that the number alone cannot report, and falls through to the ramp where it paints
- * nothing. The number form is what a surface uses once it has decided which relation a thing is
- * painted at - an aggregate over several factions, say - and so has no pair left to ask about.
+ * <p>Answers about a number rather than about a faction pair, which is what a surface wants once it
+ * has decided which relation a thing is painted at - an aggregate over several factions, say, which
+ * has no pair left to ask about. Where a pair is in hand, {@link StarsectorFactionRelations} is the
+ * read: a faction may paint a particular pair in a shade of its own that the number alone cannot
+ * report, and the relation it hands back carries that shade already resolved.
  *
  * <p>Stateless - every entry point is a static method, no instance needed.
  */
@@ -51,25 +51,6 @@ public final class StarsectorRelationColours {
     }
 
     /**
-     * The shade the game would paint one faction pair in: the observer's own answer for that pair,
-     * or the ramp where it has none.
-     *
-     * @param observer     the faction whose palette is asked first
-     * @param subjectId    the faction the colour is asked about
-     * @param relationship the raw relationship the ramp falls back to
-     * @return the shade the game would paint this pair in
-     */
-    public static Color resolveRelationColour(
-            FactionAPI observer, String subjectId, float relationship) {
-
-        var factionColour = observer.getRelColor(subjectId);
-
-        return factionColour == null
-            ? resolveRelationColour(relationship)
-            : factionColour;
-    }
-
-    /**
      * The bright and dark pair a surface paints a relationship in: the ramp shade as primary and a
      * darkened form of it as secondary.
      *
@@ -87,5 +68,30 @@ public final class StarsectorRelationColours {
         return new FactionPalette(
             relationColour,
             Colours.darken(relationColour, DARK_SHADE_FACTOR));
+    }
+
+    /**
+     * The shade the game would paint one faction pair in: the observer's own answer for that pair,
+     * or the ramp where it has none.
+     *
+     * <p>Package-private, and takes its observer as read. The callers are the package's own reads,
+     * which have already turned an absent faction into an absent relation before they reach here -
+     * published, this would be the one entry point that could be handed nobody. It also has no
+     * consumer outside: a caller holding a pair wants the relation, which carries this shade
+     * already, and a caller holding a number wants the ramp above. It opens up when something needs
+     * a pair's own shade and nothing else.
+     *
+     * @param observer     the faction whose palette is asked first
+     * @param subjectId    the faction the colour is asked about
+     * @param relationship the raw relationship the ramp falls back to
+     * @return the shade the game would paint this pair in
+     */
+    static Color resolveRelationColour(FactionAPI observer, String subjectId, float relationship) {
+
+        var factionColour = observer.getRelColor(subjectId);
+
+        return factionColour == null
+            ? resolveRelationColour(relationship)
+            : factionColour;
     }
 }

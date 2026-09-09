@@ -7,41 +7,41 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.relation.StarsectorPlayerStandingFormatter.formatPlayerStanding;
+import static kmlib.starsector.relation.StarsectorRelationFormatter.formatRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class StarsectorPlayerStandingFormatterTest {
+class StarsectorRelationFormatterTest {
 
     private static final Color RED = new Color(200, 50, 50);
 
     @Nested
-    class FormatPlayerStanding {
+    class FormatRelation {
 
         @Test
         void namesTheLevelAndPrintsTheReputationAgainstTheScale() {
 
-            var standing = new FactionRelation(RepLevel.VENGEFUL, -100, RED);
+            var relation = new FactionRelation(RepLevel.VENGEFUL, -100, RED);
 
-            assertThat(formatPlayerStanding(standing))
+            assertThat(formatRelation(relation))
                 .isEqualTo("Vengeful (-100 / 100)");
         }
 
         @Test
         void printsAPositiveReputationWithoutASign() {
 
-            var standing = new FactionRelation(RepLevel.COOPERATIVE, 85, RED);
+            var relation = new FactionRelation(RepLevel.COOPERATIVE, 85, RED);
 
-            assertThat(formatPlayerStanding(standing))
+            assertThat(formatRelation(relation))
                 .isEqualTo("Cooperative (85 / 100)");
         }
 
         @Test
         void printsTheCentreOfTheScaleAsNought() {
 
-            var standing = new FactionRelation(RepLevel.NEUTRAL, 0, RED);
+            var relation = new FactionRelation(RepLevel.NEUTRAL, 0, RED);
 
-            assertThat(formatPlayerStanding(standing))
+            assertThat(formatRelation(relation))
                 .isEqualTo("Neutral (0 / 100)");
         }
     }

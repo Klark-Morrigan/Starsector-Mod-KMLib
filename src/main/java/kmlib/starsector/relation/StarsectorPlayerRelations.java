@@ -22,19 +22,19 @@ import java.util.Optional;
  * {@link RelationshipAPI} propagates to the caller rather than degrading silently. Stateless - the
  * single entry point is a static method, no instance needed.
  */
-public final class StarsectorPlayerStandings {
+public final class StarsectorPlayerRelations {
 
-    private StarsectorPlayerStandings() {
+    private StarsectorPlayerRelations() {
     }
 
     /**
-     * Resolves a faction's standing with the player.
+     * Resolves a faction's relation with the player.
      *
-     * @param faction the faction whose standing is read; nothing is read of no faction, so it holds
-     *                no relation
+     * @param faction the faction whose relation is read; nothing is read of no faction, so it holds
+     *                none
      * @return the relation, or none where there is no faction to read one from
      */
-    public static Optional<FactionRelation> readPlayerStanding(FactionAPI faction) {
+    public static Optional<FactionRelation> readPlayerRelation(FactionAPI faction) {
 
         if (faction == null) {
             return Optional.empty();
@@ -55,7 +55,7 @@ public final class StarsectorPlayerStandings {
         }
 
         // Without a relationship object naming a level there is nothing the player tier can add, so
-        // the standing comes off the general read against the player id - the same faction and raw
+        // the relation comes off the general read against the player id - the same faction and raw
         // number the object would have been carrying.
         return StarsectorFactionRelations.readRelation(faction, Factions.PLAYER);
     }
@@ -66,8 +66,8 @@ public final class StarsectorPlayerStandings {
      *
      * <p>Falls through on the relationship object's own number rather than on the faction's, since
      * the object is the tier that outranks it: a pair the engine has pinned reports one relationship
-     * there and another on the faction, and painting the shade of the number this standing did not
-     * take would put the two facets of one relation at odds.
+     * there and another on the faction, and painting the shade of the number this relation did not
+     * take would put its two facets at odds.
      */
     private static Color resolvePlayerRelationColour(
             FactionAPI faction, RelationshipAPI relationship) {

@@ -12,8 +12,8 @@ import kmlib.starsector.colonies.SectorColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.markets.MarketVisibility;
-import kmlib.starsector.relation.StarsectorPlayerStandingFormatter;
-import kmlib.starsector.relation.StarsectorPlayerStandings;
+import kmlib.starsector.relation.StarsectorRelationFormatter;
+import kmlib.starsector.relation.StarsectorPlayerRelations;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -200,8 +200,8 @@ public final class ListFactionsCommand extends KmlibBaseConsoleCommand {
         // the engine still answers for one, which would read as a finding.
         var relationship = Objects.equals(faction.getId(), playerFactionId)
             ? SELF_RELATIONSHIP
-            : StarsectorPlayerStandings.readPlayerStanding(faction)
-                .map(StarsectorPlayerStandingFormatter::formatPlayerStanding)
+            : StarsectorPlayerRelations.readPlayerRelation(faction)
+                .map(StarsectorRelationFormatter::formatRelation)
                 .orElse(null);
 
         if (relationship != null) {
