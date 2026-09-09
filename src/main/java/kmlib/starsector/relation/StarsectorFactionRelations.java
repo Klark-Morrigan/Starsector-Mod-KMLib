@@ -25,10 +25,12 @@ import java.util.function.BiPredicate;
  * same rule at the two shapes callers ask it in, so a surface composing dispositions takes the pair
  * form rather than writing the lookup itself.
  *
- * <p>Absence is carried by handing back no relation rather than by a reputation of nought: a
- * faction nobody can look up and a faction indifferent to the subject are the same number and
- * opposite facts, and a caller folding relations across several factions has to be able to skip the
- * first without dragging the scale's centre into its answer.
+ * <p>Absence is carried by handing back no relation rather than by a reputation of nought. Nought is
+ * not a spare value to signal it with: it sits in the middle of the band the scale calls
+ * indifference, which is where every faction with no history to speak of reads - so a pair nobody
+ * can look up and a pair that does not care would arrive as the same fact. A caller folding
+ * relations across several factions has to be able to skip the first without dragging the scale's
+ * centre into its answer.
  *
  * <p>A pair the observer answers for is never absent, however little it answers. A faction naming no
  * level still reports the raw relationship, and the scale covers the whole float range - so the level

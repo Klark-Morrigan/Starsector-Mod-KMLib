@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
+import static kmlib.starsector.relation.RelationSamples.createRelationAt;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FactionRelationTest {
@@ -107,15 +109,5 @@ class FactionRelationTest {
             assertThat(createRelationAt(-0.10f).isBelowNeutral())
                 .isTrue();
         }
-    }
-
-    // The relation the game would report for a raw relationship value, so a boundary case is stated
-    // as the number a save actually holds rather than as the level it is expected to land in.
-    private static FactionRelation createRelationAt(float relationship) {
-
-        return new FactionRelation(
-            RepLevel.getLevelFor(relationship),
-            RepLevel.getRepInt(relationship),
-            RED);
     }
 }

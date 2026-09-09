@@ -10,12 +10,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static kmlib.starsector.relation.RelationSamples.createRelationsAt;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RelationExtremesTest {
 
+    // Two shades that tell one relation from another, for the cases where which instance came back
+    // is the thing being pinned rather than what it reads.
     private static final Color BLUE = new Color(50, 50, 200);
-    private static final Color GREY = new Color(125, 125, 125);
     private static final Color RED = new Color(200, 50, 50);
 
     @Nested
@@ -146,17 +149,5 @@ class RelationExtremesTest {
             assertThat(RelationExtremes.resolveWorst(List.of()))
                 .isEmpty();
         }
-    }
-
-    // Relations distinguished only by the number the end of a set is taken over, the level and the
-    // shade being nothing this class reads.
-    private static List<FactionRelation> createRelationsAt(int... reputations) {
-
-        var relations = new ArrayList<FactionRelation>();
-
-        for (var reputation : reputations) {
-            relations.add(new FactionRelation(RepLevel.NEUTRAL, reputation, GREY));
-        }
-        return relations;
     }
 }

@@ -1,19 +1,16 @@
 package kmlib.starsector.relation;
 
-import com.fs.starfarer.api.campaign.RepLevel;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.awt.Color;
-import java.util.ArrayList;
 import java.util.List;
+
+import static kmlib.starsector.relation.RelationSamples.createRelationAt;
+import static kmlib.starsector.relation.RelationSamples.createRelationsAt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RelationDirectionTest {
-
-    private static final Color GREY = new Color(125, 125, 125);
 
     @Nested
     class IsWithinBand {
@@ -139,26 +136,5 @@ class RelationDirectionTest {
             assertThat(order.compare(createRelationAt(-0.30f), createRelationAt(-0.30f)))
                 .isZero();
         }
-    }
-
-    // A mutable list, since the ordering cases sort in place.
-    private static List<FactionRelation> createRelationsAt(int... reputations) {
-
-        var relations = new ArrayList<FactionRelation>();
-
-        for (var reputation : reputations) {
-            relations.add(new FactionRelation(RepLevel.NEUTRAL, reputation, GREY));
-        }
-        return relations;
-    }
-
-    // The relation the game would report for a raw relationship value, so a band boundary is stated
-    // as the number a save actually holds rather than as the level it is expected to land in.
-    private static FactionRelation createRelationAt(float relationship) {
-
-        return new FactionRelation(
-            RepLevel.getLevelFor(relationship),
-            RepLevel.getRepInt(relationship),
-            GREY);
     }
 }

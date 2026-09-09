@@ -134,6 +134,19 @@ class StarsectorRelationColoursTest {
         }
 
         @Test
+        void pairsTheHostileEndWithADarkenedFormOfItself() {
+
+            // The hostile end as well as the friendly one, since a palette is derived channel by
+            // channel: a pair that held only at one end would not be reporting the same rule twice.
+            // The two lesser channels land a hair under the half-way mark rather than on it, the
+            // factor being a float slightly short of 0.53 - so they round down, not up.
+            assertThat(resolveRelationPalette(-1f))
+                .isEqualTo(new FactionPalette(
+                    NEGATIVE_HIGHLIGHT,
+                    new Color(106, 26, 26, 255)));
+        }
+
+        @Test
         void darkensTheCentreGreyForAnIndifferentRelationship() {
 
             assertThat(resolveRelationPalette(0f))
