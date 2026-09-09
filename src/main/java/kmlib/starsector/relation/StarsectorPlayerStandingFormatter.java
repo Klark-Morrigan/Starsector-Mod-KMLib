@@ -3,9 +3,10 @@ package kmlib.starsector.relation;
 import java.util.Locale;
 
 /**
- * Writes a {@link PlayerStanding} as the prose the engine itself shows for one:
- * {@code "<RepLevel name> (<rep> / 100)"}, e.g. {@code "Friendly (35 / 100)"} - what a colony
- * tooltip and an intel row print.
+ * Writes a {@link FactionRelation} as the prose the engine itself shows on the player's own faction
+ * screens: {@code "<RepLevel name> (<rep> / 100)"}, e.g. {@code "Friendly (35 / 100)"} - what a
+ * colony tooltip and an intel row print. Named for that wording rather than for the value, which
+ * says nothing about whose standing it is.
  *
  * <p>Takes the standing rather than the faction, so it holds prose and nothing else: reading a
  * standing off the game is {@link StarsectorPlayerStandings}'s work, and a faction with no standing
@@ -33,7 +34,7 @@ public final class StarsectorPlayerStandingFormatter {
      * @param standing the standing to word
      * @return the description, e.g. {@code "Friendly (35 / 100)"}
      */
-    public static String formatPlayerStanding(PlayerStanding standing) {
+    public static String formatPlayerStanding(FactionRelation standing) {
 
         return String.format(
             Locale.ROOT,

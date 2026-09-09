@@ -21,7 +21,7 @@ class StarsectorPlayerStandingFormatterTest {
         @Test
         void namesTheLevelAndPrintsTheReputationAgainstTheScale() {
 
-            var standing = new PlayerStanding(RepLevel.VENGEFUL, -100, RED);
+            var standing = new FactionRelation(RepLevel.VENGEFUL, -100, RED);
 
             assertThat(formatPlayerStanding(standing))
                 .isEqualTo("Vengeful (-100 / 100)");
@@ -30,7 +30,7 @@ class StarsectorPlayerStandingFormatterTest {
         @Test
         void printsAPositiveReputationWithoutASign() {
 
-            var standing = new PlayerStanding(RepLevel.COOPERATIVE, 85, RED);
+            var standing = new FactionRelation(RepLevel.COOPERATIVE, 85, RED);
 
             assertThat(formatPlayerStanding(standing))
                 .isEqualTo("Cooperative (85 / 100)");
@@ -39,7 +39,7 @@ class StarsectorPlayerStandingFormatterTest {
         @Test
         void printsTheCentreOfTheScaleAsNought() {
 
-            var standing = new PlayerStanding(RepLevel.NEUTRAL, 0, RED);
+            var standing = new FactionRelation(RepLevel.NEUTRAL, 0, RED);
 
             assertThat(formatPlayerStanding(standing))
                 .isEqualTo("Neutral (0 / 100)");

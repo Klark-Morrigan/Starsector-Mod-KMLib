@@ -378,13 +378,17 @@ No Starsector API on the signature.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) - typed
   sector-memory accessors (flag, string).
 - [`starsector/relation/`](src/main/java/kmlib/starsector/relation/) - what
-  one faction's standing with another comes to: where a faction stands with the
-  player as one value (level, signed reputation, and the colour the game paints
-  them in, off a single three-tier read), that value worded the way the engine
-  words it, and whether a disposition clears the scale's own step from
-  indifference to goodwill - the last asked of a faction in hand, or as a pair
-  test over faction ids bound to one sector, so a caller composing dispositions
-  takes the read rather than writing the lookup.
+  one faction's standing with another comes to: the relation as one value
+  (level, signed reputation, and the colour the game paints them in, off a
+  single read), read of any faction pair or of a faction against the player -
+  the player having a live relationship object no other pair does, so that one
+  extra tier sits with the player-fixed read rather than branching the general
+  one. Beside it, the same relation worded the way the engine words it; whether
+  a disposition clears the scale's own step from indifference to goodwill,
+  asked of a faction in hand or as a pair test over ids bound to one sector, so
+  a caller composing dispositions takes the read rather than writing the
+  lookup; and the continuous relation ramp - a relationship value as the shade
+  the engine paints it, or as the bright and dark pair a map owner draws in.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) - sector
   script registration helpers.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the

@@ -6,23 +6,29 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.text.KmlibStrings;
 
+import java.util.Optional;
 import java.util.function.BiPredicate;
 
 /**
- * Reads whether one faction's standing with another is above the base game's own neutral:
- * {@link RepLevel#FAVORABLE} or better, which is every disposition warmer than indifference and no
- * others.
+ * Reads how one faction stands with another: the whole relation as a {@link FactionRelation}, and
+ * the one question a surface asks of it often enough to be worth a predicate of its own - whether
+ * that standing is above the base game's own neutral, {@link RepLevel#FAVORABLE} or better, which
+ * is every disposition warmer than indifference and no others.
  *
- * <p>A landmark the game itself names, shows the player on every faction screen, and stops
- * describing goodwill below - which is what makes a surface sorting factions by disposition
+ * <p>That cut is a landmark the game itself names, shows the player on every faction screen, and
+ * stops describing goodwill below - which is what makes a surface sorting factions by disposition
  * explicable. A cut taken anywhere else in the scale would be one the player is never shown.
  *
- * <p>Named for the test rather than for whatever word a heading above it uses, so nothing reading
- * this concludes the answer means the single {@link RepLevel#FRIENDLY} level.
+ * <p>The predicate is named for the test rather than for whatever word a heading above it uses, so
+ * nothing reading this concludes the answer means the single {@link RepLevel#FRIENDLY} level. It is
+ * answered of a faction the caller already holds, or over a pair of ids bound to one sector - the
+ * same rule at the two shapes callers ask it in, so a surface composing dispositions takes the pair
+ * form rather than writing the lookup itself.
  *
- * <p>Answered of a faction the caller already holds, or over a pair of ids bound to one sector -
- * the same rule at the two shapes callers ask it in, so a surface composing dispositions takes the
- * pair form rather than writing the lookup itself.
+ * <p>Absence is carried by handing back no relation rather than by a reputation of nought: a
+ * faction nobody can look up and a faction indifferent to the subject are the same number and
+ * opposite facts, and a caller folding relations across several factions has to be able to skip the
+ * first without dragging the scale's centre into its answer.
  *
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} propagates to
  * the caller rather than degrading silently. Stateless - every entry point is a static method, no
@@ -31,6 +37,36 @@ import java.util.function.BiPredicate;
 public final class StarsectorFactionRelations {
 
     private StarsectorFactionRelations() {
+    }
+
+    /**
+     * Resolves how one faction stands with another.
+     *
+     * <p>The general form of the read: a surface measuring a whole sector against one chosen
+     * faction asks the same question of every pair, and the number, the level and the colour all
+     * come off the one lookup here rather than being walked separately by whoever wants each.
+     *
+     * @param observer  the faction whose standing is read; nothing is read of no faction, so it
+     *                  holds no relation
+     * @param subjectId the faction it is measured against; an id with no text names nobody to hold
+     *                  a relation with
+     * @return the relation, or none where there is no pair to read one from
+     */
+    public static Optional<FactionRelation> readRelation(FactionAPI observer, String subjectId) {
+
+        if (observer == null || !KmlibStrings.hasText(subjectId)) {
+            return Optional.empty();
+        }
+        var relationship = observer.getRelationship(subjectId);
+        var level = observer.getRelationshipLevel(subjectId);
+
+        // A faction that names no level for the pair still reports the raw relationship, and the
+        // scale covers the whole float range - so the level is reconstructed from the number rather
+        // than leaving the relation without one.
+        return Optional.of(new FactionRelation(
+            level == null ? RepLevel.getLevelFor(relationship) : level,
+            RepLevel.getRepInt(relationship),
+            StarsectorRelationColours.resolveRelationColour(observer, subjectId, relationship)));
     }
 
     /**
@@ -55,8 +91,11 @@ public final class StarsectorFactionRelations {
         // A faction that answers no level at all has no standing to be above anything, and goodwill
         // is a positive claim: the absent answer is "not above neutral" rather than the benefit of
         // the doubt, so nothing reports warmth it never read.
+        //
+        // Asked through the engine's own name for the cut, the same one FactionRelation reads, so
+        // the two ways this package states "above neutral" cannot drift apart.
         return level != null
-            && level.isAtWorst(RepLevel.FAVORABLE);
+            && level.isPositive();
     }
 
     /**

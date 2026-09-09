@@ -7,8 +7,11 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.awt.Color;
+
 import static kmlib.starsector.relation.StarsectorFactionRelations.createDispositionReader;
 import static kmlib.starsector.relation.StarsectorFactionRelations.isDispositionAboveNeutral;
+import static kmlib.starsector.relation.StarsectorFactionRelations.readRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -25,8 +28,15 @@ import static org.mockito.Mockito.when;
  *
  * <p>The pair form is pinned on the two things it adds over that threshold and nothing else: which
  * side of the pair is looked up, and that the sector is read per call.
+ *
+ * <p>The whole-relation read is pinned on what it composes: which facets come off the faction
+ * directly, which are reconstructed when it answers nothing, and that an unreadable pair is absent
+ * rather than indifferent.
  */
 class StarsectorFactionRelationsTest {
+
+    private static final Color GREEN = new Color(60, 180, 60);
+    private static final Color RED = new Color(200, 50, 50);
 
     @Nested
     class IsDispositionAboveNeutral {
@@ -165,6 +175,71 @@ class StarsectorFactionRelationsTest {
 
             assertThat(reader.test("hegemony", "tritachyon"))
                 .isTrue();
+        }
+    }
+
+    @Nested
+    class ReadRelation {
+
+        @Test
+        void readsLevelReputationAndColourForThePair() {
+
+            var factionMock = mock(FactionAPI.class);
+
+            when(factionMock.getRelationship("tritachyon"))
+                .thenReturn(0.6f);
+            when(factionMock.getRelationshipLevel("tritachyon"))
+                .thenReturn(RepLevel.FRIENDLY);
+            when(factionMock.getRelColor("tritachyon"))
+                .thenReturn(GREEN);
+
+            assertThat(readRelation(factionMock, "tritachyon"))
+                .contains(new FactionRelation(RepLevel.FRIENDLY, 60, GREEN));
+        }
+
+        @Test
+        void reconstructsTheLevelFromTheRawRelationshipWhenTheFactionNamesNone() {
+            // A modded faction can answer nothing at all for the level while still reporting the
+            // number, and the scale covers the whole float range - so the relation comes back with a
+            // level rather than with a hole in it.
+            var factionMock = mock(FactionAPI.class);
+
+            when(factionMock.getRelationship("tritachyon"))
+                .thenReturn(-0.8f);
+            when(factionMock.getRelColor("tritachyon"))
+                .thenReturn(RED);
+
+            assertThat(readRelation(factionMock, "tritachyon"))
+                .contains(new FactionRelation(RepLevel.VENGEFUL, -80, RED));
+        }
+
+        @Test
+        void readsIndifferenceAsARelationRatherThanAsAbsence() {
+            // A pair with no history reports nought, which is a standing on the scale - only a pair
+            // that cannot be looked up at all answers nothing, which is what lets a caller folding
+            // several factions skip the unreadable ones without dragging the centre into its answer.
+            var factionMock = mock(FactionAPI.class);
+
+            when(factionMock.getRelColor("tritachyon"))
+                .thenReturn(GREEN);
+
+            assertThat(readRelation(factionMock, "tritachyon"))
+                .contains(new FactionRelation(RepLevel.NEUTRAL, 0, GREEN));
+        }
+
+        @Test
+        void readsNoFactionAtAllAsNoRelation() {
+
+            assertThat(readRelation(null, "tritachyon"))
+                .isEmpty();
+        }
+
+        @Test
+        void readsAnUnnamedOtherFactionAsNoRelation() {
+            // Nobody named on the other side, so there is nobody to hold a relation with - and an
+            // indifferent-looking answer would be indistinguishable from a real standing at nought.
+            assertThat(readRelation(mock(FactionAPI.class), " "))
+                .isEmpty();
         }
     }
 

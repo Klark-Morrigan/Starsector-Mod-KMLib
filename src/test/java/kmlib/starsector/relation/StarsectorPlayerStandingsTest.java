@@ -54,7 +54,7 @@ class StarsectorPlayerStandingsTest {
                 .thenReturn(relationshipMock);
 
             assertThat(readPlayerStanding(factionMock))
-                .contains(new PlayerStanding(RepLevel.VENGEFUL, -100, RED));
+                .contains(new FactionRelation(RepLevel.VENGEFUL, -100, RED));
         }
 
         @Test
@@ -76,7 +76,7 @@ class StarsectorPlayerStandingsTest {
                 .thenReturn(GREEN);
 
             assertThat(readPlayerStanding(factionMock))
-                .contains(new PlayerStanding(RepLevel.FRIENDLY, 60, GREEN));
+                .contains(new FactionRelation(RepLevel.FRIENDLY, 60, GREEN));
         }
 
         @Test
@@ -92,7 +92,7 @@ class StarsectorPlayerStandingsTest {
                 .thenReturn(BLUE);
 
             assertThat(readPlayerStanding(factionMock))
-                .contains(new PlayerStanding(RepLevel.FRIENDLY, 60, BLUE));
+                .contains(new FactionRelation(RepLevel.FRIENDLY, 60, BLUE));
         }
 
         @Test
@@ -122,7 +122,7 @@ class StarsectorPlayerStandingsTest {
                     .thenReturn(RED);
 
                 assertThat(readPlayerStanding(factionMock))
-                    .contains(new PlayerStanding(RepLevel.SUSPICIOUS, -20, RED));
+                    .contains(new FactionRelation(RepLevel.SUSPICIOUS, -20, RED));
             } finally {
                 StarsectorSettingsFake.clearSettings();
             }
@@ -141,7 +141,7 @@ class StarsectorPlayerStandingsTest {
                 .thenReturn(GREEN);
 
             assertThat(readPlayerStanding(factionMock))
-                .contains(new PlayerStanding(RepLevel.NEUTRAL, 0, GREEN));
+                .contains(new FactionRelation(RepLevel.NEUTRAL, 0, GREEN));
         }
     }
 }

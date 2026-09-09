@@ -1,37 +1,22 @@
 package kmlib.starsector.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.RepLevel;
 import com.fs.starfarer.api.characters.RelationshipAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
-import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
 import java.util.Optional;
 
 /**
- * Reads where a faction stands with the player as a single {@link PlayerStanding}.
+ * Reads where a faction stands with the player, as the player-fixed binding of
+ * {@link StarsectorFactionRelations#readRelation}.
  *
- * <p>The signed number is what a surface ranking factions by disposition orders on, and the colour
- * is what it draws that number in. Both are answered from one read here rather than left to each
- * caller, so a tooltip describing a standing and a row ranking by it cannot end up quoting
- * different walks of the same fallback chain.
- *
- * <p>The colour walks a three-tier fallback, so whichever shade Starsector would use for this
- * faction pair right now is the one that comes back:
- * <ol>
- *   <li>{@link RelationshipAPI#getRelColor()} on the live relationship object - the most
- *       authoritative source, because it picks up any per-relationship overrides Starsector applies
- *       (tutorial pinning, scripted events, and the like).</li>
- *   <li>{@link FactionAPI#getRelColor(String)} against {@link Factions#PLAYER} - the next-best
- *       read, used where the live relationship object is unavailable or paints nothing.</li>
- *   <li>{@link Misc#getRelColor(float)} on the raw reputation - the stateless palette fallback.</li>
- * </ol>
- *
- * <p>Absence is carried by handing back no standing rather than by a reputation of nought: a
- * faction nobody can look up and a faction the player is indifferent to are the same number and
- * opposite facts, and a caller folding standings across several factions has to be able to skip the
- * first without dragging the scale's centre into its answer.
+ * <p>Kept as its own entry point because the player pair is the one Starsector exposes a live
+ * {@link RelationshipAPI} for, and that object is the most authoritative source there is: it picks
+ * up per-relationship overrides the engine applies (tutorial pinning, scripted events, and the
+ * like) that neither the faction's palette nor the raw number reports. So this class holds that one
+ * extra tier and falls through to the general read for everything below it, rather than the general
+ * read carrying a branch about the player.
  *
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} or
  * {@link RelationshipAPI} propagates to the caller rather than degrading silently. Stateless - the
@@ -46,10 +31,10 @@ public final class StarsectorPlayerStandings {
      * Resolves a faction's standing with the player.
      *
      * @param faction the faction whose standing is read; nothing is read of no faction, so it holds
-     *                no standing
-     * @return the standing, or no standing where there is no faction to read one from
+     *                no relation
+     * @return the relation, or none where there is no faction to read one from
      */
-    public static Optional<PlayerStanding> readPlayerStanding(FactionAPI faction) {
+    public static Optional<FactionRelation> readPlayerStanding(FactionAPI faction) {
 
         if (faction == null) {
             return Optional.empty();
@@ -62,46 +47,36 @@ public final class StarsectorPlayerStandings {
 
             if (level != null) {
 
-                return Optional.of(new PlayerStanding(
+                return Optional.of(new FactionRelation(
                     level,
                     relationship.getRepInt(),
-                    resolveStandingColour(faction, relationship, relationship.getRel())));
+                    resolvePlayerRelationColour(faction, relationship)));
             }
         }
 
-        // Without a relationship object naming a level, the standing is reconstructed from the raw
-        // reputation the faction reports - the same number the object would have been carrying.
-        // The scale covers the whole float range, so this path always names a level.
-        var reputation = faction.getRelationship(Factions.PLAYER);
-
-        return Optional.of(new PlayerStanding(
-            RepLevel.getLevelFor(reputation),
-            RepLevel.getRepInt(reputation),
-            resolveStandingColour(faction, null, reputation)));
+        // Without a relationship object naming a level there is nothing the player tier can add, so
+        // the standing comes off the general read against the player id - the same faction and raw
+        // number the object would have been carrying.
+        return StarsectorFactionRelations.readRelation(faction, Factions.PLAYER);
     }
 
     /**
-     * Walks the three colour tiers in order, taking the first that paints something.
+     * The live relationship's own shade, falling through to the general colour walk where it paints
+     * nothing.
      *
-     * @param relationship the live relationship object, or none where the caller has none to offer
-     * @param reputation   the raw reputation the stateless palette is asked about
+     * <p>Falls through on the relationship object's own number rather than on the faction's, since
+     * the object is the tier that outranks it: a pair the engine has pinned reports one relationship
+     * there and another on the faction, and painting the shade of the number this standing did not
+     * take would put the two facets of one relation at odds.
      */
-    private static Color resolveStandingColour(
-            FactionAPI faction, RelationshipAPI relationship, float reputation) {
+    private static Color resolvePlayerRelationColour(
+            FactionAPI faction, RelationshipAPI relationship) {
 
-        if (relationship != null) {
+        var relationshipColour = relationship.getRelColor();
 
-            var relationshipColour = relationship.getRelColor();
-
-            if (relationshipColour != null) {
-                return relationshipColour;
-            }
-        }
-        var factionColour = faction.getRelColor(Factions.PLAYER);
-
-        if (factionColour != null) {
-            return factionColour;
-        }
-        return Misc.getRelColor(reputation);
+        return relationshipColour == null
+            ? StarsectorRelationColours.resolveRelationColour(
+                faction, Factions.PLAYER, relationship.getRel())
+            : relationshipColour;
     }
 }
