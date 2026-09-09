@@ -230,8 +230,10 @@ No Starsector API on the signature.
   branching the general one. Beside them: that relation worded the way the
   engine words it; whether a disposition clears the step from indifference to
   goodwill, asked of a faction in hand or as a pair test over ids bound to one
-  sector; and the continuous relation ramp, a relationship value as the shade
-  the engine paints it or as the bright and dark pair a map owner draws in.
+  sector; the continuous relation ramp, a relationship value as the shade
+  the engine paints it or as the bright and dark pair a map owner draws in; and
+  which of several relations decides, taken at either end of the scale, with a
+  direction carrying the band it is about alongside the end it takes.
 - **`kmlib.starsector.scripts`** - registering an every-frame script on the
   sector only when one of its type is not already there.
 - **`kmlib.starsector.settings`** - whether a mod is enabled, answered the

@@ -386,9 +386,14 @@ No Starsector API on the signature.
   relation worded the way the engine words it; whether a disposition clears the
   scale's own step from indifference to goodwill, asked of a faction in hand or
   as a pair test over ids bound to one sector, so a caller composing
-  dispositions takes the read rather than writing the lookup; and the continuous
+  dispositions takes the read rather than writing the lookup; the continuous
   relation ramp - a relationship value as the shade the engine paints it, or as
-  the bright and dark pair a map owner draws in.
+  the bright and dark pair a map owner draws in; and which of several relations
+  decides, taken at either end of the scale, ties settled by the order they were
+  handed over in and an empty set answered by no relation rather than by a
+  nought. A direction carries the band it is about alongside the end it takes and
+  the order it ranks in, so nothing can pick the most hostile relation of a set
+  while asking whether that same set is uniformly friendly.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) - sector
   script registration helpers.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the
