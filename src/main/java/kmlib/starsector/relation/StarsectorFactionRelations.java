@@ -12,12 +12,9 @@ import java.util.function.BiPredicate;
 /**
  * Reads how one faction stands with another: the whole relation as a {@link FactionRelation}, and
  * the one question a surface asks of it often enough to be worth a predicate of its own - whether
- * that relation is above the base game's own neutral, {@link RepLevel#FAVORABLE} or better, which
- * is every disposition warmer than indifference and no others.
- *
- * <p>That cut is a landmark the game itself names, shows the player on every faction screen, and
- * stops describing goodwill below - which is what makes a surface sorting factions by disposition
- * explicable. A cut taken anywhere else in the scale would be one the player is never shown.
+ * that relation is above the base game's own neutral, which is
+ * {@link FactionRelation#isAboveNeutral()} answered straight off a pair. Where the cut falls and why
+ * it is the game's rather than ours is stated there, on the value that holds it.
  *
  * <p>The predicate is named for the test rather than for whatever word a heading above it uses, so
  * nothing reading this concludes the answer means the single {@link RepLevel#FRIENDLY} level. It is
@@ -74,10 +71,16 @@ public final class StarsectorFactionRelations {
     /**
      * Whether one faction is disposed above neutral toward another.
      *
-     * <p>Asked of the level rather than of the raw reputation float, so the threshold is the scale's
-     * own step from indifference to goodwill rather than a number this class picks. Nothing is read
-     * of a pair that names nobody, and goodwill is a positive claim: the unreadable pair answers
-     * false rather than taking the benefit of the doubt, so nothing reports warmth it never read.
+     * <p>Asked of the level alone, not by testing the relation {@link #readRelation} composes.
+     * Routing it through that read would spell the cut once, but it would also resolve a colour to
+     * answer a predicate that paints nothing - and resolving one reaches the game's settings, so a
+     * pair test that reads a number today would stop answering wherever those are not up. The two
+     * spellings are both {@link RepLevel#isPositive()}, the engine's own predicate rather than a
+     * threshold either side picks, so there is no rule here to drift from the one on
+     * {@link FactionRelation#isAboveNeutral()}.
+     *
+     * <p>Goodwill is a positive claim: a pair that names nobody answers false rather than taking the
+     * benefit of the doubt, so nothing reports warmth it never read.
      *
      * @param faction        the faction whose disposition is read; nothing is read of no faction,
      *                       so it is not above neutral with anyone
