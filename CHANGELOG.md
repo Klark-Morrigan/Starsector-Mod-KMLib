@@ -62,7 +62,9 @@ No Starsector API on the signature.
   through a per-element formatter.
 - **`kmlib.colour`** - AWT Color to normalised GL channels folding in an alpha
   multiplier, plus darkening, RGB and full blends, flattening onto a backdrop,
-  and additive overlay and light.
+  channel multiply - the operation a tinted texture goes through, so a caller
+  can resolve the colour a multiplied draw lands on - and additive overlay and
+  light.
 - **`kmlib.extensions`** - a named extension point one implementation
   registers into, the last registration winning, with a sealed
   executed-or-declined outcome and whether the caller may fall back to library
@@ -394,7 +396,9 @@ No Starsector API on the signature.
   band button is painted with the tabs as one piece of chrome - same clip, same
   state save, same alpha - but in its own tab style, and with its image drawn
   into the tab it stands as rather than over the whole band, which would cover
-  the line a chrome keeps under its tabs.
+  the line a chrome keeps under its tabs. That image is also what answers the
+  pointer: it fills the tab, so the chrome that would otherwise show a hover is
+  behind it, and the pass washes the picture by the button's own fade instead.
 - **`kmlib.starsector.ui.render.gl.tooltip`** - painting a cursor tooltip and
   the leader lines ruling its rows, with redaction darkening, and the box
   height and screen budget a caller weighs its content against before the box
@@ -466,7 +470,11 @@ No Starsector API on the signature.
   a press on it fires the panel's action and moves no selection; it is laid and
   hit through the same one-cell tabs geometry a tab is, carries a look of its
   own (usually the row's with only the box changed, a button being as wide as
-  the one thing it shows), and may show an image in place of a word. It sits
+  the one thing it shows), and may show an image in place of a word - which the
+  button then resolves a tint for, the shade its own word would read in at
+  whatever point its fade stands, multiplied over whatever the image itself
+  states, so a mark filling the box lights where the chrome behind it cannot. It
+  sits
   outside the tabs control on purpose: a cell in that control which is not a tab
   would shift every index the selection, the lit tab and any bound keys are
   resolved by.
