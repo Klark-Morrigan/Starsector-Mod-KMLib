@@ -4,6 +4,7 @@ import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.recording.RecordingProfiler;
 import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.testfixtures.profiling.ProfileCounts;
 import kmlib.testfixtures.profiling.RecordedCapture;
 
 import java.util.function.Consumer;
@@ -16,6 +17,9 @@ public final class WalkCountCapture {
 
     // Nothing captured here is a duration, so one reading answers every clock read.
     private static final long FIXED_CLOCK_NANOS = 0L;
+
+    // What a read that counted nothing at all reports, there being no row to ask.
+    private static final long NOTHING_COUNTED = 0L;
 
     // What stands in for the caller a shared read is charged to.
     private static final String CALLER_SECTION = "test.caller";
@@ -79,32 +83,20 @@ public final class WalkCountCapture {
 
         /**
          * @param counter the counter to read
-         * @return what the row counted of it, and zero where it never touched it - which a row
-         *         reports as an absent counter rather than as a zero
+         * @return what the row counted of it, and nought where it never touched it - or where the
+         *         read counted nothing at all, which leaves the capture with no row to ask
          */
         public long readCount(ProfileCounter counter) {
-
-            if (row == null) {
-                return 0L;
-            }
-            return row
-                .getCounts()
-                .stream()
-                .filter(count -> count.getCounter() == counter)
-                .mapToLong(count -> count.getTotals().getTotal())
-                .findFirst()
-                .orElse(0L);
+            return row == null ? NOTHING_COUNTED : ProfileCounts.readTotalOf(row, counter);
         }
 
         /**
          * @param counter the counter to look for
          * @return whether the row carries it at all, which is what tells a counter nothing was
-         *         added to from one an amount of zero was
+         *         added to from one an amount of nought was
          */
         public boolean hasCount(ProfileCounter counter) {
-
-            return row != null
-                && row.getCounts().stream().anyMatch(count -> count.getCounter() == counter);
+            return row != null && ProfileCounts.hasCountOf(row, counter);
         }
 
         /**
