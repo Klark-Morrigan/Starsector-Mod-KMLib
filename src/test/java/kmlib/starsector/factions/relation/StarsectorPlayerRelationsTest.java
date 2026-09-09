@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.RepLevel;
@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 
 import java.awt.Color;
 
-import static kmlib.starsector.relation.StarsectorPlayerRelations.readPlayerRelation;
+import static kmlib.starsector.factions.relation.StarsectorPlayerRelations.readPlayerRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

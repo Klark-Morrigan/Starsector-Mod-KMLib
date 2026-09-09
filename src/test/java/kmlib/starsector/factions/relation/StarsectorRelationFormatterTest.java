@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.RepLevel;
 
@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.relation.StarsectorRelationFormatter.formatRelation;
+import static kmlib.starsector.factions.relation.StarsectorRelationFormatter.formatRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

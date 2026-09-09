@@ -335,9 +335,28 @@ No Starsector API on the signature.
   spawning custom campaign entities and jump points, their orbits, name
   generation, gate activation, and how an entity is identified to a reader:
   its name paired with the map glyph it is marked with.
-- [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) -
-  player-faction lifecycle, faction colours, crests and flags. See
-  [Player Faction Resolution](#player-faction-resolution).
+- [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) - what a
+  faction is in itself: player-faction lifecycle, faction colours, crests and
+  flags. See [Player Faction Resolution](#player-faction-resolution). Where a
+  faction stands against another is a package in, since that reading is held of
+  a pair rather than of either side alone.
+- [`starsector/factions/relation/`](src/main/java/kmlib/starsector/factions/relation/)
+  - where one faction stands with another, as one value: the level, the signed
+  reputation and the colour the game paints them in, off a single read. Answered
+  of any pair, or of a faction against the player - the player having a live
+  relationship object no other pair does, so that one extra tier sits with the
+  player-fixed read rather than branching the general one. Beside it, the same
+  relation worded the way the engine words it; whether a disposition clears the
+  scale's own step from indifference to goodwill, asked of a faction in hand or
+  as a pair test over ids bound to one sector, so a caller composing
+  dispositions takes the read rather than writing the lookup; the continuous
+  relation ramp - a relationship value as the shade the engine paints it, or as
+  the bright and dark pair a map owner draws in; and which of several relations
+  decides, taken at either end of the scale, ties settled by the order they were
+  handed over in and an empty set answered by no relation rather than by a
+  nought. A direction carries the band it is about alongside the end it takes and
+  the order it ranks in, so nothing can pick the most hostile relation of a set
+  while asking whether that same set is uniformly friendly.
 - [`starsector/fleet/`](src/main/java/kmlib/starsector/fleet/) - player fleet
   proximity.
 - [`starsector/geometry/`](src/main/java/kmlib/starsector/geometry/) -
@@ -377,23 +396,6 @@ No Starsector API on the signature.
   are offered their work through.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) - typed
   sector-memory accessors (flag, string).
-- [`starsector/relation/`](src/main/java/kmlib/starsector/relation/) - where one
-  faction stands with another, as one value: the level, the signed reputation
-  and the colour the game paints them in, off a single read. Answered of any
-  pair, or of a faction against the player - the player having a live
-  relationship object no other pair does, so that one extra tier sits with the
-  player-fixed read rather than branching the general one. Beside it, the same
-  relation worded the way the engine words it; whether a disposition clears the
-  scale's own step from indifference to goodwill, asked of a faction in hand or
-  as a pair test over ids bound to one sector, so a caller composing
-  dispositions takes the read rather than writing the lookup; the continuous
-  relation ramp - a relationship value as the shade the engine paints it, or as
-  the bright and dark pair a map owner draws in; and which of several relations
-  decides, taken at either end of the scale, ties settled by the order they were
-  handed over in and an empty set answered by no relation rather than by a
-  nought. A direction carries the band it is about alongside the end it takes and
-  the order it ranks in, so nothing can pick the most hostile relation of a set
-  while asking whether that same set is uniformly friendly.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) - sector
   script registration helpers.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the

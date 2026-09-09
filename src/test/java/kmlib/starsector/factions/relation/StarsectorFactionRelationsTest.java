@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.RepLevel;
@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.relation.StarsectorFactionRelations.createDispositionReader;
-import static kmlib.starsector.relation.StarsectorFactionRelations.isDispositionAboveNeutral;
-import static kmlib.starsector.relation.StarsectorFactionRelations.readRelation;
+import static kmlib.starsector.factions.relation.StarsectorFactionRelations.createDispositionReader;
+import static kmlib.starsector.factions.relation.StarsectorFactionRelations.isDispositionAboveNeutral;
+import static kmlib.starsector.factions.relation.StarsectorFactionRelations.readRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.nullable;

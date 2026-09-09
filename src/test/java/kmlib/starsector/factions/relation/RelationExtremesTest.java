@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.RepLevel;
 
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static kmlib.starsector.relation.RelationSamples.createRelationsAt;
+import static kmlib.starsector.factions.relation.RelationSamples.createRelationsAt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

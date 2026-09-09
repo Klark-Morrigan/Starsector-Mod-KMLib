@@ -81,6 +81,7 @@ No Starsector API on the signature.
 - `kmlib.starsector.colonies`
 - `kmlib.starsector.entities`
 - `kmlib.starsector.factions`
+- `kmlib.starsector.factions.relation`
 - `kmlib.starsector.fleet`
 - `kmlib.starsector.geometry`
 - `kmlib.starsector.graphics`
@@ -90,7 +91,6 @@ No Starsector API on the signature.
 - `kmlib.starsector.markets.colonisation`
 - `kmlib.starsector.markets.ownership`
 - `kmlib.starsector.memory`
-- `kmlib.starsector.relation`
 - `kmlib.starsector.scripts`
 - `kmlib.starsector.settings`
 - `kmlib.starsector.strings`

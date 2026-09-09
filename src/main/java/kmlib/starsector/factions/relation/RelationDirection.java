@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import java.util.Comparator;
 import java.util.function.Predicate;

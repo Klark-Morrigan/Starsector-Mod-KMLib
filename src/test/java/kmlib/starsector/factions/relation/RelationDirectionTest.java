@@ -1,12 +1,12 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static kmlib.starsector.relation.RelationSamples.createRelationAt;
-import static kmlib.starsector.relation.RelationSamples.createRelationsAt;
+import static kmlib.starsector.factions.relation.RelationSamples.createRelationAt;
+import static kmlib.starsector.factions.relation.RelationSamples.createRelationsAt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

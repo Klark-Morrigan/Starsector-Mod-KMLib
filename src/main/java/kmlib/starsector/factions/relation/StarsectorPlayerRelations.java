@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.characters.RelationshipAPI;

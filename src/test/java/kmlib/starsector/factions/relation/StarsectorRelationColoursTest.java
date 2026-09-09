@@ -1,4 +1,4 @@
-package kmlib.starsector.relation;
+package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 
@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.relation.StarsectorRelationColours.resolveRelationColour;
-import static kmlib.starsector.relation.StarsectorRelationColours.resolveRelationPalette;
+import static kmlib.starsector.factions.relation.StarsectorRelationColours.resolveRelationColour;
+import static kmlib.starsector.factions.relation.StarsectorRelationColours.resolveRelationPalette;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
