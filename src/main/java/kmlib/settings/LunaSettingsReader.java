@@ -1,5 +1,7 @@
 package kmlib.settings;
 
+import kmlib.starsector.settings.ModPresence;
+
 import lunalib.lunaSettings.LunaSettings;
 import lunalib.lunaSettings.LunaSettingsListener;
 
@@ -17,9 +19,24 @@ import lunalib.lunaSettings.LunaSettingsListener;
  *
  * <p>Thin passthrough to {@code LunaSettings}, which answers only in-engine
  * (like {@link kmlib.opengl.GlColour}'s GL passthrough): there is no logic here
- * beyond the null fallback and the mod-id filtering.
+ * beyond the fallbacks and the mod-id filtering.
+ *
+ * <p>Two fallbacks rather than one, because there are two ways a read can find
+ * nothing. LunaLib answers null for a field it has no value for, which is the
+ * ordinary case this has always covered - and it throws for a read taken before
+ * the game has stood its settings up, its loader reaching the mod set on the
+ * first read of any mod's settings. The second is not a null it could return,
+ * so it is asked about beforehand: a read outside a running game answers the
+ * caller's fallback rather than dying inside LunaLib. That reaches every caller
+ * whose value is read on a path a test drives - a per-frame budget, a colour, a
+ * cadence - and none of them is asking to be told the game is not up.
  */
 public final class LunaSettingsReader {
+
+    // LunaLib's own mod id, asked of the game's mod set to establish that both it and the settings
+    // behind it are up. Its own, rather than the calling mod's: what a read needs is the library
+    // that answers it, and a mod may legitimately read a setting belonging to another.
+    private static final String LUNALIB_MOD_ID = "lunalib";
 
     private LunaSettingsReader() {
     }
@@ -34,7 +51,12 @@ public final class LunaSettingsReader {
      * @return the stored boolean, or {@code fallback} when it is unavailable
      */
     public static boolean getBoolean(String modId, String fieldId, boolean fallback) {
+
+        if (!isSettingsLibraryUp()) {
+            return fallback;
+        }
         var value = LunaSettings.getBoolean(modId, fieldId);
+
         return value != null ? value : fallback;
     }
 
@@ -48,7 +70,12 @@ public final class LunaSettingsReader {
      * @return the stored double, or {@code fallback} when it is unavailable
      */
     public static double getDouble(String modId, String fieldId, double fallback) {
+
+        if (!isSettingsLibraryUp()) {
+            return fallback;
+        }
         var value = LunaSettings.getDouble(modId, fieldId);
+
         return value != null ? value : fallback;
     }
 
@@ -63,7 +90,12 @@ public final class LunaSettingsReader {
      * @return the stored int, or {@code fallback} when it is unavailable
      */
     public static int getInt(String modId, String fieldId, int fallback) {
+
+        if (!isSettingsLibraryUp()) {
+            return fallback;
+        }
         var value = LunaSettings.getInt(modId, fieldId);
+
         return value != null ? value : fallback;
     }
 
@@ -78,7 +110,12 @@ public final class LunaSettingsReader {
      * @return the stored string, or {@code fallback} when it is unavailable
      */
     public static String getString(String modId, String fieldId, String fallback) {
+
+        if (!isSettingsLibraryUp()) {
+            return fallback;
+        }
         var value = LunaSettings.getString(modId, fieldId);
+
         return value != null ? value : fallback;
     }
 
@@ -96,6 +133,18 @@ public final class LunaSettingsReader {
      */
     public static void runOnSettingsChange(String modId, Runnable onChange) {
         LunaSettings.addSettingsListener(new ChangeRelay(modId, onChange));
+    }
+
+    // Whether LunaLib can answer a read at all, which is the game's mod set being up and carrying
+    // it. Asked before every read rather than caught after one: what LunaLib does outside a running
+    // game is throw from inside its own loader, and a caught throwable there would be
+    // indistinguishable from a real fault in it.
+    //
+    // Deliberately not asked of the listener registration below, which only puts a callback on a
+    // list: refusing to register outside a running game would drop a subscription taken at
+    // application load, before the settings it waits on exist.
+    private static boolean isSettingsLibraryUp() {
+        return ModPresence.isModEnabled(LUNALIB_MOD_ID);
     }
 
     // Relays LunaLib's change event to a plain Runnable, filtered to one mod so
