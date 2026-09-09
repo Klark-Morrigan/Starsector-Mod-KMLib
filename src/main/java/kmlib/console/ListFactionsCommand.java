@@ -12,8 +12,8 @@ import kmlib.starsector.colonies.SectorColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.markets.MarketVisibility;
-import kmlib.starsector.relation.StarsectorRelationFormatter;
 import kmlib.starsector.relation.StarsectorPlayerRelations;
+import kmlib.starsector.relation.StarsectorRelationFormatter;
 
 import java.util.ArrayList;
 import java.util.Comparator;
