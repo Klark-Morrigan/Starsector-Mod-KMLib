@@ -61,6 +61,54 @@ class FactionRelationTest {
         }
     }
 
+    @Nested
+    class IsBelowNeutral {
+
+        @Test
+        void answersBelowNeutralAtTheFirstLevelOfIllWill() {
+
+            assertThat(new FactionRelation(RepLevel.SUSPICIOUS, -15, RED).isBelowNeutral())
+                .isTrue();
+        }
+
+        @Test
+        void answersBelowNeutralAtTheBottomOfTheScale() {
+
+            assertThat(new FactionRelation(RepLevel.VENGEFUL, -100, RED).isBelowNeutral())
+                .isTrue();
+        }
+
+        @Test
+        void answersNotBelowNeutralAtIndifference() {
+
+            assertThat(new FactionRelation(RepLevel.NEUTRAL, 0, RED).isBelowNeutral())
+                .isFalse();
+        }
+
+        @Test
+        void answersNotBelowNeutralAtTheFirstLevelOfGoodwill() {
+
+            assertThat(new FactionRelation(RepLevel.FAVORABLE, 15, RED).isBelowNeutral())
+                .isFalse();
+        }
+
+        @Test
+        void answersNotBelowNeutralAtTheBottomOfTheNeutralBand() {
+
+            // The band reaches -9, so a faintly negative reputation is still indifference - the
+            // same cut the positive side draws, taken from the other direction.
+            assertThat(createRelationAt(-0.09f).isBelowNeutral())
+                .isFalse();
+        }
+
+        @Test
+        void answersBelowNeutralOneStepPastTheNeutralBand() {
+
+            assertThat(createRelationAt(-0.10f).isBelowNeutral())
+                .isTrue();
+        }
+    }
+
     // The relation the game would report for a raw relationship value, so a boundary case is stated
     // as the number a save actually holds rather than as the level it is expected to land in.
     private static FactionRelation createRelationAt(float relationship) {

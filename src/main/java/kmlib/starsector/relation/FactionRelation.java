@@ -39,4 +39,22 @@ public record FactionRelation(
     public boolean isAboveNeutral() {
         return level.isPositive();
     }
+
+    /**
+     * Whether this relation falls past the scale's own step from indifference to ill will -
+     * {@link RepLevel#SUSPICIOUS} or worse, which is a reputation under -9.
+     *
+     * <p>The mirror of {@link #isAboveNeutral()}, and asked the same way for the same reason: the
+     * cut is the one the game shows the player rather than the sign of the number, so a reputation
+     * of -3 reads as indifference here exactly as it does everywhere else in the interface.
+     *
+     * <p>Offered beside its mirror rather than as its negation, because the two are not
+     * complementary - the neutral band satisfies neither, and a surface reading one as "not the
+     * other" would count indifference as the thing it was testing for.
+     *
+     * @return true where the relation is {@link RepLevel#SUSPICIOUS} or worse
+     */
+    public boolean isBelowNeutral() {
+        return level.isNegative();
+    }
 }
