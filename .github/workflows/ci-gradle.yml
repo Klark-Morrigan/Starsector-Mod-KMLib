@@ -55,6 +55,11 @@ jobs:
       runner: '["self-hosted", "kmlib-runner"]'
       gradle-tasks: ${{ matrix.gradle-tasks }}
       setup-java: false
+      # Both legs upload their test report into the one workflow run, where
+      # artifact names have to differ. The leg name is what tells them apart
+      # everywhere else in this file, so it is what tells the reports apart
+      # too.
+      artifact-suffix: ${{ matrix.leg }}
       # gradle/starsector-mod.gradle applies Common-Java's java-conventions by a
       # path relative to this repo's root, so Common-Java has to be cloned as a
       # neighbour and the checkout has to sit one level down to leave room for
