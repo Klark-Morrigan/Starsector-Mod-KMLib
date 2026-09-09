@@ -176,7 +176,7 @@ public final class TabPanelRenderer {
                         style.withTabStyle(bandButton.style()),
                         interactions.resolveBandButtonSources(),
                         alpha);
-                    drawBandButtonIcon(bandButton, alpha);
+                    drawBandButtonIcon(bandButton, interactions.bandButtonHover(), alpha);
                 }
             }));
     }
@@ -209,9 +209,16 @@ public final class TabPanelRenderer {
     // and sized to the tab box the layout reserved for it - the box being as wide as the image asked to be,
     // so the picture fills it rather than being letterboxed inside it.
     //
+    // Washed by the button's own fade, which is the whole of what shows the pointer here: the mark fills its
+    // box, so the fill lighting beneath it is covered by the very thing it would be lighting for. Which
+    // shade that is belongs to the placement, this pass spending only the fraction the panel reported.
+    //
     // The chrome channel, like the row's own words: the button stands opaque on a see-through body and goes
     // with the panel as it arrives and leaves.
-    private static void drawBandButtonIcon(BandButtonPlacement bandButton, PanelAlpha alpha) {
+    private static void drawBandButtonIcon(
+            BandButtonPlacement bandButton,
+            float hoverFraction,
+            PanelAlpha alpha) {
 
         var icon = bandButton.icon();
         if (icon == null) {
@@ -221,7 +228,7 @@ public final class TabPanelRenderer {
             icon.spritePath(),
             bandButton.computeIconBox(),
             alpha.resolveChromeAlpha(),
-            icon.tintColour());
+            bandButton.resolveIconTint(hoverFraction));
     }
 
     // One control of the header band, drawn as the chrome it is. Both the tabs and the button beside them go

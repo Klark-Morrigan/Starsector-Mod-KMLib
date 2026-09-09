@@ -88,6 +88,18 @@ public final class TabStyles {
     }
 
     /**
+     * Builds a tab style over the given palette - for a test whose subject is a shade, the flat stand-in
+     * set above being deliberately unable to tell one role from another.
+     *
+     * @param headerBandHeight how tall the tab band stands, passed through as above
+     * @param palette          the paint the row's looks are resolved from
+     * @return the tab style at that band height over that palette
+     */
+    public static TabStyle buildAtBandHeightInPalette(float headerBandHeight, TabPalette palette) {
+        return composeStyle(headerBandHeight, STAND_IN_FACE, TabBox.SNAPPED, palette);
+    }
+
+    /**
      * Builds a tab style standing its band at the given height, lettered in the given face and standing
      * its tabs in the given box - the one composition the narrower builders above both route through.
      *
@@ -101,13 +113,24 @@ public final class TabStyles {
             TextFace face,
             TabBox tabBox) {
 
+        return composeStyle(headerBandHeight, face, tabBox, STAND_IN_PALETTE);
+    }
+
+    // Every builder above lands here, so the roles no test reads - the chrome, the hotkey look, the ring,
+    // the sharpness - are filled in one place rather than once per entry point.
+    private static TabStyle composeStyle(
+            float headerBandHeight,
+            TextFace face,
+            TabBox tabBox,
+            TabPalette palette) {
+
         return new TabStyle(
             // The map's own chrome, which no test here draws: these assert dimensions and geometry, and a
             // chrome is read only at paint time.
             TabChrome.STRIP,
             headerBandHeight,
             tabBox,
-            STAND_IN_PALETTE,
+            palette,
             STAND_IN_HOTKEY,
             face,
             // No ring, for the same reason the key is left plain: a halo costs no width, so a measured row

@@ -1,9 +1,12 @@
 package kmlib.starsector.ui.widgets.tabs;
 
+import kmlib.colour.Colours;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
+
+import java.awt.Color;
 
 /**
  * A laid-out band button: the control the layout placed, and the look it was placed at. The style travels
@@ -25,6 +28,15 @@ public record BandButtonPlacement(
     Control control,
     TabStyle style,
     ImageSpan icon) {
+
+    // What an image stating no tint of its own is multiplied by, which is the multiply that changes
+    // nothing - so "drawn as authored" and "drawn under a wash" are one composition rather than two paths.
+    private static final Color AS_AUTHORED_TINT = Color.WHITE;
+
+    // A band button is never the cell a panel is showing: it opens something rather than selecting
+    // anything, so it is laid with no selection at all. Stated here because the look channel asks the
+    // question and there is no index to answer it with.
+    private static final boolean NEVER_SELECTED = false;
 
     /**
      * The box the icon is drawn into: the tab this button stands as, hung from the band's top. Not the
@@ -56,5 +68,41 @@ public record BandButtonPlacement(
      */
     public boolean containsPoint(float pointX, float pointY) {
         return control.bounds().containsPoint(pointX, pointY);
+    }
+
+    /**
+     * The colour the mark is multiplied by at this point of the button's fade: the shade the button's own
+     * word would read in, so a mark standing in place of a word answers the pointer the way that word
+     * would. The image fills its box, so what shows the pointer is the mark itself rather than a margin of
+     * chrome around it - the fill beneath an image is covered by the very thing it would be lighting for.
+     *
+     * <p>Composed the way a tab's finished label is: the look its state names carried however far the fade
+     * has run, then whatever light the palette adds at that point. Both, because the two chromes answer
+     * the pointer differently - a strip travels to a shade and a raised button lights from where it stands
+     * - and a mark reading only the first would sit inert on the chrome that lights.
+     *
+     * <p>Multiplied over whatever the image states rather than replacing it, so an asset authored in its
+     * own colours is washed rather than repainted, and one stating no tint takes the shade whole.
+     *
+     * @param hoverFraction how far the button has travelled into being pointed at, 0 fully off and 1 fully
+     *                      on
+     * @return the colour to multiply the image by
+     */
+    public Color resolveIconTint(float hoverFraction) {
+
+        var palette = style.palette();
+        var light = palette.resolveLightAtHoverFraction(hoverFraction);
+
+        var litLabel = palette.resolveLookAtHoverFraction(NEVER_SELECTED, hoverFraction)
+            .computeGlowingLook(light.colour(), light.weight())
+            .label();
+
+        return Colours.multiplyBy(resolveStatedTint(), litLabel);
+    }
+
+    // The image's own colour, or the no-op multiply where it states none. A null tint means "as authored",
+    // which is white here rather than a second path through the composition above.
+    private Color resolveStatedTint() {
+        return icon == null || icon.tintColour() == null ? AS_AUTHORED_TINT : icon.tintColour();
     }
 }
