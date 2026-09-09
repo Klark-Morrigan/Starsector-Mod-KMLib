@@ -156,6 +156,57 @@ final class ColoursTest {
     }
 
     @Nested
+    class MultiplyBy {
+
+        @Test
+        void multiplies_each_channel_as_a_fraction_of_full_strength() {
+
+            var tinted = Colours.multiplyBy(new Color(200, 100, 40, 255), new Color(128, 255, 0, 255));
+
+            // 200 * 128/255 = 100.4, rounded.
+            assertThat(tinted.getRed()).isEqualTo(100);
+            assertThat(tinted.getGreen()).isEqualTo(100);
+            assertThat(tinted.getBlue()).isEqualTo(0);
+            assertThat(tinted.getAlpha()).isEqualTo(255);
+        }
+
+        @Test
+        void leaves_the_colour_unchanged_under_white() {
+            // The no-op multiply, which is what "states no tint" resolves to - so an untinted image and a
+            // white-tinted one are the same draw rather than two paths through the pass that makes it.
+            var same = Colours.multiplyBy(new Color(10, 20, 30, 128), Color.WHITE);
+
+            assertThat(same.getRed()).isEqualTo(10);
+            assertThat(same.getGreen()).isEqualTo(20);
+            assertThat(same.getBlue()).isEqualTo(30);
+            assertThat(same.getAlpha()).isEqualTo(128);
+        }
+
+        @Test
+        void takes_the_alpha_down_with_the_rest_under_a_half_solid_multiplier() {
+            // A translucent tint thins what it is laid over rather than only shading it, which is what a
+            // multiplied draw does - an alpha carried across whole would leave it solid under a wash that
+            // was not.
+            var thinned = Colours.multiplyBy(new Color(200, 200, 200, 200), new Color(255, 255, 255, 128));
+
+            assertThat(thinned.getRed()).isEqualTo(200);
+
+            // 200 * 128/255 = 100.4, rounded.
+            assertThat(thinned.getAlpha()).isEqualTo(100);
+        }
+
+        @Test
+        void returns_black_under_black() {
+
+            var black = Colours.multiplyBy(new Color(200, 150, 100, 255), Color.BLACK);
+
+            assertThat(black.getRed()).isEqualTo(0);
+            assertThat(black.getGreen()).isEqualTo(0);
+            assertThat(black.getBlue()).isEqualTo(0);
+        }
+    }
+
+    @Nested
     class BlendRgbTowards {
 
         @Test

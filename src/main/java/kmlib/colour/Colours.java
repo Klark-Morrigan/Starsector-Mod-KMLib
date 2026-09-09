@@ -90,6 +90,27 @@ public final class Colours {
     }
 
     /**
+     * {@code base} multiplied channel by channel by {@code multiplier}, each channel treated as a 0..1
+     * fraction - the operation a texture drawn under a tint goes through, so a caller can resolve on the
+     * CPU the colour a multiplied draw would land on. White leaves the colour untouched, which is what
+     * makes "no tint stated" and "tinted white" one composition rather than two paths.
+     *
+     * <p>Alpha multiplies with the rest, so a half-solid multiplier halves what it is laid over rather
+     * than only shading it - the same thing a translucent tint does to the texture it is drawn over.
+     *
+     * @param base       the colour being multiplied
+     * @param multiplier the colour multiplying it; white returns {@code base} unchanged
+     * @return the product, each channel rounded and clamped
+     */
+    public static Color multiplyBy(Color base, Color multiplier) {
+        return new Color(
+            multiplyChannel(base.getRed(), multiplier.getRed()),
+            multiplyChannel(base.getGreen(), multiplier.getGreen()),
+            multiplyChannel(base.getBlue(), multiplier.getBlue()),
+            multiplyChannel(base.getAlpha(), multiplier.getAlpha()));
+    }
+
+    /**
      * Lerps {@code base}'s red, green, and blue toward {@code target}'s by {@code amount}, keeping
      * {@code base}'s own alpha - so a caller can wash a fill toward a brighter shade (e.g. a tab fill
      * toward white on hover) as a pure brightness shift without also changing its transparency. An
@@ -234,6 +255,12 @@ public final class Colours {
     // Scales one 0-255 channel by the factor.
     private static int scaleChannel(int channel, float factor) {
         return roundToChannel(channel * factor);
+    }
+
+    // Multiplies two 0-255 channels as though both were 0..1 fractions, so full strength keeps what it
+    // multiplies and anything less takes it down.
+    private static int multiplyChannel(int base, int multiplier) {
+        return roundToChannel(base * multiplier / MAX_CHANNEL);
     }
 
     // Lerps one 0-255 channel from -> to by t.
