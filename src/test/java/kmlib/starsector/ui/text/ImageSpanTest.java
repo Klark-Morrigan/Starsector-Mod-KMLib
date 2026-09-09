@@ -16,6 +16,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * the run, a width that did not follow the line would reserve room the drawn square then failed to
  * fill, and a tint dropped between the asset read and the draw shows as a glyph in a shade nobody
  * chose.
+ *
+ * <p>Also what "states none" comes to at the draw, which is the run's own answer rather than each
+ * caller's: white, the multiply that changes nothing.
  */
 class ImageSpanTest {
 
@@ -69,6 +72,25 @@ class ImageSpanTest {
             // A map glyph's colour is authored beside its path, so the run carries it to the draw rather
             // than the draw picking a shade of its own.
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).tintColour())
+                .isEqualTo(ICON_TINT);
+        }
+    }
+
+    @Nested
+    class ResolveDrawnTint {
+
+        @Test
+        void resolveDrawnTintAnswersWhiteForAnImageStatingNone() {
+            // The multiply that changes nothing, so a caller washing or drawing an untinted image needs
+            // no null branch of its own - and every such branch is a chance to multiply by black.
+            assertThat(new ImageSpan(CREST_SPRITE_PATH).resolveDrawnTint())
+                .isEqualTo(Color.WHITE);
+        }
+
+        @Test
+        void resolveDrawnTintAnswersTheImagesOwnColourWhereItStatesOne() {
+
+            assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).resolveDrawnTint())
                 .isEqualTo(ICON_TINT);
         }
     }

@@ -29,10 +29,6 @@ public record BandButtonPlacement(
     TabStyle style,
     ImageSpan icon) {
 
-    // What an image stating no tint of its own is multiplied by, which is the multiply that changes
-    // nothing - so "drawn as authored" and "drawn under a wash" are one composition rather than two paths.
-    private static final Color AS_AUTHORED_TINT = Color.WHITE;
-
     // A band button is never the cell a panel is showing: it opens something rather than selecting
     // anything, so it is laid with no selection at all. Stated here because the look channel asks the
     // question and there is no index to answer it with.
@@ -97,12 +93,11 @@ public record BandButtonPlacement(
             .computeGlowingLook(light.colour(), light.weight())
             .label();
 
-        return Colours.multiplyBy(resolveStatedTint(), litLabel);
-    }
-
-    // The image's own colour, or the no-op multiply where it states none. A null tint means "as authored",
-    // which is white here rather than a second path through the composition above.
-    private Color resolveStatedTint() {
-        return icon == null || icon.tintColour() == null ? AS_AUTHORED_TINT : icon.tintColour();
+        // Whether "as authored" is white is the image's own answer, so a button carrying one asks it
+        // rather than spelling the no-op multiply a second time; a button carrying none is the shade
+        // itself, there being nothing for it to wash.
+        return icon == null
+            ? litLabel
+            : Colours.multiplyBy(icon.resolveDrawnTint(), litLabel);
     }
 }

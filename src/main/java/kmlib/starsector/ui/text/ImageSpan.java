@@ -33,6 +33,10 @@ public record ImageSpan(
     // rather than a bare null standing in for it wherever a run is built from a path alone.
     private static final Color NO_TINT = null;
 
+    // What "as authored" comes to at the draw: white is the multiply that changes nothing, so an image
+    // stating no colour and one stating white are the same pixels rather than two paths through a pass.
+    private static final Color AS_AUTHORED_TINT = Color.WHITE;
+
     /**
      * Rejects a null path, since a label that shows no image simply carries no image run rather than
      * one with nothing to load. A null otherwise surfaces at the texture lookup inside a draw call,
@@ -79,5 +83,17 @@ public record ImageSpan(
     @Override
     public void paintRun(LabelRunPainter labelRunPainter, float runX) {
         labelRunPainter.paintImageSpan(this, runX);
+    }
+
+    /**
+     * The colour this image is actually multiplied by: its own where it states one, and the no-op
+     * multiply where it states none. What a caller resolving a colour off this run reaches for, so
+     * "a null tint means as authored" is answered here rather than restated wherever a run is drawn or
+     * washed - two spellings of it are two chances for one of them to paint an image black.
+     *
+     * @return the tint to draw this image under, never null
+     */
+    public Color resolveDrawnTint() {
+        return tintColour == null ? AS_AUTHORED_TINT : tintColour;
     }
 }

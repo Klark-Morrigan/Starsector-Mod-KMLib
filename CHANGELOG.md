@@ -412,8 +412,9 @@ No Starsector API on the signature.
   the surface it belongs to.
 - **`kmlib.starsector.ui.text`** - substrate-neutral text look (face, colour,
   casing, alignment) and the runs a label is built from: text spans, image
-  spans, and redacted spans laid out as word bars, with run offsets, widths
-  and joined-run handling.
+  spans - which answer for themselves what "states no tint" comes to at a draw,
+  so no caller carries a null branch of its own - and redacted spans laid out
+  as word bars, with run offsets, widths and joined-run handling.
 - **`kmlib.starsector.ui.tooltip`** - attaching a vanilla TooltipMakerAPI
   tooltip to a component, either from a surface the caller already holds or
   from one made for the call, for a caller decorating a widget it did not
