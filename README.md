@@ -401,9 +401,11 @@ No Starsector API on the signature.
   numeric slots.
 - [`starsector/systems/`](src/main/java/kmlib/starsector/systems/) - star
   system queries and motion tracking, the per-pass index over the colony set
-  so a system is walked once however many readers ask about it, and the
-  register of the means of arrival the engine does not model, which the mods
-  supplying them fill at load, so the read itself names no mod.
+  so a system is walked once however many readers ask about it - and over the
+  sector's systems by id, so a pass resolving ids traverses the system list
+  once as well - and the register of the means of arrival the engine does not
+  model, which the mods supplying them fill at load, so the read itself names
+  no mod.
 - [`starsector/systems/claims/`](src/main/java/kmlib/starsector/systems/claims/)
   - vanilla system claims behind a port, with a second port for the scored
   contest behind one - down to the terms each market's score is the sum of -
