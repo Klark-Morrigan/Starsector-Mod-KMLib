@@ -18,12 +18,12 @@ section here.
 
 First tagged release, so there is no prior version to diff against: this is
 the whole public surface - the console commands a player types, then one entry
-per package naming what it offers. A test fixtures variant ships alongside the
-jar for consumers' own suites.
+per package naming what it offers, ending with the test fixtures that ship as
+a second artifact for consumers' own suites.
 
 ### Added
 
-#### Console commands
+**Console commands**
 
 Seven campaign-only commands, registered through `data/console/commands.csv`
 and reached only where Console Commands is installed. Arguments, defaults and
@@ -43,7 +43,7 @@ in-game.
 Both colony commands defer to Nexerelin's own colonisation and transfer where
 that mod is enabled.
 
-#### Game-agnostic helpers
+**Game-agnostic helpers**
 
 No Starsector API on the signature.
 
@@ -135,9 +135,8 @@ No Starsector API on the signature.
 - **`kmlib.text`** - number formatting (scientific, signed delta, a signed
   reading on a scale whose middle is a real position and so draws unsigned,
   grouped integer, compact decimal) and the reads over a string every surface
-  shares:
-  is there text here, what are its words, initials, whole-word search, and
-  dropping the stutter left where one phrase was appended to another ending on
+  shares: is there text here, what are its words, initials, whole-word search,
+  and dropping the stutter left where one phrase was appended to another on
   the same word. Plus the grid a monospaced table is laid out in: cells padded
   into columns that never close below a floor, so one table's columns sit where
   the last one's did, and lines written across the whole width for what belongs
@@ -145,7 +144,7 @@ No Starsector API on the signature.
 - **`kmlib.time`** - nanosecond conversion to microseconds, milliseconds and
   seconds and back, and the duration formats a diagnostic line prints.
 
-#### Starsector-facing wrappers and seams
+**Starsector-facing wrappers and seams**
 
 - **`kmlib.console`** - the Console Commands base class, and the seven command
   implementations listed above.
@@ -243,9 +242,11 @@ No Starsector API on the signature.
 - **`kmlib.starsector.systems`** - star system queries (display name, stars,
   centremost star, markets, nearest market, reachability, claim override,
   entity search by id), sector-wide indexing and hyperspace positions, the
-  per-pass colony index so a system is walked once however many readers ask,
-  movement tracking across frames, and the register of arrival routes the
-  engine does not model.
+  per-pass index so a system is walked once however many readers ask - of its
+  colonies, and of the sector's systems by id, so a pass that resolves ids
+  traverses the system list once as well - movement tracking across frames,
+  observed either from a walk of its own or from positions the caller has
+  already read, and the register of arrival routes the engine does not model.
 - **`kmlib.starsector.systems.claims`** - the claiming faction behind a port,
   and the scored contest behind a second one: per-market breakdowns down to
   size, siblings, military bonus and admission, and standings that state their
@@ -298,10 +299,9 @@ No Starsector API on the signature.
   was raised, over a screen or from the campaign itself. Presence only: the
   codex fades in over a few tenths of a second, but on a panel this never walks
   to, and at that length a caller standing down at once does not read as a cut.
-  And a shape-based reach
-  for the members no name can
-  find: what a class declares and what it publishes, each member's parameters,
-  return type and a way to call it, so a caller can recognise an obfuscated
+  And a shape-based reach for the members no name can find: what a class
+  declares and what it publishes, each member's parameters, return type and a
+  way to call it, so a caller can recognise an obfuscated
   member by its signature rather than by a name the next game build regenerates.
   The reach itself is deliberately policy-free - a hop either answers or throws,
   and what a failure means is the caller's to decide.
@@ -430,9 +430,9 @@ No Starsector API on the signature.
   as one value - the border around its footprint and the thickness of the bar
   its body keeps a gutter clear for, together because both are room reserved
   before a control is placed and a panel is never laid out knowing one without
-  the other - and the
-  two alphas a panel paints at - how see-through its body is meant to be, and
-  how much of the panel is on screen at all - carried together because chrome
+  the other - and the two alphas a panel paints at - how see-through its body
+  is meant to be, and how much of the panel is on screen at all - carried
+  together because chrome
   standing opaque on that body still has to leave with the panel, and asked for
   separately by what honours the look and what honours only the moment: a
   panel's chrome takes both channels, while its words take the moment alone, so
@@ -467,18 +467,9 @@ No Starsector API on the signature.
   and the hover, pulse, look, wash and light sources a tab header and its
   panel read. A panel's band travels as one value - the row's look, its tabs,
   and the panel's own button after them - because a layout can use none of the
-  three alone. That button is the panel's own chrome rather than any tab's, so
-  a press on it fires the panel's action and moves no selection; it is laid and
-  hit through the same one-cell tabs geometry a tab is, carries a look of its
-  own (usually the row's with only the box changed, a button being as wide as
-  the one thing it shows), and may show an image in place of a word - which the
-  button then resolves a tint for, the shade its own word would read in at
-  whatever point its fade stands, multiplied over whatever the image itself
-  states, so a mark filling the box lights where the chrome behind it cannot. It
-  sits
-  outside the tabs control on purpose: a cell in that control which is not a tab
-  would shift every index the selection, the lit tab and any bound keys are
-  resolved by.
+  three alone. That button is the panel's chrome rather than a tab: it fires
+  the panel's action, moves no selection, carries a look of its own, and may
+  show a tinted image in place of a word.
 - **`kmlib.starsector.ui.widgets.tabs.style`** - the tab look a host varies:
   chrome choice, tab box sizing, palette with hover and click states, hotkey
   underlining, text halo, and the vanilla tab and button fills a glow is
@@ -493,3 +484,36 @@ No Starsector API on the signature.
   answers an overflow by giving up size rather than lines - re-anchoring the
   level shrink at the deepest line shown, so it keeps its size while the tiers
   above it draw smaller and closer together.
+
+**Test fixtures**
+
+Shipped as a second artifact beside the jar, for a consumer's own suites. Fakes
+stand in for a seam the library inverted; fixtures build a world a case is posed
+against.
+
+- **`kmlib.testfixtures.console.output`** - a command output collecting what a
+  command printed, in place of the console it would print to.
+- **`kmlib.testfixtures.logging`** - a recording log4j appender, attached for
+  the length of one call, so what a class wrote to the game log can be read
+  back. It holds the logger's level and additivity for that call and puts both
+  back, so a capture reports what the class wrote rather than what the level in
+  force happened to let through.
+- **`kmlib.testfixtures.mods.consolecommands`** - a stand-in for whether the
+  console overlay is up, for a caller that behaves differently while it is.
+- **`kmlib.testfixtures.profiling`** - a capture that binds a recording
+  profiler for the length of some work, restores the silent one after, and
+  finds a row in what it recorded by section name; and the reading of one row's
+  counter that states an untouched counter as nought.
+- **`kmlib.testfixtures.starsector.colonies`**,
+  **`.markets`** and **`.systems.claims`** - colonies, the markets behind them,
+  where each is placed, the states a market can be in, and the claim readers
+  and standings a contest is posed with.
+- **`kmlib.testfixtures.starsector.memory`** and **`.settings`** - sector
+  memory, the common data store, the game's settings, and the mod ids and
+  per-mod scopes a case stages against them.
+- **`kmlib.testfixtures.starsector.ui.*`** - the game's UI stood up without a
+  game: core UI components, panels, widgets, hosts, faders and modal dialogs;
+  button labels, line measuring and positions; cursor position and pointer
+  holds; the intel screen; the sector map, its filter row and buttons, the
+  minimap, the map widgets a probe reads and the modelview matrix behind them;
+  and the UI sound player.
