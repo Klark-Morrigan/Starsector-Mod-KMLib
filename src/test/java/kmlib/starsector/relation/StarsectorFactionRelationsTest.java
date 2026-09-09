@@ -52,6 +52,7 @@ class StarsectorFactionRelationsTest {
 
         @Test
         void readsCooperativeAsAboveNeutral() {
+
             assertThat(isDispositionAboveNeutral(buildFactionAt(RepLevel.COOPERATIVE), "tritachyon"))
                 .isTrue();
         }
@@ -66,12 +67,14 @@ class StarsectorFactionRelationsTest {
 
         @Test
         void readsSuspiciousAsNotAboveNeutral() {
+
             assertThat(isDispositionAboveNeutral(buildFactionAt(RepLevel.SUSPICIOUS), "tritachyon"))
                 .isFalse();
         }
 
         @Test
         void readsVengefulAsNotAboveNeutral() {
+
             assertThat(isDispositionAboveNeutral(buildFactionAt(RepLevel.VENGEFUL), "tritachyon"))
                 .isFalse();
         }
@@ -100,6 +103,7 @@ class StarsectorFactionRelationsTest {
 
         @Test
         void readsNoFactionAtAllAsNotAboveNeutral() {
+
             assertThat(isDispositionAboveNeutral(null, "tritachyon"))
                 .isFalse();
         }
@@ -120,7 +124,8 @@ class StarsectorFactionRelationsTest {
             // Matched with nullable rather than any: the overload has to be named by type, and a
             // plain typed matcher stands for no null - which would let exactly the call this guards
             // against past the verification.
-            verify(factionMock, never()).getRelationshipLevel(nullable(String.class));
+            verify(factionMock, never())
+                .getRelationshipLevel(nullable(String.class));
         }
     }
 

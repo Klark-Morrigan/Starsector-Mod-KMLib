@@ -47,14 +47,23 @@ class RelationDirectionTest {
         }
 
         @Test
-        void placesIndifferenceInNeitherBand() {
+        void placesTheWholeNeutralBandInNeitherBand() {
 
-            // The neutral band belongs to no direction, which is what keeps a set of wholly
-            // indifferent factions from reading as uniform at both ends at once.
-            var indifferent = createRelationAt(0.00f);
+            // Indifference is a band the game spans from -9 to +9, not the single value nought, and
+            // no part of it belongs to a direction - which is what keeps a set of wholly
+            // indifferent factions from reading as uniform at both ends at once. Stated across the
+            // band rather than at its centre, so a rule taken on the sign of the number would fail
+            // here on the two edges even though nought would pass it.
+            for (var indifferent : List.of(
+                    createRelationAt(-0.09f),
+                    createRelationAt(0.00f),
+                    createRelationAt(0.09f))) {
 
-            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(indifferent)).isFalse();
-            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(indifferent)).isFalse();
+                assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(indifferent))
+                    .isFalse();
+                assertThat(RelationDirection.FRIENDLIEST.isWithinBand(indifferent))
+                    .isFalse();
+            }
         }
 
         @Test
@@ -88,8 +97,10 @@ class RelationDirectionTest {
         @Test
         void placesNoRelationInNoBand() {
 
-            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(null)).isFalse();
-            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(null)).isFalse();
+            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(null))
+                .isFalse();
+            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(null))
+                .isFalse();
         }
     }
 

@@ -17,8 +17,10 @@ import java.util.Optional;
  * rule is stated as iteration order rather than left to whichever one a fold happens to keep -
  * which makes a caller's own ordering the thing that settles them.
  *
- * <p>An empty set answers no relation rather than a reputation of nought: nobody to read and
- * everybody indifferent are the same number and opposite facts, the same distinction a single pair
+ * <p>An empty set answers no relation rather than a reputation of nought. Nought is not a spare
+ * value to signal absence with - it sits in the middle of the band the scale calls indifference,
+ * which every faction nobody has any history with reads at - so a set with nobody in it and a set
+ * of factions who do not care would arrive as the same fact. The same distinction a single pair
  * read draws by handing back no relation at all.
  *
  * <p>Stateless - every entry point is a static method, no instance needed.
