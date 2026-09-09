@@ -8,6 +8,7 @@ import kmlib.starsector.colonies.Colonies;
 import kmlib.starsector.colonies.SystemColonies;
 import kmlib.text.KmlibStrings;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,8 +40,8 @@ public final class SystemColoniesIndex {
     private final Map<String, Colonies> coloniesBySystemId = new HashMap<>();
     private final SectorAPI sector;
 
-    // Built on the first ask made by id alone, and only then: a pass that always asks with the
-    // system in hand never needs the sector's systems indexed at all.
+    // Built on the first ask that needs the sector's systems resolved, and only then: a pass whose
+    // readers all hold the system in hand never indexes the sector at all.
     private Map<String, StarSystemAPI> systemById;
 
     /**
@@ -115,6 +116,25 @@ public final class SystemColoniesIndex {
         return readColoniesIn(findSystemById(systemId));
     }
 
+    /**
+     * The sector's star systems keyed by id, traversed on the first ask and remembered thereafter.
+     *
+     * <p>Published for the same reason the colony sets are: a reader resolving ids off this pass
+     * would otherwise open a traversal of its own, and two traversals for one pass is exactly what
+     * an index exists to stop. The pass's readers share this one whether they came for a system or
+     * for its colonies.
+     *
+     * @return each system keyed by its id, in the sector's star-system order; empty for an index
+     *         opened over no sector. Read-only - the map is the index's own memo
+     */
+    public Map<String, StarSystemAPI> readSystemsById() {
+
+        if (systemById == null) {
+            systemById = Collections.unmodifiableMap(SectorStarSystems.indexById(sector));
+        }
+        return systemById;
+    }
+
     // One system read for real, counted as the visit it is. Only the misses reach here, which is
     // what makes the counter say how many systems a pass actually walked rather than how many
     // times it asked - the difference between the two being the whole point of holding an index.
@@ -125,14 +145,10 @@ public final class SystemColoniesIndex {
         return SystemColonies.readColoniesIn(sector, system);
     }
 
-    // The system carrying this id, resolving the sector's systems once and keeping the result.
-    // Matched on getId for the same reason SectorStarSystems.indexById is: vanilla's own lookup
-    // matches the optional unique id first and silently misses a system keyed by its base name.
+    // The system carrying this id, off the one index every reader of this pass shares. Matched on
+    // getId for the same reason SectorStarSystems.indexById is: vanilla's own lookup matches the
+    // optional unique id first and silently misses a system keyed by its base name.
     private StarSystemAPI findSystemById(String systemId) {
-
-        if (systemById == null) {
-            systemById = SectorStarSystems.indexById(sector);
-        }
-        return systemById.get(systemId);
+        return readSystemsById().get(systemId);
     }
 }

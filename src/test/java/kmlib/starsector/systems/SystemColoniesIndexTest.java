@@ -13,15 +13,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
  * Pins the contracts of {@link SystemColoniesIndex#readColoniesIn},
- * {@link SystemColoniesIndex#readColoniesById} and {@link SystemColoniesIndex#getSector}: that
- * the index answers exactly what the direct read answers, that it pays for a system's walk once
- * however it is asked, and that it names the sector it answers out of. Each method's
+ * {@link SystemColoniesIndex#readColoniesById}, {@link SystemColoniesIndex#readSystemsById} and
+ * {@link SystemColoniesIndex#getSector}: that the index answers exactly what the direct read
+ * answers, that it pays for a system's walk once however it is asked, that one traversal of the
+ * sector serves every reader of it, and that it names the sector it answers out of. Each method's
  * cases live in a {@link Nested} group so the suite reports as a per-method tree; the world they
  * are posed against is {@link ColonyFixture}, shared with the direct read's suite - which
  * is what lets the two answers be compared at all.
@@ -197,6 +199,70 @@ final class SystemColoniesIndexTest {
         void yields_nothing_for_a_blank_id() {
             assertThat(new SystemColoniesIndex(mock(SectorAPI.class)).readColoniesById(" "))
                 .isEqualTo(Colonies.NONE);
+        }
+    }
+
+    @Nested
+    class ReadSystemsById {
+
+        @Test
+        void answers_each_of_the_sector_s_systems_keyed_by_its_id() {
+
+            var fixture = buildCorvusHoldingOneColony();
+
+            assertThat(new SystemColoniesIndex(fixture.getSector()).readSystemsById())
+                .containsExactly(entry("corvus", fixture.getSystem()));
+        }
+
+        @Test
+        void traverses_the_sector_once_across_repeated_asks() {
+            // This is what a reader resolving many ids takes instead of indexing the sector for
+            // itself, so it has to be cheaper than doing so - otherwise the reader has bought the
+            // traversal it came here to avoid.
+            var fixture = buildCorvusHoldingOneColony();
+            var index = new SystemColoniesIndex(fixture.getSector());
+
+            index.readSystemsById();
+            index.readSystemsById();
+
+            verify(fixture.getSector(), times(1)).getStarSystems();
+        }
+
+        @Test
+        void shares_that_traversal_with_a_colony_read_made_by_id() {
+            // The index's two id-keyed answers are one traversal between them: a pass that resolves
+            // a system here and then asks who lives in one it never held has walked the sector
+            // once, which is what the row reporting that pass is allowed.
+            var fixture = buildCorvusHoldingOneColony();
+            var index = new SystemColoniesIndex(fixture.getSector());
+
+            index.readSystemsById();
+            index.readColoniesById("askonia");
+
+            verify(fixture.getSector(), times(1)).getStarSystems();
+        }
+
+        @Test
+        void counts_one_sector_walk_however_often_it_is_asked_for() {
+            // The counter the frame's bound on a rebuild is stated against: a second traversal
+            // opened for the same pass is the breach, so this answer must never add one.
+            var fixture = buildCorvusHoldingOneColony();
+            var index = new SystemColoniesIndex(fixture.getSector());
+
+            var counts = WalkCountCapture.captureCountsOf(() -> {
+                index.readSystemsById();
+                index.readSystemsById();
+            });
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(1L);
+        }
+
+        @Test
+        void yields_no_systems_when_the_sector_is_unreachable() {
+
+            assertThat(new SystemColoniesIndex(null).readSystemsById())
+                .isEmpty();
         }
     }
 
