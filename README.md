@@ -430,6 +430,16 @@ built out of widgets' shared rows), a layout places it, `render/gl/` paints
 it. How the tiers meet is in
 [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md).
 
+- [`starsector/ui/buttons/`](src/main/java/kmlib/starsector/ui/buttons/) - the
+  words on a button the game built, for a caller decorating a widget it did not
+  draw. Read and written through the label the engine draws them with rather
+  than through the published text accessors, which serve one of the several
+  kinds of button the game builds and quietly do nothing for the rest. What a
+  key is called there follows the game's own rule: lit in the words where they
+  already hold it, spelled out after them where they do not. Beside that, the ID
+  a caller put on a widget, found again in either of the two objects an action
+  listener is handed - which one carries it depends on the widget, so a reader
+  committed to one position silently drops every press from the others.
 - [`starsector/ui/colour/`](src/main/java/kmlib/starsector/ui/colour/) -
   palette enum and Misc-backed resolver, with the accent triple a look is
   built from. See [UI Colour Palette](#ui-colour-palette).
@@ -462,9 +472,21 @@ it. How the tiers meet is in
   placement maths: padding, anchors, strips, panel and tab-panel layout.
 - [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/) - how
   readable a map icon is under the nebulae drawn over it, with the campaign
-  map seam split into the four packages under it. See
+  map seam split into the five packages under it. See
   [Rendering environment](#rendering-environment) and
   [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
+- [`starsector/ui/map/controls/`](src/main/java/kmlib/starsector/ui/map/controls/)
+  - the writes into the map screen's own furniture, sitting above the reads in
+  `map/probes/` and the one map package that names another's classes, since a
+  write has to be aimed by a reading. It reaches the row of toggles a map is
+  furnished with - the `M` screen's strip and the intel screen's map visor
+  alike, both being one widget behind one accessor - and hands back a handle
+  saying which row it is and where it was laid out, rather than the widget. On
+  that it stands one more toggle, sized off the row so one path serves both
+  screens, declining a row it cannot measure or that has no room left. The
+  toggle carries the hover tooltip the row's own buttons carry, binds its key
+  live only while the button is on screen, says that key in the button's own
+  words, and answers whether it still stands on the row currently shown.
 - [`starsector/ui/map/icons/`](src/main/java/kmlib/starsector/ui/map/icons/) -
   reseating a map icon once the layering over it settles.
 - [`starsector/ui/map/presence/`](src/main/java/kmlib/starsector/ui/map/presence/)
