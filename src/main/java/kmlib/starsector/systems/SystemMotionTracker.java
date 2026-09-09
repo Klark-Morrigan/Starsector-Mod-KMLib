@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import kmlib.math.motion.MotionTracker;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -49,7 +50,28 @@ public final class SystemMotionTracker {
         if (sector == null) {
             return false;
         }
-        return motionTracker.observe(SectorStarSystems.collectPositionsById(sector, shouldInclude));
+        return updateMovingSystems(
+            SectorStarSystems.collectPositionsById(sector, shouldInclude));
+    }
+
+    /**
+     * Observes positions the caller has already read and reports whether the moving
+     * set changed.
+     *
+     * <p>What a caller sharing one reading of the sector with other readers takes: the
+     * traversal above is a traversal of its own, and a poll that has already gathered
+     * these positions would be walking the system list twice for one answer.
+     *
+     * @param positionsById each selected system's live hyperspace position keyed by
+     *                      system id, as of this poll; an empty map observes an empty
+     *                      sector and reports every system that had been moving as
+     *                      stopped
+     * @return true when a selected system started or stopped moving since the last
+     *         poll; false while the moving set holds steady, including a system that
+     *         merely keeps moving - it is already excluded, so nothing changes
+     */
+    public boolean updateMovingSystems(Map<String, double[]> positionsById) {
+        return motionTracker.observe(positionsById);
     }
 
     /**
