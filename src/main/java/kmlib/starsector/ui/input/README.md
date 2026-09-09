@@ -81,8 +81,9 @@ because a host rebuilds its strip every frame: a hover belongs to the place unde
 strip that changes under a still cursor keeps one continuous lift instead of dipping dark and starting
 again. Three channels, held apart because they answer different questions about one cell:
 
-- **Hover fades** (`HoverFades`, keyed; `HoverFade` for a lone element) - how far the cell has
-  travelled onto its hovered look. Where the pointer is standing.
+- **Hover fades** (`HoverFades`, keyed; [`TraverseFraction`](../../../animation/TraverseFraction.java)
+  for a lone element) - how far the cell has travelled onto its hovered look. Where the pointer is
+  standing.
 - **Press lifts** ([`PulseEnvelopes`](../../../animation/PulseEnvelopes.java)) - how far through its
   lift a pressed cell is. What the pointer just did there. A tab's lift is held at its peak while the
   button is down and released wherever the pointer has got to by then; a body cell's times its own

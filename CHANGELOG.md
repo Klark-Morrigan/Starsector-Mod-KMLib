@@ -53,9 +53,11 @@ No Starsector API on the signature.
   step is guarded, so a failure costs its own step rather than every mod
   depending on the library.
 - **`kmlib.animation`** - stepped envelopes the caller advances each frame
-  (pulse, held pulse, keyed pulse sets, eased fraction) and read ones that are
-  a function of the instant they are asked at (phase clock, per-subject phase,
-  steady-beat and SOS patterns), over shared rise and fall durations.
+  (pulse, held pulse, keyed pulse sets, eased fraction, and a two-ended
+  traverse between rest and full aimed by a flag, which turns round where it
+  stands rather than replaying) and read ones that are a function of the
+  instant they are asked at (phase clock, per-subject phase, steady-beat and
+  SOS patterns), over shared rise and fall durations.
 - **`kmlib.collections`** - joining an iterable into a delimited string
   through a per-element formatter.
 - **`kmlib.colour`** - AWT Color to normalised GL channels folding in an alpha
@@ -285,7 +287,13 @@ No Starsector API on the signature.
   doing - whether it is up, which the published dialog state never reports,
   that answering for the campaign's own conversations, and how far through its
   own fade it stands, so a caller can thin out against its backdrop rather than
-  cut away from it. Beside that, whether the codex stands over the screen - a
+  cut away from it. Those two come back as one reading, in a shape anything
+  raised over a screen answers in - a mod's own panel included, which the walk
+  below cannot see - so a caller stands aside for all of them alike, on a flag
+  for its input and a fraction for its paint. Which frames the flag covers is
+  each answerer's to state: the game holds a modal raised until its fade has
+  run out, while something a mod raises may let go the moment it is dismissed
+  and go on painting. Beside that, whether the codex stands over the screen - a
   reading of its own rather than a case of the modal, the codex being raised
   outside the core UI entirely, into a second screen panel the campaign state
   keeps for it, so no walk of the core UI reaches it however deep it goes. It is
@@ -309,7 +317,9 @@ No Starsector API on the signature.
   that render to a text panel, a tooltip, a label, or a MessageIntel.
 - **`kmlib.starsector.ui.input`** - pointer and key controllers driving panel
   and tab-panel state (scroll, drag, collapse, hotkey blink), hover arrival
-  and fades with keyed variants of both, cursor position and button-hold
+  with its keyed variant and the keyed hover fades of a row - a lone element
+  keeping a traverse fraction of its own - the one pace every panel motion
+  answering input takes unless its holder states another, cursor position and button-hold
   ports, pointer event claiming, the hovered tab, body cell and notch a
   frame resolves, and the report of that body cell back to the host that
   built the control - once per change, and once more as the pointer or the

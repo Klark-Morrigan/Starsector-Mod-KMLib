@@ -3,6 +3,7 @@ package kmlib.starsector.ui.input;
 import com.fs.starfarer.api.input.InputEventAPI;
 
 import kmlib.animation.TraverseDurations;
+import kmlib.animation.TraverseFraction;
 import kmlib.starsector.ui.controls.BodyHoverSource;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.BodyPressSource;
@@ -86,12 +87,12 @@ public final class TabPanelController {
     // How far the collapse handle has travelled onto its lit look. A lone fade rather than a keyed set,
     // there being one handle per panel, and a fraction rather than a flag so the notch lights and dims at
     // the pace the tabs do rather than switching on the frame the pointer arrives.
-    private final HoverFade notchHoverFade = new HoverFade();
+    private final TraverseFraction notchHoverFade = new TraverseFraction();
 
     // How far the panel's own band button has travelled onto the hovered shade. A lone fade like the
     // handle's rather than an entry in the row's keyed set, because it is one cell that is not a tab: keyed
     // alongside them it would take an index out of the row's space, and every index there is a tab's.
-    private final HoverFade bandButtonHoverFade = new HoverFade();
+    private final TraverseFraction bandButtonHoverFade = new TraverseFraction();
 
     // When the pointer reaches the band button - its own latch beside its own fade, for the same reason the
     // handle keeps one.
@@ -195,7 +196,7 @@ public final class TabPanelController {
      *         handle by; 0 fully at rest, 1 fully lit
      */
     public float getNotchHoverFraction() {
-        return notchHoverFade.getHoverFraction();
+        return notchHoverFade.getEasedValue();
     }
 
     /**
@@ -238,7 +239,7 @@ public final class TabPanelController {
     public TabPanelInteractionSources getInteractionSources() {
         return new TabPanelInteractionSources(
             getTabInteractionSources(),
-            bandButtonHoverFade.getHoverFraction(),
+            bandButtonHoverFade.getEasedValue(),
             new BodyInteractionSources(
                 getBodyHoverSource(),
                 getBodyPressSource()));
@@ -319,8 +320,8 @@ public final class TabPanelController {
         // Everything the row holds - its fades, its lifts, its blinks, and what it announced - goes in one
         // call to the end that holds all of it.
         headerMotions.resetTabMotions();
-        notchHoverFade.resetFade();
-        bandButtonHoverFade.resetFade();
+        notchHoverFade.dropToRest();
+        bandButtonHoverFade.dropToRest();
 
         // Forgetting what was announced, so a panel re-opening under a still pointer sounds that part's
         // arrival afresh. It is an arrival to the player - the handle and the button were not there a moment
@@ -675,11 +676,11 @@ public final class TabPanelController {
 
         // The band button travels at the row's pace like the tabs it stands beside, the reading behind it
         // already gated with theirs.
-        bandButtonHoverFade.advanceTowardHover(hover.isBandButtonHovered(), elapsedSeconds, durations);
+        bandButtonHoverFade.advanceTowardEnd(hover.isBandButtonHovered(), elapsedSeconds, durations);
 
         // The handle is never gated with the tabs - it draws past the fold and outlives it, being what brings
         // a docked panel back.
-        notchHoverFade.advanceTowardHover(hover.isNotchHovered(), elapsedSeconds, durations);
+        notchHoverFade.advanceTowardEnd(hover.isNotchHovered(), elapsedSeconds, durations);
     }
 
     /**

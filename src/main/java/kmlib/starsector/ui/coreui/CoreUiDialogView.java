@@ -79,16 +79,19 @@ public final class CoreUiDialogView {
      * <p>Beside the presence read rather than replacing it: a caller wanting only "is one up" should not
      * pay for the fader hops, and one wanting both should not pay for two walks.
      *
-     * @return what the modal over the core UI is doing, and {@link ModalDialogState#NONE} whenever there
+     * <p>A modal reads as raised until its fade has fully run out, which is how long the game keeps it in
+     * the tree intercepting - so the flag covers the dismissal as well as the arrival.
+     *
+     * @return what the modal over the core UI is doing, and {@link OverlayPresence#NONE} whenever there
      *         is none or the reach fails
      */
-    public static ModalDialogState resolveModalDialogState() {
+    public static OverlayPresence resolveModalPresence() {
 
         try {
-            return resolveModalDialogStateUnder(CoreUiTree.resolveActiveCoreUi());
+            return resolveModalPresenceUnder(CoreUiTree.resolveActiveCoreUi());
 
         } catch (Throwable cannotReachCoreUi) {
-            return ModalDialogState.NONE;
+            return OverlayPresence.NONE;
         }
     }
 
@@ -109,15 +112,15 @@ public final class CoreUiDialogView {
      * the presence rule beside it is.
      *
      * @param coreUi the core UI in force, or null when there is none
-     * @return what the modal among its children is doing, or {@link ModalDialogState#NONE}
+     * @return what the modal among its children is doing, or {@link OverlayPresence#NONE}
      */
-    static ModalDialogState resolveModalDialogStateUnder(Object coreUi) {
+    static OverlayPresence resolveModalPresenceUnder(Object coreUi) {
 
         var modal = findShowingModalUnder(coreUi);
 
         return modal == null
-            ? ModalDialogState.NONE
-            : new ModalDialogState(true, readBrightnessOf(modal));
+            ? OverlayPresence.NONE
+            : new OverlayPresence(true, readBrightnessOf(modal));
     }
 
     // How far through its fade a found modal stands. Fails the other way from the presence read, and

@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins {@link HoverArrival} as a moment rather than a state: it reports the frame the pointer reaches an
  * element and nothing on the frames it rests there, which is the whole difference between this and the
- * {@link HoverFade} beside it.
+ * hover fade an element keeps beside it.
  */
 final class HoverArrivalTest {
 

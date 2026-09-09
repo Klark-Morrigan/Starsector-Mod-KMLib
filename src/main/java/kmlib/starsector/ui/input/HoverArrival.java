@@ -2,9 +2,9 @@ package kmlib.starsector.ui.input;
 
 /**
  * Whether the pointer has just reached one element, told apart from the frames it spends resting there
- * afterwards. The discrete sibling of {@link HoverFade}: the fade says how far onto its hovered look an
- * element stands and holds at the top for as long as the pointer stays, and this says the one frame it
- * got there.
+ * afterwards. The discrete sibling of the hover fade an element keeps beside it: the fade says how far onto
+ * its hovered look the element stands and holds at the top for as long as the pointer stays, and this says
+ * the one frame it got there.
  *
  * <p>The two are apart rather than one object because they answer different kinds of question and are
  * read by different passes - a fraction is a position the paint pass reads every frame, an arrival is a

@@ -140,54 +140,54 @@ class CoreUiDialogViewTest {
     }
 
     @Nested
-    class ResolveModalDialogStateUnder {
+    class ResolveModalPresenceUnder {
 
         @Test
-        void resolveModalDialogStateUnderFollowsAModalMidFade() {
+        void resolveModalPresenceUnderFollowsAModalMidFade() {
             // The read the presence one cannot stand in for, and the reason it exists: the modal
-            // darkens the screen by this same brightness, so anything fading against it lands frame
+            // darkens the screen by this same fraction, so anything fading against it lands frame
             // for frame instead of on a duration guessed to match.
             var coreUiFake = new CoreUiComponentFake(ModalDialogFake.createMidFade(0.4f));
 
-            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).brightness())
+            assertThat(CoreUiDialogView.resolveModalPresenceUnder(coreUiFake).fadeFraction())
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
 
         @Test
-        void resolveModalDialogStateUnderReportsAModalMidFadeAsShowing() {
+        void resolveModalPresenceUnderReportsAModalMidFadeAsRaised() {
             // The half that must not follow the fade. A modal claims input from the frame it is
-            // raised, when its brightness is still nothing, so presence read off the brightness
-            // would let the panel underneath route for the frames the fade is climbing through.
+            // raised, when its fade is still at nothing, so presence read off that fraction would
+            // let the panel underneath route for the frames the fade is climbing through.
             var coreUiFake = new CoreUiComponentFake(ModalDialogFake.createMidFade(0f));
 
-            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).isShowing())
+            assertThat(CoreUiDialogView.resolveModalPresenceUnder(coreUiFake).isRaised())
                 .isTrue();
         }
 
         @Test
-        void resolveModalDialogStateUnderIsFullyRaisedForAModalAtRest() {
+        void resolveModalPresenceUnderIsFullyRaisedForAModalAtRest() {
 
             var coreUiFake = new CoreUiComponentFake(new ModalDialogFake());
 
-            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).brightness())
+            assertThat(CoreUiDialogView.resolveModalPresenceUnder(coreUiFake).fadeFraction())
                 .isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
-        void resolveModalDialogStateUnderIsNoneWithNoModalUp() {
+        void resolveModalPresenceUnderIsNoneWithNoModalUp() {
 
-            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(new CoreUiComponentFake()))
-                .isEqualTo(ModalDialogState.NONE);
+            assertThat(CoreUiDialogView.resolveModalPresenceUnder(new CoreUiComponentFake()))
+                .isEqualTo(OverlayPresence.NONE);
         }
 
         @Test
-        void resolveModalDialogStateUnderIsFullyRaisedWhenTheFadeCannotBeRead() {
+        void resolveModalPresenceUnderIsFullyRaisedWhenTheFadeCannotBeRead() {
             // Failing the opposite way from the presence read beside it, which is the point: a modal
             // was found, so only how far in it is went unread - and answering "not raised" there
             // would leave a caller painting over the dialog it had just been told about.
             var coreUiFake = new CoreUiComponentFake(new UnreadableFadeModalFake());
 
-            assertThat(CoreUiDialogView.resolveModalDialogStateUnder(coreUiFake).brightness())
+            assertThat(CoreUiDialogView.resolveModalPresenceUnder(coreUiFake).fadeFraction())
                 .isCloseTo(1f, within(TOLERANCE));
         }
     }
