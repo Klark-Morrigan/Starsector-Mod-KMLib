@@ -96,42 +96,37 @@ No Starsector API on the signature.
   whether Fast Rendering is in force plus how to read its matrix.
 - **`kmlib.opengl.hatch`** - hatch fills across a polygon, with a tally of how
   cleanly the runs join.
-- **`kmlib.profiling`**, with `budget`, `snapshot`, `recording` and `report`
-  under it - the profiler a mod binds to hear what the library measures, silent
-  until one does: named sections opened as nesting scopes or collected by
-  measure or record, the counters a scope tallies, the tag a caller names one
-  call by, and the sections whose calls run a loop, declared with the steps one
-  turn is split into and opened as a scope that counts the turns and charges
-  each step to its slot. A root names the origin it and everything under it was
-  measured in, and a section opened under no root lands in a reserved group
-  rather than being dropped. A shared read holding no scope of its own counts
-  onto whatever section is open, and onto a reserved row of that group when
-  none is. A section states the level of detail it is worth timing at and a
-  profiler the finest it keeps, so a section on a per-item path costs a
-  comparison rather than a clock read under a capture taken to read whole
-  frames - and the turns of a loop, being the finest thing one offers, are
-  measured only by a capture keeping that. A
-  section may state what one of its calls is allowed - an amount of a counter,
-  a duration read as the call closes, or both - and a call that breaks it is
-  warned about once and becomes the row's worst call whatever it took. It may
-  also state how slow one of its calls has to be before it says so in the game
-  log as it closes - never, over a stated number of milliseconds, or every call
-  - and the line it then writes carries the span the row was accumulated from,
-  what that call counted, and what it named itself, so a step timed by hand
-  beside a profiled one becomes one measurement rather than two. A
-  capture comes back as a tree of rows per origin, each row carrying its count,
-  total, min, max, average and self time, its counters with their spread per
-  call, its worst call kept with that call's tag and counters, what it broke of
-  what its section allows, what its loops ran per step and per turn with the
-  slowest turn named, and where its calls fell across duration bands doubling
-  from a microsecond up. A reader states what they are asking of it: the capture
-  as it was measured, as a listing worst self time first with each row named by
-  its whole path, or as what one counter says with the rows that never counted
-  it dropped and the row that reached most of it in a single call first -
-  narrowed to a namespace and to however many rows are wanted, the rows those
-  rows ran inside kept either way, and optionally divided by the calls of a
-  named beat so a total reads as what one frame spends. Whichever is asked for
-  comes back as one aligned table, a group of rows per origin.
+- **`kmlib.profiling`** - the profiler a mod binds to hear what the library
+  measures, silent until one does.
+  - Sections registered by name and opened as nesting scopes, or measured and
+    recorded by name; a scope tallies counters and takes a tag naming the call.
+  - Phased sections for loops: one scope over the loop counts its turns and
+    charges each step of a turn to its slot.
+  - Roots name the origin everything under them was measured in; anything
+    opened or counted under no root lands in a reserved group rather than
+    being dropped.
+  - A section's terms, stated once at registration: the level of detail it is
+    worth timing at, what one call is allowed (a counter amount, a duration, or
+    both), and how slow a call has to be before it writes a line in the game
+    log as it closes - never, over a number of milliseconds, or every call.
+  - A profiler keeps a level, so a per-item section under a coarse capture
+    costs a comparison and no clock read; a loop's turns are measured only by a
+    fine capture.
+  - A call that breaks its bound is warned about once per capture and becomes
+    the row's worst call whatever it took; a closed call over its threshold
+    writes the span the row was accumulated from, what it counted, and its tag.
+  - `snapshot` - the capture as a tree of rows per origin: count, total, min,
+    max, average, self time, counters with their per-call spread, the worst call
+    with its tag and counters, the breach, the loop's per-step and per-turn
+    costs with the slowest turn named, and duration bands doubling from a
+    microsecond up.
+  - `report` - three readings of a capture (the tree as measured; rows worst
+    self time first, named by path; what one counter says, rows that never
+    counted it dropped), narrowed to a namespace and a row count with the rows
+    they ran inside kept, optionally divided by the calls of a named beat, as one
+    aligned table per origin.
+  - `budget` and `recording` hold the bounds and the accumulation behind the
+    above.
 - **`kmlib.settings`** - LunaLib settings read and write, immediate and
   deferred with flush and removal, change callbacks, and resolving a labelled
   choice back from its label.

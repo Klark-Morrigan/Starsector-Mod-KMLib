@@ -61,6 +61,19 @@ final class PhasedSectionTest {
             assertThatNullPointerException()
                 .isThrownBy(() -> PhasedSection.registerPhasedSection(null, PLAN_PHASE_NAME));
         }
+
+        @Test
+        void declaresTheRowOnTheTermsItWasHanded() {
+            // The loop's terms are the row's: a threshold stated for the pass reaches the section a
+            // plain open of the same name lands on, so the two cannot disagree about it.
+            var section = PhasedSection.registerPhasedSection(
+                "test.phasedSection.logged",
+                SectionTerms.DEFAULT.withCallLogThreshold(CallLogThreshold.LOGGING_EVERY_CALL),
+                PLAN_PHASE_NAME);
+
+            assertThat(section.getSection().getCallLogThreshold())
+                .isSameAs(CallLogThreshold.LOGGING_EVERY_CALL);
+        }
     }
 
     @Nested

@@ -57,7 +57,9 @@ final class ProfileSectionTest {
             // A section states what its calls are allowed once, beside the constant holding it, so
             // a later resolve of the name gets the bound rather than replacing it.
             var budget = ProfileBudget.allowingDurationPerCall(() -> ONE_MILLISECOND_IN_NANOS);
-            var section = ProfileSection.registerSection("test.profileSection.bounded", budget);
+            var section = ProfileSection.registerSection(
+                "test.profileSection.bounded",
+                SectionTerms.DEFAULT.withBudget(budget));
 
             assertThat(ProfileSection.registerSection("test.profileSection.bounded"))
                 .isSameAs(section);
@@ -71,7 +73,7 @@ final class ProfileSectionTest {
             // resolve of the name is a call site asking for the row, not one redeclaring it.
             var section = ProfileSection.registerSection(
                 "test.profileSection.perItem",
-                ProfileLevel.FINE);
+                SectionTerms.DEFAULT.withLevel(ProfileLevel.FINE));
 
             assertThat(ProfileSection.registerSection("test.profileSection.perItem").getLevel())
                 .isEqualTo(ProfileLevel.FINE);
@@ -85,7 +87,7 @@ final class ProfileSectionTest {
             // repeat - or contradict - what makes one of its calls worth a line.
             var section = ProfileSection.registerSection(
                 "test.profileSection.logged",
-                CallLogThreshold.LOGGING_EVERY_CALL);
+                SectionTerms.DEFAULT.withCallLogThreshold(CallLogThreshold.LOGGING_EVERY_CALL));
 
             assertThat(ProfileSection.registerSection("test.profileSection.logged"))
                 .isSameAs(section);

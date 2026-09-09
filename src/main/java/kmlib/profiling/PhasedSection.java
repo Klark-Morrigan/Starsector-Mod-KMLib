@@ -31,18 +31,15 @@ public final class PhasedSection {
     private final ProfileSection section;
     private final List<ProfilePhase> phases;
 
-    private PhasedSection(
-            String name,
-            CallLogThreshold callLogThreshold,
-            String[] phaseNames) {
-
-        this.section = ProfileSection.registerSection(name, callLogThreshold);
+    private PhasedSection(String name, SectionTerms terms, String[] phaseNames) {
+        this.section = ProfileSection.registerSection(name, terms);
         this.phases = createPhases(phaseNames);
     }
 
     /**
      * Resolves the phased section {@code name} identifies, declaring it with
-     * {@code phaseNames} the first time the name is seen.
+     * {@code phaseNames} on {@link SectionTerms#DEFAULT} the first time the
+     * name is seen.
      *
      * @param name       what the section is called in a report
      * @param phaseNames what one turn of its loop is split into, in the order a
@@ -50,32 +47,30 @@ public final class PhasedSection {
      * @return the one phased section carrying that name
      */
     public static PhasedSection registerPhasedSection(String name, String... phaseNames) {
-        return registerPhasedSection(name, CallLogThreshold.NO_LOGGING, phaseNames);
+        return registerPhasedSection(name, SectionTerms.DEFAULT, phaseNames);
     }
 
     /**
-     * Resolves the phased section {@code name} identifies, declaring it with
-     * {@code callLogThreshold} and {@code phaseNames} the first time the name is
-     * seen.
+     * Resolves the phased section {@code name} identifies, declaring it on
+     * {@code terms} with {@code phaseNames} the first time the name is seen.
      *
-     * <p>A loop reports the whole pass in that line, not a turn of it: the line
-     * is written once per call however many items the loop ran over, and what
+     * <p>The terms are the loop's as one call: a line it states a threshold for
+     * is written once per pass however many items the loop ran over, and what
      * one turn cost is what the row's own steps are read for.
      *
-     * @param name             what the section is called in a report
-     * @param callLogThreshold how slow one call of the loop has to be to say so
-     *                         in the log
-     * @param phaseNames       what one turn of its loop is split into, in the
-     *                         order a turn pays them
+     * @param name       what the section is called in a report
+     * @param terms      what the section states about itself beyond its name
+     * @param phaseNames what one turn of its loop is split into, in the order a
+     *                   turn pays them
      * @return the one phased section carrying that name
      */
     public static PhasedSection registerPhasedSection(
             String name,
-            CallLogThreshold callLogThreshold,
+            SectionTerms terms,
             String... phaseNames) {
 
         return PHASED_SECTIONS_BY_NAME.resolveByName(
-            name, resolvedName -> new PhasedSection(resolvedName, callLogThreshold, phaseNames));
+            name, resolvedName -> new PhasedSection(resolvedName, terms, phaseNames));
     }
 
     /**

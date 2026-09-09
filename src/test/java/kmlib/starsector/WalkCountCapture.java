@@ -1,20 +1,16 @@
 package kmlib.starsector;
 
-import kmlib.profiling.ActiveProfiler;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
-import kmlib.profiling.SilentProfiler;
 import kmlib.profiling.recording.RecordingProfiler;
 import kmlib.profiling.snapshot.ProfileNode;
+import kmlib.testfixtures.profiling.RecordedCapture;
 
 import java.util.function.Consumer;
 
 /**
  * Runs a sector read under a recording profiler and hands back what it counted, so a suite over
- * one reader states what that reader reports without binding, opening and unbinding by hand.
- *
- * <p>The profiler holder is process-wide, so every capture leaves it silent again however the read
- * ended - a binding left behind would have the next suite counting into a tree nobody reads.
+ * one reader states what that reader reports without opening a section by hand.
  */
 public final class WalkCountCapture {
 
@@ -55,20 +51,14 @@ public final class WalkCountCapture {
         return captureCountsWhile(profiler -> read.run());
     }
 
-    // The capture both forms are: bind, run the read against the profiler it was
-    // bound to, and leave the holder silent however the read ended.
+    // The capture both forms are: the read run against the profiler it was bound to, and the one
+    // row the capture then holds.
     private static WalkCounts captureCountsWhile(Consumer<RecordingProfiler> read) {
 
         var profiler = new RecordingProfiler(() -> FIXED_CLOCK_NANOS);
-
-        ActiveProfiler.bindProfiler(profiler);
-
-        try {
-            read.accept(profiler);
-        } finally {
-            ActiveProfiler.bindProfiler(SilentProfiler.INSTANCE);
-        }
-        var originTrees = profiler.snapshot();
+        var originTrees = RecordedCapture
+            .recordWhile(profiler, () -> read.accept(profiler))
+            .getOriginTrees();
 
         return new WalkCounts(
             originTrees.isEmpty() ? null : originTrees.get(0).getRoots().get(0));

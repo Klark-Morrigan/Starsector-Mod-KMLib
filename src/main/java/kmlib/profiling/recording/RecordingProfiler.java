@@ -9,17 +9,11 @@ import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
 import kmlib.profiling.SilentProfiler;
-import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
-import kmlib.text.KmlibStrings;
-
-import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -47,21 +41,11 @@ import java.util.function.Supplier;
  * the section costs a comparison and no clock read - which is what lets a
  * per-item section exist at all without a reader of whole frames paying for it.
  *
- * <p>Some of what it accumulates is also said as it happens: a call that broke
- * what its section allows, and a call of a section that states a threshold it
- * ran over. Both are written under this class's own name rather than the
- * caller's, so a reader raising the level to follow one pass raises it on
- * profiling rather than on whichever package happened to open the scope.
- *
- * <p>The logger is asked of log4j directly rather than of the game, which is
- * the same logger under the same name - the game's own helper is that call and
- * nothing more. A package that knows nothing about Starsector then stays that
- * way, and the name still sits under {@code kmlib}, so the library's own level
- * control governs it like everything else.
+ * <p>Some of what it accumulates is also said as it happens, through the
+ * {@link CaptureLog}: a call that broke what its section allows, a scope closed
+ * out of order, and a call of a section that states a threshold it ran over.
  */
 public final class RecordingProfiler implements Profiler {
-
-    private static final Logger LOG = Logger.getLogger(RecordingProfiler.class);
 
     // A count that arrived with no scope open has a size but no span, and a
     // duration nobody measured must not appear in a column read as measured.
@@ -69,8 +53,7 @@ public final class RecordingProfiler implements Profiler {
 
     private final List<ProfileOriginAccumulator> originGroups = new ArrayList<>();
     private final List<RecordingProfileScope> openScopes = new ArrayList<>();
-    private final Set<ProfileSection> sectionsReportedOutOfOrder = new HashSet<>();
-    private final Set<ProfileSection> sectionsReportedOverBudget = new HashSet<>();
+    private final CaptureLog captureLog = new CaptureLog();
 
     private final ProfileLevel recordedLevel;
     private final LongSupplier clockNanos;
@@ -203,7 +186,7 @@ public final class RecordingProfiler implements Profiler {
         var breach = resolveNode(recordedSection)
             .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG);
 
-        reportBreachOnce(recordedSection, breach, WorstCall.NO_TAG);
+        captureLog.reportBreachOnce(recordedSection, breach, WorstCall.NO_TAG);
     }
 
     @Override
@@ -227,10 +210,9 @@ public final class RecordingProfiler implements Profiler {
         // closing after this finds itself off the stack and records nothing,
         // which is the right answer: its node no longer exists.
         openScopes.clear();
-        sectionsReportedOutOfOrder.clear();
-        // Said again after a clear, since the capture a breach was reported
+        // Said again after a clear, since the capture a finding was reported
         // against is gone and the next one has to stand on its own.
-        sectionsReportedOverBudget.clear();
+        captureLog.forgetWhatWasSaid();
     }
 
     /**
@@ -255,7 +237,7 @@ public final class RecordingProfiler implements Profiler {
         for (var youngerIndex = openScopes.size() - 1; youngerIndex > closingIndex; youngerIndex--) {
             var abandoned = openScopes.remove(youngerIndex);
             endScope(abandoned, endNanos);
-            reportOutOfOrderClose(abandoned.getSection());
+            captureLog.reportOutOfOrderCloseOnce(abandoned.getSection());
         }
         openScopes.remove(closingIndex);
         endScope(scope, endNanos);
@@ -315,27 +297,11 @@ public final class RecordingProfiler implements Profiler {
     private void endScope(RecordingProfileScope scope, long endNanos) {
 
         var elapsedNanos = endNanos - scope.getStartNanos();
-
-        reportBreachOnce(scope.getSection(), scope.recordSpan(elapsedNanos), scope.getTag());
-        reportClosedCall(scope, elapsedNanos);
-        scope.handCountsToParentScope();
-    }
-
-    // The line a section that states a threshold writes as one of its calls
-    // ends. Asked of the section rather than of the caller, so a site states
-    // once that its passes are worth following through the log and then keeps
-    // nothing of the clock, the format or the counts it prints.
-    private void reportClosedCall(RecordingProfileScope scope, long elapsedNanos) {
-
         var section = scope.getSection();
 
-        // The threshold first: nearly every section states none, and that answer
-        // is a comparison where asking log4j is a lookup.
-        if (!section.getCallLogThreshold().shouldLogCall(elapsedNanos) || !LOG.isDebugEnabled()) {
-            return;
-        }
-        LOG.debug(ClosedCallLine.describeClosedCall(
-            section, elapsedNanos, scope.getCounts(), scope.getTag()));
+        captureLog.reportBreachOnce(section, scope.recordSpan(elapsedNanos), scope.getTag());
+        captureLog.reportClosedCall(section, elapsedNanos, scope.getCounts(), scope.getTag());
+        scope.handCountsToParentScope();
     }
 
     // One call of the reserved row per count that arrives with nothing open,
@@ -349,7 +315,7 @@ public final class RecordingProfiler implements Profiler {
         var breach = resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
             .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG);
 
-        reportBreachOnce(ProfileSection.UNSCOPED_COUNTS, breach, WorstCall.NO_TAG);
+        captureLog.reportBreachOnce(ProfileSection.UNSCOPED_COUNTS, breach, WorstCall.NO_TAG);
     }
 
     // The node a section opened right now belongs to: a child of whatever is
@@ -374,37 +340,5 @@ public final class RecordingProfiler implements Profiler {
         return ProfileOriginAccumulator
             .resolveOriginIn(originGroups, origin)
             .resolveRootNode(section);
-    }
-
-    // A breach is a finding, so it is said where a reader is already looking -
-    // in the log, as it happens - as well as on the row afterwards. Once per
-    // section, since the pass that broke a bound breaks it on every frame it
-    // runs and the tenth line says nothing the first did not.
-    private void reportBreachOnce(ProfileSection section, BudgetBreach breach, String tag) {
-
-        if (!breach.hasBreached() || !sectionsReportedOverBudget.add(section)) {
-            return;
-        }
-        LOG.warn("Profiling section '" + section.getName() + "' went over budget: "
-            + breach.describeBreach() + describeBreachingCall(tag)
-            + ". Said once; the row carries the latest breach of it.");
-    }
-
-    // What the caller named the breaching call, where it named anything. Quoted,
-    // a tag being free text whose end has to be tellable from the prose after it.
-    private static String describeBreachingCall(String tag) {
-        return KmlibStrings.hasText(tag) ? ", on call \"" + tag + "\"" : "";
-    }
-
-    // Once per section, because the sites this happens on run every frame and
-    // the second line says nothing the first did not - while a different
-    // section left open is a different bug and still gets said.
-    private void reportOutOfOrderClose(ProfileSection section) {
-        if (!sectionsReportedOutOfOrder.add(section)) {
-            return;
-        }
-        LOG.warn("Profiling scope '" + section.getName() + "' was still open when a scope"
-            + " outside it closed, so it was closed too. Read its rows as calls that had not"
-            + " finished.");
     }
 }
