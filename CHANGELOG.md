@@ -78,7 +78,6 @@ No Starsector API on the signature.
 - `kmlib.mods.nexerelin`
 - `kmlib.mods.rat`
 - `kmlib.starsector`
-- `kmlib.starsector.colonies`
 - `kmlib.starsector.entities`
 - `kmlib.starsector.factions`
 - `kmlib.starsector.factions.relation`
@@ -88,6 +87,7 @@ No Starsector API on the signature.
 - `kmlib.starsector.intel`
 - `kmlib.starsector.map`
 - `kmlib.starsector.markets`
+- `kmlib.starsector.markets.colonies`
 - `kmlib.starsector.markets.colonisation`
 - `kmlib.starsector.markets.ownership`
 - `kmlib.starsector.memory`
@@ -143,8 +143,8 @@ against.
 - `kmlib.testfixtures.logging`
 - `kmlib.testfixtures.mods.consolecommands`
 - `kmlib.testfixtures.profiling`
-- `kmlib.testfixtures.starsector.colonies`
 - `kmlib.testfixtures.starsector.markets`
+- `kmlib.testfixtures.starsector.markets.colonies`
 - `kmlib.testfixtures.starsector.memory`
 - `kmlib.testfixtures.starsector.settings`
 - `kmlib.testfixtures.starsector.systems.claims`

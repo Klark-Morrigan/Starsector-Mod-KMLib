@@ -7,13 +7,13 @@ import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.Parameter;
 import kmlib.console.parsing.ParameterSpec;
 import kmlib.console.parsing.ParsedParameters;
-import kmlib.starsector.colonies.Colony;
-import kmlib.starsector.colonies.SectorColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.factions.relation.StarsectorPlayerRelations;
 import kmlib.starsector.factions.relation.StarsectorRelationFormatter;
 import kmlib.starsector.markets.MarketVisibility;
+import kmlib.starsector.markets.colonies.Colony;
+import kmlib.starsector.markets.colonies.SectorColonies;
 
 import java.util.ArrayList;
 import java.util.Comparator;

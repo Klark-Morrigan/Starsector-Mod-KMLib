@@ -59,8 +59,6 @@ enforceNoTestVocabulary {
 
 enforcePackageLayering {
 
-    forbidImport under: 'kmlib.starsector.colonies', of: 'kmlib.starsector.systems'
-
     forbidImport under: 'kmlib.profiling.budget', of: 'kmlib.profiling.recording'
     forbidImport under: 'kmlib.profiling.budget', of: 'kmlib.profiling.report'
 
@@ -75,15 +73,29 @@ enforcePackageLayering {
 
     forbidImport under: 'kmlib.starsector', of: 'kmlib.mods'
 
-    forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.colonies'
     forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.systems'
 
+    forbidImport under: 'kmlib.starsector.markets.colonies',
+            of: 'kmlib.starsector.markets.colonisation'
+    forbidImport under: 'kmlib.starsector.markets.colonies',
+            of: 'kmlib.starsector.markets.ownership'
+
+    forbidImport under: 'kmlib.starsector.markets.colonisation',
+            of: 'kmlib.starsector.markets.colonies'
+
+    forbidImport under: 'kmlib.starsector.markets.ownership',
+            of: 'kmlib.starsector.markets.colonies'
     forbidImport under: 'kmlib.starsector.markets.ownership',
             of: 'kmlib.starsector.markets.colonisation'
 
     forbidImport exactly: 'kmlib.profiling', of: 'kmlib.profiling.recording'
     forbidImport exactly: 'kmlib.profiling', of: 'kmlib.profiling.report'
 
+    forbidImport exactly: 'kmlib.starsector.factions',
+            of: 'kmlib.starsector.factions.relation'
+
+    forbidImport exactly: 'kmlib.starsector.markets',
+            of: 'kmlib.starsector.markets.colonies'
     forbidImport exactly: 'kmlib.starsector.markets',
             of: 'kmlib.starsector.markets.colonisation'
     forbidImport exactly: 'kmlib.starsector.markets',

@@ -1,4 +1,4 @@
-package kmlib.starsector.colonies;
+package kmlib.starsector.markets.colonies;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
@@ -8,8 +8,8 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
-import kmlib.testfixtures.starsector.colonies.ColonyMarketFixture;
-import kmlib.testfixtures.starsector.colonies.ColonyPlacementFixture;
+import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
+import kmlib.testfixtures.starsector.markets.colonies.ColonyPlacementFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

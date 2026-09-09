@@ -6,12 +6,12 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.starsector.colonies.Colonies;
-import kmlib.starsector.colonies.Colony;
-import kmlib.starsector.colonies.KnownColonyReader;
-import kmlib.starsector.colonies.SystemColonies;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.colonies.Colonies;
+import kmlib.starsector.markets.colonies.Colony;
+import kmlib.starsector.markets.colonies.KnownColonyReader;
+import kmlib.starsector.markets.colonies.SystemColonies;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.starsector.systems.SystemColoniesIndex;
 

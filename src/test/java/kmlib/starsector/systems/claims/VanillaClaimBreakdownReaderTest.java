@@ -3,9 +3,9 @@ package kmlib.starsector.systems.claims;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
-import kmlib.starsector.colonies.Colonies;
-import kmlib.starsector.colonies.KnownColonyReader;
 import kmlib.starsector.entities.EntityMapIcon;
+import kmlib.starsector.markets.colonies.Colonies;
+import kmlib.starsector.markets.colonies.KnownColonyReader;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 import org.junit.jupiter.api.AfterEach;

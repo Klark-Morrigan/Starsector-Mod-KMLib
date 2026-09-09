@@ -37,6 +37,12 @@ import java.util.Optional;
  * same package under names of the same shape, where a class that answered a question and
  * a class that rewrote a colony were told apart only by opening them.
  *
+ * <p>What a market is as a place somebody holds is a package in as well -
+ * {@link kmlib.starsector.markets.colonies}, the colony set every "who is here" read
+ * selects through. A read like this root, and gated off both operations the same way:
+ * nested here because a colony is a market seen as an inhabited place, not a second
+ * subject beside it.
+ *
  * <p>Final class with a private constructor: pure-function utility, no instance
  * state. Matches {@link kmlib.starsector.systems.StarSystems}'s shape, and is
  * null-market defensive like the rest of the library.

@@ -1,6 +1,6 @@
 package kmlib.starsector.systems.claims;
 
-import kmlib.starsector.colonies.KnownColonyReader;
+import kmlib.starsector.markets.colonies.KnownColonyReader;
 import kmlib.starsector.systems.SystemColoniesIndex;
 
 /**

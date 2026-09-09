@@ -321,16 +321,6 @@ No Starsector API on the signature.
   the sector is actually walked, so a caller states how much it touched without
   having written a profiling line, and a second traversal shows on the row that
   made it.
-- [`starsector/colonies/`](src/main/java/kmlib/starsector/colonies/) - the
-  shared colony set every "who is here" read selects through - one rule, one
-  entry per place and owner, unfogged - stated once over a location and read
-  per kind of place above it: a star system, hyperspace, and the whole sector
-  as the composition of the two. Each colony carries its market and the
-  listing it was found in, and answers concealment, discovery and ownership.
-  What may be *shown* of the set is no part of it - withholding a colony is a
-  judgement made for a purpose, and it needs facts the sector does not hold -
-  so a consumer states its own projection and hands one in through
-  `KnownColonyReader`.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points, their orbits, name
   generation, gate activation, and how an entity is identified to a reader:
@@ -378,7 +368,19 @@ No Starsector API on the signature.
   nearest meeting what a caller needs of it. What can be done *to* a market is
   a package in, one per operation, so a class that answers a question and a
   class that rewrites a colony are never the same word shape in the same
-  place.
+  place. What a market is as a place somebody holds - the colony set - is a
+  package in as well, a read like this root and gated off the operations the
+  same way.
+- [`starsector/markets/colonies/`](src/main/java/kmlib/starsector/markets/colonies/)
+  - the shared colony set every "who is here" read selects through - one rule,
+  one entry per place and owner, unfogged - stated once over a location and
+  read per kind of place above it: a star system, hyperspace, and the whole
+  sector as the composition of the two. Each colony carries its market and the
+  listing it was found in, and answers concealment, discovery and ownership.
+  What may be *shown* of the set is no part of it - withholding a colony is a
+  judgement made for a purpose, and it needs facts the sector does not hold -
+  so a consumer states its own projection and hands one in through
+  `KnownColonyReader`.
 - [`starsector/markets/colonisation/`](src/main/java/kmlib/starsector/markets/colonisation/)
   - founding a colony on a body that carries only survey data: whether it can
   be, the owner-neutral sequence that settles it, the owner it is founded

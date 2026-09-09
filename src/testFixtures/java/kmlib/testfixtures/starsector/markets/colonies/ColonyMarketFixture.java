@@ -1,4 +1,4 @@
-package kmlib.testfixtures.starsector.colonies;
+package kmlib.testfixtures.starsector.markets.colonies;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;

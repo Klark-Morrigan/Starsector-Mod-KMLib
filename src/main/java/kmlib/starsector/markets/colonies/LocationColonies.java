@@ -1,4 +1,4 @@
-package kmlib.starsector.colonies;
+package kmlib.starsector.markets.colonies;
 
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
