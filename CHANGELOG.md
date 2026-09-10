@@ -12,7 +12,10 @@ section here.
 
 ## Index
 
+- [Unreleased](#unreleased)
 - [0.1.0](#010---unreleased)
+
+## [Unreleased]
 
 ## [0.1.0] - Unreleased
 
