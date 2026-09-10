@@ -63,9 +63,19 @@ public final class TimingReport {
     private static final String PER_FRAME_OF = " of ";
     private static final String NO_FRAMES_SUFFIX = " never ran here; totals as captured";
 
-    // The second line under a row: what its worst call took, what it was called,
-    // and what each counter stood at when it ended.
+    // The second line under a row: what the call it names took, what it was
+    // called, and what each counter stood at when it ended.
+    //
+    // Which call that is changes once the row has broken its bound, and the line
+    // says which rather than leaving the two to be told apart by reading the
+    // accumulator: an unbreached row keeps the slowest call it has seen, while a
+    // breached one keeps the latest call that broke the bound however fast that
+    // call was. Both would otherwise read as "worst" beside a maximum column that
+    // means the first of the two, and a breached row's number moving down over a
+    // session reads as a fault in the report rather than as the newer finding it
+    // is.
     private static final String WORST_CALL_PREFIX = "worst ";
+    private static final String LATEST_BREACH_PREFIX = "latest breach ";
     private static final String TAG_QUOTE = "\"";
     private static final String COUNT_ASSIGNMENT = "=";
 
@@ -143,13 +153,14 @@ public final class TimingReport {
         }
     }
 
-    // What the row's worst call was doing, on a line of its own under it: the
+    // What the row's kept call was doing, on a line of its own under it: the
     // counters it carries are that one call's values rather than the row's, so
     // they belong to no column, and a tag is free text of the caller's length.
     // Written only where it says something the maximum column does not, so the
     // rows whose calls are all alike stay one line each - and always on a row that
     // went over budget, where the finding is the thing worth saying and the call
-    // beside it is what broke the bound.
+    // beside it is what broke the bound. Which call is kept is the row's breach to
+    // decide, so the prefix is taken from it rather than fixed.
     private static void appendWorstCallLine(TextTable table, ProfileReportRow row) {
 
         var worstCall = row.getNode().getWorstCall();
@@ -161,7 +172,7 @@ public final class TimingReport {
         var line = new StringBuilder();
 
         line.append(indentSpanningLine(row));
-        line.append(WORST_CALL_PREFIX);
+        line.append(breach.hasBreached() ? LATEST_BREACH_PREFIX : WORST_CALL_PREFIX);
         line.append(formatCallMillis(worstCall.getDurationNanos()));
 
         if (breach.hasBreached()) {

@@ -237,9 +237,10 @@ No Starsector API on the signature.
   costs a comparison rather than a clock read per item.
 - [`profiling/budget/`](src/main/java/kmlib/profiling/budget/) - what one call
   of a section is allowed: an amount of a counter, a duration read as the call
-  closes, or both. A call that breaks one is warned about once and becomes the
-  row's worst call whatever it took, which is what turns a capture into
-  findings rather than numbers.
+  closes, or both. A call that breaks one is warned about once and takes the
+  row's kept-call record whatever it took, the row then reporting its latest
+  breach where an unbreached row reports its slowest call. That is what turns a
+  capture into findings rather than numbers.
 - [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
   profiler that keeps what it is handed, and the open stack and per-row tallies
   it accumulates a capture in.
@@ -252,8 +253,8 @@ No Starsector API on the signature.
   total reads as what one frame spends.
 - [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
   reader is handed after a capture: one section tree per origin, each row's
-  count, total, min, max, average and self time, what it counted, what its
-  worst call was doing, what it broke of what its section allows, what the
+  count, total, min, max, average and self time, what it counted, what the call
+  it kept was doing, what it broke of what its section allows, what the
   loops inside its calls ran, and how its calls fell across doubling duration
   bands.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and

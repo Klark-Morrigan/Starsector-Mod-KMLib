@@ -360,9 +360,24 @@ final class TimingReportTest {
                 breachOfOneAllowedSystem())));
 
             assertThat(report)
-                .contains("\n  worst 3.000ms  over budget: 48 " + SYSTEMS_COUNTER
+                .contains("\n  latest breach 3.000ms  over budget: 48 " + SYSTEMS_COUNTER
                     + ", 1 allowed per call")
                 .contains("\"" + WORST_CALL_TAG + "\"");
+        }
+
+        @Test
+        void formatNamesABreachedRowsCallTheLatestBreachRatherThanTheWorst() {
+            // The two lines carry different calls: an unbreached row keeps the slowest it has seen,
+            // a breached one the latest that broke the bound however fast that call was. A breached
+            // row saying "worst" beside a maximum column holding the first of the two reads as a
+            // report that has lost track of its own number.
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
+                new WorstCall(PARENT_TOTAL_NANOS, WORST_CALL_TAG, List.of()),
+                breachOfOneAllowedSystem())));
+
+            assertThat(report)
+                .contains("\n  latest breach 3.000ms")
+                .doesNotContain("worst ");
         }
 
         @Test
