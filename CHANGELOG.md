@@ -12,9 +12,9 @@ section here.
 
 ## Index
 
-- [0.1.0](#010---2026-09-08)
+- [0.1.0](#010---unreleased)
 
-## [0.1.0] - 2026-09-08
+## [0.1.0] - Unreleased
 
 First tagged release, so there is no prior version to diff against: this is the
 whole public surface - the commands a player types, the packages a consumer
@@ -151,4 +151,15 @@ against.
 - `kmlib.testfixtures.starsector.memory`
 - `kmlib.testfixtures.starsector.settings`
 - `kmlib.testfixtures.starsector.systems.claims`
-- `kmlib.testfixtures.starsector.ui`
+- `kmlib.testfixtures.starsector.ui.coreui`
+- `kmlib.testfixtures.starsector.ui.font`
+- `kmlib.testfixtures.starsector.ui.input`
+- `kmlib.testfixtures.starsector.ui.intel`
+- `kmlib.testfixtures.starsector.ui.label`
+- `kmlib.testfixtures.starsector.ui.layout`
+- `kmlib.testfixtures.starsector.ui.map`
+- `kmlib.testfixtures.starsector.ui.map.controls`
+- `kmlib.testfixtures.starsector.ui.map.presence`
+- `kmlib.testfixtures.starsector.ui.map.probes`
+- `kmlib.testfixtures.starsector.ui.map.transform`
+- `kmlib.testfixtures.starsector.ui.sound`
