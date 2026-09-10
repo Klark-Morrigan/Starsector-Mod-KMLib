@@ -80,7 +80,7 @@ public final class ChangedLineTrace {
             log,
             subject, () -> {
                 var line = describeLine.get();
-                return line == null ? null : new TracedLine(line, line);
+                return line == null ? null : TracedLine.createWholeLine(line);
             });
     }
 

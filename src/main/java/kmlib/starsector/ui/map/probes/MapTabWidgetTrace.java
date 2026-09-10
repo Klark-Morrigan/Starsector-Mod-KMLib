@@ -68,7 +68,7 @@ public final class MapTabWidgetTrace {
 
     // Says once per session that this stopped working, since a caller handed null cannot tell a
     // screen with no tab from a reach that broke.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
 
     private MapTabWidgetTrace() {
     }

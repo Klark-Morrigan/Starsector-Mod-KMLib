@@ -70,7 +70,7 @@ public final class MapSurfaceBounds {
     // Says once per session that this rule no longer fits. One warning covers both ways it can
     // fail, so the first of them silences the other - which costs nothing since either one means
     // the same thing, that the surface is unidentifiable.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
 
     // The last surface measured, and what it was measured against. Kept because a caller in a render
     // pass asks per frame while the answer moves only when the layout does, and re-reading it is not

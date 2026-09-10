@@ -264,4 +264,22 @@ class ChangedLineTraceTest {
                 .isInstanceOf(NullPointerException.class);
         }
     }
+
+    @Nested
+    class CreateWholeLine {
+
+        @Test
+        void createWholeLineKeysTheLineOnItsOwnText() {
+            // The case where nothing in the reading moves on its own, so any difference is news.
+            assertThat(TracedLine.createWholeLine(LINE))
+                .isEqualTo(new TracedLine(LINE, LINE));
+        }
+
+        @Test
+        void createWholeLineRefusesTextThatIsNull() {
+
+            assertThatThrownBy(() -> TracedLine.createWholeLine(null))
+                .isInstanceOf(NullPointerException.class);
+        }
+    }
 }

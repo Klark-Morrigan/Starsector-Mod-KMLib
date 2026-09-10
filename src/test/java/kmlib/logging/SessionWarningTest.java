@@ -89,4 +89,61 @@ class SessionWarningTest {
                 .isTrue();
         }
     }
+
+    @Nested
+    class RearmWarning {
+
+        @Test
+        void rearmWarningLetsASpentWarningBeSaidOnceMore() {
+            // The case it exists for: a reach broke and said so while nobody was listening, and the
+            // reader who then asks to be told would otherwise be met with silence.
+            var loggerMock = mock(Logger.class);
+            var warning = new SessionWarning(loggerMock);
+
+            warning.warnOnce(FIRST_MESSAGE);
+            warning.rearmWarning();
+            warning.warnOnce(FIRST_MESSAGE);
+
+            verify(loggerMock, times(2))
+                .warn(FIRST_MESSAGE);
+        }
+
+        @Test
+        void rearmWarningRestoresTheOnceRatherThanLiftingIt() {
+            // Re-armed is not un-silenced. The reaches behind these fail identically every frame, so
+            // anything that left the warning open would be writing it sixty times a second.
+            var loggerMock = mock(Logger.class);
+            var warning = new SessionWarning(loggerMock);
+
+            warning.warnOnce(FIRST_MESSAGE);
+            warning.rearmWarning();
+            warning.warnOnce(FIRST_MESSAGE);
+            warning.warnOnce(FIRST_MESSAGE);
+
+            verify(loggerMock, times(2))
+                .warn(FIRST_MESSAGE);
+        }
+
+        @Test
+        void rearmWarningSaysNothingByItself() {
+            // It changes what may be said, not what is: a switch flipped on a session where nothing
+            // ever broke must not manufacture a warning.
+            var loggerMock = mock(Logger.class);
+
+            new SessionWarning(loggerMock).rearmWarning();
+
+            verifyNoInteractions(loggerMock);
+        }
+
+        @Test
+        void rearmWarningLeavesAnUnspentWarningUnspent() {
+
+            var warning = new SessionWarning(mock(Logger.class));
+
+            warning.rearmWarning();
+
+            assertThat(warning.hasWarnedThisSession())
+                .isFalse();
+        }
+    }
 }

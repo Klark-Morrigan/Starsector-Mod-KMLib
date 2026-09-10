@@ -39,7 +39,7 @@ final class MapWidgetIcons {
     // One latch for one reach. Each caller wording its own consequence would put two near-identical
     // lines in the log for a single tree that stopped being readable, and each would have to be
     // silenced separately.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
 
     private MapWidgetIcons() {
     }

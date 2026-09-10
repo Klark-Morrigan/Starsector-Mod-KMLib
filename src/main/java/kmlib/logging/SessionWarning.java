@@ -49,6 +49,22 @@ public final class SessionWarning {
     }
 
     /**
+     * Lets this be said once more.
+     *
+     * <p>For a change in who is listening, never for a change in what failed. A reach that broke
+     * stays broken, so re-arming on a retry would be back to a warning a frame; what warrants it is
+     * a reader who has just asked to be told, and for whom the one line this already spent was
+     * written while they were not.
+     *
+     * <p>Without it, "once per session" silently becomes "never, for anyone who started listening
+     * afterwards" - and a diagnostic that then produces nothing looks broken in a way its own
+     * warning was meant to explain.
+     */
+    public void rearmWarning() {
+        hasWarnedThisSession = false;
+    }
+
+    /**
      * Says this once, if nothing has been said yet this session.
      *
      * @param message what stopped working, and what that costs the caller

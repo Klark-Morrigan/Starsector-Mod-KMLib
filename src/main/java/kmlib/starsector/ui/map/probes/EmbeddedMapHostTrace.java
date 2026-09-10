@@ -48,7 +48,7 @@ public final class EmbeddedMapHostTrace {
 
     // Says once per session that this stopped working, since a caller handed null cannot tell an
     // empty tree from a reach that broke.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
 
     // Package prefixes that can never be the answer. The engine's own classes make up every host
     // that could hold a map, so reporting them would bury the one name that identifies an owner.

@@ -49,7 +49,7 @@ public final class ShownMapTab {
 
     // Says once per session that this recognition no longer fits, rather than on every frame a
     // caller asks.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
 
     private ShownMapTab() {
     }

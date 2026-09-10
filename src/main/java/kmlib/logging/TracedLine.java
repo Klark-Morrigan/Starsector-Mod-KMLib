@@ -38,4 +38,18 @@ public record TracedLine(
             text,
             "A traced line with no text would report nothing.");
     }
+
+    /**
+     * A line whose whole text is the fact, so any difference in it is a change worth reporting.
+     *
+     * <p>For a reading that carries nothing which moves on its own. Naming that case rather than
+     * leaving each caller to pass its text twice is what keeps "the text is the key" a stated
+     * decision rather than something a reader has to notice.
+     *
+     * @param text the line, standing as both what is reported and what decides whether to report it
+     * @return the line, keyed on itself
+     */
+    public static TracedLine createWholeLine(String text) {
+        return new TracedLine(text, text);
+    }
 }
