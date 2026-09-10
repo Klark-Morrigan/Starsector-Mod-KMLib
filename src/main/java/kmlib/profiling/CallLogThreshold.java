@@ -74,4 +74,15 @@ public final class CallLogThreshold {
     public boolean shouldLogCall(long elapsedNanos) {
         return elapsedNanos > thresholdNanos;
     }
+
+    /**
+     * Whether any call at all could write a line under this threshold - which
+     * is what marks a section's calls as events rather than per-frame cost, and
+     * so as worth reading the conditions of.
+     *
+     * @return false only for {@link #NO_LOGGING}
+     */
+    public boolean canLogAnyCall() {
+        return thresholdNanos != NEVER_REACHED_NANOS;
+    }
 }

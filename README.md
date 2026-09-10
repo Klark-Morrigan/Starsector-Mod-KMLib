@@ -262,9 +262,13 @@ No Starsector API on the signature.
 - [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
   reader is handed after a capture: one section tree per origin, each row's
   count, total, min, max, average and self time, what it counted, what the call
-  it kept was doing, what it broke of what its section allows, what the
-  loops inside its calls ran, and how its calls fell across doubling duration
-  bands.
+  it kept was doing and under what conditions it ran, what it broke of what its
+  section allows, what the loops inside its calls ran, and how its calls fell
+  across doubling duration bands. The conditions are the first-call bit and how
+  far the JVM's compilation clock moved under the call, which is what tells a
+  cold reading from a slow one - read only for the sections whose calls are
+  events, since the bean is a native read and a per-frame path has nothing to
+  gain from it.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
   write, immediate and deferred, change callbacks, and labelled choices.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus

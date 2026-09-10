@@ -2,9 +2,11 @@ package kmlib.profiling.recording;
 
 import kmlib.profiling.CallLogThreshold;
 import kmlib.profiling.ProfileCounter;
+import kmlib.profiling.ProfileLevel;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.SectionTerms;
 import kmlib.profiling.recording.RecordingProfilerTestSupport.ScriptedClock;
+import kmlib.profiling.snapshot.CallWarmth;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,10 +31,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins, of {@link RecordingProfiler}, that a scope closed out of order takes the scopes inside it
- * with it, a second close records nothing, and a call of a section stating a threshold it ran over
- * writes one line carrying its counts and its tag.
+ * with it, a second close records nothing, a call of a section stating a threshold it ran over
+ * writes one line carrying its counts and its tag, and such a call is read for whether it was its
+ * row's first and what the JVM compiled under it - where a section stating no threshold is not.
  */
 final class RecordingProfilerCloseScopeTest {
+
+    private static final long TWO_MILLISECONDS_IN_NANOS = 2_000_000L;
+
+    // The JVM's compilation clock either side of a cold call: 412ms of compiling under it.
+    private static final long COMPILATION_BEFORE_MILLIS = 100L;
+    private static final long COMPILATION_AFTER_MILLIS = 512L;
+    private static final long JIT_MILLIS = COMPILATION_AFTER_MILLIS - COMPILATION_BEFORE_MILLIS;
 
     @Nested
     class CloseScope {
@@ -169,6 +179,59 @@ final class RecordingProfilerCloseScopeTest {
             assertThat(messages.get(0))
                 .contains(SYSTEMS_COUNTER + "=" + TWO_ITEMS)
                 .contains('"' + FIRST_CALL_TAG + '"');
+        }
+
+        @Test
+        void marksTheFirstCallOfARowAndWhatTheJvmCompiledUnderItWhereTheSectionLogs() {
+            // What tells a cold call from a slow one. Two calls of one row, the compilation
+            // clock moving 412ms under the first and standing still under the second: the first
+            // is the row's first and was compiled under, the second is neither and says so by
+            // saying nothing. The kept call is the first, the second being no slower.
+            var section = ProfileSection.registerSection(
+                "test.closeLine.warmth",
+                SectionTerms.DEFAULT.withCallLogThreshold(CallLogThreshold.LOGGING_EVERY_CALL));
+
+            var profiler = new RecordingProfiler(
+                ProfileLevel.FINE,
+                new ScriptedClock(
+                    0,
+                    ONE_MILLISECOND_IN_NANOS,
+                    ONE_MILLISECOND_IN_NANOS,
+                    TWO_MILLISECONDS_IN_NANOS),
+                new ScriptedClock(
+                    COMPILATION_BEFORE_MILLIS,
+                    COMPILATION_AFTER_MILLIS,
+                    COMPILATION_AFTER_MILLIS,
+                    COMPILATION_AFTER_MILLIS));
+
+            var messages = captureLogWhile(() -> {
+                profiler.open(section).close();
+                profiler.open(section).close();
+            });
+
+            assertThat(messages.get(0))
+                .contains("took=1.00ms first jitMs=" + JIT_MILLIS);
+            assertThat(messages.get(1))
+                .doesNotContain("first")
+                .doesNotContain("jitMs");
+            assertThat(readRoots(profiler).get(0).getWorstCall().getWarmth())
+                .isEqualTo(new CallWarmth(true, JIT_MILLIS));
+        }
+
+        @Test
+        void readsNoCompilationClockForASectionThatStatedNoThreshold() {
+            // The bean is a native read, and the paths that open a scope thirty thousand times a
+            // second have nothing to gain from it. A clock with no readings throws on the first
+            // one, so the case fails if the profiler so much as looks.
+            var profiler = new RecordingProfiler(
+                ProfileLevel.FINE,
+                new ScriptedClock(0, ONE_MILLISECOND_IN_NANOS),
+                new ScriptedClock());
+
+            profiler.open(ProfileSection.registerSection(PARENT_SECTION)).close();
+
+            assertThat(readRoots(profiler).get(0).getWorstCall().getWarmth())
+                .isSameAs(CallWarmth.UNMEASURED);
         }
 
         @Test

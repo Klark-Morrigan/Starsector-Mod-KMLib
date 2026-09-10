@@ -9,6 +9,7 @@ import kmlib.profiling.ProfileScope;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
 import kmlib.profiling.SilentProfiler;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.WorstCall;
 
@@ -58,6 +59,12 @@ public final class RecordingProfiler implements Profiler {
     private final ProfileLevel recordedLevel;
     private final LongSupplier clockNanos;
 
+    // The JVM's compilation clock, read either side of a call whose section
+    // states a log threshold so its line can say whether the JVM was compiling
+    // under it. Injected like the time source, for the same reason: a test
+    // scripts it, and the accumulation reads whatever its caller names.
+    private final LongSupplier compilationMillis;
+
     /**
      * Creates a profiler keeping every level of detail, timing against the
      * system nanosecond clock.
@@ -89,14 +96,33 @@ public final class RecordingProfiler implements Profiler {
 
     /**
      * Creates a profiler keeping detail down to {@code recordedLevel}, timing
-     * against {@code clockNanos}.
+     * against {@code clockNanos} and reading the JVM's own compilation clock.
      *
      * @param recordedLevel the finest detail this capture keeps
      * @param clockNanos    source of the current time in nanoseconds
      */
     public RecordingProfiler(ProfileLevel recordedLevel, LongSupplier clockNanos) {
+        this(recordedLevel, clockNanos, JitCompilationClock::readTotalCompilationMillis);
+    }
+
+    /**
+     * Creates a profiler keeping detail down to {@code recordedLevel}, timing
+     * against {@code clockNanos} and reading what the JVM has compiled off
+     * {@code compilationMillis}.
+     *
+     * @param recordedLevel     the finest detail this capture keeps
+     * @param clockNanos        source of the current time in nanoseconds
+     * @param compilationMillis source of how long the JVM has spent compiling so
+     *                          far, in milliseconds
+     */
+    public RecordingProfiler(
+            ProfileLevel recordedLevel,
+            LongSupplier clockNanos,
+            LongSupplier compilationMillis) {
+
         this.recordedLevel = recordedLevel;
         this.clockNanos = clockNanos;
+        this.compilationMillis = compilationMillis;
     }
 
     @Override
@@ -184,7 +210,7 @@ public final class RecordingProfiler implements Profiler {
             return;
         }
         var breach = resolveNode(recordedSection)
-            .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG);
+            .addSpan(elapsedNanos, List.of(), WorstCall.NO_TAG, CallWarmth.UNMEASURED);
 
         captureLog.reportBreachOnce(recordedSection, breach, WorstCall.NO_TAG);
     }
@@ -283,10 +309,27 @@ public final class RecordingProfiler implements Profiler {
             RecordingProfileScope parentScope) {
 
         var scope = new RecordingProfileScope(
-            this, node, clockNanos.getAsLong(), iterations, parentScope);
+            this,
+            node,
+            clockNanos.getAsLong(),
+            readCompilationMillisFor(node.getSection()),
+            iterations,
+            parentScope);
 
         openScopes.add(scope);
         return scope;
+    }
+
+    // Where the JVM's compilation clock stands as a call opens, for a section
+    // whose calls are events - the ones that state a log threshold - and the
+    // not-measured mark for the rest: the bean is a native read, and the paths
+    // that open a scope thirty thousand times a second have nothing to gain from
+    // it.
+    private long readCompilationMillisFor(ProfileSection section) {
+
+        return section.getCallLogThreshold().canLogAnyCall()
+            ? compilationMillis.getAsLong()
+            : CallWarmth.NOT_MEASURED_MILLIS;
     }
 
     // Records the span and rolls what the scope counted into the scope it names
@@ -298,9 +341,13 @@ public final class RecordingProfiler implements Profiler {
 
         var elapsedNanos = endNanos - scope.getStartNanos();
         var section = scope.getSection();
+        var warmth = scope.resolveWarmth(compilationMillis);
 
-        captureLog.reportBreachOnce(section, scope.recordSpan(elapsedNanos), scope.getTag());
-        captureLog.reportClosedCall(section, elapsedNanos, scope.getCounts(), scope.getTag());
+        captureLog.reportBreachOnce(
+            section, scope.recordSpan(elapsedNanos, warmth), scope.getTag());
+
+        captureLog.reportClosedCall(
+            section, elapsedNanos, warmth, scope.getCounts(), scope.getTag());
         scope.handCountsToParentScope();
     }
 
@@ -313,7 +360,7 @@ public final class RecordingProfiler implements Profiler {
         ScopeCount.resolveCountIn(callCounts, counter).addSelfAmount(amount);
 
         var breach = resolveRootNode(ProfileOrigin.UNSCOPED, ProfileSection.UNSCOPED_COUNTS)
-            .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG);
+            .addSpan(UNTIMED_CALL_NANOS, callCounts, WorstCall.NO_TAG, CallWarmth.UNMEASURED);
 
         captureLog.reportBreachOnce(ProfileSection.UNSCOPED_COUNTS, breach, WorstCall.NO_TAG);
     }

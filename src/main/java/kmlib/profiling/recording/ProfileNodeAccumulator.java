@@ -4,6 +4,7 @@ import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.budget.ProfileBudget;
 import kmlib.profiling.snapshot.BudgetBreach;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.profiling.snapshot.ProfileCount;
 import kmlib.profiling.snapshot.ProfileIterations;
 import kmlib.profiling.snapshot.ProfileNode;
@@ -66,18 +67,32 @@ final class ProfileNodeAccumulator {
     }
 
     /**
+     * @return whether no call has ended here yet - which is what makes the one
+     *         about to be recorded the row's first
+     */
+    boolean hasNoCallsYet() {
+        return spans.getCallCount() == 0;
+    }
+
+    /**
      * Folds one ended call into this node.
      *
      * @param elapsedNanos how long the call took
      * @param callCounts   what the call counted, empty when it counted nothing
      * @param tag          what the caller named the call, empty when it named
      *                     nothing
+     * @param warmth       under what conditions the call ran,
+     *                     {@link CallWarmth#UNMEASURED} where they were not read
      * @return what this call broke of its section's budget, or
      *         {@link BudgetBreach#NO_BREACH} where it broke nothing - handed
      *         back rather than logged here, since saying it once per section is
      *         a fact about the whole capture and not about one row
      */
-    BudgetBreach addSpan(long elapsedNanos, List<ScopeCount> callCounts, String tag) {
+    BudgetBreach addSpan(
+            long elapsedNanos,
+            List<ScopeCount> callCounts,
+            String tag,
+            CallWarmth warmth) {
 
         // Before the span is folded in, since a counter first added to in this
         // call has to know how many calls preceded it without it, and the spans
@@ -89,7 +104,7 @@ final class ProfileNodeAccumulator {
         // to know that it is holding one.
         var breach = findBreachInCall(elapsedNanos, callCounts);
 
-        worstCall.addCall(elapsedNanos, callCounts, tag, breach);
+        worstCall.addCall(elapsedNanos, callCounts, tag, breach, warmth);
         spans.addSpan(elapsedNanos);
         return breach;
     }

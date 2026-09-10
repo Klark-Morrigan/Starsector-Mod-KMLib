@@ -2,6 +2,7 @@ package kmlib.profiling.recording;
 
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.BudgetBreach;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.text.KmlibStrings;
 import kmlib.time.Timings;
 
@@ -93,6 +94,9 @@ final class CaptureLog {
      *
      * @param section      what ran
      * @param elapsedNanos how long the call took
+     * @param warmth       under what conditions it ran - first of its row,
+     *                     compiled under - which is what tells a cold call from
+     *                     a slow one on the line
      * @param counts       what it counted, in the order it first counted them
      * @param tag          what the caller named this one call, blank where it
      *                     named nothing
@@ -100,6 +104,7 @@ final class CaptureLog {
     void reportClosedCall(
             ProfileSection section,
             long elapsedNanos,
+            CallWarmth warmth,
             List<ScopeCount> counts,
             String tag) {
 
@@ -108,7 +113,7 @@ final class CaptureLog {
         if (!section.getCallLogThreshold().shouldLogCall(elapsedNanos) || !LOG.isDebugEnabled()) {
             return;
         }
-        LOG.debug(describeClosedCall(section, elapsedNanos, counts, tag));
+        LOG.debug(describeClosedCall(section, elapsedNanos, warmth, counts, tag));
     }
 
     /**
@@ -125,6 +130,7 @@ final class CaptureLog {
     private static String describeClosedCall(
             ProfileSection section,
             long elapsedNanos,
+            CallWarmth warmth,
             List<ScopeCount> counts,
             String tag) {
 
@@ -135,6 +141,13 @@ final class CaptureLog {
             .append(DURATION_LABEL)
             .append(Timings.formatMillis(elapsedNanos));
 
+        // Straight after the duration it qualifies, and before the counts, so a
+        // reader meets "took=216ms first jitMs=412" as one fact.
+        var conditions = warmth.describeWarmth();
+
+        if (!conditions.isEmpty()) {
+            line.append(' ').append(conditions);
+        }
         for (var count : counts) {
             line.append(' ')
                 .append(count.getCounter().getName())

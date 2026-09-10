@@ -2,6 +2,7 @@ package kmlib.profiling.recording;
 
 import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.profiling.snapshot.WorstCall;
 
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ final class WorstCallAccumulator {
     private long durationNanos;
     private String tag = WorstCall.NO_TAG;
     private List<CallCount> counts = List.of();
+    private CallWarmth warmth = CallWarmth.UNMEASURED;
     private BudgetBreach budgetBreach = BudgetBreach.NO_BREACH;
 
     /**
@@ -42,12 +44,15 @@ final class WorstCallAccumulator {
      *                     when it named nothing
      * @param breach       what the call broke of its section's budget,
      *                     {@link BudgetBreach#NO_BREACH} when it broke nothing
+     * @param callWarmth   under what conditions the call ran,
+     *                     {@link CallWarmth#UNMEASURED} where they were not read
      */
     void addCall(
             long elapsedNanos,
             List<ScopeCount> callCounts,
             String tag,
-            BudgetBreach breach) {
+            BudgetBreach breach,
+            CallWarmth callWarmth) {
 
         if (breach.hasBreached()) {
             budgetBreach = breach;
@@ -58,6 +63,7 @@ final class WorstCallAccumulator {
         durationNanos = elapsedNanos;
         this.tag = tag;
         counts = copyCallCounts(callCounts);
+        warmth = callWarmth;
     }
 
     /**
@@ -65,7 +71,9 @@ final class WorstCallAccumulator {
      *         where no call has finished here yet
      */
     WorstCall buildWorstCall() {
-        return hasObservedCall ? new WorstCall(durationNanos, tag, counts) : WorstCall.NO_CALL;
+        return hasObservedCall
+            ? new WorstCall(durationNanos, tag, counts, warmth)
+            : WorstCall.NO_CALL;
     }
 
     /**

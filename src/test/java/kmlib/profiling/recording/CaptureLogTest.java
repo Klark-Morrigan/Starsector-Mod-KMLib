@@ -5,6 +5,7 @@ import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.SectionTerms;
 import kmlib.profiling.snapshot.BudgetBreach;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.profiling.snapshot.WorstCall;
 import kmlib.testfixtures.logging.LogAppenderFake;
 
@@ -38,6 +39,7 @@ final class CaptureLogTest {
 
     private static final long TWELVE = 12L;
     private static final long THREE = 3L;
+    private static final long JIT_MILLIS = 412L;
 
     private static final ProfileSection SECTION = ProfileSection.registerSection(SECTION_NAME);
     private static final ProfileSection OTHER_SECTION =
@@ -127,7 +129,11 @@ final class CaptureLogTest {
 
             var messages = captureMessagesWhile(() ->
                 captureLog.reportClosedCall(
-                    LOGGED_SECTION, FIVE_MILLISECONDS_IN_NANOS, List.of(), WorstCall.NO_TAG));
+                    LOGGED_SECTION,
+                    FIVE_MILLISECONDS_IN_NANOS,
+                    CallWarmth.UNMEASURED,
+                    List.of(),
+                    WorstCall.NO_TAG));
 
             assertThat(messages)
                 .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=5.00ms");
@@ -141,7 +147,12 @@ final class CaptureLogTest {
                 countOf(OTHER_COUNTER_NAME, THREE));
 
             var messages = captureMessagesWhile(() ->
-                captureLog.reportClosedCall(LOGGED_SECTION, ONE_MILLISECOND_IN_NANOS, counts, TAG));
+                captureLog.reportClosedCall(
+                    LOGGED_SECTION,
+                    ONE_MILLISECOND_IN_NANOS,
+                    CallWarmth.UNMEASURED,
+                    counts,
+                    TAG));
 
             assertThat(messages)
                 .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=1.00ms "
@@ -150,12 +161,33 @@ final class CaptureLogTest {
         }
 
         @Test
+        void writesTheCallsConditionsAfterTheSpanAndBeforeTheCounts() {
+            // One fact with the duration it qualifies: "took=1.00ms first jitMs=412" is what a
+            // reader meets, before the counts that say what the call did.
+            var messages = captureMessagesWhile(() ->
+                captureLog.reportClosedCall(
+                    LOGGED_SECTION,
+                    ONE_MILLISECOND_IN_NANOS,
+                    new CallWarmth(true, JIT_MILLIS),
+                    List.of(countOf(COUNTER_NAME, TWELVE)),
+                    TAG));
+
+            assertThat(messages)
+                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=1.00ms first jitMs="
+                    + JIT_MILLIS + " " + COUNTER_NAME + "=" + TWELVE + " \"" + TAG + "\"");
+        }
+
+        @Test
         void writesAtDebug() {
             // A trace a reader turns on to follow a rebuild, not a finding: it must not surface at
             // the level the breaches do.
             var appenderFake = LogAppenderFake.captureLogOf(CaptureLog.class, () ->
                 captureLog.reportClosedCall(
-                    LOGGED_SECTION, ONE_MILLISECOND_IN_NANOS, List.of(), WorstCall.NO_TAG));
+                    LOGGED_SECTION,
+                    ONE_MILLISECOND_IN_NANOS,
+                    CallWarmth.UNMEASURED,
+                    List.of(),
+                    WorstCall.NO_TAG));
 
             assertThat(appenderFake.getEvents().get(0).getLevel())
                 .isEqualTo(Level.DEBUG);
@@ -166,7 +198,11 @@ final class CaptureLogTest {
 
             assertThat(captureMessagesWhile(() ->
                     captureLog.reportClosedCall(
-                        QUIET_SECTION, FIVE_MILLISECONDS_IN_NANOS, List.of(), WorstCall.NO_TAG)))
+                        QUIET_SECTION,
+                        FIVE_MILLISECONDS_IN_NANOS,
+                        CallWarmth.UNMEASURED,
+                        List.of(),
+                        WorstCall.NO_TAG)))
                 .isEmpty();
         }
     }

@@ -210,6 +210,14 @@ public final class TimingReport {
         line.append(breach.hasBreached() ? LATEST_BREACH_PREFIX : WORST_CALL_PREFIX);
         line.append(formatCallMillis(worstCall.getDurationNanos()));
 
+        // Beside the duration they qualify: a maximum that was the row's first
+        // call under a compiling JVM is a different finding from one that was
+        // not, and the two have to be told apart where the number is.
+        var conditions = worstCall.getWarmth().describeWarmth();
+
+        if (!conditions.isEmpty()) {
+            line.append(PART_GAP).append(conditions);
+        }
         if (breach.hasBreached()) {
 
             line.append(PART_GAP)
@@ -313,10 +321,17 @@ public final class TimingReport {
     }
 
     // Whether the record says anything the table does not already carry. Its
-    // duration is the maximum column, so a call that was named nothing and counted
-    // nothing would print a line repeating a number one column to the left.
+    // duration is the maximum column, so a call that was named nothing, counted
+    // nothing and ran under nothing worth reporting would print a line repeating a
+    // number one column to the left. The conditions count among what it says: a
+    // maximum reached on a row's first call under a compiling JVM is a reading to
+    // discount, and a row whose calls are alike in every other way is exactly where
+    // that would otherwise go unsaid.
     private static boolean hasContextBeyondItsDuration(WorstCall worstCall) {
-        return KmlibStrings.hasText(worstCall.getTag()) || !worstCall.getCounts().isEmpty();
+
+        return KmlibStrings.hasText(worstCall.getTag())
+            || !worstCall.getCounts().isEmpty()
+            || !worstCall.getWarmth().describeWarmth().isEmpty();
     }
 
     // One level past the row it belongs to, so a line written across the columns

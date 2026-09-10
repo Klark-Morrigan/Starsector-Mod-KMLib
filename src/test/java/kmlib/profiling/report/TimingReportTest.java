@@ -6,6 +6,7 @@ import kmlib.profiling.ProfileOrigin;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
@@ -118,6 +119,9 @@ final class TimingReportTest {
 
     private static final String WORST_CALL_TAG = "eos";
     private static final long WORST_CALL_SYSTEMS = 48L;
+
+    // What the JVM compiled under the kept call of the case about a cold one.
+    private static final long JIT_MILLIS = 412L;
 
     // What the case about a flagged row allows that call, so its 48 systems are 47 too many.
     private static final long ONE_SYSTEM = 1L;
@@ -323,12 +327,29 @@ final class TimingReportTest {
                 PARENT_TOTAL_NANOS,
                 WORST_CALL_TAG,
                 List.of(new CallCount(
-                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS))))));
+                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS)),
+                CallWarmth.UNMEASURED))));
 
             assertThat(report)
                 .contains("\n  worst 3.000ms")
                 .contains("\"" + WORST_CALL_TAG + "\"")
                 .contains(SYSTEMS_COUNTER + "=" + WORST_CALL_SYSTEMS);
+        }
+
+        @Test
+        void formatWritesUnderWhatConditionsTheKeptCallRan() {
+            // A maximum that was the row's first call under a compiling JVM is a different
+            // finding from one that was not, and the two are told apart where the number is.
+            // Conditions alone earn the line: a cold call that counted nothing and was named
+            // nothing is still the call the reader has to know was cold.
+            var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
+                PARENT_TOTAL_NANOS,
+                WorstCall.NO_TAG,
+                List.of(),
+                new CallWarmth(true, JIT_MILLIS)))));
+
+            assertThat(report)
+                .contains("\n  worst 3.000ms  first jitMs=" + JIT_MILLIS);
         }
 
         @Test
@@ -339,7 +360,8 @@ final class TimingReportTest {
                 PARENT_TOTAL_NANOS,
                 WorstCall.NO_TAG,
                 List.of(new CallCount(
-                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS))))));
+                    ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS)),
+                CallWarmth.UNMEASURED))));
 
             assertThat(report)
                 .contains("\n  worst 3.000ms")
@@ -363,7 +385,7 @@ final class TimingReportTest {
             // A call named nothing and counting nothing has only its duration to state, and the
             // table has already stated it - so the rows whose calls are all alike stay one line.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
-                new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of()))));
+                new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of(), CallWarmth.UNMEASURED))));
 
             assertThat(report.lines())
                 .hasSize(ROWS_OF_A_HEADER_AN_ORIGIN_AND_ONE_SECTION);
@@ -378,7 +400,8 @@ final class TimingReportTest {
                     PARENT_TOTAL_NANOS,
                     WORST_CALL_TAG,
                     List.of(new CallCount(
-                        ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS))),
+                        ProfileCounter.registerCounter(SYSTEMS_COUNTER), WORST_CALL_SYSTEMS)),
+                    CallWarmth.UNMEASURED),
                 breachOfOneAllowedSystem())));
 
             assertThat(report)
@@ -394,7 +417,7 @@ final class TimingReportTest {
             // row saying "worst" beside a maximum column holding the first of the two reads as a
             // report that has lost track of its own number.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
-                new WorstCall(PARENT_TOTAL_NANOS, WORST_CALL_TAG, List.of()),
+                new WorstCall(PARENT_TOTAL_NANOS, WORST_CALL_TAG, List.of(), CallWarmth.UNMEASURED),
                 breachOfOneAllowedSystem())));
 
             assertThat(report)
@@ -407,7 +430,7 @@ final class TimingReportTest {
             // A row is one line while its calls are alike, but a broken bound is never a repeat of
             // the maximum column: it is the reason to look at the row at all.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
-                new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of()),
+                new WorstCall(PARENT_TOTAL_NANOS, WorstCall.NO_TAG, List.of(), CallWarmth.UNMEASURED),
                 breachOfOneAllowedSystem())));
 
             assertThat(report.lines())
@@ -468,7 +491,7 @@ final class TimingReportTest {
             // widen the section column by however long that text was and push every number away
             // from the header it sits under.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
-                PARENT_TOTAL_NANOS, LONG_WORST_CALL_TAG, List.of()))));
+                PARENT_TOTAL_NANOS, LONG_WORST_CALL_TAG, List.of(), CallWarmth.UNMEASURED))));
 
             assertThat(readRow(report, PARENT_SECTION).length())
                 .isEqualTo(PARENT_SECTION.length() + NUMERIC_COLUMNS_WIDTH);
@@ -700,7 +723,7 @@ final class TimingReportTest {
         return new ProfileNode(
             ProfileSection.registerSection(PARENT_SECTION),
             oneCallOf(PARENT_TOTAL_NANOS),
-            new WorstCall(PARENT_TOTAL_NANOS, worstCallTag, List.of()),
+            new WorstCall(PARENT_TOTAL_NANOS, worstCallTag, List.of(), CallWarmth.UNMEASURED),
             BudgetBreach.NO_BREACH,
             new ProfileIterations(
                 turns,

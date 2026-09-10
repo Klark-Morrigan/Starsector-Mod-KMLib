@@ -36,16 +36,19 @@ public final class WorstCall {
      * rather than as a bound nobody set. Shared, since every such row says the
      * same nothing.
      */
-    public static final WorstCall NO_CALL = new WorstCall(0, NO_TAG, List.of());
+    public static final WorstCall NO_CALL =
+        new WorstCall(0, NO_TAG, List.of(), CallWarmth.UNMEASURED);
 
     private final long durationNanos;
     private final String tag;
     private final List<CallCount> counts;
+    private final CallWarmth warmth;
 
-    public WorstCall(long durationNanos, String tag, List<CallCount> counts) {
+    public WorstCall(long durationNanos, String tag, List<CallCount> counts, CallWarmth warmth) {
         this.durationNanos = durationNanos;
         this.tag = tag;
         this.counts = List.copyOf(counts);
+        this.warmth = warmth;
     }
 
     /**
@@ -82,5 +85,14 @@ public final class WorstCall {
      */
     public List<CallCount> getCounts() {
         return counts;
+    }
+
+    /**
+     * @return under what conditions the call ran - its row's first, compiled
+     *         under - or {@link CallWarmth#UNMEASURED} where its section's calls
+     *         are not events worth reading those of
+     */
+    public CallWarmth getWarmth() {
+        return warmth;
     }
 }

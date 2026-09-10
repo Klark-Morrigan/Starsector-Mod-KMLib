@@ -5,10 +5,12 @@ import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfilePhase;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.BudgetBreach;
+import kmlib.profiling.snapshot.CallWarmth;
 import kmlib.profiling.snapshot.WorstCall;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 /**
  * One entry on {@link RecordingProfiler}'s open stack: the node the span will
@@ -31,6 +33,13 @@ final class RecordingProfileScope implements IterationScope {
     private final ProfileNodeAccumulator node;
     private final long startNanos;
 
+    // Under what conditions this call opened: whether its row had seen none
+    // before it, and where the JVM's compilation clock stood - the latter read
+    // only for a section whose calls are events, and NOT_MEASURED_MILLIS on the
+    // rest, so a per-frame path pays a comparison and no bean read.
+    private final boolean isFirstCall;
+    private final long startCompilationMillis;
+
     // The scope this one was opened inside, and so the one its counts roll into
     // when it ends. Null on a root, whose node hangs off an origin rather than
     // off a row, and whose counts therefore stop with it.
@@ -51,12 +60,15 @@ final class RecordingProfileScope implements IterationScope {
             RecordingProfiler profiler,
             ProfileNodeAccumulator node,
             long startNanos,
+            long startCompilationMillis,
             ScopeIterations iterations,
             RecordingProfileScope parentScope) {
 
         this.profiler = profiler;
         this.node = node;
         this.startNanos = startNanos;
+        this.startCompilationMillis = startCompilationMillis;
+        this.isFirstCall = node.hasNoCallsYet();
         this.iterations = iterations;
         this.parentScope = parentScope;
     }
@@ -147,14 +159,36 @@ final class RecordingProfileScope implements IterationScope {
     }
 
     /**
+     * Under what conditions this call ran, now that it has ended.
+     *
+     * @param compilationMillis the JVM's compilation clock, read only where this
+     *                          scope read it at open - which is what keeps the
+     *                          bean off the paths that never asked
+     * @return the first-call bit and the compilation that happened under the
+     *         call, or {@link CallWarmth#UNMEASURED} where the section's calls
+     *         are not events
+     */
+    CallWarmth resolveWarmth(LongSupplier compilationMillis) {
+
+        if (startCompilationMillis == CallWarmth.NOT_MEASURED_MILLIS) {
+            return CallWarmth.UNMEASURED;
+        }
+        return new CallWarmth(
+            isFirstCall,
+            compilationMillis.getAsLong() - startCompilationMillis);
+    }
+
+    /**
      * @param elapsedNanos how long this call took, measured by the profiler so
      *                     every span of one capture is read off one clock
+     * @param warmth       under what conditions it ran, resolved by the profiler
+     *                     off the same compilation clock every scope reads
      * @return what this call broke of its section's budget, or
      *         {@link BudgetBreach#NO_BREACH} where it broke nothing
      */
-    BudgetBreach recordSpan(long elapsedNanos) {
+    BudgetBreach recordSpan(long elapsedNanos, CallWarmth warmth) {
 
-        var breach = node.addSpan(elapsedNanos, getCounts(), tag);
+        var breach = node.addSpan(elapsedNanos, getCounts(), tag, warmth);
 
         // The turns go in with the span rather than as they run: a row is read
         // as one thing, and a loop half way through its cells is not a fact
