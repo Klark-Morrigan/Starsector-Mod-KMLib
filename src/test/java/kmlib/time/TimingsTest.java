@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link Timings}: the conversions between nanoseconds and the coarser units either
- * way, and the fixed two-decimal "{@code 1.23ms}" format used by timing output.
+ * way, and the fixed three-decimal "{@code 1.234ms}" format used by timing output.
  */
 class TimingsTest {
 
@@ -144,8 +144,9 @@ class TimingsTest {
 
         @Test
         void formatMicrosKeepsASpanMillisecondsWouldRoundAway() {
-            // Three microseconds is "0.00ms" at two decimals, which is the whole reason this
-            // format exists rather than the millisecond one.
+            // Three microseconds is "0.003ms" in milliseconds - a leading zero and two of them
+            // spent before a digit says anything, which is why a per-item cost gets this format
+            // rather than the millisecond one.
             assertThat(Timings.formatMicros(3_000L))
                 .isEqualTo("3.0us");
         }
@@ -162,24 +163,32 @@ class TimingsTest {
     class FormatMillis {
 
         @Test
-        void formatMillisShowsTwoDecimalsAndTheUnit() {
+        void formatMillisShowsThreeDecimalsAndTheUnit() {
 
             assertThat(Timings.formatMillis(1_234_567L))
-                .isEqualTo("1.23ms");
+                .isEqualTo("1.235ms");
         }
 
         @Test
-        void formatMillisRoundsToTwoDecimals() {
-            // 1.238ms rounds up at the second decimal (third digit 8).
-            assertThat(Timings.formatMillis(1_238_000L))
-                .isEqualTo("1.24ms");
+        void formatMillisRoundsToThreeDecimals() {
+            // 1.2348ms rounds up at the third decimal (fourth digit 8).
+            assertThat(Timings.formatMillis(1_234_800L))
+                .isEqualTo("1.235ms");
+        }
+
+        @Test
+        void formatMillisKeepsASpanTwoDecimalsWouldRoundAway() {
+            // Eight microseconds is "0.01ms" at two decimals and "0.00ms" at anything coarser -
+            // three is what keeps a sub-ten-microsecond row from reading as nothing.
+            assertThat(Timings.formatMillis(8_000L))
+                .isEqualTo("0.008ms");
         }
 
         @Test
         void formatMillisIsZeroForZero() {
 
             assertThat(Timings.formatMillis(0L))
-                .isEqualTo("0.00ms");
+                .isEqualTo("0.000ms");
         }
     }
 }

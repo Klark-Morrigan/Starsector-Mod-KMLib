@@ -29,7 +29,7 @@ final class ProfileBudgetTest {
 
     // What a duration bound reads as, so a case can state the text a reader sees rather than the
     // nanoseconds behind it.
-    private static final String FOUR_MILLISECONDS_ALLOWED = "4.00ms allowed per call";
+    private static final String FOUR_MILLISECONDS_ALLOWED = "4.000ms allowed per call";
 
     // A call that counted nothing at all, which is what every counter of a section with a duration
     // bound is asked for.

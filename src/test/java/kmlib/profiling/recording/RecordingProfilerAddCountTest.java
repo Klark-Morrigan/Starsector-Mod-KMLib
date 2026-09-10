@@ -3,7 +3,6 @@ package kmlib.profiling.recording;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.recording.RecordingProfilerTestSupport.ScriptedClock;
-import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 
 import org.junit.jupiter.api.Nested;
@@ -56,7 +55,7 @@ final class RecordingProfilerAddCountTest {
         }
 
         @Test
-        void spreadsACountOverTheCallsOfTheRowRatherThanTheRowsTotal() {
+        void keepsTheLargestCallOfTheRowRatherThanOnlyItsTotal() {
             // Two calls of one row counting 3 and 8. A total of 11 says the row is worth looking
             // at; that one call did 8 of it says which call to look at.
             var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
@@ -71,15 +70,14 @@ final class RecordingProfilerAddCountTest {
 
             assertThat(count.getTotals().getTotal())
                 .isEqualTo(11L);
-            assertThat(count.getSpread())
-                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
-                .containsExactly(3L, 8L);
+            assertThat(count.getMaxPerCall())
+                .isEqualTo(8L);
         }
 
         @Test
-        void readsACallThatCountedNoneOfItAsAZeroRatherThanSkippingIt() {
-            // A row that usually walks and sometimes does not has a minimum of zero. A spread that
-            // only saw the calls which counted would report a floor no call ever went under.
+        void leavesTheLargestCallWhereItWasWhenALaterCallCountedNoneOfIt() {
+            // A row that usually walks and sometimes does not: the call that walked is still the
+            // one to look at, and a later call counting none of it moves nothing.
             var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
 
             var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
@@ -92,28 +90,8 @@ final class RecordingProfilerAddCountTest {
 
             assertThat(count.getTotals().getTotal())
                 .isEqualTo(5L);
-            assertThat(count.getSpread())
-                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
-                .containsExactly(0L, 5L);
-        }
-
-        @Test
-        void countsTheCallsThatRanBeforeACounterWasFirstAddedTo() {
-            // The same rule from the other side: a counter first seen on the second call did not
-            // start existing then, and the call before it counted none of it.
-            var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0, 0, 0));
-
-            var parent = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
-
-            profiler.open(ProfileSection.registerSection(CHILD_SECTION)).close();
-            countInACallOf(profiler, CHILD_SECTION, 5);
-            parent.close();
-
-            var childNode = readRoots(profiler).get(0).getChildren().get(0);
-
-            assertThat(readCount(childNode, SYSTEMS_COUNTER).getSpread())
-                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
-                .containsExactly(0L, 5L);
+            assertThat(count.getMaxPerCall())
+                .isEqualTo(5L);
         }
 
         @Test
@@ -154,16 +132,15 @@ final class RecordingProfilerAddCountTest {
 
             assertThat(count.getTotals().getTotal())
                 .isEqualTo(7L);
-            assertThat(count.getSpread())
-                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
-                .containsExactly(7L, 7L);
+            assertThat(count.getMaxPerCall())
+                .isEqualTo(7L);
         }
 
         @Test
         void keepsSeveralCountersOnOneRowApart() {
             // A section counts more than one kind of thing - systems walked and markets read - and
-            // a later call may touch only some of them. Each counter carries its own spread, so a
-            // call that read markets without walking must not shorten the walk's tally.
+            // a later call may touch only some of them. Each counter carries its own largest call,
+            // so a call that read markets without walking must not disturb the walk's tally.
             var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0));
 
             var first = profiler.open(ProfileSection.registerSection(PARENT_SECTION));
@@ -181,14 +158,12 @@ final class RecordingProfilerAddCountTest {
 
             assertThat(readCount(node, SYSTEMS_COUNTER).getTotals().getTotal())
                 .isEqualTo(3L);
-            assertThat(readCount(node, SYSTEMS_COUNTER).getSpread())
-                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
-                .containsExactly(0L, 3L);
+            assertThat(readCount(node, SYSTEMS_COUNTER).getMaxPerCall())
+                .isEqualTo(3L);
             assertThat(readCount(node, MARKETS_COUNTER).getTotals().getTotal())
                 .isEqualTo(14L);
-            assertThat(readCount(node, MARKETS_COUNTER).getSpread())
-                .extracting(CountSpread::getMinPerCall, CountSpread::getMaxPerCall)
-                .containsExactly(4L, 10L);
+            assertThat(readCount(node, MARKETS_COUNTER).getMaxPerCall())
+                .isEqualTo(10L);
         }
 
         @Test

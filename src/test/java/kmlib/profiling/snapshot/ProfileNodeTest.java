@@ -99,7 +99,7 @@ final class ProfileNodeTest {
         return new ProfileCount(
             ProfileCounter.registerCounter(counterName),
             new CountTotals(total, total),
-            new CountSpread(total, total));
+            total);
     }
 
     private static ProfileNode nodeCounting(ProfileCount count) {

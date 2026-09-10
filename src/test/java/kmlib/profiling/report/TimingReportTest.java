@@ -7,7 +7,6 @@ import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.BudgetBreach;
 import kmlib.profiling.snapshot.CallCount;
 import kmlib.profiling.snapshot.CallWarmth;
-import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.PhaseTotal;
@@ -769,7 +768,7 @@ final class TimingReportTest {
         return new ProfileCount(
             ProfileCounter.registerCounter(counterName),
             new CountTotals(total, selfTotal),
-            new CountSpread(minPerCall, maxPerCall));
+            maxPerCall);
     }
 
     // The cells a row actually fills, blank ones excluded - a blank cell is whitespace and so

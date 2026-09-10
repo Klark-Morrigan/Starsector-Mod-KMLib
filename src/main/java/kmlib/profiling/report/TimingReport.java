@@ -224,14 +224,18 @@ public final class TimingReport {
                 .append(OVER_BUDGET_PREFIX)
                 .append(breach.describeBreach());
         }
-        appendQuotedTag(line, worstCall.getTag());
-
+        // The counts before the name, and the name last, in the order the same
+        // call's closing line writes them: a reader who found a call in the log
+        // and then looked it up here is reading one fact twice, and two orders
+        // would make them compare it word by word.
         for (var count : worstCall.getCounts()) {
             line.append(PART_GAP);
             line.append(count.getCounter().getName());
             line.append(COUNT_ASSIGNMENT);
             line.append(count.getAmount());
         }
+        appendQuotedTag(line, worstCall.getTag());
+
         table.addSpanningLine(line.toString());
     }
 
@@ -331,7 +335,7 @@ public final class TimingReport {
 
         return KmlibStrings.hasText(worstCall.getTag())
             || !worstCall.getCounts().isEmpty()
-            || !worstCall.getWarmth().describeWarmth().isEmpty();
+            || worstCall.getWarmth().hasAnythingToSay();
     }
 
     // One level past the row it belongs to, so a line written across the columns

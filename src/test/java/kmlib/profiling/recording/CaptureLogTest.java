@@ -136,7 +136,7 @@ final class CaptureLogTest {
                     WorstCall.NO_TAG));
 
             assertThat(messages)
-                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=5.00ms");
+                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=5.000ms");
         }
 
         @Test
@@ -155,14 +155,14 @@ final class CaptureLogTest {
                     TAG));
 
             assertThat(messages)
-                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=1.00ms "
+                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=1.000ms "
                     + COUNTER_NAME + "=" + TWELVE + " " + OTHER_COUNTER_NAME + "=" + THREE
                     + " \"" + TAG + "\"");
         }
 
         @Test
         void writesTheCallsConditionsAfterTheSpanAndBeforeTheCounts() {
-            // One fact with the duration it qualifies: "took=1.00ms first jitMs=412" is what a
+            // One fact with the duration it qualifies: "took=1.000ms first jitMs=412" is what a
             // reader meets, before the counts that say what the call did.
             var messages = captureMessagesWhile(() ->
                 captureLog.reportClosedCall(
@@ -173,7 +173,7 @@ final class CaptureLogTest {
                     TAG));
 
             assertThat(messages)
-                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=1.00ms first jitMs="
+                .containsExactly("Profiled '" + LOGGED_SECTION_NAME + "' took=1.000ms first jitMs="
                     + JIT_MILLIS + " " + COUNTER_NAME + "=" + TWELVE + " \"" + TAG + "\"");
         }
 

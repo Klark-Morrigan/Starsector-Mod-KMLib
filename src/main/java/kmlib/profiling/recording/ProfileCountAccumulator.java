@@ -1,13 +1,12 @@
 package kmlib.profiling.recording;
 
 import kmlib.profiling.ProfileCounter;
-import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.ProfileCount;
 
 /**
  * The mutable tally one node keeps for one counter, folding each ended call's
- * amounts into the totals and the per-call spread a snapshot reports.
+ * amounts into the totals and the per-call maximum a snapshot reports.
  *
  * <p>Kept apart from the {@link ProfileCount} a snapshot hands out for the same
  * reason a node is: what a reader is given must not change while it is being
@@ -17,23 +16,15 @@ final class ProfileCountAccumulator {
 
     private final ProfileCounter counter;
 
-    private boolean hasObservedCall;
     private long total;
     private long selfTotal;
-    private long minPerCall;
     private long maxPerCall;
 
     /**
-     * @param counter               what is being counted
-     * @param callsBeforeFirstCount how many calls of the row had already ended
-     *                              when this counter was first added to - each
-     *                              of them counted none of it, which is a zero
-     *                              per call and not a gap, so the minimum is
-     *                              settled before the first amount arrives
+     * @param counter what is being counted
      */
-    ProfileCountAccumulator(ProfileCounter counter, long callsBeforeFirstCount) {
+    ProfileCountAccumulator(ProfileCounter counter) {
         this.counter = counter;
-        this.hasObservedCall = callsBeforeFirstCount > 0;
     }
 
     ProfileCounter getCounter() {
@@ -49,17 +40,10 @@ final class ProfileCountAccumulator {
      */
     void addCall(long selfAmount, long totalAmount) {
 
-        // The first call sets both bounds rather than being folded into
-        // sentinels a snapshot would then have to undo - the same rule a span
-        // is bounded by.
-        if (hasObservedCall) {
-            minPerCall = Math.min(minPerCall, totalAmount);
-            maxPerCall = Math.max(maxPerCall, totalAmount);
-        } else {
-            minPerCall = totalAmount;
-            maxPerCall = totalAmount;
-            hasObservedCall = true;
-        }
+        // No first-call case to carry: an amount is never negative, so a zero
+        // start is the floor rather than a sentinel a snapshot would have to
+        // undo, and a call that counted none of something cannot be the largest.
+        maxPerCall = Math.max(maxPerCall, totalAmount);
         total += totalAmount;
         selfTotal += selfAmount;
     }
@@ -68,9 +52,6 @@ final class ProfileCountAccumulator {
      * @return this tally copied into the immutable form a snapshot is read from
      */
     ProfileCount buildCount() {
-        return new ProfileCount(
-            counter,
-            new CountTotals(total, selfTotal),
-            new CountSpread(minPerCall, maxPerCall));
+        return new ProfileCount(counter, new CountTotals(total, selfTotal), maxPerCall);
     }
 }

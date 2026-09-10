@@ -94,9 +94,6 @@ final class ProfileNodeAccumulator {
             String tag,
             CallWarmth warmth) {
 
-        // Before the span is folded in, since a counter first added to in this
-        // call has to know how many calls preceded it without it, and the spans
-        // are what remember that.
         recordCallCounts(callCounts);
 
         // The verdict goes to the record rather than being kept beside it: a
@@ -177,39 +174,21 @@ final class ProfileNodeAccumulator {
         return callCount == null ? 0 : callCount.getTotalAmount();
     }
 
-    // Every counter this node has ever seen takes a value for the call that has
-    // just ended, zero included: a call that counted none of something is what
-    // makes a minimum zero, and a spread that only saw the calls which counted
-    // would read as a floor no call ever went under.
+    // What this call counted, folded into the tally each counter keeps. A counter
+    // this row has seen before and this call did not touch is left alone: nothing
+    // it holds - a total, a self total, a largest call - is moved by a call that
+    // counted none of it.
     private void recordCallCounts(List<ScopeCount> callCounts) {
 
-        for (var countAccumulator : countAccumulators) {
-
-            var callCount = IdentityLookup.findByKey(
-                callCounts, ScopeCount::getCounter, countAccumulator.getCounter());
-
-            if (callCount == null) {
-                countAccumulator.addCall(0, 0);
-            } else {
-                countAccumulator.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
-            }
-        }
-
-        // Whatever the loop above did not already hold: the counters this call
-        // is the first of this row's to touch.
         for (var callCount : callCounts) {
 
-            var alreadyOpened = IdentityLookup.findByKey(
-                countAccumulators, ProfileCountAccumulator::getCounter, callCount.getCounter());
-
-            if (alreadyOpened != null) {
-                continue;
-            }
-            var opened =
-                new ProfileCountAccumulator(callCount.getCounter(), spans.getCallCount());
-
-            opened.addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
-            countAccumulators.add(opened);
+            IdentityLookup
+                .resolveByKey(
+                    countAccumulators,
+                    ProfileCountAccumulator::getCounter,
+                    callCount.getCounter(),
+                    ProfileCountAccumulator::new)
+                .addCall(callCount.getSelfAmount(), callCount.getTotalAmount());
         }
     }
 }

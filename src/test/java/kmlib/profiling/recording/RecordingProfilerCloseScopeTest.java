@@ -130,7 +130,7 @@ final class RecordingProfilerCloseScopeTest {
                 .hasSize(1);
             assertThat(messages.get(0))
                 .contains("test.closeLine.overThreshold")
-                .contains("10.00ms");
+                .contains("10.000ms");
         }
 
         @Test
@@ -210,7 +210,7 @@ final class RecordingProfilerCloseScopeTest {
             });
 
             assertThat(messages.get(0))
-                .contains("took=1.00ms first jitMs=" + JIT_MILLIS);
+                .contains("took=1.000ms first jitMs=" + JIT_MILLIS);
             assertThat(messages.get(1))
                 .doesNotContain("first")
                 .doesNotContain("jitMs");

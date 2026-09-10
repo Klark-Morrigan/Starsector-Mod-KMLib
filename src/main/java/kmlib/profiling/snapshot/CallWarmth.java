@@ -53,6 +53,20 @@ public record CallWarmth(
     }
 
     /**
+     * Whether these conditions are worth a word at all: the call was read, and
+     * what was read of it was not the ordinary answer.
+     *
+     * <p>Asked rather than answered by building the sentence and finding it empty,
+     * because a writer deciding whether a call has earned a line of its own asks
+     * this of every row it writes, and nearly every one of them says no.
+     *
+     * @return whether {@link #describeWarmth()} would say anything
+     */
+    public boolean hasAnythingToSay() {
+        return isMeasured() && (isFirstCall || jitMillis > 0);
+    }
+
+    /**
      * What a line about the call says of its conditions, which is nothing unless
      * there is something to say: an unmeasured call, and a measured one that was
      * neither first nor compiled under, both read as the plain call they were.
@@ -61,7 +75,7 @@ public record CallWarmth(
      */
     public String describeWarmth() {
 
-        if (!isMeasured()) {
+        if (!hasAnythingToSay()) {
             return "";
         }
         var description = new StringBuilder();

@@ -77,7 +77,7 @@ final class RecordingProfilerRecordTest {
             profiler.record(section.getName(), TEN_MILLISECONDS_IN_NANOS);
 
             assertThat(readRoots(profiler).get(0).getBudgetBreach().describeBreach())
-                .isEqualTo("1.00ms allowed per call");
+                .isEqualTo("1.000ms allowed per call");
         }
 
         @Test

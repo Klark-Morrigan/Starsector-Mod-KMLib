@@ -17,7 +17,15 @@ import kmlib.profiling.budget.ProfileBudget;
  *                         the section at all
  * @param budget           what one call of the section is allowed
  * @param callLogThreshold how slow one call has to be to write a line as it
- *                         closes
+ *                         closes. Stating any threshold at all also marks the
+ *                         section's calls as events rather than per-frame cost,
+ *                         and a call of such a section is additionally read for
+ *                         the conditions it ran under - whether it was its row's
+ *                         first, and what the JVM compiled while it ran - so a
+ *                         cold reading can be told from a slow one. That reading
+ *                         costs a native clock read per call, which is why it
+ *                         follows the threshold rather than being asked of every
+ *                         section
  */
 public record SectionTerms(
     ProfileLevel level,
@@ -51,7 +59,9 @@ public record SectionTerms(
 
     /**
      * @param callLogThreshold how slow one call has to be to write a line, in
-     *                         place of the current term
+     *                         place of the current term - and with it, whether
+     *                         the section's calls are read for the conditions
+     *                         they ran under at all
      * @return these terms with the threshold replaced
      */
     public SectionTerms withCallLogThreshold(CallLogThreshold callLogThreshold) {

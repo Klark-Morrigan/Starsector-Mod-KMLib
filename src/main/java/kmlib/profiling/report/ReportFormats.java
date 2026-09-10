@@ -21,7 +21,7 @@ final class ReportFormats {
     /** What a row that never touched a counter says: nothing, rather than a zero. */
     static final String ABSENT_CELL = "";
 
-    static final String MILLIS_UNIT = "ms";
+    static final String MILLIS_UNIT = Timings.MILLIS_UNIT;
 
     // What one of something cost, whether the something is an item a row counted
     // or a turn of its loop. One spelling, since a reader meets both in one table
@@ -37,7 +37,11 @@ final class ReportFormats {
     // parent, narrow enough that a deep tree still fits a console line.
     private static final int INDENT_SPACES_PER_DEPTH = 2;
 
-    private static final String MILLIS_FORMAT = "%.3f";
+    // Taken from the clock's own home rather than spelled here, so a column and
+    // the line under it - written by this and by the capture log respectively -
+    // cannot state one call's duration to two different precisions.
+    private static final String MILLIS_FORMAT = Timings.MILLIS_FORMAT;
+
     private static final String PER_ITEM_FORMAT = "%.1f";
 
     // A count divided by the frames it was spread over is a fraction, and the

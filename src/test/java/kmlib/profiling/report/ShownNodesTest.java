@@ -3,7 +3,6 @@ package kmlib.profiling.report;
 import kmlib.profiling.ProfileCounter;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.snapshot.BudgetBreach;
-import kmlib.profiling.snapshot.CountSpread;
 import kmlib.profiling.snapshot.CountTotals;
 import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.ProfileCount;
@@ -189,6 +188,6 @@ final class ShownNodesTest {
         return new ProfileCount(
             ProfileCounter.registerCounter(WALKS_COUNTER),
             new CountTotals(TWO_WALKS, TWO_WALKS),
-            new CountSpread(TWO_WALKS, TWO_WALKS));
+            TWO_WALKS);
     }
 }

@@ -76,7 +76,7 @@ interface ProfileView {
 
         var count = node.findCount(counter);
 
-        return count == null ? 0L : count.getSpread().getMaxPerCall();
+        return count == null ? 0L : count.getMaxPerCall();
     }
 
     private static long readTotal(ProfileNode node, ProfileCounter counter) {

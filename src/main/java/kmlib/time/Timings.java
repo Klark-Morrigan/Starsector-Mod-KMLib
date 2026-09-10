@@ -5,10 +5,10 @@ import java.util.Locale;
 /**
  * Duration conversion and formatting.
  *
- * <p>The single home for the nanosecond divisors and the "{@code 1.23ms}" format,
- * for anything reading {@link System#nanoTime()}: a measured span, a diagnostic
- * trace, an animation phased off the clock. All three convert the same way, so
- * the divisors are written once.
+ * <p>The single home for the nanosecond divisors and the "{@code 1.234ms}"
+ * format, for anything reading {@link System#nanoTime()}: a measured span, a
+ * diagnostic trace, an animation phased off the clock. All three convert the same
+ * way, so the divisors are written once.
  *
  * <p>Its own package rather than a profiler's, because reading a clock is not
  * profiling - the profiler is one caller of this and not its owner. Pure maths
@@ -19,6 +19,21 @@ public final class Timings {
     private static final double NANOS_PER_MICROSECOND = 1_000.0;
     private static final double NANOS_PER_MILLISECOND = 1_000_000.0;
     private static final double NANOS_PER_SECOND = 1_000_000_000.0;
+
+    /**
+     * How a duration in milliseconds is written wherever one is: the decimals
+     * alone, so a caller writing a column of them adds no unit and one writing a
+     * sentence adds {@link #MILLIS_UNIT}.
+     *
+     * <p>Published because the precision is the fact worth sharing rather than the
+     * whole format: two surfaces writing one measurement to different numbers of
+     * decimals read as two measurements, and the log and the report are exactly
+     * two surfaces onto the same call.
+     */
+    public static final String MILLIS_FORMAT = "%.3f";
+
+    /** What a duration in milliseconds is called, where a caller writes the unit. */
+    public static final String MILLIS_UNIT = "ms";
 
     private Timings() {
     }
@@ -77,13 +92,20 @@ public final class Timings {
     }
 
     /**
-     * Formats a nanosecond duration as milliseconds with two decimals and a
-     * trailing unit, e.g. {@code "1.23ms"}. {@link Locale#ROOT} is forced so the
+     * Formats a nanosecond duration as milliseconds with three decimals and a
+     * trailing unit, e.g. {@code "1.234ms"}. {@link Locale#ROOT} is forced so the
      * decimal separator is a dot regardless of the JVM's default locale - a fixed
      * technical format, not locale-sensitive prose.
+     *
+     * <p>Three rather than two, because the durations written through here are
+     * read beside the ones a profiling report writes in its columns, and the same
+     * measurement at two precisions reads as two: a call is logged as it closes
+     * and reported afterwards, and a bound stated here is printed on the very line
+     * the report gives the call that broke it. Three decimals is also what keeps a
+     * span under ten microseconds from reading as zero.
      */
     public static String formatMillis(long nanos) {
-        return String.format(Locale.ROOT, "%.2fms", convertNanosToMillis(nanos));
+        return String.format(Locale.ROOT, MILLIS_FORMAT + MILLIS_UNIT, convertNanosToMillis(nanos));
     }
 
     /**
