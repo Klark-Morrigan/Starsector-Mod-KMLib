@@ -87,7 +87,7 @@ class RendererEquivalenceIntegrationTest {
     class UnprojectToWorld {
 
         @Test
-        void mapTransform_ResolvesTheSameWorldPoint_UnderEitherRenderer() {
+        void resolvesTheSameWorldPointUnderEitherRenderer() {
             var stockGlPoint = resolveWorldPointFrom(buildMatrixAsStockGlReportsIt());
 
             var fastRenderingPoint = resolveWorldPointFrom(
@@ -98,7 +98,7 @@ class RendererEquivalenceIntegrationTest {
         }
 
         @Test
-        void mapTransform_ResolvesAWorldPointThatMovesWithThePan_UnderEitherRenderer() {
+        void resolvesAWorldPointThatMovesWithThePanUnderEitherRenderer() {
             // Guards the way the check above could pass on a lie: if both paths were broken into
             // reporting a pan-independent point, they would agree with each other perfectly. So
             // the agreed point also has to be the one the pan actually implies.
@@ -117,7 +117,7 @@ class RendererEquivalenceIntegrationTest {
     class ReadModelviewMatrix {
 
         @Test
-        void modelviewMatrixReader_ReportsTheSameMatrix_UnderEitherRenderer() {
+        void reportsTheSameMatrixUnderEitherRenderer() {
             // The bindings themselves need a GL context and a live bridge, so each is stood in for
             // by a reader over the reading it would return. What is under test is the layouts
             // converging, which is the part that is theirs rather than the renderers'.

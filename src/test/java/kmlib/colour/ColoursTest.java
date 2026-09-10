@@ -430,7 +430,7 @@ final class ColoursTest {
     class AddLight {
 
         @Test
-        void adds_the_same_channels_addOverlay_does() {
+        void addsTheSameChannelsAddOverlayDoes() {
             // The channel rule is shared with the method beside it - the two part over how solid the result
             // is, not over how bright - so a change to one that did not reach the other would leave the same
             // light landing in two different colours.
@@ -486,7 +486,7 @@ final class ColoursTest {
     class SubtractLight {
 
         @Test
-        void gives_back_the_light_that_addOverlay_would_add_in_full() {
+        void givesBackTheLightThatAddOverlayWouldAddInFull() {
             // The round trip is the whole contract: a caller measures the pass between two settled shades
             // here and lays it on something else, so what comes back has to be what the additive blend
             // takes from one to the other.

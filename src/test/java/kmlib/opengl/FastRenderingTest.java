@@ -44,7 +44,7 @@ class FastRenderingTest {
     class IsFastRenderingActive {
 
         @Test
-        void fastRendering_isFastRenderingActive_ReportsFalse_IfGlIsStockLwjgl() {
+        void reportsFalseWhenGlIsStockLwjgl() {
             // Nothing rewrote this test's class references, so GL11 is the real one. This pins the
             // stock half of the detection - the patched half needs a patched game to observe.
             assertThat(FastRendering.isFastRenderingActive()).isFalse();
@@ -55,7 +55,7 @@ class FastRenderingTest {
     class IsBridgeClassName {
 
         @Test
-        void fastRendering_isBridgeClassName_ReportsTrue_IfNameIsRelocatedBridge() {
+        void reportsTrueWhenTheNameIsTheRelocatedBridge() {
             // The layout from v0.7.4 onwards. Fast Rendering relocated its bridge within its own
             // package without saying so, and a check keyed to one release's full class name
             // reported "stock" afterwards - which sent callers into GL reads it cannot serve.
@@ -64,13 +64,13 @@ class FastRenderingTest {
         }
 
         @Test
-        void fastRendering_isBridgeClassName_ReportsTrue_IfNameIsEarlierBridgeLayout() {
+        void reportsTrueWhenTheNameIsTheEarlierBridgeLayout() {
             // The layout up to v0.7.3, still in the field on installs that have not updated.
             assertThat(FastRendering.isBridgeClassName("com.genir.renderer.bridge.GL11")).isTrue();
         }
 
         @Test
-        void fastRendering_isBridgeClassName_ReportsFalse_IfNameIsStockLwjgl() {
+        void reportsFalseWhenTheNameIsStockLwjgl() {
             assertThat(FastRendering.isBridgeClassName("org.lwjgl.opengl.GL11")).isFalse();
         }
     }
@@ -79,7 +79,7 @@ class FastRenderingTest {
     class CopyAsColumnMajorFloats {
 
         @Test
-        void fastRendering_copyAsColumnMajorFloats_PutsTranslationLast_IfMatrixIsRowMajor() {
+        void putsTheTranslationLastWhenTheMatrixIsRowMajor() {
             var columnMajorFloats =
                 FastRendering.copyAsColumnMajorFloats(buildRowMajorTranslationMatrix());
 
@@ -91,7 +91,7 @@ class FastRenderingTest {
         }
 
         @Test
-        void fastRendering_copyAsColumnMajorFloats_ReportsSnapshot_IfSourceChangesAfterwards() {
+        void reportsASnapshotWhenTheSourceChangesAfterwards() {
             // Fast Rendering hands out its live mutable matrix, so a result that aliased it would
             // change under a caller mid-frame as the renderer pushes and pops.
             var matrix = buildRowMajorTranslationMatrix();
