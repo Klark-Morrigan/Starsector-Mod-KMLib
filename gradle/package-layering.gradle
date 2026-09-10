@@ -1,0 +1,92 @@
+// KMLib's layering rules: which of its package roots may not import which, and
+// which third-party mods no root but kmlib.mods may name.
+//
+// Its own file because these are a description of the library's architecture
+// rather than of its build, and a reader opening build.gradle to find out how
+// the library is assembled should not have to scroll past the whole shape of the
+// code first. The mechanism they are declared through stays in Common-Java's
+// gradle/tasks/lint/structure/enforce-package-layering.gradle; this is only the
+// edges, which are a per-project fact.
+//
+// Applied AFTER the shared conventions, since those are what register the task
+// this configures. Applied before them, the name resolves to nothing and the
+// build fails at configuration time.
+
+// Every package tree beside kmlib.mods, closed below against the optional mods'
+// own types. Stated as an enumeration because the gate has no exemption clause:
+// a single 'under: kmlib' edge would shut kmlib.mods off from the very mods its
+// adapters exist to adapt. A new top-level tree has to be added here to be
+// covered - the list is the rule.
+def treesClosedToOptionalMods = ['kmlib.animation', 'kmlib.collections',
+    'kmlib.colour', 'kmlib.extensions', 'kmlib.gradlescripts', 'kmlib.input',
+    'kmlib.logging', 'kmlib.math', 'kmlib.opengl', 'kmlib.profiling',
+    'kmlib.settings', 'kmlib.starsector', 'kmlib.testbootstrap',
+    'kmlib.testfixtures', 'kmlib.text', 'kmlib.time']
+
+// The mods a consumer may run without: named only by the adapter that stands
+// behind a presence gate for each. LazyLib, LunaLib, MagicLib and Fast Rendering
+// are deliberately absent - the library is compiled against them and cannot run
+// without them, so they belong with the code that uses them rather than under
+// kmlib.mods, and closing a tree to them would be a rule against the build.
+def optionalModPackages = ['assortment_of_things', 'exerelin', 'org.lazywizard.console']
+
+enforcePackageLayering {
+
+    // Optional-mod bans:
+
+    treesClosedToOptionalMods.each { closedTree ->
+        forbidImport under: closedTree, of: optionalModPackages
+    }
+
+    // The mod plugin sits in the root package itself and registers the adapters,
+    // so it names kmlib.mods; naming a mod's own types there would defeat the
+    // deferral those adapters are built around. 'exactly' rather than 'under',
+    // which would re-close every tree above.
+    forbidImport exactly: 'kmlib', of: optionalModPackages
+
+    // Group bans:
+
+    forbidImport under: 'kmlib.profiling.budget',
+                 of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
+
+    forbidImport under: 'kmlib.profiling.recording',
+                 of: 'kmlib.profiling.report'
+
+    forbidImport under: 'kmlib.profiling.report',
+                 of: ['kmlib.profiling.budget', 'kmlib.profiling.recording']
+
+    forbidImport under: 'kmlib.profiling.snapshot',
+                 of: ['kmlib.profiling.budget',
+                      'kmlib.profiling.recording',
+                      'kmlib.profiling.report']
+
+    forbidImport under: 'kmlib.starsector',
+                 of: 'kmlib.mods'
+
+    forbidImport under: 'kmlib.starsector.markets',
+                 of: 'kmlib.starsector.systems'
+
+    forbidImport under: 'kmlib.starsector.markets.colonies',
+                 of: ['kmlib.starsector.markets.colonisation',
+                      'kmlib.starsector.markets.ownership']
+
+    forbidImport under: 'kmlib.starsector.markets.colonisation',
+                 of: 'kmlib.starsector.markets.colonies'
+
+    forbidImport under: 'kmlib.starsector.markets.ownership',
+                 of: ['kmlib.starsector.markets.colonies',
+                      'kmlib.starsector.markets.colonisation']
+
+    // Exact bans:
+
+    forbidImport exactly: 'kmlib.profiling',
+                 of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
+
+    forbidImport exactly: 'kmlib.starsector.factions',
+                 of: 'kmlib.starsector.factions.relation'
+
+    forbidImport exactly: 'kmlib.starsector.markets',
+                 of: ['kmlib.starsector.markets.colonies',
+                      'kmlib.starsector.markets.colonisation',
+                      'kmlib.starsector.markets.ownership']
+}
