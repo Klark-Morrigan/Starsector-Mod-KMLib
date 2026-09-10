@@ -361,6 +361,10 @@ No Starsector API on the signature.
   lookup.
 - [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) - intel-plugin
   base classes. See [Intel Base Classes](#intel-base-classes).
+- [`starsector/listeners/`](src/main/java/kmlib/starsector/listeners/) - sector
+  listener registration: transient, with the listener's class cleared before it
+  is added so an install is idempotent and never keeps a stale instance, and
+  cleared again for a feature switched off mid-session.
 - [`starsector/map/`](src/main/java/kmlib/starsector/map/) - which systems the
   sector map marks with a star.
 - [`starsector/markets/`](src/main/java/kmlib/starsector/markets/) - what a
@@ -404,7 +408,11 @@ No Starsector API on the signature.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) - typed
   sector-memory accessors (flag, string).
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) - sector
-  script registration helpers.
+  script registration, one shape per lifetime: a persisted script added only if
+  absent, so the state it carries survives; a transient one installed fresh with
+  its own exact class cleared first, and cleared again for a feature switched off
+  mid-session; and a by-instance slot for a script whose class a sibling mod may
+  also be running over the same sector.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the
   game's own settings: whether a mod is enabled, answered the same way for
   every optional-mod gate and answering "not installed" before the game is up;
@@ -886,7 +894,11 @@ the length of one call and detached whatever that call did, since an appender le
 logger goes on collecting what the rest of a suite writes - the core-UI hops and widget
 tree a layout rule walks, builders for the values
 those ports report, the market and colony shapes a "who is here" read is posed
-against, and
+against, a listener manager that records what an installer registered with it beside
+the narrow sector that answers for nothing but that manager, a `Global` stand-in that
+still answers every class its own logger - owed wherever `Global` is mocked, since a
+static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM -
+and
 [`starsector/settings/`](src/testFixtures/java/kmlib/testfixtures/starsector/settings/)'s
 no-op `SettingsAPI` proxy, which a test installs into `Global` before touching `Misc`
 (whose static initialiser would otherwise NPE), and beside it a common-data folder that

@@ -85,6 +85,7 @@ No Starsector API on the signature.
 - `kmlib.starsector.geometry`
 - `kmlib.starsector.graphics`
 - `kmlib.starsector.intel`
+- `kmlib.starsector.listeners`
 - `kmlib.starsector.map`
 - `kmlib.starsector.markets`
 - `kmlib.starsector.markets.colonies`
@@ -143,6 +144,8 @@ against.
 - `kmlib.testfixtures.logging`
 - `kmlib.testfixtures.mods.consolecommands`
 - `kmlib.testfixtures.profiling`
+- `kmlib.testfixtures.starsector`
+- `kmlib.testfixtures.starsector.listeners`
 - `kmlib.testfixtures.starsector.markets`
 - `kmlib.testfixtures.starsector.markets.colonies`
 - `kmlib.testfixtures.starsector.memory`

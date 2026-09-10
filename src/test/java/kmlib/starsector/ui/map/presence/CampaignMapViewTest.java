@@ -8,11 +8,11 @@ import com.fs.starfarer.api.campaign.PersistentUIDataAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
 
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -52,7 +51,7 @@ class CampaignMapViewTest {
         globalMock.when(Global::getSector).thenReturn(sectorMock);
         // The class logs a one-shot warning on an unexpected UI-data type; give it a logger
         // so that static field init and that warn path do not dereference null under the mock.
-        globalMock.when(() -> Global.getLogger(any(Class.class))).thenReturn(mock(Logger.class));
+        StubbedGlobalLogger.answerLoggersOn(globalMock);
         when(sectorMock.getCampaignUI()).thenReturn(campaignUiMock);
         // The map tab is the active core tab by default; each test relaxes one condition.
         when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.MAP);

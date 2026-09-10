@@ -5,9 +5,9 @@ import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.SettingsAPI;
 
 import kmlib.testfixtures.mods.consolecommands.ConsoleOverlayPresenceFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -15,7 +15,6 @@ import org.mockito.MockedStatic;
 import static kmlib.testfixtures.starsector.settings.StubbedModIds.CONSOLE_COMMANDS;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -188,9 +187,7 @@ final class ConsoleCommandsOverlayTest {
     // The gate holds a static logger, resolved when its class is first loaded - which happens
     // inside one of these mocked scopes, so Global must be able to hand one back.
     private static void stubLogger(MockedStatic<Global> globalMock) {
-        globalMock
-            .when(() -> Global.getLogger(any(Class.class)))
-            .thenReturn(mock(Logger.class));
+        StubbedGlobalLogger.answerLoggersOn(globalMock);
     }
 
     // A console whose panel class or accessor is gone: what an install running a Console Commands

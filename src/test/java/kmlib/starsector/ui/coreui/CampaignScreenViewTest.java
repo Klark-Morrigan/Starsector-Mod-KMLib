@@ -6,11 +6,11 @@ import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.InteractionDialogAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
 
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -60,14 +59,8 @@ class CampaignScreenViewTest {
             .when(Global::getSector)
             .thenReturn(sectorMock);
 
-        // Answer the logger even though this class holds none. The mock is in force for every class
-        // the JVM happens to initialise while it is open, and a class holding Global.getLogger in a
-        // static field would take the mock's unstubbed null and keep it for the rest of the run -
-        // failing suites that never mention Global. Which classes those are is decided by load
-        // order rather than by this test, so the stub is owed regardless of what is under test.
-        globalMock
-            .when(() -> Global.getLogger(any(Class.class)))
-            .thenReturn(mock(Logger.class));
+        // Owed even though this class holds no logger: StubbedGlobalLogger says why.
+        StubbedGlobalLogger.answerLoggersOn(globalMock);
 
         when(sectorMock.getCampaignUI())
             .thenReturn(campaignUiMock);
