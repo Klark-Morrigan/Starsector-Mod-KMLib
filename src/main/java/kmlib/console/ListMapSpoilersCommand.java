@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import kmlib.console.output.CommandOutput;
 import kmlib.console.parsing.ParameterSpec;
 import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.entities.Entities;
 import kmlib.starsector.markets.LocationMarkets;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.systems.StarSystems;
@@ -146,8 +147,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     // $core_hiddenBase flag, both of which stay set for the market's life - it
     // stops flagging the moment the entity is discovered.
     private static String getVisibilitySuffix(MarketAPI market) {
-        var entity = market.getPrimaryEntity();
-        if (entity != null && entity.isDiscoverable()) {
+        if (!Entities.isDiscoveredByPlayer(market.getPrimaryEntity())) {
             return "  [undiscovered]";
         }
         return "";

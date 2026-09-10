@@ -348,18 +348,18 @@ No Starsector API on the signature.
   standstill is said in the signature rather than in a nought. Beside it the
   orbit arithmetic itself: the vanilla-paced rate for a radius, the random
   spread over any rate, the placement, the speed read back off an orbit, and the
-  orbit-focus chain every "how far out does this sit" question walks. Plus the
-  built structures - relays, buoys, arrays - as the plain facts each carries
-  about itself: who holds it, what kind of thing it is, whether it has been
-  found, and whether it is broken, disrupted or being sniffed; with the search
-  for the ones standing in a location, selected on the objective tag so a mod's
-  own kind joins by tagging it rather than by being listed here. Beside that the
-  custom entities no market hangs on - stations, habitats, platforms, down to
-  cargo pods - as the facts each carries: who owns it, which type it was built
-  from, and whether it has been found; with the search for the ones in a
-  location, where the market is the whole of the exclusion. Picking the man-made
-  places worth listing out of that set is the caller's judgement, and a line
-  drawn here would be one caller's written into a search shared by all of them.
+  orbit-focus chain every "how far out does this sit" question walks. Then the
+  things standing on an entity, each as the plain facts it carries and each with
+  the search for the ones in a location: the built structures - relays, buoys,
+  arrays, whether broken, disrupted or being sniffed - selected on the objective
+  tag so a mod's own kind joins by tagging it rather than by being listed here;
+  and the custom entities no market hangs on, from stations and habitats down to
+  cargo pods, where the market is the whole of the exclusion, because picking
+  the man-made places worth listing out of that set is the caller's judgement
+  and a line drawn here would be one caller's written into a search shared by
+  all of them. What both read through: the faction an entity names, and whether
+  the player has found it - the game stating the second backwards, as a flag an
+  entity loses once found, so the inversion is made in one place.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) - what a
   faction is in itself: player-faction lifecycle, faction colours, crests and
   flags. See [Player Faction Resolution](#player-faction-resolution). Where a

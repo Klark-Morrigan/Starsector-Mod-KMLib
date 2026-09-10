@@ -44,12 +44,7 @@ public record Structure(
      * @return the holding faction's id, or null where the entity names no faction
      */
     public String readHolderFactionId() {
-
-        var faction = entity.getFaction();
-
-        return faction == null
-            ? null
-            : faction.getId();
+        return Entities.readFactionId(entity);
     }
 
     /**
@@ -74,13 +69,10 @@ public record Structure(
      * Whether the player has found this structure - the entity's own fact, and the base every
      * rule about showing one starts from.
      *
-     * <p>There is no {@code isDiscovered}: an entity stops being discoverable once found, so the
-     * inclusion gate is the negation of that flag.
-     *
      * @return true when the entity has been found
      */
     public boolean isDiscoveredByPlayer() {
-        return !entity.isDiscoverable();
+        return Entities.isDiscoveredByPlayer(entity);
     }
 
     /**

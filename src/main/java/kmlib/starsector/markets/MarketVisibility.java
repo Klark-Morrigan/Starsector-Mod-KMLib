@@ -2,6 +2,8 @@ package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.starsector.entities.Entities;
+
 /**
  * What the player may be told about a market.
  *
@@ -111,9 +113,8 @@ public final class MarketVisibility {
     /**
      * Whether the player has physically found this market's entity.
      *
-     * <p>Discovery lives on the entity, not the market: an entity stops being
-     * {@code discoverable} once found. A market with no entity reads discovered - there is
-     * nothing left to find, so nothing to withhold.
+     * <p>Discovery lives on the entity, not the market, so the reading itself is the entity's
+     * own; this is where a market's primary entity is found and handed to it.
      *
      * <p>Hiddenness is a separate axis and is deliberately not read here. A concealed base
      * the player has raided is discovered and permanently hidden; a colony surfaced by a
@@ -129,10 +130,11 @@ public final class MarketVisibility {
      * @return true when the market's entity has been found, or it has no entity
      */
     public static boolean isDiscoveredByPlayer(MarketAPI market) {
+        // A null market is the one case that cannot defer: there is no entity to ask about, and
+        // an absent market is nothing to show rather than something with nothing left to find.
         if (market == null) {
             return false;
         }
-        var entity = market.getPrimaryEntity();
-        return entity == null || !entity.isDiscoverable();
+        return Entities.isDiscoveredByPlayer(market.getPrimaryEntity());
     }
 }
