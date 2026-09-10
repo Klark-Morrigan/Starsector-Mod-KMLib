@@ -39,7 +39,7 @@ ext.findCoreJars = { List<String> jarNamePatterns ->
 
 // Every jar in the core folder, as one collection - what a test runtime needs,
 // since a game class loaded under test can reach for any of them.
-ext.starsectorCoreJars = fileTree(dir: starsectorCoreDirectory, include: ['*.jar'])
+ext.starsectorCoreJars = findCoreJars(['*.jar'])
 
 // The KMLib checkout, holding the classes a consumer compiles against and the
 // shell scripts the release pipeline and the task scripts run. Located from this
@@ -49,6 +49,14 @@ ext.starsectorCoreJars = fileTree(dir: starsectorCoreDirectory, include: ['*.jar
 // because the task scripts sit two directories further down and must not each
 // count parentFile hops of their own.
 ext.kmlibCheckoutDirectory = buildscript.sourceFile.parentFile.parentFile
+
+// A jar inside a named mod folder, for the mods whose folder name is fixed
+// (lunalib, lw_lazylib, ...). Takes the folder because that is the only part a
+// caller knows that this file cannot derive; the <mods>/<folder>/jars/ layout
+// the launcher requires is spelled here rather than at each call site.
+ext.resolveModJarFile = { String modFolderName, String jarName ->
+    return file("${configuredStarsectorRoot}/mods/${modFolderName}/jars/${jarName}")
+}
 
 // Locate a dependency mod's jar without spelling out its folder name, which is
 // version-stamped for several mods (Nexerelin-0.12.0a, ...). Looks exactly one

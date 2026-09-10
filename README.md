@@ -94,6 +94,9 @@ Sources, one tree per audience:
   than inside it. See [Test fixtures](#test-fixtures).
 - [`src/test/java/`](src/test/java/) - JUnit 5 and Mockito suites, and the
   fixtures only they use.
+- [`src/buildScriptTest/java/`](src/buildScriptTest/java/) - TestKit suites over
+  the scripts in [`gradle/`](gradle/), run by `testBuildScripts`. See
+  [Build & Test](#build--test).
 - `jars/` - build output, gitignored; holds `KMLib.jar`.
 
 Build:
@@ -108,6 +111,11 @@ Build:
   a core jar by name or by pattern, an installed mod's jar, and this checkout.
   Applied by the conventions script, so a consumer gets it from the one
   `apply from`.
+- [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle)
+  - KMLib's own, not shared: binds the modelview reader to Fast Rendering's real
+  bridge or to the compile-only mirrors of it, and owns the stub source set and
+  the `-PvanillaOnly` / `-PrequireFastRendering` legs. See
+  [Rendering environment](#rendering-environment).
 - [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle)
   - warns when a mod compiles against one KMLib and asks players for another.
 - [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle)
@@ -755,10 +763,16 @@ toolchain is intentionally not auto-provisioned so the project compiles
 on whichever JDK is already installed.
 
 ```
-./gradlew test       # JUnit 5 unit tests
-./gradlew coverage   # tests + JaCoCo HTML/XML report in build/reports/
-./gradlew jar        # writes jars/KMLib.jar and kmlib.version
+./gradlew test              # JUnit 5 unit tests
+./gradlew testBuildScripts  # the gradle/ scripts, against throwaway builds
+./gradlew coverage          # tests + JaCoCo HTML/XML report in build/reports/
+./gradlew jar               # writes jars/KMLib.jar and kmlib.version
 ```
+
+`testBuildScripts` runs [`src/buildScriptTest/java`](src/buildScriptTest/java/)
+through Gradle TestKit and is wired into `check`. Its own source set rather than
+a package in the main suite: TestKit brings Gradle's runtime with it, and on the
+same classpath that runtime's logging backend answers instead of the game's.
 
 The version file comes from `writeVersionFile`, which `jar` depends on. It fills
 `kmlib.version.template` into `kmlib.version` at the repo root by running the same

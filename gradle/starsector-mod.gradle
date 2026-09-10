@@ -5,10 +5,12 @@
 // mod_info.json as the version source, and the jar output location the
 // launcher expects.
 //
-// Conventions only: every line here is something a KM mod is held to, not
-// something it may call. The lookups a build uses to find an install, a core
-// jar or a mod jar live in starsector-install-locator.gradle, applied below so
-// a consumer still gets both from this one `apply from`.
+// Conventions only: every line here is something a KM mod is held to. Two of
+// them are published as helpers (dependOnGameJars / dependOnModJars) because a
+// rule about which configurations a jar lands on is better applied than
+// restated. The lookups a build uses to find an install, a core jar or a mod
+// jar live in starsector-install-locator.gradle, applied below so a consumer
+// still gets both from this one `apply from`.
 //
 // Owned by KMLib (not Common-Java) because all of this is Starsector
 // knowledge; it is build-time only and is not part of the shipped KMLib.jar.
@@ -58,44 +60,57 @@ if (!modInfo.version) {
 
 version = modInfo.version
 
-// The jars every KM mod compiles against, captured as locals so the closures
-// below close over the files rather than re-reading a dynamic project property.
+// Captured as a local so the compile guard below closes over the file rather
+// than re-reading a dynamic project property while a task runs.
 def apiJarFile = project.ext.apiJarFile
 
-// lwjgl_util.jar carries Vector2f / Vector3f, which appear in Misc's
-// getDistance overloads. javac needs the class file on the classpath to
-// resolve overload candidates, so it is compileOnly (the game classloader
-// provides it at runtime, like the API jar). Harmless for mods that do not
-// touch LWJGL types.
-def lwjglUtilJarFile = resolveCoreJarFile('lwjgl_util.jar')
+// The game jars every KM mod is built against, whatever it does:
+//
+// - starfarer.api.jar is the published API itself.
+// - lwjgl_util.jar carries Vector2f / Vector3f, which appear in Misc's
+//   getDistance overloads; javac needs the class file to resolve overload
+//   candidates even in a mod that names no LWJGL type itself.
+// - lwjgl.jar carries org.lwjgl.opengl.GL11, the raw OpenGL surface a mod
+//   drawing on the campaign or combat view goes through.
+// - log4j backs Global.getLogger(...), the logging channel every mod uses.
+//
+// One collection rather than four declarations per configuration: a mod is held
+// to all of them together, so there is no case for adding one and not the rest.
+def sharedGameJars = files(
+    apiJarFile,
+    resolveCoreJarFile('lwjgl_util.jar'),
+    resolveCoreJarFile('lwjgl.jar'),
+    resolveCoreJarFile('log4j-1.2.9.jar'))
 
-// lwjgl.jar carries org.lwjgl.opengl.GL11, the raw OpenGL surface mods use to
-// draw on the campaign/combat views. compileOnly like the rest: the game
-// classloader always provides LWJGL at runtime. Shared here (not per-mod)
-// since more than one KM mod renders raw GL.
-def lwjglJarFile = resolveCoreJarFile('lwjgl.jar')
+// Where a jar lands, by what supplies it at runtime. Named so a mod adding a
+// dependency picks one of two documented answers instead of copying three lines
+// and forgetting the fourth - and so the rule itself lives in one place.
+//
+// A jar from the game's own install is on both compile classpaths and off the
+// test runtime, which already reaches every core jar through starsectorCoreJars
+// below; adding it again would only put a second copy of the same file there.
+ext.dependOnGameJars = { Object jars ->
+    ['compileOnly', 'testCompileOnly'].each { configurationName ->
+        dependencies.add(configurationName, jars)
+    }
+}
 
-// log4j backs Global.getLogger(...), the logging channel every Starsector mod
-// uses. compileOnly for the same reason as the API jar: the game classloader
-// provides it at runtime. Shared here (not per-mod) since all KM mods log.
-def log4jJarFile = resolveCoreJarFile('log4j-1.2.9.jar')
-def starsectorCoreJars = project.ext.starsectorCoreJars
+// A mod's jar lives outside the game's install and nothing else puts it on the
+// test runtime, so it is added there as well as to both compile classpaths -
+// which is what lets a test load a class naming one of that mod's types.
+ext.dependOnModJars = { Object jars ->
+    ['compileOnly', 'testCompileOnly', 'testRuntimeOnly'].each { configurationName ->
+        dependencies.add(configurationName, jars)
+    }
+}
+
+dependOnGameJars(sharedGameJars)
 
 dependencies {
-    // Starsector ships the API in starsector-core. compileOnly because the
-    // game classloader already provides it at runtime - and so do mods that
-    // depend on KMLib - so the jar stays out of the produced artifact.
-    compileOnly files(apiJarFile)
-    compileOnly files(lwjglUtilJarFile)
-    compileOnly files(lwjglJarFile)
-    compileOnly files(log4jJarFile)
-
-    testCompileOnly files(apiJarFile)
-    testCompileOnly files(lwjglUtilJarFile)
-    testCompileOnly files(lwjglJarFile)
-    testCompileOnly files(log4jJarFile)
+    // The API jar alone is raised to the test runtime: a test loading a game
+    // class needs it before the core-jar set below is even consulted.
     testRuntimeOnly files(apiJarFile)
-    testRuntimeOnly starsectorCoreJars
+    testRuntimeOnly project.ext.starsectorCoreJars
 }
 
 // A mod publishing test fixtures builds them against the same game jars its own
@@ -104,10 +119,7 @@ dependencies {
 // share declares no fixtures source set and those configurations do not exist.
 plugins.withId('java-test-fixtures') {
     dependencies {
-        testFixturesCompileOnly files(apiJarFile)
-        testFixturesCompileOnly files(lwjglUtilJarFile)
-        testFixturesCompileOnly files(lwjglJarFile)
-        testFixturesCompileOnly files(log4jJarFile)
+        testFixturesCompileOnly sharedGameJars
     }
 }
 
@@ -133,8 +145,7 @@ jar {
 // manifest-pair report a consumer gets warned by, and the local fill of its
 // VersionChecker template (registered only for a mod that commits one). Kept out
 // of this file so it stays what its header claims - classpath, version source and
-// jar location - and resolved relative to THIS script's own gradle/ dir, the same
-// sibling-checkout convention Common-Java's lint tasks use.
+// jar location.
 def starsectorTasksDir = new File(buildscript.sourceFile.parentFile, 'tasks')
 apply from: new File(starsectorTasksDir, 'checks/report-kmlib-version-mismatch.gradle')
 apply from: new File(starsectorTasksDir, 'release/write-version-file.gradle')

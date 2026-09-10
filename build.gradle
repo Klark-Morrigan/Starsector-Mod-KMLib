@@ -20,6 +20,38 @@ group = 'kmlib'
 ext.formatterExcludedSourceSets = ['bridgeStubs']
 apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
 
+// The scripts under gradle/ are Groovy evaluated against a project, so what they decide can only be
+// checked by running a build. TestKit does that, and it brings Gradle's own runtime with it - which
+// is why these tests get a source set rather than a package in the main suite: on the same classpath
+// its logging backend answers instead of the game's, and KMLib's log-level tests read the wrong
+// level. Separate task, wired into `check` so it is not a suite someone has to remember.
+sourceSets {
+    buildScriptTest {
+    }
+}
+
+dependencies {
+    buildScriptTestImplementation platform(testStackCoordinates.junitBom)
+    buildScriptTestImplementation testStackCoordinates.junitJupiter
+    buildScriptTestImplementation testStackCoordinates.assertj
+    buildScriptTestImplementation gradleTestKit()
+    buildScriptTestRuntimeOnly testStackCoordinates.junitPlatformLauncher
+}
+
+def testBuildScripts = tasks.register('testBuildScripts', Test) {
+    group = 'verification'
+    description = 'Runs the build scripts under gradle/ against throwaway Gradle builds.'
+    testClassesDirs = sourceSets.buildScriptTest.output.classesDirs
+    classpath = sourceSets.buildScriptTest.runtimeClasspath
+    useJUnitPlatform()
+}
+
+reportTestOutcomesOf(testBuildScripts.get())
+
+tasks.named('check') {
+    dependsOn testBuildScripts
+}
+
 enforcePackageVocabulary {
     // To curb usage of non-fitting words in relation to fills.
     forbidWords under: 'kmlib', words: ['ground']
@@ -28,6 +60,10 @@ enforcePackageVocabulary {
 enforceNoTestVocabulary {
 
     exemptSourceSet name: 'testFixtures'
+
+    // The suites that drive Gradle itself: a test source set by purpose, but not one of the names
+    // the gate knows on sight.
+    exemptSourceSet name: 'buildScriptTest'
 
     // The hand-written bridge stubs mirror a third party's shape rather than
     // ours, on the same grounds that exempt them from the formatter and from
@@ -41,65 +77,48 @@ enforceNoTestVocabulary {
     // 'fake', 'testfixtures' and 'test fixtures' are the fixture types' own
     // names and the paths that link to them: the seam table lists each seam
     // beside the Fake that stands in for it, so the catalogue cannot be written
-    // without saying them. The last is the source set they now live in, which a
-    // relative link out of this tree has to cross.
-    allowWord word: 'fake',
-            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
-    allowWord word: 'testfixtures',
-            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
-    allowWord word: 'test fixtures',
-            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
-    allowWord word: 'stubbing',
-            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
-    allowWord word: 'mocking',
-            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
-    allowWord word: 'tests can',
-            inFile: 'src/main/java/kmlib/starsector/ui/README.md'
+    // without saying them. 'testfixtures' is also the source set they live in,
+    // which a relative link out of this tree has to cross.
+    allowWords words: ['fake', 'testfixtures', 'test fixtures', 'stubbing', 'mocking', 'tests can'],
+        inFile: 'src/main/java/kmlib/starsector/ui/README.md'
 }
 
 enforcePackageLayering {
 
-    forbidImport under: 'kmlib.profiling.budget', of: 'kmlib.profiling.recording'
-    forbidImport under: 'kmlib.profiling.budget', of: 'kmlib.profiling.report'
+    forbidImport under: 'kmlib.profiling.budget',
+                    of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
 
     forbidImport under: 'kmlib.profiling.recording', of: 'kmlib.profiling.report'
 
-    forbidImport under: 'kmlib.profiling.report', of: 'kmlib.profiling.budget'
-    forbidImport under: 'kmlib.profiling.report', of: 'kmlib.profiling.recording'
+    forbidImport under: 'kmlib.profiling.report',
+                    of: ['kmlib.profiling.budget', 'kmlib.profiling.recording']
 
-    forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.budget'
-    forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.recording'
-    forbidImport under: 'kmlib.profiling.snapshot', of: 'kmlib.profiling.report'
+    forbidImport under: 'kmlib.profiling.snapshot',
+                    of: ['kmlib.profiling.budget', 'kmlib.profiling.recording', 'kmlib.profiling.report']
 
     forbidImport under: 'kmlib.starsector', of: 'kmlib.mods'
 
     forbidImport under: 'kmlib.starsector.markets', of: 'kmlib.starsector.systems'
 
     forbidImport under: 'kmlib.starsector.markets.colonies',
-            of: 'kmlib.starsector.markets.colonisation'
-    forbidImport under: 'kmlib.starsector.markets.colonies',
-            of: 'kmlib.starsector.markets.ownership'
+                    of: ['kmlib.starsector.markets.colonisation', 'kmlib.starsector.markets.ownership']
 
     forbidImport under: 'kmlib.starsector.markets.colonisation',
-            of: 'kmlib.starsector.markets.colonies'
+                    of: 'kmlib.starsector.markets.colonies'
 
     forbidImport under: 'kmlib.starsector.markets.ownership',
-            of: 'kmlib.starsector.markets.colonies'
-    forbidImport under: 'kmlib.starsector.markets.ownership',
-            of: 'kmlib.starsector.markets.colonisation'
+                    of: ['kmlib.starsector.markets.colonies', 'kmlib.starsector.markets.colonisation']
 
-    forbidImport exactly: 'kmlib.profiling', of: 'kmlib.profiling.recording'
-    forbidImport exactly: 'kmlib.profiling', of: 'kmlib.profiling.report'
+    forbidImport exactly: 'kmlib.profiling',
+                    of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
 
     forbidImport exactly: 'kmlib.starsector.factions',
-            of: 'kmlib.starsector.factions.relation'
+                    of: 'kmlib.starsector.factions.relation'
 
     forbidImport exactly: 'kmlib.starsector.markets',
-            of: 'kmlib.starsector.markets.colonies'
-    forbidImport exactly: 'kmlib.starsector.markets',
-            of: 'kmlib.starsector.markets.colonisation'
-    forbidImport exactly: 'kmlib.starsector.markets',
-            of: 'kmlib.starsector.markets.ownership'
+                    of: ['kmlib.starsector.markets.colonies',
+                        'kmlib.starsector.markets.colonisation',
+                        'kmlib.starsector.markets.ownership']
 }
 
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
@@ -107,7 +126,7 @@ enforcePackageLayering {
 // kmlib.settings unconditionally; the game classloader provides the jar at
 // runtime. testRuntimeOnly so classes implementing LunaLib's listener interface
 // can be loaded and verified under test.
-def lunaLibJarFile = file("${project.ext.starsectorRoot}/mods/lunalib/jars/LunaLib.jar")
+def lunaLibJarFile = resolveModJarFile('lunalib', 'LunaLib.jar')
 
 // Soft dependency: compileOnly, and KMLib declares no Console Commands mod
 // dependency. Command classes load only when Console Commands reads KMLib's
@@ -122,7 +141,7 @@ def consoleCommandsJars = findModJars('lw_Console.jar')
 // no guard can prevent it - LabelRenderer names LazyFont.TextAnchor in its own
 // signature, so the class resolves before any guard runs. testRuntimeOnly so the
 // class can load under test.
-def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/LazyLib.jar")
+def lazyLibJarFile = resolveModJarFile('lw_lazylib', 'LazyLib.jar')
 
 // LazyLib is written in Kotlin, so its types carry Kotlin-generated bytecode: an enum's static
 // initialiser calls kotlin.enums.EnumEntriesKt, which lives in the Kotlin runtime LazyLib ships
@@ -137,8 +156,7 @@ def lazyLibJarFile = file("${project.ext.starsectorRoot}/mods/lw_lazylib/jars/La
 // DeprecationLevel.HIDDEN" - noise that reads like a real problem and is not one.
 //
 // compileOnly like the other soft dependencies, so it stays out of the produced artifact.
-def lazyLibKotlinRuntimeJarFile = file(
-    "${project.ext.starsectorRoot}/mods/lw_lazylib/jars/internal/Kotlin-Runtime.jar")
+def lazyLibKotlinRuntimeJarFile = resolveModJarFile('lw_lazylib', 'internal/Kotlin-Runtime.jar')
 
 // Random Assortment of Things backs RandomAssortmentOfThingsMatcher (and, through
 // it, StarSystems' reachability read): compiling against RAT's Abyssal Fracture
@@ -189,182 +207,11 @@ def jsonJarFile = resolveCoreJarFile('json.jar')
 def starfarerObfJarFile = resolveCoreJarFile('starfarer_obf.jar')
 def fsCommonObfJarFile = resolveCoreJarFile('fs.common_obf.jar')
 
-// Fast Rendering's bridge backs FastRenderingModelviewMatrixReader, which reads the modelview
-// from the renderer's own TransformManager because GL does not hold it under that mod.
-//
-// It is bound differently from the soft dependencies above, because unlike LunaLib or RAT it is
-// not a mod folder that a build machine can simply install: fr.jar exists only on an install that
-// has been patched in place, so requiring it would make KMLib compilable only on a patched
-// machine - including CI, which would then need a patched game to compile a class it never runs.
-//
-// So the source is the constant and the classpath is not: a patched install compiles the adapter
-// against genir's actual bytes, and a stock one falls back to compile-only mirrors of the three
-// members it reads (src/bridgestubs/java). Development happens on patched installs, so the strict
-// binding is the everyday one and stub drift surfaces as an ordinary compile error rather than as
-// a promise nobody checks; the stubs only keep an unpatched machine's build green.
-//
-// compileOnly either way, like the rest: the game classloader provides fr.jar at runtime on the
-// installs that have it, and the stubs must never reach the jar, where they would shadow the real
-// classes. Which binding was used is logged at build time, since a build that quietly varies by
-// machine is worth being able to see.
-//
-// Two properties make each leg buildable on demand rather than only on the machine that happens to
-// select it, which is what lets CI run both:
-//
-// -PvanillaOnly=true builds as an unpatched install would - the vanilla binding, which in practice
-// means compiling against the bridge stubs. Named for the install it stands in for rather than for
-// the stubs that do the standing: a caller is choosing which player's game to prove buildable, and
-// the stubs are how that is arranged. Without it the vanilla leg is only ever exercised where
-// nobody is watching, which is the failure the stubs are meant to prevent rather than cause.
-//
-// -PrequireFastRendering=true refuses to fall back, failing instead. A build that means to check
-// the adapter against genir's real bytes has to be able to insist on them: silently compiling stubs
-// would report success for a check that never ran, which is worse than not running it, since the
-// green tells a reader the signatures were verified.
-def fastRenderingJarFile = resolveCoreJarFile('fr.jar')
-def isVanillaForced = findProperty('vanillaOnly') == 'true'
-def isFastRenderingRequired = findProperty('requireFastRendering') == 'true'
-def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isVanillaForced
-
-// Which Fast Rendering the adapter is type-checked against, read out of the jar itself:
-// fr.jar carries com.genir.renderer.Version.getVersion(). The jar is the only source that
-// exists everywhere the build does - a patched install is patched IN PLACE, so there is no
-// mod folder to read a mod_info.json from, and CI has only the transported core jars.
-//
-// Loaded under a bootstrap-parented loader so the class cannot resolve against the build's
-// own classpath, and closed immediately; the method returns a constant and touches nothing
-// else, so nothing stays loaded. Any failure - an older jar without the class, a renamed
-// method - reports 'unknown version'. Which Fast Rendering was bound is a thing to report,
-// never a reason to fail a build that would otherwise compile.
-def readFastRenderingVersion = { File jar ->
-    if (!jar.exists()) {
-        return null
-    }
-    try {
-        def loader = new URLClassLoader([jar.toURI().toURL()] as URL[], (ClassLoader) null)
-        try {
-            return loader.loadClass('com.genir.renderer.Version')
-                .getMethod('getVersion')
-                .invoke(null)
-        } finally {
-            loader.close()
-        }
-    } catch (Exception ignored) {
-        return null
-    }
-}
-def fastRenderingVersion = null
-if (isFastRenderingInstalled) {
-    fastRenderingVersion = readFastRenderingVersion(fastRenderingJarFile) ?: 'unknown version'
-}
-
-if (isFastRenderingRequired && isVanillaForced) {
-    throw new GradleException('-PrequireFastRendering and -PvanillaOnly select opposite '
-        + 'bindings; pass one or neither.')
-}
-if (isFastRenderingRequired && !isFastRenderingInstalled) {
-    throw new GradleException(
-        "-PrequireFastRendering=true, but no Fast Rendering bridge at ${fastRenderingJarFile}. "
-            + 'This build machine needs a Fast-Rendering-patched Starsector install to '
-            + "verify KMLib's bridge adapter against the real jar.")
-}
-
-sourceSets {
-    bridgeStubs {
-        // Declared explicitly to match the path used in the repo. If undeclared,
-        // Gradle derives the same path in camel case, which causes case-sensitive
-        // operating systems to look in the wrong place.
-        java.srcDirs = ['src/bridgestubs/java']
-    }
-}
-
-// Read here, at configuration time, so the guard below touches no project state while the task
-// runs, and so the failure can quote the directories Gradle ACTUALLY read rather than the ones
-// the lifecycle messages below name.
-def bridgeStubsSrcDirs = sourceSets.bridgeStubs.java.srcDirs.join(', ')
-def hasBridgeStubSources = !sourceSets.bridgeStubs.java.files.isEmpty()
-
-// Reported at configuration time so it prints on EVERY invocation. It used to be logged from
-// compileJava's doFirst, which is silent whenever that task is up-to-date or served from the
-// build cache - so the build most likely to be read after the fact, an incremental one, was
-// the one that said nothing.
-//
-// Only when a jar is bound. The vanilla binding has no Fast Rendering to report, and naming
-// the version sitting unused on the machine under a build that asked for vanilla invites the
-// misreading it would exist to prevent. The generic toolchain line (Common-Java's
-// java-conventions.gradle) still prints for both, since Gradle and the JVM are the same
-// question either way.
-if (isFastRenderingInstalled) {
-    logger.lifecycle("Fast Rendering: ${fastRenderingVersion} (bound from ${fastRenderingJarFile})")
-}
-
-tasks.named('compileJava') {
-    doFirst {
-
-        // Nothing to check on the Fast Rendering binding - the jar either exists or the
-        // build already failed above.
-        if (isFastRenderingInstalled) {
-            return
-        }
-
-        // Both remaining bindings compile against the stubs, so an empty stub source set is not
-        // a degraded build - it is a broken one. sourceSets.bridgeStubs.output lands on
-        // compileJava's classpath as an empty directory, and every com.genir.renderer.bridge.*
-        // import then fails naming the file that imports the stubs rather than the stubs that
-        // went missing. Guarded for the same reason -PrequireFastRendering refuses to fall back:
-        // a binding that is silently absent has to say so itself, or the reader debugs the
-        // wrong file.
-        if (!hasBridgeStubSources) {
-
-            // The parentheses around the else-branch are load-bearing. Without them the
-            // ternary is a complete statement at the end of its own line, so the next
-            // line's leading '+' starts a NEW statement - unary plus on a String, which
-            // dies as "No signature of method: java.lang.String.positive()". Every other
-            // leading-'+' continuation in this file sits inside a method call's
-            // parentheses, where a newline cannot end the expression; this one did not.
-            def selected = isVanillaForced
-                ? '-PvanillaOnly=true selected the vanilla binding'
-                : ("no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
-                    + 'back to the stub binding')
-
-            throw new GradleException("${selected}, but the bridgeStubs source set has no "
-                + "sources. Gradle read ${bridgeStubsSrcDirs}. Note that the conventional "
-                + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
-                + 'which is the same path as src/bridgestubs on a case-insensitive '
-                + 'filesystem and a different one on Linux.')
-        }
-    }
-}
-
-// The stubs mirror a third party's signatures, so they are held to genir's shape rather than to
-// KM house style - the names are not ours to choose.
-tasks.named('checkstyleBridgeStubs') {
-    enabled = false
-}
-
-// Nothing KMLib compiles against ships inside its jar - the game classloader supplies every one of
-// them at runtime - so each lands on the same few configurations, and which of the two shapes a jar
-// takes is the only thing about that a reader has to know. Named rather than spelt out per jar, so
-// adding a dependency is a decision between two documented answers instead of three lines to copy
-// and one to forget.
-//
-// A mod's jar lives outside the game's own install and nothing else puts it on the test runtime, so
-// it is added there as well as to both compile classpaths - which is what lets a test load a class
-// that names one of that mod's types.
-def dependOnModJars = { Object jars ->
-    ['compileOnly', 'testCompileOnly', 'testRuntimeOnly'].each { configurationName ->
-        dependencies.add(configurationName, jars)
-    }
-}
-
-// A jar from the game's own install (or the stubs standing in for one) reaches the test runtime
-// already, through the starsectorCoreJars set the shared conventions put there, so only the two
-// compile classpaths are added and the runtime is left with a single copy of it.
-def dependOnGameJars = { Object jars ->
-    ['compileOnly', 'testCompileOnly'].each { configurationName ->
-        dependencies.add(configurationName, jars)
-    }
-}
+// The one classpath entry that varies by machine: KMLib's Fast Rendering adapter compiles against
+// that mod's real bridge on a patched install and against compile-only mirrors of it elsewhere. The
+// whole decision - the stub source set it needs, the version it reports, and the properties that
+// force either leg - lives in the applied script, which is KMLib's own rather than shared.
+apply from: "${rootDir}/gradle/select-fast-rendering-binding.gradle"
 
 dependencies {
     // The suite implements a launcher SPI (see kmlib.testbootstrap), which has to be compiled
@@ -374,8 +221,6 @@ dependencies {
     // testImplementation supplies it, so the family still bumps JUnit in one place.
     testImplementation 'org.junit.platform:junit-platform-launcher'
 
-    // The stubs name Matrix4f in the one signature they mirror, so they need the jar it lives in.
-    bridgeStubsCompileOnly files(resolveCoreJarFile('lwjgl_util.jar'))
 
     // The common-data fake poses a port whose signatures are spelled in org.json, so the fixtures
     // need the jar too. Not covered by dependOnGameJars below, which adds the two compile
@@ -395,14 +240,6 @@ dependOnModJars(files(lazyLibKotlinRuntimeJarFile))
 dependOnGameJars(files(jsonJarFile))
 dependOnGameJars(files(starfarerObfJarFile))
 dependOnGameJars(files(fsCommonObfJarFile))
-
-// Which Fast Rendering binding this build took is settled above; here it is only a matter of which
-// of the two the compiler is pointed at. The stubs take the game-jar shape for the same reason the
-// real jar does - they stand in for a jar the game provides, and must never reach the test runtime,
-// where they would shadow the real classes on a patched install.
-dependOnGameJars(isFastRenderingInstalled
-    ? files(fastRenderingJarFile)
-    : sourceSets.bridgeStubs.output)
 
 // Deliberately no version-file wiring here. Filling kmlib.version.template locally
 // is the shared conventions script's job (gradle/starsector-mod.gradle), which
