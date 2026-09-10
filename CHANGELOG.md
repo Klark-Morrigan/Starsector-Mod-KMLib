@@ -68,13 +68,13 @@ No Starsector API on the signature.
 
 **Starsector-facing wrappers and seams**
 
-- `kmlib.console`
-- `kmlib.console.input`
-- `kmlib.console.output`
-- `kmlib.console.parsing`
-- `kmlib.console.targets`
-- `kmlib.console.validation`
-- `kmlib.mods.consolecommands`
+- `kmlib.mods.console`
+- `kmlib.mods.console.commands`
+- `kmlib.mods.console.commands.input`
+- `kmlib.mods.console.commands.output`
+- `kmlib.mods.console.commands.parsing`
+- `kmlib.mods.console.commands.targets`
+- `kmlib.mods.console.commands.validation`
 - `kmlib.mods.nexerelin`
 - `kmlib.mods.rat`
 - `kmlib.starsector`
@@ -140,9 +140,9 @@ Shipped as a second artifact beside the jar, for a consumer's own suites. Fakes
 stand in for a seam the library inverted; fixtures build a world a case is posed
 against.
 
-- `kmlib.testfixtures.console.output`
 - `kmlib.testfixtures.logging`
-- `kmlib.testfixtures.mods.consolecommands`
+- `kmlib.testfixtures.mods.console`
+- `kmlib.testfixtures.mods.console.commands.output`
 - `kmlib.testfixtures.profiling`
 - `kmlib.testfixtures.starsector`
 - `kmlib.testfixtures.starsector.listeners`

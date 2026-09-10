@@ -292,37 +292,39 @@ No Starsector API on the signature.
   optional-mod adapters, and states which GL renderer every KM draw call
   reaches. Each step is guarded on its own, so a failure costs that step
   rather than every mod depending on the library.
-- [`console/`](src/main/java/kmlib/console/) - the Console Commands base class
-  and KMLib's own commands, listed under
-  [Console commands](#console-commands).
-- [`console/input/`](src/main/java/kmlib/console/input/) - one command
-  invocation, its context, argument text and output channel, with the
-  requirements a command states before parsing.
-- [`console/output/`](src/main/java/kmlib/console/output/) - where a command's
-  messages go, behind an interface so a test can take them: the live overlay,
-  or the game log for what a player was asked to send on rather than read now.
-- [`console/parsing/`](src/main/java/kmlib/console/parsing/) - declarative
-  parameter specs with required and defaulted parameters, typed value parsers,
-  and a parsed result reporting validity and which parameters were supplied.
-- [`console/targets/`](src/main/java/kmlib/console/targets/) - what a command
-  was pointed at, found or refused with a reason under one sealed answer:
-  which place - named by id anywhere in the sector, or the nearest one meeting
-  what the command needs of it - and which faction it acts for, named by id or
-  the player's own.
-- [`console/validation/`](src/main/java/kmlib/console/validation/) - the
-  context checks a command runs before it does anything, with the
-  player-facing feedback they print.
 - [`mods/`](src/main/java/kmlib/mods/) - every adapter to a third-party mod,
   one package per mod and nothing else here. What belongs is what stands
   behind a presence gate, so a mod this library is compiled against but cannot
   run without - LunaLib under `settings/`, Fast Rendering under `opengl/` - is
   not one of these. How one is written, and which way the arrows run, is in
   [extensions/README.md](src/main/java/kmlib/extensions/README.md).
-- [`mods/consolecommands/`](src/main/java/kmlib/mods/consolecommands/) -
+- [`mods/console/`](src/main/java/kmlib/mods/console/) -
   Console Commands as something to stand down for: whether the mod is enabled,
   and whether a console is taking text entry this frame - the latter as a role
   any caller holds, answered by one shared fail-open reader that settles the
   mod state once and warns once naming whichever hop broke.
+- [`mods/console/commands/`](src/main/java/kmlib/mods/console/commands/) -
+  the Console Commands base class and KMLib's own commands, listed under
+  [Console commands](#console-commands).
+- [`mods/console/commands/input/`](src/main/java/kmlib/mods/console/commands/input/) -
+  one command invocation, its context, argument text and output channel, with
+  the requirements a command states before parsing.
+- [`mods/console/commands/output/`](src/main/java/kmlib/mods/console/commands/output/) -
+  where a command's messages go, behind an interface so a test can take them:
+  the live overlay, or the game log for what a player was asked to send on
+  rather than read now.
+- [`mods/console/commands/parsing/`](src/main/java/kmlib/mods/console/commands/parsing/) -
+  declarative parameter specs with required and defaulted parameters, typed
+  value parsers, and a parsed result reporting validity and which parameters
+  were supplied.
+- [`mods/console/commands/targets/`](src/main/java/kmlib/mods/console/commands/targets/) -
+  what a command was pointed at, found or refused with a reason under one
+  sealed answer: which place - named by id anywhere in the sector, or the
+  nearest one meeting what the command needs of it - and which faction it acts
+  for, named by id or the player's own.
+- [`mods/console/commands/validation/`](src/main/java/kmlib/mods/console/commands/validation/) -
+  the context checks a command runs before it does anything, with the
+  player-facing feedback they print.
 - [`mods/nexerelin/`](src/main/java/kmlib/mods/nexerelin/) - Nexerelin:
   founding a colony through that mod's own colonisation, handing an existing
   colony over through that mod's own transfer, stated as a hand-over rather
