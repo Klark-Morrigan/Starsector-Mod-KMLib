@@ -88,7 +88,35 @@ enforceNoTestVocabulary {
         inFile: 'src/main/java/kmlib/starsector/ui/README.md'
 }
 
+// Every package tree beside kmlib.mods, closed below against the optional mods'
+// own types. Stated as an enumeration because the gate has no exemption clause:
+// a single 'under: kmlib' edge would shut kmlib.mods off from the very mods its
+// adapters exist to adapt. A new top-level tree has to be added here to be
+// covered - the list is the rule.
+def treesClosedToOptionalMods = ['kmlib.animation', 'kmlib.collections',
+    'kmlib.colour', 'kmlib.extensions', 'kmlib.gradlescripts', 'kmlib.input',
+    'kmlib.logging', 'kmlib.math', 'kmlib.opengl', 'kmlib.profiling',
+    'kmlib.settings', 'kmlib.starsector', 'kmlib.testbootstrap',
+    'kmlib.testfixtures', 'kmlib.text', 'kmlib.time']
+
+// The mods a consumer may run without: named only by the adapter that stands
+// behind a presence gate for each. LazyLib, LunaLib, MagicLib and Fast Rendering
+// are deliberately absent - the library is compiled against them and cannot run
+// without them, so they belong with the code that uses them rather than under
+// kmlib.mods, and closing a tree to them would be a rule against the build.
+def optionalModPackages = ['assortment_of_things', 'exerelin', 'org.lazywizard.console']
+
 enforcePackageLayering {
+
+    treesClosedToOptionalMods.each { closedTree ->
+        forbidImport under: closedTree, of: optionalModPackages
+    }
+
+    // The mod plugin sits in the root package itself and registers the adapters,
+    // so it names kmlib.mods; naming a mod's own types there would defeat the
+    // deferral those adapters are built around. 'exactly' rather than 'under',
+    // which would re-close every tree above.
+    forbidImport exactly: 'kmlib', of: optionalModPackages
 
     forbidImport under: 'kmlib.profiling.budget',
                     of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
