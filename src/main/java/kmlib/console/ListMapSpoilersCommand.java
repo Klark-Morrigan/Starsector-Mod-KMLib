@@ -102,7 +102,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
                     .append("  (")
                     .append(market.getFaction().getDisplayName())
                     .append(')')
-                    .append(getVisibilitySuffix(market));
+                    .append(readVisibilitySuffix(market));
             }
         }
         // No shared reader stands between this listing and the system list, so the traversal
@@ -117,7 +117,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
 
     private static boolean hasFlaggedMarkets(List<MarketAPI> markets) {
         for (var market : markets) {
-            if (!getVisibilitySuffix(market).isEmpty()) {
+            if (!readVisibilitySuffix(market).isEmpty()) {
                 return true;
             }
         }
@@ -146,7 +146,7 @@ public final class ListMapSpoilersCommand extends KmlibBaseConsoleCommand {
     // discoverable, so this covers them too, and - unlike isHidden() or the
     // $core_hiddenBase flag, both of which stay set for the market's life - it
     // stops flagging the moment the entity is discovered.
-    private static String getVisibilitySuffix(MarketAPI market) {
+    private static String readVisibilitySuffix(MarketAPI market) {
         if (!Entities.isDiscoveredByPlayer(market.getPrimaryEntity())) {
             return "  [undiscovered]";
         }
