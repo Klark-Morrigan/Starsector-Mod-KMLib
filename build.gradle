@@ -30,12 +30,17 @@ sourceSets {
     }
 }
 
+// The same stack the main suite runs on, taken by extending its configuration rather than by naming
+// versions again: a second pinning is a second thing to bump, and the two suites drifting onto
+// different assertion libraries is not a difference anyone would choose.
+//
+// Only the compile-side configuration is extended. The test RUNTIME carries the game's own jars, and
+// putting those behind TestKit is how the wrong logging backend answers - the reason these tests sit
+// apart in the first place.
+configurations.buildScriptTestImplementation.extendsFrom(configurations.testImplementation)
+
 dependencies {
-    buildScriptTestImplementation platform(testStackCoordinates.junitBom)
-    buildScriptTestImplementation testStackCoordinates.junitJupiter
-    buildScriptTestImplementation testStackCoordinates.assertj
     buildScriptTestImplementation gradleTestKit()
-    buildScriptTestRuntimeOnly testStackCoordinates.junitPlatformLauncher
 }
 
 def testBuildScripts = tasks.register('testBuildScripts', Test) {
