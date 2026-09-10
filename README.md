@@ -105,8 +105,9 @@ Build:
   source, and the jar output location the launcher expects.
 - [`gradle/starsector-install-locator.gradle`](gradle/starsector-install-locator.gradle)
   - the lookups those conventions and a mod's own build call: the install root,
-  a named core jar, an installed mod's jar, and this checkout. Applied by the
-  conventions script, so a consumer gets it from the one `apply from`.
+  a core jar by name or by pattern, an installed mod's jar, and this checkout.
+  Applied by the conventions script, so a consumer gets it from the one
+  `apply from`.
 - [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle)
   - warns when a mod compiles against one KMLib and asks players for another.
 - [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle)

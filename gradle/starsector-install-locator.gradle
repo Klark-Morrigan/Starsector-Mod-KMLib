@@ -29,6 +29,14 @@ ext.resolveCoreJarFile = { String jarName ->
 
 ext.apiJarFile = resolveCoreJarFile('starfarer.api.jar')
 
+// Core jars by Ant pattern, for the two cases a plain name cannot serve: a
+// version-stamped jar (xstream-1.4.10.jar, ...) and a set named in one go.
+// Yields nothing for a pattern that matches nothing, so a caller can hand the
+// result to a classpath without first asking whether the install has one.
+ext.findCoreJars = { List<String> jarNamePatterns ->
+    return fileTree(dir: starsectorCoreDirectory, include: jarNamePatterns)
+}
+
 // Every jar in the core folder, as one collection - what a test runtime needs,
 // since a game class loaded under test can reach for any of them.
 ext.starsectorCoreJars = fileTree(dir: starsectorCoreDirectory, include: ['*.jar'])

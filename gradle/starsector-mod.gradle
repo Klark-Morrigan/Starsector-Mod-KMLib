@@ -61,17 +61,20 @@ version = modInfo.version
 // The jars every KM mod compiles against, captured as locals so the closures
 // below close over the files rather than re-reading a dynamic project property.
 def apiJarFile = project.ext.apiJarFile
+
 // lwjgl_util.jar carries Vector2f / Vector3f, which appear in Misc's
 // getDistance overloads. javac needs the class file on the classpath to
 // resolve overload candidates, so it is compileOnly (the game classloader
 // provides it at runtime, like the API jar). Harmless for mods that do not
 // touch LWJGL types.
 def lwjglUtilJarFile = resolveCoreJarFile('lwjgl_util.jar')
+
 // lwjgl.jar carries org.lwjgl.opengl.GL11, the raw OpenGL surface mods use to
 // draw on the campaign/combat views. compileOnly like the rest: the game
 // classloader always provides LWJGL at runtime. Shared here (not per-mod)
 // since more than one KM mod renders raw GL.
 def lwjglJarFile = resolveCoreJarFile('lwjgl.jar')
+
 // log4j backs Global.getLogger(...), the logging channel every Starsector mod
 // uses. compileOnly for the same reason as the API jar: the game classloader
 // provides it at runtime. Shared here (not per-mod) since all KM mods log.

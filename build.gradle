@@ -173,7 +173,7 @@ def magicLibJars = findModJars('MagicLib.jar')
 // resolve JSONObject#put and JSONException to compile the write. The classes ship
 // in starsector-core/json.jar, provided by the game classloader at runtime, so
 // compileOnly like the rest (testRuntime already sees it via starsectorCoreJars).
-def jsonJarFile = file("${project.ext.starsectorRoot}/starsector-core/json.jar")
+def jsonJarFile = resolveCoreJarFile('json.jar')
 
 // The game's core (obfuscated) jar backs the two casts to concrete campaign classes
 // the API jar does not publish: CampaignMapView's campaign-UI-data class, and the
@@ -186,8 +186,8 @@ def jsonJarFile = file("${project.ext.starsectorRoot}/starsector-core/json.jar")
 // core jar. Test runtime already sees it via the shared starsectorCoreJars set.
 // fs.common_obf.jar rides along because the core classes implement its
 // DoNotObfuscate marker, which javac must resolve to compile a cast to them.
-def starfarerObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/starfarer_obf.jar")
-def fsCommonObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/fs.common_obf.jar")
+def starfarerObfJarFile = resolveCoreJarFile('starfarer_obf.jar')
+def fsCommonObfJarFile = resolveCoreJarFile('fs.common_obf.jar')
 
 // Fast Rendering's bridge backs FastRenderingModelviewMatrixReader, which reads the modelview
 // from the renderer's own TransformManager because GL does not hold it under that mod.
@@ -221,7 +221,7 @@ def fsCommonObfJarFile = file("${project.ext.starsectorRoot}/starsector-core/fs.
 // the adapter against genir's real bytes has to be able to insist on them: silently compiling stubs
 // would report success for a check that never ran, which is worse than not running it, since the
 // green tells a reader the signatures were verified.
-def fastRenderingJarFile = file("${project.ext.starsectorRoot}/starsector-core/fr.jar")
+def fastRenderingJarFile = resolveCoreJarFile('fr.jar')
 def isVanillaForced = findProperty('vanillaOnly') == 'true'
 def isFastRenderingRequired = findProperty('requireFastRendering') == 'true'
 def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isVanillaForced
@@ -375,7 +375,7 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-launcher'
 
     // The stubs name Matrix4f in the one signature they mirror, so they need the jar it lives in.
-    bridgeStubsCompileOnly files("${project.ext.starsectorRoot}/starsector-core/lwjgl_util.jar")
+    bridgeStubsCompileOnly files(resolveCoreJarFile('lwjgl_util.jar'))
 
     // The common-data fake poses a port whose signatures are spelled in org.json, so the fixtures
     // need the jar too. Not covered by dependOnGameJars below, which adds the two compile
