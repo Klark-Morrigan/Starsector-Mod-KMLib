@@ -21,7 +21,7 @@ final class MotionTrackerTest {
     class Observe {
 
         @Test
-        void a_first_sighting_is_not_yet_moving() {
+        void aFirstSightingIsNotYetMoving() {
             var tracker = new MotionTracker(1.0);
 
             // No baseline to compare against, so nothing is moving and the set (still
@@ -33,7 +33,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void a_stationary_key_is_not_moving() {
+        void aStationaryKeyIsNotMoving() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
@@ -44,7 +44,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void a_key_that_shifted_past_the_floor_is_moving() {
+        void aKeyThatShiftedPastTheFloorIsMoving() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
@@ -55,7 +55,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void a_shift_under_the_floor_reads_as_noise() {
+        void aShiftUnderTheFloorReadsAsNoise() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
@@ -67,7 +67,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void a_key_that_keeps_moving_stays_in_the_set_without_reporting_a_change() {
+        void aKeyThatKeepsMovingStaysInTheSetWithoutReportingAChange() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
             tracker.observe(Map.of("a", buildPoint(500, 0)));
@@ -81,7 +81,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void a_key_that_stops_leaves_the_moving_set() {
+        void aKeyThatStopsLeavesTheMovingSet() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
             tracker.observe(Map.of("a", buildPoint(500, 0)));
@@ -95,7 +95,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void a_key_that_returns_is_judged_afresh_rather_than_against_a_stale_position() {
+        void aKeyThatReturnsIsJudgedAfreshRatherThanAgainstAStalePosition() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0), "b", buildPoint(0, 0)));
             // "b" drops out of the observation, so its baseline is pruned.
@@ -111,7 +111,7 @@ final class MotionTrackerTest {
         }
 
         @Test
-        void clearing_observations_makes_the_next_sighting_a_first_sighting() {
+        void clearingObservationsMakesTheNextSightingAFirstSighting() {
             var tracker = new MotionTracker(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 

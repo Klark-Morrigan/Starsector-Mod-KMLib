@@ -64,7 +64,7 @@ final class PolylineBandsTest {
     class StrokeToTriangles {
 
         @Test
-        void straight_centreline_strokes_the_rectangle_around_it() {
+        void straightCentrelineStrokesTheRectangleAroundIt() {
             // Half the width either side of the line from (0,0) to (10,0), as the two
             // triangles of one quad.
             var band = PolylineBands.strokeToTriangles(
@@ -82,7 +82,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void mitred_corner_covers_both_arms_of_the_turn_once() {
+        void mitredCornerCoversBothArmsOfTheTurnOnce() {
             // Each arm is a 10-by-2 rectangle, so the band is 40 - the square the two
             // arms would otherwise share on the inside of the turn is exactly the square
             // the miter adds on the outside. A band that covered less would have a notch
@@ -97,7 +97,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void mitred_corner_turns_on_its_two_miter_points() {
+        void mitredCornerTurnsOnItsTwoMiterPoints() {
             // The rails either side of the corner at (10,0) cross at (9,1) inside the
             // turn and (11,-1) outside it, and the band turns on those rather than on
             // the square ends the two arms would otherwise stop at.
@@ -113,7 +113,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void corner_past_the_spike_limit_bevels_the_outside_of_the_turn() {
+        void cornerPastTheSpikeLimitBevelsTheOutsideOfTheTurn() {
             // The outer miter at (11,-1) stands root-two from the corner, past a limit of
             // one half-width, so the outer rail cuts straight across from (10,-1) to
             // (11,0) instead. That takes the half-unit triangle behind the cut off the
@@ -131,7 +131,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_turn_the_other_way_bevels_the_outside_of_its_own_turn() {
+        void aTurnTheOtherWayBevelsTheOutsideOfItsOwnTurn() {
             // The mirror of the case above: 10 east then 10 south, so the outside of the
             // turn is now the left of the band rather than its right. The band has to
             // read the sides off the turn - a stroker with the sides fixed passes both
@@ -158,7 +158,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void corner_whose_miter_outruns_its_segments_keeps_the_bands_full_width() {
+        void cornerWhoseMiterOutrunsItsSegmentsKeepsTheBandsFullWidth() {
             // A one-long segment between two right angles: each miter reaches root-two
             // back along it, and the two of them together reach farther than the segment
             // is long, so their rails would cross and the band would fold into a bowtie.
@@ -189,7 +189,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void point_the_centreline_runs_straight_through_leaves_the_band_unbroken() {
+        void pointTheCentrelineRunsStraightThroughLeavesTheBandUnbroken() {
             // A point with no turn at it has no join to make: the two quads either side
             // meet exactly, so the band is the 10-by-2 rectangle and carries no bevel.
             var band = PolylineBands.strokeToTriangles(
@@ -204,7 +204,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_point_repeated_on_the_centreline_is_one_point() {
+        void aPointRepeatedOnTheCentrelineIsOnePoint() {
             // The step between the two is no step at all - it names no direction to
             // offset the rails along - so the band is the one the centreline without it
             // strokes, rather than a degenerate piece plus that band.
@@ -226,7 +226,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_centreline_of_one_distinct_point_strokes_nothing() {
+        void aCentrelineOfOneDistinctPointStrokesNothing() {
             // No direction, so no sides: there is nothing to put a width either side of.
             var band = PolylineBands.strokeToTriangles(
                 List.of(new double[] {3, 3}, new double[] {3, 3}),
@@ -238,7 +238,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_band_of_no_width_strokes_nothing() {
+        void aBandOfNoWidthStrokesNothing() {
             // Both rails would sit on the centreline, enclosing no area.
             var band = PolylineBands.strokeToTriangles(
                 List.of(new double[] {0, 0}, new double[] {10, 0}),
@@ -254,7 +254,7 @@ final class PolylineBandsTest {
     class StrokeSpansToTriangles {
 
         @Test
-        void spans_of_a_centreline_stroke_the_band_the_whole_of_it_strokes() {
+        void spansOfACentrelineStrokeTheBandTheWholeOfItStrokes() {
             // The spans are stretches of one centreline, so their pieces put back together
             // are that centreline's own band - nothing is added at a boundary and nothing is
             // lost there. Which makes every case pinned above hold of a split band too.
@@ -271,7 +271,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_boundary_landing_on_a_corner_turns_with_the_corner() {
+        void aBoundaryLandingOnACornerTurnsWithTheCorner() {
             // The boundary between the two spans sits exactly on the centreline's corner,
             // which is where stroking each span on its own would leave the band's worst
             // artefact: the first span ending square at (10,1) and (10,-1), the second
@@ -298,7 +298,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void each_span_takes_the_triangles_of_its_own_stretch() {
+        void eachSpanTakesTheTrianglesOfItsOwnStretch() {
             // A straight centreline cut in half: each span is the rectangle around its own
             // half and nothing of the other's, so a caller colouring the spans separately
             // colours exactly the stretch it asked about.
@@ -327,7 +327,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_boundary_landing_on_a_bevelled_corner_gives_the_wedge_to_the_span_arriving() {
+        void aBoundaryLandingOnABevelledCornerGivesTheWedgeToTheSpanArriving() {
             // The same corner at a limit tight enough to bevel it. The wedge the bevel holds
             // open belongs to the corner rather than to either span, so the two have to
             // differ over it: it goes to the span arriving, whose 19 units of quad it takes
@@ -350,7 +350,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_span_may_open_on_the_point_after_the_one_its_predecessor_ended_on() {
+        void aSpanMayOpenOnThePointAfterTheOneItsPredecessorEndedOn() {
             // The boundary point is where one span ended, so stating it again at the head of
             // the next is a courtesy rather than a requirement - a caller cutting a path into
             // stretches has it either way round, and the band is the same band.
@@ -378,7 +378,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_span_that_covers_no_distance_strokes_nothing_and_keeps_its_place() {
+        void aSpanThatCoversNoDistanceStrokesNothingAndKeepsItsPlace() {
             // A span standing where its predecessor ended covers no stretch of the band, so
             // it has nothing to stroke. It comes back empty rather than being dropped - the
             // spans answer by position, and a caller reading a colour off each would
@@ -400,7 +400,7 @@ final class PolylineBandsTest {
         }
 
         @Test
-        void a_band_of_no_width_strokes_nothing_for_any_span() {
+        void aBandOfNoWidthStrokesNothingForAnySpan() {
             // The degenerate band still answers per span, so a caller need not tell the two
             // reasons a span is empty apart.
             var spans = PolylineBands.strokeSpansToTriangles(

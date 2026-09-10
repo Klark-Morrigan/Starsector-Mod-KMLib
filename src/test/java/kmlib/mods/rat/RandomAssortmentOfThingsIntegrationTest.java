@@ -43,7 +43,7 @@ final class RandomAssortmentOfThingsIntegrationTest {
     class InstallSystemAccessRoutes {
 
         @Test
-        void puts_a_route_in_front_of_the_reachability_read_under_the_mod_s_name() {
+        void putsARouteInFrontOfTheReachabilityReadUnderTheModSName() {
             // The Abyssal Fracture is the one way this mod moves fleets that the engine does not
             // model. A registration missed here is a system quietly reading as cut off on a save
             // whose fleets get there every day. The name is asserted with it because what the
@@ -56,7 +56,7 @@ final class RandomAssortmentOfThingsIntegrationTest {
         }
 
         @Test
-        void installs_one_route_when_the_install_is_composed_twice() {
+        void installsOneRouteWhenTheInstallIsComposedTwice() {
             // Keyed by name, so a second composition replaces this integration's own route rather
             // than adding a second one that would be walked for nothing on every read.
             RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
@@ -69,7 +69,7 @@ final class RandomAssortmentOfThingsIntegrationTest {
         }
 
         @Test
-        void installs_nothing_on_an_install_without_the_mod() {
+        void installsNothingOnAnInstallWithoutTheMod() {
             // What keeps the reachability read clear of a class naming a Random Assortment of
             // Things type: with nothing registered, no route is ever consulted and no such class
             // is ever reached.

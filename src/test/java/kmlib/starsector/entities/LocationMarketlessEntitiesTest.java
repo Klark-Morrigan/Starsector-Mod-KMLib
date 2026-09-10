@@ -30,7 +30,7 @@ final class LocationMarketlessEntitiesTest {
     class ReadMarketlessEntitiesIn {
 
         @Test
-        void yields_every_market_less_entity_and_leaves_the_colonys_out() {
+        void yieldsEveryMarketLessEntityAndLeavesTheColonysOut() {
             // The market is the whole of the exclusion, and it is the only one: the relay and the
             // cargo pod come back beside the derelict station, because which of them counts as a
             // place worth listing is the caller's judgement rather than this search's.
@@ -53,7 +53,7 @@ final class LocationMarketlessEntitiesTest {
         }
 
         @Test
-        void yields_an_undiscovered_entity_like_any_other() {
+        void yieldsAnUndiscoveredEntityLikeAnyOther() {
             // Nothing is filtered here: discovery is a fact a caller reads off the record and
             // applies to its own purpose, and a search that withheld one would leave a caller
             // recording observations unable to see what it was meant to be recording.
@@ -71,7 +71,7 @@ final class LocationMarketlessEntitiesTest {
         }
 
         @Test
-        void skips_an_entity_the_location_lists_as_nothing() {
+        void skipsAnEntityTheLocationListsAsNothing() {
             // Nothing to read facts off, and the record refuses one - so the listing is filtered
             // here rather than letting one bad entry take out the whole read.
             var locationMock = mock(LocationAPI.class);
@@ -85,7 +85,7 @@ final class LocationMarketlessEntitiesTest {
         }
 
         @Test
-        void returns_empty_for_a_location_holding_no_custom_entities() {
+        void returnsEmptyForALocationHoldingNoCustomEntities() {
             // Empty rather than null: a place with nothing standing in it is an ordinary answer,
             // and every caller walking one would otherwise guard against it separately.
             var locationMock = mock(LocationAPI.class);
@@ -98,13 +98,13 @@ final class LocationMarketlessEntitiesTest {
         }
 
         @Test
-        void returns_empty_for_a_null_location() {
+        void returnsEmptyForANullLocation() {
             assertThat(LocationMarketlessEntities.readMarketlessEntitiesIn(null))
                 .isEmpty();
         }
 
         @Test
-        void returns_empty_when_the_location_reports_no_custom_entity_list() {
+        void returnsEmptyWhenTheLocationReportsNoCustomEntityList() {
 
             var locationMock = mock(LocationAPI.class);
 

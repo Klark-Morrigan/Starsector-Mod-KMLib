@@ -100,7 +100,7 @@ final class RingPathTest {
     class TraceInsetRing {
 
         @Test
-        void path_starts_at_the_top_centre_above_the_anchor() {
+        void pathStartsAtTheTopCentreAboveTheAnchor() {
             // The vertical line through (5,5) crosses the inset ring at y = 2 and y = 8;
             // the path starts at the higher one, which is the top centre.
             assertThat(traceReferenceSquare().getPoints().get(0))
@@ -108,7 +108,7 @@ final class RingPathTest {
         }
 
         @Test
-        void path_runs_clockwise_from_its_start() {
+        void pathRunsClockwiseFromItsStart() {
             // Leaving the top centre toward (8,8) is rightward along the top edge, which
             // continues down the right-hand side - clockwise where y points up. A path
             // running the other way would carry every layout on it backward.
@@ -127,7 +127,7 @@ final class RingPathTest {
         }
 
         @Test
-        void path_of_a_clockwise_ring_is_the_path_of_the_same_ring_wound_the_other_way() {
+        void pathOfAClockwiseRingIsThePathOfTheSameRingWoundTheOtherWay() {
             // The winding is normalised before the offset, so a clockwise ring insets
             // inward like any other. Un-normalised it would grow instead, putting the
             // path outside the shape it is meant to run within - the corners here would
@@ -154,7 +154,7 @@ final class RingPathTest {
         }
 
         @Test
-        void path_starts_at_the_ring_s_top_corner_when_the_anchor_sits_beside_it() {
+        void pathStartsAtTheRingSTopCornerWhenTheAnchorSitsBesideIt() {
             // No vertical line through x = 100 meets the ring at all, so there is no top
             // centre to find. The topmost corner keeps the path starting somewhere along
             // the ring's top rather than dropping it over an anchor that only says where
@@ -170,7 +170,7 @@ final class RingPathTest {
         }
 
         @Test
-        void nothing_is_left_to_trace_when_the_ring_encloses_no_area() {
+        void nothingIsLeftToTraceWhenTheRingEnclosesNoArea() {
             // Two vertices bound nothing, so there is no interior to inset into.
             var traced = RingPath.traceInsetRing(
                 Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
@@ -187,7 +187,7 @@ final class RingPathTest {
     class FindStretchesHoldingItsInset {
 
         @Test
-        void ring_with_room_for_its_inset_holds_the_whole_path() {
+        void ringWithRoomForItsInsetHoldsTheWholePath() {
             // Nothing carved, so the answer is the path itself as one stretch - the ordinary
             // cell, and what every case below is a departure from.
             assertThatArcsAre(
@@ -196,7 +196,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_that_failed_the_inset_is_carved_between_the_corners_either_side_of_it() {
+        void stretchThatFailedTheInsetIsCarvedBetweenTheCornersEitherSideOfIt() {
             // The tab's mouth stands 1.58 off the ring rather than the 2 it was built from,
             // and what is given up for it is the mouth and the two edges reaching it - from
             // the corner before it at (18,11) to the corner after it at (18,8). Clearance is
@@ -218,7 +218,7 @@ final class RingPathTest {
         }
 
         @Test
-        void pinch_lying_across_the_path_s_start_is_carved_off_both_ends_of_it() {
+        void pinchLyingAcrossThePathSStartIsCarvedOffBothEndsOfIt() {
             // The same tab, anchored so the path opens on the mouth itself. The carve around a
             // path's first corner reaches back before the start, and these intervals do not
             // wrap - so it is split there and taken off the path's end as well as its
@@ -240,7 +240,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_holds_no_stretches() {
+        void anEmptyPathHoldsNoStretches() {
             // A ring that left nothing to trace held nothing, which is the same answer a ring
             // overrun everywhere gives - one shape of "no room" for a caller to read.
             assertThat(RingPath.nothingLeftToTrace().findStretchesHoldingItsInset())
@@ -252,7 +252,7 @@ final class RingPathTest {
     class FindStretchesFailingItsInset {
 
         @Test
-        void carve_is_the_stretch_between_the_corners_either_side_of_the_failing_one() {
+        void carveIsTheStretchBetweenTheCornersEitherSideOfTheFailingOne() {
             // The exact complement of the case above, stated from the other side: what the
             // mouth cost is one stretch running from (18,11) round the mouth to (18,8). Pinned
             // in its own right because a caller reporting on a ring draws this, and a carve
@@ -274,7 +274,7 @@ final class RingPathTest {
         }
 
         @Test
-        void nothing_is_carved_from_a_ring_with_room_for_its_inset() {
+        void nothingIsCarvedFromARingWithRoomForItsInset() {
             // The ordinary cell gives nothing up, so a caller drawing the carve draws nothing
             // rather than a ring stated twice.
             assertThat(traceReferenceSquare().findStretchesFailingItsInset())
@@ -282,7 +282,7 @@ final class RingPathTest {
         }
 
         @Test
-        void carve_across_the_path_s_start_comes_back_as_the_two_pieces_it_was_split_into() {
+        void carveAcrossThePathSStartComesBackAsTheTwoPiecesItWasSplitInto() {
             // The split the intervals' not wrapping forces, seen from the carve's own side: the
             // piece closing the path and the piece opening it, rather than one stretch running
             // past the perimeter. Both are drawn, so both have to be stated.
@@ -306,7 +306,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_carves_nothing() {
+        void anEmptyPathCarvesNothing() {
             // A path that was never traced failed no inset, so the carve is empty rather than
             // the whole of a ring that does not exist.
             assertThat(RingPath.nothingLeftToTrace().findStretchesFailingItsInset())
@@ -318,7 +318,7 @@ final class RingPathTest {
     class HasStretchHoldingItsInset {
 
         @Test
-        void ring_with_room_for_the_inset_holds_it() {
+        void ringWithRoomForTheInsetHoldsIt() {
             // The ordinary case: every corner of the inset square stands its full 2 off the
             // ring it came from, so the whole path is ring a layout may go on.
             assertThat(traceReferenceSquare().hasStretchHoldingItsInset())
@@ -326,7 +326,7 @@ final class RingPathTest {
         }
 
         @Test
-        void ring_pinched_in_one_place_holds_the_rest_of_itself() {
+        void ringPinchedInOnePlaceHoldsTheRestOfItself() {
             // The tab's mouth is the one place this ring has no room for the inset, and the
             // three sides of the square it hangs off have room several times over. A verdict
             // on the whole ring answers this shape the same way it answers a shape with no
@@ -336,7 +336,7 @@ final class RingPathTest {
         }
 
         @Test
-        void no_stretch_holds_the_inset_when_it_outruns_the_ring() {
+        void noStretchHoldsTheInsetWhenItOutrunsTheRing() {
             // A side-10 square cannot hold an inset of 6: the four offset edges cross past
             // one another and what comes back is a tidy side-2 square standing 4 off the
             // ring rather than 6. Every corner of it fails, so every stretch is carved and
@@ -352,7 +352,7 @@ final class RingPathTest {
         }
 
         @Test
-        void no_stretch_holds_the_inset_when_the_ring_is_too_thin_in_one_direction_only() {
+        void noStretchHoldsTheInsetWhenTheRingIsTooThinInOneDirectionOnly() {
             // A 20-by-4 ring has length to spare and no width: inset by 3, its long sides
             // cross while its ends do not, and what comes back is a tidy 14-by-2 rectangle
             // whose corners stand 1 from the ring rather than 3. A ring thin in one
@@ -375,7 +375,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_holds_nothing() {
+        void anEmptyPathHoldsNothing() {
             // A ring that left nothing to trace has no stretch to offer, which is the same
             // answer a ring overrun everywhere gives - and the reason a caller choosing
             // between insets can ask one question rather than two.
@@ -388,14 +388,14 @@ final class RingPathTest {
     class GetPerimeter {
 
         @Test
-        void perimeter_is_the_length_of_the_inset_ring() {
+        void perimeterIsTheLengthOfTheInsetRing() {
             // The inset square runs from (2,2) to (8,8): four sides of 6.
             assertThat(traceReferenceSquare().getPerimeter())
                 .isCloseTo(24.0, buildAssertionSlack());
         }
 
         @Test
-        void perimeter_is_zero_where_there_is_no_path() {
+        void perimeterIsZeroWhereThereIsNoPath() {
             assertThat(RingPath.nothingLeftToTrace().getPerimeter())
                 .isCloseTo(0.0, buildAssertionSlack());
         }
@@ -405,13 +405,13 @@ final class RingPathTest {
     class ComputePointAt {
 
         @Test
-        void point_at_zero_is_the_start() {
+        void pointAtZeroIsTheStart() {
             assertThat(traceReferenceSquare().computePointAt(0))
                 .containsExactly(new double[] {5, 8}, buildAssertionSlack());
         }
 
         @Test
-        void point_within_an_edge_is_interpolated_along_it() {
+        void pointWithinAnEdgeIsInterpolatedAlongIt() {
             // 1.5 along the top edge from (5,8), and 6 - three past the corner at 3 -
             // partway down the right-hand edge.
             var path = traceReferenceSquare();
@@ -423,7 +423,7 @@ final class RingPathTest {
         }
 
         @Test
-        void point_past_the_perimeter_wraps_round_to_the_start() {
+        void pointPastThePerimeterWrapsRoundToTheStart() {
             // A layout running off the end of the path continues round it rather than
             // having to be split by whoever laid it out.
             var path = traceReferenceSquare();
@@ -435,7 +435,7 @@ final class RingPathTest {
         }
 
         @Test
-        void point_before_the_start_measures_back_from_the_end() {
+        void pointBeforeTheStartMeasuresBackFromTheEnd() {
             // Three back from the top centre is the corner at (2,8), three before the
             // path's end at 24.
             assertThat(traceReferenceSquare().computePointAt(-3))
@@ -443,7 +443,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_has_nothing_to_measure_between() {
+        void anEmptyPathHasNothingToMeasureBetween() {
             assertThatThrownBy(() -> RingPath.nothingLeftToTrace().computePointAt(0))
                 .isInstanceOf(IllegalStateException.class);
         }
@@ -453,14 +453,14 @@ final class RingPathTest {
     class CollectPointsBetween {
 
         @Test
-        void stretch_within_one_edge_is_its_two_ends() {
+        void stretchWithinOneEdgeIsItsTwoEnds() {
             assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(1, 2),
                 List.of(new double[] {6, 8}, new double[] {7, 8}));
         }
 
         @Test
-        void stretch_spanning_a_corner_keeps_the_corner() {
+        void stretchSpanningACornerKeepsTheCorner() {
             // From 1.5 along the top edge to 1.5 down the right-hand one. The corner at 3
             // is where the stretch bends, so it has to survive into the polyline - the
             // straight line between the two ends would cut across it.
@@ -473,7 +473,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_ending_on_a_corner_does_not_repeat_it() {
+        void stretchEndingOnACornerDoesNotRepeatIt() {
             // The corner is both the last turn and the end point; emitting it twice would
             // leave a zero-length step for whatever gives the stretch girth.
             assertThatPointsAre(
@@ -482,7 +482,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_starting_on_a_corner_walks_forward_from_it() {
+        void stretchStartingOnACornerWalksForwardFromIt() {
             // A start landing exactly on a corner belongs to the edge leaving it, so the
             // walk steps forward down the right-hand edge rather than back along the top.
             assertThatPointsAre(
@@ -491,14 +491,14 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_of_no_length_is_the_single_point_it_sits_at() {
+        void stretchOfNoLengthIsTheSinglePointItSitsAt() {
             assertThatPointsAre(
                 traceReferenceSquare().collectPointsBetween(5, 5),
                 List.of(new double[] {8, 6}));
         }
 
         @Test
-        void stretch_wrapping_past_the_start_carries_on_round() {
+        void stretchWrappingPastTheStartCarriesOnRound() {
             // From 1 before the end to 1 after it. The start point is a listed corner of
             // the path - it split the edge it sits on - so it appears on the way past.
             assertThatPointsAre(
@@ -510,7 +510,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_ending_behind_its_start_is_of_no_length() {
+        void stretchEndingBehindItsStartIsOfNoLength() {
             // The walk only runs forward, and an end behind its start is a caller's
             // arithmetic having gone wrong. Reading it as "almost all the way round" would
             // turn that slip into a nearly complete lap; a point is the safer reading.
@@ -520,7 +520,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_longer_than_the_perimeter_is_cut_to_one_lap() {
+        void stretchLongerThanThePerimeterIsCutToOneLap() {
             // Going round twice would only retrace the same geometry, so the walk stops
             // where it began - both ends of the lap kept, since they are the two ends of
             // a polyline rather than a repeated corner.
@@ -536,7 +536,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_has_nothing_to_walk_between() {
+        void anEmptyPathHasNothingToWalkBetween() {
             assertThatThrownBy(() -> RingPath.nothingLeftToTrace().collectPointsBetween(0, 1))
                 .isInstanceOf(IllegalStateException.class);
         }
@@ -546,7 +546,7 @@ final class RingPathTest {
     class FindClearArcs {
 
         @Test
-        void whole_path_is_clear_when_no_shape_covers_it() {
+        void wholePathIsClearWhenNoShapeCoversIt() {
             // The ordinary case, and the one every layout that asks for nothing to be kept
             // clear of lands in: one interval, the path from end to end.
             assertThatArcsAre(
@@ -555,7 +555,7 @@ final class RingPathTest {
         }
 
         @Test
-        void shape_over_the_path_leaves_the_stretches_either_side_of_it() {
+        void shapeOverThePathLeavesTheStretchesEitherSideOfIt() {
             // A box over the top right corner, covering the top edge from x=6 and the right
             // edge down to y=7. The path reaches x=6 one along and leaves y=7 four along, so
             // what is left is the run up to the box and the run from it back round.
@@ -567,7 +567,7 @@ final class RingPathTest {
         }
 
         @Test
-        void cover_spanning_several_edges_comes_back_as_one_stretch() {
+        void coverSpanningSeveralEdgesComesBackAsOneStretch() {
             // The same box states the point on its own: it covers the end of one edge and the
             // start of the next, and the corner between them is under it too. Reported as two
             // intervals meeting at the corner, a layout would read a gap where the shape is
@@ -577,7 +577,7 @@ final class RingPathTest {
         }
 
         @Test
-        void shape_over_the_start_leaves_the_stretch_between_its_two_sides() {
+        void shapeOverTheStartLeavesTheStretchBetweenItsTwoSides() {
             // A box across the top centre covers the first stretch of the path and the last -
             // they meet at the start, but the intervals do not wrap, so the pieces before and
             // after the origin are stated separately and only the middle survives.
@@ -587,7 +587,7 @@ final class RingPathTest {
         }
 
         @Test
-        void several_shapes_over_the_path_each_take_their_own_stretch() {
+        void severalShapesOverThePathEachTakeTheirOwnStretch() {
             // Every shape is tested, not just the nearest: two names over one cell take two
             // bites out of its ring, which is the case a single-shape carve would half-answer.
             assertThatArcsAre(
@@ -601,7 +601,7 @@ final class RingPathTest {
         }
 
         @Test
-        void shape_covering_the_whole_path_leaves_nothing_clear() {
+        void shapeCoveringTheWholePathLeavesNothingClear() {
             // A name across the whole shape. Nothing can be laid along what is left, and
             // saying so is what lets a caller answer "then draw none" rather than draw a
             // sliver somewhere.
@@ -610,7 +610,7 @@ final class RingPathTest {
         }
 
         @Test
-        void shape_lying_elsewhere_covers_nothing() {
+        void shapeLyingElsewhereCoversNothing() {
             // The whole map's shapes are handed over, so most of them are nowhere near any one
             // path - and a shape that misses must leave the path exactly as it found it.
             assertThatArcsAre(
@@ -619,7 +619,7 @@ final class RingPathTest {
         }
 
         @Test
-        void shape_over_the_path_and_a_pinch_in_it_carve_the_one_ring_between_them() {
+        void shapeOverThePathAndAPinchInItCarveTheOneRingBetweenThem() {
             // Both are stretches the layout may not use, and a caller taking the longest of
             // what is left has to see them in one list: read separately, the longest run
             // clear of the shapes would be judged without knowing the pinch cuts it in two.
@@ -633,7 +633,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_has_no_stretches_to_offer() {
+        void anEmptyPathHasNoStretchesToOffer() {
             // A ring that left nothing to trace has nothing to carve either, and answering
             // with a stretch of a path that does not exist would be worse than answering none.
             assertThat(RingPath.nothingLeftToTrace().findClearArcs(List.of(buildBox(0, 0, 1, 1))))
@@ -645,7 +645,7 @@ final class RingPathTest {
     class FuseStretchAcrossStart {
 
         @Test
-        void stretches_meeting_at_the_start_come_back_as_the_one_stretch_they_are() {
+        void stretchesMeetingAtTheStartComeBackAsTheOneStretchTheyAre() {
             // A shape on the far side of the path leaves one run, stated by the carve as the
             // piece before the origin and the piece after it. Fused, it is the 20-long run it
             // actually is, closing past the perimeter; read as carved, a caller comparing the
@@ -658,7 +658,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretches_between_the_two_ends_are_left_where_they_are() {
+        void stretchesBetweenTheTwoEndsAreLeftWhereTheyAre() {
             // Only the pair reaching the two ends is fused. A stretch in the middle of the path
             // neither moves nor changes order, so the fuse costs a caller nothing it did not
             // ask for.
@@ -673,7 +673,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_falling_short_of_the_start_is_not_fused_with_the_one_opening_it() {
+        void stretchFallingShortOfTheStartIsNotFusedWithTheOneOpeningIt() {
             // The two nearly meet, and nearly is not meeting: the path's start is covered, so
             // there is one stretch either side of it rather than one stretch through it. Fused
             // regardless, a layout would be laid straight over the shape at the origin.
@@ -687,7 +687,7 @@ final class RingPathTest {
         }
 
         @Test
-        void stretch_opening_past_the_start_is_not_fused_with_the_one_closing_the_path() {
+        void stretchOpeningPastTheStartIsNotFusedWithTheOneClosingThePath() {
             // The same rule read from the other end, and worth posing separately: the pair is
             // fused for reaching the start, so a stretch reaching only the perimeter is no more
             // fusable than one reaching only the origin.
@@ -701,7 +701,7 @@ final class RingPathTest {
         }
 
         @Test
-        void a_single_stretch_is_never_fused_with_itself() {
+        void aSingleStretchIsNeverFusedWithItself() {
             // The whole path uncovered is one stretch reaching both ends, and it is already the
             // run it describes. Fused with itself it would come back twice as long as the path
             // it lies on.
@@ -715,7 +715,7 @@ final class RingPathTest {
     class PlaceSpanNearestStart {
 
         @Test
-        void span_starts_at_the_path_start_where_the_stretch_has_room_after_it() {
+        void spanStartsAtThePathStartWhereTheStretchHasRoomAfterIt() {
             // The ordinary case: the path's start lies on the stretch with room clockwise of it,
             // so the layout opens exactly on the landmark. The stretch is one fused across the
             // start, so the landmark within it is the perimeter rather than the zero it would
@@ -726,7 +726,7 @@ final class RingPathTest {
         }
 
         @Test
-        void span_backs_up_where_the_stretch_closes_too_soon_after_the_path_start() {
+        void spanBacksUpWhereTheStretchClosesTooSoonAfterThePathStart() {
             // The path's start is on the stretch, but the stretch closes one after it and the
             // span reaches four. The start backs up to the latest the stretch allows, so the
             // landmark still falls on the span and only which part of it lands there moves.
@@ -736,7 +736,7 @@ final class RingPathTest {
         }
 
         @Test
-        void span_opens_where_the_stretch_does_where_a_shape_covers_the_path_start() {
+        void spanOpensWhereTheStretchDoesWhereAShapeCoversThePathStart() {
             // A shape over the start and one unit of path clockwise of it. The span begins as
             // near the landmark as the shape allows rather than being thrown to the stretch's
             // far end - which is what makes this a clamp rather than a preference with a
@@ -747,7 +747,7 @@ final class RingPathTest {
         }
 
         @Test
-        void span_ends_near_the_path_start_where_the_stretch_closes_just_behind_it() {
+        void spanEndsNearThePathStartWhereTheStretchClosesJustBehindIt() {
             // The stretch closes one short of the landmark and opens six the other side of it,
             // so the span's start is nearer at the closing end: it sits at 19 and runs to 23.
             assertThat(traceReferenceSquare()
@@ -756,7 +756,7 @@ final class RingPathTest {
         }
 
         @Test
-        void span_takes_the_one_position_an_exact_fit_stretch_allows() {
+        void spanTakesTheOnePositionAnExactFitStretchAllows() {
             // A stretch the span exactly fills has one position, and the clamp reaches it
             // however far off the landmark lies.
             assertThat(traceReferenceSquare()
@@ -765,7 +765,7 @@ final class RingPathTest {
         }
 
         @Test
-        void span_takes_the_stretchs_own_start_where_both_its_ends_are_equally_far() {
+        void spanTakesTheStretchsOwnStartWhereBothItsEndsAreEquallyFar() {
             // A stretch lying opposite the landmark: six of path from it round to where the
             // stretch opens, and six from the latest start the stretch allows back to it. The
             // tie takes the stretch's start, so such a stretch places the same way every call.
@@ -775,7 +775,7 @@ final class RingPathTest {
         }
 
         @Test
-        void span_longer_than_its_stretch_opens_where_the_stretch_does() {
+        void spanLongerThanItsStretchOpensWhereTheStretchDoes() {
             // Sizing a layout to its stretch is the caller's, so a span that outruns the one it
             // was handed is a length question asked of a placement. It opens where the stretch
             // does and overruns the far end, rather than being refused an answer it cannot give.
@@ -785,7 +785,7 @@ final class RingPathTest {
         }
 
         @Test
-        void an_empty_path_has_no_lap_to_place_within() {
+        void anEmptyPathHasNoLapToPlaceWithin() {
             // A path that was never traced has no perimeter, and nearness the short way round is
             // measured within one. Answering with a position on a path that does not exist would
             // be worse than answering none.

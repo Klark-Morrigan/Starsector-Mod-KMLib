@@ -131,7 +131,7 @@ class ConsoleCommandsCsvIntegrationTest {
     class RegisteredClasses {
 
         @Test
-        void name_a_class_that_exists_and_is_a_console_command() {
+        void nameAClassThatExistsAndIsAConsoleCommand() {
             // The row is the only thing tying a command to the console, and it is a string: a
             // typo or a package move leaves it pointing at nothing, silently.
             for (var className : readRegisteredClassNames()) {
@@ -143,7 +143,7 @@ class ConsoleCommandsCsvIntegrationTest {
         }
 
         @Test
-        void can_be_instantiated_the_way_the_console_instantiates_them() {
+        void canBeInstantiatedTheWayTheConsoleInstantiatesThem() {
             // Console Commands builds a command reflectively through its public no-arg
             // constructor. A command carrying only the output-injecting one would register and
             // then fail the first time a player typed it.
@@ -175,7 +175,7 @@ class ConsoleCommandsCsvIntegrationTest {
     class ShippedCommands {
 
         @Test
-        void are_all_registered_by_the_shipped_table() {
+        void areAllRegisteredByTheShippedTable() {
             // The other direction: a command written, tested and shipped without a row runs
             // perfectly and can never be invoked.
             var registeredClassNames = readRegisteredClassNames();

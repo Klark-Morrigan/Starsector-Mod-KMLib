@@ -37,7 +37,7 @@ final class HyperspaceColoniesTest {
     class ReadColonies {
 
         @Test
-        void yields_the_colonies_the_economy_places_in_hyperspace() {
+        void yieldsTheColoniesTheEconomyPlacesInHyperspace() {
 
             var deepSpaceStation = ColonyMarketFixture.buildVisibleColony("independent");
             var sector = buildSectorWhoseHyperspaceHolds(List.of(deepSpaceStation), List.of());
@@ -47,7 +47,7 @@ final class HyperspaceColoniesTest {
         }
 
         @Test
-        void yields_a_hyperspace_colony_the_economy_does_not_list() {
+        void yieldsAHyperspaceColonyTheEconomyDoesNotList() {
             // The off-economy shape reaches hyperspace too, and is the likelier one out here: a
             // mod hanging a station in deep space has no reason to register it with the economy.
             var deepSpaceStation = ColonyMarketFixture.buildVisibleColony("independent");
@@ -58,7 +58,7 @@ final class HyperspaceColoniesTest {
         }
 
         @Test
-        void drops_a_condition_only_market_sitting_in_hyperspace() {
+        void dropsAConditionOnlyMarketSittingInHyperspace() {
             // The ownership rule is the shared one, so it rejects here exactly as in a system.
             var barePlanet = ColonyMarketFixture.buildConditionOnlyMarket();
             var sector = buildSectorWhoseHyperspaceHolds(List.of(barePlanet), List.of());
@@ -68,7 +68,7 @@ final class HyperspaceColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_hyperspace_holding_no_colony() {
+        void yieldsNothingForAHyperspaceHoldingNoColony() {
 
             var sector = buildSectorWhoseHyperspaceHolds(List.of(), List.of());
 
@@ -77,7 +77,7 @@ final class HyperspaceColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_sector_with_no_hyperspace() {
+        void yieldsNothingForASectorWithNoHyperspace() {
             // What a sector reads as before it is built. Nothing to read is not a fault.
             var sectorMock = mock(SectorAPI.class);
 
@@ -89,7 +89,7 @@ final class HyperspaceColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_null_sector() {
+        void yieldsNothingForANullSector() {
             assertThat(HyperspaceColonies.readColonies(null))
                 .isEqualTo(Colonies.NONE);
         }

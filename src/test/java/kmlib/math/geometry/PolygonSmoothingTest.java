@@ -30,7 +30,7 @@ final class PolygonSmoothingTest {
     class RoundCorners {
 
         @Test
-        void round_corners_arcs_each_corner_and_keeps_straight_edges() {
+        void roundCornersArcsEachCornerAndKeepsStraightEdges() {
             // Side-100 square, radius 10, 3 segments/corner -> 4 corners x 4 points
             // = 16. The cut is a fixed 10 units, so the bottom edge stays straight
             // through its middle: the arc endpoints (10,0) and (90,0) lie on y = 0.
@@ -55,7 +55,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_clamps_an_oversized_radius_without_spiking() {
+        void roundCornersClampsAnOversizedRadiusWithoutSpiking() {
             // Radius far larger than the side: clamped to half the edge, so the
             // result still stays inside the square instead of overshooting.
             var rounded = PolygonSmoothing.roundCorners(
@@ -70,7 +70,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_leaves_the_polygon_unchanged_for_zero_radius() {
+        void roundCornersLeavesThePolygonUnchangedForZeroRadius() {
 
             assertThat(PolygonSmoothing.roundCorners(
                     buildReferenceSquare(),
@@ -79,7 +79,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_leaves_the_polygon_unchanged_for_no_segments_per_corner() {
+        void roundCornersLeavesThePolygonUnchangedForNoSegmentsPerCorner() {
             // An arc sampled into no segments is not an arc; the pass declines rather
             // than replacing each corner with its two bare step-back points.
             assertThat(PolygonSmoothing.roundCorners(
@@ -89,7 +89,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_returns_the_input_below_three_vertices() {
+        void roundCornersReturnsTheInputBelowThreeVertices() {
 
             var segment = Arrays.asList(
                 new double[] {0, 0},
@@ -102,7 +102,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_chords_a_straight_through_corner() {
+        void roundCornersChordsAStraightThroughCorner() {
             // (5,0) sits mid-edge, so its two step-back points and the corner are
             // collinear and no arc centre exists. The pass falls back to the chord
             // between those points instead of dividing through the degenerate centre.
@@ -126,7 +126,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_chamfers_a_corner_sharper_than_the_threshold() {
+        void roundCornersChamfersACornerSharperThanTheThreshold() {
             // Thin CCW triangle: the apex at the origin spans ~5.7 deg, well below
             // the 45 deg threshold, so it is chamfered flat (its two step-back
             // points only) while the two near-90 deg corners stay rounded into
@@ -151,7 +151,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_arcs_a_reflex_corner_into_the_concavity() {
+        void roundCornersArcsAReflexCornerIntoTheConcavity() {
             // CCW L-shape with a reflex corner at (10,10). The arc there must bulge
             // toward the notch (the corner apex), not fly outside the shape: with
             // radius 3 it steps back to (13,10) and (10,13) and curves through about
@@ -186,7 +186,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_keeps_a_corner_flatter_than_the_rounding_threshold() {
+        void roundCornersKeepsACornerFlatterThanTheRoundingThreshold() {
             // A square's corners span 90 deg, flatter than the 45 deg rounding
             // threshold, so every one keeps its vertex verbatim: same four points.
             var rounded = PolygonSmoothing.roundCorners(
@@ -198,7 +198,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_rounds_only_a_corner_sharper_than_the_rounding_threshold() {
+        void roundCornersRoundsOnlyACornerSharperThanTheRoundingThreshold() {
             // Thin CCW triangle: the apex at the origin spans ~5.7 deg and is the
             // only corner under the 45 deg rounding threshold, so it alone arcs
             // into 3 + 1 points while the other two corners pass through verbatim.
@@ -223,7 +223,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void round_corners_rounds_nothing_for_a_non_positive_rounding_threshold() {
+        void roundCornersRoundsNothingForANonPositiveRoundingThreshold() {
             // No interior angle sits below zero, so a threshold there switches the
             // pass off corner by corner: the square comes back as its four points.
             var rounded = PolygonSmoothing.roundCorners(
@@ -243,7 +243,7 @@ final class PolygonSmoothingTest {
         private static final double MAX_CORNER_ANGLE = Math.toRadians(45);
 
         @Test
-        void remove_spikes_splices_out_an_outward_needle() {
+        void removeSpikesSplicesOutAnOutwardNeedle() {
             // A side-100 square whose top edge is interrupted by a thin needle poking
             // up to (50,108): a sharp corner (well under 45 deg) rising only 8 above
             // the y = 100 chord. With the height bar at 20 it is spliced out, leaving
@@ -272,7 +272,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void remove_spikes_splices_out_an_inward_cusp() {
+        void removeSpikesSplicesOutAnInwardCusp() {
             // The same square with a sharp nick biting DOWN to (50,92) from the top
             // edge - an inward cusp of the same 8-unit depth. Because the interior
             // angle is unsigned, it is treated like the outward needle and removed.
@@ -299,7 +299,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void remove_spikes_keeps_a_sharp_but_tall_peninsula() {
+        void removeSpikesKeepsASharpButTallPeninsula() {
             // A sharp corner that juts far is real shape, not a sliver: the apex at
             // (50,160) rises 60 above the y = 100 chord, past the 20 height bar, so
             // even though it is sharp it survives.
@@ -322,7 +322,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void remove_spikes_keeps_a_gently_curved_run() {
+        void removeSpikesKeepsAGentlyCurvedRun() {
             // A shallow bump only 8 above the chord but spread wide, so its corner is
             // near-straight (well over 45 deg). It clears the angle bar and stays even
             // though it is under the height bar - the pass sands slivers, not curves.
@@ -345,7 +345,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void remove_spikes_leaves_the_polygon_unchanged_for_a_non_positive_threshold() {
+        void removeSpikesLeavesThePolygonUnchangedForANonPositiveThreshold() {
 
             var squareWithNeedle = Arrays.asList(
                 new double[] {0, 0},
@@ -363,7 +363,7 @@ final class PolygonSmoothingTest {
         }
 
         @Test
-        void remove_spikes_never_drops_below_three_vertices() {
+        void removeSpikesNeverDropsBelowThreeVertices() {
             // A degenerate sliver triangle (all corners sharp and thin): the pass must
             // not eat it down to a line - it stops at three so the caller's own area
             // check discards it.

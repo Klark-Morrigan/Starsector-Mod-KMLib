@@ -17,7 +17,7 @@ final class SectorWalkCountersTest {
     class CountColoniesRead {
 
         @Test
-        void counts_the_colonies_on_the_open_section() {
+        void countsTheColoniesOnTheOpenSection() {
 
             var counts = WalkCountCapture.captureCountsOf(
                 () -> SectorWalkCounters.countColoniesRead(4));
@@ -31,7 +31,7 @@ final class SectorWalkCountersTest {
     class CountEntitiesVisited {
 
         @Test
-        void counts_the_entities_on_the_open_section() {
+        void countsTheEntitiesOnTheOpenSection() {
 
             var counts = WalkCountCapture.captureCountsOf(
                 () -> SectorWalkCounters.countEntitiesVisited(2100));
@@ -45,7 +45,7 @@ final class SectorWalkCountersTest {
     class CountMarketsRead {
 
         @Test
-        void counts_the_markets_on_the_open_section() {
+        void countsTheMarketsOnTheOpenSection() {
 
             var counts = WalkCountCapture.captureCountsOf(
                 () -> SectorWalkCounters.countMarketsRead(12));
@@ -59,7 +59,7 @@ final class SectorWalkCountersTest {
     class CountSectorWalk {
 
         @Test
-        void counts_one_walk_and_the_systems_it_went_over() {
+        void countsOneWalkAndTheSystemsItWentOver() {
             // Both, since neither answers the other's question: the walk is what a budget bounds,
             // and the systems are what a duration is read against.
             var counts = WalkCountCapture.captureCountsOf(
@@ -72,7 +72,7 @@ final class SectorWalkCountersTest {
         }
 
         @Test
-        void counts_a_second_walk_as_a_second_walk() {
+        void countsASecondWalkAsASecondWalk() {
             // The one thing the counter exists to catch: a pass answering one question with two
             // traversals says so on the row that asked for them.
             var counts = WalkCountCapture.captureCountsOf(() -> {
@@ -85,7 +85,7 @@ final class SectorWalkCountersTest {
         }
 
         @Test
-        void counts_a_walk_over_an_empty_sector_without_opening_a_systems_column() {
+        void countsAWalkOverAnEmptySectorWithoutOpeningASystemsColumn() {
             // A walk that found nothing still cost a traversal, while a systems column reading
             // zero is a column every other row then has to be read past.
             var counts = WalkCountCapture.captureCountsOf(
@@ -102,7 +102,7 @@ final class SectorWalkCountersTest {
     class CountSystemsVisited {
 
         @Test
-        void counts_the_systems_without_counting_a_walk() {
+        void countsTheSystemsWithoutCountingAWalk() {
             // A system handed over one at a time is a visit and not a traversal, so a budget
             // stated on walks is not spent by a reader that walked nothing.
             var counts = WalkCountCapture.captureCountsOf(

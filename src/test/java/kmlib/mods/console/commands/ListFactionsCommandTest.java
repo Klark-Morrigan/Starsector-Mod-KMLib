@@ -60,7 +60,7 @@ final class ListFactionsCommandTest {
     class BuildReport {
 
         @Test
-        void names_every_faction_with_the_places_it_holds() {
+        void namesEveryFactionWithThePlacesItHolds() {
 
             var sector = new SectorFixture();
 
@@ -79,7 +79,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void prints_no_visibility_counts_or_systems_for_a_faction_holding_nothing() {
+        void printsNoVisibilityCountsOrSystemsForAFactionHoldingNothing() {
             // A row of noughts and an empty systems clause read as a finding rather
             // than as the absence they are, and "holdings: 0" already says it.
             var sector = new SectorFixture();
@@ -93,7 +93,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void counts_two_markets_on_one_body_as_one_holding() {
+        void countsTwoMarketsOnOneBodyAsOneHolding() {
             // A mod supersedes a colony by adding its own market beside vanilla's on
             // the same body. Counted per market, that place is banked twice and its
             // owner reads as holding twice what the player can see.
@@ -110,7 +110,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void counts_a_found_concealed_place_as_hidden_only() {
+        void countsAFoundConcealedPlaceAsHiddenOnly() {
             // The hidden flag never clears, so a raided pirate base stays hidden while
             // being perfectly well known - it must not also count as undiscovered.
             var sector = new SectorFixture();
@@ -125,7 +125,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void counts_an_undiscovered_concealed_place_in_both_columns() {
+        void countsAnUndiscoveredConcealedPlaceInBothColumns() {
             // Neither column is a subset of the other: an undiscovered base is concealed AND
             // still to be found, which is why the two are reported side by side.
             var sector = new SectorFixture();
@@ -140,7 +140,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void names_hyperspace_after_the_star_systems() {
+        void namesHyperspaceAfterTheStarSystems() {
             // Vanilla puts no colony out there, but mods do, and a sector-wide count
             // that quietly dropped them would be wrong rather than merely incomplete.
             var sector = new SectorFixture();
@@ -157,7 +157,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void marks_a_territorial_faction() {
+        void marksATerritorialFaction() {
 
             var sector = new SectorFixture();
 
@@ -168,7 +168,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void reports_the_player_s_own_faction_as_self() {
+        void reportsThePlayerSOwnFactionAsSelf() {
             // The engine answers for a relationship with oneself; printed, it reads as
             // a finding about the player's standing with the player.
             var sector = new SectorFixture();
@@ -182,7 +182,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void names_a_faction_carrying_a_placeholder_display_name_by_its_id() {
+        void namesAFactionCarryingAPlaceholderDisplayNameByItsId() {
             // A stock Nexerelin player.faction reports the literal "player" as its
             // display name, and vanilla reports "Independent" before the first colony.
             // Repeating the id says no more than is known, which is the point.
@@ -195,7 +195,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void orders_the_factions_by_id() {
+        void ordersTheFactionsById() {
             // The sector's own order is load order, which differs between installs and
             // makes two runs hard to compare.
             var sector = new SectorFixture();
@@ -213,7 +213,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void lists_only_factions_holding_something_under_the_markets_keyword() {
+        void listsOnlyFactionsHoldingSomethingUnderTheMarketsKeyword() {
 
             var sector = new SectorFixture();
 
@@ -229,7 +229,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void lists_only_factions_holding_nothing_under_the_no_markets_keyword() {
+        void listsOnlyFactionsHoldingNothingUnderTheNoMarketsKeyword() {
 
             var sector = new SectorFixture();
 
@@ -245,7 +245,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void lists_only_factions_holding_a_concealed_place_under_the_hidden_keyword() {
+        void listsOnlyFactionsHoldingAConcealedPlaceUnderTheHiddenKeyword() {
 
             var sector = new SectorFixture();
 
@@ -264,7 +264,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void lists_only_factions_holding_an_undiscovered_place_under_the_discoverable_keyword() {
+        void listsOnlyFactionsHoldingAnUndiscoveredPlaceUnderTheDiscoverableKeyword() {
             // A found concealed base is hidden but no longer findable, so it must not
             // satisfy this keyword - which is what keeps the two columns distinct.
             var sector = new SectorFixture();
@@ -284,7 +284,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void keeps_the_counts_whole_and_narrows_the_systems_clause_under_a_keyword() {
+        void keepsTheCountsWholeAndNarrowsTheSystemsClauseUnderAKeyword() {
             // The keyword decides who is listed, not what is reported about them - but
             // the clause does narrow, since finding WHERE the matches are is what a
             // filtered run is for.
@@ -303,7 +303,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void names_the_keyword_in_the_header() {
+        void namesTheKeywordInTheHeader() {
 
             var sector = new SectorFixture();
 
@@ -312,7 +312,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void reports_none_when_no_faction_matches() {
+        void reportsNoneWhenNoFactionMatches() {
 
             var sector = new SectorFixture();
 
@@ -352,7 +352,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void prints_the_report_for_a_bare_invocation() {
+        void printsTheReportForABareInvocation() {
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
 
@@ -368,7 +368,7 @@ final class ListFactionsCommandTest {
         // noticing: a flag bound to the wrong filter still parses and still prints.
         @ParameterizedTest
         @ValueSource(strings = {"markets", "hidden", "discoverable", "no_markets"})
-        void accepts_each_filter_keyword_and_selects_the_filter_it_names(String keyword) {
+        void acceptsEachFilterKeywordAndSelectsTheFilterItNames(String keyword) {
 
             var result = command.runCommand(keyword, CommandContext.CAMPAIGN_MAP);
 
@@ -380,7 +380,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void reports_two_filter_keywords_as_bad_syntax() {
+        void reportsTwoFilterKeywordsAsBadSyntax() {
             // The keywords are alternatives: a pair has no single honest answer for the
             // systems clause, and no_markets contradicts the other three outright. The
             // usage line is asserted as a literal because it is built from the filters
@@ -395,7 +395,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void reports_an_unknown_word_as_bad_syntax() {
+        void reportsAnUnknownWordAsBadSyntax() {
 
             var result = command.runCommand("bogus", CommandContext.CAMPAIGN_MAP);
 
@@ -406,7 +406,7 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void returns_the_validation_result_outside_a_campaign() {
+        void returnsTheValidationResultOutsideACampaign() {
 
             var result = command.runCommand("", CommandContext.COMBAT_MISSION);
 

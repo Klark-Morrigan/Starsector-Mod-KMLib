@@ -61,7 +61,7 @@ final class ColonisationRoutinesTest {
     class OfferColonisation {
 
         @Test
-        void takes_nothing_where_nothing_is_installed() {
+        void takesNothingWhereNothingIsInstalled() {
             // The answer on every install running no mod with a colonisation of its own, and the
             // one that leaves the game's own sequence to found the colony.
             assertThat(offerColonisation().wasExecuted())
@@ -69,7 +69,7 @@ final class ColonisationRoutinesTest {
         }
 
         @Test
-        void answers_that_the_founding_was_taken_where_the_installed_routine_takes_it() {
+        void answersThatTheFoundingWasTakenWhereTheInstalledRoutineTakesIt() {
 
             installPermittingFallback("Some Mod", buildRoutineNamed("installed", true));
 
@@ -80,7 +80,7 @@ final class ColonisationRoutinesTest {
         }
 
         @Test
-        void leaves_the_founding_where_the_installed_routine_declines() {
+        void leavesTheFoundingWhereTheInstalledRoutineDeclines() {
             // Declining is how a routine says this install, or this body, is not its case - the
             // game's own sequence founds the colony instead.
             installPermittingFallback("Some Mod", buildRoutineNamed("installed", false));
@@ -92,7 +92,7 @@ final class ColonisationRoutinesTest {
         }
 
         @Test
-        void fails_the_founding_where_a_routine_that_had_to_found_declines() {
+        void failsTheFoundingWhereARoutineThatHadToFoundDeclines() {
             // A mod whose colonies are not the game's colonies has no correct outcome from the
             // plainer founding, so the run stops here rather than producing one nothing on that
             // install would recognise.
@@ -108,7 +108,7 @@ final class ColonisationRoutinesTest {
     class RegisterRoutine {
 
         @Test
-        void offers_the_founding_to_the_last_routine_registered() {
+        void offersTheFoundingToTheLastRoutineRegistered() {
             // One routine founds colonies on an install, so registering is replacing: the mod that
             // registered first is not consulted afterwards, and is not meant to be.
             installPermittingFallback("First Mod", buildRoutineNamed("first", true));
@@ -121,7 +121,7 @@ final class ColonisationRoutinesTest {
         }
 
         @Test
-        void answers_with_the_name_the_installed_routine_was_registered_under() {
+        void answersWithTheNameTheInstalledRoutineWasRegisteredUnder() {
             // What a reader asks the register: which mod founds colonies on this install.
             installPermittingFallback("Some Mod", buildRoutineNamed("installed", true));
 
@@ -134,7 +134,7 @@ final class ColonisationRoutinesTest {
     class ReadRoutine {
 
         @Test
-        void answers_with_what_this_install_registered() {
+        void answersWithWhatThisInstallRegistered() {
 
             var colonisationRoutine = buildRoutineNamed("installed", false);
 
@@ -145,7 +145,7 @@ final class ColonisationRoutinesTest {
         }
 
         @Test
-        void is_absent_where_nothing_registered_one() {
+        void isAbsentWhereNothingRegisteredOne() {
 
             assertThat(ColonisationRoutines.readRoutine())
                 .isNull();

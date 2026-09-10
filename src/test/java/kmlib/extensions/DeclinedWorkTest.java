@@ -20,7 +20,7 @@ final class DeclinedWorkTest {
     class Construction {
 
         @Test
-        void carries_the_reason_it_was_given() {
+        void carriesTheReasonItWasGiven() {
 
             var declinedWork = new DeclinedWork("the body under it is not a planet");
 
@@ -29,21 +29,21 @@ final class DeclinedWorkTest {
         }
 
         @Test
-        void is_not_executed_work() {
+        void isNotExecutedWork() {
 
             assertThat(new DeclinedWork("nothing to do here").wasExecuted())
                 .isFalse();
         }
 
         @Test
-        void refuses_a_decline_that_says_nothing() {
+        void refusesADeclineThatSaysNothing() {
 
             assertThatThrownBy(() -> new DeclinedWork(null))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
-        void refuses_a_decline_whose_reason_is_only_whitespace() {
+        void refusesADeclineWhoseReasonIsOnlyWhitespace() {
             // Blank passes a null check and reads as a reason at every call site that builds one,
             // so the test for text is the one worth having.
             assertThatThrownBy(() -> new DeclinedWork("   "))

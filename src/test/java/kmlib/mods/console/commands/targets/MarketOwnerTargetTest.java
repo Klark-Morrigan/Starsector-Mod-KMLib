@@ -25,7 +25,7 @@ final class MarketOwnerTargetTest {
     class ReadOwnerName {
 
         @Test
-        void names_a_faction_by_its_own_display_name() {
+        void namesAFactionByItsOwnDisplayName() {
 
             var target = buildTargetOwnedBy("hegemony", "Hegemony");
 
@@ -34,7 +34,7 @@ final class MarketOwnerTargetTest {
         }
 
         @Test
-        void names_the_player_faction_by_id_while_it_reports_the_vanilla_placeholder() {
+        void namesThePlayerFactionByIdWhileItReportsTheVanillaPlaceholder() {
             // "Independent" is what the player's faction reports before its first colony, and in
             // a sentence about who now holds a place it reads as somebody else entirely.
             var target = buildTargetOwnedBy(PLAYER_FACTION_ID, "Independent");
@@ -44,7 +44,7 @@ final class MarketOwnerTargetTest {
         }
 
         @Test
-        void names_a_faction_by_id_when_it_reports_no_name_at_all() {
+        void namesAFactionByIdWhenItReportsNoNameAtAll() {
 
             var target = buildTargetOwnedBy("some_mod_faction", "");
 

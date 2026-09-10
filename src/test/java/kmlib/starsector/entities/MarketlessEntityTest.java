@@ -25,7 +25,7 @@ final class MarketlessEntityTest {
     class Construct {
 
         @Test
-        void refuses_an_entity_carrying_a_market() {
+        void refusesAnEntityCarryingAMarket() {
             // Such an entity is a colony's, and its owner and discovery are the market's. Refusing
             // it here fails where the mistake is, rather than three reads downstream each free to
             // answer differently from the colony holding the same entity.
@@ -40,7 +40,7 @@ final class MarketlessEntityTest {
         }
 
         @Test
-        void refuses_a_reading_with_no_entity() {
+        void refusesAReadingWithNoEntity() {
 
             assertThatThrownBy(() -> new MarketlessEntity(null))
                 .isInstanceOf(NullPointerException.class);
@@ -51,7 +51,7 @@ final class MarketlessEntityTest {
     class ReadOwnerId {
 
         @Test
-        void reports_the_faction_id_the_entity_carries() {
+        void reportsTheFactionIdTheEntityCarries() {
             // Live and unconcealed. A reading that substituted a neutral owner for a distant
             // player would leave a caller unable to tell a genuinely unowned hulk from a
             // withheld one.
@@ -70,7 +70,7 @@ final class MarketlessEntityTest {
         }
 
         @Test
-        void reports_no_owner_where_the_entity_names_no_faction() {
+        void reportsNoOwnerWhereTheEntityNamesNoFaction() {
             // Absorbed rather than refused: an owner nobody can name is compared against whatever
             // a caller compares owners for, and there is nothing here to fail on.
             var marketlessEntity = new MarketlessEntity(buildCustomEntity("station_research"));
@@ -84,7 +84,7 @@ final class MarketlessEntityTest {
     class ReadTypeId {
 
         @Test
-        void reports_the_type_the_entity_was_built_from() {
+        void reportsTheTypeTheEntityWasBuiltFrom() {
             // The id rather than the spec's name, that being what a classification keyed on entity
             // type matches against.
             assertThat(new MarketlessEntity(buildCustomEntity("station_mining")).readTypeId())
@@ -92,7 +92,7 @@ final class MarketlessEntityTest {
         }
 
         @Test
-        void reports_no_type_where_the_entity_carries_none() {
+        void reportsNoTypeWhereTheEntityCarriesNone() {
 
             assertThat(new MarketlessEntity(buildCustomEntity(null)).readTypeId())
                 .isNull();
@@ -103,7 +103,7 @@ final class MarketlessEntityTest {
     class IsDiscoveredByPlayer {
 
         @Test
-        void reports_a_found_entity_as_discovered() {
+        void reportsAFoundEntityAsDiscovered() {
             // An entity stops being discoverable once found, so the inclusion gate is the
             // negation of that flag rather than a reading of its own.
             var marketlessEntity = new MarketlessEntity(buildCustomEntity("station_research"));
@@ -113,7 +113,7 @@ final class MarketlessEntityTest {
         }
 
         @Test
-        void reports_an_unfound_entity_as_undiscovered() {
+        void reportsAnUnfoundEntityAsUndiscovered() {
 
             var entityMock = buildCustomEntity("station_research");
 

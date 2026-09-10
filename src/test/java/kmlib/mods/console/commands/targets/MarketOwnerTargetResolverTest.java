@@ -67,7 +67,7 @@ final class MarketOwnerTargetResolverTest {
     class ResolveMarketAndOwner {
 
         @Test
-        void pairs_the_place_with_the_owner_when_both_are_found() {
+        void pairsThePlaceWithTheOwnerWhenBothAreFound() {
 
             var resolution = MarketOwnerTargetResolver.resolveMarketAndOwner(
                 sectorMock,
@@ -80,7 +80,7 @@ final class MarketOwnerTargetResolverTest {
         }
 
         @Test
-        void poses_each_search_the_argument_it_answers_for() {
+        void posesEachSearchTheArgumentItAnswersFor() {
             // The requirement goes to the place search and the faction id to the owner search,
             // and an omitted argument is passed on as omitted rather than defaulted here.
             MarketOwnerTargetResolver.resolveMarketAndOwner(
@@ -99,7 +99,7 @@ final class MarketOwnerTargetResolverTest {
         }
 
         @Test
-        void passes_on_the_place_searchs_refusal() {
+        void passesOnThePlaceSearchsRefusal() {
 
             refuseThePlace();
 
@@ -114,7 +114,7 @@ final class MarketOwnerTargetResolverTest {
         }
 
         @Test
-        void looks_for_no_owner_once_the_place_is_refused() {
+        void looksForNoOwnerOnceThePlaceIsRefused() {
             // Nothing is resolved after a refusal: the run is over, and a second search would be
             // work done for an answer nobody reads.
             refuseThePlace();
@@ -130,7 +130,7 @@ final class MarketOwnerTargetResolverTest {
         }
 
         @Test
-        void passes_on_the_owner_searchs_refusal() {
+        void passesOnTheOwnerSearchsRefusal() {
 
             refuseTheOwner();
 
@@ -145,7 +145,7 @@ final class MarketOwnerTargetResolverTest {
         }
 
         @Test
-        void reports_the_place_rather_than_the_owner_when_both_are_wrong() {
+        void reportsThePlaceRatherThanTheOwnerWhenBothAreWrong() {
             // A run with two mistakes in it has to report one of them, and the place is the
             // argument a player is likelier to have got wrong - so it is asked first and its
             // refusal is the one that gets said.

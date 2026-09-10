@@ -33,7 +33,7 @@ final class PolygonTessellatorTest {
     @Nested
     class TessellateToTriangles {
         @Test
-        void concave_polygon_triangulates_to_its_own_area() {
+        void concavePolygonTriangulatesToItsOwnArea() {
             // CCW L-shape: a 30x30 square with a 20x20 bite out of the top-right,
             // area 900 - 400 = 500.
             var lShape = Arrays.asList(
@@ -46,7 +46,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void an_opposite_wound_hole_is_subtracted_from_the_fill() {
+        void anOppositeWoundHoleIsSubtractedFromTheFill() {
             // CCW 40x40 outer (area 1600) with a CW 20x20 hole (area 400): the filled
             // region is 1600 - 400 = 1200.
             var outer = Arrays.asList(
@@ -62,14 +62,14 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void a_degenerate_contour_produces_no_triangles() {
+        void aDegenerateContourProducesNoTriangles() {
             var twoPoints = Arrays.asList(new double[] {0, 0}, new double[] {10, 0});
 
             assertThat(PolygonTessellator.tessellateToTriangles(List.of(twoPoints))).isEmpty();
         }
 
         @Test
-        void empty_input_produces_no_triangles() {
+        void emptyInputProducesNoTriangles() {
             assertThat(PolygonTessellator.tessellateToTriangles(List.of())).isEmpty();
         }
     }
@@ -77,7 +77,7 @@ final class PolygonTessellatorTest {
     @Nested
     class TessellateIntersectionToTriangles {
         @Test
-        void two_overlapping_squares_triangulate_to_their_overlap() {
+        void twoOverlappingSquaresTriangulateToTheirOverlap() {
             // A 20x20 square at the origin and a 20x20 square offset by (10, 10):
             // their overlap is the 10x10 square [10,10]-[20,20], area 100.
             var lower = Arrays.asList(
@@ -94,7 +94,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void a_region_contained_in_the_other_triangulates_to_its_own_area() {
+        void aRegionContainedInTheOtherTriangulatesToItsOwnArea() {
             // A 20x20 square wholly inside a 40x40 square: the overlap is the inner
             // square itself, area 400.
             var outer = Arrays.asList(
@@ -111,7 +111,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void disjoint_regions_produce_no_triangles() {
+        void disjointRegionsProduceNoTriangles() {
             var left = Arrays.asList(
                 new double[] {0, 0}, new double[] {10, 0},
                 new double[] {10, 10}, new double[] {0, 10});
@@ -124,7 +124,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void a_hole_in_one_region_is_excluded_from_the_overlap() {
+        void aHoleInOneRegionIsExcludedFromTheOverlap() {
             // A 40x40 outer with a CW 10x10 hole [15,15]-[25,25], intersected with a
             // 20x20 square [10,10]-[30,30] that sits over the hole: the overlap is the
             // 20x20 square (400) minus the hole it fully contains (100), area 300.
@@ -145,7 +145,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void an_operand_given_as_overlapping_contours_is_normalized_first() {
+        void anOperandGivenAsOverlappingContoursIsNormalizedFirst() {
             // One operand passed as two overlapping copies of the same 20x20 square:
             // raw, its interior would wind +2 and survive the intersection everywhere
             // on its own. Resolving each operand to a +1 region first makes the result
@@ -169,7 +169,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void an_empty_operand_produces_no_triangles() {
+        void anEmptyOperandProducesNoTriangles() {
             var square = Arrays.asList(
                 new double[] {0, 0}, new double[] {10, 0},
                 new double[] {10, 10}, new double[] {0, 10});
@@ -182,7 +182,7 @@ final class PolygonTessellatorTest {
     @Nested
     class TessellateIntersectionToBoundaryLoops {
         @Test
-        void two_overlapping_squares_outline_their_overlap() {
+        void twoOverlappingSquaresOutlineTheirOverlap() {
             // The same overlap the triangle form covers, as a boundary loop: the 10x10
             // square [10,10]-[20,20], area 100.
             var lower = Arrays.asList(
@@ -200,7 +200,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void a_region_contained_in_the_other_outlines_its_own_area() {
+        void aRegionContainedInTheOtherOutlinesItsOwnArea() {
             // A 20x20 square wholly inside a 40x40 square outlines the inner square
             // untouched, area 400 - the clip leaves an interior operand alone.
             var outer = Arrays.asList(
@@ -218,7 +218,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void an_overlap_split_into_two_pieces_returns_two_loops() {
+        void anOverlapSplitIntoTwoPiecesReturnsTwoLoops() {
             // A horizontal bar clipped by two disjoint pillars overlaps in two separate places, so
             // the intersection is two loops - the case that makes the boundary a list of loops
             // rather than one ring. Each overlap is a 20x20 square (400), so the two sum to 800.
@@ -241,7 +241,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void a_hole_in_one_region_is_excluded_from_the_outlined_overlap() {
+        void aHoleInOneRegionIsExcludedFromTheOutlinedOverlap() {
             // The same holed-outer/probe overlap the triangle form covers, as boundary loops: the
             // 20x20 probe (400) minus the 10x10 hole it fully contains (100), area 300, and the
             // hole comes back as its own loop.
@@ -263,7 +263,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void disjoint_regions_produce_no_loops() {
+        void disjointRegionsProduceNoLoops() {
             var left = Arrays.asList(
                 new double[] {0, 0}, new double[] {10, 0},
                 new double[] {10, 10}, new double[] {0, 10});
@@ -276,7 +276,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void an_empty_operand_produces_no_loops() {
+        void anEmptyOperandProducesNoLoops() {
             var square = Arrays.asList(
                 new double[] {0, 0}, new double[] {10, 0},
                 new double[] {10, 10}, new double[] {0, 10});
@@ -289,7 +289,7 @@ final class PolygonTessellatorTest {
     @Nested
     class TessellateToBoundaryLoops {
         @Test
-        void a_simple_square_returns_one_loop_of_its_area() {
+        void aSimpleSquareReturnsOneLoopOfItsArea() {
             var square = Arrays.asList(
                 new double[] {0, 0}, new double[] {10, 0},
                 new double[] {10, 10}, new double[] {0, 10});
@@ -301,7 +301,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void a_self_intersecting_bowtie_keeps_only_its_positive_lobe() {
+        void aSelfIntersectingBowtieKeepsOnlyItsPositiveLobe() {
             // A figure-eight whose waist crosses itself: one lobe winds
             // counter-clockwise (winding +1), the other clockwise (-1). Under the
             // positive rule only the +1 lobe survives - a clean loop with no
@@ -319,7 +319,7 @@ final class PolygonTessellatorTest {
         }
 
         @Test
-        void empty_input_produces_no_loops() {
+        void emptyInputProducesNoLoops() {
             assertThat(PolygonTessellator.tessellateToBoundaryLoops(List.of())).isEmpty();
         }
     }

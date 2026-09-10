@@ -166,7 +166,7 @@ final class SpawnEntityCommandTest {
     class RunCommand {
 
         @Test
-        void reports_the_supported_list_for_an_unknown_kind_and_spawns_nothing() {
+        void reportsTheSupportedListForAnUnknownKindAndSpawnsNothing() {
 
             var result = command.runCommand("bogus", CommandContext.CAMPAIGN_MAP);
 
@@ -182,7 +182,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void reports_the_supported_list_for_a_bare_invocation_naming_no_kind() {
+        void reportsTheSupportedListForABareInvocationNamingNoKind() {
             // No words at all rather than one blank word: the command names the kind it
             // could not read as the empty string it was given, and lists what it accepts.
             var result = command.runCommand("   ", CommandContext.CAMPAIGN_MAP);
@@ -198,7 +198,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void spawns_an_inactive_gate_orbiting_the_center_and_reports_its_id() {
+        void spawnsAnInactiveGateOrbitingTheCenterAndReportsItsId() {
 
             var spawnedMock = mock(SectorEntityToken.class);
 
@@ -225,7 +225,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void derives_a_radius_speed_with_default_jitter_when_none_is_given() {
+        void derivesARadiusSpeedWithDefaultJitterWhenNoneIsGiven() {
 
             var spawnedMock = mock(JumpPointAPI.class);
 
@@ -267,7 +267,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void passes_a_named_jitter_to_the_widening() {
+        void passesANamedJitterToTheWidening() {
 
             var spawnedMock = mock(JumpPointAPI.class);
 
@@ -302,7 +302,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void jitters_an_explicit_speed_without_deriving_from_radius() {
+        void jittersAnExplicitSpeedWithoutDerivingFromRadius() {
 
             var spawnedMock = mock(JumpPointAPI.class);
 
@@ -340,7 +340,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void applies_a_named_jitter_to_an_explicit_speed() {
+        void appliesANamedJitterToAnExplicitSpeed() {
 
             var spawnedMock = mock(JumpPointAPI.class);
 
@@ -375,7 +375,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void applies_a_positional_focus_and_speed_in_order() {
+        void appliesAPositionalFocusAndSpeedInOrder() {
 
             var namedFocusMock = mock(SectorEntityToken.class);
 
@@ -416,7 +416,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void rejects_a_non_numeric_speed() {
+        void rejectsANonNumericSpeed() {
 
             var result = command.runCommand("jump_point speed=fast", CommandContext.CAMPAIGN_MAP);
 
@@ -430,7 +430,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void rejects_a_non_numeric_jitter() {
+        void rejectsANonNumericJitter() {
 
             var result = command.runCommand("jump_point jitter=lots", CommandContext.CAMPAIGN_MAP);
 
@@ -444,7 +444,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void rejects_a_negative_jitter() {
+        void rejectsANegativeJitter() {
 
             var result = command.runCommand("jump_point jitter=-0.5", CommandContext.CAMPAIGN_MAP);
 
@@ -458,7 +458,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void rejects_an_unknown_named_parameter() {
+        void rejectsAnUnknownNamedParameter() {
 
             var result = command.runCommand("jump_point colour=red", CommandContext.CAMPAIGN_MAP);
 
@@ -472,7 +472,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void rejects_more_arguments_than_focus_and_speed() {
+        void rejectsMoreArgumentsThanFocusAndSpeed() {
 
             var result = command.runCommand("jump_point beta 5 extra", CommandContext.CAMPAIGN_MAP);
 
@@ -486,7 +486,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void refuses_a_multi_star_system_without_a_focus_id() {
+        void refusesAMultiStarSystemWithoutAFocusId() {
             // Build the star list before opening the static stub: constructing
             // the mocks mid-stub would trip Mockito's unfinished-stubbing guard.
             var stars = List.of(buildStar("alpha"), buildStar("beta"));
@@ -511,7 +511,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void refuses_an_explicit_focus_id_that_matches_nothing() {
+        void refusesAnExplicitFocusIdThatMatchesNothing() {
 
             when(systemMock.getEntityById("ghost"))
                 .thenReturn(null);
@@ -528,7 +528,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void orbits_an_explicit_focus_id_when_one_is_given() {
+        void orbitsAnExplicitFocusIdWhenOneIsGiven() {
 
             var namedFocusMock = mock(SectorEntityToken.class);
 
@@ -564,7 +564,7 @@ final class SpawnEntityCommandTest {
         }
 
         @Test
-        void returns_the_validation_result_outside_a_campaign() {
+        void returnsTheValidationResultOutsideACampaign() {
 
             var result = command.runCommand("gate", CommandContext.COMBAT_MISSION);
 

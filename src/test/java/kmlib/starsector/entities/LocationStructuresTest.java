@@ -41,7 +41,7 @@ final class LocationStructuresTest {
     class ReadStructuresIn {
 
         @Test
-        void yields_every_vanilla_structure_the_tag_admits() {
+        void yieldsEveryVanillaStructureTheTagAdmits() {
             // The makeshift variants carry the tag as the full installations do, so a selection
             // keyed on the three whole-installation ids would drop half of what is built.
             var locationMock = mock(LocationAPI.class);
@@ -59,7 +59,7 @@ final class LocationStructuresTest {
         }
 
         @Test
-        void yields_a_modded_structure_the_tag_admits() {
+        void yieldsAModdedStructureTheTagAdmits() {
             // A mod adding a fourth kind joins the set by tagging its own entity, and that is the
             // whole of what joining takes.
             var locationMock = mock(LocationAPI.class);
@@ -71,7 +71,7 @@ final class LocationStructuresTest {
         }
 
         @Test
-        void yields_an_undiscovered_structure_like_any_other() {
+        void yieldsAnUndiscoveredStructureLikeAnyOther() {
             // Nothing is filtered here: discovery is a fact a caller reads off the structure and
             // applies to its own purpose, and a search that withheld one would leave a caller
             // recording observations unable to see what it was meant to be recording.
@@ -89,7 +89,7 @@ final class LocationStructuresTest {
         }
 
         @Test
-        void skips_an_entity_the_location_lists_as_nothing() {
+        void skipsAnEntityTheLocationListsAsNothing() {
             // Nothing to stand a structure on, and the record refuses one - so the listing is
             // filtered here rather than letting one bad entry take out the whole read.
             var locationMock = mock(LocationAPI.class);
@@ -103,7 +103,7 @@ final class LocationStructuresTest {
         }
 
         @Test
-        void returns_empty_for_a_location_holding_no_structures() {
+        void returnsEmptyForALocationHoldingNoStructures() {
             // Empty rather than null: a place with nothing built in it is an ordinary answer, and
             // every caller listing structures would otherwise guard against it separately.
             var locationMock = mock(LocationAPI.class);
@@ -115,13 +115,13 @@ final class LocationStructuresTest {
         }
 
         @Test
-        void returns_empty_for_a_null_location() {
+        void returnsEmptyForANullLocation() {
             assertThat(LocationStructures.readStructuresIn(null))
                 .isEmpty();
         }
 
         @Test
-        void returns_empty_when_the_location_reports_no_tagged_entity_list() {
+        void returnsEmptyWhenTheLocationReportsNoTaggedEntityList() {
 
             var locationMock = mock(LocationAPI.class);
 

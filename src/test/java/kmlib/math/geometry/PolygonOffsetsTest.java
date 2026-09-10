@@ -55,13 +55,13 @@ final class PolygonOffsetsTest {
     class OffsetEdgesInward {
 
         @Test
-        void offset_returns_one_segment_per_edge() {
+        void offsetReturnsOneSegmentPerEdge() {
             assertThat(PolygonOffsets.offsetEdgesInward(buildReferenceSquare(), 2.0))
                 .hasSize(4);
         }
 
         @Test
-        void offset_moves_edges_toward_the_interior() {
+        void offsetMovesEdgesTowardTheInterior() {
             // The first edge (0,0)->(10,0) is the bottom edge; offsetting inward by
             // 2 lifts it from y = 0 to y = 2, spanning the same x extent.
             var segments = PolygonOffsets.offsetEdgesInward(buildReferenceSquare(), 2.0);
@@ -78,7 +78,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void offset_does_not_collapse_a_thin_polygon() {
+        void offsetDoesNotCollapseAThinPolygon() {
             // A whole-polygon inset by 2 would empty this height-1 quad; per-edge
             // offset still yields a segment per edge - nothing vanishes.
             var thin = Arrays.asList(
@@ -92,7 +92,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void offset_returns_empty_for_fewer_than_two_vertices() {
+        void offsetReturnsEmptyForFewerThanTwoVertices() {
             assertThat(PolygonOffsets.offsetEdgesInward(
                     List.of(new double[] {0, 0}),
                     1.0))
@@ -100,7 +100,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void offset_skips_an_edge_too_short_to_have_a_direction() {
+        void offsetSkipsAnEdgeTooShortToHaveADirection() {
             // This entry point offsets the ring as given, without the dedup the whole-
             // polygon insets run first, so a near-coincident vertex pair reaches it as a
             // real edge. That edge has no direction and so no normal: it is dropped
@@ -123,7 +123,7 @@ final class PolygonOffsetsTest {
     class InsetConvexPolygon {
 
         @Test
-        void inset_shrinks_a_square_to_a_concentric_square() {
+        void insetShrinksASquareToAConcentricSquare() {
             // The side-10 square inset by 2 is the side-6 square (2,2)..(8,8): each
             // corner is where two adjacent offset edges meet, so the shape stays
             // closed with clean corners rather than overshooting segments.
@@ -143,7 +143,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_drops_duplicate_vertices_before_insetting() {
+        void insetDropsDuplicateVerticesBeforeInsetting() {
             // A repeated vertex would make a zero-length edge with no direction;
             // the inset must dedupe and still return the side-6 square's 4 corners.
             var withDuplicate = Arrays.asList(
@@ -158,7 +158,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_empties_when_distance_consumes_the_polygon() {
+        void insetEmptiesWhenDistanceConsumesThePolygon() {
             // A height-1 quad inset by 2 has no interior left: clipping empties it
             // rather than producing an inverted/spiking shape.
             var thin = Arrays.asList(
@@ -172,7 +172,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_returns_empty_for_fewer_than_three_distinct_vertices() {
+        void insetReturnsEmptyForFewerThanThreeDistinctVertices() {
             assertThat(PolygonOffsets.insetConvexPolygon(
                     Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
                     1.0))
@@ -183,7 +183,7 @@ final class PolygonOffsetsTest {
     @Nested
     class InsetSelectedEdges {
         @Test
-        void inset_selected_edges_pulls_in_only_the_flagged_edges() {
+        void insetSelectedEdgesPullsInOnlyTheFlaggedEdges() {
             // Square side 10; inset every edge but the right one (index 1). The kept
             // right edge stays at x = 10 while the other three pull in by 2, giving
             // the rectangle (2,2)..(10,8).
@@ -205,7 +205,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_selected_edges_flags_the_kept_edge_and_truncates_it_within_the_inset() {
+        void insetSelectedEdgesFlagsTheKeptEdgeAndTruncatesItWithinTheInset() {
 
             var result = PolygonOffsets.insetSelectedEdges(
                 buildReferenceSquare(),
@@ -232,7 +232,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_selected_edges_matches_the_whole_polygon_inset_when_every_edge_is_flagged() {
+        void insetSelectedEdgesMatchesTheWholePolygonInsetWhenEveryEdgeIsFlagged() {
 
             var selective = PolygonOffsets.insetSelectedEdges(
                 buildReferenceSquare(),
@@ -250,7 +250,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_selected_edges_empties_when_the_inset_consumes_the_polygon() {
+        void insetSelectedEdgesEmptiesWhenTheInsetConsumesThePolygon() {
 
             var thin = Arrays.asList(
                 new double[] {0, 0},
@@ -270,7 +270,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_selected_edges_empties_a_collapse_rather_than_returning_a_sliver() {
+        void insetSelectedEdgesEmptiesACollapseRatherThanReturningASliver() {
             // Insetting every edge of the side-10 square by exactly half its side
             // pulls all four borders through the centre, so the clip collapses to
             // coincident points at (5,5) - a non-zero raw vertex count but no area.
@@ -288,7 +288,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void inset_selected_edges_rejects_a_mask_not_parallel_to_the_edges() {
+        void insetSelectedEdgesRejectsAMaskNotParallelToTheEdges() {
             assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(
                     buildReferenceSquare(),
                     new boolean[] {true},
@@ -297,7 +297,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_uniform_distances_reproduce_the_boolean_scalar_result() {
+        void perEdgeUniformDistancesReproduceTheBooleanScalarResult() {
             // A per-edge array with every entry equal to one distance is the boolean
             // form flagging every edge with that scalar: same inset square, same
             // all-inset flags.
@@ -319,7 +319,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_mixed_distances_pull_each_edge_independently() {
+        void perEdgeMixedDistancesPullEachEdgeIndependently() {
             // Square side 10; the right edge (index 1) stays on its line at distance 0
             // while the other three pull in by their own amounts: bottom by 2 (y ->
             // 2), top by 3 (y -> 7), left by 1 (x -> 1). The result is the rectangle
@@ -350,7 +350,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_zero_distance_leaves_that_edge_on_its_line() {
+        void perEdgeZeroDistanceLeavesThatEdgeOnItsLine() {
             // A zero entry is exactly the boolean form's false: the edge is kept on
             // its line and flagged not-inset. {2,0,2,2} matches {true,false,true,true}
             // at distance 2 vertex-for-vertex and flag-for-flag.
@@ -372,7 +372,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_rejects_distances_not_parallel_to_the_edges() {
+        void perEdgeRejectsDistancesNotParallelToTheEdges() {
             assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(
                     buildReferenceSquare(),
                     new double[] {2.0}))
@@ -380,7 +380,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_returns_nothing_to_draw_below_three_vertices() {
+        void perEdgeReturnsNothingToDrawBelowThreeVertices() {
             // Two vertices bound no area, so there is no interior to pull edges into.
             var result = PolygonOffsets.insetSelectedEdges(
                 Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
@@ -391,7 +391,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_skips_an_edge_too_short_to_have_a_direction() {
+        void perEdgeSkipsAnEdgeTooShortToHaveADirection() {
             // Unlike the whole-polygon insets this path clips the ring as given, so a
             // near-coincident vertex pair survives to the clip loop. That edge has no
             // direction to offset along, so it is skipped rather than clipping the
@@ -454,7 +454,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void removal_splices_out_a_loop_wound_against_the_ring() {
+        void removalSplicesOutALoopWoundAgainstTheRing() {
 
             var cleaned = PolygonOffsets.removeReversedLoops(buildBowtieRing(), 0);
 
@@ -472,13 +472,13 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void removal_leaves_a_ring_that_does_not_fold_untouched() {
+        void removalLeavesARingThatDoesNotFoldUntouched() {
             assertThat(PolygonOffsets.removeReversedLoops(buildReferenceSquare(), 0))
                 .containsExactlyElementsOf(buildReferenceSquare());
         }
 
         @Test
-        void removal_leaves_a_fold_outside_the_window_alone() {
+        void removalLeavesAFoldOutsideTheWindowAlone() {
             // Two edges must be at least two apart along the ring to be able to cross -
             // adjacent ones share a vertex - so a window of one compares no pair at all and
             // every fold survives. Pinned because the window is the cheap scan's cost, and
@@ -489,7 +489,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void removal_leaves_nothing_for_a_second_pass_to_find() {
+        void removalLeavesNothingForASecondPassToFind() {
             // The method splices one fold per scan and repeats, so "no fold is left" is the
             // termination condition rather than something the caller checks. Idempotence
             // pins it without having to hand-build a shape that folds a chosen number of
@@ -501,7 +501,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void removal_leaves_a_clockwise_ring_clockwise() {
+        void removalLeavesAClockwiseRingClockwise() {
             // Winding is read from the ring itself rather than assumed counter-clockwise,
             // so a clockwise input keeps its own sense and only folds against IT are cut.
             var clockwise = Arrays.asList(
@@ -519,7 +519,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void removal_returns_the_input_below_three_vertices() {
+        void removalReturnsTheInputBelowThreeVertices() {
 
             var line = Arrays.asList(new double[] {0, 0}, new double[] {10, 0});
 
@@ -532,7 +532,7 @@ final class PolygonOffsetsTest {
     class InsetPolygonByMiter {
 
         @Test
-        void miter_inset_matches_the_convex_inset_on_a_square() {
+        void miterInsetMatchesTheConvexInsetOnASquare() {
             // On a convex shape the miter join and the half-plane clip agree: the
             // side-10 square insets by 2 to the concentric (2,2)..(8,8) square.
             var inset = PolygonOffsets.insetPolygonByMiter(
@@ -554,7 +554,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void miter_inset_keeps_a_concave_corner_bevelling_the_reflex_turn() {
+        void miterInsetKeepsAConcaveCornerBevellingTheReflexTurn() {
             // CCW L-shape with a reflex corner at (10,10). A half-plane clip would
             // shear the concavity off; this keeps it, mitring the five convex corners
             // (the origin to (2,2)) and bevelling the reflex one into two points -
@@ -588,7 +588,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void miter_inset_bevels_a_reflex_spike_instead_of_spiking_inward() {
+        void miterInsetBevelsAReflexSpikeInsteadOfSpikingInward() {
             // A side-200 CCW square with a narrow spike jutting into its interior
             // from the bottom edge - a sharp reflex corner at (100,15). A plain miter
             // would shoot that corner's join far up into the interior (to ~y=78), a
@@ -618,7 +618,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void miter_inset_returns_empty_for_fewer_than_three_distinct_vertices() {
+        void miterInsetReturnsEmptyForFewerThanThreeDistinctVertices() {
             assertThat(PolygonOffsets.insetPolygonByMiter(
                     Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
                     1.0,
@@ -627,7 +627,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_uniform_distances_reproduce_the_scalar_inset() {
+        void perEdgeUniformDistancesReproduceTheScalarInset() {
             // Every edge shifted the same distance is the scalar inset: the side-10
             // square insets by 2 to the concentric (2,2)..(8,8) square.
             var uniform = new double[] {2.0, 2.0, 2.0, 2.0};
@@ -650,7 +650,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_negative_distance_bulges_that_edge_outward() {
+        void perEdgeNegativeDistanceBulgesThatEdgeOutward() {
             // Only the bottom edge (edge 0) is pushed outward by 2 while the other
             // three inset inward by 2: the bottom corners drop below the original
             // y=0 line to y=-2, the outward bulge, and the top stays inset.
@@ -674,7 +674,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_two_outward_edges_bevel_instead_of_spiking_at_a_sharp_corner() {
+        void perEdgeTwoOutwardEdgesBevelInsteadOfSpikingAtASharpCorner() {
             // A sharp convex tip at the origin, its two edges (0 and 2) both pushed
             // outward by 5. Their offset lines would cross ~100 units out along -x -
             // a self-intersecting spike; the spike guard bevels the corner instead,
@@ -694,7 +694,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_returns_empty_for_fewer_than_three_distinct_vertices() {
+        void perEdgeReturnsEmptyForFewerThanThreeDistinctVertices() {
             // A duplicate vertex collapses the "triangle" to two distinct points; the
             // distance-preserving dedup keeps the array parallel and still drops it.
             var collapsed = Arrays.asList(
@@ -710,7 +710,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void per_edge_rejects_distances_not_parallel_to_the_edges() {
+        void perEdgeRejectsDistancesNotParallelToTheEdges() {
             assertThatThrownBy(() -> PolygonOffsets.insetPolygonByMiter(
                     buildReferenceSquare(),
                     new double[] {1.0, 1.0},
@@ -719,7 +719,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void miter_inset_pulls_a_straight_through_corner_onto_the_offset_edge() {
+        void miterInsetPullsAStraightThroughCornerOntoTheOffsetEdge() {
             // (5,0) is a corner only in the vertex list: its two edges are collinear, so
             // both inward normals point the same way and their offset lines never meet.
             // With no miter point to place, the corner takes the outbound edge's own

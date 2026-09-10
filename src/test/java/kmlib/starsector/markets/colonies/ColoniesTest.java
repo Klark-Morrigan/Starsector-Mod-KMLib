@@ -28,13 +28,13 @@ final class ColoniesTest {
     class Construct {
 
         @Test
-        void reads_absent_colonies_as_an_empty_set() {
+        void readsAbsentColoniesAsAnEmptySet() {
             assertThat(new Colonies(null))
                 .isEqualTo(Colonies.NONE);
         }
 
         @Test
-        void keeps_the_colonies_it_was_built_with_when_the_source_list_changes_later() {
+        void keepsTheColoniesItWasBuiltWithWhenTheSourceListChangesLater() {
 
             var colonies = new ArrayList<Colony>();
             colonies.add(new Colony(mock(MarketAPI.class), true));
@@ -48,7 +48,7 @@ final class ColoniesTest {
         }
 
         @Test
-        void rejects_an_attempt_to_change_the_colonies() {
+        void rejectsAnAttemptToChangeTheColonies() {
             // A set is memoised for a whole pass and handed to every reader in it, so one reader
             // able to change it would be rewriting the system underneath all the others.
             var set = new Colonies(List.of(new Colony(mock(MarketAPI.class), true)));

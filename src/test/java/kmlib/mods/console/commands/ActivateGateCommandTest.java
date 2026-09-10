@@ -101,7 +101,7 @@ final class ActivateGateCommandTest {
     class RunCommand {
 
         @Test
-        void reports_the_unknown_id_and_activates_nothing() {
+        void reportsTheUnknownIdAndActivatesNothing() {
 
             starSystemsMock
                 .when(() -> StarSystems.find(systemMock, Tags.GATE, "ghost"))
@@ -120,7 +120,7 @@ final class ActivateGateCommandTest {
         }
 
         @Test
-        void activates_the_resolved_gate_and_reports_success() {
+        void activatesTheResolvedGateAndReportsSuccess() {
 
             var gateMock = mock(SectorEntityToken.class);
 
@@ -144,7 +144,7 @@ final class ActivateGateCommandTest {
         }
 
         @Test
-        void reports_a_missing_id_as_bad_syntax_and_resolves_nothing() {
+        void reportsAMissingIdAsBadSyntaxAndResolvesNothing() {
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
 
@@ -159,7 +159,7 @@ final class ActivateGateCommandTest {
         }
 
         @Test
-        void reports_a_surplus_argument_as_bad_syntax() {
+        void reportsASurplusArgumentAsBadSyntax() {
 
             var result = command.runCommand("gate1 extra", CommandContext.CAMPAIGN_MAP);
 
@@ -173,7 +173,7 @@ final class ActivateGateCommandTest {
         }
 
         @Test
-        void returns_the_validation_result_outside_a_campaign() {
+        void returnsTheValidationResultOutsideACampaign() {
 
             var result = command.runCommand("gate1", CommandContext.COMBAT_MISSION);
 

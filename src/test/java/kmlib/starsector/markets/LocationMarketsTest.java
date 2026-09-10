@@ -43,7 +43,7 @@ final class LocationMarketsTest {
     class ReadMarkets {
 
         @Test
-        void returns_the_locations_markets_in_economy_order() {
+        void returnsTheLocationsMarketsInEconomyOrder() {
             // Order is the economy's, and the listing unfiltered: a caller mirroring vanilla's
             // tie rule resolves on which market comes first, so the traversal must not reorder,
             // and a bare planet's placeholder comes back beside a colony rather than being
@@ -59,7 +59,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_for_a_location_with_no_markets() {
+        void returnsEmptyForALocationWithNoMarkets() {
 
             var locationMock = mock(LocationAPI.class);
 
@@ -68,19 +68,19 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_sector() {
+        void returnsEmptyForANullSector() {
             assertThat(LocationMarkets.readMarkets(null, mock(LocationAPI.class)))
                 .isEmpty();
         }
 
         @Test
-        void returns_empty_for_a_null_location() {
+        void returnsEmptyForANullLocation() {
             assertThat(LocationMarkets.readMarkets(mock(SectorAPI.class), null))
                 .isEmpty();
         }
 
         @Test
-        void returns_empty_when_the_sector_has_no_economy() {
+        void returnsEmptyWhenTheSectorHasNoEconomy() {
 
             var sectorMock = mock(SectorAPI.class);
 
@@ -92,7 +92,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_when_the_economy_reports_no_market_list() {
+        void returnsEmptyWhenTheEconomyReportsNoMarketList() {
 
             var economyMock = mock(EconomyAPI.class);
             var locationMock = mock(LocationAPI.class);
@@ -110,7 +110,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void counts_the_listing_on_every_read_of_it() {
+        void countsTheListingOnEveryReadOfIt() {
             // Two reads of one place are two reads, whoever made them: the row that asked states
             // both, which is what makes a place read twice for one answer visible at all.
             var colony = MarketStateFixture.buildColony("hegemony");
@@ -131,7 +131,7 @@ final class LocationMarketsTest {
     class ReadMarketsUnlistedByEconomy {
 
         @Test
-        void yields_the_market_the_economy_does_not_list_and_not_the_ones_it_does() {
+        void yieldsTheMarketTheEconomyDoesNotListAndNotTheOnesItDoes() {
             // Vanilla builds Galatia Academy as a real market on a real station and deliberately
             // never registers it, so a read of the economy alone reports the station as nobody's.
             // Only that market comes back: a caller wanting the listed ones has already read
@@ -149,7 +149,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void yields_nothing_for_a_location_the_economy_lists_whole() {
+        void yieldsNothingForALocationTheEconomyListsWhole() {
             // The ordinary system: every market on a body is one the economy already hands over,
             // so the read that exists to find what it left out finds nothing to add.
             var first = MarketPlacementFixture.buildMarketOnBody("ancyra");
@@ -164,7 +164,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void yields_unlisted_markets_in_entity_order() {
+        void yieldsUnlistedMarketsInEntityOrder() {
 
             var first = MarketPlacementFixture.buildMarketOnBody("first");
             var second = MarketPlacementFixture.buildMarketOnBody("second");
@@ -178,7 +178,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void yields_one_unlisted_market_once_though_two_bodies_carry_it() {
+        void yieldsOneUnlistedMarketOnceThoughTwoBodiesCarryIt() {
             // Vanilla hangs a station's market on the station and on what it orbits alike, so
             // one colony can be reached twice down the entity walk.
             var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
@@ -192,7 +192,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void resolves_two_markets_on_one_body_under_one_owner_to_one() {
+        void resolvesTwoMarketsOnOneBodyUnderOneOwnerToOne() {
             // A mod supersedes a market by adding rather than replacing, so the station ends up
             // carrying two market objects for the one place - counted twice, it would read as
             // two holdings where the player sees one.
@@ -210,7 +210,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void ignores_a_body_carrying_no_market() {
+        void ignoresABodyCarryingNoMarket() {
 
             var locationMock = mock(LocationAPI.class);
             var sector = buildSectorListing(
@@ -229,19 +229,19 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_sector() {
+        void returnsEmptyForANullSector() {
             assertThat(LocationMarkets.readMarketsUnlistedByEconomy(null, mock(LocationAPI.class)))
                 .isEmpty();
         }
 
         @Test
-        void returns_empty_for_a_null_location() {
+        void returnsEmptyForANullLocation() {
             assertThat(LocationMarkets.readMarketsUnlistedByEconomy(mock(SectorAPI.class), null))
                 .isEmpty();
         }
 
         @Test
-        void returns_empty_when_the_sector_has_no_economy() {
+        void returnsEmptyWhenTheSectorHasNoEconomy() {
             // With no listing to compare against there is no telling a listed market from an
             // unlisted one, so the read reports nothing rather than every market it can reach.
             var sectorMock = mock(SectorAPI.class);
@@ -256,7 +256,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void counts_the_entities_it_scanned_beside_the_markets_it_produced() {
+        void countsTheEntitiesItScannedBesideTheMarketsItProduced() {
             // The entities are what this read costs and the markets are what it yielded, and
             // neither answers the other: a place with one unlisted colony among many bodies is a
             // cheap answer to state and an expensive one to find.
@@ -282,7 +282,7 @@ final class LocationMarketsTest {
     class FindNearestMarket {
 
         @Test
-        void returns_the_admitted_market_whose_body_sits_closest() {
+        void returnsTheAdmittedMarketWhoseBodySitsClosest() {
 
             var near = MarketPlacementFixture.buildMarketOnBodyAt("near", 100, 0);
             var far = MarketPlacementFixture.buildMarketOnBodyAt("far", 5000, 0);
@@ -301,7 +301,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void passes_over_a_closer_market_the_eligibility_rejects() {
+        void passesOverACloserMarketTheEligibilityRejects() {
             // What a caller is looking for decides, not proximity alone: the nearest place is
             // routinely the wrong kind of place, which is the whole reason for the predicate.
             var wanted = MarketPlacementFixture.buildMarketOnBodyAt("wanted", 500, 0);
@@ -318,7 +318,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void reaches_a_market_the_economy_does_not_list() {
+        void reachesAMarketTheEconomyDoesNotList() {
             // A body still carrying only survey data is never registered, so a search of the
             // economy's own listing could not find one to colonise at all.
             var surveyData = MarketPlacementFixture.buildMarketOnBodyAt("planet", 100, 0);
@@ -336,7 +336,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void ranks_an_unlisted_market_against_a_listed_one_by_distance_alone() {
+        void ranksAnUnlistedMarketAgainstAListedOneByDistanceAlone() {
             // Which listing a market came from is not part of the answer: a colony the economy
             // never registered is as much the nearest place as one it did.
             var listed = MarketPlacementFixture.buildMarketOnBodyAt("listed", 5000, 0);
@@ -355,7 +355,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void settles_an_equal_distance_on_the_lowest_body_id() {
+        void settlesAnEqualDistanceOnTheLowestBodyId() {
             // Listed high-id first, so the lower id is shown to be the deterministic pick rather
             // than whichever the traversal happened to meet first.
             var beta = MarketPlacementFixture.buildMarketOnBodyAt("beta", 0, 100);
@@ -372,7 +372,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void ignores_a_market_standing_for_no_body() {
+        void ignoresAMarketStandingForNoBody() {
             // Nothing to measure to, so it cannot be nearest - only nearest by default, which
             // would have a caller act on a place nobody pointed at.
             var locationMock = mock(LocationAPI.class);
@@ -387,7 +387,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void ignores_a_market_whose_body_sits_nowhere() {
+        void ignoresAMarketWhoseBodySitsNowhere() {
             // A body sitting nowhere is the same case as no body at all: there is no distance to
             // take, and reading one off it would be reading off a null.
             var locationMock = mock(LocationAPI.class);
@@ -404,7 +404,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_when_nothing_present_is_admitted() {
+        void returnsEmptyWhenNothingPresentIsAdmitted() {
 
             var locationMock = mock(LocationAPI.class);
             var sector = buildSectorListing(
@@ -420,7 +420,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_for_an_empty_location() {
+        void returnsEmptyForAnEmptyLocation() {
 
             var locationMock = mock(LocationAPI.class);
 
@@ -433,7 +433,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_without_anything_to_measure_from() {
+        void returnsEmptyWithoutAnythingToMeasureFrom() {
 
             var locationMock = mock(LocationAPI.class);
             var sector = buildSectorListing(
@@ -449,7 +449,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_when_what_it_measures_from_sits_nowhere() {
+        void returnsEmptyWhenWhatItMeasuresFromSitsNowhere() {
             // An entity sitting nowhere is as unmeasurable as none at all, and taking a
             // distance to it would be reading off a null rather than answering "nearest".
             var locationMock = mock(LocationAPI.class);
@@ -468,7 +468,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_without_an_eligibility_rule() {
+        void returnsEmptyWithoutAnEligibilityRule() {
             // No rule is not "every market": a caller that failed to say what it wants must not
             // be handed the nearest place of any kind to act on.
             var locationMock = mock(LocationAPI.class);
@@ -485,7 +485,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_sector() {
+        void returnsEmptyForANullSector() {
             assertThat(LocationMarkets.findNearestMarket(
                     null,
                     mock(LocationAPI.class),
@@ -495,7 +495,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_location() {
+        void returnsEmptyForANullLocation() {
             assertThat(LocationMarkets.findNearestMarket(
                     mock(SectorAPI.class),
                     null,
@@ -505,7 +505,7 @@ final class LocationMarketsTest {
         }
 
         @Test
-        void returns_empty_when_the_sector_has_no_economy() {
+        void returnsEmptyWhenTheSectorHasNoEconomy() {
 
             var sectorMock = mock(SectorAPI.class);
 

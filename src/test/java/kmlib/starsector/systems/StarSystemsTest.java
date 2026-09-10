@@ -46,7 +46,7 @@ final class StarSystemsTest {
     class GetStars {
 
         @Test
-        void keeps_only_the_stars_in_system_order() {
+        void keepsOnlyTheStarsInSystemOrder() {
 
             var starA = buildPlanet(true);
             var gasGiant = buildPlanet(false);
@@ -61,7 +61,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_system() {
+        void returnsEmptyForANullSystem() {
             assertThat(StarSystems.getStars(null))
                 .isEmpty();
         }
@@ -71,7 +71,7 @@ final class StarSystemsTest {
     class GetCentremostStar {
 
         @Test
-        void returns_the_only_star_in_a_single_star_system() {
+        void returnsTheOnlyStarInASingleStarSystem() {
 
             var star = buildStarWithLocation(0, 0);
             var system = buildSystemWithCentreAndStars(star, star);
@@ -81,7 +81,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_the_star_nearest_the_centre_in_a_multi_star_system() {
+        void returnsTheStarNearestTheCentreInAMultiStarSystem() {
 
             var centreMock = mock(SectorEntityToken.class);
 
@@ -99,7 +99,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void breaks_an_equal_distance_tie_by_lowest_star_id() {
+        void breaksAnEqualDistanceTieByLowestStarId() {
 
             var centreMock = mock(SectorEntityToken.class);
 
@@ -118,7 +118,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void falls_back_to_the_centre_token_when_the_system_has_no_star() {
+        void fallsBackToTheCentreTokenWhenTheSystemHasNoStar() {
 
             var centreMock = mock(SectorEntityToken.class);
             var system = buildSystemWithCentreAndStars(centreMock);
@@ -128,7 +128,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_null_for_a_null_system() {
+        void returnsNullForANullSystem() {
             assertThat(StarSystems.getCentremostStar(null))
                 .isNull();
         }
@@ -143,7 +143,7 @@ final class StarSystemsTest {
     class ReadMarkets {
 
         @Test
-        void returns_the_systems_markets_in_economy_order() {
+        void returnsTheSystemsMarketsInEconomyOrder() {
 
             var first = MarketPlacementFixture.buildMarketOnBody("ancyra");
             var second = MarketPlacementFixture.buildMarketOnBody("tibicena");
@@ -154,7 +154,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_system() {
+        void returnsEmptyForANullSystem() {
             assertThat(StarSystems.readMarkets(mock(SectorAPI.class), null))
                 .isEmpty();
         }
@@ -168,7 +168,7 @@ final class StarSystemsTest {
     class ReadMarketsUnlistedByEconomy {
 
         @Test
-        void yields_the_market_the_economy_does_not_list_and_not_the_ones_it_does() {
+        void yieldsTheMarketTheEconomyDoesNotListAndNotTheOnesItDoes() {
 
             var listed = MarketPlacementFixture.buildMarketOnBody("ancyra");
             var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
@@ -181,7 +181,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_system() {
+        void returnsEmptyForANullSystem() {
             assertThat(StarSystems.readMarketsUnlistedByEconomy(mock(SectorAPI.class), null))
                 .isEmpty();
         }
@@ -195,7 +195,7 @@ final class StarSystemsTest {
     class FindNearestMarket {
 
         @Test
-        void returns_the_admitted_market_whose_body_sits_closest() {
+        void returnsTheAdmittedMarketWhoseBodySitsClosest() {
 
             var near = MarketPlacementFixture.buildMarketOnBodyAt("near", 100, 0);
             var far = MarketPlacementFixture.buildMarketOnBodyAt("far", 5000, 0);
@@ -212,7 +212,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_empty_for_a_null_system() {
+        void returnsEmptyForANullSystem() {
             assertThat(StarSystems.findNearestMarket(
                     mock(SectorAPI.class),
                     null,
@@ -226,7 +226,7 @@ final class StarSystemsTest {
     class ReadDisplayName {
 
         @Test
-        void drops_a_type_word_the_name_already_ends_on() {
+        void dropsATypeWordTheNameAlreadyEndsOn() {
             // Vanilla composes the name as the base name plus the type, so a system named after its
             // star stutters: the reading the whole method exists for.
             assertThat(StarSystems.readDisplayName(
@@ -235,7 +235,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void answers_a_name_with_no_repetition_unchanged() {
+        void answersANameWithNoRepetitionUnchanged() {
             // The ordinary system: the type word is nothing the base name ended on, so the composed
             // name already reads as a person would have written it.
             assertThat(StarSystems.readDisplayName(
@@ -244,7 +244,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void keeps_a_repetition_inside_the_name_proper() {
+        void keepsARepetitionInsideTheNameProper() {
             // The case the protection exists for: the repeat is the name's own, so dropping it would
             // answer "Ko Star System" - a system nobody named.
             assertThat(StarSystems.readDisplayName(
@@ -253,7 +253,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void answers_the_name_untouched_where_the_name_proper_is_not_what_it_opens_with() {
+        void answersTheNameUntouchedWhereTheNameProperIsNotWhatItOpensWith() {
             // getNameWithNoType strips its type word globally, so a base name carrying that word in
             // its middle comes back as something the name does not begin with - and a word count
             // taken from it would protect the wrong words.
@@ -263,28 +263,28 @@ final class StarSystemsTest {
         }
 
         @Test
-        void answers_a_name_that_is_its_own_name_proper_untouched() {
+        void answersANameThatIsItsOwnNameProperUntouched() {
             // Nothing was appended, so every word is protected and there is nothing to weigh.
             assertThat(StarSystems.readDisplayName(buildSystemNamed("Galatia", "Galatia")))
                 .isEqualTo("Galatia");
         }
 
         @Test
-        void answers_the_name_untouched_where_the_name_proper_is_blank() {
+        void answersTheNameUntouchedWhereTheNameProperIsBlank() {
             // With no base name to protect, a general scan could cut a word out of the name itself.
             assertThat(StarSystems.readDisplayName(buildSystemNamed("Ko Ko System", " ")))
                 .isEqualTo("Ko Ko System");
         }
 
         @Test
-        void matches_the_repeat_ignoring_case() {
+        void matchesTheRepeatIgnoringCase() {
             assertThat(StarSystems.readDisplayName(
                     buildSystemNamed("Penelope's Star STAR System", "Penelope's Star")))
                 .isEqualTo("Penelope's Star System");
         }
 
         @Test
-        void answers_an_unchanged_name_as_the_very_string_it_was_given() {
+        void answersAnUnchangedNameAsTheVeryStringItWasGiven() {
             // A name that lost nothing is handed back rather than rejoined: rebuilding it would
             // normalise whatever spacing it was authored with, changing a name for no gain.
             var name = "Galatia  Star System";
@@ -294,7 +294,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void drops_the_repeat_out_of_a_type_of_more_than_two_words() {
+        void dropsTheRepeatOutOfATypeOfMoreThanTwoWords() {
             // The protection is a word count off the name proper rather than a rule about
             // where the repeat may fall, so a longer composed type is in reach whole.
             assertThat(StarSystems.readDisplayName(
@@ -303,13 +303,13 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_blank_for_a_system_with_no_name() {
+        void returnsBlankForASystemWithNoName() {
             assertThat(StarSystems.readDisplayName(buildSystemNamed(null, "Penelope's Star")))
                 .isEmpty();
         }
 
         @Test
-        void returns_blank_for_a_null_system() {
+        void returnsBlankForANullSystem() {
             assertThat(StarSystems.readDisplayName(null))
                 .isEmpty();
         }
@@ -319,13 +319,13 @@ final class StarSystemsTest {
     class ReadFactionClaimOverride {
 
         @Test
-        void returns_the_decreed_faction_id() {
+        void returnsTheDecreedFactionId() {
             assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy("luddic_church")))
                 .isEqualTo("luddic_church");
         }
 
         @Test
-        void returns_null_when_no_claim_is_imposed() {
+        void returnsNullWhenNoClaimIsImposed() {
             // The ordinary case: vanilla scores markets for an unflagged system, so most
             // claimed systems carry no flag at all.
             assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy(null)))
@@ -333,7 +333,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_null_for_a_system_with_no_memory() {
+        void returnsNullForASystemWithNoMemory() {
 
             var systemMock = mock(StarSystemAPI.class);
 
@@ -345,7 +345,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_null_for_a_null_system() {
+        void returnsNullForANullSystem() {
             assertThat(StarSystems.readFactionClaimOverride(null))
                 .isNull();
         }
@@ -368,13 +368,13 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_true_for_a_system_with_a_jump_point() {
+        void returnsTrueForASystemWithAJumpPoint() {
             assertThat(StarSystems.isReachable(buildSystemNotCutOff("a")))
                 .isTrue();
         }
 
         @Test
-        void returns_false_for_a_transverse_only_system_with_an_inactive_gate() {
+        void returnsFalseForATransverseOnlySystemWithAnInactiveGate() {
             // The hidden-system case: not cut off (the engine never tags a
             // nascent-well system), no jump point, only an unlit gate.
             var system = buildTransverseOnlySystem("a", buildGateWithPlugin(buildGatePlugin(false)));
@@ -384,13 +384,13 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_false_for_a_cut_off_system_with_no_gate() {
+        void returnsFalseForACutOffSystemWithNoGate() {
             assertThat(StarSystems.isReachable(cutOffSystem("a")))
                 .isFalse();
         }
 
         @Test
-        void returns_false_for_a_cut_off_system_with_only_an_inactive_gate() {
+        void returnsFalseForACutOffSystemWithOnlyAnInactiveGate() {
 
             var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(false)));
 
@@ -399,7 +399,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_true_for_a_cut_off_system_with_an_active_gate() {
+        void returnsTrueForACutOffSystemWithAnActiveGate() {
 
             var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(true)));
 
@@ -408,7 +408,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_true_for_a_cut_off_system_an_installed_route_reaches() {
+        void returnsTrueForACutOffSystemAnInstalledRouteReaches() {
             // A route stands for a mod that moves fleets in without a jump
             // point, so it overrides the cut-off flag the way an active gate
             // does. Stated as a route rather than as any one mod's entity: what
@@ -420,7 +420,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_false_for_a_cut_off_system_no_installed_route_reaches() {
+        void returnsFalseForACutOffSystemNoInstalledRouteReaches() {
             // A route that declines leaves the question where it found it, so
             // the system reads as the cut-off system it is.
             SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
@@ -435,7 +435,7 @@ final class StarSystemsTest {
     class Find {
 
         @Test
-        void returns_the_tagged_entity_whose_id_matches() {
+        void returnsTheTaggedEntityWhoseIdMatches() {
 
             var gate = buildEntity("alpha-gate");
             var other = buildEntity("beta-gate");
@@ -449,7 +449,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_null_when_no_tagged_entity_has_the_id() {
+        void returnsNullWhenNoTaggedEntityHasTheId() {
 
             var other = buildEntity("beta-gate");
             var systemMock = mock(StarSystemAPI.class);
@@ -462,13 +462,13 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_null_for_a_null_system() {
+        void returnsNullForANullSystem() {
             assertThat(StarSystems.find(null, "gate", "alpha-gate"))
                 .isNull();
         }
 
         @Test
-        void returns_null_for_a_blank_id() {
+        void returnsNullForABlankId() {
 
             var systemMock = mock(StarSystemAPI.class);
 
@@ -477,7 +477,7 @@ final class StarSystemsTest {
         }
 
         @Test
-        void returns_null_for_a_null_id() {
+        void returnsNullForANullId() {
 
             var systemMock = mock(StarSystemAPI.class);
 

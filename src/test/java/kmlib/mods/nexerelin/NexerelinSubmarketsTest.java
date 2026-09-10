@@ -37,7 +37,7 @@ final class NexerelinSubmarketsTest {
     class ApplySubmarkets {
 
         @Test
-        void declines_the_counters_while_the_mod_is_absent() {
+        void declinesTheCountersWhileTheModIsAbsent() {
             // What every install without the mod answers, and the answer that keeps the class
             // naming one of its types from being resolved at all.
             var marketMock = mock(MarketAPI.class);
@@ -54,7 +54,7 @@ final class NexerelinSubmarketsTest {
         }
 
         @Test
-        void declines_the_counters_before_the_game_settings_are_up() {
+        void declinesTheCountersBeforeTheGameSettingsAreUp() {
             // A read taken outside a running game, which cannot say whether the mod is there - so
             // it answers as an install without it does.
             ModStateScopes.runWithoutGameSettings(() ->
@@ -65,7 +65,7 @@ final class NexerelinSubmarketsTest {
         }
 
         @Test
-        void declines_a_change_naming_no_incoming_owner() {
+        void declinesAChangeNamingNoIncomingOwner() {
             // The mod's routine reads every one of its verdicts off the incoming id, so a change
             // that names nobody is a decline rather than a set of counters decided against nothing.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
@@ -76,7 +76,7 @@ final class NexerelinSubmarketsTest {
         }
 
         @Test
-        void declines_a_null_market() {
+        void declinesANullMarket() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinSubmarkets.applySubmarkets(

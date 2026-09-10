@@ -35,7 +35,7 @@ final class SpansTest {
     class ComputeLineBlockers {
 
         @Test
-        void line_blockers_carve_the_chord_each_obstacle_within_clearance_cuts() {
+        void lineBlockersCarveTheChordEachObstacleWithinClearanceCuts() {
             // Perpendicular distance 3 with clearance 5 cuts a chord of half-width
             // sqrt(25 - 9) = 4 about the projection at t=0.
             var blockers = Spans.computeLineBlockers(
@@ -53,7 +53,7 @@ final class SpansTest {
         }
 
         @Test
-        void line_blockers_arrive_sorted_by_start_whatever_order_the_obstacles_came_in() {
+        void lineBlockersArriveSortedByStartWhateverOrderTheObstaclesCameIn() {
             // Sorted intervals are what lets a span be walked with one advancing
             // cursor, so the order the obstacles were handed over must not survive:
             // the far obstacle listed first still yields the near interval first.
@@ -76,7 +76,7 @@ final class SpansTest {
         }
 
         @Test
-        void line_blockers_measure_parameters_as_world_distances_for_a_non_unit_direction() {
+        void lineBlockersMeasureParametersAsWorldDistancesForANonUnitDirection() {
             // The direction is normalised here, so the obstacle 4 units along a
             // doubled direction blocks about t=4, not about t=2.
             var blockers = Spans.computeLineBlockers(
@@ -94,7 +94,7 @@ final class SpansTest {
         }
 
         @Test
-        void line_blockers_skip_an_obstacle_farther_than_the_clearance_from_the_line() {
+        void lineBlockersSkipAnObstacleFartherThanTheClearanceFromTheLine() {
             // Perpendicular distance 5 with clearance 3: the keep-out circle never
             // reaches the line, so it carves nothing from it.
             var blockers = Spans.computeLineBlockers(
@@ -107,7 +107,7 @@ final class SpansTest {
         }
 
         @Test
-        void line_blockers_are_empty_for_a_non_positive_clearance() {
+        void lineBlockersAreEmptyForANonPositiveClearance() {
             // No clearance means no keep-out, so even an obstacle dead on the line
             // blocks nothing.
             var blockers = Spans.computeLineBlockers(
@@ -120,7 +120,7 @@ final class SpansTest {
         }
 
         @Test
-        void line_blockers_are_null_for_a_degenerate_direction() {
+        void lineBlockersAreNullForADegenerateDirection() {
             // A zero direction defines no line, so there is no frame to measure
             // blocked parameters in - distinct from a line nothing blocks.
             assertThat(Spans.computeLineBlockers(
@@ -135,7 +135,7 @@ final class SpansTest {
     class FindLongestClearSubsegment {
 
         @Test
-        void clear_subsegment_takes_the_longer_side_when_an_obstacle_on_the_line_splits_the_span() {
+        void clearSubsegmentTakesTheLongerSideWhenAnObstacleOnTheLineSplitsTheSpan() {
             // The obstacle at t=2 with clearance 3 blocks [-1, 5]: the left remainder
             // [-10, -1] (length 9) beats the right [5, 10] (length 5).
             var clear = Spans.findLongestClearSubsegment(
@@ -151,7 +151,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_ignores_an_obstacle_farther_than_the_clearance_from_the_line() {
+        void clearSubsegmentIgnoresAnObstacleFartherThanTheClearanceFromTheLine() {
             // Perpendicular distance 5 with clearance 3: the keep-out circle never
             // touches the line, so the whole span survives.
             var clear = Spans.findLongestClearSubsegment(
@@ -167,7 +167,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_blocks_the_chord_of_an_obstacle_off_the_line_but_within_clearance() {
+        void clearSubsegmentBlocksTheChordOfAnObstacleOffTheLineButWithinClearance() {
             // Perpendicular distance 3 with clearance 5 cuts a chord of half-width
             // sqrt(25 - 9) = 4 about the projection at t=0, blocking [-4, 4]: the
             // left remainder [-10, -4] beats the right [4, 8].
@@ -184,7 +184,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_survives_between_two_obstacles() {
+        void clearSubsegmentSurvivesBetweenTwoObstacles() {
             // Obstacles at t=-5 and t=5 with clearance 2 block [-7, -3] and [3, 7]:
             // the middle gap [-3, 3] (length 6) beats both end remainders (length 3).
             var clear = Spans.findLongestClearSubsegment(
@@ -200,7 +200,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_picks_the_longest_across_multiple_spans() {
+        void clearSubsegmentPicksTheLongestAcrossMultipleSpans() {
             // With nothing blocked the contest is between the spans themselves: the
             // length-6 span beats the length-2 one.
             var clear = Spans.findLongestClearSubsegment(
@@ -216,7 +216,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_blocks_nothing_for_a_non_positive_clearance() {
+        void clearSubsegmentBlocksNothingForANonPositiveClearance() {
             // Zero clearance means no keep-out at all, so even an obstacle dead on
             // the line leaves the span whole.
             var clear = Spans.findLongestClearSubsegment(
@@ -232,7 +232,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_is_null_for_empty_spans() {
+        void clearSubsegmentIsNullForEmptySpans() {
             assertThat(Spans.findLongestClearSubsegment(
                     List.of(),
                     new DirectedLine(0, 0, 1, 0),
@@ -242,7 +242,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_is_null_when_an_obstacle_blocks_the_whole_span() {
+        void clearSubsegmentIsNullWhenAnObstacleBlocksTheWholeSpan() {
             // Clearance 5 around an obstacle at the origin swallows the entire
             // [-1, 1] span; nothing clear remains.
             assertThat(Spans.findLongestClearSubsegment(
@@ -254,7 +254,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_is_null_for_a_degenerate_direction() {
+        void clearSubsegmentIsNullForADegenerateDirection() {
             // A zero direction defines no line to project onto, so there is no
             // interval to pick.
             assertThat(Spans.findLongestClearSubsegment(
@@ -266,7 +266,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_trims_the_span_by_already_projected_blockers() {
+        void clearSubsegmentTrimsTheSpanByAlreadyProjectedBlockers() {
             // The same obstacle-on-the-line case as above, reached through blockers
             // projected in advance: t=2 with clearance 3 blocks [-1, 5], so the left
             // remainder [-10, -1] wins - a precomputed subtraction is the same
@@ -287,7 +287,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_answers_several_span_lists_from_one_blocker_set() {
+        void clearSubsegmentAnswersSeveralSpanListsFromOneBlockerSet() {
             // Blockers outlive any one query: the obstacle at t=0 with clearance 2
             // blocks [-2, 2] for both spans asked about, trimming the first to its
             // left remainder [-10, -2] and leaving the second, which starts past the
@@ -317,7 +317,7 @@ final class SpansTest {
         }
 
         @Test
-        void clear_subsegment_is_null_when_precomputed_blockers_swallow_the_span() {
+        void clearSubsegmentIsNullWhenPrecomputedBlockersSwallowTheSpan() {
 
             var blockers = Spans.computeLineBlockers(
                 new DirectedLine(0, 0, 1, 0),
@@ -335,7 +335,7 @@ final class SpansTest {
     class FindLongestSpan {
 
         @Test
-        void longest_span_returns_the_widest_of_several() {
+        void longestSpanReturnsTheWidestOfSeveral() {
             // Lengths 6, 2, 4: the first span wins.
             var longest = Spans.findLongestSpan(List.of(
                 new double[] {-10, -4},
@@ -349,7 +349,7 @@ final class SpansTest {
         }
 
         @Test
-        void longest_span_returns_the_only_span_when_the_list_is_a_singleton() {
+        void longestSpanReturnsTheOnlySpanWhenTheListIsASingleton() {
 
             var longest = Spans.findLongestSpan(List.of(new double[] {3, 7}));
 
@@ -360,14 +360,14 @@ final class SpansTest {
         }
 
         @Test
-        void longest_span_is_null_for_an_empty_list() {
+        void longestSpanIsNullForAnEmptyList() {
 
             assertThat(Spans.findLongestSpan(List.of()))
                 .isNull();
         }
 
         @Test
-        void longest_span_is_null_when_every_span_is_degenerate() {
+        void longestSpanIsNullWhenEverySpanIsDegenerate() {
             // Zero-length spans have no room, so none wins.
             assertThat(Spans.findLongestSpan(List.of(
                     new double[] {2, 2},
@@ -380,7 +380,7 @@ final class SpansTest {
     class IntersectSpans {
 
         @Test
-        void intersect_spans_yields_the_shared_interval_of_two_overlapping_spans() {
+        void intersectSpansYieldsTheSharedIntervalOfTwoOverlappingSpans() {
             // [0, 6] and [4, 10] overlap on [4, 6].
             var overlap = Spans.intersectSpans(
                 List.of(new double[] {0, 6}),
@@ -396,7 +396,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersect_spans_reports_one_overlap_per_span_a_wide_span_meets() {
+        void intersectSpansReportsOneOverlapPerSpanAWideSpanMeets() {
             // A single [0, 20] span meets two on the other side, [2, 6] and [10, 14],
             // so two overlaps come back - the shape of a band rail split by a notch
             // meeting a whole centreline span.
@@ -418,7 +418,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersect_spans_yields_nothing_when_spans_only_touch() {
+        void intersectSpansYieldsNothingWhenSpansOnlyTouch() {
             // [0, 5] and [5, 10] share only the endpoint t=5: a zero-length touch is
             // no usable interval.
             assertThat(Spans.intersectSpans(
@@ -428,7 +428,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersect_spans_yields_nothing_when_spans_miss() {
+        void intersectSpansYieldsNothingWhenSpansMiss() {
 
             assertThat(Spans.intersectSpans(
                     List.of(new double[] {0, 4}),
@@ -437,7 +437,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersect_spans_yields_nothing_when_either_side_is_empty() {
+        void intersectSpansYieldsNothingWhenEitherSideIsEmpty() {
 
             assertThat(Spans.intersectSpans(List.of(), List.of(new double[] {0, 5})))
                 .isEmpty();

@@ -31,7 +31,7 @@ final class MarketColocationTest {
     class IsSamePlaceAndOwner {
 
         @Test
-        void reports_two_markets_on_one_entity_under_one_owner_as_one_place() {
+        void reportsTwoMarketsOnOneEntityUnderOneOwnerAsOnePlace() {
             // The shape a merged listing has to collapse: IndEvo hangs its own Galatia Academy
             // market on the station that already carries vanilla's, both independent-owned.
             var station = buildPlaceEntity();
@@ -44,7 +44,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_a_market_as_its_own_place() {
+        void reportsAMarketAsItsOwnPlace() {
 
             var market = buildMarketAtPlace(
                 buildPlaceEntity(), buildFaction("hegemony"), 4);
@@ -54,7 +54,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_a_market_with_no_entity_as_its_own_place() {
+        void reportsAMarketWithNoEntityAsItsOwnPlace() {
             // Identity settles it before the key is ever built, so a market that answers for
             // nothing but itself still answers for itself.
             var market = buildMarketAtPlace(null, buildFaction("hegemony"), 4);
@@ -64,7 +64,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_two_markets_on_one_entity_under_different_owners_as_two_places() {
+        void reportsTwoMarketsOnOneEntityUnderDifferentOwnersAsTwoPlaces() {
 
             var station = buildPlaceEntity();
 
@@ -75,7 +75,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_two_markets_of_one_owner_on_separate_entities_as_two_places() {
+        void reportsTwoMarketsOfOneOwnerOnSeparateEntitiesAsTwoPlaces() {
 
             var independent = buildFaction("independent");
 
@@ -86,7 +86,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_two_distinct_markets_with_no_entity_as_two_places() {
+        void reportsTwoDistinctMarketsWithNoEntityAsTwoPlaces() {
             // A missing key is not a key two markets can share, so each answers for itself alone.
             var independent = buildFaction("independent");
 
@@ -97,7 +97,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_two_distinct_markets_with_no_owner_as_two_places() {
+        void reportsTwoDistinctMarketsWithNoOwnerAsTwoPlaces() {
 
             var station = buildPlaceEntity();
 
@@ -108,7 +108,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void reports_a_null_market_as_the_same_place_as_nothing() {
+        void reportsANullMarketAsTheSamePlaceAsNothing() {
 
             var market = buildMarketAtPlace(
                 buildPlaceEntity(), buildFaction("hegemony"), 4);
@@ -126,7 +126,7 @@ final class MarketColocationTest {
     class ReadLargestMarketsPerFaction {
 
         @Test
-        void keeps_only_the_larger_of_two_markets_sharing_an_entity_and_owner() {
+        void keepsOnlyTheLargerOfTwoMarketsSharingAnEntityAndOwner() {
 
             var station = buildPlaceEntity();
             var independent = buildFaction("independent");
@@ -139,7 +139,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void keeps_a_market_of_each_owner_when_one_entity_carries_two() {
+        void keepsAMarketOfEachOwnerWhenOneEntityCarriesTwo() {
 
             var station = buildPlaceEntity();
             var hegemony = buildMarketAtPlace(station, buildFaction("hegemony"), 3);
@@ -150,7 +150,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void keeps_both_markets_of_one_owner_on_separate_entities() {
+        void keepsBothMarketsOfOneOwnerOnSeparateEntities() {
 
             var independent = buildFaction("independent");
             var academy = buildMarketAtPlace(buildPlaceEntity(), independent, 3);
@@ -161,7 +161,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void keeps_the_first_of_two_equal_sized_markets_sharing_a_place() {
+        void keepsTheFirstOfTwoEqualSizedMarketsSharingAPlace() {
 
             var station = buildPlaceEntity();
             var independent = buildFaction("independent");
@@ -173,7 +173,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void yields_a_place_where_it_was_first_named_though_its_winner_arrives_later() {
+        void yieldsAPlaceWhereItWasFirstNamedThoughItsWinnerArrivesLater() {
 
             var station = buildPlaceEntity();
             var independent = buildFaction("independent");
@@ -187,7 +187,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void passes_through_markets_of_one_owner_that_have_no_entity() {
+        void passesThroughMarketsOfOneOwnerThatHaveNoEntity() {
 
             var independent = buildFaction("independent");
             var first = buildMarketAtPlace(null, independent, 3);
@@ -198,7 +198,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void passes_through_markets_on_one_entity_that_have_no_owner() {
+        void passesThroughMarketsOnOneEntityThatHaveNoOwner() {
 
             var station = buildPlaceEntity();
             var first = buildMarketAtPlace(station, null, 3);
@@ -209,7 +209,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void passes_through_markets_on_one_entity_whose_owner_has_no_id() {
+        void passesThroughMarketsOnOneEntityWhoseOwnerHasNoId() {
             // An owner with no id cannot be told apart from any other, so keying on it
             // would merge places that share nothing but an unreadable faction.
             var station = buildPlaceEntity();
@@ -222,7 +222,7 @@ final class MarketColocationTest {
         }
 
         @Test
-        void drops_null_markets() {
+        void dropsNullMarkets() {
 
             var market = buildMarketAtPlace(
                 buildPlaceEntity(), buildFaction("hegemony"), 4);
@@ -233,13 +233,13 @@ final class MarketColocationTest {
         }
 
         @Test
-        void yields_an_empty_list_for_no_markets() {
+        void yieldsAnEmptyListForNoMarkets() {
             assertThat(MarketColocation.readLargestMarketsPerFaction(List.of()))
                 .isEmpty();
         }
 
         @Test
-        void yields_an_empty_list_for_a_null_collection() {
+        void yieldsAnEmptyListForANullCollection() {
             assertThat(MarketColocation.readLargestMarketsPerFaction(null))
                 .isEmpty();
         }

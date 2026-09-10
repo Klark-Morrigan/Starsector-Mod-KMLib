@@ -43,7 +43,7 @@ final class ExtensionPointTest {
     class RegisterImplementation {
 
         @Test
-        void installs_an_implementation_on_an_empty_point() {
+        void installsAnImplementationOnAnEmptyPoint() {
 
             installPermittingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
 
@@ -54,7 +54,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void replaces_what_was_installed_rather_than_queueing_behind_it() {
+        void replacesWhatWasInstalledRatherThanQueueingBehindIt() {
             // The work is taken over whole or not at all, so a second implementation behind the
             // first would be one nothing ever reaches - kept, it would only hide that one of the
             // two is dead.
@@ -69,7 +69,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void replaces_the_fallback_policy_along_with_the_implementation() {
+        void replacesTheFallbackPolicyAlongWithTheImplementation() {
             // The policy belongs to whoever registered, so a mod taking the work over brings its
             // own - otherwise a permissive mod would inherit a refusal it never asked for.
             installForbiddingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
@@ -81,7 +81,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void passes_over_an_absent_implementation() {
+        void passesOverAnAbsentImplementation() {
             // An integration that is not installed registers nothing rather than failing: absence
             // is the ordinary state of every optional mod.
             installPermittingFallback(IMPLEMENTATION_NAME, null);
@@ -91,7 +91,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void leaves_an_installed_implementation_alone_when_passed_an_absent_one() {
+        void leavesAnInstalledImplementationAloneWhenPassedAnAbsentOne() {
             // Passing over an absent one must not empty the point behind whoever did install
             // something - an integration that is not there has nothing to say about the one that
             // is.
@@ -106,7 +106,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void names_an_unnamed_implementation_by_its_own_type() {
+        void namesAnUnnamedImplementationByItsOwnType() {
             // A caller that names nothing still has to leave a line worth reading, the whole point
             // of the name being to answer "what is doing this on my install".
             installPermittingFallback("  ", IMPLEMENTATION);
@@ -116,7 +116,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void reads_an_unstated_policy_as_permitting_the_fallback() {
+        void readsAnUnstatedPolicyAsPermittingTheFallback() {
             // Whoever installs without saying has not claimed their work is the only correct
             // outcome, and inferring the claim would refuse runs nobody asked to have refused.
             extensionPoint.registerImplementation(IMPLEMENTATION_NAME, IMPLEMENTATION, null);
@@ -130,7 +130,7 @@ final class ExtensionPointTest {
     class ReadImplementation {
 
         @Test
-        void is_absent_before_anything_is_installed() {
+        void isAbsentBeforeAnythingIsInstalled() {
 
             assertThat(extensionPoint.readImplementation())
                 .isNull();
@@ -143,7 +143,7 @@ final class ExtensionPointTest {
     class ClearImplementation {
 
         @Test
-        void empties_the_point_so_it_can_be_composed_again_from_nothing() {
+        void emptiesThePointSoItCanBeComposedAgainFromNothing() {
 
             installPermittingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
 
@@ -156,7 +156,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void takes_the_fallback_policy_with_it() {
+        void takesTheFallbackPolicyWithIt() {
             // An emptied point is one nothing has claimed, so it cannot go on refusing runs on
             // behalf of an implementation that is no longer there.
             installForbiddingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
@@ -172,7 +172,7 @@ final class ExtensionPointTest {
     class SettleWorkOutcome {
 
         @Test
-        void refuses_the_run_where_an_implementation_that_had_to_execute_did_not() {
+        void refusesTheRunWhereAnImplementationThatHadToExecuteDidNot() {
             // The whole reason the outcome is reported rather than merely logged. Carrying on with
             // the ordinary sequence here would produce something this install has no correct
             // version of, and it would be found much later with nothing pointing back to the cause
@@ -186,7 +186,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void carries_the_declines_own_reason_into_the_refusal() {
+        void carriesTheDeclinesOwnReasonIntoTheRefusal() {
             // The failure is the only report anyone gets of this, so it has to say what the
             // implementation said - a refusal naming the work and the mod but not the cause leaves
             // the reader exactly where a silent fallback would have.
@@ -197,7 +197,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void accepts_an_execution_from_an_implementation_that_had_to_execute() {
+        void acceptsAnExecutionFromAnImplementationThatHadToExecute() {
 
             installForbiddingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
 
@@ -206,7 +206,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void accepts_a_decline_from_an_implementation_that_permits_the_fallback() {
+        void acceptsADeclineFromAnImplementationThatPermitsTheFallback() {
             // The ordinary case: declining is how an implementation says "not this one", and the
             // operation carries on with its own sequence.
             installPermittingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
@@ -216,7 +216,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void answers_a_decline_naming_what_the_install_supplies_none_of() {
+        void answersADeclineNamingWhatTheInstallSuppliesNoneOf() {
             // An empty point is the ordinary state of an optional integration rather than a failed
             // one - and the caller is owed a sentence rather than a bare no, since from where it
             // stands an install with nothing here and one whose implementation declined look
@@ -227,7 +227,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void treats_an_implementation_that_answered_with_nothing_as_a_decline() {
+        void treatsAnImplementationThatAnsweredWithNothingAsADecline() {
             // A port answering null has broken the one contract that makes a decline diagnosable.
             // It is still a decline - the work was not done - so the fallback policy decides what
             // happens next, and the answer says as much as there is to say.
@@ -239,7 +239,7 @@ final class ExtensionPointTest {
         }
 
         @Test
-        void refuses_a_run_where_an_implementation_that_had_to_execute_answered_with_nothing() {
+        void refusesARunWhereAnImplementationThatHadToExecuteAnsweredWithNothing() {
 
             installForbiddingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
 

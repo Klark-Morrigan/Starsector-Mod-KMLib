@@ -65,7 +65,7 @@ final class GatesTest {
     class ActivateGate {
 
         @Test
-        void null_gate_touches_no_state() {
+        void nullGateTouchesNoState() {
             // Early return guards a no-op call site (e.g. a console command run
             // against a system with no gate) from powering the network for a
             // gate that does not exist.
@@ -79,7 +79,7 @@ final class GatesTest {
         }
 
         @Test
-        void null_sector_touches_no_state() {
+        void nullSectorTouchesNoState() {
             // The flags are a sector's own state, so with no sector named there is
             // nothing to power - and reaching for a current one instead would power
             // whichever sector happened to be up rather than the caller's.
@@ -95,7 +95,7 @@ final class GatesTest {
         }
 
         @Test
-        void powers_the_network_of_the_sector_it_was_given() {
+        void powersTheNetworkOfTheSectorItWasGiven() {
 
             var gate = buildGateWithMemory(mock(MemoryAPI.class));
 
@@ -110,7 +110,7 @@ final class GatesTest {
         }
 
         @Test
-        void scans_only_the_target_gate() {
+        void scansOnlyTheTargetGate() {
 
             var gateMemoryMock = mock(MemoryAPI.class);
             var gate = buildGateWithMemory(gateMemoryMock);
@@ -124,7 +124,7 @@ final class GatesTest {
         }
 
         @Test
-        void registers_the_gate_as_a_transit_destination() {
+        void registersTheGateAsATransitDestination() {
 
             var gate = buildGateWithMemory(mock(MemoryAPI.class));
 

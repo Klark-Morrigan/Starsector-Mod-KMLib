@@ -43,7 +43,7 @@ final class NexerelinColoniserTest {
     class EstablishColony {
 
         @Test
-        void declines_a_founding_while_the_mod_is_absent() {
+        void declinesAFoundingWhileTheModIsAbsent() {
             // What every install without the mod answers, and the answer that keeps the class
             // naming one of its types from being resolved at all.
             var market = buildWorldMarket();
@@ -59,7 +59,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_a_founding_before_the_game_settings_are_up() {
+        void declinesAFoundingBeforeTheGameSettingsAreUp() {
             // A read taken outside a running game, which cannot say whether the mod is there - so
             // it answers as an install without it does.
             ModStateScopes.runWithoutGameSettings(() ->
@@ -71,7 +71,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_a_body_that_is_not_a_planet() {
+        void declinesABodyThatIsNotAPlanet() {
             // The mod's routine renames a world still carrying its star system's name and reads
             // the system off the planet to do it, so a modded body of another kind is a decline
             // and the caller founds the colony itself.
@@ -86,7 +86,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_a_place_the_game_gave_no_body() {
+        void declinesAPlaceTheGameGaveNoBody() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinColoniser.establishColony(
@@ -97,7 +97,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_an_owner_no_faction_answers_to() {
+        void declinesAnOwnerNoFactionAnswersTo() {
             // The routine reads that mod's settings and tariffs off the faction rather than off an
             // id, so an id the sector does not know is a decline rather than a founding that dies
             // partway through one.
@@ -110,7 +110,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_a_founding_under_no_owner_at_all() {
+        void declinesAFoundingUnderNoOwnerAtAll() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinColoniser.establishColony(
@@ -121,7 +121,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_a_null_market() {
+        void declinesANullMarket() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinColoniser.establishColony(
@@ -132,7 +132,7 @@ final class NexerelinColoniserTest {
         }
 
         @Test
-        void declines_a_founding_with_no_sector_to_read_the_owner_from() {
+        void declinesAFoundingWithNoSectorToReadTheOwnerFrom() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinColoniser.establishColony(

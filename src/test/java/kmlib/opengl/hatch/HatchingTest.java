@@ -70,19 +70,19 @@ final class HatchingTest {
         private static final double NO_JOIN_TOLERANCE = 0;
 
         @Test
-        void compute_hatch_run_yields_an_empty_run_for_zero_spacing() {
+        void computeHatchRunYieldsAnEmptyRunForZeroSpacing() {
             assertThat(buildHatchRun(RIGHT_TRIANGLE, 0, 0, GENEROUS_JOIN_TOLERANCE).segments())
                 .isEmpty();
         }
 
         @Test
-        void compute_hatch_run_yields_an_empty_run_for_negative_spacing() {
+        void computeHatchRunYieldsAnEmptyRunForNegativeSpacing() {
             assertThat(buildHatchRun(RIGHT_TRIANGLE, 0, -1, GENEROUS_JOIN_TOLERANCE).segments())
                 .isEmpty();
         }
 
         @Test
-        void compute_hatch_run_yields_an_empty_run_for_a_soup_smaller_than_a_triangle() {
+        void computeHatchRunYieldsAnEmptyRunForASoupSmallerThanATriangle() {
             // Two vertices cannot form a triangle, so there is no area to hatch.
             var tooSmall = new float[] {0f, 0f, 1f, 0f};
 
@@ -91,7 +91,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_clips_horizontal_lines_to_a_right_triangle() {
+        void computeHatchRunClipsHorizontalLinesToARightTriangle() {
             // Horizontal lines (angle 0) at y = 0, 1, 2, 3; each clipped to the triangle's
             // narrowing width, and the apex line at y = 4 dropped as a corner-only touch. One
             // triangle, so every line crosses once and the merge has nothing to join.
@@ -106,7 +106,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_returns_each_line_whole_across_a_strip() {
+        void computeHatchRunReturnsEachLineWholeAcrossAStrip() {
             // The strip's shared diagonal splits every interior line in two as it is clipped -
             // x = 1..4 from one triangle, x = 0..1 from the other - and the merge puts them back,
             // so five segments come back where the clip found eight crossings. The merged
@@ -124,7 +124,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_closes_a_shared_edge_join_exactly() {
+        void computeHatchRunClosesASharedEdgeJoinExactly() {
             // The three interior lines each join across the shared diagonal, and every one of
             // them closes on crossings that came out of their two triangles identical - so on
             // this soup the tolerance is doing nothing at all. That is the reading the tolerance
@@ -136,7 +136,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_breaks_between_lobes_but_joins_inside_one() {
+        void computeHatchRunBreaksBetweenLobesButJoinsInsideOne() {
             // Each lobe's own diagonal join closes; the six units of empty space between the
             // lobes does not, so every line comes back as two strokes rather than one spanning
             // an area the region does not cover.
@@ -152,7 +152,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_keeps_the_longer_reach_when_two_spans_overlap() {
+        void computeHatchRunKeepsTheLongerReachWhenTwoSpansOverlap() {
             // The overlaid triangle's spans all start after the square's and end before them, so a
             // merge that took the later span's end would cut every stroke short of the square's
             // right edge. The run is the square's own five full-width strokes, unchanged by an area
@@ -169,7 +169,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_counts_an_overlap_apart_from_a_tolerated_gap() {
+        void computeHatchRunCountsAnOverlapApartFromAToleratedGap() {
             // Four of the joins close on spans that already overlapped, by as much as three units
             // - three hundred times the tolerance. They are counted as overlaps and leave the
             // widest tolerated gap at zero, because reading that magnitude back as the reach the
@@ -181,7 +181,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_reports_a_join_the_tolerance_closed_apart_from_an_exact_one() {
+        void computeHatchRunReportsAJoinTheToleranceClosedApartFromAnExactOne() {
             // The rectangle's three interior joins land exactly; the four joins across the
             // thousandth-unit gap to the lone triangle land only because the tolerance reaches
             // that far, and the widest of them is reported as the fraction of the spacing it
@@ -203,7 +203,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_leaves_a_nearly_abutting_join_open_at_no_tolerance() {
+        void computeHatchRunLeavesANearlyAbuttingJoinOpenAtNoTolerance() {
             // The same soup with the tolerance taken away: the exact joins still close - they
             // need no tolerance to - and the four the tolerance was closing reopen, so every
             // line the gap crosses breaks in two.
@@ -218,7 +218,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_measures_the_gap_it_refused_at_no_tolerance() {
+        void computeHatchRunMeasuresTheGapItRefusedAtNoTolerance() {
             // The reading a zero-tolerance run exists to give. Nothing was tolerated - nothing
             // can be, at zero - so the count and the widest closed gap say only what every
             // zero-tolerance run says. The narrowest gap left open is the one number that
@@ -233,7 +233,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_clips_lines_below_the_origin_to_a_right_triangle() {
+        void computeHatchRunClipsLinesBelowTheOriginToARightTriangle() {
             // The same right triangle reflected below the x axis, so every line it crosses is a
             // negative multiple of the spacing. Emitted points are derived from the line's own
             // offset rather than carried through from the clip, and that derivation is where a
@@ -250,7 +250,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_lays_fewer_lines_as_the_spacing_widens() {
+        void computeHatchRunLaysFewerLinesAsTheSpacingWidens() {
             // Doubling the spacing halves how many lines fall within the triangle's y span.
             var tight = buildHatchRun(RIGHT_TRIANGLE, 0, 1, GENEROUS_JOIN_TOLERANCE);
             var loose = buildHatchRun(RIGHT_TRIANGLE, 0, 2, GENEROUS_JOIN_TOLERANCE);
@@ -260,7 +260,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_runs_every_segment_along_the_given_angle() {
+        void computeHatchRunRunsEverySegmentAlongTheGivenAngle() {
             // A 45-degree hatch: every clipped segment must lie parallel to that direction,
             // so its direction vector's cross product with (cos, sin) is zero.
             var angle = Math.PI / 4;
@@ -281,7 +281,7 @@ final class HatchingTest {
         }
 
         @Test
-        void compute_hatch_run_ignores_a_zero_area_triangle() {
+        void computeHatchRunIgnoresAZeroAreaTriangle() {
             // Three collinear points enclose no area, so no line crosses them.
             var collinear = new float[] {0f, 0f, 2f, 0f, 4f, 0f};
 

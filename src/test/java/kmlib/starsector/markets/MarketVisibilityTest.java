@@ -35,7 +35,7 @@ final class MarketVisibilityTest {
     class IsCountedAsColony {
 
         @Test
-        void returns_true_for_a_known_owned_colony() {
+        void returnsTrueForAKnownOwnedColony() {
 
             var market = buildVisibleColony();
 
@@ -44,7 +44,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_condition_only_market() {
+        void returnsFalseForAConditionOnlyMarket() {
 
             var market = buildConditionOnlyMarket();
 
@@ -53,7 +53,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_an_undiscovered_concealed_colony() {
+        void returnsFalseForAnUndiscoveredConcealedColony() {
 
             var market = buildUndiscoveredConcealedColony();
 
@@ -62,7 +62,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_true_for_an_undiscovered_concealed_colony_when_including_undiscovered() {
+        void returnsTrueForAnUndiscoveredConcealedColonyWhenIncludingUndiscovered() {
 
             var market = buildUndiscoveredConcealedColony();
 
@@ -71,7 +71,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_an_un_hidden_colony_whose_entity_is_undiscovered() {
+        void returnsFalseForAnUnHiddenColonyWhoseEntityIsUndiscovered() {
             // The composed filter inherits the fog's own reading, so a colony that is merely
             // listed does not reach a surface that reports its system as settled before the
             // player has been anywhere near it.
@@ -82,7 +82,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_true_for_a_concealed_colony_the_player_has_found() {
+        void returnsTrueForAConcealedColonyThePlayerHasFound() {
             // A raided pirate base stays hidden for good, and stays known for good with it -
             // concealment is not what the fog reads.
             var market = buildFoundConcealedColony();
@@ -92,7 +92,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_true_for_a_colony_with_no_entity_to_find() {
+        void returnsTrueForAColonyWithNoEntityToFind() {
 
             var market = buildEntitylessColony();
 
@@ -101,7 +101,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_null_market() {
+        void returnsFalseForANullMarket() {
             assertThat(MarketVisibility.isCountedAsColony(null, true))
                 .isFalse();
         }
@@ -111,7 +111,7 @@ final class MarketVisibilityTest {
     class IsCountedAsUngovernedColony {
 
         @Test
-        void returns_true_for_a_surveyed_world_on_a_found_planet() {
+        void returnsTrueForASurveyedWorldOnAFoundPlanet() {
 
             var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, buildFoundEntity());
 
@@ -120,7 +120,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_market_that_is_not_decivilised() {
+        void returnsFalseForAMarketThatIsNotDecivilised() {
             // The kind arm, which is what keeps every condition-only rock in the sector out of an
             // answer the survey arm alone would admit on any surveyed one.
             var market = buildConditionOnlyMarket();
@@ -130,7 +130,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_world_nobody_has_looked_at() {
+        void returnsFalseForAWorldNobodyHasLookedAt() {
 
             var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
 
@@ -139,7 +139,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_seen_world_where_a_full_survey_is_asked_for() {
+        void returnsFalseForASeenWorldWhereAFullSurveyIsAskedFor() {
             // The bar moves both ways, which is what makes it a level rather than a reveal: a
             // world vanilla would show is withheld where the caller asks for more than vanilla
             // asks.
@@ -150,7 +150,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_true_for_an_unsurveyed_world_where_no_survey_is_asked_for() {
+        void returnsTrueForAnUnsurveyedWorldWhereNoSurveyIsAskedFor() {
 
             var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
 
@@ -159,7 +159,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void reads_an_absent_survey_level_as_the_bar_vanilla_asks_for() {
+        void readsAnAbsentSurveyLevelAsTheBarVanillaAsksFor() {
             // A missing argument may not be read as no bar at all: the direction it must never
             // take is the widening one.
             var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildFoundEntity());
@@ -169,7 +169,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_surveyed_world_on_a_planet_the_player_has_not_found() {
+        void returnsFalseForASurveyedWorldOnAPlanetThePlayerHasNotFound() {
             // The two arms are independent, and this is the direction that is easy to miss: a
             // survey the player somehow holds says nothing about their having found the planet.
             var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.FULL, buildUndiscoveredEntity());
@@ -179,7 +179,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void needs_both_knobs_for_an_unsurveyed_world_on_an_undiscovered_planet() {
+        void needsBothKnobsForAnUnsurveyedWorldOnAnUndiscoveredPlanet() {
             // Each knob reaches the arm it names and no other, so a world held back twice needs
             // both - which is the rule every knob on the visibility tab is written to.
             var market = buildDecivilisedWorld(MarketAPI.SurveyLevel.NONE, buildUndiscoveredEntity());
@@ -193,7 +193,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_null_market() {
+        void returnsFalseForANullMarket() {
             assertThat(MarketVisibility.isCountedAsUngovernedColony(null, true, NONE))
                 .isFalse();
         }
@@ -203,7 +203,7 @@ final class MarketVisibilityTest {
     class IsDiscoveredByPlayer {
 
         @Test
-        void returns_true_when_the_entity_is_discovered() {
+        void returnsTrueWhenTheEntityIsDiscovered() {
 
             var market = buildFoundConcealedColony();
 
@@ -212,7 +212,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_true_when_the_primary_entity_is_null() {
+        void returnsTrueWhenThePrimaryEntityIsNull() {
 
             var market = buildEntitylessColony();
 
@@ -221,7 +221,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_when_the_entity_is_undiscovered_though_the_market_is_un_hidden() {
+        void returnsFalseWhenTheEntityIsUndiscoveredThoughTheMarketIsUnHidden() {
             // The two axes pulled apart: being publicly listed is not having been there, so an
             // un-hidden market whose entity is still to be found reads undiscovered.
             var market = buildUndiscoveredOpenColony();
@@ -231,7 +231,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_when_the_market_is_hidden_on_a_discoverable_entity() {
+        void returnsFalseWhenTheMarketIsHiddenOnADiscoverableEntity() {
             // Concealment is not read here, so it neither rescues nor condemns: the answer is
             // the entity's alone, and this entity is still to be found.
             var market = buildUndiscoveredConcealedColony();
@@ -241,7 +241,7 @@ final class MarketVisibilityTest {
         }
 
         @Test
-        void returns_false_for_a_null_market() {
+        void returnsFalseForANullMarket() {
             assertThat(MarketVisibility.isDiscoveredByPlayer(null))
                 .isFalse();
         }

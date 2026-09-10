@@ -21,7 +21,7 @@ final class NexerelinPresenceTest {
     class IsModEnabled {
 
         @Test
-        void reports_enabled_while_the_mod_manager_says_so() {
+        void reportsEnabledWhileTheModManagerSaysSo() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertThat(NexerelinPresence.isModEnabled())
@@ -29,7 +29,7 @@ final class NexerelinPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_while_the_mod_manager_says_so() {
+        void reportsNotEnabledWhileTheModManagerSaysSo() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, false, () ->
                 assertThat(NexerelinPresence.isModEnabled())
@@ -37,7 +37,7 @@ final class NexerelinPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_before_the_game_settings_are_up() {
+        void reportsNotEnabledBeforeTheGameSettingsAreUp() {
 
             ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(NexerelinPresence.isModEnabled())

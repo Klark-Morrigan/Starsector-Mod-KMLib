@@ -60,7 +60,7 @@ final class OwnershipTransferRoutinesTest {
     class OfferTransfer {
 
         @Test
-        void takes_nothing_where_nothing_is_installed() {
+        void takesNothingWhereNothingIsInstalled() {
             // The answer on every install running no mod with a hand-over of its own, and the one
             // that leaves this library's own sequence to move the colony.
             assertThat(offerTransfer().wasExecuted())
@@ -68,7 +68,7 @@ final class OwnershipTransferRoutinesTest {
         }
 
         @Test
-        void answers_that_the_hand_over_was_taken_where_the_installed_routine_takes_it() {
+        void answersThatTheHandOverWasTakenWhereTheInstalledRoutineTakesIt() {
 
             installPermittingFallback("Some Mod", buildRoutineNamed("installed", true));
 
@@ -79,7 +79,7 @@ final class OwnershipTransferRoutinesTest {
         }
 
         @Test
-        void leaves_the_hand_over_where_the_installed_routine_declines() {
+        void leavesTheHandOverWhereTheInstalledRoutineDeclines() {
 
             installPermittingFallback("Some Mod", buildRoutineNamed("installed", false));
 
@@ -90,7 +90,7 @@ final class OwnershipTransferRoutinesTest {
         }
 
         @Test
-        void fails_the_hand_over_where_a_routine_that_had_to_move_it_declines() {
+        void failsTheHandOverWhereARoutineThatHadToMoveItDeclines() {
             // A mod whose colonies cannot change hands without its own standing and intel moving
             // with them has no correct outcome from the plain sequence, so the run stops here.
             installForbiddingFallback("Total Conversion", buildRoutineNamed("installed", false));
@@ -105,7 +105,7 @@ final class OwnershipTransferRoutinesTest {
     class RegisterRoutine {
 
         @Test
-        void offers_the_hand_over_to_the_last_routine_registered() {
+        void offersTheHandOverToTheLastRoutineRegistered() {
             // One routine moves colonies on an install, so registering is replacing: the mod that
             // registered first is not consulted afterwards, and is not meant to be.
             installPermittingFallback("First Mod", buildRoutineNamed("first", true));
@@ -118,7 +118,7 @@ final class OwnershipTransferRoutinesTest {
         }
 
         @Test
-        void answers_with_the_name_the_installed_routine_was_registered_under() {
+        void answersWithTheNameTheInstalledRoutineWasRegisteredUnder() {
 
             installPermittingFallback("Some Mod", buildRoutineNamed("installed", true));
 
@@ -131,7 +131,7 @@ final class OwnershipTransferRoutinesTest {
     class ReadRoutine {
 
         @Test
-        void answers_with_what_this_install_registered() {
+        void answersWithWhatThisInstallRegistered() {
 
             var ownershipTransferRoutine = buildRoutineNamed("installed", false);
 
@@ -142,7 +142,7 @@ final class OwnershipTransferRoutinesTest {
         }
 
         @Test
-        void is_absent_where_nothing_registered_one() {
+        void isAbsentWhereNothingRegisteredOne() {
 
             assertThat(OwnershipTransferRoutines.readRoutine())
                 .isNull();

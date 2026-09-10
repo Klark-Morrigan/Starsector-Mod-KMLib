@@ -32,7 +32,7 @@ final class ColoursTest {
     class GetGlComponents {
 
         @Test
-        void normalizes_channels_to_unit_range() {
+        void normalizesChannelsToUnitRange() {
 
             var rgba = Colours.getGlComponents(Color.YELLOW, 1f);
 
@@ -43,7 +43,7 @@ final class ColoursTest {
         }
 
         @Test
-        void scales_only_alpha_by_the_multiplier() {
+        void scalesOnlyAlphaByTheMultiplier() {
 
             var rgba = Colours.getGlComponents(Color.YELLOW, 0.5f);
 
@@ -54,7 +54,7 @@ final class ColoursTest {
         }
 
         @Test
-        void folds_the_colours_own_alpha_into_the_multiplier() {
+        void foldsTheColoursOwnAlphaIntoTheMultiplier() {
 
             var rgba = Colours.getGlComponents(new Color(0, 0, 0, 128), 0.5f);
 
@@ -67,7 +67,7 @@ final class ColoursTest {
     class ScaleAlpha {
 
         @Test
-        void keeps_the_rgb_channels_and_scales_a_full_alpha() {
+        void keepsTheRgbChannelsAndScalesAFullAlpha() {
 
             var faded = Colours.scaleAlpha(new Color(10, 20, 30, 255), 0.5f);
 
@@ -80,7 +80,7 @@ final class ColoursTest {
         }
 
         @Test
-        void folds_the_colours_own_alpha_into_the_multiplier() {
+        void foldsTheColoursOwnAlphaIntoTheMultiplier() {
 
             var faded = Colours.scaleAlpha(new Color(0, 0, 0, 128), 0.5f);
 
@@ -89,7 +89,7 @@ final class ColoursTest {
         }
 
         @Test
-        void saturates_at_the_max_channel_when_the_multiplier_exceeds_one() {
+        void saturatesAtTheMaxChannelWhenTheMultiplierExceedsOne() {
             // 200 * 2 = 400 would overflow Color's 0-255 range, so it clamps to 255
             // instead of throwing.
             var faded = Colours.scaleAlpha(new Color(0, 0, 0, 200), 2f);
@@ -98,7 +98,7 @@ final class ColoursTest {
         }
 
         @Test
-        void reaches_zero_alpha_at_a_zero_multiplier() {
+        void reachesZeroAlphaAtAZeroMultiplier() {
 
             var faded = Colours.scaleAlpha(new Color(0, 0, 0, 255), 0f);
 
@@ -110,7 +110,7 @@ final class ColoursTest {
     class Darken {
 
         @Test
-        void scales_each_rgb_channel_by_the_factor_and_keeps_the_alpha() {
+        void scalesEachRgbChannelByTheFactorAndKeepsTheAlpha() {
 
             var darker = Colours.darken(new Color(200, 100, 40, 255), 0.5f);
 
@@ -123,7 +123,7 @@ final class ColoursTest {
         }
 
         @Test
-        void leaves_the_colour_unchanged_at_a_factor_of_one() {
+        void leavesTheColourUnchangedAtAFactorOfOne() {
 
             var same = Colours.darken(new Color(10, 20, 30, 128), 1f);
 
@@ -134,7 +134,7 @@ final class ColoursTest {
         }
 
         @Test
-        void returns_black_at_a_factor_of_zero() {
+        void returnsBlackAtAFactorOfZero() {
 
             var black = Colours.darken(new Color(200, 150, 100, 200), 0f);
 
@@ -147,7 +147,7 @@ final class ColoursTest {
         }
 
         @Test
-        void saturates_at_the_max_channel_when_the_factor_exceeds_one() {
+        void saturatesAtTheMaxChannelWhenTheFactorExceedsOne() {
             // 200 * 2 = 400 would overflow Color's 0-255 range, so it clamps to 255.
             var brighter = Colours.darken(new Color(200, 0, 0, 255), 2f);
 
@@ -159,7 +159,7 @@ final class ColoursTest {
     class MultiplyBy {
 
         @Test
-        void multiplies_each_channel_as_a_fraction_of_full_strength() {
+        void multipliesEachChannelAsAFractionOfFullStrength() {
 
             var tinted = Colours.multiplyBy(new Color(200, 100, 40, 255), new Color(128, 255, 0, 255));
 
@@ -171,7 +171,7 @@ final class ColoursTest {
         }
 
         @Test
-        void leaves_the_colour_unchanged_under_white() {
+        void leavesTheColourUnchangedUnderWhite() {
             // The no-op multiply, which is what "states no tint" resolves to - so an untinted image and a
             // white-tinted one are the same draw rather than two paths through the pass that makes it.
             var same = Colours.multiplyBy(new Color(10, 20, 30, 128), Color.WHITE);
@@ -183,7 +183,7 @@ final class ColoursTest {
         }
 
         @Test
-        void takes_the_alpha_down_with_the_rest_under_a_half_solid_multiplier() {
+        void takesTheAlphaDownWithTheRestUnderAHalfSolidMultiplier() {
             // A translucent tint thins what it is laid over rather than only shading it, which is what a
             // multiplied draw does - an alpha carried across whole would leave it solid under a wash that
             // was not.
@@ -196,7 +196,7 @@ final class ColoursTest {
         }
 
         @Test
-        void returns_black_under_black() {
+        void returnsBlackUnderBlack() {
 
             var black = Colours.multiplyBy(new Color(200, 150, 100, 255), Color.BLACK);
 
@@ -210,7 +210,7 @@ final class ColoursTest {
     class BlendRgbTowards {
 
         @Test
-        void lerps_each_rgb_channel_toward_the_target_and_keeps_base_alpha() {
+        void lerpsEachRgbChannelTowardTheTargetAndKeepsBaseAlpha() {
 
             var washed = Colours.blendRgbTowards(
                 new Color(40, 80, 120, 200),
@@ -227,7 +227,7 @@ final class ColoursTest {
         }
 
         @Test
-        void returns_the_base_rgb_at_a_zero_amount() {
+        void returnsTheBaseRgbAtAZeroAmount() {
 
             var washed = Colours.blendRgbTowards(
                 new Color(10, 20, 30, 128),
@@ -241,7 +241,7 @@ final class ColoursTest {
         }
 
         @Test
-        void reaches_the_target_rgb_at_an_amount_of_one_but_keeps_base_alpha() {
+        void reachesTheTargetRgbAtAnAmountOfOneButKeepsBaseAlpha() {
 
             var washed = Colours.blendRgbTowards(
                 new Color(10, 20, 30, 128),
@@ -257,7 +257,7 @@ final class ColoursTest {
         }
 
         @Test
-        void saturates_at_the_max_channel_when_the_amount_exceeds_one() {
+        void saturatesAtTheMaxChannelWhenTheAmountExceedsOne() {
             // 200 + (255-200)*2 = 310 would overflow Color's 0-255 range, so it clamps to 255.
             var washed = Colours.blendRgbTowards(
                 new Color(200, 0, 0, 255),
@@ -272,7 +272,7 @@ final class ColoursTest {
     class BlendTowards {
 
         @Test
-        void lerps_the_alpha_channel_along_with_the_rgb() {
+        void lerpsTheAlphaChannelAlongWithTheRgb() {
             // The whole difference from blendRgbTowards, so the two are told apart on the one channel
             // they disagree about: 200 + (32-200)*0.5 = 116, where the RGB-only blend would answer 200.
             var blended = Colours.blendTowards(
@@ -287,7 +287,7 @@ final class ColoursTest {
         }
 
         @Test
-        void carries_a_fully_transparent_base_all_the_way_to_the_targets_alpha() {
+        void carriesAFullyTransparentBaseAllTheWayToTheTargetsAlpha() {
             // The case the blend exists for: an unpainted surface fading in. An alpha kept from the base
             // would hold this at zero the whole way, so the travel would never appear at all.
             var blended = Colours.blendTowards(
@@ -299,7 +299,7 @@ final class ColoursTest {
         }
 
         @Test
-        void returns_the_base_at_a_zero_amount() {
+        void returnsTheBaseAtAZeroAmount() {
 
             var blended = Colours.blendTowards(
                 new Color(10, 20, 30, 128),
@@ -310,7 +310,7 @@ final class ColoursTest {
         }
 
         @Test
-        void saturates_every_channel_including_alpha_when_the_amount_exceeds_one() {
+        void saturatesEveryChannelIncludingAlphaWhenTheAmountExceedsOne() {
             // 200 + (255-200)*2 = 310 on the RGB and 128 + (255-128)*2 = 382 on the alpha would both
             // overflow Color's 0-255 range. The alpha is the one this blend adds, so it is the one an
             // out-of-range amount could newly throw from.
@@ -327,7 +327,7 @@ final class ColoursTest {
     class FlattenOnto {
 
         @Test
-        void composites_each_channel_by_the_source_alpha_and_returns_it_opaque() {
+        void compositesEachChannelByTheSourceAlphaAndReturnsItOpaque() {
 
             var flattened = Colours.flattenOnto(
                 new Color(200, 100, 50, 128),
@@ -342,7 +342,7 @@ final class ColoursTest {
         }
 
         @Test
-        void returns_the_source_shade_when_it_is_already_opaque() {
+        void returnsTheSourceShadeWhenItIsAlreadyOpaque() {
             // An opaque colour hides whatever it is over, so flattening it is the identity on its RGB.
             var flattened = Colours.flattenOnto(
                 new Color(10, 20, 30, 255),
@@ -352,7 +352,7 @@ final class ColoursTest {
         }
 
         @Test
-        void returns_the_backdrop_shade_when_the_source_is_fully_transparent() {
+        void returnsTheBackdropShadeWhenTheSourceIsFullyTransparent() {
 
             var flattened = Colours.flattenOnto(
                 new Color(10, 20, 30, 0),
@@ -362,7 +362,7 @@ final class ColoursTest {
         }
 
         @Test
-        void spends_the_backdrop_alpha_and_answers_opaque_whatever_it_carried() {
+        void spendsTheBackdropAlphaAndAnswersOpaqueWhateverItCarried() {
             // The backdrop is read as the surface it stands for, so a caller handing in a see-through one
             // still gets a surface back rather than a colour that is somehow half of one.
             var flattened = Colours.flattenOnto(
@@ -377,7 +377,7 @@ final class ColoursTest {
     class AddOverlay {
 
         @Test
-        void adds_the_overlay_channels_scaled_by_its_alpha_and_the_weight() {
+        void addsTheOverlayChannelsScaledByItsAlphaAndTheWeight() {
 
             var lit = Colours.addOverlay(
                 new Color(20, 30, 40, 255),
@@ -392,7 +392,7 @@ final class ColoursTest {
         }
 
         @Test
-        void keeps_the_bases_own_alpha() {
+        void keepsTheBasesOwnAlpha() {
             // The base is the surface the light lands on, so what the light carried is spent on how much
             // of it lands rather than on how solid the result is.
             var lit = Colours.addOverlay(
@@ -404,7 +404,7 @@ final class ColoursTest {
         }
 
         @Test
-        void leaves_the_base_unchanged_at_a_zero_weight() {
+        void leavesTheBaseUnchangedAtAZeroWeight() {
 
             var lit = Colours.addOverlay(
                 new Color(20, 30, 40, 255),
@@ -415,7 +415,7 @@ final class ColoursTest {
         }
 
         @Test
-        void saturates_at_the_max_channel_rather_than_wrapping() {
+        void saturatesAtTheMaxChannelRatherThanWrapping() {
             // 200 + 200 = 400 would overflow Color's 0-255 range; light piles up to white and stops.
             var lit = Colours.addOverlay(
                 new Color(200, 200, 200, 255),
@@ -445,7 +445,7 @@ final class ColoursTest {
         }
 
         @Test
-        void paints_an_unpainted_surface_as_solidly_as_the_light_landing_on_it() {
+        void paintsAnUnpaintedSurfaceAsSolidlyAsTheLightLandingOnIt() {
             // The whole reason this stands apart from addOverlay: a surface drawn at nothing has no
             // channels worth brightening, so the light itself is what paints it - a quarter of the way to
             // the light's own solidity at a quarter weight.
@@ -458,7 +458,7 @@ final class ColoursTest {
         }
 
         @Test
-        void leaves_a_solid_surface_solid_under_a_fainter_light() {
+        void leavesASolidSurfaceSolidUnderAFainterLight() {
             // Light only ever adds. A dim light on a solid surface would otherwise eat a hole in it, which
             // is the one way this rule could make something less visible than it was.
             var lit = Colours.addLight(
@@ -470,7 +470,7 @@ final class ColoursTest {
         }
 
         @Test
-        void leaves_the_base_unchanged_at_a_zero_weight() {
+        void leavesTheBaseUnchangedAtAZeroWeight() {
             // Including its alpha: what the light painted has to come back off as the light goes, or a
             // surface once lit would keep a shade of its own for good.
             var lit = Colours.addLight(
@@ -498,7 +498,7 @@ final class ColoursTest {
         }
 
         @Test
-        void gives_back_nothing_on_a_channel_the_lit_shade_is_darker_on() {
+        void givesBackNothingOnAChannelTheLitShadeIsDarkerOn() {
             // Light only ever adds, so there is no light that could carry a channel down - and a negative
             // one handed to Color would throw rather than dim anything.
             var light = Colours.subtractLight(new Color(200, 10, 120), new Color(20, 40, 60));
@@ -507,7 +507,7 @@ final class ColoursTest {
         }
 
         @Test
-        void comes_back_opaque_whatever_either_side_was_drawn_at() {
+        void comesBackOpaqueWhateverEitherSideWasDrawnAt() {
             // A light's own alpha scales how much of it lands, so one inheriting a see-through surface's
             // alpha would arrive at a fraction of the difference it was measured as.
             var light = Colours.subtractLight(new Color(200, 160, 120, 40), new Color(20, 40, 60, 0));

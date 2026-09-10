@@ -69,7 +69,7 @@ final class MarketOwnershipTransferTest {
     class TransferOwnership {
 
         @Test
-        void hands_a_faction_s_colony_to_the_player() {
+        void handsAFactionSColonyToThePlayer() {
             // The one direction the game has no routine of its own for, vanilla having no market
             // capture at all - so what the colony becomes is the ownership rule's answer applied
             // rather than a sequence transcribed from anywhere.
@@ -87,7 +87,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_the_player_s_colony_to_a_faction() {
+        void handsThePlayerSColonyToAFaction() {
 
             var market = MarketTransferFixture.buildPlayerColonyAsItsOwnerLeftIt();
 
@@ -106,7 +106,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void removes_the_administrator_the_outgoing_owner_posted() {
+        void removesTheAdministratorTheOutgoingOwnerPosted() {
             // An administrator is a person the previous owner sent here, not a post the colony
             // carries - leaving them in place would have a faction's own officer running a colony
             // for whoever took it.
@@ -120,7 +120,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void closes_the_free_port_the_outgoing_owner_opened() {
+        void closesTheFreePortTheOutgoingOwnerOpened() {
             // A free port is an arrangement its owner made about their own colony's trade, so the
             // incoming owner gets a colony trading normally rather than under terms they never set.
             var market = MarketTransferFixture.buildPlayerColonyAsItsOwnerLeftIt();
@@ -136,7 +136,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void stops_covering_shortages_from_the_outgoing_owner_s_stockpiles() {
+        void stopsCoveringShortagesFromTheOutgoingOwnerSStockpiles() {
 
             var market = MarketTransferFixture.buildPlayerColonyAsItsOwnerLeftIt();
 
@@ -151,7 +151,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void wipes_the_unrest_the_outgoing_owner_accrued() {
+        void wipesTheUnrestTheOutgoingOwnerAccrued() {
             // Unrest is a record of how the previous owner was resented. The incoming owner
             // inherits the colony rather than the resentment, and a stability penalty carried over
             // would read as their own rule going badly from the day they took the place.
@@ -166,7 +166,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void leaves_a_colony_nobody_resented_carrying_no_unrest_at_all() {
+        void leavesAColonyNobodyResentedCarryingNoUnrestAtAll() {
             // The engine's own read hangs an unrest condition on a colony that has none before
             // answering, which on a peaceful hand-over would mark the colony as recently troubled
             // for as long as it took the next economy step to sweep it off again.
@@ -180,7 +180,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void settles_the_local_resources_account_while_the_colony_is_still_the_player_s() {
+        void settlesTheLocalResourcesAccountWhileTheColonyIsStillThePlayerS() {
             // The whole reason the account is settled at all: what the player took on credit is
             // billed only while the colony reads as theirs, so a transfer that changed the flag
             // first would forgive the outstanding charge on the way past.
@@ -206,7 +206,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void settles_the_account_against_the_month_s_last_economy_step() {
+        void settlesTheAccountAgainstTheMonthSLastEconomyStep() {
             // The step the counter itself bills on, and the only one it acts upon - asked for by
             // the number of steps the install's own settings give a month rather than by a number
             // assumed here.
@@ -224,7 +224,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_over_a_colony_that_keeps_no_such_account() {
+        void handsOverAColonyThatKeepsNoSuchAccount() {
             // A colony taken from a faction has no local resources counter, that being the
             // player's own - so there is nothing to settle and the hand-over is the whole of it.
             // The counter the colony ends up with is one the change opened for its new owner, and
@@ -241,7 +241,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void leaves_a_colony_named_for_the_owner_it_already_has_untouched() {
+        void leavesAColonyNamedForTheOwnerItAlreadyHasUntouched() {
             // A hand-over to the incumbent changes nothing about who holds the place, and the
             // detaching half has no way of knowing that - so it would strip the administrator, the
             // free port and the stockpiling of a colony whose owner never changed. Refused whole
@@ -267,7 +267,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void leaves_the_account_unbilled_when_the_owner_named_is_the_one_already_holding_it() {
+        void leavesTheAccountUnbilledWhenTheOwnerNamedIsTheOneAlreadyHoldingIt() {
             // The half of the refusal that costs money rather than state. The account is settled
             // early on every real hand-over, so a call naming the owner already there would pull
             // the month's charge forward for a transfer that never happened.
@@ -282,7 +282,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_over_a_colony_whose_counter_keeps_no_account() {
+        void handsOverAColonyWhoseCounterKeepsNoAccount() {
             // The counter is asked for its billing step through the listener that step is declared
             // on, so a plugin some other mod put there is simply not asked - rather than the
             // hand-over failing on a colony whose counter is not the one this library expects.
@@ -301,7 +301,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_over_a_colony_before_the_game_settings_are_up() {
+        void handsOverAColonyBeforeTheGameSettingsAreUp() {
             // A read taken outside a running game cannot say how many steps a month has, and there
             // is no month being played through to have taken anything on credit in - so the
             // account is left unsettled and the colony still changes hands.
@@ -321,7 +321,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_the_whole_transfer_to_a_routine_the_install_supplies() {
+        void handsTheWholeTransferToARoutineTheInstallSupplies() {
             // A mod that moves its own colonies files intel, moves standing and re-posts offices
             // that nothing can arrange afterwards, so its routine takes the hand-over whole and
             // none of this sequence runs under it - the colony is left exactly as that routine
@@ -353,7 +353,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_the_colony_over_itself_when_the_installed_routine_declines_it() {
+        void handsTheColonyOverItselfWhenTheInstalledRoutineDeclinesIt() {
             // The answer on every install without such a mod - the composed sequence runs in its
             // place and the colony still changes hands.
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();
@@ -373,7 +373,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void leaves_the_account_to_a_routine_that_takes_the_transfer() {
+        void leavesTheAccountToARoutineThatTakesTheTransfer() {
             // A mod with a hand-over of its own settles the same account as part of it, so a
             // sequence that billed the colony before offering the hand-over over would charge the
             // month twice. The order the branch takes - refuse, offer, only then detach - is what
@@ -392,7 +392,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void hands_the_colony_over_through_the_live_binding_when_no_such_mod_is_installed() {
+        void handsTheColonyOverThroughTheLiveBindingWhenNoSuchModIsInstalled() {
             // The public entry point against a mod set that is readable and holds no such mod:
             // nothing else here exercises the routine the library actually binds, and an install
             // without that mod is what the composed sequence exists for.
@@ -408,7 +408,7 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void offers_nothing_to_the_installed_routine_when_the_owner_named_already_holds_it() {
+        void offersNothingToTheInstalledRoutineWhenTheOwnerNamedAlreadyHoldsIt() {
             // The refusal is asked before the hand-over is offered anywhere, so a call that changes
             // nothing about who holds the place is not one a mod is handed either - a mod's own
             // routine would file intel and move standing for it.
@@ -428,13 +428,13 @@ final class MarketOwnershipTransferTest {
         }
 
         @Test
-        void leaves_a_null_market_alone() {
+        void leavesANullMarketAlone() {
             assertThatCode(() -> MarketOwnershipTransfer.transferOwnership(sectorMock, null, Factions.PLAYER))
                 .doesNotThrowAnyException();
         }
 
         @Test
-        void leaves_a_colony_alone_when_no_owner_is_named() {
+        void leavesAColonyAloneWhenNoOwnerIsNamed() {
             // Naming nobody would leave a colony detached from the owner it had and given to none,
             // which is worse than the transfer not happening - so nothing is detached either.
             var market = MarketTransferFixture.buildFactionColonyAsItsOwnerLeftIt();

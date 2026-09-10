@@ -42,7 +42,7 @@ final class SystemAccessRoutesTest {
     class RegisterRoute {
 
         @Test
-        void keeps_every_route_registered_under_a_distinct_name() {
+        void keepsEveryRouteRegisteredUnderADistinctName() {
             // The difference from a single-slot extension point: a second mod adding a way in
             // must not displace the first mod's.
             SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
@@ -53,7 +53,7 @@ final class SystemAccessRoutesTest {
         }
 
         @Test
-        void replaces_a_route_registered_again_under_the_same_name() {
+        void replacesARouteRegisteredAgainUnderTheSameName() {
             // An integration composing itself twice - a reload, a settings save that re-runs the
             // composition - is one way in rather than two identical ones stacked.
             SystemAccessRoutes.registerRoute("a mod", DECLINING_ROUTE);
@@ -66,7 +66,7 @@ final class SystemAccessRoutesTest {
         }
 
         @Test
-        void passes_over_a_null_route() {
+        void passesOverANullRoute() {
             // An absent integration is a state to leave alone. Registering nothing must not
             // disturb what another mod did install, so the standing route survives.
             SystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
@@ -82,13 +82,13 @@ final class SystemAccessRoutesTest {
     class ReadRouteNames {
 
         @Test
-        void returns_empty_on_an_install_that_registered_none() {
+        void returnsEmptyOnAnInstallThatRegisteredNone() {
             assertThat(SystemAccessRoutes.readRouteNames())
                 .isEmpty();
         }
 
         @Test
-        void returns_the_names_in_the_order_they_were_registered() {
+        void returnsTheNamesInTheOrderTheyWereRegistered() {
             SystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
             SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
 
@@ -101,7 +101,7 @@ final class SystemAccessRoutesTest {
     class ClearRoutes {
 
         @Test
-        void empties_the_set_so_an_install_can_be_composed_again_from_nothing() {
+        void emptiesTheSetSoAnInstallCanBeComposedAgainFromNothing() {
             SystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
 
             SystemAccessRoutes.clearRoutes();
@@ -117,13 +117,13 @@ final class SystemAccessRoutesTest {
     class IsReachedByAnyRoute {
 
         @Test
-        void returns_false_on_an_install_that_registered_none() {
+        void returnsFalseOnAnInstallThatRegisteredNone() {
             assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .isFalse();
         }
 
         @Test
-        void returns_false_when_every_route_declines() {
+        void returnsFalseWhenEveryRouteDeclines() {
             SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
             SystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
 
@@ -132,7 +132,7 @@ final class SystemAccessRoutesTest {
         }
 
         @Test
-        void returns_true_when_one_route_of_several_grants_access() {
+        void returnsTrueWhenOneRouteOfSeveralGrantsAccess() {
             // One route answering false leaves the question where it found it, so the granting
             // route behind it still decides the answer.
             SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
@@ -143,7 +143,7 @@ final class SystemAccessRoutesTest {
         }
 
         @Test
-        void hands_the_system_asked_about_to_the_route() {
+        void handsTheSystemAskedAboutToTheRoute() {
             // A route decides per system, so it has to be given the one being asked about rather
             // than being consulted as a standing yes-or-no about the install.
             var reachableSystemMock = mock(StarSystemAPI.class);

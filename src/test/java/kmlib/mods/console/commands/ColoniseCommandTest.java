@@ -91,7 +91,7 @@ final class ColoniseCommandTest {
     class RunCommand {
 
         @Test
-        void founds_a_colony_for_the_resolved_faction_and_reports_it() {
+        void foundsAColonyForTheResolvedFactionAndReportsIt() {
 
             answerWithFaction(HEGEMONY_ID, "Hegemony");
 
@@ -114,7 +114,7 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void aims_the_search_at_a_colonisable_body_and_passes_on_omitted_arguments() {
+        void aimsTheSearchAtAColonisableBodyAndPassesOnOmittedArguments() {
             // Neither argument is defaulted on the command line, so what an omission means stays
             // the search's answer to give.
             answerWithFaction(PLAYER_FACTION_ID, "Sabre Company");
@@ -133,7 +133,7 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void names_the_player_faction_by_id_while_it_still_reports_a_placeholder() {
+        void namesThePlayerFactionByIdWhileItStillReportsAPlaceholder() {
             // A player faction with no identity of its own reports "Independent", which in this
             // sentence reads as having colonised the body for somebody else.
             answerWithFaction(PLAYER_FACTION_ID, "Independent");
@@ -146,7 +146,7 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void passes_on_the_searchs_refusal_and_founds_nothing() {
+        void passesOnTheSearchsRefusalAndFoundsNothing() {
 
             marketOwnerTargetResolverMock
                 .when(() -> MarketOwnerTargetResolver.resolveMarketAndOwner(
@@ -167,7 +167,7 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void reports_a_surplus_argument_as_bad_syntax_and_resolves_nothing() {
+        void reportsASurplusArgumentAsBadSyntaxAndResolvesNothing() {
 
             var result = command.runCommand(
                 "corvus_iii hegemony extra",
@@ -185,7 +185,7 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void returns_the_validation_result_outside_a_campaign() {
+        void returnsTheValidationResultOutsideACampaign() {
 
             var result = command.runCommand("", CommandContext.COMBAT_MISSION);
 
@@ -199,7 +199,7 @@ final class ColoniseCommandTest {
         }
 
         @Test
-        void guards_on_no_star_system_of_its_own() {
+        void guardsOnNoStarSystemOfItsOwn() {
             // The sector answers for no fleet, so this run is made from outside every system.
             // Whether one is needed depends on the argument shape, so it is the search's
             // condition and the command must not turn a run away for it - which is what the

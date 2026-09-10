@@ -23,7 +23,7 @@ final class FactionTargetResolverTest {
     class ResolveOwningFaction {
 
         @Test
-        void resolves_the_faction_the_id_names() {
+        void resolvesTheFactionTheIdNames() {
 
             var hegemonyMock = mock(FactionAPI.class);
 
@@ -34,7 +34,7 @@ final class FactionTargetResolverTest {
         }
 
         @Test
-        void takes_the_player_when_no_id_is_given() {
+        void takesThePlayerWhenNoIdIsGiven() {
             // What a bare invocation means: a dev tool handing out colonies is nearly always
             // handing them to the person running it.
             var playerMock = mock(FactionAPI.class);
@@ -46,7 +46,7 @@ final class FactionTargetResolverTest {
         }
 
         @Test
-        void treats_a_blank_id_as_no_id_at_all() {
+        void treatsABlankIdAsNoIdAtAll() {
             // The console hands over whatever the player typed, and a run of spaces is a bare
             // invocation - looking for a faction named by them would find none.
             var playerMock = mock(FactionAPI.class);
@@ -58,7 +58,7 @@ final class FactionTargetResolverTest {
         }
 
         @Test
-        void refuses_an_id_no_faction_answers_to() {
+        void refusesAnIdNoFactionAnswersTo() {
             // Refused rather than passed through: an ownership change takes an id, so a typo
             // applied verbatim leaves a colony held by nobody and the command reporting success.
             assertThat(FactionTargetResolver.resolveOwningFaction(
@@ -68,7 +68,7 @@ final class FactionTargetResolverTest {
         }
 
         @Test
-        void names_the_player_faction_in_a_refusal_it_asked_for_itself() {
+        void namesThePlayerFactionInARefusalItAskedForItself() {
             // The default is looked up like any other id, so a sector that cannot answer for the
             // player says so under that id rather than under the blank the caller passed.
             assertThat(FactionTargetResolver.resolveOwningFaction(mock(SectorAPI.class), null))
@@ -76,7 +76,7 @@ final class FactionTargetResolverTest {
         }
 
         @Test
-        void refuses_a_run_made_without_a_sector() {
+        void refusesARunMadeWithoutASector() {
             // Nothing to look an id up in, and no default to fall back to either - the player's
             // faction is the sector's to answer for like any other.
             assertThat(FactionTargetResolver.resolveOwningFaction(null, "hegemony"))

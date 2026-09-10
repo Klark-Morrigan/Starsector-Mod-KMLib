@@ -20,31 +20,31 @@ final class RangesTest {
     class ClampToUnit {
 
         @Test
-        void a_fraction_within_the_unit_range_is_left_where_it_is() {
+        void aFractionWithinTheUnitRangeIsLeftWhereItIs() {
             assertThat(Ranges.clampToUnit(0.4f))
                 .isEqualTo(0.4f);
         }
 
         @Test
-        void a_fraction_below_the_range_is_pulled_up_to_its_floor() {
+        void aFractionBelowTheRangeIsPulledUpToItsFloor() {
             assertThat(Ranges.clampToUnit(-0.5f))
                 .isEqualTo(0f);
         }
 
         @Test
-        void a_fraction_above_the_range_is_pulled_down_to_its_ceiling() {
+        void aFractionAboveTheRangeIsPulledDownToItsCeiling() {
             assertThat(Ranges.clampToUnit(1.5f))
                 .isEqualTo(1f);
         }
 
         @Test
-        void the_floor_itself_is_allowed() {
+        void theFloorItselfIsAllowed() {
             assertThat(Ranges.clampToUnit(0f))
                 .isEqualTo(0f);
         }
 
         @Test
-        void the_ceiling_itself_is_allowed() {
+        void theCeilingItselfIsAllowed() {
             assertThat(Ranges.clampToUnit(1f))
                 .isEqualTo(1f);
         }
@@ -54,25 +54,25 @@ final class RangesTest {
     class ClampInto {
 
         @Test
-        void a_value_between_the_bounds_is_left_where_it_is() {
+        void aValueBetweenTheBoundsIsLeftWhereItIs() {
             assertThat(Ranges.clampInto(5.0, 1.0, 10.0))
                 .isEqualTo(5.0);
         }
 
         @Test
-        void a_value_below_the_floor_is_pulled_up_to_it() {
+        void aValueBelowTheFloorIsPulledUpToIt() {
             assertThat(Ranges.clampInto(-3.0, 1.0, 10.0))
                 .isEqualTo(1.0);
         }
 
         @Test
-        void a_value_above_the_ceiling_is_pulled_down_to_it() {
+        void aValueAboveTheCeilingIsPulledDownToIt() {
             assertThat(Ranges.clampInto(30.0, 1.0, 10.0))
                 .isEqualTo(10.0);
         }
 
         @Test
-        void either_bound_is_itself_allowed() {
+        void eitherBoundIsItselfAllowed() {
 
             assertThat(Ranges.clampInto(1.0, 1.0, 10.0))
                 .isEqualTo(1.0);
@@ -81,13 +81,13 @@ final class RangesTest {
         }
 
         @Test
-        void a_range_of_no_width_leaves_only_the_one_value_it_allows() {
+        void aRangeOfNoWidthLeavesOnlyTheOneValueItAllows() {
             assertThat(Ranges.clampInto(5.0, 7.0, 7.0))
                 .isEqualTo(7.0);
         }
 
         @Test
-        void an_empty_range_gives_the_floor_when_the_value_is_nearer_to_it() {
+        void anEmptyRangeGivesTheFloorWhenTheValueIsNearerToIt() {
             // The floor has been pushed past the ceiling: 10 is wanted at least, 4 at most.
             // A value of 9 is one away from the floor and five from the ceiling.
             assertThat(Ranges.clampInto(9.0, 10.0, 4.0))
@@ -95,14 +95,14 @@ final class RangesTest {
         }
 
         @Test
-        void an_empty_range_gives_the_ceiling_when_the_value_is_nearer_to_that() {
+        void anEmptyRangeGivesTheCeilingWhenTheValueIsNearerToThat() {
             // The same impossible range, asked with a value down at the ceiling's end.
             assertThat(Ranges.clampInto(5.0, 10.0, 4.0))
                 .isEqualTo(4.0);
         }
 
         @Test
-        void an_empty_range_prefers_the_floor_when_the_value_sits_exactly_between() {
+        void anEmptyRangePrefersTheFloorWhenTheValueSitsExactlyBetween() {
             // Seven is three from each end. The tie goes to the floor, so an equidistant
             // value is answered the same way every time rather than by rounding.
             assertThat(Ranges.clampInto(7.0, 10.0, 4.0))

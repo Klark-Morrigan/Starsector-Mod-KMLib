@@ -56,7 +56,7 @@ final class ParameterParserTest {
         private final SampleSpec spec = new SampleSpec();
 
         @Test
-        void reads_named_values_into_their_typed_keys() {
+        void readsNamedValuesIntoTheirTypedKeys() {
             var parsed = spec.parse(
                 new String[] {"focus=beta", "speed=5", "jitter=0.5"}, outputFake);
 
@@ -67,7 +67,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void fills_positional_slots_in_declared_order() {
+        void fillsPositionalSlotsInDeclaredOrder() {
             var parsed = spec.parse(new String[] {"beta", "5"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -77,7 +77,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void a_named_value_drops_its_positional_slot() {
+        void aNamedValueDropsItsPositionalSlot() {
             var parsed = spec.parse(new String[] {"focus=beta", "5"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -88,7 +88,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void matches_parameter_names_case_insensitively() {
+        void matchesParameterNamesCaseInsensitively() {
             var parsed = spec.parse(new String[] {"FOCUS=beta"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -96,7 +96,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void returns_the_default_for_an_unsupplied_parameter() {
+        void returnsTheDefaultForAnUnsuppliedParameter() {
             var parsed = spec.parse(new String[0], outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -107,14 +107,14 @@ final class ParameterParserTest {
         }
 
         @Test
-        void reports_a_parameter_as_supplied_only_when_typed() {
+        void reportsAParameterAsSuppliedOnlyWhenTyped() {
             var parsed = spec.parse(new String[] {"jitter=0.5"}, outputFake);
 
             assertThat(parsed.isSupplied(spec.jitter)).isTrue();
         }
 
         @Test
-        void rejects_an_unknown_named_parameter() {
+        void rejectsAnUnknownNamedParameter() {
             var parsed = spec.parse(new String[] {"colour=red"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -127,7 +127,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void rejects_a_value_its_parser_refuses_and_frames_the_clause() {
+        void rejectsAValueItsParserRefusesAndFramesTheClause() {
             var parsed = spec.parse(new String[] {"speed=fast"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -137,7 +137,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void rejects_a_positional_value_its_parser_refuses() {
+        void rejectsAPositionalValueItsParserRefuses() {
             // The first bare token fills focus; the second fills speed, whose
             // parser rejects it - the same framing as a named bad value, reached
             // through the positional fill rather than a name=value token.
@@ -151,7 +151,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void parses_a_null_argument_string_as_nothing_supplied() {
+        void parsesANullArgumentStringAsNothingSupplied() {
             // Console Commands hands a bare invocation an empty string, but the
             // whole-string entry point tolerates null too: it yields no tokens, so
             // every parameter falls back to its default.
@@ -163,7 +163,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void omits_the_usage_line_when_the_spec_declares_none() {
+        void omitsTheUsageLineWhenTheSpecDeclaresNone() {
             // A spec may carry no usage line; the surplus-argument message then
             // stands on its own rather than trailing an empty suffix.
             var parsed = new NoUsageSpec().parse(new String[] {"extra"}, outputFake);
@@ -173,7 +173,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void rejects_a_negative_value_with_the_same_clause_as_a_non_numeric_one() {
+        void rejectsANegativeValueWithTheSameClauseAsANonNumericOne() {
             var parsed = spec.parse(new String[] {"jitter=-0.5"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -183,7 +183,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void rejects_more_positionals_than_open_slots_with_the_usage_line() {
+        void rejectsMorePositionalsThanOpenSlotsWithTheUsageLine() {
             var parsed = spec.parse(new String[] {"beta", "5", "extra"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -193,7 +193,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void does_not_let_a_name_only_parameter_take_a_positional_slot() {
+        void doesNotLetANameOnlyParameterTakeAPositionalSlot() {
             // focus and speed are the only two slots; a third bare token has no
             // slot because jitter is name-only.
             var parsed = spec.parse(new String[] {"beta", "5", "0.5"}, outputFake);
@@ -211,7 +211,7 @@ final class ParameterParserTest {
         private final RequiredSpec spec = new RequiredSpec();
 
         @Test
-        void rejects_a_missing_required_parameter() {
+        void rejectsAMissingRequiredParameter() {
             var parsed = spec.parse(new String[0], outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -221,7 +221,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void accepts_a_required_parameter_once_supplied() {
+        void acceptsARequiredParameterOnceSupplied() {
             var parsed = spec.parse(new String[] {"target=beta"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -251,7 +251,7 @@ final class ParameterParserTest {
         private final FlagSpec spec = new FlagSpec();
 
         @Test
-        void sets_a_flag_present_as_a_bare_keyword() {
+        void setsAFlagPresentAsABareKeyword() {
             var parsed = spec.parse(new String[] {"verbose"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -260,7 +260,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void leaves_an_absent_flag_false_and_unsupplied() {
+        void leavesAnAbsentFlagFalseAndUnsupplied() {
             var parsed = spec.parse(new String[0], outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -269,7 +269,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void a_flag_does_not_claim_a_positional_slot() {
+        void aFlagDoesNotClaimAPositionalSlot() {
             var parsed = spec.parse(new String[] {"alpha", "verbose"}, outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -280,7 +280,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void rejects_a_flag_given_a_value() {
+        void rejectsAFlagGivenAValue() {
             var parsed = spec.parse(new String[] {"verbose=1"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -290,7 +290,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void lists_a_flag_as_a_bare_keyword_when_naming_an_unknown_parameter() {
+        void listsAFlagAsABareKeywordWhenNamingAnUnknownParameter() {
             var parsed = spec.parse(new String[] {"colour=red"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();
@@ -321,7 +321,7 @@ final class ParameterParserTest {
             ParameterSpec.takingNoArguments("Usage: sample.");
 
         @Test
-        void accepts_an_empty_argument_list() {
+        void acceptsAnEmptyArgumentList() {
             var parsed = spec.parse(new String[0], outputFake);
 
             assertThat(parsed.isValid()).isTrue();
@@ -329,7 +329,7 @@ final class ParameterParserTest {
         }
 
         @Test
-        void rejects_any_argument_with_the_usage_line() {
+        void rejectsAnyArgumentWithTheUsageLine() {
             var parsed = spec.parse(new String[] {"stray"}, outputFake);
 
             assertThat(parsed.isValid()).isFalse();

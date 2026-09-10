@@ -160,7 +160,7 @@ final class DisksTest {
     class IntersectWithDisk {
 
         @Test
-        void polygon_is_bounded_to_the_disk_when_it_reaches_past_it() {
+        void polygonIsBoundedToTheDiskWhenItReachesPastIt() {
             // The square reaches far past a disk centred inside it, so the disk alone
             // survives: the reach bound, not the polygon, decides the result's area.
             var bounded = Disks.intersectWithDisk(
@@ -172,7 +172,7 @@ final class DisksTest {
         }
 
         @Test
-        void polygon_comes_back_whole_when_the_disk_encloses_it() {
+        void polygonComesBackWholeWhenTheDiskEnclosesIt() {
             // A bound wider than the polygon clips nothing away - the reach cap only
             // ever removes, never invents, so the square keeps its full area.
             var bounded = Disks.intersectWithDisk(
@@ -184,7 +184,7 @@ final class DisksTest {
         }
 
         @Test
-        void nothing_is_kept_when_the_polygon_lies_wholly_outside_the_disk() {
+        void nothingIsKeptWhenThePolygonLiesWhollyOutsideTheDisk() {
             // The cap case that must collapse: a wedge past its owner's reach keeps no
             // colour at all, so an empty ring - not a sliver - is the answer.
             var bounded = Disks.intersectWithDisk(
@@ -196,7 +196,7 @@ final class DisksTest {
         }
 
         @Test
-        void nothing_is_kept_when_the_disk_is_too_small_to_enclose_area() {
+        void nothingIsKeptWhenTheDiskIsTooSmallToEncloseArea() {
             // A zero radius has no interior to keep, and its chords are too short to
             // carry a normal, so it is reported as enclosing nothing rather than let
             // to decide sides from noise.
@@ -209,7 +209,7 @@ final class DisksTest {
         }
 
         @Test
-        void nothing_is_kept_when_the_polygon_encloses_no_area() {
+        void nothingIsKeptWhenThePolygonEnclosesNoArea() {
 
             var bounded = Disks.intersectWithDisk(
                 List.of(new double[] {0, 0}, new double[] {10, 0}),
@@ -225,7 +225,7 @@ final class DisksTest {
     class SubtractDisk {
 
         @Test
-        void a_hole_is_punched_when_the_disk_lies_strictly_inside_the_polygon() {
+        void aHoleIsPunchedWhenTheDiskLiesStrictlyInsideThePolygon() {
 
             var centre = new double[] {50, 50};
             var remainder = Disks.subtractDisk(buildSquare(100), new Disk(centre, 20, SEGMENTS));
@@ -250,7 +250,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_rest_survives_when_the_disk_bites_into_an_edge() {
+        void theRestSurvivesWhenTheDiskBitesIntoAnEdge() {
             // A disk centred on a corner takes a quarter of itself out of the square;
             // the bite leaves a concave remainder, which is why the result is pieces.
             var remainder = Disks.subtractDisk(
@@ -262,7 +262,7 @@ final class DisksTest {
         }
 
         @Test
-        void nothing_survives_when_the_disk_covers_the_polygon() {
+        void nothingSurvivesWhenTheDiskCoversThePolygon() {
             // The pocket case that must collapse: a wedge wholly inside the keep-out
             // is all pocket, so it drops out entirely rather than leaving slivers.
             var remainder = Disks.subtractDisk(
@@ -274,7 +274,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_polygon_comes_back_whole_when_the_disk_misses_it() {
+        void thePolygonComesBackWholeWhenTheDiskMissesIt() {
 
             var remainder = Disks.subtractDisk(
                 buildSquare(10),
@@ -285,7 +285,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_polygon_comes_back_whole_when_the_disk_is_too_small_to_enclose_area() {
+        void thePolygonComesBackWholeWhenTheDiskIsTooSmallToEncloseArea() {
             // Nothing is withheld by a disk with no interior, so a caller that disables
             // its keep-out by zeroing the radius gets the unclipped polygon back.
             var remainder = Disks.subtractDisk(
@@ -297,7 +297,7 @@ final class DisksTest {
         }
 
         @Test
-        void nothing_survives_when_the_polygon_encloses_no_area() {
+        void nothingSurvivesWhenThePolygonEnclosesNoArea() {
 
             var remainder = Disks.subtractDisk(
                 List.of(new double[] {0, 0}, new double[] {10, 0}),
@@ -308,7 +308,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_pieces_wind_the_same_way_as_the_polygon() {
+        void thePiecesWindTheSameWayAsThePolygon() {
             // Clipping preserves the subject's winding, so every piece reads
             // counter-clockwise like the square it came from - the sign a consumer's
             // fold-guard and fill keep on.
@@ -331,7 +331,7 @@ final class DisksTest {
     class SubtractDiskWithLabels {
 
         @Test
-        void an_edge_the_clip_left_alone_still_names_what_it_arrived_naming() {
+        void anEdgeTheClipLeftAloneStillNamesWhatItArrivedNaming() {
             // A disk biting one corner shortens two of the square's sides and leaves the
             // other two untouched; all four must still name the side they always were,
             // since nothing moved to the far side of any of them.
@@ -350,7 +350,7 @@ final class DisksTest {
         }
 
         @Test
-        void no_label_of_the_clips_own_leaks_out() {
+        void noLabelOfTheClipsOwnLeaksOut() {
             // The clip tells its own cuts apart internally, so a subject that labels its
             // sides with the very values it uses to do that must still come back saying
             // what it said - the two label spaces cannot be the same one.
@@ -368,7 +368,7 @@ final class DisksTest {
         }
 
         @Test
-        void a_rim_and_a_fan_cut_lying_on_one_line_are_labelled_apart() {
+        void aRimAndAFanCutLyingOnOneLineAreLabelledApart() {
             // A disk strictly inside the square is cut around by lines that run right
             // across it, so one cut runs on past the chord it was made for: the withheld
             // disk lies across the chord's span, a sibling piece across the rest of the
@@ -386,7 +386,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_rim_is_bordered_once_over_its_whole_length() {
+        void theRimIsBorderedOnceOverItsWholeLength() {
             // The rim label goes on exactly the withheld disk's boundary - no more, no
             // less. Length is what says so: a fan cut mistaken for rim would lengthen the
             // total past the disk's circumference, and a rim mistaken for a fan cut would
@@ -404,7 +404,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_rim_is_bordered_once_where_the_disk_bites_into_an_edge() {
+        void theRimIsBorderedOnceWhereTheDiskBitesIntoAnEdge() {
             // Half the disk's rim lies outside the square here, so only the quarter the
             // square covers is anyone's border. The chord lines running on outside the
             // subject must not be counted rim for the stretch where there is no subject
@@ -422,7 +422,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_polygon_comes_back_whole_with_its_labels_when_the_disk_encloses_no_area() {
+        void thePolygonComesBackWholeWithItsLabelsWhenTheDiskEnclosesNoArea() {
             // A caller disabling its keep-out by zeroing the radius gets its subject back
             // untouched - and the labels it handed in, not the ones the walk uses to talk
             // to itself, since this path never reaches the cuts that translate them.
@@ -442,7 +442,7 @@ final class DisksTest {
         }
 
         @Test
-        void nothing_survives_when_the_disk_covers_the_polygon() {
+        void nothingSurvivesWhenTheDiskCoversThePolygon() {
             // Every piece is clipped below area here, so the labels have nothing to ride
             // on: an empty list, not a set of labelled slivers.
             var pieces = Disks.subtractDiskWithLabels(
@@ -456,7 +456,7 @@ final class DisksTest {
         }
 
         @Test
-        void the_labelled_pieces_are_the_plain_ones_with_labels_on_them() {
+        void theLabelledPiecesAreThePlainOnesWithLabelsOnThem() {
             // The plain subtract is this one with its labels dropped, so the two cannot
             // disagree about the shape of the remainder - which is the point of having
             // one walk rather than two.
@@ -492,7 +492,7 @@ final class DisksTest {
     class BothSenses {
 
         @Test
-        void the_two_senses_partition_the_polygon_between_them() {
+        void theTwoSensesPartitionThePolygonBetweenThem() {
             // The keep-out and the reach bound are the same disk read opposite ways, so
             // what one keeps is exactly what the other drops: their areas must sum to
             // the whole polygon, with no gap left between the two arcs and no strip

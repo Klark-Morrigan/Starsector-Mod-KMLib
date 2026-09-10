@@ -29,7 +29,7 @@ final class VisibleStarsTest {
     @Nested
     class IsStarVisibleForSystem {
         @Test
-        void is_true_when_a_visible_star_anchor_leads_into_it() {
+        void isTrueWhenAVisibleStarAnchorLeadsIntoIt() {
             var system = buildSystemWithId("alpha");
             var visibleStars = VisibleStars.scan(
                 buildSectorWithHyperEntities(buildStarAnchorLeadingTo(system, false)));
@@ -38,7 +38,7 @@ final class VisibleStarsTest {
         }
 
         @Test
-        void is_false_when_its_star_anchor_is_hidden_on_map() {
+        void isFalseWhenItsStarAnchorIsHiddenOnMap() {
             var system = buildSystemWithId("alpha");
             var visibleStars = VisibleStars.scan(
                 buildSectorWithHyperEntities(buildStarAnchorLeadingTo(system, true)));
@@ -47,14 +47,14 @@ final class VisibleStarsTest {
         }
 
         @Test
-        void is_false_when_the_jump_point_is_not_a_star_anchor() {
+        void isFalseWhenTheJumpPointIsNotAStarAnchor() {
             var visibleStars = VisibleStars.scan(buildSectorWithHyperEntities(buildNonAnchor()));
 
             assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();
         }
 
         @Test
-        void is_false_when_the_only_anchor_leads_into_another_system() {
+        void isFalseWhenTheOnlyAnchorLeadsIntoAnotherSystem() {
             // Resolution is by the destination system's identity, so an anchor for
             // "alpha" cannot make "beta" read as visible.
             var visibleStars = VisibleStars.scan(
@@ -64,7 +64,7 @@ final class VisibleStarsTest {
         }
 
         @Test
-        void ignores_a_star_anchor_that_leads_nowhere() {
+        void ignoresAStarAnchorThatLeadsNowhere() {
             // A malformed anchor with no destination must drop out of the scan
             // rather than crash it or admit a phantom system.
             var visibleStars = VisibleStars.scan(
@@ -74,7 +74,7 @@ final class VisibleStarsTest {
         }
 
         @Test
-        void is_false_when_the_sector_has_no_hyperspace() {
+        void isFalseWhenTheSectorHasNoHyperspace() {
             // getHyperspace() defaults to null on the mock - the empty-index path.
             var visibleStars = VisibleStars.scan(mock(SectorAPI.class));
 
@@ -82,7 +82,7 @@ final class VisibleStarsTest {
         }
 
         @Test
-        void is_false_for_a_null_sector() {
+        void isFalseForANullSector() {
             var visibleStars = VisibleStars.scan(null);
 
             assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();

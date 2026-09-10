@@ -21,7 +21,7 @@ final class JitterTest {
     @Nested
     class Roll {
         @Test
-        void positive_size_lands_in_symmetric_band() {
+        void positiveSizeLandsInSymmetricBand() {
             var size = 0.15f;
 
             for (var i = 0; i < SAMPLE_COUNT; i++) {
@@ -31,7 +31,7 @@ final class JitterTest {
         }
 
         @Test
-        void negative_size_is_treated_as_its_absolute_value() {
+        void negativeSizeIsTreatedAsItsAbsoluteValue() {
             // -0.25 must produce the same band as +0.25, not flip
             // the interval or return NaN.
             var size = -0.25f;
@@ -45,7 +45,7 @@ final class JitterTest {
         }
 
         @Test
-        void zero_size_collapses_to_one() {
+        void zeroSizeCollapsesToOne() {
             // size = 0 means min == max == 1, regardless of the
             // underlying PRNG output.
             for (var i = 0; i < 100; i++) {
@@ -54,7 +54,7 @@ final class JitterTest {
         }
 
         @Test
-        void rolls_cover_both_sides_of_one() {
+        void rollsCoverBothSidesOfOne() {
             // Sanity that the band is actually random, not stuck on
             // one bound. Across 10k samples both halves must appear.
             var sawBelow = false;

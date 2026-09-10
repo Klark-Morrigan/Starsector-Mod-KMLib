@@ -27,7 +27,7 @@ final class MarketPatrolsTest {
     class ReadPatrolCounts {
 
         @Test
-        void reads_the_three_tier_counts_from_the_dynamic_stats() {
+        void readsTheThreeTierCountsFromTheDynamicStats() {
 
             var market = buildMarketWithPatrolMods(4.0f, 3.0f, 1.0f);
 
@@ -36,7 +36,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void truncates_a_fractional_tier_count_to_int() {
+        void truncatesAFractionalTierCountToInt() {
             // Vanilla getMaxPatrols casts the effective mod to int, so a fractional
             // count floors rather than rounds.
             var market = buildMarketWithPatrolMods(2.9f, 1.4f, 0.6f);
@@ -46,7 +46,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void floors_a_negative_tier_count_to_zero() {
+        void floorsANegativeTierCountToZero() {
 
             var market = buildMarketWithPatrolMods(-1.0f, 2.0f, 0.0f);
 
@@ -55,7 +55,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void treats_a_missing_tier_mod_as_zero() {
+        void treatsAMissingTierModAsZero() {
             // A market with no military industry has no patrol mods; getMod returns
             // null for every tier.
             var market = buildMarketWithDynamic(mock(DynamicStatsAPI.class));
@@ -65,7 +65,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void returns_none_for_a_market_with_no_dynamic_stats() {
+        void returnsNoneForAMarketWithNoDynamicStats() {
 
             var statsMock = mock(MutableMarketStatsAPI.class);
 
@@ -82,7 +82,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void returns_none_for_a_market_with_no_stats() {
+        void returnsNoneForAMarketWithNoStats() {
 
             var marketMock = mock(MarketAPI.class);
 
@@ -94,7 +94,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void returns_none_for_a_null_market() {
+        void returnsNoneForANullMarket() {
             assertThat(MarketPatrols.readPatrolCounts(null))
                 .isEqualTo(PatrolCounts.NONE);
         }
@@ -104,7 +104,7 @@ final class MarketPatrolsTest {
     class FieldsPatrols {
 
         @Test
-        void returns_true_when_the_patrol_flag_is_set() {
+        void returnsTrueWhenThePatrolFlagIsSet() {
 
             var market = buildMarketWithPatrolFlag(true);
 
@@ -113,7 +113,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void returns_false_when_the_patrol_flag_is_unset() {
+        void returnsFalseWhenThePatrolFlagIsUnset() {
             // A hidden raider base writes the patrol-count stats but never sets
             // $patrol, so it reads as fielding no patrols.
             var market = buildMarketWithPatrolFlag(false);
@@ -123,7 +123,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void returns_false_for_a_market_with_no_memory() {
+        void returnsFalseForAMarketWithNoMemory() {
 
             var marketMock = mock(MarketAPI.class);
 
@@ -135,7 +135,7 @@ final class MarketPatrolsTest {
         }
 
         @Test
-        void returns_false_for_a_null_market() {
+        void returnsFalseForANullMarket() {
             assertThat(MarketPatrols.fieldsPatrols(null))
                 .isFalse();
         }

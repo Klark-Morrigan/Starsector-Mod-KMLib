@@ -25,7 +25,7 @@ final class ConsoleCommandsPresenceTest {
     class IsModEnabled {
 
         @Test
-        void reports_enabled_while_the_mod_manager_says_so() {
+        void reportsEnabledWhileTheModManagerSaysSo() {
 
             ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, true, () ->
                 assertThat(ConsoleCommandsPresence.isModEnabled())
@@ -33,7 +33,7 @@ final class ConsoleCommandsPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_while_the_mod_manager_says_so() {
+        void reportsNotEnabledWhileTheModManagerSaysSo() {
 
             ModStateScopes.runWithModEnabled(CONSOLE_COMMANDS, false, () ->
                 assertThat(ConsoleCommandsPresence.isModEnabled())
@@ -41,7 +41,7 @@ final class ConsoleCommandsPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_before_the_game_settings_are_up() {
+        void reportsNotEnabledBeforeTheGameSettingsAreUp() {
 
             ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(ConsoleCommandsPresence.isModEnabled())
@@ -49,7 +49,7 @@ final class ConsoleCommandsPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_while_the_settings_carry_no_mod_manager() {
+        void reportsNotEnabledWhileTheSettingsCarryNoModManager() {
 
             ModStateScopes.runWithoutModManager(() ->
                 assertThat(ConsoleCommandsPresence.isModEnabled())

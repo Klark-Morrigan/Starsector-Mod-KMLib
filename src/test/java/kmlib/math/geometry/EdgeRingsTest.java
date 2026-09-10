@@ -33,7 +33,7 @@ final class EdgeRingsTest {
     @Nested
     class ChainIntoRings {
         @Test
-        void four_segments_of_a_square_chain_into_one_ordered_ring() {
+        void fourSegmentsOfASquareChainIntoOneOrderedRing() {
             // CCW unit square handed over out of order; the walk stitches it back
             // into one ring of its four corners.
             var segments = Arrays.asList(
@@ -55,7 +55,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void endpoints_within_the_weld_tolerance_still_chain() {
+        void endpointsWithinTheWeldToleranceStillChain() {
             // A corner reported by its two segments at coordinates a rounding
             // whisker apart (well below the tolerance) still welds into one corner,
             // so the ring closes rather than splitting at the seam.
@@ -72,7 +72,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void a_segment_shorter_than_the_weld_tolerance_does_not_break_its_ring() {
+        void aSegmentShorterThanTheWeldToleranceDoesNotBreakItsRing() {
             // A segment whose two ends weld to one corner is no step at this resolution. It is
             // retired as a corner rather than walked, so the loop around it still closes -
             // where walking it would seed a one-segment ring that is dropped, taking the real
@@ -92,7 +92,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void disjoint_squares_come_back_as_two_rings() {
+        void disjointSquaresComeBackAsTwoRings() {
             var segments = Arrays.asList(
                 buildSegment(0, 0, 10, 0),
                 buildSegment(10, 0, 10, 10),
@@ -110,7 +110,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void an_unclosed_strand_is_dropped() {
+        void anUnclosedStrandIsDropped() {
             // Three segments that march away without returning to the start: no
             // ring closes, so nothing is emitted (never a stray open loop).
             var segments = Arrays.asList(
@@ -122,7 +122,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void empty_input_yields_no_rings() {
+        void emptyInputYieldsNoRings() {
             assertThat(EdgeRings.chainIntoRings(List.of(), WELD_TOLERANCE)).isEmpty();
         }
     }
@@ -130,7 +130,7 @@ final class EdgeRingsTest {
     @Nested
     class ChainIntoRingsWithEdgeValues {
         @Test
-        void values_follow_their_segments_through_the_reordering() {
+        void valuesFollowTheirSegmentsThroughTheReordering() {
             // The square handed over out of order, each segment tagged with its own
             // start x. The walk re-orders the segments into winding order, and each
             // edge's carried value still equals its corner's x - so every value rode
@@ -154,7 +154,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void a_value_array_not_parallel_to_the_segments_is_rejected() {
+        void aValueArrayNotParallelToTheSegmentsIsRejected() {
             var segments = Arrays.asList(
                 buildSegment(0, 0, 10, 0),
                 buildSegment(10, 0, 10, 10),
@@ -166,7 +166,7 @@ final class EdgeRingsTest {
         }
 
         @Test
-        void an_unclosed_strand_drops_with_its_values() {
+        void anUnclosedStrandDropsWithItsValues() {
             var segments = Arrays.asList(
                 buildSegment(0, 0, 10, 0),
                 buildSegment(10, 0, 20, 0),

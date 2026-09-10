@@ -21,7 +21,7 @@ final class KnownColonyReaderTest {
     class NothingKnown {
 
         @Test
-        void names_no_colony_of_a_populated_place() {
+        void namesNoColonyOfAPopulatedPlace() {
             // The conservative answer, and the reason it is the one stated here: a reader handed
             // no port must not name a colony the caller never said could be named.
             var colonies = new Colonies(List.of(
@@ -33,7 +33,7 @@ final class KnownColonyReaderTest {
         }
 
         @Test
-        void names_nothing_of_a_place_that_could_not_be_read() {
+        void namesNothingOfAPlaceThatCouldNotBeRead() {
 
             assertThat(KnownColonyReader.NOTHING_KNOWN.readKnownColonies(Colonies.NONE))
                 .isEmpty();

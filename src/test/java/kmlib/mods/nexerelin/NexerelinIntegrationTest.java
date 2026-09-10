@@ -50,7 +50,7 @@ final class NexerelinIntegrationTest {
     class InstallRoutines {
 
         @Test
-        void puts_an_adapter_in_front_of_every_operation_it_covers() {
+        void putsAnAdapterInFrontOfEveryOperationItCovers() {
             // Three operations may defer to this mod - founding, handing over, and the counters
             // half of an ownership change - and an install with the mod is meant to reach it on
             // all three. A registration missed here is a colony quietly built the vanilla way on
@@ -66,7 +66,7 @@ final class NexerelinIntegrationTest {
         }
 
         @Test
-        void installs_every_adapter_under_a_name_a_log_line_can_be_read_by() {
+        void installsEveryAdapterUnderANameALogLineCanBeReadBy() {
             // What the startup log is read for here is which mod founds colonies and moves them on
             // this install, so the name has to be the mod's rather than a lambda's type.
             NexerelinIntegration.installRoutines(WITH_NEXERELIN);
@@ -80,7 +80,7 @@ final class NexerelinIntegrationTest {
         }
 
         @Test
-        void installs_nothing_on_an_install_without_the_mod() {
+        void installsNothingOnAnInstallWithoutTheMod() {
             // What keeps every operation clear of a class naming a Nexerelin type: with nothing
             // installed, no offer is ever made and no such class is ever reached.
             NexerelinIntegration.installRoutines(WITHOUT_NEXERELIN);

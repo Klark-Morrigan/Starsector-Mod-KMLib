@@ -34,14 +34,14 @@ final class RandomAssortmentOfThingsMatcherTest {
     @Nested
     class HasAbyssalFracture {
         @Test
-        void returns_false_for_a_null_system() {
+        void returnsFalseForANullSystem() {
             // Null short-circuits before the mod-enabled check, so RAT state is
             // irrelevant and Global is never consulted.
             assertThat(RandomAssortmentOfThingsMatcher.hasAbyssalFracture(null)).isFalse();
         }
 
         @Test
-        void returns_false_when_rat_disabled() {
+        void returnsFalseWhenRatDisabled() {
             var systemMock = buildSystemWithEntities(
                 buildEntityWithPlugin(mock(AbyssalFracture.class)));
 
@@ -51,7 +51,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         }
 
         @Test
-        void returns_false_when_the_system_holds_no_fracture() {
+        void returnsFalseWhenTheSystemHoldsNoFracture() {
             var systemMock = buildSystemWithEntities(
                 buildEntityWithPlugin(mock(CustomCampaignEntityPlugin.class)));
 
@@ -61,7 +61,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         }
 
         @Test
-        void returns_false_for_an_empty_system() {
+        void returnsFalseForAnEmptySystem() {
             var systemMock = buildSystemWithEntities();
 
             ModStateScopes.runWithModEnabled(RANDOM_ASSORTMENT_OF_THINGS, true, () ->
@@ -70,7 +70,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         }
 
         @Test
-        void counts_the_entities_it_examined_before_the_fracture() {
+        void countsTheEntitiesItExaminedBeforeTheFracture() {
             // The scan runs per system inside a reachability read, so what it went over belongs
             // on that read's row - and a scan that stopped at the fracture went over two, not
             // the three the system holds.
@@ -88,7 +88,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         }
 
         @Test
-        void counts_nothing_where_the_mod_is_disabled() {
+        void countsNothingWhereTheModIsDisabled() {
             // The gate returns before any scan, so there is nothing to charge - a counter that
             // reported entities here would price a read that never happened.
             var systemMock = buildSystemWithEntities(
@@ -103,7 +103,7 @@ final class RandomAssortmentOfThingsMatcherTest {
         }
 
         @Test
-        void returns_true_when_a_fracture_sits_behind_other_entities() {
+        void returnsTrueWhenAFractureSitsBehindOtherEntities() {
             // The fracture is not the first entity, so this fails on a read that
             // settles on whatever the system lists first rather than scanning.
             var systemMock = buildSystemWithEntities(

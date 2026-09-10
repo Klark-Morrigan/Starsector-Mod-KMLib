@@ -20,13 +20,13 @@ final class RingStretchTest {
     class ComputeLength {
 
         @Test
-        void length_is_the_distance_between_the_two_ends() {
+        void lengthIsTheDistanceBetweenTheTwoEnds() {
             assertThat(new RingStretch(4, 10).computeLength())
                 .isEqualTo(6.0);
         }
 
         @Test
-        void stretch_closing_past_the_perimeter_measures_its_whole_run() {
+        void stretchClosingPastThePerimeterMeasuresItsWholeRun() {
             // A stretch fused across a 24-long path's start: from 20 round through the origin to
             // 8 on the next lap, which is 12 of path rather than the 12 back to the start or a
             // negative reading of the two ends.

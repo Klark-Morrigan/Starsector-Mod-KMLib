@@ -160,7 +160,7 @@ final class ListSystemEntitiesCommandTest {
         }
 
         @Test
-        void lists_the_full_tree_for_a_bare_invocation() {
+        void listsTheFullTreeForABareInvocation() {
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
 
@@ -172,7 +172,7 @@ final class ListSystemEntitiesCommandTest {
         }
 
         @Test
-        void narrows_to_gates_when_the_gates_flag_is_given() {
+        void narrowsToGatesWhenTheGatesFlagIsGiven() {
 
             var result = command.runCommand("gates", CommandContext.CAMPAIGN_MAP);
 
@@ -185,7 +185,7 @@ final class ListSystemEntitiesCommandTest {
         }
 
         @Test
-        void reports_a_surplus_argument_as_bad_syntax() {
+        void reportsASurplusArgumentAsBadSyntax() {
 
             var result = command.runCommand("gates extra", CommandContext.CAMPAIGN_MAP);
 
@@ -196,7 +196,7 @@ final class ListSystemEntitiesCommandTest {
         }
 
         @Test
-        void returns_the_validation_result_outside_a_campaign() {
+        void returnsTheValidationResultOutsideACampaign() {
 
             var result = command.runCommand("", CommandContext.COMBAT_MISSION);
 

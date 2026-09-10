@@ -35,7 +35,7 @@ final class SystemColoniesTest {
     class ReadColoniesIn {
 
         @Test
-        void yields_the_economy_s_own_colonies_ahead_of_the_ones_it_does_not_list() {
+        void yieldsTheEconomySOwnColoniesAheadOfTheOnesItDoesNotList() {
             // Economy order is load-bearing: a caller mirroring vanilla's claim mechanic settles
             // a tied contest on whichever market the economy reaches first, so the listed half
             // has to arrive first and in its own order.
@@ -53,7 +53,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void marks_a_colony_the_economy_does_not_list() {
+        void marksAColonyTheEconomyDoesNotList() {
             // Galatia Academy: a real market on a real station that vanilla deliberately never
             // registers. A reader that only walked the economy would report the station as
             // nobody's, so it is admitted - and marked, since it carries no economy-fed weight.
@@ -67,7 +67,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void excludes_a_planet_s_condition_only_market() {
+        void excludesAPlanetSConditionOnlyMarket() {
             // Every uninhabited planet carries one of these, hung on the entity and never
             // registered. Admitting them would put a neutral colony on every surveyed rock.
             var fixture = new ColonyFixture("corvus");
@@ -79,7 +79,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void admits_a_condition_only_market_carrying_the_decivilised_condition() {
+        void admitsAConditionOnlyMarketCarryingTheDecivilisedCondition() {
             // The one condition-only market a colony set holds, and the narrowest admission that
             // reaches it: a ruin is stripped of its owner as it dies, so ownership refuses it along
             // with every bare rock, and the decivilised condition is what parts it from those.
@@ -93,7 +93,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void admits_a_dead_world_the_player_has_not_surveyed() {
+        void admitsADeadWorldThePlayerHasNotSurveyed() {
             // The set is unfogged, a mechanic mirrored from vanilla having to see what vanilla
             // sees, so what the player may be told about the ruins is decided over the set rather
             // than by leaving them out of it.
@@ -107,7 +107,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void admits_a_concealed_colony_and_marks_it_hidden() {
+        void admitsAConcealedColonyAndMarksItHidden() {
 
             var fixture = new ColonyFixture("kumari_kandam");
             var base = fixture.buildFoundConcealedColony("pirates");
@@ -124,7 +124,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void yields_one_colony_where_two_market_objects_share_a_place_and_owner() {
+        void yieldsOneColonyWhereTwoMarketObjectsShareAPlaceAndOwner() {
             // A mod supersedes a colony by adding its own market beside vanilla's on the same
             // station rather than replacing it. Counted per market, that colony is banked twice
             // and its owner reads as holding twice what it holds.
@@ -140,7 +140,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void marks_a_derelict_station_as_an_abandoned_station() {
+        void marksADerelictStationAsAnAbandonedStation() {
             // The set admits it like any other owned market - what changes is that the colony
             // says what it is, so a reader downstream is not left to take a hulk for a town.
             var fixture = new ColonyFixture("corvus");
@@ -153,7 +153,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void takes_a_colliding_pair_s_kind_from_the_market_that_wins_the_place() {
+        void takesACollidingPairSKindFromTheMarketThatWinsThePlace() {
             // Kind and place have to be settled by the same market. The loser is named first
             // here, so a resolution reading the kind off anything but the winner reports a plain
             // colony where the winner is a station.
@@ -174,7 +174,7 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void yields_a_colony_the_player_has_not_found() {
+        void yieldsAColonyThePlayerHasNotFound() {
             // The set is unfogged on purpose: claim scoring weighs colonies the player has never
             // found, and a fogged input would resolve a claimant vanilla does not report.
             var fixture = new ColonyFixture("kumari_kandam");
@@ -188,13 +188,13 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_null_sector() {
+        void yieldsNothingForANullSector() {
             assertThat(SystemColonies.readColoniesIn(null, mock(StarSystemAPI.class)))
                 .isEqualTo(Colonies.NONE);
         }
 
         @Test
-        void yields_nothing_for_a_null_system() {
+        void yieldsNothingForANullSystem() {
             assertThat(SystemColonies.readColoniesIn(mock(SectorAPI.class), null))
                 .isEqualTo(Colonies.NONE);
         }

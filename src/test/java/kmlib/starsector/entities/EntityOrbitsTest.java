@@ -204,7 +204,7 @@ final class EntityOrbitsTest {
     class ReadFocusChain {
 
         @Test
-        void yields_the_body_first_then_everything_it_orbits_through() {
+        void yieldsTheBodyFirstThenEverythingItOrbitsThrough() {
 
             var starMock = mock(SectorEntityToken.class);
             var planet = buildOrbiting(300, starMock);
@@ -215,7 +215,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void yields_a_body_that_orbits_nothing_alone() {
+        void yieldsABodyThatOrbitsNothingAlone() {
 
             var starMock = mock(SectorEntityToken.class);
 
@@ -224,7 +224,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void yields_an_empty_chain_for_a_null_body() {
+        void yieldsAnEmptyChainForANullBody() {
             // Empty rather than null: a caller summing or listing a chain has nothing to guard
             // against, which is the reason the guard lives here rather than at each call site.
             assertThat(EntityOrbits.readFocusChain(null))
@@ -232,7 +232,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void halts_on_a_chain_that_orbits_itself_rather_than_hanging() {
+        void haltsOnAChainThatOrbitsItselfRatherThanHanging() {
             // A malformed chain is bounded here so no caller has to bound it: one walking by
             // depth and another by a visited set would be two answers to a question with one.
             var bodyMock = mock(SectorEntityToken.class);
@@ -283,7 +283,7 @@ final class EntityOrbitsTest {
     class ComputeOrbitalDistanceTo {
 
         @Test
-        void sums_a_planets_own_orbit_to_its_star() {
+        void sumsAPlanetsOwnOrbitToItsStar() {
 
             var starMock = mock(SectorEntityToken.class);
             var planet = buildOrbiting(300, starMock);
@@ -293,7 +293,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void sums_the_whole_orbit_chain_for_a_moon() {
+        void sumsTheWholeOrbitChainForAMoon() {
 
             var starMock = mock(SectorEntityToken.class);
             var planet = buildOrbiting(300, starMock);
@@ -304,7 +304,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void does_not_add_the_references_own_orbit() {
+        void doesNotAddTheReferencesOwnOrbit() {
 
             var starMock = buildOrbiting(9999, mock(SectorEntityToken.class));
             var planet = buildOrbiting(300, starMock);
@@ -314,7 +314,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void sums_the_whole_chain_for_a_body_that_never_reaches_the_reference() {
+        void sumsTheWholeChainForABodyThatNeverReachesTheReference() {
             // Measured against something the body does not hang off - a star in another system,
             // say. The sum is still the body's depth in its own chain rather than a refusal, so a
             // caller ranking bodies from different chains gets a stable number for each.
@@ -327,7 +327,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void reads_the_reference_itself_as_sitting_at_no_distance() {
+        void readsTheReferenceItselfAsSittingAtNoDistance() {
 
             var starMock = buildOrbiting(9999, mock(SectorEntityToken.class));
 
@@ -336,7 +336,7 @@ final class EntityOrbitsTest {
         }
 
         @Test
-        void yields_infinity_for_a_null_body() {
+        void yieldsInfinityForANullBody() {
 
             assertThat(EntityOrbits.computeOrbitalDistanceTo(null, mock(SectorEntityToken.class)))
                 .isEqualTo(Double.POSITIVE_INFINITY);

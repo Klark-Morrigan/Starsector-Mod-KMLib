@@ -30,7 +30,7 @@ final class StructureTest {
     class ReadHolderFactionId {
 
         @Test
-        void reports_the_faction_id_the_entity_carries() {
+        void reportsTheFactionIdTheEntityCarries() {
             // Live and unconcealed. Vanilla's map item substitutes a neutral faction here when the
             // player is elsewhere; that is a display rule, and applying it in the reading would
             // leave a caller unable to tell a genuinely neutral structure from a withheld one.
@@ -49,7 +49,7 @@ final class StructureTest {
         }
 
         @Test
-        void reports_no_holder_where_the_entity_names_no_faction() {
+        void reportsNoHolderWhereTheEntityNamesNoFaction() {
             // Absorbed rather than refused: a holder nobody can name is compared against whatever
             // a caller compares holders for, and there is nothing here to fail on.
             assertThat(new Structure(buildStructureEntity()).readHolderFactionId())
@@ -61,7 +61,7 @@ final class StructureTest {
     class ReadTypeName {
 
         @Test
-        void reports_the_specs_default_name() {
+        void reportsTheSpecsDefaultName() {
             // The spec's rather than the entity's, because the entity's name is the one procgen
             // replaces - a relay named after its system no longer says anywhere what it is.
             var specMock = mock(CustomEntitySpecAPI.class);
@@ -79,7 +79,7 @@ final class StructureTest {
         }
 
         @Test
-        void reports_no_type_name_where_the_entity_carries_no_spec() {
+        void reportsNoTypeNameWhereTheEntityCarriesNoSpec() {
 
             assertThat(new Structure(buildStructureEntity()).readTypeName())
                 .isNull();
@@ -90,7 +90,7 @@ final class StructureTest {
     class IsDiscoveredByPlayer {
 
         @Test
-        void reports_a_structure_on_a_found_entity_as_discovered() {
+        void reportsAStructureOnAFoundEntityAsDiscovered() {
             // An entity stops being discoverable once found, so the inclusion gate is the
             // negation of that flag rather than a reading of its own.
             assertThat(new Structure(buildStructureEntity()).isDiscoveredByPlayer())
@@ -98,7 +98,7 @@ final class StructureTest {
         }
 
         @Test
-        void reports_a_structure_on_an_undiscovered_entity_as_undiscovered() {
+        void reportsAStructureOnAnUndiscoveredEntityAsUndiscovered() {
 
             var entityMock = buildStructureEntity();
 
@@ -114,7 +114,7 @@ final class StructureTest {
     class IsMakeshift {
 
         @Test
-        void reports_a_tagged_variant_as_makeshift() {
+        void reportsATaggedVariantAsMakeshift() {
             // Off the tag rather than off the entity id, so a mod's own improvised variant reads
             // true without this having to know its id - which is the same reasoning that makes
             // the objective tag the selection rule rather than a list of six ids.
@@ -128,7 +128,7 @@ final class StructureTest {
         }
 
         @Test
-        void reports_an_untagged_structure_as_not_makeshift() {
+        void reportsAnUntaggedStructureAsNotMakeshift() {
 
             assertThat(new Structure(buildStructureEntity()).isMakeshift())
                 .isFalse();
@@ -139,21 +139,21 @@ final class StructureTest {
     class IsNonFunctional {
 
         @Test
-        void reports_a_structure_carrying_the_flag_as_non_functional() {
+        void reportsAStructureCarryingTheFlagAsNonFunctional() {
 
             assertThat(new Structure(buildNonFunctionalStructureEntity()).isNonFunctional())
                 .isTrue();
         }
 
         @Test
-        void reports_a_structure_without_the_flag_as_functional() {
+        void reportsAStructureWithoutTheFlagAsFunctional() {
 
             assertThat(new Structure(buildStructureEntity()).isNonFunctional())
                 .isFalse();
         }
 
         @Test
-        void reports_a_structure_under_a_foreign_plugin_as_functional() {
+        void reportsAStructureUnderAForeignPluginAsFunctional() {
             // The flag is set on this one, so the answer shows the reading standing down rather
             // than merely meeting a structure that had nothing to report. A plugin that is not
             // the objective plugin makes none of these claims, and guessing from a key it never
@@ -167,21 +167,21 @@ final class StructureTest {
     class IsDisrupted {
 
         @Test
-        void reports_a_factory_reset_structure_as_disrupted() {
+        void reportsAFactoryResetStructureAsDisrupted() {
 
             assertThat(new Structure(buildDisruptedStructureEntity()).isDisrupted())
                 .isTrue();
         }
 
         @Test
-        void reports_an_untouched_structure_as_not_disrupted() {
+        void reportsAnUntouchedStructureAsNotDisrupted() {
 
             assertThat(new Structure(buildStructureEntity()).isDisrupted())
                 .isFalse();
         }
 
         @Test
-        void reports_a_structure_under_a_foreign_plugin_as_not_disrupted() {
+        void reportsAStructureUnderAForeignPluginAsNotDisrupted() {
             // Nothing to ask: the state lives behind a plugin method this entity's plugin does not
             // have, so the read degrades rather than throwing on the first state question.
             assertThat(new Structure(buildForeignPluginStructureEntity()).isDisrupted())
@@ -193,21 +193,21 @@ final class StructureTest {
     class IsHacked {
 
         @Test
-        void reports_a_sniffed_structure_as_hacked() {
+        void reportsASniffedStructureAsHacked() {
 
             assertThat(new Structure(buildHackedStructureEntity()).isHacked())
                 .isTrue();
         }
 
         @Test
-        void reports_an_untouched_structure_as_not_hacked() {
+        void reportsAnUntouchedStructureAsNotHacked() {
 
             assertThat(new Structure(buildStructureEntity()).isHacked())
                 .isFalse();
         }
 
         @Test
-        void reports_a_structure_under_a_foreign_plugin_as_not_hacked() {
+        void reportsAStructureUnderAForeignPluginAsNotHacked() {
 
             assertThat(new Structure(buildForeignPluginStructureEntity()).isHacked())
                 .isFalse();

@@ -33,7 +33,7 @@ final class RingsTest {
     class FindSurvivingVertices {
 
         @Test
-        void every_vertex_survives_a_ring_with_no_duplicates() {
+        void everyVertexSurvivesARingWithNoDuplicates() {
 
             var survivors = Rings.findSurvivingVertices(GeometryTestSupport.buildReferenceSquare());
 
@@ -44,7 +44,7 @@ final class RingsTest {
         }
 
         @Test
-        void a_run_takes_its_position_from_the_first_and_its_outgoing_edge_from_the_last() {
+        void aRunTakesItsPositionFromTheFirstAndItsOutgoingEdgeFromTheLast() {
             // The corner at index 1 is recorded three times. Its position must come from
             // the first of the run, so the answer does not drift down it, while the edge
             // that really leaves the corner is the third's - the first two only step to
@@ -65,7 +65,7 @@ final class RingsTest {
         }
 
         @Test
-        void the_repeat_of_the_first_corner_closing_the_ring_drops() {
+        void theRepeatOfTheFirstCornerClosingTheRingDrops() {
             // A ring stated with its first corner written again at the end closes by a
             // zero-length edge. The repeat goes, and the edge reaching it - a real one -
             // stays, so the survivors still name three real edges.
@@ -84,7 +84,7 @@ final class RingsTest {
         }
 
         @Test
-        void nothing_survives_an_empty_ring() {
+        void nothingSurvivesAnEmptyRing() {
 
             var survivors = Rings.findSurvivingVertices(List.of());
 
@@ -99,7 +99,7 @@ final class RingsTest {
     class RemoveConsecutiveDuplicates {
 
         @Test
-        void a_ring_with_no_duplicates_comes_back_whole() {
+        void aRingWithNoDuplicatesComesBackWhole() {
 
             var cleaned = Rings.removeConsecutiveDuplicates(GeometryTestSupport.buildReferenceSquare());
 
@@ -108,7 +108,7 @@ final class RingsTest {
         }
 
         @Test
-        void a_duplicated_corner_is_recorded_once() {
+        void aDuplicatedCornerIsRecordedOnce() {
 
             var ring = List.of(
                 new double[] {0, 0},
@@ -125,7 +125,7 @@ final class RingsTest {
         }
 
         @Test
-        void the_repeat_of_the_first_corner_closing_the_ring_drops() {
+        void theRepeatOfTheFirstCornerClosingTheRingDrops() {
 
             var ring = List.of(
                 new double[] {0, 0},
@@ -144,7 +144,7 @@ final class RingsTest {
     class RemoveConsecutiveDuplicatesWithLabels {
 
         @Test
-        void a_ring_with_no_duplicates_keeps_every_label_where_it_was() {
+        void aRingWithNoDuplicatesKeepsEveryLabelWhereItWas() {
 
             var cleaned = Rings.removeConsecutiveDuplicates(LabelledPolygon.fromLabelledEdges(
                 GeometryTestSupport.buildReferenceSquare(),
@@ -155,7 +155,7 @@ final class RingsTest {
         }
 
         @Test
-        void a_surviving_corner_takes_the_label_of_the_edge_that_really_leaves_it() {
+        void aSurvivingCornerTakesTheLabelOfTheEdgeThatReallyLeavesIt() {
             // The corner at index 1 is recorded twice, so the edge leaving it is not the
             // zero-length step to its duplicate (label 11) but the duplicate's own
             // outgoing edge (label 12). Taking 11 here would hand the corner a label
@@ -177,7 +177,7 @@ final class RingsTest {
         }
 
         @Test
-        void the_repeat_closing_the_ring_drops_its_label_with_it() {
+        void theRepeatClosingTheRingDropsItsLabelWithIt() {
             // The last vertex repeats the first, so its outgoing edge is the zero-length
             // one closing the ring and its label (13) names nothing. The edge reaching
             // it (12) is real and must survive.

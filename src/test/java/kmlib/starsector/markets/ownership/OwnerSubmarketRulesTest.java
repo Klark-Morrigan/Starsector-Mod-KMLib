@@ -59,7 +59,7 @@ final class OwnerSubmarketRulesTest {
     class OfferSubmarkets {
 
         @Test
-        void decides_nothing_where_nothing_is_installed() {
+        void decidesNothingWhereNothingIsInstalled() {
             // The answer on every install running no mod with a submarket rule of its own, and the
             // one that leaves this library's own table to say what an owner's colony trades over.
             assertThat(offerSubmarkets().wasExecuted())
@@ -67,7 +67,7 @@ final class OwnerSubmarketRulesTest {
         }
 
         @Test
-        void answers_that_the_counters_were_decided_where_the_installed_rule_decides_them() {
+        void answersThatTheCountersWereDecidedWhereTheInstalledRuleDecidesThem() {
 
             installPermittingFallback("Some Mod", buildRuleNamed("installed", true));
 
@@ -78,7 +78,7 @@ final class OwnerSubmarketRulesTest {
         }
 
         @Test
-        void leaves_the_counters_where_the_installed_rule_declines() {
+        void leavesTheCountersWhereTheInstalledRuleDeclines() {
 
             installPermittingFallback("Some Mod", buildRuleNamed("installed", false));
 
@@ -89,7 +89,7 @@ final class OwnerSubmarketRulesTest {
         }
 
         @Test
-        void fails_the_change_where_a_rule_that_had_to_decide_them_declines() {
+        void failsTheChangeWhereARuleThatHadToDecideThemDeclines() {
             // A mod whose colonies trade over counters this library's table does not know about
             // has no correct outcome from that table, so the run stops here rather than opening
             // counters the mod would never have opened.
@@ -101,7 +101,7 @@ final class OwnerSubmarketRulesTest {
         }
 
         @Test
-        void hands_the_installed_rule_both_owners() {
+        void handsTheInstalledRuleBothOwners() {
             // A rule may restock only where the colony has actually changed hands, which the
             // incoming id alone cannot say - so both ids have to reach it.
             var seenOwners = new ArrayList<String>();
@@ -123,7 +123,7 @@ final class OwnerSubmarketRulesTest {
     class RegisterRule {
 
         @Test
-        void offers_the_counters_to_the_last_rule_registered() {
+        void offersTheCountersToTheLastRuleRegistered() {
             // One rule decides a colony's counters on an install: two of them opening and closing
             // the same counters would leave whichever ran last in charge of a colony neither
             // describes, so the last registered decides them outright.
@@ -137,7 +137,7 @@ final class OwnerSubmarketRulesTest {
         }
 
         @Test
-        void answers_with_the_name_the_installed_rule_was_registered_under() {
+        void answersWithTheNameTheInstalledRuleWasRegisteredUnder() {
 
             installPermittingFallback("Some Mod", buildRuleNamed("installed", true));
 
@@ -150,7 +150,7 @@ final class OwnerSubmarketRulesTest {
     class ReadRule {
 
         @Test
-        void answers_with_what_this_install_registered() {
+        void answersWithWhatThisInstallRegistered() {
 
             var ownerSubmarketRule = buildRuleNamed("installed", false);
 
@@ -161,7 +161,7 @@ final class OwnerSubmarketRulesTest {
         }
 
         @Test
-        void is_absent_where_nothing_registered_one() {
+        void isAbsentWhereNothingRegisteredOne() {
 
             assertThat(OwnerSubmarketRules.readRule())
                 .isNull();

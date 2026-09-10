@@ -30,7 +30,7 @@ final class SegmentTest {
     class ComputeBandCorners {
 
         @Test
-        void band_corners_run_the_segments_length_half_the_girth_either_side() {
+        void bandCornersRunTheSegmentsLengthHalfTheGirthEitherSide() {
             // The ring starts on the left of the direction of travel, runs to the far end, and
             // comes back down the right - a closed ring with no repeated corner, which is what
             // the polygon operations here take.
@@ -44,7 +44,7 @@ final class SegmentTest {
         }
 
         @Test
-        void band_corners_turn_with_the_segment() {
+        void bandCornersTurnWithTheSegment() {
             // The box is oriented, not axis-aligned: a name laid along a slanted line occupies
             // a slanted box, and a bounding box round it would claim room the name never takes.
             assertThatPointsAre(
@@ -57,7 +57,7 @@ final class SegmentTest {
         }
 
         @Test
-        void a_segment_with_no_direction_has_no_box() {
+        void aSegmentWithNoDirectionHasNoBox() {
             // Both ends at one point: there is no direction to spend the girth across, so
             // there is no rectangle rather than a degenerate one for a caller to trip over.
             assertThat(new Segment(3, 3, 3, 3).computeBandCorners(GIRTH))
@@ -65,7 +65,7 @@ final class SegmentTest {
         }
 
         @Test
-        void a_band_with_no_girth_has_no_box() {
+        void aBandWithNoGirthHasNoBox() {
             // A collapsed fit reports zero girth, and a line encloses no area - so it takes up
             // no room and stands in nothing's way.
             assertThat(EASTWARD.computeBandCorners(0))

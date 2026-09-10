@@ -19,7 +19,7 @@ final class GlVertexRunsTest {
     @Nested
     class FlattenVertices {
         @Test
-        void flatten_vertices_packs_each_point_in_order_as_an_x_y_pair() {
+        void flattenVerticesPacksEachPointInOrderAsAnXYPair() {
             var flat = GlVertexRuns.flattenVertices(List.of(
                 new double[] {1, 2},
                 new double[] {3, 4},
@@ -30,7 +30,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flatten_vertices_yields_an_empty_run_for_no_points() {
+        void flattenVerticesYieldsAnEmptyRunForNoPoints() {
             assertThat(GlVertexRuns.flattenVertices(List.of()))
                 .isEmpty();
         }
@@ -39,7 +39,7 @@ final class GlVertexRunsTest {
     @Nested
     class FlattenLoops {
         @Test
-        void flatten_loops_packs_one_run_per_loop_in_order() {
+        void flattenLoopsPacksOneRunPerLoopInOrder() {
             var runs = GlVertexRuns.flattenLoops(List.of(
                 List.of(
                     new double[] {0, 0},
@@ -60,7 +60,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flatten_loops_packs_each_loop_exactly_as_flatten_vertices_would() {
+        void flattenLoopsPacksEachLoopExactlyAsFlattenVerticesWould() {
             // The plural is the singular applied down the list; a divergence here would show
             // as geometry that draws correctly alone and wrongly in company.
             var loop = List.of(
@@ -72,13 +72,13 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flatten_loops_yields_no_runs_for_no_loops() {
+        void flattenLoopsYieldsNoRunsForNoLoops() {
             assertThat(GlVertexRuns.flattenLoops(List.of()))
                 .isEmpty();
         }
 
         @Test
-        void flatten_loops_keeps_an_empty_loop_as_an_empty_run() {
+        void flattenLoopsKeepsAnEmptyLoopAsAnEmptyRun() {
             // Dropping it would silently renumber the runs against the loops they came from,
             // which a caller pairing them up by index would never see.
             var runs = GlVertexRuns.flattenLoops(List.of(
@@ -95,7 +95,7 @@ final class GlVertexRunsTest {
     @Nested
     class UnflattenVertices {
         @Test
-        void unflatten_vertices_reads_each_x_y_pair_back_out_in_order() {
+        void unflattenVerticesReadsEachXYPairBackOutInOrder() {
             var vertices = GlVertexRuns.unflattenVertices(new float[] {1, 2, 3, 4, 5, 6});
 
             assertThat(vertices)
@@ -106,7 +106,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void unflatten_vertices_round_trips_what_flatten_vertices_packed() {
+        void unflattenVerticesRoundTripsWhatFlattenVerticesPacked() {
             // The two halves of the packing must agree; a stride that drifted apart would
             // survive either test alone.
             var polygon = List.of(
@@ -122,7 +122,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void unflatten_vertices_yields_no_points_for_an_empty_run() {
+        void unflattenVerticesYieldsNoPointsForAnEmptyRun() {
             assertThat(GlVertexRuns.unflattenVertices(GlVertexRuns.NO_VERTICES))
                 .isEmpty();
         }
@@ -131,7 +131,7 @@ final class GlVertexRunsTest {
     @Nested
     class PackFloats {
         @Test
-        void pack_floats_writes_each_float_into_the_run_in_order() {
+        void packFloatsWritesEachFloatIntoTheRunInOrder() {
             var run = GlVertexRuns.packFloats(List.of(1f, 2f, 3f, 4f, 5f));
 
             assertThat(run)
@@ -139,7 +139,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void pack_floats_yields_an_empty_run_for_no_floats() {
+        void packFloatsYieldsAnEmptyRunForNoFloats() {
             assertThat(GlVertexRuns.packFloats(List.of()))
                 .isEmpty();
         }
@@ -148,7 +148,7 @@ final class GlVertexRunsTest {
     @Nested
     class FlattenClosedLoopAsSegments {
         @Test
-        void flatten_closed_loop_emits_one_segment_per_edge_including_the_wrap() {
+        void flattenClosedLoopEmitsOneSegmentPerEdgeIncludingTheWrap() {
             // A triangle yields three segments: 0->1, 1->2, and the wrap 2->0.
             var flat = GlVertexRuns.flattenClosedLoopAsSegments(List.of(
                 new double[] {0, 0},
@@ -163,7 +163,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flatten_closed_loop_yields_an_empty_run_for_an_empty_ring() {
+        void flattenClosedLoopYieldsAnEmptyRunForAnEmptyRing() {
             assertThat(GlVertexRuns.flattenClosedLoopAsSegments(List.of()))
                 .isEmpty();
         }

@@ -22,7 +22,7 @@ final class ColonyTest {
     class IsHidden {
 
         @Test
-        void reports_a_concealed_market_as_hidden() {
+        void reportsAConcealedMarketAsHidden() {
 
             var colony = new Colony(buildMarket(true, false), true);
 
@@ -31,7 +31,7 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_a_publicly_listed_market_as_not_hidden() {
+        void reportsAPubliclyListedMarketAsNotHidden() {
 
             var colony = new Colony(buildMarket(false, false), true);
 
@@ -44,7 +44,7 @@ final class ColonyTest {
     class IsDiscoveredByPlayer {
 
         @Test
-        void reports_a_concealed_colony_on_a_found_entity_as_found() {
+        void reportsAConcealedColonyOnAFoundEntityAsFound() {
             // A raided pirate base: permanently hidden, and perfectly well found. Concealment is
             // not the fog, which is why the colony asks the market rather than reading isHidden.
             var colony = new Colony(buildMarket(true, false), true);
@@ -54,7 +54,7 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_a_concealed_colony_on_an_undiscovered_entity_as_undiscovered() {
+        void reportsAConcealedColonyOnAnUndiscoveredEntityAsUndiscovered() {
 
             var colony = new Colony(buildMarket(true, true), true);
 
@@ -63,7 +63,7 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_an_open_colony_on_an_undiscovered_entity_as_undiscovered() {
+        void reportsAnOpenColonyOnAnUndiscoveredEntityAsUndiscovered() {
             // The case concealment and the fog part company on. Being publicly listed is not
             // being seen: a derelict station declares itself to an economy the player has no
             // sight of, so listing alone must not carry a colony past the fog.
@@ -78,7 +78,7 @@ final class ColonyTest {
     class ReadOwnerId {
 
         @Test
-        void reports_the_faction_id_the_market_carries() {
+        void reportsTheFactionIdTheMarketCarries() {
             // Read off the market's own id rather than its faction object, which is what an
             // ownership change writes - so a market answering one and not the other answers here.
             var marketMock = mock(MarketAPI.class);
@@ -91,7 +91,7 @@ final class ColonyTest {
         }
 
         @Test
-        void reports_no_owner_where_the_market_names_none() {
+        void reportsNoOwnerWhereTheMarketNamesNone() {
             // Absorbed rather than refused: an owner nobody can name is compared against whatever
             // a caller compares owners for, and there is nothing here to fail on.
             var colony = new Colony(mock(MarketAPI.class), true);

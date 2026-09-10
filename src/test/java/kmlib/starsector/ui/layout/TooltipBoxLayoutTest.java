@@ -43,7 +43,7 @@ final class TooltipBoxLayoutTest {
     class ComputeBox {
 
         @Test
-        void grows_the_width_to_the_content_plus_padding_on_both_sides() {
+        void growsTheWidthToTheContentPlusPaddingOnBothSides() {
 
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 300f, SCREEN);
 
@@ -53,7 +53,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void grows_the_height_to_the_content_plus_padding_top_and_bottom() {
+        void growsTheHeightToTheContentPlusPaddingTopAndBottom() {
 
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 300f, SCREEN);
 
@@ -63,7 +63,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void wraps_a_taller_content_stack_without_reinterpreting_it() {
+        void wrapsATallerContentStackWithoutReinterpretingIt() {
 
             var box = TooltipBoxLayout.computeBox(100d, TWO_LINE_HEIGHT, 200f, 300f, SCREEN);
 
@@ -73,7 +73,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void places_the_box_up_and_right_of_the_cursor_when_there_is_room() {
+        void placesTheBoxUpAndRightOfTheCursorWhenThereIsRoom() {
 
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 300f, SCREEN);
 
@@ -85,7 +85,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void clamps_to_the_right_edge_when_the_cursor_is_near_it() {
+        void clampsToTheRightEdgeWhenTheCursorIsNearIt() {
 
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 1850f, 300f, SCREEN);
 
@@ -95,7 +95,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void clamps_to_the_top_edge_when_the_cursor_is_near_it() {
+        void clampsToTheTopEdgeWhenTheCursorIsNearIt() {
 
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 200f, 1060f, SCREEN);
 
@@ -105,7 +105,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void clamps_inside_a_bound_that_does_not_start_at_the_origin() {
+        void clampsInsideABoundThatDoesNotStartAtTheOrigin() {
             // The bound is a region, not a size: a box near its far corner pulls back to that corner
             // (500 + 300 - 116, 400 + 200 - 31), which a clamp reading only the extents would miss.
             var box = TooltipBoxLayout.computeBox(100d, ONE_LINE_HEIGHT, 780f, 580f, INSET_BOUND);
@@ -117,7 +117,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void pins_to_the_bounds_near_corner_when_the_box_is_larger_than_the_bound() {
+        void pinsToTheBoundsNearCornerWhenTheBoxIsLargerThanTheBound() {
             // A box wider and taller than the tiny bound: the clamp would push it past the near corner,
             // so the floor keeps it anchored there rather than sliding off the far edge.
             var box = TooltipBoxLayout.computeBox(
@@ -138,7 +138,7 @@ final class TooltipBoxLayoutTest {
     class ComputeBoxHeight {
 
         @Test
-        void wraps_the_content_height_in_the_padding_above_and_below_it() {
+        void wrapsTheContentHeightInThePaddingAboveAndBelowIt() {
 
             // One 15-tall line + 8 padding top and bottom, the same height the placed box comes to.
             assertThat(TooltipBoxLayout.computeBoxHeight(ONE_LINE_HEIGHT))
@@ -146,7 +146,7 @@ final class TooltipBoxLayoutTest {
         }
 
         @Test
-        void wraps_empty_content_in_the_padding_alone() {
+        void wrapsEmptyContentInThePaddingAlone() {
 
             // A box with nothing in it is still its own chrome, so the padding stands whatever it holds.
             assertThat(TooltipBoxLayout.computeBoxHeight(0d))

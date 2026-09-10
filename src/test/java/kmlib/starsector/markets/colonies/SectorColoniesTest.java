@@ -40,7 +40,7 @@ final class SectorColoniesTest {
     class ReadColonies {
 
         @Test
-        void yields_every_star_system_s_colonies_in_the_sector_s_own_order() {
+        void yieldsEveryStarSystemSColoniesInTheSectorSOwnOrder() {
 
             var sector = new SectorFixture();
             var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
@@ -56,7 +56,7 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void yields_the_colonies_sitting_in_hyperspace() {
+        void yieldsTheColoniesSittingInHyperspace() {
             // Vanilla builds none, but mods put markets out there, and getStarSystems() does not
             // reach them - so a walk that only looped the systems would drop them silently.
             // What hyperspace itself yields is HyperspaceColoniesTest's; this is the composition.
@@ -70,7 +70,7 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void yields_hyperspace_s_colonies_after_every_system_s() {
+        void yieldsHyperspaceSColoniesAfterEverySystemS() {
 
             var sector = new SectorFixture();
             var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
@@ -86,7 +86,7 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void selects_colonies_through_the_colony_set_rather_than_off_the_economy() {
+        void selectsColoniesThroughTheColonySetRatherThanOffTheEconomy() {
             // The condition-only market a bare planet carries is rejected by the colony set's
             // ownership rule. Its absence here is the tell that the walk goes through the set.
             var sector = new SectorFixture();
@@ -100,7 +100,7 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void yields_the_systems_colonies_for_a_sector_with_no_hyperspace() {
+        void yieldsTheSystemsColoniesForASectorWithNoHyperspace() {
 
             var sector = new SectorFixture();
             var jangala = ColonyMarketFixture.buildVisibleColony("hegemony");
@@ -112,13 +112,13 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_sector_holding_no_colony() {
+        void yieldsNothingForASectorHoldingNoColony() {
             assertThat(SectorColonies.readColonies(new SectorFixture().getSector()))
                 .isEmpty();
         }
 
         @Test
-        void still_reads_hyperspace_for_a_sector_listing_no_systems() {
+        void stillReadsHyperspaceForASectorListingNoSystems() {
             // The two are separate places, so an unreadable system list says nothing about
             // hyperspace - and treating it as "the sector holds nothing" would drop exactly the
             // colonies this read exists to catch.
@@ -133,13 +133,13 @@ final class SectorColoniesTest {
         }
 
         @Test
-        void yields_nothing_for_a_null_sector() {
+        void yieldsNothingForANullSector() {
             assertThat(SectorColonies.readColonies(null))
                 .isEmpty();
         }
 
         @Test
-        void counts_one_walk_over_the_systems_and_the_colonies_it_selected() {
+        void countsOneWalkOverTheSystemsAndTheColoniesItSelected() {
             // The sector-wide read walks the system list itself rather than through the system
             // reader, so what it costs is stated here or nowhere. The colonies come from the one
             // selection every set is read through, hyperspace's included.

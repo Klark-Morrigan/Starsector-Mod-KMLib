@@ -32,13 +32,13 @@ final class VoronoiCellBuilderTest {
     class BuildCells {
 
         @Test
-        void empty_sites_yield_no_cells() {
+        void emptySitesYieldNoCells() {
             assertThat(VoronoiCellBuilder.buildCells(List.of(), MAX_CELL_RADIUS))
                 .isEmpty();
         }
 
         @Test
-        void one_cell_is_built_per_site() {
+        void oneCellIsBuiltPerSite() {
 
             var sites = Arrays.asList(
                 new double[] {-1, 0},
@@ -50,7 +50,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void a_lone_site_fills_a_bounded_disc() {
+        void aLoneSiteFillsABoundedDisc() {
 
             double[] site = {500, 500};
 
@@ -67,7 +67,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void every_cell_stays_within_the_bound_radius() {
+        void everyCellStaysWithinTheBoundRadius() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},
@@ -88,7 +88,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void two_sites_split_along_their_bisector() {
+        void twoSitesSplitAlongTheirBisector() {
 
             var sites = Arrays.asList(
                 new double[] {-1000, 0},
@@ -103,7 +103,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void each_site_lies_inside_its_own_cell() {
+        void eachSiteLiesInsideItsOwnCell() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},
@@ -125,7 +125,7 @@ final class VoronoiCellBuilderTest {
     @Nested
     class BuildLabelledCell {
         @Test
-        void labelled_cell_vertices_match_the_unlabelled_build_cell() {
+        void labelledCellVerticesMatchTheUnlabelledBuildCell() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},
@@ -153,7 +153,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void there_is_one_edge_label_per_edge() {
+        void thereIsOneEdgeLabelPerEdge() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},
@@ -170,7 +170,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void the_bound_segment_count_sets_a_lone_cell_vertex_count() {
+        void theBoundSegmentCountSetsALoneCellVertexCount() {
 
             var site = List.of(new double[] {500, 500});
 
@@ -186,7 +186,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void a_lone_site_has_only_bound_edges() {
+        void aLoneSiteHasOnlyBoundEdges() {
 
             var cell = VoronoiCellBuilder.buildLabelledCell(
                 0,
@@ -200,7 +200,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void two_close_sites_each_tag_the_other_across_their_shared_edge() {
+        void twoCloseSitesEachTagTheOtherAcrossTheirSharedEdge() {
 
             var sites = Arrays.asList(
                 new double[] {-1000, 0},
@@ -216,7 +216,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void a_far_site_is_not_tagged_as_a_neighbour() {
+        void aFarSiteIsNotTaggedAsANeighbour() {
 
             var sites = Arrays.asList(
                 new double[] {0, 0},
@@ -233,7 +233,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void adjacency_is_symmetric() {
+        void adjacencyIsSymmetric() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},
@@ -516,7 +516,7 @@ final class VoronoiCellBuilderTest {
     class BuildCell {
 
         @Test
-        void build_cell_matches_the_same_site_from_build_cells() {
+        void buildCellMatchesTheSameSiteFromBuildCells() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},
@@ -552,7 +552,7 @@ final class VoronoiCellBuilderTest {
     class SplitPolygonAmongSites {
 
         @Test
-        void no_sites_yield_no_pieces() {
+        void noSitesYieldNoPieces() {
             assertThat(VoronoiCellBuilder.splitPolygonAmongSites(
                     GeometryTestSupport.buildSquare(SPLIT_SQUARE_SIDE),
                     List.of()))
@@ -560,7 +560,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void a_lone_site_takes_the_whole_polygon() {
+        void aLoneSiteTakesTheWholePolygon() {
 
             var polygon = GeometryTestSupport.buildSquare(SPLIT_SQUARE_SIDE);
             var pieces = VoronoiCellBuilder.splitPolygonAmongSites(
@@ -575,7 +575,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void two_sites_split_the_polygon_along_their_bisector() {
+        void twoSitesSplitThePolygonAlongTheirBisector() {
 
             var sites = Arrays.asList(
                 new double[] {2, 5},
@@ -599,7 +599,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void three_sites_take_disjoint_pieces_that_cover_the_polygon() {
+        void threeSitesTakeDisjointPiecesThatCoverThePolygon() {
 
             var sites = Arrays.asList(
                 new double[] {3, 3},
@@ -628,7 +628,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void a_site_with_no_nearest_region_gets_an_empty_piece() {
+        void aSiteWithNoNearestRegionGetsAnEmptyPiece() {
 
             var sites = Arrays.asList(
                 new double[] {5, 5},
@@ -647,7 +647,7 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void a_polygon_that_encloses_no_area_splits_into_empty_pieces() {
+        void aPolygonThatEnclosesNoAreaSplitsIntoEmptyPieces() {
 
             var degenerate = Arrays.asList(
                 new double[] {0, 0},

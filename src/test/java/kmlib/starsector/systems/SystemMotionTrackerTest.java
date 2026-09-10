@@ -27,7 +27,7 @@ final class SystemMotionTrackerTest {
     class UpdateMovingSystems {
 
         @Test
-        void reports_a_selected_system_that_moved_between_polls() {
+        void reportsASelectedSystemThatMovedBetweenPolls() {
             var tracker = new SystemMotionTracker();
             var systemMock = buildSystemAt("mover", 0, 0);
             var sectorMock = buildSectorOf(systemMock);
@@ -41,7 +41,7 @@ final class SystemMotionTrackerTest {
         }
 
         @Test
-        void never_tracks_a_system_the_predicate_rejects() {
+        void neverTracksASystemThePredicateRejects() {
             var tracker = new SystemMotionTracker();
             var systemMock = buildSystemAt("excluded", 0, 0);
             var sectorMock = buildSectorOf(systemMock);
@@ -55,7 +55,7 @@ final class SystemMotionTrackerTest {
         }
 
         @Test
-        void a_null_sector_reports_no_change() {
+        void aNullSectorReportsNoChange() {
             var tracker = new SystemMotionTracker();
 
             assertThat(tracker.updateMovingSystems(null, acceptAll())).isFalse();

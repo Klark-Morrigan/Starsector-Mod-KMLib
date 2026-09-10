@@ -36,7 +36,7 @@ final class NexerelinMarketTransferTest {
     class TransferOwnership {
 
         @Test
-        void declines_a_hand_over_while_the_mod_is_absent() {
+        void declinesAHandOverWhileTheModIsAbsent() {
             // What every install without the mod answers, and the answer that keeps the class
             // naming one of its types from being resolved at all.
             var market = buildColonyHeldByAFaction();
@@ -51,7 +51,7 @@ final class NexerelinMarketTransferTest {
         }
 
         @Test
-        void declines_a_hand_over_before_the_game_settings_are_up() {
+        void declinesAHandOverBeforeTheGameSettingsAreUp() {
             // A read taken outside a running game, which cannot say whether the mod is there - so
             // it answers as an install without it does.
             ModStateScopes.runWithoutGameSettings(() ->
@@ -62,7 +62,7 @@ final class NexerelinMarketTransferTest {
         }
 
         @Test
-        void declines_an_incoming_owner_no_faction_answers_to() {
+        void declinesAnIncomingOwnerNoFactionAnswersTo() {
             // The routine reads that mod's settings, tariffs and colours off the faction rather
             // than off an id, so an id the sector does not know is a decline rather than a
             // hand-over that dies partway through one.
@@ -76,7 +76,7 @@ final class NexerelinMarketTransferTest {
         }
 
         @Test
-        void declines_a_colony_flying_no_flag_at_all() {
+        void declinesAColonyFlyingNoFlagAtAll() {
             // The outgoing owner reaches the routine as a faction too - it reads the id off it and
             // counts what that faction has left afterwards - so a colony nobody is recorded as
             // holding is a decline and the caller hands it over itself.
@@ -88,7 +88,7 @@ final class NexerelinMarketTransferTest {
         }
 
         @Test
-        void declines_a_hand_over_naming_no_incoming_owner() {
+        void declinesAHandOverNamingNoIncomingOwner() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinMarketTransfer.transferOwnership(
@@ -98,7 +98,7 @@ final class NexerelinMarketTransferTest {
         }
 
         @Test
-        void declines_a_null_market() {
+        void declinesANullMarket() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinMarketTransfer.transferOwnership(
@@ -108,7 +108,7 @@ final class NexerelinMarketTransferTest {
         }
 
         @Test
-        void declines_a_hand_over_with_no_sector_to_read_the_incoming_owner_from() {
+        void declinesAHandOverWithNoSectorToReadTheIncomingOwnerFrom() {
 
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinMarketTransfer.transferOwnership(

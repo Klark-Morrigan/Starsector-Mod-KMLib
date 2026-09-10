@@ -21,7 +21,7 @@ final class EntitiesTest {
     class ReadFactionId {
 
         @Test
-        void reports_the_id_of_the_faction_the_entity_names() {
+        void reportsTheIdOfTheFactionTheEntityNames() {
 
             var factionMock = mock(FactionAPI.class);
 
@@ -38,14 +38,14 @@ final class EntitiesTest {
         }
 
         @Test
-        void reports_no_faction_where_the_entity_names_none() {
+        void reportsNoFactionWhereTheEntityNamesNone() {
 
             assertThat(Entities.readFactionId(mock(SectorEntityToken.class)))
                 .isNull();
         }
 
         @Test
-        void reports_no_faction_for_an_absent_entity() {
+        void reportsNoFactionForAnAbsentEntity() {
 
             assertThat(Entities.readFactionId(null))
                 .isNull();
@@ -56,7 +56,7 @@ final class EntitiesTest {
     class IsDiscoveredByPlayer {
 
         @Test
-        void reports_a_found_entity_as_discovered() {
+        void reportsAFoundEntityAsDiscovered() {
             // An entity stops being discoverable once found, so the answer is the negation of
             // that flag - which is the inversion this exists to state once.
             assertThat(Entities.isDiscoveredByPlayer(mock(SectorEntityToken.class)))
@@ -64,7 +64,7 @@ final class EntitiesTest {
         }
 
         @Test
-        void reports_a_still_discoverable_entity_as_undiscovered() {
+        void reportsAStillDiscoverableEntityAsUndiscovered() {
 
             var entityMock = mock(SectorEntityToken.class);
 
@@ -76,7 +76,7 @@ final class EntitiesTest {
         }
 
         @Test
-        void reports_an_absent_entity_as_discovered() {
+        void reportsAnAbsentEntityAsDiscovered() {
             // Nothing left to find is nothing to withhold, and a caller holding no entity would
             // otherwise have to decide that for itself.
             assertThat(Entities.isDiscoveredByPlayer(null))

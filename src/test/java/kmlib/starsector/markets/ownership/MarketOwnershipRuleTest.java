@@ -44,7 +44,7 @@ final class MarketOwnershipRuleTest {
     class ApplyOwnership {
 
         @Test
-        void opens_the_counters_a_player_colony_trades_through() {
+        void opensTheCountersAPlayerColonyTradesThrough() {
             // Local resources is the player's own production made buyable, and it replaces the
             // open and black markets an NPC colony trades over. Storage arrives with it because a
             // colony the player holds is one they can store in.
@@ -60,7 +60,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void opens_the_counters_a_faction_colony_trades_through() {
+        void opensTheCountersAFactionColonyTradesThrough() {
 
             var market = MarketOwnershipFixture.buildColonyTradingThrough(
                 Factions.PLAYER,
@@ -73,7 +73,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void leaves_no_counter_of_the_previous_owner_s_behind_across_a_round_trip() {
+        void leavesNoCounterOfThePreviousOwnerSBehindAcrossARoundTrip() {
             // The whole reason the rule is stated per submarket rather than as a sequence: each
             // leg has to undo the one before it, or a colony that changes hands twice ends up
             // trading over both owners' counters at once.
@@ -97,7 +97,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void keeps_a_counter_the_incoming_owner_already_trades_over() {
+        void keepsACounterTheIncomingOwnerAlreadyTradesOver() {
             // Opening a counter builds a new one, and whatever was stocked in the old one goes
             // with it. So a submarket already in the state the owner calls for is left where it
             // is rather than closed and opened again - which is why the rule asks each submarket
@@ -116,7 +116,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void charges_the_incoming_owner_s_tariff_on_every_change() {
+        void chargesTheIncomingOwnerSTariffOnEveryChange() {
             // Written to the one key on every leg rather than added to, so the rate on the market
             // is the current owner's rather than the sum of everyone who has held the place.
             var market = MarketOwnershipFixture.buildColonyHeldBy(
@@ -134,7 +134,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void marks_the_market_as_the_player_s_own_and_unmarks_it_again() {
+        void marksTheMarketAsThePlayerSOwnAndUnmarksItAgain() {
             // The flag every player-only rule downstream keys on, and the one this method both
             // sets and has to be able to clear - a rule reading it back to decide who the owner is
             // would never clear it once set.
@@ -155,7 +155,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void flies_the_new_owner_s_flag_over_the_colony_and_everything_connected_to_it() {
+        void fliesTheNewOwnerSFlagOverTheColonyAndEverythingConnectedToIt() {
             // A holding is the body, its station, its relay and its sensor array. An entity left
             // on the old flag keeps reading as the previous owner's property to anything that
             // asks the entity rather than the market.
@@ -171,7 +171,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void flies_the_new_owner_s_flag_over_a_body_the_market_does_not_list_as_connected() {
+        void fliesTheNewOwnerSFlagOverABodyTheMarketDoesNotListAsConnected() {
             // A market is not obliged to name its own body among its connected entities, so the
             // body is re-flagged in its own right rather than by being swept up with the rest.
             var market = MarketOwnershipFixture.buildColonyNotListingItsOwnBody(Factions.PLAYER);
@@ -183,7 +183,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void opens_a_market_counter_on_a_player_colony_running_commerce() {
+        void opensAMarketCounterOnAPlayerColonyRunningCommerce() {
             // The one aspect that is not the inverse of the faction side: a player colony trading
             // commercially has an open market too, which a rule derived by negating the faction
             // set would get wrong.
@@ -198,7 +198,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void opens_the_military_counter_on_a_faction_garrison() {
+        void opensTheMilitaryCounterOnAFactionGarrison() {
 
             var market = MarketOwnershipFixture.buildColonyRunning(
                 Factions.PLAYER,
@@ -211,7 +211,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void withholds_the_military_counter_from_a_player_colony_running_a_military_base() {
+        void withholdsTheMilitaryCounterFromAPlayerColonyRunningAMilitaryBase() {
             // The player's own garrison equips itself rather than trading with itself, so the
             // military counter closes when the place changes hands to the player however it is
             // armed.
@@ -227,7 +227,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void keeps_storage_when_a_colony_leaves_the_player() {
+        void keepsStorageWhenAColonyLeavesThePlayer() {
             // Storage holds the player's own cargo and hulls. Closing it on a hand-over would
             // destroy property rather than transfer it, which is why no owner's rule names it
             // among the counters it opens or closes.
@@ -243,7 +243,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void opens_storage_already_paid_for_when_the_player_takes_a_colony_without_one() {
+        void opensStorageAlreadyPaidForWhenThePlayerTakesAColonyWithoutOne() {
             // Vanilla charges a fee at a storage counter the player did not build. A colony the
             // player now holds is theirs, so the fee is marked settled rather than billed to reach
             // their own hold.
@@ -257,7 +257,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void changes_the_owner_of_a_colony_with_no_body_to_re_flag() {
+        void changesTheOwnerOfAColonyWithNoBodyToReFlag() {
             // A market can stand for a place the game gave no entity, and the flag half of the
             // change simply has nothing to reach - the counters and the tariff still land.
             var market = MarketOwnershipFixture.buildColonyWithNothingAttached(
@@ -272,7 +272,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void hands_the_counters_to_a_submarket_rule_the_install_supplies() {
+        void handsTheCountersToASubmarketRuleTheInstallSupplies() {
             // A mod running its own diplomacy knows which modded markets trade without a black
             // market and which faction ships a military counter of its own, so where such a rule is
             // present it decides the counters whole and none of this library's verdicts apply.
@@ -303,7 +303,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void names_the_outgoing_owner_to_the_installed_rule_as_well_as_the_incoming_one() {
+        void namesTheOutgoingOwnerToTheInstalledRuleAsWellAsTheIncomingOne() {
             // A rule may restock the counters only where the colony has actually changed hands, and
             // the outgoing owner is the only thing that says whether it has - so it is read before
             // the incoming id lands rather than after, when it is gone.
@@ -325,7 +325,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void opens_storage_for_the_player_even_where_the_installed_rule_takes_the_counters() {
+        void opensStorageForThePlayerEvenWhereTheInstalledRuleTakesTheCounters() {
             // Storage is the one counter no owner's rule names, this library's included, so it is
             // applied whichever rule decided the rest - a colony handed to the player through a
             // mod's rule would otherwise be left with no hold they can reach.
@@ -344,7 +344,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void changes_every_other_aspect_itself_where_the_installed_rule_takes_the_counters() {
+        void changesEveryOtherAspectItselfWhereTheInstalledRuleTakesTheCounters() {
             // The rule stands in for one aspect of the change rather than for the change. Nothing
             // an install supplies decides whose flag the colony flies, whether it is the player's,
             // what its outlying entities fly or what its goods are taxed at - so all four land
@@ -371,7 +371,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void applies_its_own_verdicts_when_the_installed_rule_declines_the_counters() {
+        void appliesItsOwnVerdictsWhenTheInstalledRuleDeclinesTheCounters() {
             // The answer on every install without such a mod, so the colony still trades over the
             // counters its new owner should have.
             var market = MarketOwnershipFixture.buildColonyTradingThrough(
@@ -389,7 +389,7 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void applies_its_own_verdicts_through_the_live_binding_when_no_such_mod_is_installed() {
+        void appliesItsOwnVerdictsThroughTheLiveBindingWhenNoSuchModIsInstalled() {
             // The public entry point rather than the seam beneath it: nothing else here exercises
             // the rule the library actually binds, and an install without that mod is what the
             // fallback exists for.
@@ -407,13 +407,13 @@ final class MarketOwnershipRuleTest {
         }
 
         @Test
-        void leaves_a_null_market_alone() {
+        void leavesANullMarketAlone() {
             assertThatCode(() -> MarketOwnershipRule.applyOwnership(null, Factions.PLAYER))
                 .doesNotThrowAnyException();
         }
 
         @Test
-        void leaves_a_colony_alone_when_no_owner_is_named() {
+        void leavesAColonyAloneWhenNoOwnerIsNamed() {
             // Naming nobody is not the same as unowning the place, so the colony is left exactly
             // as it was rather than stripped of the owner it has.
             var market = MarketOwnershipFixture.buildColonyTradingThrough(

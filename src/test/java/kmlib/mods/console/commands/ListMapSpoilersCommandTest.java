@@ -255,7 +255,7 @@ final class ListMapSpoilersCommandTest {
         }
 
         @Test
-        void prints_the_report_for_a_bare_invocation() {
+        void printsTheReportForABareInvocation() {
 
             var result = command.runCommand("", CommandContext.CAMPAIGN_MAP);
 
@@ -266,7 +266,7 @@ final class ListMapSpoilersCommandTest {
         }
 
         @Test
-        void reports_a_surplus_argument_as_bad_syntax() {
+        void reportsASurplusArgumentAsBadSyntax() {
 
             var result = command.runCommand("bogus", CommandContext.CAMPAIGN_MAP);
 
@@ -277,7 +277,7 @@ final class ListMapSpoilersCommandTest {
         }
 
         @Test
-        void returns_the_validation_result_outside_a_campaign() {
+        void returnsTheValidationResultOutsideACampaign() {
 
             var result = command.runCommand("", CommandContext.COMBAT_MISSION);
 

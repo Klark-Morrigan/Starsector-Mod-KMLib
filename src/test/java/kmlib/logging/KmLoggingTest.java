@@ -33,7 +33,7 @@ final class KmLoggingTest {
     class ApplyLevel {
 
         @Test
-        void named_level_is_inherited_by_descendant_loggers() {
+        void namedLevelIsInheritedByDescendantLoggers() {
 
             var descendant = Logger.getLogger("kmlibtest_named.child.grandchild");
 
@@ -44,7 +44,7 @@ final class KmLoggingTest {
         }
 
         @Test
-        void surrounding_whitespace_on_the_name_is_tolerated() {
+        void surroundingWhitespaceOnTheNameIsTolerated() {
 
             var descendant = Logger.getLogger("kmlibtest_pad.child");
 
@@ -55,7 +55,7 @@ final class KmLoggingTest {
         }
 
         @Test
-        void null_name_falls_back_to_the_default() {
+        void nullNameFallsBackToTheDefault() {
 
             var descendant = Logger.getLogger("kmlibtest_null.child");
 
@@ -66,7 +66,7 @@ final class KmLoggingTest {
         }
 
         @Test
-        void unrecognised_name_falls_back_to_the_default() {
+        void unrecognisedNameFallsBackToTheDefault() {
 
             var descendant = Logger.getLogger("kmlibtest_bad.child");
 
@@ -77,7 +77,7 @@ final class KmLoggingTest {
         }
 
         @Test
-        void loggers_outside_the_subtree_are_not_affected() {
+        void loggersOutsideTheSubtreeAreNotAffected() {
 
             var sibling = Logger.getLogger("kmlibtest_sibling_outside");
             var siblingBefore = sibling.getEffectiveLevel();
@@ -93,7 +93,7 @@ final class KmLoggingTest {
     class DefaultLevel {
 
         @Test
-        void library_default_level_is_warn() {
+        void libraryDefaultLevelIsWarn() {
             // Pins the shared fallback used by the no-default bindToLunaSetting
             // overload, so mods do not restate a default of their own.
             assertThat(KmLogging.DEFAULT_LEVEL)
@@ -105,7 +105,7 @@ final class KmLoggingTest {
     class SettingsChanged {
 
         @Test
-        void binding_ignores_changes_to_other_mods_settings() {
+        void bindingIgnoresChangesToOtherModsSettings() {
             // A change notification carrying a different mod id must not retune
             // this binding's logger subtree, so its explicit level stays unset.
             var root = Logger.getLogger("kmlibtest_filter_root");

@@ -24,7 +24,7 @@ final class ModPresenceTest {
     class IsModEnabled {
 
         @Test
-        void reports_enabled_while_the_mod_manager_says_so() {
+        void reportsEnabledWhileTheModManagerSaysSo() {
 
             ModStateScopes.runWithModEnabled(MOD_ID, true, () ->
                 assertThat(ModPresence.isModEnabled(MOD_ID))
@@ -32,7 +32,7 @@ final class ModPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_while_the_mod_manager_says_so() {
+        void reportsNotEnabledWhileTheModManagerSaysSo() {
 
             ModStateScopes.runWithModEnabled(MOD_ID, false, () ->
                 assertThat(ModPresence.isModEnabled(MOD_ID))
@@ -40,7 +40,7 @@ final class ModPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_for_a_mod_the_game_was_never_given() {
+        void reportsNotEnabledForAModTheGameWasNeverGiven() {
             // The id is what a caller brings, so a caller naming a mod this install does not have
             // is the ordinary case rather than an error.
             ModStateScopes.runWithModEnabled(MOD_ID, true, () ->
@@ -49,7 +49,7 @@ final class ModPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_before_the_game_settings_are_up() {
+        void reportsNotEnabledBeforeTheGameSettingsAreUp() {
             // A read taken outside a running game - a class being initialised, a plugin's earliest
             // hook - which has nothing to ask and must not throw for it.
             ModStateScopes.runWithoutGameSettings(() ->
@@ -58,7 +58,7 @@ final class ModPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_while_the_settings_carry_no_mod_manager() {
+        void reportsNotEnabledWhileTheSettingsCarryNoModManager() {
             // The half-built state between a game that is up and one that is not, and the one a
             // gate written out by hand is easiest to leave out of.
             ModStateScopes.runWithoutModManager(() ->
@@ -67,7 +67,7 @@ final class ModPresenceTest {
         }
 
         @Test
-        void reports_not_enabled_when_no_mod_is_named() {
+        void reportsNotEnabledWhenNoModIsNamed() {
 
             ModStateScopes.runWithModEnabled(MOD_ID, true, () ->
                 assertThat(ModPresence.isModEnabled(null))

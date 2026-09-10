@@ -48,7 +48,7 @@ final class MarketTargetResolverTest {
     class ResolveTargetMarket {
 
         @Test
-        void resolves_the_market_on_the_entity_the_id_names() {
+        void resolvesTheMarketOnTheEntityTheIdNames() {
 
             var systemMock = buildSystemNamed(SYSTEM_NAME);
             var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
@@ -62,7 +62,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void resolves_a_named_entity_the_economy_does_not_list() {
+        void resolvesANamedEntityTheEconomyDoesNotList() {
             // The named place is found on the entity itself, so a body carrying only survey data
             // - which the economy never lists - can still be pointed at by id.
             var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
@@ -78,7 +78,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void resolves_a_named_place_from_outside_every_star_system() {
+        void resolvesANamedPlaceFromOutsideEveryStarSystem() {
             // An id names one place in the whole sector, so it is reachable from hyperspace,
             // where there is no system to be scoped to at all. Nothing about naming a place
             // depends on where the player is standing - only "nearest" does.
@@ -95,7 +95,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void takes_the_named_place_over_a_nearer_one() {
+        void takesTheNamedPlaceOverANearerOne() {
             // Naming a place is the player overriding the search, not narrowing it: the nearest
             // qualifying place is what a bare invocation means, and this invocation is not bare.
             var systemMock = buildSystemNamed(SYSTEM_NAME);
@@ -111,7 +111,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_an_id_no_entity_in_the_sector_carries() {
+        void refusesAnIdNoEntityInTheSectorCarries() {
             // Named rather than searched: the player asked for one place, so the answer is that
             // there is no such place, not the nearest thing that happens to qualify.
             var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
@@ -125,7 +125,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_an_entity_with_no_market_on_it() {
+        void refusesAnEntityWithNoMarketOnIt() {
 
             var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
 
@@ -141,7 +141,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_a_named_market_of_the_wrong_kind() {
+        void refusesANamedMarketOfTheWrongKind() {
             // Told apart from "no such place" on purpose: the place exists and the player pointed
             // at it, so the correction is a different one.
             var systemMock = buildSystemNamed(SYSTEM_NAME);
@@ -156,7 +156,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void takes_the_nearest_qualifying_market_when_no_id_is_given() {
+        void takesTheNearestQualifyingMarketWhenNoIdIsGiven() {
 
             var systemMock = buildSystemNamed(SYSTEM_NAME);
             var far = MarketPlacementFixture.buildMarketOnBodyAt("far", 5000, 0);
@@ -171,7 +171,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void treats_a_blank_id_as_no_id_at_all() {
+        void treatsABlankIdAsNoIdAtAll() {
             // The console hands over whatever the player typed, and a run of spaces is a bare
             // invocation - searching for an entity named by them would find nothing at all.
             var systemMock = buildSystemNamed(SYSTEM_NAME);
@@ -185,7 +185,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_a_search_that_turns_nothing_up() {
+        void refusesASearchThatTurnsNothingUp() {
 
             var systemMock = buildSystemNamed(SYSTEM_NAME);
             var jangala = MarketPlacementFixture.buildMarketOnBodyAt("jangala", 500, 0);
@@ -199,7 +199,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_a_bare_run_made_from_outside_every_star_system() {
+        void refusesABareRunMadeFromOutsideEveryStarSystem() {
             // A fleet in hyperspace has nowhere to measure "nearest" from, so the refusal names
             // the way out rather than only the obstacle: an id reaches a place from here.
             assertThat(MarketTargetResolver.resolveTargetMarket(
@@ -211,7 +211,7 @@ final class MarketTargetResolverTest {
         }
 
         @Test
-        void refuses_a_run_made_without_a_sector() {
+        void refusesARunMadeWithoutASector() {
             // Nothing to look an id up in and nowhere to search from, so neither way of naming a
             // place is open.
             assertThat(MarketTargetResolver.resolveTargetMarket(null, "jangala", ANY_MARKET))

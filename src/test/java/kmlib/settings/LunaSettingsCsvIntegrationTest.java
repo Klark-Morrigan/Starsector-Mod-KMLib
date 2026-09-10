@@ -55,14 +55,14 @@ class LunaSettingsCsvIntegrationTest {
     class LogLevelRow {
 
         @Test
-        void ships_a_row_for_the_field_the_binding_reads() {
+        void shipsARowForTheFieldTheBindingReads() {
             // The binding asks LunaLib for this id; a row under any other name is a setting the
             // player can change and the library will never read.
             assertThat(readLogLevelRow()).startsWith(LOG_LEVEL_FIELD + ",");
         }
 
         @Test
-        void defaults_to_the_librarys_own_fallback_level() {
+        void defaultsToTheLibrarysOwnFallbackLevel() {
             // The screen's default and the code's fallback are two different values that have to
             // agree, or a player who never opens the settings screen gets one level and a player
             // who opens it and changes nothing gets another.
@@ -71,7 +71,7 @@ class LunaSettingsCsvIntegrationTest {
         }
 
         @Test
-        void offers_every_level_and_only_levels_log4j_parses() {
+        void offersEveryLevelAndOnlyLevelsLog4jParses() {
             // An option log4j cannot parse resolves to the fallback, so the player picks a level and
             // silently gets a different one.
             assertThat(readLogLevelRow())
