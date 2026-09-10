@@ -324,7 +324,12 @@ No Starsector API on the signature.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points, their orbits, name
   generation, gate activation, and how an entity is identified to a reader:
-  its name paired with the map glyph it is marked with.
+  its name paired with the map glyph it is marked with. Plus the built
+  structures - relays, buoys, arrays - as the plain facts each carries about
+  itself: who holds it, what kind of thing it is, whether it has been found,
+  and whether it is broken, disrupted or being sniffed; with the search for the
+  ones standing in a location, selected on the objective tag so a mod's own
+  kind joins by tagging it rather than by being listed here.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) - what a
   faction is in itself: player-faction lifecycle, faction colours, crests and
   flags. See [Player Faction Resolution](#player-faction-resolution). Where a
