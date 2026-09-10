@@ -1,0 +1,76 @@
+// Answers "where is it" for a Starsector build: the install root, the jars
+// inside it, an installed mod's jar, and the KMLib checkout this script is
+// applied from. Pure lookup - it configures no task, declares no dependency and
+// holds no build to anything; a caller decides what to do with what it finds.
+//
+// Kept apart from the conventions script (starsector-mod.gradle, which applies
+// this one) because the two are different kinds of thing: a convention is a
+// standard every KM mod is held to, whereas these are helpers a build calls when
+// it wants them. Splitting them also gives the install layout a single home - a
+// consumer that needs an extra jar asks here instead of spelling
+// "starsector-core" again.
+
+// Order: explicit override, environment variable, then the conventional "two
+// levels above the mod folder" (mods live at <starsector>/mods/<modId>) for
+// in-place checkouts.
+def configuredStarsectorRoot = findProperty('starsectorRoot')
+    ?: System.getenv('STARSECTOR_HOME')
+    ?: new File(projectDir, '../..').canonicalPath
+
+def starsectorCoreDirectory = "${configuredStarsectorRoot}/starsector-core"
+
+ext.starsectorRoot = configuredStarsectorRoot
+
+// A named jar the game ships. Exposed as a lookup so callers name a jar and
+// never a layout: "starsector-core" is spelled once, here.
+ext.resolveCoreJarFile = { String jarName ->
+    return file("${starsectorCoreDirectory}/${jarName}")
+}
+
+ext.apiJarFile = resolveCoreJarFile('starfarer.api.jar')
+
+// Every jar in the core folder, as one collection - what a test runtime needs,
+// since a game class loaded under test can reach for any of them.
+ext.starsectorCoreJars = fileTree(dir: starsectorCoreDirectory, include: ['*.jar'])
+
+// The KMLib checkout, holding the classes a consumer compiles against and the
+// shell scripts the release pipeline and the task scripts run. Located from this
+// file rather than from the relative path a consumer already spells in its
+// `apply from`: this file sits at <KMLib>/gradle/, so its grandparent is that
+// checkout, and there is no second copy of the path to keep in step. Published
+// because the task scripts sit two directories further down and must not each
+// count parentFile hops of their own.
+ext.kmlibCheckoutDirectory = buildscript.sourceFile.parentFile.parentFile
+
+// Locate a dependency mod's jar without spelling out its folder name, which is
+// version-stamped for several mods (Nexerelin-0.12.0a, ...). Looks exactly one
+// level down - <mods>/<anyModFolder>/jars/<jarName>, the layout the launcher
+// requires - rather than matching a recursive '**/jars/<jarName>' pattern.
+//
+// The depth matters for build time, not just tidiness: Gradle re-walks a
+// filtered file tree every time it snapshots it and never caches the result, so
+// a recursive tree over mods/ is re-scanned once per glob per task that carries
+// it on a classpath. A modded install holds ~175k files there, which costs
+// seconds each time and turns an up-to-date build into a minute of pure
+// input-checking. A directory listing plus one stat per mod folder is free by
+// comparison, and the resulting FileCollection holds plain files, which Gradle
+// does cache.
+//
+// Returns a FileCollection (empty when the mod is absent) so callers can hand it
+// straight to a dependency declaration and still ask '.files.isEmpty()' when they
+// want to fail the build with an "install this mod" message.
+ext.findModJars = { String jarName ->
+    def modFolders = file("${configuredStarsectorRoot}/mods").listFiles() ?: new File[0]
+    return files(modFolders
+        .collect { modFolder -> new File(modFolder, "jars/${jarName}") }
+        .findAll { candidateJar -> candidateJar.isFile() })
+}
+
+// Deliberately no KMLib lookup here, though this is where a consumer's other mod
+// jars are resolved from. Every mod applying the conventions script applies it BY
+// PATH from a KMLib checkout, so that checkout is already a hard prerequisite; a
+// consumer includes it as a build (settings.gradle) and names KMLib by its
+// coordinates instead. Locating an installed jar as well would offer a second,
+// weaker answer to a question the checkout already settles - and let a build
+// compile against a release that no longer matches the conventions it is being
+// built with.

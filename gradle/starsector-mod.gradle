@@ -5,6 +5,11 @@
 // mod_info.json as the version source, and the jar output location the
 // launcher expects.
 //
+// Conventions only: every line here is something a KM mod is held to, not
+// something it may call. The lookups a build uses to find an install, a core
+// jar or a mod jar live in starsector-install-locator.gradle, applied below so
+// a consumer still gets both from this one `apply from`.
+//
 // Owned by KMLib (not Common-Java) because all of this is Starsector
 // knowledge; it is build-time only and is not part of the shipped KMLib.jar.
 // Applied by path, the same sibling-checkout convention used elsewhere: KMLib
@@ -13,6 +18,10 @@
 apply from: "${rootDir}/../Common-Java/gradle/java-conventions.gradle"
 
 import groovy.json.JsonSlurper
+
+// Resolved relative to THIS script's own gradle/ dir, so a consumer's own
+// `apply from` path is not restated here.
+apply from: new File(buildscript.sourceFile.parentFile, 'starsector-install-locator.gradle')
 
 // The knowledge-graph tool writes a generated wiki and report as markdown
 // under graphify-out/. Those are derived from the source tree rather than
@@ -49,81 +58,25 @@ if (!modInfo.version) {
 
 version = modInfo.version
 
-// Resolve the Starsector install root. Order: explicit override, environment
-// variable, then the conventional "two levels above the mod folder" (mods
-// live at <starsector>/mods/<modId>) for in-place checkouts.
-def configuredStarsectorRoot = findProperty('starsectorRoot')
-    ?: System.getenv('STARSECTOR_HOME')
-    ?: new File(projectDir, '../..').canonicalPath
-
-def apiJarFile = file("${configuredStarsectorRoot}/starsector-core/starfarer.api.jar")
+// The jars every KM mod compiles against, captured as locals so the closures
+// below close over the files rather than re-reading a dynamic project property.
+def apiJarFile = project.ext.apiJarFile
 // lwjgl_util.jar carries Vector2f / Vector3f, which appear in Misc's
 // getDistance overloads. javac needs the class file on the classpath to
 // resolve overload candidates, so it is compileOnly (the game classloader
 // provides it at runtime, like the API jar). Harmless for mods that do not
 // touch LWJGL types.
-def lwjglUtilJarFile = file("${configuredStarsectorRoot}/starsector-core/lwjgl_util.jar")
+def lwjglUtilJarFile = resolveCoreJarFile('lwjgl_util.jar')
 // lwjgl.jar carries org.lwjgl.opengl.GL11, the raw OpenGL surface mods use to
 // draw on the campaign/combat views. compileOnly like the rest: the game
 // classloader always provides LWJGL at runtime. Shared here (not per-mod)
 // since more than one KM mod renders raw GL.
-def lwjglJarFile = file("${configuredStarsectorRoot}/starsector-core/lwjgl.jar")
+def lwjglJarFile = resolveCoreJarFile('lwjgl.jar')
 // log4j backs Global.getLogger(...), the logging channel every Starsector mod
 // uses. compileOnly for the same reason as the API jar: the game classloader
 // provides it at runtime. Shared here (not per-mod) since all KM mods log.
-def log4jJarFile = file("${configuredStarsectorRoot}/starsector-core/log4j-1.2.9.jar")
-def starsectorCoreJars = fileTree(
-    dir: "${configuredStarsectorRoot}/starsector-core",
-    include: ['*.jar'])
-
-// Expose the resolved root and core jars so a consumer can locate its own
-// extra dependencies (Console Commands, LunaLib, KMLib, ...) without
-// re-deriving the install path.
-ext.starsectorRoot = configuredStarsectorRoot
-ext.apiJarFile = apiJarFile
-ext.starsectorCoreJars = starsectorCoreJars
-
-// The KMLib whose classes a consumer compiles against, and which holds the shell
-// scripts the release pipeline and the task scripts below both run. Located from
-// this file rather than from the relative path a consumer already spells in its
-// `apply from`: this file sits at <KMLib>/gradle/, so its grandparent is that
-// checkout, and there is no second copy of the path to keep in step. Published
-// because the task scripts sit two directories further down and must not each
-// count parentFile hops of their own.
-ext.kmlibCheckoutDirectory = buildscript.sourceFile.parentFile.parentFile
-
-// Locate a dependency mod's jar without spelling out its folder name, which is
-// version-stamped for several mods (Nexerelin-0.12.0a, ...). Looks exactly one
-// level down - <mods>/<anyModFolder>/jars/<jarName>, the layout the launcher
-// requires - rather than matching a recursive '**/jars/<jarName>' pattern.
-//
-// The depth matters for build time, not just tidiness: Gradle re-walks a
-// filtered file tree every time it snapshots it and never caches the result, so
-// a recursive tree over mods/ is re-scanned once per glob per task that carries
-// it on a classpath. A modded install holds ~175k files there, which costs
-// seconds each time and turns an up-to-date build into a minute of pure
-// input-checking. A directory listing plus one stat per mod folder is free by
-// comparison, and the resulting FileCollection holds plain files, which Gradle
-// does cache.
-//
-// Returns a FileCollection (empty when the mod is absent) so callers can hand it
-// straight to a dependency declaration and still ask '.files.isEmpty()' when they
-// want to fail the build with an "install this mod" message.
-ext.findModJars = { String jarName ->
-    def modFolders = file("${configuredStarsectorRoot}/mods").listFiles() ?: new File[0]
-    return files(modFolders
-        .collect { modFolder -> new File(modFolder, "jars/${jarName}") }
-        .findAll { candidateJar -> candidateJar.isFile() })
-}
-
-// Deliberately no KMLib lookup here, though this is where a consumer's other
-// mod jars are resolved from. Every mod applying this script also applies it
-// BY PATH from a KMLib checkout, so that checkout is already a hard
-// prerequisite; a consumer includes it as a build (settings.gradle) and names
-// KMLib by its coordinates instead. Locating an installed jar as well would
-// offer a second, weaker answer to a question the checkout already settles -
-// and let a build compile against a release that no longer matches the
-// conventions it is being built with.
+def log4jJarFile = resolveCoreJarFile('log4j-1.2.9.jar')
+def starsectorCoreJars = project.ext.starsectorCoreJars
 
 dependencies {
     // Starsector ships the API in starsector-core. compileOnly because the
