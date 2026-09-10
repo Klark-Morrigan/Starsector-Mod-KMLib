@@ -47,6 +47,7 @@ final class ActivateGateCommandTest {
     private MockedStatic<StarSystems> starSystemsMock;
     private MockedStatic<Gates> gatesMock;
 
+    private SectorAPI sectorMock;
     private StarSystemAPI systemMock;
     private CommandOutputFake outputFake;
     private ActivateGateCommand command;
@@ -54,7 +55,7 @@ final class ActivateGateCommandTest {
     @BeforeEach
     void setUp() {
 
-        var sectorMock = mock(SectorAPI.class);
+        sectorMock = mock(SectorAPI.class);
 
         systemMock = mock(StarSystemAPI.class);
 
@@ -133,9 +134,10 @@ final class ActivateGateCommandTest {
                 .isEqualTo(CommandResult.SUCCESS);
 
             // Delegation is the contract: the command resolves, Gates owns the
-            // state change.
+            // state change - and it is handed the sector the command is acting in
+            // rather than left to find one for itself.
             gatesMock
-                .verify(() -> Gates.activateGate(gateMock));
+                .verify(() -> Gates.activateGate(sectorMock, gateMock));
 
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Activated gate 'gate1'"));

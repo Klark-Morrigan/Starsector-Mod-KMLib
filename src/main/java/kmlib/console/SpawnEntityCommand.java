@@ -15,6 +15,7 @@ import kmlib.math.geometry.Points;
 import kmlib.starsector.entities.EntityNameGenerator;
 import kmlib.starsector.entities.EntityOrbits;
 import kmlib.starsector.entities.EntitySpawner;
+import kmlib.starsector.entities.OrbitPlacement;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.text.KmlibStrings;
@@ -131,7 +132,9 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
             parsed.get(SPEC.jitter),
             new Random());
 
-        var entity = kind.spawnOrbiting(focus, distance, speedDegPerDay, angle);
+        var entity = kind.spawnOrbiting(
+            focus,
+            OrbitPlacement.createOrbiting(distance, speedDegPerDay, angle));
 
         output.showMessage(kind.describeSpawn(entity, system));
         return CommandResult.SUCCESS;
@@ -208,20 +211,14 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
     private enum SpawnableKind {
         GATE("gate") {
             @Override
-            SectorEntityToken spawnOrbiting(
-                    SectorEntityToken focus,
-                    float distance,
-                    float speedDegPerDay,
-                    float startAngleDegrees) {
+            SectorEntityToken spawnOrbiting(SectorEntityToken focus, OrbitPlacement placement) {
                 // The gate is spawned inactive: it grants no access until the
                 // gate-activation command brings it online.
                 return EntitySpawner.spawnOrbitingCustomEntity(
                     focus,
                     Entities.INACTIVE_GATE,
                     Factions.NEUTRAL,
-                    distance,
-                    speedDegPerDay,
-                    startAngleDegrees);
+                    placement);
             }
 
             @Override
@@ -234,20 +231,15 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         },
         JUMP_POINT("jump_point") {
             @Override
-            SectorEntityToken spawnOrbiting(
-                    SectorEntityToken focus,
-                    float distance,
-                    float speedDegPerDay,
-                    float startAngleDegrees) {
+            SectorEntityToken spawnOrbiting(SectorEntityToken focus, OrbitPlacement placement) {
                 // The name is derived from the focus and orbit radius so the point
                 // reads like a charted body; spawnOrbitingJumpPoint also generates
                 // the hyperspace entrance and clears the system's cut-off tag.
-                var name = EntityNameGenerator.generateJumpPointName(focus, distance);
-                return EntitySpawner.spawnOrbitingJumpPoint(
-                    focus, name,
-                    distance,
-                    speedDegPerDay,
-                    startAngleDegrees);
+                var name = EntityNameGenerator.generateJumpPointName(
+                    focus,
+                    placement.orbitDistance());
+
+                return EntitySpawner.spawnOrbitingJumpPoint(focus, name, placement);
             }
 
             @Override
@@ -271,9 +263,7 @@ public final class SpawnEntityCommand extends KmlibBaseConsoleCommand {
         // command supplies, and returns the spawned entity.
         abstract SectorEntityToken spawnOrbiting(
                 SectorEntityToken focus,
-                float distance,
-                float speedDegPerDay,
-                float startAngleDegrees);
+                OrbitPlacement placement);
 
         // The player-facing report for a completed spawn, read back from the
         // spawned entity (and its system) so the message reflects what was added.

@@ -53,7 +53,7 @@ public final class ActivateGateCommand extends KmlibBaseConsoleCommand {
                 + ".");
             return CommandResult.ERROR;
         }
-        Gates.activateGate(gate);
+        Gates.activateGate(readActiveSector(), gate);
 
         output.showMessage("Activated gate '"
             + id

@@ -53,11 +53,10 @@ public record Structure(
     }
 
     /**
-     * What kind of thing this is in the game's own words - the entity spec's default name, which
-     * is what an entity procgen has given a name of its own no longer says anywhere else.
+     * What kind of thing this is in the game's own words - the spec's default name, which is what
+     * a structure procgen has named after its system no longer says anywhere else.
      *
-     * <p>The spec rather than the entity's name, because the name is the one that gets replaced.
-     * Read off the entity's own spec rather than looked up by type through the settings, so the
+     * <p>Read off the entity's own spec rather than looked up by type through the settings, so the
      * answer needs nothing but the entity.
      *
      * @return the spec's default name, or null where the entity carries no custom spec
@@ -109,9 +108,7 @@ public record Structure(
         if (resolveObjectivePlugin() == null) {
             return false;
         }
-        var memory = entity.getMemoryWithoutUpdate();
-
-        return memory != null && memory.getBoolean(MemFlags.OBJECTIVE_NON_FUNCTIONAL);
+        return entity.getMemoryWithoutUpdate().getBoolean(MemFlags.OBJECTIVE_NON_FUNCTIONAL);
     }
 
     /**

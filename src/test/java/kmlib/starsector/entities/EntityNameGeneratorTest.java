@@ -36,67 +36,117 @@ final class EntityNameGeneratorTest {
 
     @BeforeEach
     void setUp() {
+
         stringsMock = mockStatic(StarsectorStrings.class);
-        stringsMock.when(() -> StarsectorStrings.get(anyString(), anyString()))
+        stringsMock
+            .when(() -> StarsectorStrings.get(anyString(), anyString()))
             .thenReturn("Jump-point");
     }
 
     @AfterEach
     void tearDown() {
+
         stringsMock.close();
     }
 
     @Nested
     class GenerateJumpPointName {
+
         @Test
         void leadsWithTheFocusNameWhenItHasOne() {
+
             var focusMock = mock(SectorEntityToken.class);
-            when(focusMock.getName()).thenReturn("Corvus A");
+
+            when(focusMock.getName())
+                .thenReturn("Corvus A");
 
             var name = EntityNameGenerator.generateJumpPointName(focusMock, 1500f);
 
-            assertThat(name).isEqualTo("Corvus A Jump-point 1.5e3");
+            assertThat(name)
+                .isEqualTo("Corvus A Jump-point 1.5e3");
         }
 
         @Test
         void fallsBackToTheLocationNameWhenTheFocusHasNoNameOfItsOwn() {
+
             var locationMock = mock(LocationAPI.class);
-            when(locationMock.getName()).thenReturn("The Abyssal Depths");
             var focusMock = mock(SectorEntityToken.class);
-            when(focusMock.getName()).thenReturn(null);
-            when(focusMock.getContainingLocation()).thenReturn(locationMock);
+
+            when(locationMock.getName())
+                .thenReturn("The Abyssal Depths");
+
+            when(focusMock.getName())
+                .thenReturn(null);
+            when(focusMock.getContainingLocation())
+                .thenReturn(locationMock);
 
             var name = EntityNameGenerator.generateJumpPointName(focusMock, 18f);
 
-            assertThat(name).isEqualTo("The Abyssal Depths Jump-point 1.8e1");
+            assertThat(name)
+                .isEqualTo("The Abyssal Depths Jump-point 1.8e1");
         }
 
         @Test
         void treatsVanillasUnknownLocationPlaceholderAsNoNameOnTheFocus() {
+
             var locationMock = mock(LocationAPI.class);
-            when(locationMock.getName()).thenReturn("The Abyssal Depths");
             var focusMock = mock(SectorEntityToken.class);
+
+            when(locationMock.getName())
+                .thenReturn("The Abyssal Depths");
+
             // Vanilla's BaseLocation returns this literal for an unnamed center.
-            when(focusMock.getName()).thenReturn("unknown location");
-            when(focusMock.getContainingLocation()).thenReturn(locationMock);
+            when(focusMock.getName())
+                .thenReturn("unknown location");
+            when(focusMock.getContainingLocation())
+                .thenReturn(locationMock);
 
             var name = EntityNameGenerator.generateJumpPointName(focusMock, 18f);
 
-            assertThat(name).isEqualTo("The Abyssal Depths Jump-point 1.8e1");
+            assertThat(name)
+                .isEqualTo("The Abyssal Depths Jump-point 1.8e1");
         }
 
         @Test
         void fallsBackToTheFocusIdWhenNeitherFocusNorLocationIsNamed() {
+
             var locationMock = mock(LocationAPI.class);
-            when(locationMock.getName()).thenReturn("unknown location");
             var focusMock = mock(SectorEntityToken.class);
-            when(focusMock.getName()).thenReturn(null);
-            when(focusMock.getContainingLocation()).thenReturn(locationMock);
-            when(focusMock.getId()).thenReturn("barycenter");
+
+            when(locationMock.getName())
+                .thenReturn("unknown location");
+
+            when(focusMock.getName())
+                .thenReturn(null);
+            when(focusMock.getContainingLocation())
+                .thenReturn(locationMock);
+            when(focusMock.getId())
+                .thenReturn("barycenter");
 
             var name = EntityNameGenerator.generateJumpPointName(focusMock, 1500f);
 
-            assertThat(name).isEqualTo("barycenter Jump-point 1.5e3");
+            assertThat(name)
+                .isEqualTo("barycenter Jump-point 1.5e3");
+        }
+
+        @Test
+        void fallsBackToTheFocusIdWhenTheFocusStandsInNoLocation() {
+            // An entity the game holds outside any location has no second name to fall back on,
+            // so the id is reached without the location step being asked for a name it has not
+            // got - the reading has to survive a focus that is not anywhere.
+            var focusMock = mock(SectorEntityToken.class);
+
+            when(focusMock.getName())
+                .thenReturn(null);
+            when(focusMock.getContainingLocation())
+                .thenReturn(null);
+            when(focusMock.getId())
+                .thenReturn("adrift");
+
+            var name = EntityNameGenerator.generateJumpPointName(focusMock, 1500f);
+
+            assertThat(name)
+                .isEqualTo("adrift Jump-point 1.5e3");
         }
     }
 }

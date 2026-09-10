@@ -12,33 +12,39 @@ import java.util.Random;
  * orbit. {@link EntitySpawner} owns creating the entity; this owns the orbit it
  * is put on.
  *
- * <p>Two concerns live here. Speed: {@link #deriveBaseSpeedDegPerDay} answers
+ * <p>Three concerns live here. Speed: {@link #deriveBaseSpeedDegPerDay} answers
  * "how fast should a body at this radius drift" the vanilla way (constant
  * tangential speed), and {@link #applyJitter} widens any speed - that
  * radius-derived default or an explicit one - by vanilla's random spread. Orbit:
- * {@link #applyCircularOrbit} puts an entity onto a circular orbit at a given
- * degrees-per-day rate (or pins it when the rate is non-positive). Speed is in
- * degrees per day throughout, the intuitive knob; the orbital period
- * {@code setCircularOrbit} wants is derived from it (period = 360 / speed).
+ * {@link #applyCircularOrbit} puts an entity onto the circle an
+ * {@link OrbitPlacement} describes, or pins it where that placement is a
+ * standstill. Chain: {@link #readFocusChain} and
+ * {@link #computeOrbitalDistanceTo} walk the orbit-focus chain, which is the one
+ * traversal any question about where a body sits relative to another has to make.
+ *
+ * <p>Speed is in degrees per day throughout, the intuitive knob; the orbital
+ * period {@code setCircularOrbit} wants is derived from it (period = 360 / speed).
  *
  * <p>The reads sit here beside the writes on purpose. {@link #readSpeedDegPerDay}
  * inverts the very arithmetic {@link #applyCircularOrbit} performs, and a reader
  * that stated that inverse for itself would be free to disagree with the writer
- * about what 360 means. {@link #readFocusChain} and
- * {@link #computeOrbitalDistanceTo} walk the orbit-focus chain, which is the one
- * traversal any question about where a body sits relative to another has to make.
+ * about what 360 means.
  */
 public final class EntityOrbits {
+
+    /**
+     * Vanilla's own orbital spread: it jitters the base divisor up by as much as
+     * a quarter (20 + random*5), so this is what a caller that has no reason to
+     * pick its own spread widens a speed by.
+     */
+    public static final float VANILLA_JITTER_FRACTION = 0.25f;
+
     private static final float DEGREES_PER_CIRCLE = 360f;
 
     // Vanilla's base orbital divisor for planets and moons: orbital period in
     // days is radius / divisor, so a larger divisor means a shorter period and a
     // higher tangential speed.
     private static final float BASE_ORBIT_DIVISOR = 20f;
-
-    // Vanilla jitters the divisor up by up to a quarter (20 + random*5), so this
-    // is the default spread for an unspecified jitter.
-    public static final float VANILLA_JITTER_FRACTION = 0.25f;
 
     // A hang guard for a malformed cyclic orbit chain, not a domain limit: a real
     // chain nests only a few links (station -> planet -> star), so a walk halts on a
@@ -47,6 +53,7 @@ public final class EntityOrbits {
     private static final int MAX_ORBIT_CHAIN_DEPTH = 32;
 
     private EntityOrbits() {
+        // utility class, no instances.
     }
 
     /**
@@ -96,37 +103,33 @@ public final class EntityOrbits {
     }
 
     /**
-     * Puts an existing entity into a circular orbit around {@code focus} (or pins
-     * it in place when the speed is non-positive). Used by {@link EntitySpawner}
-     * and by callers placing entities created elsewhere, e.g. a jump point built
-     * through the factory.
+     * Puts an existing entity onto the circle {@code placement} describes around
+     * {@code focus}, or fixes it at that point when the placement is a
+     * standstill. Used by {@link EntitySpawner} and by callers placing entities
+     * created elsewhere, e.g. a jump point built through the factory.
      *
-     * @param entity            the entity to place
-     * @param focus             the entity to orbit
-     * @param orbitDistance     orbit radius from the focus
-     * @param speedDegPerDay    orbital angular speed; 0 or less means static
-     * @param startAngleDegrees angle from the focus at which the entity starts
+     * @param entity    the entity to place
+     * @param focus     the entity to orbit
+     * @param placement where around the focus the entity goes, and how fast
      */
     public static void applyCircularOrbit(
             SectorEntityToken entity,
             SectorEntityToken focus,
-            float orbitDistance,
-            float speedDegPerDay,
-            float startAngleDegrees) {
+            OrbitPlacement placement) {
 
-        if (speedDegPerDay <= 0f) {
+        if (placement.isPinned()) {
             var focusLocation = focus.getLocation();
-            var radians = Math.toRadians(startAngleDegrees);
+            var radians = Math.toRadians(placement.startAngleDegrees());
             entity.setFixedLocation(
-                focusLocation.x + (float) (Math.cos(radians) * orbitDistance),
-                focusLocation.y + (float) (Math.sin(radians) * orbitDistance));
+                focusLocation.x + (float) (Math.cos(radians) * placement.orbitDistance()),
+                focusLocation.y + (float) (Math.sin(radians) * placement.orbitDistance()));
             return;
         }
-        var orbitalPeriodDays = DEGREES_PER_CIRCLE / speedDegPerDay;
+        var orbitalPeriodDays = DEGREES_PER_CIRCLE / placement.speedDegPerDay();
         entity.setCircularOrbit(
             focus,
-            startAngleDegrees,
-            orbitDistance,
+            placement.startAngleDegrees(),
+            placement.orbitDistance(),
             orbitalPeriodDays);
     }
 

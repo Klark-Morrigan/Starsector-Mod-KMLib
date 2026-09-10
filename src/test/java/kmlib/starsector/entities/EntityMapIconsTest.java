@@ -86,6 +86,7 @@ final class EntityMapIconsTest {
 
         @Test
         void resolveMapIconIsEmptyForANullEntity() {
+
             assertThat(EntityMapIcons.resolveMapIcon(null))
                 .isEmpty();
         }

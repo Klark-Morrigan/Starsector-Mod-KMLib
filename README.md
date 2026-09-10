@@ -322,14 +322,20 @@ No Starsector API on the signature.
   having written a profiling line, and a second traversal shows on the row that
   made it.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
-  spawning custom campaign entities and jump points, their orbits, name
-  generation, gate activation, and how an entity is identified to a reader:
-  its name paired with the map glyph it is marked with. Plus the built
-  structures - relays, buoys, arrays - as the plain facts each carries about
-  itself: who holds it, what kind of thing it is, whether it has been found,
-  and whether it is broken, disrupted or being sniffed; with the search for the
-  ones standing in a location, selected on the objective tag so a mod's own
-  kind joins by tagging it rather than by being listed here.
+  spawning custom campaign entities and jump points, name generation, gate
+  activation, and how an entity is identified to a reader: its name paired with
+  the map glyph it is marked with. Where a body goes around its focus travels as
+  one value - how far out, how fast, and where on the circle it starts - so the
+  three do not cross every placing signature as interchangeable floats, and a
+  standstill is said in the signature rather than in a nought. Beside it the
+  orbit arithmetic itself: the vanilla-paced rate for a radius, the random
+  spread over any rate, the placement, the speed read back off an orbit, and the
+  orbit-focus chain every "how far out does this sit" question walks. Plus the
+  built structures - relays, buoys, arrays - as the plain facts each carries
+  about itself: who holds it, what kind of thing it is, whether it has been
+  found, and whether it is broken, disrupted or being sniffed; with the search
+  for the ones standing in a location, selected on the objective tag so a mod's
+  own kind joins by tagging it rather than by being listed here.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) - what a
   faction is in itself: player-faction lifecycle, faction colours, crests and
   flags. See [Player Faction Resolution](#player-faction-resolution). Where a

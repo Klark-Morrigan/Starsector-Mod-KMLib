@@ -39,12 +39,12 @@ final class StructureTest {
             when(factionMock.getId())
                 .thenReturn("hegemony");
 
-            var entity = buildStructureEntity();
+            var entityMock = buildStructureEntity();
 
-            when(entity.getFaction())
+            when(entityMock.getFaction())
                 .thenReturn(factionMock);
 
-            assertThat(new Structure(entity).readHolderFactionId())
+            assertThat(new Structure(entityMock).readHolderFactionId())
                 .isEqualTo("hegemony");
         }
 
@@ -69,17 +69,18 @@ final class StructureTest {
             when(specMock.getDefaultName())
                 .thenReturn("Makeshift Comm Relay");
 
-            var entity = buildStructureEntity();
+            var entityMock = buildStructureEntity();
 
-            when(entity.getCustomEntitySpec())
+            when(entityMock.getCustomEntitySpec())
                 .thenReturn(specMock);
 
-            assertThat(new Structure(entity).readTypeName())
+            assertThat(new Structure(entityMock).readTypeName())
                 .isEqualTo("Makeshift Comm Relay");
         }
 
         @Test
         void reports_no_type_name_where_the_entity_carries_no_spec() {
+
             assertThat(new Structure(buildStructureEntity()).readTypeName())
                 .isNull();
         }
@@ -99,12 +100,12 @@ final class StructureTest {
         @Test
         void reports_a_structure_on_an_undiscovered_entity_as_undiscovered() {
 
-            var entity = buildStructureEntity();
+            var entityMock = buildStructureEntity();
 
-            when(entity.isDiscoverable())
+            when(entityMock.isDiscoverable())
                 .thenReturn(true);
 
-            assertThat(new Structure(entity).isDiscoveredByPlayer())
+            assertThat(new Structure(entityMock).isDiscoveredByPlayer())
                 .isFalse();
         }
     }
@@ -117,17 +118,18 @@ final class StructureTest {
             // Off the tag rather than off the entity id, so a mod's own improvised variant reads
             // true without this having to know its id - which is the same reasoning that makes
             // the objective tag the selection rule rather than a list of six ids.
-            var entity = buildStructureEntity();
+            var entityMock = buildStructureEntity();
 
-            when(entity.hasTag(Tags.MAKESHIFT))
+            when(entityMock.hasTag(Tags.MAKESHIFT))
                 .thenReturn(true);
 
-            assertThat(new Structure(entity).isMakeshift())
+            assertThat(new Structure(entityMock).isMakeshift())
                 .isTrue();
         }
 
         @Test
         void reports_an_untagged_structure_as_not_makeshift() {
+
             assertThat(new Structure(buildStructureEntity()).isMakeshift())
                 .isFalse();
         }
@@ -138,12 +140,14 @@ final class StructureTest {
 
         @Test
         void reports_a_structure_carrying_the_flag_as_non_functional() {
+
             assertThat(new Structure(buildNonFunctionalStructureEntity()).isNonFunctional())
                 .isTrue();
         }
 
         @Test
         void reports_a_structure_without_the_flag_as_functional() {
+
             assertThat(new Structure(buildStructureEntity()).isNonFunctional())
                 .isFalse();
         }
@@ -164,12 +168,14 @@ final class StructureTest {
 
         @Test
         void reports_a_factory_reset_structure_as_disrupted() {
+
             assertThat(new Structure(buildDisruptedStructureEntity()).isDisrupted())
                 .isTrue();
         }
 
         @Test
         void reports_an_untouched_structure_as_not_disrupted() {
+
             assertThat(new Structure(buildStructureEntity()).isDisrupted())
                 .isFalse();
         }
@@ -188,18 +194,21 @@ final class StructureTest {
 
         @Test
         void reports_a_sniffed_structure_as_hacked() {
+
             assertThat(new Structure(buildHackedStructureEntity()).isHacked())
                 .isTrue();
         }
 
         @Test
         void reports_an_untouched_structure_as_not_hacked() {
+
             assertThat(new Structure(buildStructureEntity()).isHacked())
                 .isFalse();
         }
 
         @Test
         void reports_a_structure_under_a_foreign_plugin_as_not_hacked() {
+
             assertThat(new Structure(buildForeignPluginStructureEntity()).isHacked())
                 .isFalse();
         }

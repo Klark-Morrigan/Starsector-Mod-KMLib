@@ -10,8 +10,11 @@ import kmlib.text.KmlibStrings;
 /**
  * Generates in-universe display names for spawned entities so a dev-created
  * object reads like a charted body on the campaign map rather than debug text.
- * One {@code generate<Kind>Name} method per entity kind keeps each kind's naming
- * convention in a single place.
+ * Each entity kind's naming convention is stated in one method, so a label the
+ * player reads has a single place it can be wrong.
+ *
+ * <p>Final class with a private constructor: pure-function utility, no instance
+ * state.
  */
 public final class EntityNameGenerator {
 
@@ -22,6 +25,7 @@ public final class EntityNameGenerator {
     private static final String VANILLA_UNNAMED_PLACEHOLDER = "unknown location";
 
     private EntityNameGenerator() {
+        // utility class, no instances.
     }
 
     /**
@@ -51,7 +55,7 @@ public final class EntityNameGenerator {
         var jumpPointWord = StarsectorStrings.get(
             KmlibStringKeys.CATEGORY,
             KmlibStringKeys.JUMP_POINT_LABEL);
-        return getLabel(focus)
+        return resolveFocusLabel(focus)
             + " "
             + jumpPointWord
             + " "
@@ -64,13 +68,18 @@ public final class EntityNameGenerator {
     // yields the system label, e.g. "The Abyssal Depths"), and finally the focus
     // id as a last resort. Vanilla's "unknown location" placeholder is treated as
     // no name at each step so it never leaks into the label.
-    private static String getLabel(SectorEntityToken focus) {
-        if (isUsableName(focus.getName())) {
-            return focus.getName();
+    private static String resolveFocusLabel(SectorEntityToken focus) {
+
+        var ownName = focus.getName();
+
+        if (isUsableName(ownName)) {
+            return ownName;
         }
         var location = focus.getContainingLocation();
-        if (location != null && isUsableName(location.getName())) {
-            return location.getName();
+        var locationName = location == null ? null : location.getName();
+
+        if (isUsableName(locationName)) {
+            return locationName;
         }
         return focus.getId();
     }

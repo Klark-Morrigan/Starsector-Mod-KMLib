@@ -13,6 +13,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import kmlib.starsector.entities.EntityNameGenerator;
 import kmlib.starsector.entities.EntityOrbits;
 import kmlib.starsector.entities.EntitySpawner;
+import kmlib.starsector.entities.OrbitPlacement;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.console.output.CommandOutputFake;
@@ -31,6 +32,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -208,9 +210,7 @@ final class SpawnEntityCommandTest {
                     eq(focusMock),
                     eq(Entities.INACTIVE_GATE),
                     eq(Factions.NEUTRAL),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand("gate", CommandContext.CAMPAIGN_MAP);
@@ -236,9 +236,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point", CommandContext.CAMPAIGN_MAP);
@@ -261,9 +259,7 @@ final class SpawnEntityCommandTest {
                 .verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    eq(JITTERED_SPEED),
-                    anyFloat()));
+                    matchPlacementWithSpeed(JITTERED_SPEED)));
 
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Spawned " + GENERATED_NAME)
@@ -282,9 +278,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point jitter=0.5", CommandContext.CAMPAIGN_MAP);
@@ -304,9 +298,7 @@ final class SpawnEntityCommandTest {
                 .verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    eq(JITTERED_SPEED),
-                    anyFloat()));
+                    matchPlacementWithSpeed(JITTERED_SPEED)));
         }
 
         @Test
@@ -321,9 +313,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point speed=5", CommandContext.CAMPAIGN_MAP);
@@ -346,9 +336,7 @@ final class SpawnEntityCommandTest {
                 .verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    eq(JITTERED_SPEED),
-                    anyFloat()));
+                    matchPlacementWithSpeed(JITTERED_SPEED)));
         }
 
         @Test
@@ -363,9 +351,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand(
@@ -385,9 +371,7 @@ final class SpawnEntityCommandTest {
                 .verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(focusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    eq(JITTERED_SPEED),
-                    anyFloat()));
+                    matchPlacementWithSpeed(JITTERED_SPEED)));
         }
 
         @Test
@@ -409,9 +393,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(namedFocusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point beta 5", CommandContext.CAMPAIGN_MAP);
@@ -430,9 +412,7 @@ final class SpawnEntityCommandTest {
                 .verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(namedFocusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    eq(JITTERED_SPEED),
-                    anyFloat()));
+                    matchPlacementWithSpeed(JITTERED_SPEED)));
         }
 
         @Test
@@ -567,9 +547,7 @@ final class SpawnEntityCommandTest {
                 .when(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(namedFocusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()))
+                    any()))
                 .thenReturn(spawnedMock);
 
             var result = command.runCommand("jump_point beta", CommandContext.CAMPAIGN_MAP);
@@ -582,9 +560,7 @@ final class SpawnEntityCommandTest {
                 .verify(() -> EntitySpawner.spawnOrbitingJumpPoint(
                     eq(namedFocusMock),
                     eq(GENERATED_NAME),
-                    anyFloat(),
-                    anyFloat(),
-                    anyFloat()));
+                    any()));
         }
 
         @Test
@@ -600,6 +576,14 @@ final class SpawnEntityCommandTest {
             spawnerMock
                 .verifyNoInteractions();
         }
+    }
+
+    // A placement carrying the rate the widening produced, whatever radius and start angle the
+    // fleet's position worked out to - those belong to the geometry read and are pinned where
+    // that read is, not here.
+    private static OrbitPlacement matchPlacementWithSpeed(float speedDegPerDay) {
+        return argThat(placement -> placement != null
+            && placement.speedDegPerDay() == speedDegPerDay);
     }
 
     private static PlanetAPI buildStar(String id) {

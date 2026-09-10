@@ -1,6 +1,6 @@
 package kmlib.starsector.entities;
 
-import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 
@@ -38,13 +38,18 @@ public final class Gates {
      * <p>The gate flips to active on its next advance, when its plugin sees the
      * flags this set.
      *
-     * @param gate the gate to activate; null is a no-op
+     * <p>The sector is handed over rather than reached for, since the network
+     * flags are that sector's own state: a caller acting on one sector must not
+     * power the network of whichever sector happens to be current.
+     *
+     * @param sector the sector whose gate network is powered; null is a no-op
+     * @param gate   the gate to activate; null is a no-op
      */
-    public static void activateGate(SectorEntityToken gate) {
-        if (gate == null) {
+    public static void activateGate(SectorAPI sector, SectorEntityToken gate) {
+        if (sector == null || gate == null) {
             return;
         }
-        var sectorMemory = Global.getSector().getMemoryWithoutUpdate();
+        var sectorMemory = sector.getMemoryWithoutUpdate();
         sectorMemory.set(GateEntityPlugin.GATES_ACTIVE, true);
         sectorMemory.set(GateEntityPlugin.PLAYER_CAN_USE_GATES, true);
         gate.getMemoryWithoutUpdate().set(GateEntityPlugin.GATE_SCANNED, true);
