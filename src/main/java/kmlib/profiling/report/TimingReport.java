@@ -7,6 +7,7 @@ import kmlib.profiling.snapshot.WorstCall;
 import kmlib.text.KmlibStrings;
 import kmlib.text.TextTable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -109,25 +110,59 @@ public final class TimingReport {
         if (originTrees.isEmpty()) {
             return NO_TIMINGS_NOTICE;
         }
-        var columns = ReportColumns.buildColumns(originTrees, request.hasFrameBeat());
-        var table = new TextTable(columns.describeTableColumns());
-        var hasWrittenRows = false;
-
-        table.addRow(columns.buildHeaderRow());
+        // The rows are chosen before a column is named, because which counter
+        // columns the table carries is decided by what those rows counted: a
+        // group raised for the whole capture would stand empty on a reading
+        // narrowed to rows that never fill it.
+        var groups = new ArrayList<OriginGroup>();
 
         for (var originTree : originTrees) {
 
-            var scale = ReportScale.resolveScale(originTree, request);
             var rows = selectRows(originTree, request);
 
-            if (rows.isEmpty()) {
-                continue;
+            if (!rows.isEmpty()) {
+                groups.add(new OriginGroup(
+                    originTree,
+                    ReportScale.resolveScale(originTree, request),
+                    rows));
             }
-            hasWrittenRows = true;
-            table.addSpanningLine(describeOrigin(originTree, scale, request));
-            appendRows(table, columns, rows, scale);
         }
-        return hasWrittenRows ? table.renderAligned() : NO_MATCHING_ROWS_NOTICE;
+        if (groups.isEmpty()) {
+            return NO_MATCHING_ROWS_NOTICE;
+        }
+        var columns = ReportColumns.buildColumns(collectRowsOf(groups), request.hasFrameBeat());
+        var table = new TextTable(columns.describeTableColumns());
+
+        table.addRow(columns.buildHeaderRow());
+
+        for (var group : groups) {
+            table.addSpanningLine(describeOrigin(group.originTree(), group.scale(), request));
+            appendRows(table, columns, group.rows(), group.scale());
+        }
+        return table.renderAligned();
+    }
+
+    /**
+     * One origin's part of the reading: the rows the request kept of it, and
+     * the scale they are written at. Gathered before the table is built, since
+     * the columns are chosen from every group's rows together.
+     */
+    private record OriginGroup(
+        ProfileOriginTree originTree,
+        ReportScale scale,
+        List<ProfileReportRow> rows) {
+    }
+
+    // Every row the reading writes, in the order it writes them, which is the
+    // order their counters' groups are raised in.
+    private static List<ProfileReportRow> collectRowsOf(List<OriginGroup> groups) {
+
+        var rows = new ArrayList<ProfileReportRow>();
+
+        for (var group : groups) {
+            rows.addAll(group.rows());
+        }
+        return rows;
     }
 
     private static List<ProfileReportRow> selectRows(

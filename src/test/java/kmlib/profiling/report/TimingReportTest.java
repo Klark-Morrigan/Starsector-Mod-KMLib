@@ -83,12 +83,12 @@ final class TimingReportTest {
     // and 22 for the one character each duration band takes.
     private static final int NUMERIC_COLUMNS_WIDTH = 95;
 
-    // The section name, the six timing columns, and the four of the one counter group that row
+    // The section name, the six timing columns, and the two of the one counter group that row
     // filled - the second group in the table stays blank on it.
-    private static final int FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER = 11;
+    private static final int FILLED_CELLS_PER_ROW_WITH_ONE_COUNTER = 9;
 
     // The same row less its cost-each cell, which a row that counted nothing itself cannot state.
-    private static final int FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST = 10;
+    private static final int FILLED_CELLS_PER_ROW_WITH_NO_PER_ITEM_COST = 8;
 
     // The column header, the origin heading under it and the one section under that, which is all
     // a row with nothing to add about its slowest call may print.
@@ -218,16 +218,38 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatHeadsAColumnGroupForEveryCounterTheTreeTouched() {
-            // What a duration is read against: the row states how much it counted in all and how
-            // far one call's worth spread, beside the milliseconds it took to do it.
+        void formatHeadsAColumnGroupForEveryCounterAShownRowTouched() {
+            // What a duration is read against: the row states how much it counted in all and what
+            // one of them cost, beside the milliseconds it took to do it. Not how far one call's
+            // worth spread - that is a per-call fact, and the line under a row already carries
+            // the one call worth reading it off.
             var report = formatOneOrigin(List.of(nodeCounting(
                 PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 100, 200))));
 
             assertThat(report)
-                .contains("SYSTEMS", "SYSTEMS MIN", "SYSTEMS MAX", "SYSTEMS us/ea");
+                .contains("SYSTEMS", "SYSTEMS us/ea")
+                .doesNotContain("SYSTEMS MIN", "SYSTEMS MAX");
             assertThat(readFilledCells(report, PARENT_SECTION))
-                .contains("300", "100", "200");
+                .contains("300");
+        }
+
+        @Test
+        void formatRaisesNoColumnGroupForACounterOnlyADroppedRowTouched() {
+            // A reading narrowed to one namespace was narrowed to be read, and a group raised for
+            // a counter none of its rows fill is a column of blanks standing in the way of that.
+            var report = TimingReport.format(
+                List.of(new ProfileOriginTree(
+                    ProfileOrigin.registerOrigin(ORIGIN_LABEL),
+                    List.of(
+                        nodeCounting(PARENT_SECTION, countOf(SYSTEMS_COUNTER, 300, 300, 300, 300)),
+                        nodeCounting(
+                            UNUSED_NAMESPACE + "walk",
+                            countOf(MARKETS_COUNTER, 40, 40, 40, 40))))),
+                ProfileReportRequest.showTree().limitToNamespace(PARENT_SECTION));
+
+            assertThat(report)
+                .contains("SYSTEMS")
+                .doesNotContain("MARKETS");
         }
 
         @Test

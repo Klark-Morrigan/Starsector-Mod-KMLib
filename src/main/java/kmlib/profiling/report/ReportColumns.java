@@ -2,7 +2,6 @@ package kmlib.profiling.report;
 
 import kmlib.profiling.snapshot.DurationBuckets;
 import kmlib.profiling.snapshot.ProfileNode;
-import kmlib.profiling.snapshot.ProfileOriginTree;
 import kmlib.profiling.snapshot.ProfileTiming;
 import kmlib.text.TextTableColumn;
 
@@ -71,13 +70,14 @@ final class ReportColumns {
     }
 
     /**
-     * @param originTrees the whole capture, so every group shares one set of
-     *                    columns
-     * @param isPerFrame  whether the totals are being divided by a frame count,
-     *                    which the headers of the divided columns say
-     * @return the columns the capture needs, left to right
+     * @param shownRows  every row the reading writes, across all of its origins,
+     *                   so every group shares one set of columns and no column is
+     *                   raised for a counter none of them fills
+     * @param isPerFrame whether the totals are being divided by a frame count,
+     *                   which the headers of the divided columns say
+     * @return the columns those rows need, left to right
      */
-    static ReportColumns buildColumns(List<ProfileOriginTree> originTrees, boolean isPerFrame) {
+    static ReportColumns buildColumns(List<ProfileReportRow> shownRows, boolean isPerFrame) {
 
         var columns = new ArrayList<ReportColumn>();
 
@@ -110,7 +110,7 @@ final class ReportColumns {
             SPREAD_COLUMN_FLOOR,
             (row, scale) -> formatBands(row.getNode())));
 
-        columns.addAll(CounterColumns.buildColumnsForEveryCounter(originTrees, isPerFrame));
+        columns.addAll(CounterColumns.buildColumnsForEveryCounter(shownRows, isPerFrame));
         return new ReportColumns(columns);
     }
 
