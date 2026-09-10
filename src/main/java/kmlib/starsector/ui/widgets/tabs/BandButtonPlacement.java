@@ -67,15 +67,15 @@ public record BandButtonPlacement(
     }
 
     /**
-     * The colour the mark is multiplied by at this point of the button's fade: the shade the button's own
-     * word would read in, so a mark standing in place of a word answers the pointer the way that word
-     * would. The image fills its box, so what shows the pointer is the mark itself rather than a margin of
-     * chrome around it - the fill beneath an image is covered by the very thing it would be lighting for.
+     * The colour the mark is multiplied by at this point of the button's fade, and the whole of how this
+     * control answers the pointer: the image fills its box, so what shows the pointer is the mark itself
+     * rather than a margin of chrome around it - the fill beneath an image is covered by the very thing it
+     * would be lighting for.
      *
-     * <p>Composed the way a tab's finished label is: the look its state names carried however far the fade
-     * has run, then whatever light the palette adds at that point. Both, because the two chromes answer
-     * the pointer differently - a strip travels to a shade and a raised button lights from where it stands
-     * - and a mark reading only the first would sit inert on the chrome that lights.
+     * <p>The palette's mark shade rather than its label's, which is not the same reading and is the point:
+     * a word is parted from its lit self by role while its fill brightens underneath, and the mark covers
+     * that fill - so it is lit rather than recoloured, and the brightening lands on the mark itself. The
+     * palette composes it; see {@link kmlib.starsector.ui.widgets.tabs.style.TabHover#computeMarkLight}.
      *
      * <p>Multiplied over whatever the image states rather than replacing it, so an asset authored in its
      * own colours is washed rather than repainted, and one stating no tint takes the shade whole.
@@ -86,18 +86,13 @@ public record BandButtonPlacement(
      */
     public Color resolveIconTint(float hoverFraction) {
 
-        var palette = style.palette();
-        var light = palette.resolveLightAtHoverFraction(hoverFraction);
-
-        var litLabel = palette.resolveLookAtHoverFraction(NEVER_SELECTED, hoverFraction)
-            .computeGlowingLook(light.colour(), light.weight())
-            .label();
+        var markShade = style.palette().resolveMarkTintAtHoverFraction(NEVER_SELECTED, hoverFraction);
 
         // Whether "as authored" is white is the image's own answer, so a button carrying one asks it
         // rather than spelling the no-op multiply a second time; a button carrying none is the shade
         // itself, there being nothing for it to wash.
         return icon == null
-            ? litLabel
-            : Colours.multiplyBy(icon.resolveDrawnTint(), litLabel);
+            ? markShade
+            : Colours.multiplyBy(icon.resolveDrawnTint(), markShade);
     }
 }

@@ -73,6 +73,19 @@ final class TabPaletteTest {
         new TabHover.MeetingShade(HOVERED_LOOK),
         CLICKED_WASH);
 
+    // A palette for the mark channel alone, its shades spread across channels the stand-in above does not
+    // use. Its own rather than the one beside it because the numbers have to part two answers that the
+    // stand-in's evenly-spaced greys happen to make identical: a mark lit by its fill's lift and a mark
+    // travelled onto the hovered label. Every label here is a channel no fill touches, so a mark carrying a
+    // label's role instead of a fill's light shows as a colour rather than as a number.
+    private static final TabPalette MARK_PALETTE = new TabPalette(
+        CHROME_ACCENT,
+        BACKING,
+        new TabLook(new Color(10, 0, 0), new Color(30, 0, 0)),
+        new TabLook(new Color(50, 0, 0), new Color(0, 60, 0)),
+        new TabHover.MeetingShade(new TabLook(new Color(90, 0, 0), new Color(0, 0, 200))),
+        CLICKED_WASH);
+
     // The two engine roles the map-tab factory reads: the button text every fill is worked out from and an
     // untouched tab reads its label in, and the standard text a lit one switches to. Its chrome accent
     // arrives as an argument instead, so nothing else about the engine's palette reaches this factory.
@@ -193,6 +206,44 @@ final class TabPaletteTest {
                 .isEqualTo(new TabLook(new Color(30, 30, 30), new Color(40, 40, 40)));
             assertThat(PALETTE.resolveLookAtHoverFraction(SELECTED, 0.25f))
                 .isEqualTo(new TabLook(new Color(45, 45, 45), new Color(55, 55, 55)));
+        }
+    }
+
+    @Nested
+    class ResolveMarkTintAtHoverFraction {
+
+        @Test
+        void resolveMarkTintAtHoverFractionLightsTheMarkByTheLiftItsOwnFillWouldHaveTaken() {
+            // The reading exists because a mark covers its fill: the brightening the eye was going to see
+            // has to land on the mark itself. 110 = 30 + (90 - 10), on the label's own channel and nowhere
+            // near the blue a word would have swapped into.
+            assertThat(MARK_PALETTE.resolveMarkTintAtHoverFraction(UNSELECTED, FULLY_HOVERED))
+                .isEqualTo(new Color(110, 0, 0));
+        }
+
+        @Test
+        void resolveMarkTintAtHoverFractionMeasuresBothEndsOffTheLookTheMarkRestsIn() {
+            // A shown cell rests brighter, so it is a shorter lift away from the same hovered shade - and
+            // the light lands on its own label. 40 = 0 + (90 - 50), over a green the resting look has none
+            // of, so a reading that took the resting end for both would show as a red.
+            assertThat(MARK_PALETTE.resolveMarkTintAtHoverFraction(SELECTED, FULLY_HOVERED))
+                .isEqualTo(new Color(40, 60, 0));
+        }
+
+        @Test
+        void resolveMarkTintAtHoverFractionLeavesTheMarkOnItsSettledLabelWithNoPointerOnIt() {
+            // The near end has to be exactly the settled label, or every mark in a row at rest would sit a
+            // shade off the palette it was built from.
+            assertThat(MARK_PALETTE.resolveMarkTintAtHoverFraction(UNSELECTED, 0f))
+                .isEqualTo(new Color(30, 0, 0));
+        }
+
+        @Test
+        void resolveMarkTintAtHoverFractionScalesTheLightByHowFarTheFadeHasRun() {
+            // Part-way in takes part of the light, so a mark travels onto its lit shade rather than
+            // switching to it. 70 = 30 + (90 - 10) / 2.
+            assertThat(MARK_PALETTE.resolveMarkTintAtHoverFraction(UNSELECTED, 0.5f))
+                .isEqualTo(new Color(70, 0, 0));
         }
     }
 

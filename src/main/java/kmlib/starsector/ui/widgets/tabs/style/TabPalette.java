@@ -265,6 +265,28 @@ public record TabPalette(
     }
 
     /**
+     * The shade a mark standing in place of a word wears at that point of the fade: the settled look's own
+     * label lit by whatever light this palette's rule gives a mark. Finished here rather than composed at
+     * each caller, so a control carrying a mark reads one colour off the palette the way one carrying a
+     * word reads its look.
+     *
+     * <p>The label channel rather than the fill's, a mark being what the tab says rather than what it
+     * stands on - but lit rather than travelled, which is the whole of why this is separate from
+     * {@link #resolveLookAtHoverFraction}. See {@link TabHover#computeMarkLight}.
+     *
+     * @param isSelected    whether this is the cell whose content the panel is showing
+     * @param hoverFraction how far the mark has travelled into being pointed at, 0 fully off and 1 fully on
+     * @return the colour to draw the mark in
+     */
+    public Color resolveMarkTintAtHoverFraction(boolean isSelected, float hoverFraction) {
+
+        var settledLook = resolveLook(resolveSettledLookState(isSelected));
+        var markLight = hover.computeMarkLight(settledLook, hoverFraction);
+
+        return settledLook.computeGlowingLook(markLight.colour(), markLight.weight()).label();
+    }
+
+    /**
      * The lift a tab takes from the given momentary state at its full depth. A caller animating the lift
      * scales it down as the pulse decays.
      *

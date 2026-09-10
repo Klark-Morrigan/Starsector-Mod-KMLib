@@ -26,8 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * nothing.
  *
  * <p>Both hover rules are asked, since the two chromes answer the pointer differently - one travels to a
- * named shade and the other lights from where it stands - and a mark reading only the first would sit
- * inert on every panel wearing the second.
+ * named shade and the other lights from where it stands - and a mark is lit rather than recoloured under
+ * either: the shade a strip's tabs travel to is the one a word swaps into, which on a mark would drain its
+ * colour instead of raising it.
  */
 final class BandButtonPlacementTest {
 
@@ -37,13 +38,24 @@ final class BandButtonPlacementTest {
     // Widely-spaced, single-channel shades, so a resolved colour names the role it came from rather than
     // being a number two roles could both have produced.
     private static final Color SETTLED_LABEL = new Color(60, 0, 0);
-    private static final Color HOVERED_LABEL = new Color(200, 0, 0);
+
+    // The lit label, which a mark must never arrive at: a word is parted from its lit self by role, and a
+    // mark taking that swap would change colour instead of brightening. On its own channel, so a mark
+    // wearing it reads as unmistakably that rather than as a number the light could also have produced.
+    private static final Color UNREACHABLE_HOVERED_LABEL = new Color(0, 0, 200);
 
     // The shown look, which a band button never wears: it opens something rather than selecting anything,
     // so a mark arriving at this shade is a look channel that read the button as a tab.
     private static final Color UNREACHABLE_SHOWN_LABEL = new Color(0, 255, 0);
 
-    // Any fill: the mark covers it, so no assertion here reads one.
+    // The two fills the strip's rule parts a resting tab from a pointed-at one by. The mark covers them, so
+    // what reaches an assertion here is not either fill but the light between them - 140 on the red channel,
+    // which is the lift the mark carries in the fill's place.
+    private static final Color SETTLED_FILL = new Color(10, 0, 0);
+    private static final Color HOVERED_FILL = new Color(150, 0, 0);
+
+    // Any fill, on the rule that lights rather than travels: that rule leaves the settled look where it
+    // stands and names its light outright, so no fill of its is read.
     private static final Color UNREAD_FILL = Color.BLACK;
 
     // The momentary lift, at no strength: a band button carries no pulse, so a lift of any strength here
@@ -57,9 +69,9 @@ final class BandButtonPlacementTest {
     private static final TabPalette MEETING_SHADE_PALETTE = new TabPalette(
         STAND_IN_ACCENT,
         STAND_IN_BACKING,
-        new TabLook(UNREAD_FILL, SETTLED_LABEL),
+        new TabLook(SETTLED_FILL, SETTLED_LABEL),
         new TabLook(UNREAD_FILL, UNREACHABLE_SHOWN_LABEL),
-        new TabHover.MeetingShade(new TabLook(UNREAD_FILL, HOVERED_LABEL)),
+        new TabHover.MeetingShade(new TabLook(HOVERED_FILL, UNREACHABLE_HOVERED_LABEL)),
         NO_LIFT);
 
     // The raised button's rule: the pointer adds light to whatever the button already wears, leaving its
@@ -93,8 +105,10 @@ final class BandButtonPlacementTest {
         }
 
         @Test
-        void resolveIconTintBringsTheMarkToTheHoveredShade() {
-
+        void resolveIconTintLightsTheMarkByTheLiftTheFillUnderItWouldHaveShown() {
+            // The strip parts a resting tab from a pointed-at one by brightening the fill and swapping the
+            // label's role. A mark covers the fill, so it takes that lift itself and stays on its own
+            // channel: 200 = 60 + (150 - 10), and never the blue the label would have swapped to.
             assertThat(buildPlacement(MEETING_SHADE_PALETTE, UNTINTED_ICON).resolveIconTint(FULLY_HOVERED))
                 .isEqualTo(new Color(200, 0, 0));
         }

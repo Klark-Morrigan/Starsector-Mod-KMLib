@@ -10,9 +10,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins the two rules a pointer can answer by, and what parts them: a strip's tabs converge on one named
  * shade whatever they were showing, where a row of buttons is lit by light added over the finished tab and
- * so keeps the shown one apart from the rest. Each rule answers on one channel and stays silent on the
- * other, which is what stops a tab being brightened twice; both are pinned at the far end of the fade and
- * part-way along it, since a scaling that ignored the fade is invisible at the ends alone.
+ * so keeps the shown one apart from the rest. Each rule answers on one of the tab's two channels and stays
+ * silent on the other, which is what stops a tab being brightened twice; both are pinned at the far end of
+ * the fade and part-way along it, since a scaling that ignored the fade is invisible at the ends alone.
+ *
+ * <p>The third channel, the light a mark takes, is pinned on both rules for the opposite reason: it is the
+ * one answer neither may stay silent on, a mark covering the fill that would otherwise have shown the
+ * pointer.
  */
 final class TabHoverTest {
 
@@ -71,6 +75,43 @@ final class TabHoverTest {
                     .computeAddedLight(FULLY_HOVERED))
                 .isEqualTo(TabLight.NONE);
         }
+
+        @Test
+        void TabHover_MeetingShade_computeMarkLight_measuresTheLightOutOfTheTwoFills() {
+            // A mark covers its own fill, so the light it takes is the one that fill was going to show:
+            // 200 - 20, 200 - 40, 200 - 60, opaque because a light's alpha is how much of it lands.
+            assertThat(new TabHover.MeetingShade(MEETING_LOOK)
+                    .computeMarkLight(RESTING_LOOK, FULLY_HOVERED))
+                .isEqualTo(new TabLight(new Color(180, 160, 140), FULLY_HOVERED));
+        }
+
+        @Test
+        void TabHover_MeetingShade_computeMarkLight_measuresItAgainstTheLookTheMarkRestsIn() {
+            // A shown cell rests brighter than a resting one, so the same meeting shade is less of a lift
+            // away from it: 200 - 80, 200 - 100, 200 - 120.
+            assertThat(new TabHover.MeetingShade(MEETING_LOOK)
+                    .computeMarkLight(LIT_LOOK, FULLY_HOVERED))
+                .isEqualTo(new TabLight(new Color(120, 100, 80), FULLY_HOVERED));
+        }
+
+        @Test
+        void TabHover_MeetingShade_computeMarkLight_scalesTheLightByHowFarTheFadeHasRun() {
+            // The colour is the whole travel and the weight is where along it the pointer has got, so a
+            // mark brightens on the one axis rather than sliding through shades no palette named.
+            assertThat(new TabHover.MeetingShade(MEETING_LOOK)
+                    .computeMarkLight(RESTING_LOOK, HALF_HOVERED))
+                .isEqualTo(new TabLight(new Color(180, 160, 140), HALF_HOVERED));
+        }
+
+        @Test
+        void TabHover_MeetingShade_computeMarkLight_givesNoLightWhereTheHoveredFillIsNoBrighter() {
+            // A chrome that darkens under the pointer parts its states by something other than a glow, and
+            // a mark cannot show what its fill does not do - so the honest answer is no light at all.
+            assertThat(new TabHover.MeetingShade(RESTING_LOOK)
+                    .computeMarkLight(LIT_LOOK, FULLY_HOVERED)
+                    .colour())
+                .isEqualTo(new Color(0, 0, 0));
+        }
     }
 
     @Nested
@@ -104,6 +145,15 @@ final class TabHoverTest {
             assertThat(new TabHover.AddedGlow(GLOW_COLOUR, GLOW_AMOUNT)
                     .computeAddedLight(HALF_HOVERED))
                 .isEqualTo(new TabLight(GLOW_COLOUR, GLOW_AMOUNT / 2f));
+        }
+
+        @Test
+        void TabHover_AddedGlow_computeMarkLight_isTheVeryLightTheTabBesideItTakes() {
+            // A chrome that brightens by adding lights a mark with the pass its tabs already run, so there
+            // is nothing separate to work out and the settled look it rests in does not enter into it.
+            assertThat(new TabHover.AddedGlow(GLOW_COLOUR, GLOW_AMOUNT)
+                    .computeMarkLight(RESTING_LOOK, HALF_HOVERED))
+                .isEqualTo(new TabLight(new Color(100, 200, 40), 0.25f));
         }
 
         @Test

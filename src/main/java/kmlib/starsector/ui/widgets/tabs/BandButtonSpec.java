@@ -28,8 +28,8 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * rather than one of its tabs, so a mark serves where a label would only repeat what pressing it does;
  * a button showing one carries an empty label and states its width through the style's box, since an
  * image is sized by the room it is given rather than measured like text. Filling the box, it is also
- * what answers the pointer: the mark is washed by the style's own label shade at the button's fade
- * (see {@link BandButtonPlacement#resolveIconTint}), the chrome beneath being covered by it.
+ * what answers the pointer: the mark is lit at the button's fade by the light its own fill would have
+ * taken (see {@link BandButtonPlacement#resolveIconTint}), the chrome beneath being covered by it.
  *
  * @param spec  the one-cell tabs control the button is expressed as - its word, its action, and no
  *              selection
