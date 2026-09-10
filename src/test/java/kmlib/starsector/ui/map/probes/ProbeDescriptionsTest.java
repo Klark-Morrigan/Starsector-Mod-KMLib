@@ -31,13 +31,16 @@ class ProbeDescriptionsTest {
 
         @Test
         void describeUpToCapKeepsTheOrderItWasGiven() {
+
             assertThat(ProbeDescriptions.describeUpToCap(
-                    List.of("outer", "middle", "inner"), item -> "<" + item + ">"))
+                    List.of("outer", "middle", "inner"),
+                    item -> "<" + item + ">"))
                 .containsExactly("<outer>", "<middle>", "<inner>");
         }
 
         @Test
         void describeUpToCapDescribesNothingForNoItems() {
+
             assertThat(ProbeDescriptions.describeUpToCap(List.of(), Object::toString))
                 .isEmpty();
         }

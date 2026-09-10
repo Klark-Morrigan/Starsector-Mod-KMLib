@@ -58,7 +58,11 @@ public final class KmLogging {
      * @param loggerRoot the mod's top package (e.g. {@code "kmu"})
      * @param fieldId    the LunaSettings field holding the level name
      */
-    public static void bindToLunaSetting(String modId, String loggerRoot, String fieldId) {
+    public static void bindToLunaSetting(
+            String modId,
+            String loggerRoot,
+            String fieldId) {
+
         bindToLunaSetting(modId, loggerRoot, fieldId, DEFAULT_LEVEL);
     }
 
@@ -81,7 +85,9 @@ public final class KmLogging {
             String loggerRoot,
             String fieldId,
             Level fallback) {
+
         var binding = new LunaLogBinding(modId, loggerRoot, fieldId, fallback);
+
         LunaSettings.addSettingsListener(binding);
         binding.applyConfiguredLevel();
     }
@@ -90,16 +96,22 @@ public final class KmLogging {
     // applying a level does to log4j stays separable from the LunaLib binding
     // that decides which level it is.
     static void applyLevel(String loggerRoot, String levelName, Level fallback) {
-        Logger.getLogger(loggerRoot).setLevel(resolveLevel(levelName, fallback));
+
+        Logger
+            .getLogger(loggerRoot)
+            .setLevel(resolveLevel(levelName, fallback));
     }
 
     // Null-safe, whitespace-tolerant log4j level-name parse, so a value read
     // from a settings dropdown survives any padding around the stored entry.
     private static Level resolveLevel(String levelName, Level fallback) {
+
         if (levelName == null) {
             return fallback;
         }
-        return Level.toLevel(levelName.trim(), fallback);
+        return Level.toLevel(
+            levelName.trim(),
+            fallback);
     }
 
     // Live binding: re-reads and re-applies the level whenever the player
@@ -111,6 +123,7 @@ public final class KmLogging {
         private final Level fallback;
 
         LunaLogBinding(String modId, String loggerRoot, String fieldId, Level fallback) {
+
             this.modId = modId;
             this.loggerRoot = loggerRoot;
             this.fieldId = fieldId;
@@ -119,6 +132,7 @@ public final class KmLogging {
 
         @Override
         public void settingsChanged(String changedModId) {
+
             // LunaLib notifies every listener for every mod's change; retune
             // only when this mod's own settings changed.
             if (modId.equals(changedModId)) {
@@ -127,7 +141,11 @@ public final class KmLogging {
         }
 
         void applyConfiguredLevel() {
-            applyLevel(loggerRoot, LunaSettings.getString(modId, fieldId), fallback);
+
+            applyLevel(
+                loggerRoot,
+                LunaSettings.getString(modId, fieldId),
+                fallback);
         }
     }
 }

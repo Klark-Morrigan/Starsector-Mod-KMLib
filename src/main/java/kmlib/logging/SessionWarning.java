@@ -65,12 +65,15 @@ public final class SessionWarning {
      *                throwing
      */
     public void warnOnce(String message, Throwable failure) {
+
         if (hasWarnedThisSession) {
             return;
         }
         hasWarnedThisSession = true;
+
         if (failure == null) {
             logger.warn(message);
+
         } else {
             logger.warn(message, failure);
         }

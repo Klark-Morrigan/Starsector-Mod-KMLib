@@ -80,6 +80,7 @@ class SubtreeSearchTest {
 
         @Test
         void findFirstUnderAnswersNothingWithNoRoot() {
+
             assertThat(SubtreeSearch.<Object>findFirstUnder(NO_ROOT, component -> ANSWER))
                 .isNull();
         }
@@ -121,6 +122,9 @@ class SubtreeSearchTest {
     // A read that answers for one component and nothing for the rest, which is the shape both
     // callers have: most of a widget tree does not carry what they are looking for.
     private static Function<Object, Object> readAnswerOn(Object targetFake) {
-        return component -> component == targetFake ? ANSWER : null;
+
+        return component -> component == targetFake
+            ? ANSWER
+            : null;
     }
 }

@@ -155,12 +155,14 @@ class MapSurfaceBoundsTest {
 
         @Test
         void selectSurfaceAreaFindsNothingWhenTheTabHasNoChildren() {
+
             assertThat(MapSurfaceBounds.selectSurfaceArea(TAB_BOX, List.of()))
                 .isNull();
         }
 
         @Test
         void selectSurfaceAreaFindsNothingWhenTheTabWasNeverPositioned() {
+
             assertThat(MapSurfaceBounds.selectSurfaceArea(
                     null,
                     List.of(createLeafChild(SURFACE_BOX))))
@@ -187,6 +189,7 @@ class MapSurfaceBoundsTest {
 
         @Test
         void collectDrawnBoxesOfReturnsEveryDrawnChildBoxInTheOrderGiven() {
+
             var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
             var tabStripWidgetFake = createDrawnWidgetFake(TAB_STRIP_BOX);
 
@@ -257,6 +260,7 @@ class MapSurfaceBoundsTest {
 
         @Test
         void collectDrawnBoxesOfReturnsNothingForATabWithNoChildren() {
+
             assertThat(MapSurfaceBounds.collectDrawnBoxesOf(List.of()))
                 .isEmpty();
         }

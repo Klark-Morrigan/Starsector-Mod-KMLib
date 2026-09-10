@@ -31,8 +31,10 @@ final class KmLoggingTest {
 
     @Nested
     class ApplyLevel {
+
         @Test
         void named_level_is_inherited_by_descendant_loggers() {
+
             var descendant = Logger.getLogger("kmlibtest_named.child.grandchild");
 
             KmLogging.applyLevel("kmlibtest_named", "DEBUG", Level.INFO);
@@ -43,6 +45,7 @@ final class KmLoggingTest {
 
         @Test
         void surrounding_whitespace_on_the_name_is_tolerated() {
+
             var descendant = Logger.getLogger("kmlibtest_pad.child");
 
             KmLogging.applyLevel("kmlibtest_pad", "  WARN  ", Level.INFO);
@@ -53,6 +56,7 @@ final class KmLoggingTest {
 
         @Test
         void null_name_falls_back_to_the_default() {
+
             var descendant = Logger.getLogger("kmlibtest_null.child");
 
             KmLogging.applyLevel("kmlibtest_null", null, Level.ERROR);
@@ -63,6 +67,7 @@ final class KmLoggingTest {
 
         @Test
         void unrecognised_name_falls_back_to_the_default() {
+
             var descendant = Logger.getLogger("kmlibtest_bad.child");
 
             KmLogging.applyLevel("kmlibtest_bad", "nonsense", Level.ERROR);
@@ -73,6 +78,7 @@ final class KmLoggingTest {
 
         @Test
         void loggers_outside_the_subtree_are_not_affected() {
+
             var sibling = Logger.getLogger("kmlibtest_sibling_outside");
             var siblingBefore = sibling.getEffectiveLevel();
 
@@ -85,6 +91,7 @@ final class KmLoggingTest {
 
     @Nested
     class DefaultLevel {
+
         @Test
         void library_default_level_is_warn() {
             // Pins the shared fallback used by the no-default bindToLunaSetting
@@ -96,6 +103,7 @@ final class KmLoggingTest {
 
     @Nested
     class SettingsChanged {
+
         @Test
         void binding_ignores_changes_to_other_mods_settings() {
             // A change notification carrying a different mod id must not retune

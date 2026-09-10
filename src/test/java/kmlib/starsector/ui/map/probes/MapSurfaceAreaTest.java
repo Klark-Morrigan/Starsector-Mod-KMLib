@@ -29,6 +29,7 @@ class MapSurfaceAreaTest {
 
         @Test
         void containsPointIsTrueInsideTheSurfaceAndClearOfTheChrome() {
+
             assertThat(VISOR_AREA.containsPoint(900f, 600f))
                 .isTrue();
         }
@@ -51,6 +52,7 @@ class MapSurfaceAreaTest {
 
         @Test
         void containsPointIsTrueWhenTheTabDrawsNoChromeAtAll() {
+
             var bareArea = new MapSurfaceArea(SURFACE_BOX, List.of());
 
             assertThat(bareArea.containsPoint(900f, 1070f))

@@ -107,6 +107,7 @@ class EmbeddedMapTest {
 
         @Test
         void resolveComponentAnswersNothingForAMapThatIsNotAComponent() {
+
             assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveComponent())
                 .isNull();
         }

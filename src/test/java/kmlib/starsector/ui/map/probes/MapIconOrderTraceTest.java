@@ -95,6 +95,7 @@ class MapIconOrderTraceTest {
 
         @Test
         void readTerrainIconsReportsATerrainHoldingNoPlugin() {
+
             assertThat(MapIconOrderTrace.readTerrainIcons(
                     buildIconMap(buildTerrainMock("slipstream", null))))
                 .containsExactly(new TerrainIconReading(0, "slipstream", "none"));
@@ -102,6 +103,7 @@ class MapIconOrderTraceTest {
 
         @Test
         void readTerrainIconsReportsNothingForAMapHoldingNoIcons() {
+
             assertThat(MapIconOrderTrace.readTerrainIcons(new LinkedHashMap<>()))
                 .isEmpty();
         }

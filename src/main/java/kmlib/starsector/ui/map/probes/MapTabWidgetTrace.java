@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.logging.SessionWarning;
+import kmlib.logging.TracedLine;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.geometry.Rectangles;
 import kmlib.starsector.ui.coreui.CoreUiTree;
@@ -13,6 +14,8 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Describes the vanilla widgets the cursor is currently inside on the map screen, so an overlay that
@@ -49,10 +52,15 @@ import java.util.List;
  *
  * <p>Describes rather than logs. A logger is named after its class, so a line written here would sit
  * outside every mod's logger subtree and answer to no mod's verbosity setting; handing the
- * description back instead lets the caller log it as its own, under its own switch. That also leaves
- * the caller to decide how often to say it - the answer changes only when the cursor crosses a
- * widget edge, and a caller in a render pass will want to notice that rather than repeat itself
- * sixty times a second.
+ * description back instead lets the caller log it as its own, under its own switch.
+ *
+ * <p>Hands back a {@link TracedLine} rather than bare text, because the two halves of this reading
+ * move at different rates. Which widgets contain the cursor changes only when the cursor crosses a
+ * widget edge; the boxes those widgets occupy change whenever anything moves beneath it, a list
+ * scrolling under a still cursor being enough. Keying on the widgets and their parentage while
+ * printing their boxes is what lets a caller in a render pass report the crossings without also
+ * reporting every scrolled pixel. The boxes of the tab, of the surface pick and of the direct
+ * children stay in the key: those hold still, and a change in one is the news this exists for.
  */
 public final class MapTabWidgetTrace {
 
@@ -85,20 +93,21 @@ public final class MapTabWidgetTrace {
      * over the surface stands for the boxes of what it draws a level further down.
      *
      * <p>Costs a tree walk and builds a string, so a caller in a render pass should ask only while
-     * it intends to report the answer. The cursor position is deliberately left out: a caller
-     * reporting only when the answer changes would otherwise log on every pixel of mouse movement,
-     * and each widget's box is in the line anyway.
+     * it intends to report the answer. The cursor position is deliberately left out of both halves:
+     * keyed on it, the line would report on every pixel of mouse movement, and each widget's box is
+     * in the text anyway.
      *
-     * @return a one-line description for a log, or null when there is no tab to walk or the reach
-     *         into the widget tree failed - neither of which the caller can act on differently
+     * @return the line and what decides whether it is news, or null when there is no tab to walk or
+     *         the reach into the widget tree failed - neither of which the caller can act on
+     *         differently
      */
-    public static String describeWidgetsUnderCursor() {
+    public static TracedLine describeWidgetsUnderCursor() {
         try {
             var currentTab = CoreUiTree.resolveCurrentTab();
             if (currentTab == null) {
                 return null;
             }
-            var widgetsUnderCursor = new ArrayList<String>();
+            var widgetsUnderCursor = new ArrayList<UnderCursorWidget>();
             collectWidgetsContaining(
                 currentTab,
                 null,
@@ -109,11 +118,19 @@ public final class MapTabWidgetTrace {
 
             var mapTab = ShownMapTab.resolveShownMapTab();
             var mapTabChildren = mapTab == null ? List.of() : CoreUiTree.readChildrenOf(mapTab);
-            return "tab=" + describeTab(currentTab)
+
+            // The half that holds still: everything but the walk beneath the cursor. Built once and
+            // used in both, so the key and the text cannot drift into describing different trees.
+            var settledHalf = "tab=" + describeTab(currentTab)
                 + " mapTab=" + (mapTab == null ? "none" : describeTab(mapTab))
                 + " surface=" + describeSurfacePickedFrom(mapTab, mapTabChildren)
-                + " children=" + describeDirectChildren(mapTabChildren)
-                + " under=" + widgetsUnderCursor;
+                + " children=" + describeDirectChildren(mapTabChildren);
+
+            return new TracedLine(
+                settledHalf + " under=" + describeEach(
+                    widgetsUnderCursor, UnderCursorWidget::describeIdentity),
+                settledHalf + " under=" + describeEach(
+                    widgetsUnderCursor, UnderCursorWidget::describeFully));
         } catch (Throwable failure) {
             // Swallowed rather than raised: this is a diagnostic, and one that cannot read the tree
             // must not take down the render pass its caller is in the middle of.
@@ -158,7 +175,7 @@ public final class MapTabWidgetTrace {
             int depth,
             float cursorX,
             float cursorY,
-            List<String> widgetsUnderCursor) {
+            List<UnderCursorWidget> widgetsUnderCursor) {
 
         if (component == null || depth > ProbeLimits.MAX_SEARCH_DEPTH) {
             return;
@@ -168,7 +185,12 @@ public final class MapTabWidgetTrace {
             if (isWidgetUnderCursor(box, widget.getOpacity(), cursorX, cursorY)
                     && widgetsUnderCursor.size() < ProbeLimits.MAX_REPORTED_ITEMS) {
 
-                widgetsUnderCursor.add(describeWidget(widget, box, depth, parent));
+                widgetsUnderCursor.add(new UnderCursorWidget(
+                    depth,
+                    widget.getClass().getName(),
+                    parent == null ? "none" : parent.getClass().getName(),
+                    box,
+                    widget.getOpacity()));
             }
         }
         for (var child : CoreUiTree.readChildrenOf(component)) {
@@ -177,18 +199,15 @@ public final class MapTabWidgetTrace {
         }
     }
 
-    private static String describeWidget(
-            UIComponentAPI widget,
-            Rectangle box,
-            int depth,
-            Object parent) {
+    // Renders the walk through one of the widget's two descriptions. Printed as a list so the line
+    // keeps the bracketed, comma-joined shape the rest of it is written in.
+    private static String describeEach(
+            List<UnderCursorWidget> widgetsUnderCursor,
+            Function<UnderCursorWidget, String> describeWidget) {
 
-        return "d" + depth
-            + " " + widget.getClass().getName()
-            + "[" + Rectangles.describe(box)
-            + " opacity=" + widget.getOpacity()
-            + " parent=" + (parent == null ? "none" : parent.getClass().getName())
-            + "]";
+        return widgetsUnderCursor.stream()
+            .map(describeWidget)
+            .collect(Collectors.joining(", ", "[", "]"));
     }
 
     private static String describeTab(Object currentTab) {
@@ -235,5 +254,43 @@ public final class MapTabWidgetTrace {
     private static void warnOnce(Throwable failure) {
         WARNING.warnOnce("Could not walk the map tab's widget tree by reflection; "
             + "the widget trace will describe nothing this session.", failure);
+    }
+
+    /**
+     * One drawn widget the cursor was found inside, held rather than rendered so the walk can be
+     * described twice over without being taken twice.
+     *
+     * <p>The two descriptions differ in what they leave out, and that difference is the point: a
+     * widget's place in the tree is what the trace is about, while its box is detail that moves
+     * without that place changing.
+     *
+     * @param depth            how far below the walked tab the widget sits
+     * @param widgetClassName  the widget's own class, the name the tree is read by
+     * @param parentClassName  the enclosing widget's class, or "none" at the root of the walk
+     * @param box              the widget's drawn box in UI coordinates
+     * @param opacity          the widget's own opacity, above the gate that admitted it here
+     */
+    record UnderCursorWidget(
+            int depth,
+            String widgetClassName,
+            String parentClassName,
+            Rectangle box,
+            float opacity) {
+
+        // What the trace is about: which widget, where in the tree. Two readings agreeing on this
+        // are the same news however far the boxes beneath the cursor have travelled since.
+        String describeIdentity() {
+            return "d" + depth + " " + widgetClassName + "[parent=" + parentClassName + "]";
+        }
+
+        // The whole reading, box and opacity included, as it stood when the identity above moved.
+        String describeFully() {
+            return "d" + depth
+                + " " + widgetClassName
+                + "[" + Rectangles.describe(box)
+                + " opacity=" + opacity
+                + " parent=" + parentClassName
+                + "]";
+        }
     }
 }
