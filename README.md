@@ -242,7 +242,10 @@ No Starsector API on the signature.
   seen rather than dropped. Also the level a section states it is only worth
   timing at, against the level a bound profiler is keeping: a section on a
   per-item path opens silently under a capture taken to read whole frames, so it
-  costs a comparison rather than a clock read per item.
+  costs a comparison rather than a clock read per item. What each level is worth
+  asking for, what a section may state about itself, and how a capture is read
+  back are in
+  [Profiling](src/main/java/kmlib/profiling/README.md).
 - [`profiling/budget/`](src/main/java/kmlib/profiling/budget/) - what one call
   of a section is allowed: an amount of a counter, a duration read as the call
   closes, or both. A call that breaks one is warned about once and takes the
