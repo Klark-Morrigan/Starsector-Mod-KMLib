@@ -240,6 +240,33 @@ public final class Colours {
             raiseAlphaToward(base.getAlpha(), light.getAlpha(), lightWeight));
     }
 
+    /**
+     * The light that turns {@code base} into {@code brightened} - the inverse of {@link #addOverlay} at
+     * full weight, so adding the result back onto the base reproduces the brightened colour. For a caller
+     * that has two settled shades off one axis and wants the pass between them as a value it can lay on
+     * something else.
+     *
+     * <p>Channels the brightened colour is darker on come back at nothing rather than negative: light only
+     * ever adds, so there is no light that could carry a colour down. Two shades that part in that
+     * direction therefore give back no light at all, which is the honest answer - what separates them is
+     * not a glow.
+     *
+     * <p>Opaque, whatever either side's alpha, because it is a light rather than a surface: a light's own
+     * alpha scales how much of it lands, and one inheriting a see-through base would arrive at a fraction
+     * of the difference it was measured as.
+     *
+     * @param brightened the lit shade, the far end of the pass
+     * @param base       the unlit shade the light was added to
+     * @return the light between them, opaque
+     */
+    public static Color subtractLight(Color brightened, Color base) {
+        return new Color(
+            subtractChannel(brightened.getRed(), base.getRed()),
+            subtractChannel(brightened.getGreen(), base.getGreen()),
+            subtractChannel(brightened.getBlue(), base.getBlue()),
+            MAX_CHANNEL_VALUE);
+    }
+
     // Adds a weighted share of one 0-255 channel onto another, saturating rather than wrapping.
     private static int addChannel(int base, int added, float addedWeight) {
         return roundToChannel(base + added * addedWeight);
@@ -250,6 +277,12 @@ public final class Colours {
     // surface leaves it solid rather than eating a hole in it.
     private static int raiseAlphaToward(int baseAlpha, int lightAlpha, float lightWeight) {
         return roundToChannel(baseAlpha + Math.max(0, lightAlpha - baseAlpha) * lightWeight);
+    }
+
+    // The share of one 0-255 channel another stands above it, floored at nothing: a light cannot take a
+    // channel down, so a base already brighter than the lit shade contributes none of it.
+    private static int subtractChannel(int brightened, int base) {
+        return roundToChannel(Math.max(0, brightened - base));
     }
 
     // Scales one 0-255 channel by the factor.

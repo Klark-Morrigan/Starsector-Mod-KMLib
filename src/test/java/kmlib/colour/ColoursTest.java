@@ -481,4 +481,38 @@ final class ColoursTest {
             assertThat(lit).isEqualTo(new Color(20, 30, 40, 0));
         }
     }
+
+    @Nested
+    class SubtractLight {
+
+        @Test
+        void gives_back_the_light_that_addOverlay_would_add_in_full() {
+            // The round trip is the whole contract: a caller measures the pass between two settled shades
+            // here and lays it on something else, so what comes back has to be what the additive blend
+            // takes from one to the other.
+            var light = Colours.subtractLight(new Color(200, 160, 120), new Color(20, 40, 60));
+
+            assertThat(light.getRed()).isEqualTo(180);
+            assertThat(light.getGreen()).isEqualTo(120);
+            assertThat(light.getBlue()).isEqualTo(60);
+        }
+
+        @Test
+        void gives_back_nothing_on_a_channel_the_lit_shade_is_darker_on() {
+            // Light only ever adds, so there is no light that could carry a channel down - and a negative
+            // one handed to Color would throw rather than dim anything.
+            var light = Colours.subtractLight(new Color(200, 10, 120), new Color(20, 40, 60));
+
+            assertThat(light.getGreen()).isEqualTo(0);
+        }
+
+        @Test
+        void comes_back_opaque_whatever_either_side_was_drawn_at() {
+            // A light's own alpha scales how much of it lands, so one inheriting a see-through surface's
+            // alpha would arrive at a fraction of the difference it was measured as.
+            var light = Colours.subtractLight(new Color(200, 160, 120, 40), new Color(20, 40, 60, 0));
+
+            assertThat(light.getAlpha()).isEqualTo(255);
+        }
+    }
 }
