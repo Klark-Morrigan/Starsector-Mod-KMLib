@@ -28,50 +28,73 @@ final class SystemMotionTrackerTest {
 
         @Test
         void reportsASelectedSystemThatMovedBetweenPolls() {
+
             var tracker = new SystemMotionTracker();
             var systemMock = buildSystemAt("mover", 0, 0);
             var sectorMock = buildSectorOf(systemMock);
 
             tracker.updateMovingSystems(sectorMock, acceptAll());
-            when(systemMock.getLocation()).thenReturn(new Vector2f(500, 0));
+
+            when(systemMock.getLocation())
+                .thenReturn(new Vector2f(500, 0));
+
             var hasChanged = tracker.updateMovingSystems(sectorMock, acceptAll());
 
-            assertThat(hasChanged).isTrue();
-            assertThat(tracker.getMovingSystemIds()).containsExactly("mover");
+            assertThat(hasChanged)
+                .isTrue();
+            assertThat(tracker.getMovingSystemIds())
+                .containsExactly("mover");
         }
 
         @Test
         void neverTracksASystemThePredicateRejects() {
+
             var tracker = new SystemMotionTracker();
             var systemMock = buildSystemAt("excluded", 0, 0);
             var sectorMock = buildSectorOf(systemMock);
 
             tracker.updateMovingSystems(sectorMock, acceptNone());
-            when(systemMock.getLocation()).thenReturn(new Vector2f(500, 0));
+
+            when(systemMock.getLocation())
+                .thenReturn(new Vector2f(500, 0));
+
             var hasChanged = tracker.updateMovingSystems(sectorMock, acceptNone());
 
-            assertThat(hasChanged).isFalse();
-            assertThat(tracker.getMovingSystemIds()).isEmpty();
+            assertThat(hasChanged)
+                .isFalse();
+            assertThat(tracker.getMovingSystemIds())
+                .isEmpty();
         }
 
         @Test
         void aNullSectorReportsNoChange() {
+
             var tracker = new SystemMotionTracker();
 
-            assertThat(tracker.updateMovingSystems(null, acceptAll())).isFalse();
+            assertThat(tracker.updateMovingSystems(null, acceptAll()))
+                .isFalse();
         }
     }
 
     private static SectorAPI buildSectorOf(StarSystemAPI system) {
+
         var sectorMock = mock(SectorAPI.class);
-        when(sectorMock.getStarSystems()).thenReturn(List.of(system));
+
+        when(sectorMock.getStarSystems())
+            .thenReturn(List.of(system));
+
         return sectorMock;
     }
 
     private static StarSystemAPI buildSystemAt(String id, float x, float y) {
+
         var systemMock = mock(StarSystemAPI.class);
-        when(systemMock.getId()).thenReturn(id);
-        when(systemMock.getLocation()).thenReturn(new Vector2f(x, y));
+
+        when(systemMock.getId())
+            .thenReturn(id);
+        when(systemMock.getLocation())
+            .thenReturn(new Vector2f(x, y));
+            
         return systemMock;
     }
 
