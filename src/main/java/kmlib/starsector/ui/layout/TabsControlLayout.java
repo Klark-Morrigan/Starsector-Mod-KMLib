@@ -103,9 +103,8 @@ public final class TabsControlLayout {
 
         // Sized at the size and in the box the style states, not at the baselines below: a header wears
         // its host's look, so two hosts differing in either size their tabs to what each will actually
-        // draw. The face reaches the measurement anyway (the caller loads its measurer from the style);
-        // taking the size off the same value is what stops a tab being sized in one face and lettered in
-        // another.
+        // draw. The measurement handed in is already bound to that style's face; taking the size off the
+        // same value is what stops a tab being sized in one face and lettered in another.
         //
         // Built once and handed to both passes rather than composed in each: the row's width and its
         // per-tab split are the same rule read twice, and two builds are two chances for them to differ.

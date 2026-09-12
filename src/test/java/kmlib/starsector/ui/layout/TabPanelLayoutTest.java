@@ -9,6 +9,7 @@ import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
+import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 import kmlib.starsector.ui.widgets.tabs.BandButtonSpec;
 import kmlib.starsector.ui.widgets.tabs.HeaderBandSpec;
@@ -40,6 +41,10 @@ final class TabPanelLayoutTest {
 
     // Four width units per character, so a label's measured width is its length times four.
     private static final float WIDTH_PER_CHAR = 4f;
+
+    // A tab-face width far off the body one, so a half measured through the wrong face lands nowhere near
+    // its expected multiple rather than within a rounding of it.
+    private static final float TAB_WIDTH_PER_CHAR = 20f;
 
     // A screen and placement chosen so every derived edge is an integer: the row hangs from 950, the box
     // from the row's bottom edge, content inset by a 2px border, tabs one TAB_HEIGHT tall snapped past the
@@ -95,6 +100,11 @@ final class TabPanelLayoutTest {
     // faces being told apart is pinned where that is the point under test.
     private final StripTextMeasurers measurersFake = new StripTextMeasurers(
         new LineWidthMeasurerFake(WIDTH_PER_CHAR),
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR));
+
+    // The pair with its two faces told apart, for the case whose point is which half is charged which.
+    private final StripTextMeasurers partedFacesMeasurersFake = new StripTextMeasurers(
+        new LineWidthMeasurerFake(TAB_WIDTH_PER_CHAR),
         new LineWidthMeasurerFake(WIDTH_PER_CHAR));
 
     private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
@@ -186,6 +196,44 @@ final class TabPanelLayoutTest {
                 .isCloseTo(22f + FIRST_TAB_WIDTH, within(TOLERANCE));
             assertThat(second.width())
                 .isCloseTo(SECOND_TAB_WIDTH, within(TOLERANCE));
+        }
+
+        @Test
+        void computePlacementSnapsTheHeaderInTheTabFaceAndTheBodyInTheBodyFace() {
+            // The panel letters its band and its body in different atlases, so each half has to be charged
+            // its own. One measurement spent on both sizes whichever half it does not belong to against
+            // letters that half never wears - and the box, framed to the widest body row, carries that
+            // error into the panel's width. The two faces are told far apart here so a half measured
+            // through the wrong one lands nowhere near its expectation.
+            var placement = TabPanelLayout.computePlacement(
+                SCREEN_HEIGHT,
+                new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
+                new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
+                new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
+                List.of(LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE)),
+                partedFacesMeasurersFake,
+                TabPanelViewState.RESTING);
+
+            // "No Layer" is 8 chars at the tab face's own width, plus the tab padding and the minimum floor.
+            assertThat(placement.tabsHeader().segments().get(0).width())
+                .as("a header tab is snapped in the face the band letters in")
+                .isCloseTo(
+                    Math.max(
+                        8 * TAB_WIDTH_PER_CHAR + TabsControlLayout.TAB_TEXT_PADDING,
+                        TabsControlLayout.MIN_TAB_WIDTH),
+                    within(TOLERANCE));
+
+            // "Muted" is 5 chars at the body face's width; the row is the tick box, the gap, then the label,
+            // and the box adds the body inset on each side plus the border on both.
+            assertThat(placement.body().box().width())
+                .as("the box is framed to a body row snapped in the face the body letters in")
+                .isCloseTo(
+                    ControlStripLayout.CONTROL_ROW_HEIGHT
+                        + RowColumnSpec.CONTROL_ROW.leadingLabelGap()
+                        + 5 * WIDTH_PER_CHAR
+                        + 2f * ControlStripLayout.BODY_PADDING
+                        + 2f * BORDER_WIDTH,
+                    within(TOLERANCE));
         }
 
         @Test

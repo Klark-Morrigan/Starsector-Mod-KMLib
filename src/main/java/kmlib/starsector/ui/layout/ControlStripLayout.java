@@ -104,7 +104,7 @@ public final class ControlStripLayout {
             rowHeights.add(measureRowHeight(spec));
             contentWidth = Math.max(
                 contentWidth,
-                rowWidth + measureTrailingWidth(spec, measurers.bodyFaceMeasurer()));
+                addTrailingWidthTo(rowWidth, spec, measurers));
         }
         // A divider carries no intrinsic width here (it measures zero) - it is stretched to the full
         // framed body at placement time, once the host has framed a body rectangle, so it never drives
@@ -406,18 +406,30 @@ public final class ControlStripLayout {
         return 0f;
     }
 
-    // The width one column of a side-by-side group needs: its widest control row, each sized as the top-
-    // level strip sizes it (its snapped row plus any trailing caption), so a column reserves exactly the
-    // room the same controls take when stacked at the top level. An empty column needs no width.
+    // The width one column of a side-by-side group needs: its widest control row, each charged as the
+    // top-level strip charges it, so a column reserves exactly the room the same controls take when
+    // stacked at the top level. An empty column needs no width.
     private static float measureColumnWidth(List<ControlSpec> specs, StripTextMeasurers measurers) {
         var widest = 0f;
         for (var spec : specs) {
             widest = Math.max(
                 widest,
-                measureRowWidth(spec, measurers)
-                    + measureTrailingWidth(spec, measurers.bodyFaceMeasurer()));
+                addTrailingWidthTo(measureRowWidth(spec, measurers), spec, measurers));
         }
         return widest;
+    }
+
+    // A row's snapped width plus whatever trailing caption sits past it - the full width the row is
+    // charged. The one rule for what a control costs all told, so the strip's own content width and a
+    // side-by-side column's width cannot come to disagree about it. Takes the snapped width rather than
+    // measuring it, since a caller holding one already has it and a second measurement is only a chance
+    // for the two to differ.
+    private static float addTrailingWidthTo(
+            float rowWidth,
+            ControlSpec spec,
+            StripTextMeasurers measurers) {
+
+        return rowWidth + measureTrailingWidth(spec, measurers.bodyFaceMeasurer());
     }
 
     // The height one column of a side-by-side group stands: its controls stacked with a gap between
