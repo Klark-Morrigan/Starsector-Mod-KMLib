@@ -12,8 +12,8 @@ import kmlib.starsector.markets.colonies.Colonies;
 import kmlib.starsector.markets.colonies.Colony;
 import kmlib.starsector.markets.colonies.KnownColonyReader;
 import kmlib.starsector.markets.colonies.SystemColonies;
+import kmlib.starsector.systems.SectorPassIndex;
 import kmlib.starsector.systems.StarSystems;
-import kmlib.starsector.systems.SystemColoniesIndex;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,7 +89,7 @@ import java.util.Set;
  *
  * <p>That colony read walks the whole system, so a caller reading several surfaces off each system
  * of a sector would pay the walk once per surface. A reader built for such a pass therefore takes
- * the pass's {@link SystemColoniesIndex} and shares one walk with everything else the pass reads.
+ * the pass's {@link SectorPassIndex} and shares one walk with everything else the pass reads.
  * A reader built without one walks afresh on every ask, which is what a reader outliving any pass
  * has to do: an index is a snapshot of the sector the pass that opened it saw, so the shared
  * instance a hover box holds would otherwise answer off a sector that has since moved on.
@@ -111,7 +111,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // The pass's shared colony walk, or null for a reader no pass owns. Nullable rather than
     // split into two types because the two readers differ in nothing a caller can see: same
     // contest, same claimant, same standings, off a walk that is either shared or repeated.
-    private final SystemColoniesIndex coloniesIndex;
+    private final SectorPassIndex sectorIndex;
 
     // What the player may be told about the colonies met on the walk. Applied to no part of the
     // contest - see readClaimedMarkets - and spent only so each market's breakdown can say
@@ -136,18 +136,18 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
      *
      * @param knownColonyReader what this reader asks which of the colonies it meets the player may
      *                          be told about, carried onto each market's breakdown; null names none
-     * @param coloniesIndex     the pass's colony index, discarded with the pass that opened it;
+     * @param sectorIndex     the pass's colony index, discarded with the pass that opened it;
      *                          null reads each system afresh, as the no-index reader does
      */
     public VanillaClaimBreakdownReader(
             KnownColonyReader knownColonyReader,
-            SystemColoniesIndex coloniesIndex) {
+            SectorPassIndex sectorIndex) {
 
         this.knownColonyReader = knownColonyReader == null
             ? KnownColonyReader.NOTHING_KNOWN
             : knownColonyReader;
 
-        this.coloniesIndex = coloniesIndex;
+        this.sectorIndex = sectorIndex;
     }
 
     @Override
@@ -490,10 +490,10 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // change nothing but what the answer cost: an index memoises the very read below it.
     private Colonies readColonies(StarSystemAPI system) {
 
-        if (coloniesIndex == null) {
+        if (sectorIndex == null) {
             return SystemColonies.readColoniesIn(Global.getSector(), system);
         }
-        return coloniesIndex.readColoniesIn(system);
+        return sectorIndex.readColoniesIn(system);
     }
 
     /**

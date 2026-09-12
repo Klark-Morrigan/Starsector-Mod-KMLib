@@ -6,7 +6,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.markets.colonies.Colonies;
 import kmlib.starsector.markets.colonies.KnownColonyReader;
-import kmlib.starsector.systems.SystemColoniesIndex;
+import kmlib.starsector.systems.SectorPassIndex;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,7 +93,7 @@ final class VanillaClaimBreakdownReaderTest {
             assertThat(source
                     .openReaderOver(
                         EVERY_COLONY_KNOWN,
-                        new SystemColoniesIndex(Global.getSector()))
+                        new SectorPassIndex(Global.getSector()))
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isEqualTo("hegemony");
         }
@@ -955,7 +955,7 @@ final class VanillaClaimBreakdownReaderTest {
 
             var throughIndex = new VanillaClaimBreakdownReader(
                     EVERY_COLONY_KNOWN,
-                    new SystemColoniesIndex(Global.getSector()))
+                    new SectorPassIndex(Global.getSector()))
                 .readBreakdown(claimContest.getSystem());
             var throughOwnWalk = new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                 .readBreakdown(claimContest.getSystem());

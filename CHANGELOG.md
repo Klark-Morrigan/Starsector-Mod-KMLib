@@ -26,7 +26,7 @@ suites.
 
 ### Added
 
-**Console commands**
+#### Console commands
 
 Seven campaign-only commands, registered through `data/console/commands.csv` and
 reached only where Console Commands is installed. Both colony commands defer to
@@ -40,7 +40,7 @@ Nexerelin's own colonisation and transfer where that mod is enabled.
 - `kmlib_spawn`
 - `kmlib_transfer_market`
 
-**Game-agnostic helpers**
+#### Game-agnostic helpers
 
 No Starsector API on the signature.
 
@@ -68,7 +68,7 @@ No Starsector API on the signature.
 - `kmlib.text`
 - `kmlib.time`
 
-**Starsector-facing wrappers and seams**
+#### Starsector-facing wrappers and seams
 
 - `kmlib` - the mod plugin the launcher loads, rather than a package a consumer
   imports
@@ -138,7 +138,7 @@ No Starsector API on the signature.
 - `kmlib.starsector.ui.widgets.tabs.style`
 - `kmlib.starsector.ui.widgets.tooltip`
 
-**Test fixtures**
+#### Test fixtures
 
 Shipped as a second artifact beside the jar, for a consumer's own suites. Fakes
 stand in for a seam the library inverted; fixtures build a world a case is posed

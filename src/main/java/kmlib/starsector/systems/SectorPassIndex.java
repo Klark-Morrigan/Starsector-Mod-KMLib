@@ -13,13 +13,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The colony sets of a whole pass, each system selected at most once however many readers ask
- * about it.
+ * One pass's whole reading of a sector: which systems it holds, and the colonies in each. Every
+ * question is answered off one traversal and one walk per system, however many readers ask.
  *
  * <p>A render pass asks the same question of one system several times over - who holds it, how
  * many colonies to draw for each, what to name in a hover - and answering each ask with its own
  * walk is what made a full rebuild cost several traversals per system. This is what makes the
- * shared set affordable: the walk is paid on first ask and every later reader is handed the
+ * shared answers affordable: the walk is paid on first ask and every later reader is handed the
  * answer already computed.
  *
  * <p>Held by the readers below instead of the sector, and that substitution is the point. A
@@ -27,16 +27,17 @@ import java.util.Map;
  * this cannot, so the "one walk per system per pass" rule is enforced by what a reader is able
  * to reach rather than by everyone remembering it.
  *
- * <p>Holds the pass's reading of the sector's system list beside those sets, keyed both ways a
- * caller asks for it. Kept here rather than opened where each reader stands because the colony
- * reads resolve ids through that same list, and a second copy of it is a second traversal.
+ * <p>The system list and the colony sets are held together rather than in an object each, because
+ * the colony reads resolve ids through that same list: split apart, a pass asking both would open
+ * two traversals of it, which is the very cost an index exists to stop. The list is offered keyed
+ * both ways a caller asks for it.
  *
  * <p>Memoised lazily rather than filled up front, so a pass that touches a handful of systems
  * pays for a handful rather than for the sector. Built for one pass and discarded with it: the
- * answers are a snapshot, and a set that outlived its pass would keep reporting a sector that
+ * answers are a snapshot, and a reading that outlived its pass would keep reporting a sector that
  * has since moved on. Not safe for concurrent use, a pass being one thread's work.
  */
-public final class SystemColoniesIndex {
+public final class SectorPassIndex {
 
     // A read is of one system, and the counter takes an amount rather than a call.
     private static final long ONE_SYSTEM = 1L;
@@ -57,7 +58,7 @@ public final class SystemColoniesIndex {
      *               empty set for every system, matching how the reads below treat an
      *               unreachable sector
      */
-    public SystemColoniesIndex(SectorAPI sector) {
+    public SectorPassIndex(SectorAPI sector) {
         this.sector = sector;
     }
 
@@ -77,6 +78,10 @@ public final class SystemColoniesIndex {
     /**
      * The colonies in {@code system}, walked on the first ask and remembered thereafter.
      *
+     * <p>The exception is the system the sector states nothing about - no id and neither entity -
+     * which is walked afresh every ask, its {@link SystemKey#hasStatedArm blank key} standing for no
+     * system in particular.
+     *
      * @param system the system to read; null yields {@link Colonies#NONE}
      * @return the system's colony set
      */
@@ -85,13 +90,19 @@ public final class SystemColoniesIndex {
         if (system == null) {
             return Colonies.NONE;
         }
+        var key = SystemKey.readKeyOf(system);
+
+        if (!key.hasStatedArm()) {
+            // Nothing to tell this system from another. Reading afresh costs a walk a second ask
+            // would have saved, which is the honest price of a system the sector states nothing
+            // about - pooling every one of them under the blank key would hand one's colonies to
+            // another. A system carrying any one arm is memoised like the rest.
+            return readAndCountColoniesIn(system);
+        }
         // Memoised under the whole key rather than under the id, because an id is not unique: a
-        // sector holding two systems under one id would otherwise pool them into a single entry and
-        // hand the first one's colonies to the second. Every system has a key, and a system missing
-        // both entity arms still has one, so there is no shape left that cannot be memoised.
-        return coloniesBySystemKey.computeIfAbsent(
-            SystemKey.readKeyOf(system),
-            key -> readAndCountColoniesIn(system));
+        // sector holding two systems under one id would otherwise pool them into a single entry
+        // and hand the first one's colonies to the second.
+        return coloniesBySystemKey.computeIfAbsent(key, memoKey -> readAndCountColoniesIn(system));
     }
 
     /**

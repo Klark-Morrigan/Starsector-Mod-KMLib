@@ -26,9 +26,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link SystemColoniesIndex#readColoniesIn},
- * {@link SystemColoniesIndex#readColoniesById}, {@link SystemColoniesIndex#readSystemsById},
- * {@link SystemColoniesIndex#readSystemsByKey} and {@link SystemColoniesIndex#getSector}: that the
+ * Pins the contracts of {@link SectorPassIndex#readColoniesIn},
+ * {@link SectorPassIndex#readColoniesById}, {@link SectorPassIndex#readSystemsById},
+ * {@link SectorPassIndex#readSystemsByKey} and {@link SectorPassIndex#getSector}: that the
  * index answers exactly what the direct read answers, that it pays for a system's walk once however
  * it is asked, that one traversal of the sector serves every reader keyed the same way, and that it
  * names the sector it answers out of. Each method's cases live in a {@link Nested} group so the
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
  * shared with the direct read's suite - which is what lets the two answers be compared at all - and
  * {@link StarSystemFixture} where a case needs more systems than that one holds.
  */
-final class SystemColoniesIndexTest {
+final class SectorPassIndexTest {
 
     @Nested
     class GetSector {
@@ -47,7 +47,7 @@ final class SystemColoniesIndexTest {
             // name the one its answers came out of.
             var fixture = new ColonyFixture("galatia");
 
-            assertThat(new SystemColoniesIndex(fixture.getSector()).getSector())
+            assertThat(new SectorPassIndex(fixture.getSector()).getSector())
                 .isSameAs(fixture.getSector());
         }
 
@@ -55,7 +55,7 @@ final class SystemColoniesIndexTest {
         void namesNoSectorWhenTheIndexWasOpenedOverNone() {
             // The unreachable-sector case answers an empty set for every system, and it reports
             // the absence rather than inventing a sector to name.
-            assertThat(new SystemColoniesIndex(null).getSector())
+            assertThat(new SectorPassIndex(null).getSector())
                 .isNull();
         }
     }
@@ -74,7 +74,7 @@ final class SystemColoniesIndexTest {
             fixture.placeColoniesInSystem(listedColony, unlistedColony);
             fixture.listColoniesInEconomy(listedColony);
 
-            assertThat(new SystemColoniesIndex(fixture.getSector())
+            assertThat(new SectorPassIndex(fixture.getSector())
                     .readColoniesIn(fixture.getSystem()))
                 .isEqualTo(SystemColonies.readColoniesIn(
                     fixture.getSector(),
@@ -87,7 +87,7 @@ final class SystemColoniesIndexTest {
             // to draw, what to name in a hover - and paying a traversal for each is what made a
             // rebuild cost two or three walks per system.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             index.readColoniesIn(fixture.getSystem());
             index.readColoniesIn(fixture.getSystem());
@@ -101,7 +101,7 @@ final class SystemColoniesIndexTest {
             // index for - and it is the walk that is counted, not the ask, so a memo hit adds
             // nothing.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             var counts = WalkCountCapture.captureCountsOf(() -> {
                 index.readColoniesIn(fixture.getSystem());
@@ -118,7 +118,7 @@ final class SystemColoniesIndexTest {
             // so the pair is a single entry and the second system is handed the first's colonies.
             // The key separates them, an anchor id being minted per system.
             var world = buildTwoSystemsSharingAnId();
-            var index = new SystemColoniesIndex(world.sector());
+            var index = new SectorPassIndex(world.sector());
 
             assertThat(index.readColoniesIn(world.first()).colonies())
                 .containsExactly(new Colony(world.firstColony(), false));
@@ -127,29 +127,68 @@ final class SystemColoniesIndexTest {
         }
 
         @Test
-        void walksASystemCarryingNoIdOnceAcrossRepeatedAsks() {
-            // A system with no id still has a key, so the memo covers it like any other and the
-            // walk is paid once. Nothing is pooled by that: two such systems differ in their
-            // entity arms, which is what the key is three arms wide for.
+        void memoisesASystemCarryingNoIdButAnAnchor() {
+            // What the key buys over keying on the id: an id is only one of three arms, so a system
+            // the sector never named is still remembered by the entity the engine minted for it.
+            var system = StarSystemFixture.buildKeyedSystem(null, null, "8b3");
+            var colony = ColonyMarketFixture.buildVisibleColony("hegemony");
+
+            ColonyPlacementFixture.placeColonies(system, colony);
+
+            var index = new SectorPassIndex(buildSectorHoldingSystems(system));
+
+            assertThat(index.readColoniesIn(system).colonies())
+                .containsExactly(new Colony(colony, false));
+
+            index.readColoniesIn(system);
+
+            verify(system, times(1)).getAllEntities();
+        }
+
+        @Test
+        void walksASystemStatingNoArmAtAllAfreshOnEveryAsk() {
+            // No id and neither entity, so the key is blank and equals every other blank one. The
+            // walk is paid again, which is the honest price: pooling every such system under the
+            // one key would hand the first one's colonies to the second.
             var fixture = new ColonyFixture(null);
             var colony = fixture.buildVisibleColony("hegemony");
 
             fixture.placeColoniesInSystem(colony);
             fixture.listColoniesInEconomy(colony);
 
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             assertThat(index.readColoniesIn(fixture.getSystem()).colonies())
                 .containsExactly(new Colony(colony, true));
 
             index.readColoniesIn(fixture.getSystem());
 
-            verify(fixture.getSystem(), times(1)).getAllEntities();
+            verify(fixture.getSystem(), times(2)).getAllEntities();
+        }
+
+        @Test
+        void keepsTwoSystemsStatingNoArmAtAllApart() {
+            // The conflation the blank key would cause, posed outright: two systems the sector
+            // names with nothing are two systems, and each has to answer with its own colonies.
+            var firstColony = ColonyMarketFixture.buildVisibleColony("hegemony");
+            var secondColony = ColonyMarketFixture.buildVisibleColony("tritachyon");
+            var first = StarSystemFixture.buildKeyedSystem(null, null, null);
+            var second = StarSystemFixture.buildKeyedSystem(null, null, null);
+
+            ColonyPlacementFixture.placeColonies(first, firstColony);
+            ColonyPlacementFixture.placeColonies(second, secondColony);
+
+            var index = new SectorPassIndex(buildSectorHoldingSystems(first, second));
+
+            assertThat(index.readColoniesIn(first).colonies())
+                .containsExactly(new Colony(firstColony, false));
+            assertThat(index.readColoniesIn(second).colonies())
+                .containsExactly(new Colony(secondColony, false));
         }
 
         @Test
         void yieldsNothingForANullSystem() {
-            assertThat(new SystemColoniesIndex(mock(SectorAPI.class)).readColoniesIn(null))
+            assertThat(new SectorPassIndex(mock(SectorAPI.class)).readColoniesIn(null))
                 .isEqualTo(Colonies.NONE);
         }
 
@@ -158,7 +197,7 @@ final class SystemColoniesIndexTest {
 
             var fixture = buildCorvusHoldingOneColony();
 
-            assertThat(new SystemColoniesIndex(null).readColoniesIn(fixture.getSystem()))
+            assertThat(new SectorPassIndex(null).readColoniesIn(fixture.getSystem()))
                 .isEqualTo(Colonies.NONE);
         }
     }
@@ -175,7 +214,7 @@ final class SystemColoniesIndexTest {
             fixture.placeColoniesInSystem(colony);
             fixture.listColoniesInEconomy(colony);
 
-            assertThat(new SystemColoniesIndex(fixture.getSector())
+            assertThat(new SectorPassIndex(fixture.getSector())
                     .readColoniesById("corvus")
                     .colonies())
                 .containsExactly(new Colony(colony, true));
@@ -186,7 +225,7 @@ final class SystemColoniesIndexTest {
             // A pass keyed by system id and a reader holding the system itself are asking the
             // same question, so the second route must not buy a second traversal.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             index.readColoniesIn(fixture.getSystem());
             index.readColoniesById("corvus");
@@ -199,7 +238,7 @@ final class SystemColoniesIndexTest {
 
             var fixture = buildCorvusHoldingOneColony();
 
-            assertThat(new SystemColoniesIndex(fixture.getSector()).readColoniesById("askonia"))
+            assertThat(new SectorPassIndex(fixture.getSector()).readColoniesById("askonia"))
                 .isEqualTo(Colonies.NONE);
         }
 
@@ -209,7 +248,7 @@ final class SystemColoniesIndexTest {
             // colony memo to answer off - so without keeping the resolution, a pass asking about
             // absent systems would re-index the whole sector on every ask.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             index.readColoniesById("askonia");
             index.readColoniesById("tyle");
@@ -223,7 +262,7 @@ final class SystemColoniesIndexTest {
             // one system - the one the id index holds, which is what this resolves through.
             var world = buildTwoSystemsSharingAnId();
 
-            assertThat(new SystemColoniesIndex(world.sector())
+            assertThat(new SectorPassIndex(world.sector())
                     .readColoniesById("deep space")
                     .colonies())
                 .containsExactly(new Colony(world.firstColony(), false));
@@ -231,7 +270,7 @@ final class SystemColoniesIndexTest {
 
         @Test
         void yieldsNothingForABlankId() {
-            assertThat(new SystemColoniesIndex(mock(SectorAPI.class)).readColoniesById(" "))
+            assertThat(new SectorPassIndex(mock(SectorAPI.class)).readColoniesById(" "))
                 .isEqualTo(Colonies.NONE);
         }
     }
@@ -244,7 +283,7 @@ final class SystemColoniesIndexTest {
 
             var fixture = buildCorvusHoldingOneColony();
 
-            assertThat(new SystemColoniesIndex(fixture.getSector()).readSystemsById())
+            assertThat(new SectorPassIndex(fixture.getSector()).readSystemsById())
                 .containsExactly(entry("corvus", fixture.getSystem()));
         }
 
@@ -254,7 +293,7 @@ final class SystemColoniesIndexTest {
             // itself, so it has to be cheaper than doing so - otherwise the reader has bought the
             // traversal it came here to avoid.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             index.readSystemsById();
             index.readSystemsById();
@@ -268,7 +307,7 @@ final class SystemColoniesIndexTest {
             // a system here and then asks who lives in one it never held has walked the sector
             // once, which is what the row reporting that pass is allowed.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             index.readSystemsById();
             index.readColoniesById("askonia");
@@ -281,7 +320,7 @@ final class SystemColoniesIndexTest {
             // The counter the frame's bound on a rebuild is stated against: a second traversal
             // opened for the same pass is the breach, so this answer must never add one.
             var fixture = buildCorvusHoldingOneColony();
-            var index = new SystemColoniesIndex(fixture.getSector());
+            var index = new SectorPassIndex(fixture.getSector());
 
             var counts = WalkCountCapture.captureCountsOf(() -> {
                 index.readSystemsById();
@@ -295,7 +334,7 @@ final class SystemColoniesIndexTest {
         @Test
         void yieldsNoSystemsWhenTheSectorIsUnreachable() {
 
-            assertThat(new SystemColoniesIndex(null).readSystemsById())
+            assertThat(new SectorPassIndex(null).readSystemsById())
                 .isEmpty();
         }
     }
@@ -307,7 +346,7 @@ final class SystemColoniesIndexTest {
         void answersEachOfTheSectorSSystemsKeyedByItsKey() {
 
             var corvus = StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893");
-            var index = new SystemColoniesIndex(buildSectorHoldingSystems(corvus));
+            var index = new SectorPassIndex(buildSectorHoldingSystems(corvus));
 
             assertThat(index.readSystemsByKey())
                 .containsExactly(entry(new SystemKey("corvus", "corvus_star", "893"), corvus));
@@ -320,7 +359,7 @@ final class SystemColoniesIndexTest {
             // every system the sector lists.
             var world = buildTwoSystemsSharingAnId();
 
-            assertThat(new SystemColoniesIndex(world.sector()).readSystemsByKey())
+            assertThat(new SectorPassIndex(world.sector()).readSystemsByKey())
                 .containsExactly(
                     entry(new SystemKey("deep space", "", "8b3"), world.first()),
                     entry(new SystemKey("deep space", "", "38d53"), world.second()));
@@ -331,7 +370,7 @@ final class SystemColoniesIndexTest {
             // The same bargain the id index offers, and the reason a pass reaches for either: a
             // reader that had to index the sector itself has bought the traversal it came to avoid.
             var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
-            var index = new SystemColoniesIndex(sector);
+            var index = new SectorPassIndex(sector);
 
             index.readSystemsByKey();
             index.readSystemsByKey();
@@ -345,7 +384,7 @@ final class SystemColoniesIndexTest {
             // has to be able to read that it took both. Deriving one from the other would be a
             // second place the first-under-an-id rule is decided.
             var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
-            var index = new SystemColoniesIndex(sector);
+            var index = new SectorPassIndex(sector);
 
             var counts = WalkCountCapture.captureCountsOf(() -> {
                 index.readSystemsByKey();
@@ -359,7 +398,7 @@ final class SystemColoniesIndexTest {
         @Test
         void yieldsNoSystemsWhenTheSectorIsUnreachable() {
 
-            assertThat(new SystemColoniesIndex(null).readSystemsByKey())
+            assertThat(new SectorPassIndex(null).readSystemsByKey())
                 .isEmpty();
         }
     }

@@ -10,7 +10,8 @@ import java.util.LinkedHashMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the contracts of {@link SystemKey#readKeyOf} and of the key's own equality.
+ * Pins the contracts of {@link SystemKey#readKeyOf}, {@link SystemKey#hasStatedArm} and of the
+ * key's own equality.
  *
  * <p>What is load-bearing is that two systems sharing an id are two keys. That is the live defect:
  * a modded sector holds systems whose id and name are both the same, so a case asserting an id
@@ -89,6 +90,33 @@ final class SystemKeyTest {
             // something that reads as a system.
             assertThat(SystemKey.readKeyOf(null))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class HasStatedArm {
+
+        @Test
+        void reportsAKeyCarryingAnIdAsStatingSomething() {
+            assertThat(new SystemKey("deep space", null, null).hasStatedArm())
+                .isTrue();
+        }
+
+        @Test
+        void reportsAKeyCarryingOnlyAnAnchorAsStatingSomething() {
+            // The arm that matters most is also the one that can stand alone: a system the sector
+            // never named is still told apart by the anchor the engine minted for it.
+            assertThat(new SystemKey(null, null, "8b3").hasStatedArm())
+                .isTrue();
+        }
+
+        @Test
+        void reportsAKeyWithEveryArmAbsentAsStatingNothing() {
+            // The one shape that identifies nothing, and the reason the question is asked at all:
+            // two such keys are equal while standing for two systems.
+            assertThat(SystemKey.readKeyOf(
+                    StarSystemFixture.buildKeyedSystem(null, null, null)).hasStatedArm())
+                .isFalse();
         }
     }
 

@@ -31,6 +31,10 @@ import kmlib.text.KmlibStrings;
  * values. The key stays discriminating whatever is missing: it separates two systems whenever any
  * arm differs, which makes it at least as telling as its strongest present arm.
  *
+ * <p>The one shape that tells nothing apart is the key whose every arm is absent, which the sector
+ * states nothing at all about. Two such systems carry equal keys while being two systems, so a
+ * caller keying a map on this asks {@link #hasStatedArm} first and holds them apart some other way.
+ *
  * <p>The key is internal to code holding systems. A surface addressed from outside - an override
  * table, a persisted preference, a console argument, a log line - stays on the vanilla id, because
  * that is the only arm a person or a data file can write.
@@ -58,6 +62,20 @@ public record SystemKey(
         systemId = readStatedArm(systemId);
         centreEntityId = readStatedArm(centreEntityId);
         anchorEntityId = readStatedArm(anchorEntityId);
+    }
+
+    /**
+     * Whether this key states anything at all about the system it was read off.
+     *
+     * <p>A key with every arm absent equals every other such key, so it identifies nothing: two
+     * systems the sector names with neither an id nor an entity would share one entry of any map
+     * keyed on it, which is the very conflation this type exists to prevent. The question is asked
+     * here rather than by each keyed map testing three arms for itself.
+     *
+     * @return true when at least one arm is present, so the key can tell one system from another
+     */
+    public boolean hasStatedArm() {
+        return !(systemId.isEmpty() && centreEntityId.isEmpty() && anchorEntityId.isEmpty());
     }
 
     /**

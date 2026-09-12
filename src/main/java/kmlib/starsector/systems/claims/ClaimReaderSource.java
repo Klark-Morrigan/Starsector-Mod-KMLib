@@ -1,7 +1,7 @@
 package kmlib.starsector.systems.claims;
 
 import kmlib.starsector.markets.colonies.KnownColonyReader;
-import kmlib.starsector.systems.SystemColoniesIndex;
+import kmlib.starsector.systems.SectorPassIndex;
 
 /**
  * Source port for a {@link ClaimReader} bound to one pass's colony walk - what a caller holds
@@ -32,10 +32,10 @@ public interface ClaimReaderSource {
      *
      * @param knownColonyReader what the opened reader asks which of the colonies it meets the
      *                          player may be told about, carried onto the breakdowns it builds
-     * @param colonies          the pass's colony index, discarded with the pass that opened it
+     * @param sectorIndex       the pass's colony index, discarded with the pass that opened it
      * @return a reader reading claims out of that index
      */
     ClaimReader openReaderOver(
         KnownColonyReader knownColonyReader,
-        SystemColoniesIndex colonies);
+        SectorPassIndex sectorIndex);
 }
