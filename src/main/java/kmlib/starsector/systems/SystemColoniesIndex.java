@@ -27,6 +27,10 @@ import java.util.Map;
  * this cannot, so the "one walk per system per pass" rule is enforced by what a reader is able
  * to reach rather than by everyone remembering it.
  *
+ * <p>Holds the pass's reading of the sector's system list beside those sets, keyed both ways a
+ * caller asks for it. Kept here rather than opened where each reader stands because the colony
+ * reads resolve ids through that same list, and a second copy of it is a second traversal.
+ *
  * <p>Memoised lazily rather than filled up front, so a pass that touches a handful of systems
  * pays for a handful rather than for the sector. Built for one pass and discarded with it: the
  * answers are a snapshot, and a set that outlived its pass would keep reporting a sector that
@@ -95,8 +99,8 @@ public final class SystemColoniesIndex {
      * - which is what a pass keyed by system id mostly holds.
      *
      * <p>Kept on the bare id because this is the arm anything addressed from outside speaks - an
-     * override table, a saved preference, a console argument. An id is not unique, so this answers
-     * about the first system carrying it, the one {@link #readSystemsById} holds.
+     * override table, a saved preference, a console argument. Which system a repeated id names is
+     * {@link #readSystemsById}'s answer, and this reads the colonies of that one.
      *
      * <p>Resolves the id to a system and then reads through {@link #readColoniesIn}, so a system
      * already read that way is never walked again for having been asked about the other way. The
@@ -105,7 +109,7 @@ public final class SystemColoniesIndex {
      *
      * @param systemId the system id, as {@code StarSystemAPI#getId} reports it; null or blank
      *                 yields {@link Colonies#NONE}
-     * @return the colony set of the first system with that id, or {@link Colonies#NONE} when no
+     * @return the colony set of the system that id resolves to, or {@link Colonies#NONE} when no
      *         system has it
      */
     public Colonies readColoniesById(String systemId) {
@@ -113,28 +117,26 @@ public final class SystemColoniesIndex {
         if (!KmlibStrings.hasText(systemId)) {
             return Colonies.NONE;
         }
-        // Resolved through the id index rather than by a match written here, so what an id answers
-        // is decided in one place: the index and SectorStarSystems#findSystemById both name the
-        // first system under a repeated id, and a third rule here could only disagree with them.
+        // Resolved through the id index rather than by a match written here, so which system a
+        // repeated id names is settled in one place rather than by a second rule free to disagree.
         return readColoniesIn(readSystemsById().get(systemId));
     }
 
     /**
-     * The sector's star systems keyed by id, traversed on the first ask and remembered thereafter -
-     * the read for a caller holding an id, which is what anything addressed from outside holds.
+     * {@link SectorStarSystems#indexById} held for the pass, traversed on the first ask and
+     * remembered thereafter - the read for a caller holding an id, which is what anything addressed
+     * from outside holds. It answers on that read's terms, this adding only the memo.
      *
      * <p>Published for the same reason the colony sets are: a reader resolving ids off this pass
      * would otherwise open a traversal of its own, and two traversals for one pass is exactly what
      * an index exists to stop. The pass's readers share this one whether they came for a system or
      * for its colonies.
      *
-     * <p>Not every system in the sector. An id is not unique and a modded install holds several
-     * systems sharing one, of which this holds the first - the same one
-     * {@link SectorStarSystems#findSystemById} answers with, so an id names one system whichever
-     * way it is asked. A pass that must account for every system asks {@link #readSystemsByKey}.
+     * <p>Not every system in the sector; a pass that must account for each asks
+     * {@link #readSystemsByKey}.
      *
-     * @return the first system found under each id, in the sector's star-system order; empty for an
-     *         index opened over no sector. Read-only - the map is the index's own memo
+     * @return what {@link SectorStarSystems#indexById} answers; empty for an index opened over no
+     *         sector. Read-only - the map is the index's own memo
      */
     public Map<String, StarSystemAPI> readSystemsById() {
 
@@ -145,17 +147,16 @@ public final class SystemColoniesIndex {
     }
 
     /**
-     * Every one of the sector's star systems keyed by its {@link SystemKey}, traversed on the first
-     * ask and remembered thereafter - the read for a pass that must account for each system rather
-     * than for each id.
+     * {@link SectorStarSystems#indexByKey} held for the pass, traversed on the first ask and
+     * remembered thereafter - the read for a pass that must account for every system rather than
+     * for every id. It answers on that read's terms, this adding only the memo.
      *
-     * <p>What separates it from {@link #readSystemsById}: a key is unique where an id is not, so an
-     * install holding several systems under one id has an entry here for each of them. A pass built
-     * on the id index is short those systems in everything it derives, and the loss reads as a
-     * system missing from the map with nothing naming its cause.
+     * <p>What every system-keyed structure a render pass derives is built from. Built on
+     * {@link #readSystemsById} instead, such a pass is short the systems a repeated id displaces,
+     * and the loss reads as a system missing from the map with nothing naming its cause.
      *
-     * @return each system keyed by its key, in the sector's star-system order; empty for an index
-     *         opened over no sector. Read-only - the map is the index's own memo
+     * @return what {@link SectorStarSystems#indexByKey} answers; empty for an index opened over no
+     *         sector. Read-only - the map is the index's own memo
      */
     public Map<SystemKey, StarSystemAPI> readSystemsByKey() {
 

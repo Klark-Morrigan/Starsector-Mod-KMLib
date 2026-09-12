@@ -3,6 +3,7 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
@@ -32,11 +33,8 @@ import static org.mockito.Mockito.when;
  * it is asked, that one traversal of the sector serves every reader keyed the same way, and that it
  * names the sector it answers out of. Each method's cases live in a {@link Nested} group so the
  * suite reports as a per-method tree; the world they are posed against is {@link ColonyFixture},
- * shared with the direct read's suite - which is what lets the two answers be compared at all.
- *
- * <p>The cases posing two systems under one id build their world from {@link StarSystemFixture}
- * instead, that fixture holding a sector of one system: a colliding pair is the shape the id-keyed
- * memo answered wrongly, and it takes two systems to pose.
+ * shared with the direct read's suite - which is what lets the two answers be compared at all - and
+ * {@link StarSystemFixture} where a case needs more systems than that one holds.
  */
 final class SystemColoniesIndexTest {
 
@@ -119,20 +117,13 @@ final class SystemColoniesIndexTest {
             // The defect a memo keyed on the id carries: a sector holds two systems under one id,
             // so the pair is a single entry and the second system is handed the first's colonies.
             // The key separates them, an anchor id being minted per system.
-            var firstColony = ColonyMarketFixture.buildVisibleColony("hegemony");
-            var secondColony = ColonyMarketFixture.buildVisibleColony("tritachyon");
-            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
-            var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
+            var world = buildTwoSystemsSharingAnId();
+            var index = new SystemColoniesIndex(world.sector());
 
-            ColonyPlacementFixture.placeColonies(first, firstColony);
-            ColonyPlacementFixture.placeColonies(second, secondColony);
-
-            var index = new SystemColoniesIndex(buildSectorHoldingSystems(first, second));
-
-            assertThat(index.readColoniesIn(first).colonies())
-                .containsExactly(new Colony(firstColony, false));
-            assertThat(index.readColoniesIn(second).colonies())
-                .containsExactly(new Colony(secondColony, false));
+            assertThat(index.readColoniesIn(world.first()).colonies())
+                .containsExactly(new Colony(world.firstColony(), false));
+            assertThat(index.readColoniesIn(world.second()).colonies())
+                .containsExactly(new Colony(world.secondColony(), false));
         }
 
         @Test
@@ -227,6 +218,18 @@ final class SystemColoniesIndexTest {
         }
 
         @Test
+        void answersTheFirstOfTwoSystemsSharingAnId() {
+            // The id arm is what an override table or a saved preference writes, so it has to name
+            // one system - the one the id index holds, which is what this resolves through.
+            var world = buildTwoSystemsSharingAnId();
+
+            assertThat(new SystemColoniesIndex(world.sector())
+                    .readColoniesById("deep space")
+                    .colonies())
+                .containsExactly(new Colony(world.firstColony(), false));
+        }
+
+        @Test
         void yieldsNothingForABlankId() {
             assertThat(new SystemColoniesIndex(mock(SectorAPI.class)).readColoniesById(" "))
                 .isEqualTo(Colonies.NONE);
@@ -315,14 +318,12 @@ final class SystemColoniesIndexTest {
             // Why a pass takes this read instead of the id one: the four systems a live sector
             // loses to a repeated id are here, so everything derived from this index accounts for
             // every system the sector lists.
-            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
-            var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
-            var index = new SystemColoniesIndex(buildSectorHoldingSystems(first, second));
+            var world = buildTwoSystemsSharingAnId();
 
-            assertThat(index.readSystemsByKey())
+            assertThat(new SystemColoniesIndex(world.sector()).readSystemsByKey())
                 .containsExactly(
-                    entry(new SystemKey("deep space", "", "8b3"), first),
-                    entry(new SystemKey("deep space", "", "38d53"), second));
+                    entry(new SystemKey("deep space", "", "8b3"), world.first()),
+                    entry(new SystemKey("deep space", "", "38d53"), world.second()));
         }
 
         @Test
@@ -363,10 +364,30 @@ final class SystemColoniesIndexTest {
         }
     }
 
+    // The pair of unnamed deep space systems the sector really holds under one id, each with a
+    // colony of its own, and separated only by the anchor the engine minted for each. Built here
+    // rather than taken from ColonyFixture because that one's sector holds a single system, and a
+    // collision cannot be posed with one. The ids are the ones a live install reports.
+    private static CollidingSystemPair buildTwoSystemsSharingAnId() {
+
+        var firstColony = ColonyMarketFixture.buildVisibleColony("hegemony");
+        var secondColony = ColonyMarketFixture.buildVisibleColony("tritachyon");
+        var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+        var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
+
+        ColonyPlacementFixture.placeColonies(first, firstColony);
+        ColonyPlacementFixture.placeColonies(second, secondColony);
+
+        return new CollidingSystemPair(
+            buildSectorHoldingSystems(first, second),
+            first,
+            firstColony,
+            second,
+            secondColony);
+    }
+
     // A sector holding the given systems, with an economy that lists nothing anywhere - so what a
-    // colony read finds is what was sited in a system, which is the half these cases pose. Built
-    // here rather than taken from ColonyFixture because that one's sector holds a single system,
-    // and a pair sharing an id cannot be posed with one.
+    // colony read finds is what was sited in a system, which is the half these cases pose.
     private static SectorAPI buildSectorHoldingSystems(StarSystemAPI... systems) {
 
         var sectorMock = StarSystemFixture.buildSectorOf(systems);
@@ -388,5 +409,16 @@ final class SystemColoniesIndexTest {
         fixture.listColoniesInEconomy(colony);
 
         return fixture;
+    }
+
+    // Two systems under one id and the sector listing them, each system beside the colony sited in
+    // it. The colonies travel with the systems because what the cases turn on is which system's
+    // colonies an answer came from - an assertion that cannot be made without naming both.
+    private record CollidingSystemPair(
+        SectorAPI sector,
+        StarSystemAPI first,
+        MarketAPI firstColony,
+        StarSystemAPI second,
+        MarketAPI secondColony) {
     }
 }

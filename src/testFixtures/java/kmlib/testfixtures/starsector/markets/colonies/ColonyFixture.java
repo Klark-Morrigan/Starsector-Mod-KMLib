@@ -55,8 +55,8 @@ public class ColonyFixture {
     /**
      * Opens a sector holding exactly one system.
      *
-     * @param systemId the system's id, as {@code StarSystemAPI#getId} reports it; null poses the
-     *                 unkeyable system an id-keyed reader cannot memo on
+     * @param systemId the system's id, as {@code StarSystemAPI#getId} reports it; null poses a
+     *                 system answering to no id at all
      */
     public ColonyFixture(String systemId) {
 
