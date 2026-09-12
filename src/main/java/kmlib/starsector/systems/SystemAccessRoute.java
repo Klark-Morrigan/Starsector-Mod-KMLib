@@ -13,6 +13,12 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
  * reachable. Stated as a route, that exception is supplied by whoever knows the mod, and the
  * reachability read stays a question about hyperspace with no mod named in it.
  *
+ * <p>A route also vouches that the mod marks the system on the hyperspace map. A mod that carries
+ * fleets somewhere shows the player where, by an icon or a marker of its own making, and no scan of
+ * the game's own star anchors can see that. So a read mirroring what the map draws may take a
+ * granted route as the place being drawn, rather than hunting for a star that a mod-made
+ * destination need never have been given.
+ *
  * <p>A route says only that access exists, never that it is the only one. Routes are consulted
  * alongside the vanilla reads and alongside each other, so one answering false leaves the question
  * exactly where it found it - which is what lets an install carry several without them having to

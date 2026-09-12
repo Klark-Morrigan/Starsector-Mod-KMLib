@@ -85,10 +85,22 @@ public final class SystemAccessRoutes {
         }
     }
 
-    // Whether any installed route reaches the system. Shaped as one question, so the read offering
-    // it asks its own package once rather than walking a set it would then have to know the rules
-    // of. An install with no routes answers false without touching a single entity.
-    static boolean isReachedByAnyRoute(StarSystemAPI system) {
+    /**
+     * Whether any installed route reaches the system - and so whether some mod both carries fleets
+     * there and marks the place on the map.
+     *
+     * <p>Shaped as one question, so a read offering it asks this package once rather than walking a
+     * set it would then have to know the rules of. An install with no routes answers false without
+     * touching a single entity.
+     *
+     * <p>Answered here as well as inside {@link StarSystems#isReachable} because that read folds
+     * routes in with gates and jump points, and the further thing a route vouches for - the mod
+     * marking the system on the map - cannot be told back out of the folded answer.
+     *
+     * @param system the system being asked about
+     * @return whether some installed route reaches it
+     */
+    public static boolean isReachedByAnyRoute(StarSystemAPI system) {
 
         for (var route : INSTALLED_ROUTES.values()) {
             if (route.isGrantingAccess(system)) {

@@ -68,6 +68,10 @@ public final class RandomAssortmentOfThingsIntegration {
         // jump point, so a system reached only through one holds no jump point and may carry the
         // cut-off tag while being perfectly reachable. Registered as a route, that is the whole of
         // what the reachability read needs to know about this mod.
+        //
+        // The fracture also satisfies the other half of what a route vouches for: this mod gives it
+        // a map icon of its own, so the player sees the way in marked where it is, and nothing has
+        // to find a star drawn for a destination that was never given one.
         SystemAccessRoutes.registerRoute(
             INTEGRATION_NAME,
             RandomAssortmentOfThingsMatcher::hasAbyssalFracture);
