@@ -94,7 +94,7 @@ final class SystemMotionTrackerTest {
             .thenReturn(id);
         when(systemMock.getLocation())
             .thenReturn(new Vector2f(x, y));
-            
+
         return systemMock;
     }
 
