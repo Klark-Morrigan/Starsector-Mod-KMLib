@@ -379,10 +379,11 @@ final class SectorPassIndexTest {
         }
 
         @Test
-        void countsAPassAskingBothWaysAsTwoWalks() {
-            // The two indexes are separate traversals, and a pass whose bound is stated in walks
-            // has to be able to read that it took both. Deriving one from the other would be a
-            // second place the first-under-an-id rule is decided.
+        void countsAPassAskingBothWaysAsOneWalk() {
+            // A rebuild addresses its systems both ways at once - the cells by key, the readers
+            // holding a bare id by id - and its bound is one traversal for the whole of it. So the
+            // id index is taken off the systems this one holds rather than off a walk of its own,
+            // the rule for which system a repeated id names still being the sector read's.
             var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
             var index = new SectorPassIndex(sector);
 
@@ -392,7 +393,23 @@ final class SectorPassIndexTest {
             });
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
-                .isEqualTo(2L);
+                .isEqualTo(1L);
+        }
+
+        @Test
+        void countsAPassAskingByIdFirstAndThenByKeyAsOneWalkToo() {
+            // The same bound from the other side: which way a pass asked first cannot decide what
+            // it pays, or a reader added to a rebuild would move the cost of one already there.
+            var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
+            var index = new SectorPassIndex(sector);
+
+            var counts = WalkCountCapture.captureCountsOf(() -> {
+                index.readSystemsById();
+                index.readSystemsByKey();
+            });
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(1L);
         }
 
         @Test

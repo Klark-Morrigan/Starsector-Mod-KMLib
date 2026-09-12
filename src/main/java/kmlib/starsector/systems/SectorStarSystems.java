@@ -9,6 +9,7 @@ import kmlib.text.KmlibStrings;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,15 +137,41 @@ public final class SectorStarSystems {
      * further one is stated in the log rather than quietly taking the entry. A pass that must reach
      * every system asks {@link #indexByKey} instead.
      *
+     * <p>Read off the key index rather than by a walk of its own, so the sector is traversed once
+     * however a caller asks for it. The complete index is the one a coarser address is taken from,
+     * and never the other way round: an index that had already dropped a system could not be asked
+     * for it again.
+     *
      * @param sector the sector to index; null yields an empty map
      * @return the first system found under each id, in the sector's star-system order
      */
     public static Map<String, StarSystemAPI> indexById(SectorAPI sector) {
+        return indexHeldSystemsById(indexByKey(sector).values());
+    }
+
+    /**
+     * The same id index over systems a caller already holds - for one that has traversed the sector
+     * already and would otherwise traverse it again to address those systems a second way.
+     *
+     * <p>Answers on {@link #indexById}'s terms, differing only in where the systems come from: the
+     * first system carrying an id is the one indexed under it, and each further one is stated in
+     * the log. Charges no walk, the traversal having been the caller's.
+     *
+     * @param systems the systems to index, in the order they are to be indexed in; null yields an
+     *                empty map
+     * @return the first system found under each id, in the order given
+     */
+    public static Map<String, StarSystemAPI> indexHeldSystemsById(
+            Collection<StarSystemAPI> systems) {
 
         var systemById = new LinkedHashMap<String, StarSystemAPI>();
 
-        walkStarSystems(sector, system -> indexFirstSystemUnderId(systemById, system));
-
+        if (systems == null) {
+            return systemById;
+        }
+        for (var system : systems) {
+            indexFirstSystemUnderId(systemById, system);
+        }
         return systemById;
     }
 
@@ -158,14 +185,19 @@ public final class SectorStarSystems {
      * cells, their positions, their motion - and the loss reads as a missing system on the map with
      * nothing naming its cause.
      *
+     * <p>The complete index, and so the one every coarser address is taken from. Two systems meet
+     * in one entry only where the sector states the same three arms about both, which it does for
+     * the system it states nothing about at all; the first is kept and the other is stated in the
+     * log.
+     *
      * @param sector the sector to index; null yields an empty map
-     * @return each system keyed by its key, in the sector's star-system order
+     * @return the first system found under each key, in the sector's star-system order
      */
     public static Map<SystemKey, StarSystemAPI> indexByKey(SectorAPI sector) {
 
         var systemByKey = new LinkedHashMap<SystemKey, StarSystemAPI>();
 
-        walkStarSystems(sector, system -> systemByKey.put(SystemKey.readKeyOf(system), system));
+        walkStarSystems(sector, system -> indexFirstSystemUnderKey(systemByKey, system));
 
         return systemByKey;
     }
@@ -258,5 +290,29 @@ public final class SectorStarSystems {
             + "' is held by '" + StarSystems.readDisplayName(indexed)
             + "', so '" + StarSystems.readDisplayName(system)
             + "' is absent from the id index");
+    }
+
+    // Puts a system under its key, keeping the one already indexed there.
+    //
+    // Two systems meet here only where the sector states the same id and the same two entities about
+    // both - in practice where it states none of the three - so nothing is left to tell them apart
+    // and the choice between them is arbitrary. Kept first for the same reason every other read here
+    // keeps the first, so that one system is named however a caller addresses it.
+    //
+    // Said out loud because this is the index promised to hold every system the sector lists: one
+    // lost here is lost from every structure derived from it, and nothing else connects that to a
+    // sector stating two systems identically.
+    private static void indexFirstSystemUnderKey(
+            Map<SystemKey, StarSystemAPI> systemByKey,
+            StarSystemAPI system) {
+
+        var indexed = systemByKey.putIfAbsent(SystemKey.readKeyOf(system), system);
+        if (indexed == null) {
+            return;
+        }
+        LOG.warn("Star system key is not unique: '"
+            + StarSystems.readDisplayName(indexed)
+            + "' and '" + StarSystems.readDisplayName(system)
+            + "' state the same id, centre and anchor, so the second is absent from the key index");
     }
 }

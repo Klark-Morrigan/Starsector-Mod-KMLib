@@ -12,6 +12,8 @@ import kmlib.testfixtures.starsector.systems.StarSystemFixture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
@@ -21,8 +23,9 @@ import static org.mockito.Mockito.when;
  * Pins the contracts of {@link SectorStarSystems#collectHyperspacePositions},
  * {@link SectorStarSystems#collectPositionsById},
  * {@link SectorStarSystems#getPlayerStarSystem}, {@link SectorStarSystems#indexById},
- * {@link SectorStarSystems#indexByKey} and {@link SectorStarSystems#findSystemById}. Each method's
- * cases live in a {@link Nested} group so the suite reports as a per-method tree.
+ * {@link SectorStarSystems#indexHeldSystemsById}, {@link SectorStarSystems#indexByKey} and
+ * {@link SectorStarSystems#findSystemById}. Each method's cases live in a {@link Nested} group so
+ * the suite reports as a per-method tree.
  *
  * <p>Every read keyed on something gets a case posing two systems that share an id, since a live
  * modded sector holds several such pairs and each read answers differently: the key index holds
@@ -434,6 +437,52 @@ final class SectorStarSystemsTest {
     }
 
     @Nested
+    class IndexHeldSystemsById {
+
+        @Test
+        void keysSystemsACallerAlreadyHoldsByTheirOwnIds() {
+            // The address a caller takes when it has traversed the sector already: the same index
+            // over the systems it hands over, in the order it hands them over.
+            var corvus = StarSystemFixture.buildSystem("corvus");
+            var yma = StarSystemFixture.buildSystem("yma");
+
+            assertThat(SectorStarSystems.indexHeldSystemsById(List.of(yma, corvus)))
+                .containsExactly(
+                    entry("yma", yma),
+                    entry("corvus", corvus));
+        }
+
+        @Test
+        void keepsTheFirstSystemHeldUnderARepeatedId() {
+            // The id rule is the sector read's, whichever way the systems arrive - so a caller
+            // re-addressing systems it holds gets the system every other id read answers with.
+            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+
+            assertThat(SectorStarSystems.indexHeldSystemsById(List.of(
+                    first,
+                    StarSystemFixture.buildKeyedSystem("deep space", null, "38d53"))))
+                .containsExactly(entry("deep space", first));
+        }
+
+        @Test
+        void chargesNoWalkForSystemsACallerAlreadyHolds() {
+            // The whole reason this address exists: the traversal was the caller's, so charging one
+            // here would report a pass as having read the sector twice for addressing it twice.
+            var counts = WalkCountCapture.captureCountsOf(() -> SectorStarSystems
+                .indexHeldSystemsById(List.of(StarSystemFixture.buildSystem("corvus"))));
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(0L);
+        }
+
+        @Test
+        void returnsAnEmptyIndexForNoSystemsToIndex() {
+            assertThat(SectorStarSystems.indexHeldSystemsById(null))
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class IndexByKey {
 
         @Test
@@ -461,6 +510,42 @@ final class SectorStarSystemsTest {
                 .containsExactly(
                     entry(new SystemKey("deep space", "", "8b3"), first),
                     entry(new SystemKey("deep space", "", "38d53"), second));
+        }
+
+        @Test
+        void keepsTheFirstOfTwoSystemsTheSectorStatesNothingAbout() {
+            // The one shape a key cannot part: neither system offers an id, a centre or an anchor,
+            // so both carry the blank key and the sector has said nothing that tells them apart.
+            // The first is kept for the same reason every other read here keeps the first.
+            var first = StarSystemFixture.buildKeyedSystem(null, null, null);
+            var sector = StarSystemFixture.buildSectorOf(
+                first,
+                StarSystemFixture.buildKeyedSystem(null, null, null));
+
+            assertThat(SectorStarSystems.indexByKey(sector))
+                .containsExactly(entry(new SystemKey(null, null, null), first));
+        }
+
+        @Test
+        void statesTheSystemThatLeftTheKeyIndexUnsaid() {
+            // This index is the one promised to hold every system the sector lists, so a system
+            // dropped from it is dropped from everything derived from it. Saying so is what turns
+            // the cell it never got into a one-line diagnosis rather than a hunt.
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.nameSystem(
+                    StarSystemFixture.buildKeyedSystem(null, null, null), "Unknown Location"),
+                StarSystemFixture.nameSystem(
+                    StarSystemFixture.buildKeyedSystem(null, null, null), "Uncharted Space"));
+
+            var log = LogAppenderFake.captureLogOf(
+                SectorStarSystems.class,
+                () -> SectorStarSystems.indexByKey(sector));
+
+            assertThat(log.getMessages())
+                .hasSize(1);
+            assertThat(log.getMessages().get(0))
+                .contains("Unknown Location")
+                .contains("Uncharted Space");
         }
 
         @Test

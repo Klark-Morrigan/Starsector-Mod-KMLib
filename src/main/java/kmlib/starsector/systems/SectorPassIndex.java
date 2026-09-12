@@ -46,8 +46,9 @@ public final class SectorPassIndex {
     private final SectorAPI sector;
 
     // Each built on the first ask that needs the sector's systems resolved that way, and only then:
-    // a pass whose readers all hold the system in hand indexes the sector neither way, and one that
-    // never asks by id pays for no id index.
+    // a pass whose readers all hold the system in hand indexes the sector neither way. The id index
+    // is taken off the key one, so a pass asking either way traverses the sector once and a pass
+    // asking both ways pays the second index in a re-addressing rather than in a walk.
     private Map<String, StarSystemAPI> systemById;
     private Map<SystemKey, StarSystemAPI> systemByKey;
 
@@ -152,7 +153,12 @@ public final class SectorPassIndex {
     public Map<String, StarSystemAPI> readSystemsById() {
 
         if (systemById == null) {
-            systemById = Collections.unmodifiableMap(SectorStarSystems.indexById(sector));
+            // Addressed off the systems the key index already holds rather than off a traversal of
+            // its own. A pass whose readers ask both ways is bounded at one walk, and it is the
+            // same bound whichever way its first reader asked; which system a repeated id names is
+            // still settled by the read owning that rule rather than by a second one here.
+            systemById = Collections.unmodifiableMap(
+                SectorStarSystems.indexHeldSystemsById(readSystemsByKey().values()));
         }
         return systemById;
     }
