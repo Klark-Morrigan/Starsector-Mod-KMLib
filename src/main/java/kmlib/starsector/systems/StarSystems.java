@@ -250,10 +250,14 @@ public final class StarSystems {
      * there, so nothing named here is a mod, and an install with none answers
      * from the vanilla reads alone.
      *
-     * @param system the system being asked about
+     * @param system the system being asked about; null is not reachable, there being no system to
+     *               arrive at
      * @return true when the player has a normal means of reaching it
      */
     public static boolean isReachable(StarSystemAPI system) {
+        if (system == null) {
+            return false;
+        }
         // A lit gate or an installed access route reaches the system regardless
         // of jump connectivity, so either overrides the cut-off flag and the
         // absence of jump points.
@@ -276,13 +280,17 @@ public final class StarSystems {
      * console commands and scripts need (e.g. a specific gate or comm relay),
      * so callers do not re-walk {@code getEntitiesWithTag} themselves.
      *
-     * @param system the star system to search; null yields null
+     * @param system    the star system to search; null yields null
      * @param entityTag the entity tag to filter on (e.g. {@code Tags.GATE})
-     * @param id the entity id to match exactly; null or blank yields null
+     * @param id        the entity id to match exactly; null or blank yields null
      * @return the first matching entity, or null when none in {@code system}
      *         carries {@code entityTag} with that id
      */
-    public static SectorEntityToken find(StarSystemAPI system, String entityTag, String id) {
+    public static SectorEntityToken findTaggedEntity(
+            StarSystemAPI system,
+            String entityTag,
+            String id) {
+
         if (system == null || !KmlibStrings.hasText(id)) {
             return null;
         }

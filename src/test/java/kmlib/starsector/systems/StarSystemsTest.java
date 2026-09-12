@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
  * Pins the contracts of {@link StarSystems#getStars},
  * {@link StarSystems#getCentremostStar},
  * {@link StarSystems#isReachable},
- * {@link StarSystems#find}, {@link StarSystems#readMarkets},
+ * {@link StarSystems#findTaggedEntity}, {@link StarSystems#readMarkets},
  * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#findNearestMarket},
  * {@link StarSystems#readDisplayName} and
  * {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
@@ -125,6 +125,37 @@ final class StarSystemsTest {
 
             assertThat(StarSystems.getCentremostStar(system))
                 .isSameAs(centreMock);
+        }
+
+        @Test
+        void settlesASystemWithNoCentreByLowestStarId() {
+            // Nothing to measure from, so every star is as near as every other and the read is all
+            // tie. It still has to answer the same star on every pass, which is the tie rule's job
+            // - a system the engine built without a centre is not a system without a star.
+            var starBeta = buildStarWithIdAt("beta", 0, 100);
+            var starAlpha = buildStarWithIdAt("alpha", 0, -100);
+            var system = buildSystemWithCentreAndStars(null, starBeta, starAlpha);
+
+            assertThat(StarSystems.getCentremostStar(system))
+                .isSameAs(starAlpha);
+        }
+
+        @Test
+        void settlesACentreWithNoLocationByLowestStarId() {
+            // The same absence one step in: a centre that is there but sits nowhere leaves the
+            // ranking nothing to measure against, and the read settles on the tie rule rather than
+            // measuring from a position that does not exist.
+            var centreMock = mock(SectorEntityToken.class);
+
+            when(centreMock.getLocation())
+                .thenReturn(null);
+
+            var starBeta = buildStarWithIdAt("beta", 0, 100);
+            var starAlpha = buildStarWithIdAt("alpha", 0, -100);
+            var system = buildSystemWithCentreAndStars(centreMock, starBeta, starAlpha);
+
+            assertThat(StarSystems.getCentremostStar(system))
+                .isSameAs(starAlpha);
         }
 
         @Test
@@ -374,6 +405,15 @@ final class StarSystemsTest {
         }
 
         @Test
+        void returnsFalseForANullSystem() {
+            // No system is no means of arrival, answered the way every other read here answers an
+            // absent subject - a caller holding nothing asks this as readily as one holding a
+            // system, and the absence is not worth a crash inside a reachability read.
+            assertThat(StarSystems.isReachable(null))
+                .isFalse();
+        }
+
+        @Test
         void returnsFalseForATransverseOnlySystemWithAnInactiveGate() {
             // The hidden-system case: not cut off (the engine never tags a
             // nascent-well system), no jump point, only an unlit gate.
@@ -432,7 +472,7 @@ final class StarSystemsTest {
     }
 
     @Nested
-    class Find {
+    class FindTaggedEntity {
 
         @Test
         void returnsTheTaggedEntityWhoseIdMatches() {
@@ -444,7 +484,7 @@ final class StarSystemsTest {
             when(systemMock.getEntitiesWithTag("gate"))
                 .thenReturn(List.of(other, gate));
 
-            assertThat(StarSystems.find(systemMock, "gate", "alpha-gate"))
+            assertThat(StarSystems.findTaggedEntity(systemMock, "gate", "alpha-gate"))
                 .isSameAs(gate);
         }
 
@@ -457,13 +497,13 @@ final class StarSystemsTest {
             when(systemMock.getEntitiesWithTag("gate"))
                 .thenReturn(List.of(other));
 
-            assertThat(StarSystems.find(systemMock, "gate", "alpha-gate"))
+            assertThat(StarSystems.findTaggedEntity(systemMock, "gate", "alpha-gate"))
                 .isNull();
         }
 
         @Test
         void returnsNullForANullSystem() {
-            assertThat(StarSystems.find(null, "gate", "alpha-gate"))
+            assertThat(StarSystems.findTaggedEntity(null, "gate", "alpha-gate"))
                 .isNull();
         }
 
@@ -472,7 +512,7 @@ final class StarSystemsTest {
 
             var systemMock = mock(StarSystemAPI.class);
 
-            assertThat(StarSystems.find(systemMock, "gate", " "))
+            assertThat(StarSystems.findTaggedEntity(systemMock, "gate", " "))
                 .isNull();
         }
 
@@ -481,7 +521,7 @@ final class StarSystemsTest {
 
             var systemMock = mock(StarSystemAPI.class);
 
-            assertThat(StarSystems.find(systemMock, "gate", null))
+            assertThat(StarSystems.findTaggedEntity(systemMock, "gate", null))
                 .isNull();
         }
     }

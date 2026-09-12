@@ -27,7 +27,7 @@ import java.util.function.Predicate;
  * moments: a pass resolves the sector's layout once and then asks about systems many times over.
  * Kept together they read as one grab-bag that any new system read could be added to.
  *
- * <p>Every read here traverses the sector's system list, and each one reports that through
+ * <p>Every read that traverses the sector's system list reports that through
  * {@link SectorWalkCounters}, so a caller's row states the walks it caused without the caller
  * having asked for any of them to be counted.
  *
@@ -37,10 +37,9 @@ import java.util.function.Predicate;
  */
 public final class SectorStarSystems {
 
-    // Asked of log4j directly rather than of the game, which is the same logger under the same name
-    // - the game's own helper is that call and nothing more, so KMLib's level control still governs
-    // this line. Every read here is handed the sector it is about, and a logger is no reason for the
-    // class to start reaching for the game's static entry point instead.
+    // Asked of log4j directly rather than of the game: the same logger under the same name, so
+    // KMLib's level control still governs it, and every read here is handed the sector it is about
+    // rather than reaching for the game's static entry point.
     private static final Logger LOG = Logger.getLogger(SectorStarSystems.class);
 
     private SectorStarSystems() {
@@ -48,22 +47,21 @@ public final class SectorStarSystems {
     }
 
     /**
-     * Collects every star system's hyperspace position as an {x, y} point -
-     * the sector's spatial layout, for callers that need it (e.g.
-     * partitioning the sector geometrically).
+     * Collects every star system's hyperspace position as an {x, y} point - the sector's spatial
+     * layout, for callers that need it (e.g. partitioning the sector geometrically).
      *
-     * @param sector the sector to read; null yields an empty list.
-     * @return one {x, y} pair per star system with a non-null location, in
-     *         the sector's star-system order.
+     * @param sector the sector to read; null yields an empty list
+     * @return one {x, y} pair per star system with a non-null location, in the sector's
+     *         star-system order
      */
-    public static List<double[]> getHyperspacePositions(SectorAPI sector) {
+    public static List<double[]> collectHyperspacePositions(SectorAPI sector) {
 
         var positions = new ArrayList<double[]>();
 
         walkStarSystems(sector, system -> {
-            var location = system.getLocation();
-            if (location != null) {
-                positions.add(new double[] {location.x, location.y});
+            var point = readPointOf(system);
+            if (point != null) {
+                positions.add(point);
             }
         });
 
@@ -71,21 +69,19 @@ public final class SectorStarSystems {
     }
 
     /**
-     * Collects the live hyperspace position of every star system the predicate
-     * selects, keyed by system id - the id-addressed counterpart of
-     * {@link #getHyperspacePositions}, for callers that must match a position back to
-     * the system it belongs to (tracking motion, diffing a layout).
+     * Collects the live hyperspace position of every star system the predicate selects, keyed by
+     * system id - the id-addressed counterpart of {@link #collectHyperspacePositions}, for callers
+     * that must match a position back to the system it belongs to (tracking motion, diffing a
+     * layout).
      *
      * @param sector        the sector to read; null yields an empty map
-     * @param shouldInclude which systems to keep; a system it rejects is left out.
-     *                      Null applies no filter - every located system is kept,
-     *                      making this the id-keyed twin of
-     *                      {@link #getHyperspacePositions}
-     * @return each selected system's {x, y} position keyed by id, in the sector's
-     *         star-system order; a system with no location is skipped, having no
-     *         position to record. An id is not unique (see {@link #indexByKey}), so
-     *         several systems sharing one leave a single entry holding the last of
-     *         their positions
+     * @param shouldInclude which systems to keep; a system it rejects is left out. Null applies no
+     *                      filter - every located system is kept, making this the id-keyed twin of
+     *                      {@link #collectHyperspacePositions}
+     * @return each selected system's {x, y} position keyed by id, in the sector's star-system
+     *         order; a system with no location is skipped, having no position to record. An id is
+     *         not unique (see {@link #indexByKey}), so several systems sharing one leave a single
+     *         entry holding the last of their positions
      */
     public static Map<String, double[]> collectPositionsById(
             SectorAPI sector,
@@ -94,8 +90,8 @@ public final class SectorStarSystems {
         var positions = new LinkedHashMap<String, double[]>();
 
         walkStarSystems(sector, system -> {
-            var location = system.getLocation();
-            if (location == null) {
+            var point = readPointOf(system);
+            if (point == null) {
                 return;
             }
             // A null predicate means no scoping was asked for, so every located
@@ -103,9 +99,7 @@ public final class SectorStarSystems {
             if (shouldInclude != null && !shouldInclude.test(system)) {
                 return;
             }
-            positions.put(
-                system.getId(),
-                new double[] {location.x, location.y});
+            positions.put(system.getId(), point);
         });
 
         return positions;
@@ -177,18 +171,22 @@ public final class SectorStarSystems {
     }
 
     /**
-     * The star system whose {@code getId} equals {@code id} - the reliable id lookup vanilla's own
-     * {@code SectorAPI#getStarSystem} does not provide. That one matches the optional unique id
-     * before the base name, so a system keyed by its base name (which is what {@code getId}
-     * returns) is silently missed whenever it also carries a unique id. This matches {@code getId}
-     * directly, the id every system-keyed map is built on.
+     * The first star system whose {@code getId} equals {@code id} - the reliable id lookup
+     * vanilla's own {@code SectorAPI#getStarSystem} does not provide. That one matches the optional
+     * unique id before the base name, so a system keyed by its base name (which is what
+     * {@code getId} returns) is silently missed whenever it also carries a unique id. This matches
+     * {@code getId} directly, the id every system-keyed map is built on.
+     *
+     * <p>The first, because an id is not unique: a modded sector holds several systems sharing one.
+     * That is the same system {@link #indexById} holds under the id, so an id resolves to one
+     * system whichever way a caller asks.
      *
      * @param sector the sector to search; null yields null
      * @param id     the system id to match, as {@code StarSystemAPI#getId} reports it; null or
      *               blank yields null
-     * @return the system with that id, or null when none matches
+     * @return the first system with that id, or null when none matches
      */
-    public static StarSystemAPI findById(SectorAPI sector, String id) {
+    public static StarSystemAPI findSystemById(SectorAPI sector, String id) {
         if (sector == null || !KmlibStrings.hasText(id)) {
             return null;
         }
@@ -230,11 +228,21 @@ public final class SectorStarSystems {
         SectorWalkCounters.countSectorWalk(systems.size());
     }
 
+    // Where a system sits, as the {x, y} pair every layout read here answers in, or nothing for a
+    // system the sector never placed. Shared because the two position reads differ in what they key
+    // the point by rather than in what a point is.
+    private static double[] readPointOf(StarSystemAPI system) {
+
+        var location = system.getLocation();
+
+        return location == null ? null : new double[] {location.x, location.y};
+    }
+
     // Puts a system under its id, keeping the one already indexed there.
     //
-    // First rather than last so that this index and findById, which stops at the first match, name
-    // the same system for an id both hold - a preference or an override resolved through one path
-    // otherwise addresses a different system than the same id resolved through the other.
+    // First rather than last so that this index and findSystemById, which stops at the first match,
+    // name the same system for an id both hold - a preference or an override resolved through one
+    // path otherwise addresses a different system than the same id resolved through the other.
     //
     // Said out loud because the alternative is what the silent displacement cost: a pass built on
     // this index is short a system, and nothing connects that to two systems sharing an id.

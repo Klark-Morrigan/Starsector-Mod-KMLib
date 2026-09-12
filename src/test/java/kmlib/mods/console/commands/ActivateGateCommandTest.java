@@ -104,7 +104,7 @@ final class ActivateGateCommandTest {
         void reportsTheUnknownIdAndActivatesNothing() {
 
             starSystemsMock
-                .when(() -> StarSystems.find(systemMock, Tags.GATE, "ghost"))
+                .when(() -> StarSystems.findTaggedEntity(systemMock, Tags.GATE, "ghost"))
                 .thenReturn(null);
 
             var result = command.runCommand("ghost", CommandContext.CAMPAIGN_MAP);
@@ -125,7 +125,7 @@ final class ActivateGateCommandTest {
             var gateMock = mock(SectorEntityToken.class);
 
             starSystemsMock
-                .when(() -> StarSystems.find(systemMock, Tags.GATE, "gate1"))
+                .when(() -> StarSystems.findTaggedEntity(systemMock, Tags.GATE, "gate1"))
                 .thenReturn(gateMock);
 
             var result = command.runCommand("gate1", CommandContext.CAMPAIGN_MAP);

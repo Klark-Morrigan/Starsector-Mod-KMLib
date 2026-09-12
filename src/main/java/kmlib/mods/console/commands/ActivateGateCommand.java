@@ -44,7 +44,7 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
 
         var system = SectorStarSystems.getPlayerStarSystem(readActiveSector());
         var id = parsed.get(SPEC.id);
-        var gate = StarSystems.find(system, Tags.GATE, id);
+        var gate = StarSystems.findTaggedEntity(system, Tags.GATE, id);
         if (gate == null) {
             output.showMessage("No gate with id '"
                 + id

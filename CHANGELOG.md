@@ -44,7 +44,6 @@ Nexerelin's own colonisation and transfer where that mod is enabled.
 
 No Starsector API on the signature.
 
-- `kmlib`
 - `kmlib.animation`
 - `kmlib.collections`
 - `kmlib.colour`
@@ -71,6 +70,8 @@ No Starsector API on the signature.
 
 **Starsector-facing wrappers and seams**
 
+- `kmlib` - the mod plugin the launcher loads, rather than a package a consumer
+  imports
 - `kmlib.mods.console`
 - `kmlib.mods.console.commands`
 - `kmlib.mods.console.commands.input`
@@ -153,6 +154,7 @@ against.
 - `kmlib.testfixtures.starsector.markets.colonies`
 - `kmlib.testfixtures.starsector.memory`
 - `kmlib.testfixtures.starsector.settings`
+- `kmlib.testfixtures.starsector.systems`
 - `kmlib.testfixtures.starsector.systems.claims`
 - `kmlib.testfixtures.starsector.ui.coreui`
 - `kmlib.testfixtures.starsector.ui.font`

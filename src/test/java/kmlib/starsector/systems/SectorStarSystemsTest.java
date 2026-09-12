@@ -2,20 +2,15 @@ package kmlib.starsector.systems;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.SectorEntityToken;
-import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import kmlib.profiling.ProfileSection;
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.logging.LogAppenderFake;
+import kmlib.testfixtures.starsector.systems.StarSystemFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.lwjgl.util.vector.Vector2f;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -23,27 +18,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link SectorStarSystems#getHyperspacePositions},
+ * Pins the contracts of {@link SectorStarSystems#collectHyperspacePositions},
  * {@link SectorStarSystems#collectPositionsById},
  * {@link SectorStarSystems#getPlayerStarSystem}, {@link SectorStarSystems#indexById},
- * {@link SectorStarSystems#indexByKey} and {@link SectorStarSystems#findById}. Each method's cases
- * live in a {@link Nested} group so the suite reports as a per-method tree; the shared mock
- * builders stay on the outer class.
+ * {@link SectorStarSystems#indexByKey} and {@link SectorStarSystems#findSystemById}. Each method's
+ * cases live in a {@link Nested} group so the suite reports as a per-method tree.
  *
  * <p>Every read keyed on something gets a case posing two systems that share an id, since a live
  * modded sector holds several such pairs and each read answers differently: the key index holds
- * both, the id index holds the first and says so, the id-keyed positions hold one.
+ * both, the id index and the id lookup hold the first, the id-keyed positions hold the last.
  */
 final class SectorStarSystemsTest {
 
     @Nested
-    class GetHyperspacePositions {
+    class CollectHyperspacePositions {
 
         @Test
         void collectsEachSystemPositionAsXy() {
 
-            var sector = buildSectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
-            var positions = SectorStarSystems.getHyperspacePositions(sector);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("corvus", 10, 20),
+                StarSystemFixture.buildSystemAt("yma", -5, 7));
+
+            var positions = SectorStarSystems.collectHyperspacePositions(sector);
 
             assertThat(positions)
                 .hasSize(2);
@@ -55,29 +52,18 @@ final class SectorStarSystemsTest {
 
         @Test
         void nullSectorYieldsNoPositions() {
-            assertThat(SectorStarSystems.getHyperspacePositions(null))
+            assertThat(SectorStarSystems.collectHyperspacePositions(null))
                 .isEmpty();
         }
 
         @Test
         void systemsWithoutALocationAreSkipped() {
 
-            var locatedMock = mock(StarSystemAPI.class);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("located", 1, 2),
+                StarSystemFixture.buildSystem("unlocated"));
 
-            when(locatedMock.getLocation())
-                .thenReturn(new Vector2f(1, 2));
-
-            var unlocatedMock = mock(StarSystemAPI.class);
-
-            when(unlocatedMock.getLocation())
-                .thenReturn(null);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(locatedMock, unlocatedMock));
-
-            assertThat(SectorStarSystems.getHyperspacePositions(sectorMock))
+            assertThat(SectorStarSystems.collectHyperspacePositions(sector))
                 .hasSize(1);
         }
 
@@ -85,9 +71,12 @@ final class SectorStarSystemsTest {
         void countsOneWalkOverEverySystemOnTheOpenSection() {
             // The traversal is charged to whoever asked for the layout, so a pass resolving it
             // twice reads as two walks without either caller having written a profiling line.
-            var sector = buildSectorWithSystemsAt(new float[] {10, 20}, new float[] {-5, 7});
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("corvus", 10, 20),
+                StarSystemFixture.buildSystemAt("yma", -5, 7));
+
             var counts = WalkCountCapture.captureCountsOf(
-                () -> SectorStarSystems.getHyperspacePositions(sector));
+                () -> SectorStarSystems.collectHyperspacePositions(sector));
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
                 .isEqualTo(1L);
@@ -102,14 +91,11 @@ final class SectorStarSystemsTest {
         @Test
         void keysEachSelectedSystemByIdWithItsPosition() {
 
-            var a = buildSystemAt("a", 10, 20);
-            var b = buildSystemAt("b", -5, 7);
-            var sectorMock = mock(SectorAPI.class);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("a", 10, 20),
+                StarSystemFixture.buildSystemAt("b", -5, 7));
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(a, b));
-
-            var positions = SectorStarSystems.collectPositionsById(sectorMock, system -> true);
+            var positions = SectorStarSystems.collectPositionsById(sector, system -> true);
 
             assertThat(positions.get("a"))
                 .containsExactly(10.0, 20.0);
@@ -120,15 +106,12 @@ final class SectorStarSystemsTest {
         @Test
         void excludesSystemsThePredicateRejects() {
 
-            var kept = buildSystemAt("kept", 1, 1);
-            var rejected = buildSystemAt("rejected", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(kept, rejected));
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("kept", 1, 1),
+                StarSystemFixture.buildSystemAt("rejected", 2, 2));
 
             var positions = SectorStarSystems.collectPositionsById(
-                sectorMock,
+                sector,
                 system -> system.getId().equals("kept"));
 
             assertThat(positions)
@@ -138,18 +121,11 @@ final class SectorStarSystemsTest {
         @Test
         void skipsASelectedSystemWithoutALocation() {
 
-            var located = buildSystemAt("located", 1, 1);
-            var unlocatedMock = mock(StarSystemAPI.class);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("located", 1, 1),
+                StarSystemFixture.buildSystem("unlocated"));
 
-            when(unlocatedMock.getLocation())
-                .thenReturn(null);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(located, unlocatedMock));
-
-            var positions = SectorStarSystems.collectPositionsById(sectorMock, system -> true);
+            var positions = SectorStarSystems.collectPositionsById(sector, system -> true);
 
             assertThat(positions)
                 .containsOnlyKeys("located");
@@ -158,14 +134,11 @@ final class SectorStarSystemsTest {
         @Test
         void aNullPredicateKeepsEveryLocatedSystem() {
 
-            var a = buildSystemAt("a", 1, 1);
-            var b = buildSystemAt("b", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("a", 1, 1),
+                StarSystemFixture.buildSystemAt("b", 2, 2));
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(a, b));
-
-            var positions = SectorStarSystems.collectPositionsById(sectorMock, null);
+            var positions = SectorStarSystems.collectPositionsById(sector, null);
 
             assertThat(positions)
                 .containsOnlyKeys("a", "b");
@@ -182,14 +155,13 @@ final class SectorStarSystemsTest {
             // Two systems under one id are one entry, the later position standing for both. The
             // co-located pair this happens to in a live sector is exactly the one a motion poll
             // then reads as a single system moving.
-            var first = buildKeyedSystemAt("deep space", null, "8b3", 1, 1);
-            var second = buildKeyedSystemAt("deep space", null, "38d53", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.placeSystemAt(
+                    StarSystemFixture.buildKeyedSystem("deep space", null, "8b3"), 1, 1),
+                StarSystemFixture.placeSystemAt(
+                    StarSystemFixture.buildKeyedSystem("deep space", null, "38d53"), 2, 2));
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(first, second));
-
-            var positions = SectorStarSystems.collectPositionsById(sectorMock, null);
+            var positions = SectorStarSystems.collectPositionsById(sector, null);
 
             assertThat(positions)
                 .containsOnlyKeys("deep space");
@@ -201,16 +173,13 @@ final class SectorStarSystemsTest {
         void countsTheSystemsItWentOverRatherThanTheOnesItKept() {
             // What the walk cost is what it reached: a filter keeping one system of two did not
             // make the traversal any shorter, and a row saying it did would price it wrong.
-            var kept = buildSystemAt("kept", 1, 1);
-            var rejected = buildSystemAt("rejected", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(kept, rejected));
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystemAt("kept", 1, 1),
+                StarSystemFixture.buildSystemAt("rejected", 2, 2));
 
             var counts = WalkCountCapture.captureCountsOf(
                 () -> SectorStarSystems.collectPositionsById(
-                    sectorMock,
+                    sector,
                     system -> system.getId().equals("kept")));
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
@@ -226,7 +195,7 @@ final class SectorStarSystemsTest {
         @Test
         void returnsTheFleetsSystem() {
 
-            var systemMock = mock(StarSystemAPI.class);
+            var systemMock = StarSystemFixture.buildSystem("corvus");
             var fleetMock = mock(CampaignFleetAPI.class);
 
             when(fleetMock.getStarSystem())
@@ -278,38 +247,47 @@ final class SectorStarSystemsTest {
     }
 
     @Nested
-    class FindById {
+    class FindSystemById {
 
         @Test
         void returnsTheSystemWhoseIdMatches() {
 
-            var wanted = buildSystemAt("corvus", 1, 1);
-            var other = buildSystemAt("yma", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            var wanted = StarSystemFixture.buildSystem("corvus");
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystem("yma"),
+                wanted);
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(other, wanted));
-
-            assertThat(SectorStarSystems.findById(sectorMock, "corvus"))
+            assertThat(SectorStarSystems.findSystemById(sector, "corvus"))
                 .isSameAs(wanted);
+        }
+
+        @Test
+        void answersTheFirstSystemFoundUnderARepeatedId() {
+            // The invariant the id index is built to match: an id no system holds alone resolves to
+            // one system, whichever way a caller asks. An override table's id or a saved preference
+            // would otherwise address one system through the lookup and another through the index.
+            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+            var sector = StarSystemFixture.buildSectorOf(
+                first,
+                StarSystemFixture.buildKeyedSystem("deep space", null, "38d53"));
+
+            assertThat(SectorStarSystems.findSystemById(sector, "deep space"))
+                .isSameAs(first);
         }
 
         @Test
         void returnsNullWhenNoSystemHasThatId() {
 
-            var only = buildSystemAt("corvus", 1, 1);
-            var sectorMock = mock(SectorAPI.class);
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystem("corvus"));
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(only));
-
-            assertThat(SectorStarSystems.findById(sectorMock, "nowhere"))
+            assertThat(SectorStarSystems.findSystemById(sector, "nowhere"))
                 .isNull();
         }
 
         @Test
         void returnsNullForANullSector() {
-            assertThat(SectorStarSystems.findById(null, "corvus"))
+            assertThat(SectorStarSystems.findSystemById(null, "corvus"))
                 .isNull();
         }
 
@@ -317,15 +295,12 @@ final class SectorStarSystemsTest {
         void countsTheWalkAtTheSystemsItExaminedBeforeTheMatch() {
             // A lookup that stops at the first system did not visit the sector. Counting the whole
             // list would hide what this counter is for: many lookups each walking from the start.
-            var wanted = buildSystemAt("corvus", 1, 1);
-            var other = buildSystemAt("yma", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(wanted, other));
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystem("corvus"),
+                StarSystemFixture.buildSystem("yma"));
 
             var counts = WalkCountCapture.captureCountsOf(
-                () -> SectorStarSystems.findById(sectorMock, "corvus"));
+                () -> SectorStarSystems.findSystemById(sector, "corvus"));
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
                 .isEqualTo(1L);
@@ -337,15 +312,12 @@ final class SectorStarSystemsTest {
         void countsTheWholeListForAnIdNoSystemCarries() {
             // The other half of the same rule: a lookup that matched nothing did go over every
             // system, and that is the expensive case a row has to be able to show.
-            var corvus = buildSystemAt("corvus", 1, 1);
-            var yma = buildSystemAt("yma", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(corvus, yma));
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildSystem("corvus"),
+                StarSystemFixture.buildSystem("yma"));
 
             var counts = WalkCountCapture.captureCountsOf(
-                () -> SectorStarSystems.findById(sectorMock, "nowhere"));
+                () -> SectorStarSystems.findSystemById(sector, "nowhere"));
 
             assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
                 .isEqualTo(2L);
@@ -353,9 +325,9 @@ final class SectorStarSystemsTest {
 
         @Test
         void returnsNullForABlankId() {
-            // A blank id short-circuits before the walk, so a stubbed system list is not even
+            // A blank id short-circuits before the walk, so a posed system list is not even
             // needed - a blank query matches nothing rather than the first system by accident.
-            assertThat(SectorStarSystems.findById(mock(SectorAPI.class), " "))
+            assertThat(SectorStarSystems.findSystemById(mock(SectorAPI.class), " "))
                 .isNull();
         }
     }
@@ -368,16 +340,10 @@ final class SectorStarSystemsTest {
             // The bulk lookup a pass resolving many ids reaches for instead of walking the system
             // list once per id. The sector's own order is kept, so a caller iterating the index
             // sees the systems in the order the sector lists them rather than a hash's.
-            var corvus = buildSystemAt("corvus", 1, 1);
-            var yma = buildSystemAt("yma", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            var corvus = StarSystemFixture.buildSystem("corvus");
+            var yma = StarSystemFixture.buildSystem("yma");
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(yma, corvus));
-
-            var indexed = SectorStarSystems.indexById(sectorMock);
-
-            assertThat(indexed)
+            assertThat(SectorStarSystems.indexById(StarSystemFixture.buildSectorOf(yma, corvus)))
                 .containsExactly(
                     entry("yma", yma),
                     entry("corvus", corvus));
@@ -385,17 +351,14 @@ final class SectorStarSystemsTest {
 
         @Test
         void keepsTheFirstSystemFoundUnderARepeatedId() {
-            // An id is not unique in a modded sector. Whichever system this index answers with has
-            // to be the one findById answers with, or an id written in an override table or a saved
-            // preference addresses one system through the lookup and another through the index.
-            var first = buildKeyedSystemAt("deep space", null, "8b3", 1, 1);
-            var second = buildKeyedSystemAt("deep space", null, "38d53", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            // An id is not unique in a modded sector, and the system kept is the one findSystemById
+            // answers with, so both id reads name one system.
+            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+            var sector = StarSystemFixture.buildSectorOf(
+                first,
+                StarSystemFixture.buildKeyedSystem("deep space", null, "38d53"));
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(first, second));
-
-            assertThat(SectorStarSystems.indexById(sectorMock))
+            assertThat(SectorStarSystems.indexById(sector))
                 .containsExactly(entry("deep space", first));
         }
 
@@ -404,24 +367,15 @@ final class SectorStarSystemsTest {
             // The line that turns "a system is missing from the map" into a one-line diagnosis.
             // Silently dropping the second system is what made the defect invisible for as long as
             // it lasted, so the saying of it is pinned rather than left to the reader of the code.
-            var first = buildKeyedSystemAt("deep space", null, "8b3", 1, 1);
-
-            when(first.getName())
-                .thenReturn("Deep Space");
-
-            var second = buildKeyedSystemAt("deep space", null, "38d53", 2, 2);
-
-            when(second.getName())
-                .thenReturn("Deep Space");
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(first, second));
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.nameSystem(
+                    StarSystemFixture.buildKeyedSystem("deep space", null, "8b3"), "Deep Space"),
+                StarSystemFixture.nameSystem(
+                    StarSystemFixture.buildKeyedSystem("deep space", null, "38d53"), "Deep Space"));
 
             var log = LogAppenderFake.captureLogOf(
                 SectorStarSystems.class,
-                () -> SectorStarSystems.indexById(sectorMock));
+                () -> SectorStarSystems.indexById(sector));
 
             assertThat(log.getMessages())
                 .hasSize(1);
@@ -437,20 +391,26 @@ final class SectorStarSystemsTest {
         }
 
         @Test
+        void chargesNoWalkForANullSector() {
+            // There was no list to go over, so a row that charged one would price a traversal that
+            // never happened. Pinned here for the walk every bulk read shares.
+            var counts = WalkCountCapture.captureCountsOf(() -> SectorStarSystems.indexById(null));
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(0L);
+            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
+                .isEqualTo(0L);
+        }
+
+        @Test
         void countsAnIndexAskedForTwiceAsTwoWalks() {
             // The row a pass reads to find out it is resolving the same index twice - which is
             // the whole contract this counter is here to make checkable.
-            // The system finishes its own stubbing before the sector's opens, so the two do not
-            // nest into an unfinished-stubbing error.
-            var corvus = buildSystemAt("corvus", 1, 1);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(corvus));
+            var sector = StarSystemFixture.buildSectorOf(StarSystemFixture.buildSystem("corvus"));
 
             var counts = WalkCountCapture.captureCountsOf(() -> {
-                SectorStarSystems.indexById(sectorMock);
-                SectorStarSystems.indexById(sectorMock);
+                SectorStarSystems.indexById(sector);
+                SectorStarSystems.indexById(sector);
             });
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
@@ -461,14 +421,10 @@ final class SectorStarSystemsTest {
         void keepsAWalkMadeWithNothingOpenUnderTheReservedRow() {
             // A traversal from a path nobody profiled is seen rather than dropped, which is what
             // makes an unattributed walk findable at all.
-            var corvus = buildSystemAt("corvus", 1, 1);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(corvus));
+            var sector = StarSystemFixture.buildSectorOf(StarSystemFixture.buildSystem("corvus"));
 
             var counts = WalkCountCapture.captureUnscopedCountsOf(
-                () -> SectorStarSystems.indexById(sectorMock));
+                () -> SectorStarSystems.indexById(sector));
 
             assertThat(counts.getSection())
                 .isSameAs(ProfileSection.UNSCOPED_COUNTS);
@@ -484,14 +440,10 @@ final class SectorStarSystemsTest {
         void keysEverySystemByItsOwnKeyInTheSectorsOrder() {
             // The key is the three arms the sector states, so a caller holding one can be handed
             // back the system without the id having had to be unique for it to work.
-            var corvus = buildKeyedSystemAt("corvus", "corvus_star", "893", 1, 1);
-            var yma = buildKeyedSystemAt("yma", "yma_star", "89a", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            var corvus = StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893");
+            var yma = StarSystemFixture.buildKeyedSystem("yma", "yma_star", "89a");
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(yma, corvus));
-
-            assertThat(SectorStarSystems.indexByKey(sectorMock))
+            assertThat(SectorStarSystems.indexByKey(StarSystemFixture.buildSectorOf(yma, corvus)))
                 .containsExactly(
                     entry(new SystemKey("yma", "yma_star", "89a"), yma),
                     entry(new SystemKey("corvus", "corvus_star", "893"), corvus));
@@ -502,14 +454,10 @@ final class SectorStarSystemsTest {
             // The whole point of the key index, and the defect the id index carries: a sector
             // holding two systems under one id has both of them here, so a pass built on this one
             // accounts for every system the sector lists.
-            var first = buildKeyedSystemAt("deep space", null, "8b3", 1, 1);
-            var second = buildKeyedSystemAt("deep space", null, "38d53", 2, 2);
-            var sectorMock = mock(SectorAPI.class);
+            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+            var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
 
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(first, second));
-
-            assertThat(SectorStarSystems.indexByKey(sectorMock))
+            assertThat(SectorStarSystems.indexByKey(StarSystemFixture.buildSectorOf(first, second)))
                 .containsExactly(
                     entry(new SystemKey("deep space", "", "8b3"), first),
                     entry(new SystemKey("deep space", "", "38d53"), second));
@@ -525,90 +473,16 @@ final class SectorStarSystemsTest {
         void countsOneWalkOverEverySystem() {
             // Keyed differently, priced the same: the key index walks the sector's list once, the
             // extra arms being reads off a system already in hand rather than a second traversal.
-            var corvus = buildKeyedSystemAt("corvus", "corvus_star", "893", 1, 1);
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getStarSystems())
-                .thenReturn(List.of(corvus));
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893"));
 
             var counts = WalkCountCapture.captureCountsOf(
-                () -> SectorStarSystems.indexByKey(sectorMock));
+                () -> SectorStarSystems.indexByKey(sector));
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
                 .isEqualTo(1L);
             assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
                 .isEqualTo(1L);
         }
-    }
-
-    private static StarSystemAPI buildSystemAt(String id, float x, float y) {
-
-        var systemMock = mock(StarSystemAPI.class);
-
-        when(systemMock.getId())
-            .thenReturn(id);
-        when(systemMock.getLocation())
-            .thenReturn(new Vector2f(x, y));
-
-        return systemMock;
-    }
-
-    // A system carrying the entities a key is read off, for the cases posing two systems that share
-    // an id - what tells those apart is nothing else.
-    private static StarSystemAPI buildKeyedSystemAt(
-            String id,
-            String centreEntityId,
-            String anchorEntityId,
-            float x,
-            float y) {
-
-        // Both entity mocks are built before any stubbing opens, since building one inside a
-        // when(...) call leaves Mockito's stubbing half finished.
-        var centreMock = buildEntityMock(centreEntityId);
-        var anchorMock = buildEntityMock(anchorEntityId);
-        var systemMock = buildSystemAt(id, x, y);
-
-        when(systemMock.getCenter())
-            .thenReturn(centreMock);
-        when(systemMock.getHyperspaceAnchor())
-            .thenReturn(anchorMock);
-
-        return systemMock;
-    }
-
-    // A null id stands for the entity being absent altogether, which a system may well be without.
-    private static SectorEntityToken buildEntityMock(String entityId) {
-
-        if (entityId == null) {
-            return null;
-        }
-        var entityMock = mock(SectorEntityToken.class);
-
-        when(entityMock.getId())
-            .thenReturn(entityId);
-
-        return entityMock;
-    }
-
-    private static SectorAPI buildSectorWithSystemsAt(float[]... points) {
-
-        var systems = new ArrayList<StarSystemAPI>();
-
-        for (float[] point : points) {
-
-            var systemMock = mock(StarSystemAPI.class);
-
-            when(systemMock.getLocation())
-                .thenReturn(new Vector2f(point[0], point[1]));
-
-            systems.add(systemMock);
-        }
-
-        var sectorMock = mock(SectorAPI.class);
-
-        when(sectorMock.getStarSystems())
-            .thenReturn(systems);
-
-        return sectorMock;
     }
 }

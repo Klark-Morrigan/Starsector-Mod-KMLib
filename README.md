@@ -273,7 +273,11 @@ No Starsector API on the signature.
   events, since the bean is a native read and a per-frame path has nothing to
   gain from it.
 - [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
-  write, immediate and deferred, change callbacks, and labelled choices.
+  write, immediate and deferred, change callbacks, and labelled choices. The
+  write path goes through a port to the mod's backing store, so which mods owe
+  a disk write is the writer's own state rather than the game's, and a store
+  LunaLib has not loaded is a refusal a caller is told about rather than a
+  reach that can only run inside a running game.
 - [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus
   the reads over a string every surface shares: is there text here, what are
   its words, and the stutter left where one phrase was appended to another
@@ -954,7 +958,13 @@ no-op `SettingsAPI` proxy, which a test installs into `Global` before touching `
 really holds what is written into it - map-backed rather than stubbed, so a file written
 under one name and read under another fails there rather than passing on two stubs that
 agree, and posable as a folder that will not open or will not take a write, failing open
-being the port's contract rather than an accident of it.
+being the port's contract rather than an accident of it. A LunaLib settings store of the
+same shape sits beside it, counting saves as well as holding values, since what separates
+an immediate write from a deferred one is how many disk writes a burst of edits costs.
+[`starsector/systems/`](src/testFixtures/java/kmlib/testfixtures/starsector/systems/)
+poses star systems the way the sector holds them - an id, a place in hyperspace, and the
+centre and anchor that tell two systems sharing an id apart - with identity and placement
+as separate calls, so a read over ids needs no coordinates invented for it.
 
 They are a source set of their own, published as a variant beside the jar. A consumer
 takes them with `testCompileOnly testFixtures('kmlib:KMLib')`, which resolves through

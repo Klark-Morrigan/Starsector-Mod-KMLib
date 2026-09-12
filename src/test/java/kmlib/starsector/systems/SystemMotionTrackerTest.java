@@ -1,18 +1,15 @@
 package kmlib.starsector.systems;
 
-import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
+
+import kmlib.testfixtures.starsector.systems.StarSystemFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.lwjgl.util.vector.Vector2f;
 
-import java.util.List;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins {@link SystemMotionTracker}: a selected system that moves across hyperspace
@@ -30,13 +27,11 @@ final class SystemMotionTrackerTest {
         void reportsASelectedSystemThatMovedBetweenPolls() {
 
             var tracker = new SystemMotionTracker();
-            var systemMock = buildSystemAt("mover", 0, 0);
-            var sectorMock = buildSectorOf(systemMock);
+            var systemMock = StarSystemFixture.buildSystemAt("mover", 0, 0);
+            var sectorMock = StarSystemFixture.buildSectorOf(systemMock);
 
             tracker.updateMovingSystems(sectorMock, acceptAll());
-
-            when(systemMock.getLocation())
-                .thenReturn(new Vector2f(500, 0));
+            StarSystemFixture.placeSystemAt(systemMock, 500, 0);
 
             var hasChanged = tracker.updateMovingSystems(sectorMock, acceptAll());
 
@@ -50,13 +45,11 @@ final class SystemMotionTrackerTest {
         void neverTracksASystemThePredicateRejects() {
 
             var tracker = new SystemMotionTracker();
-            var systemMock = buildSystemAt("excluded", 0, 0);
-            var sectorMock = buildSectorOf(systemMock);
+            var systemMock = StarSystemFixture.buildSystemAt("excluded", 0, 0);
+            var sectorMock = StarSystemFixture.buildSectorOf(systemMock);
 
             tracker.updateMovingSystems(sectorMock, acceptNone());
-
-            when(systemMock.getLocation())
-                .thenReturn(new Vector2f(500, 0));
+            StarSystemFixture.placeSystemAt(systemMock, 500, 0);
 
             var hasChanged = tracker.updateMovingSystems(sectorMock, acceptNone());
 
@@ -76,26 +69,34 @@ final class SystemMotionTrackerTest {
         }
     }
 
-    private static SectorAPI buildSectorOf(StarSystemAPI system) {
+    @Nested
+    class ClearObservations {
 
-        var sectorMock = mock(SectorAPI.class);
+        @Test
+        void forgetsAMoverSoTheNextPollJudgesItAfresh() {
+            // What a save load calls: the sector is replaced, and a system id carried over from the
+            // previous one must not be measured against where it sat in that sector. Cleared, the
+            // next poll is a first sighting, which cannot report motion however far the system
+            // moved in between.
+            var tracker = new SystemMotionTracker();
+            var systemMock = StarSystemFixture.buildSystemAt("mover", 0, 0);
+            var sectorMock = StarSystemFixture.buildSectorOf(systemMock);
 
-        when(sectorMock.getStarSystems())
-            .thenReturn(List.of(system));
+            tracker.updateMovingSystems(sectorMock, acceptAll());
+            StarSystemFixture.placeSystemAt(systemMock, 500, 0);
+            tracker.updateMovingSystems(sectorMock, acceptAll());
+            tracker.clearObservations();
 
-        return sectorMock;
-    }
+            assertThat(tracker.getMovingSystemIds())
+                .isEmpty();
 
-    private static StarSystemAPI buildSystemAt(String id, float x, float y) {
+            StarSystemFixture.placeSystemAt(systemMock, 1000, 0);
 
-        var systemMock = mock(StarSystemAPI.class);
-
-        when(systemMock.getId())
-            .thenReturn(id);
-        when(systemMock.getLocation())
-            .thenReturn(new Vector2f(x, y));
-
-        return systemMock;
+            assertThat(tracker.updateMovingSystems(sectorMock, acceptAll()))
+                .isFalse();
+            assertThat(tracker.getMovingSystemIds())
+                .isEmpty();
+        }
     }
 
     private static Predicate<StarSystemAPI> acceptAll() {
