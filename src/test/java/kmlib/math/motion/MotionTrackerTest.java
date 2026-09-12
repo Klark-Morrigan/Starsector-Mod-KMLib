@@ -11,8 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins {@link MotionTracker}'s detection: a first sighting cannot be judged moving; a
  * key that holds still is not moving; one whose position shifted past the floor is,
  * while a shift under the floor reads as noise; a key that keeps moving stays in the
- * set without re-reporting a change; one that stops leaves it; and a key that drops
- * out and returns is judged afresh rather than against its stale position. Drives the
+ * set without re-reporting a change; one that stops leaves it; a key that drops
+ * out and returns is judged afresh rather than against its stale position; and two keys
+ * that differ are two observations wherever their points coincide. Drives the
  * detection core directly so the state machine is pinned without a sector.
  */
 final class MotionTrackerTest {
@@ -22,7 +23,7 @@ final class MotionTrackerTest {
 
         @Test
         void aFirstSightingIsNotYetMoving() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
 
             // No baseline to compare against, so nothing is moving and the set (still
             // empty) has not changed.
@@ -34,7 +35,7 @@ final class MotionTrackerTest {
 
         @Test
         void aStationaryKeyIsNotMoving() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
             var hasChanged = tracker.observe(Map.of("a", buildPoint(0, 0)));
@@ -45,7 +46,7 @@ final class MotionTrackerTest {
 
         @Test
         void aKeyThatShiftedPastTheFloorIsMoving() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
             var hasChanged = tracker.observe(Map.of("a", buildPoint(500, 0)));
@@ -56,7 +57,7 @@ final class MotionTrackerTest {
 
         @Test
         void aShiftUnderTheFloorReadsAsNoise() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
             // Half a unit, under the one-unit floor: jitter, not motion.
@@ -68,7 +69,7 @@ final class MotionTrackerTest {
 
         @Test
         void aKeyThatKeepsMovingStaysInTheSetWithoutReportingAChange() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
             tracker.observe(Map.of("a", buildPoint(500, 0)));
 
@@ -82,7 +83,7 @@ final class MotionTrackerTest {
 
         @Test
         void aKeyThatStopsLeavesTheMovingSet() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
             tracker.observe(Map.of("a", buildPoint(500, 0)));
 
@@ -96,7 +97,7 @@ final class MotionTrackerTest {
 
         @Test
         void aKeyThatReturnsIsJudgedAfreshRatherThanAgainstAStalePosition() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0), "b", buildPoint(0, 0)));
             // "b" drops out of the observation, so its baseline is pruned.
             tracker.observe(Map.of("a", buildPoint(0, 0)));
@@ -111,8 +112,24 @@ final class MotionTrackerTest {
         }
 
         @Test
+        void keysThatDifferAreTrackedApartWhereverTheirPointsCoincide() {
+            // What the key is for: two points at one place under two keys are two observations,
+            // so a move by one is reported for that one alone. Keyed by the name the two share,
+            // they would be one observation and the move would be whichever's was recorded last.
+            var tracker = new MotionTracker<PointKey>(1.0);
+            var mover = new PointKey("deep space", "8b3");
+            var stayer = new PointKey("deep space", "38d53");
+            tracker.observe(Map.of(mover, buildPoint(0, 0), stayer, buildPoint(0, 0)));
+
+            var hasChanged = tracker.observe(Map.of(mover, buildPoint(500, 0), stayer, buildPoint(0, 0)));
+
+            assertThat(hasChanged).isTrue();
+            assertThat(tracker.getMovingKeys()).containsExactly(mover);
+        }
+
+        @Test
         void clearingObservationsMakesTheNextSightingAFirstSighting() {
-            var tracker = new MotionTracker(1.0);
+            var tracker = new MotionTracker<String>(1.0);
             tracker.observe(Map.of("a", buildPoint(0, 0)));
 
             tracker.clearObservations();
@@ -127,5 +144,10 @@ final class MotionTrackerTest {
 
     private static double[] buildPoint(double x, double y) {
         return new double[] {x, y};
+    }
+
+    // A key with two arms, so two of them can share the arm a point is named by and still differ -
+    // the shape a caller whose names are not unique tells its points apart with.
+    private record PointKey(String name, String tag) {
     }
 }

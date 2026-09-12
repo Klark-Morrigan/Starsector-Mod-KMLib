@@ -21,15 +21,14 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link SectorStarSystems#collectHyperspacePositions},
- * {@link SectorStarSystems#collectPositionsById},
  * {@link SectorStarSystems#getPlayerStarSystem}, {@link SectorStarSystems#indexById},
  * {@link SectorStarSystems#indexHeldSystemsById}, {@link SectorStarSystems#indexByKey} and
  * {@link SectorStarSystems#findSystemById}. Each method's cases live in a {@link Nested} group so
  * the suite reports as a per-method tree.
  *
  * <p>Every read keyed on something gets a case posing two systems that share an id, since a live
- * modded sector holds several such pairs and each read answers differently: the key index holds
- * both, the id index and the id lookup hold the first, the id-keyed positions hold the last.
+ * modded sector holds several such pairs and the two addresses answer differently: the key index
+ * holds both, the id index and the id lookup hold the first.
  */
 final class SectorStarSystemsTest {
 
@@ -80,110 +79,6 @@ final class SectorStarSystemsTest {
 
             var counts = WalkCountCapture.captureCountsOf(
                 () -> SectorStarSystems.collectHyperspacePositions(sector));
-
-            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
-                .isEqualTo(1L);
-            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
-                .isEqualTo(2L);
-        }
-    }
-
-    @Nested
-    class CollectPositionsById {
-
-        @Test
-        void keysEachSelectedSystemByIdWithItsPosition() {
-
-            var sector = StarSystemFixture.buildSectorOf(
-                StarSystemFixture.buildSystemAt("a", 10, 20),
-                StarSystemFixture.buildSystemAt("b", -5, 7));
-
-            var positions = SectorStarSystems.collectPositionsById(sector, system -> true);
-
-            assertThat(positions.get("a"))
-                .containsExactly(10.0, 20.0);
-            assertThat(positions.get("b"))
-                .containsExactly(-5.0, 7.0);
-        }
-
-        @Test
-        void excludesSystemsThePredicateRejects() {
-
-            var sector = StarSystemFixture.buildSectorOf(
-                StarSystemFixture.buildSystemAt("kept", 1, 1),
-                StarSystemFixture.buildSystemAt("rejected", 2, 2));
-
-            var positions = SectorStarSystems.collectPositionsById(
-                sector,
-                system -> system.getId().equals("kept"));
-
-            assertThat(positions)
-                .containsOnlyKeys("kept");
-        }
-
-        @Test
-        void skipsASelectedSystemWithoutALocation() {
-
-            var sector = StarSystemFixture.buildSectorOf(
-                StarSystemFixture.buildSystemAt("located", 1, 1),
-                StarSystemFixture.buildSystem("unlocated"));
-
-            var positions = SectorStarSystems.collectPositionsById(sector, system -> true);
-
-            assertThat(positions)
-                .containsOnlyKeys("located");
-        }
-
-        @Test
-        void aNullPredicateKeepsEveryLocatedSystem() {
-
-            var sector = StarSystemFixture.buildSectorOf(
-                StarSystemFixture.buildSystemAt("a", 1, 1),
-                StarSystemFixture.buildSystemAt("b", 2, 2));
-
-            var positions = SectorStarSystems.collectPositionsById(sector, null);
-
-            assertThat(positions)
-                .containsOnlyKeys("a", "b");
-        }
-
-        @Test
-        void nullSectorYieldsNoPositions() {
-            assertThat(SectorStarSystems.collectPositionsById(null, system -> true))
-                .isEmpty();
-        }
-
-        @Test
-        void keepsTheLastPositionOfSystemsSharingAnId() {
-            // Two systems under one id are one entry, the later position standing for both. The
-            // co-located pair this happens to in a live sector is exactly the one a motion poll
-            // then reads as a single system moving.
-            var sector = StarSystemFixture.buildSectorOf(
-                StarSystemFixture.placeSystemAt(
-                    StarSystemFixture.buildKeyedSystem("deep space", null, "8b3"), 1, 1),
-                StarSystemFixture.placeSystemAt(
-                    StarSystemFixture.buildKeyedSystem("deep space", null, "38d53"), 2, 2));
-
-            var positions = SectorStarSystems.collectPositionsById(sector, null);
-
-            assertThat(positions)
-                .containsOnlyKeys("deep space");
-            assertThat(positions.get("deep space"))
-                .containsExactly(2.0, 2.0);
-        }
-
-        @Test
-        void countsTheSystemsItWentOverRatherThanTheOnesItKept() {
-            // What the walk cost is what it reached: a filter keeping one system of two did not
-            // make the traversal any shorter, and a row saying it did would price it wrong.
-            var sector = StarSystemFixture.buildSectorOf(
-                StarSystemFixture.buildSystemAt("kept", 1, 1),
-                StarSystemFixture.buildSystemAt("rejected", 2, 2));
-
-            var counts = WalkCountCapture.captureCountsOf(
-                () -> SectorStarSystems.collectPositionsById(
-                    sector,
-                    system -> system.getId().equals("kept")));
 
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
                 .isEqualTo(1L);

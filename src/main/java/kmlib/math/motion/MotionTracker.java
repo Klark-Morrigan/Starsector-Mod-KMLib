@@ -20,21 +20,29 @@ import java.util.Set;
  * that stops being observed drops its baseline, so it is judged afresh if it
  * returns.
  *
+ * <p>The key is the caller's, compared by equality, and it is what tells one point from
+ * another: two points under one key are one observation, and a move by either reads as a
+ * move by whichever was recorded last. So a caller whose points can share a name keys them
+ * by whatever does tell them apart, and the tracker takes that type rather than fixing one
+ * and leaving the caller to flatten its key into it.
+ *
  * <p>The moving set is republished through a volatile field on each observation, so
  * a reader on another thread sees each publication whole without locking. The
  * baseline map is mutated only by {@link #observe}, so one writer paired with any
  * number of snapshot readers is safe.
+ *
+ * @param <K> what tells one observed point from another
  */
-public final class MotionTracker {
+public final class MotionTracker<K> {
     // The squared distance a point must shift between observations to count as
     // motion rather than numerical jitter. Squared so the check avoids a sqrt.
     private final double motionThresholdSquared;
     // Each key's position as seen last observation, the baseline the next
     // observation compares against. Mutated only by observe().
-    private final Map<String, double[]> lastObservedPositionByKey = new LinkedHashMap<>();
+    private final Map<K, double[]> lastObservedPositionByKey = new LinkedHashMap<>();
     // The keys observed to be moving, republished each observation. Volatile so a
     // reader sees each new publication as a whole.
-    private volatile Set<String> publishedMovingKeys = Set.of();
+    private volatile Set<K> publishedMovingKeys = Set.of();
 
     /**
      * @param motionThreshold the distance a point must shift between observations to
@@ -52,7 +60,7 @@ public final class MotionTracker {
      * @return the keys currently moving - an immutable snapshot safe to read from
      *         another thread; empty until the first observation sees anything move
      */
-    public Set<String> getMovingKeys() {
+    public Set<K> getMovingKeys() {
         return publishedMovingKeys;
     }
 
@@ -79,8 +87,8 @@ public final class MotionTracker {
      *         while it holds steady - including a key that simply keeps moving, which
      *         is already in the set, so nothing changes
      */
-    public boolean observe(Map<String, double[]> currentPositionByKey) {
-        var movingKeys = new LinkedHashSet<String>();
+    public boolean observe(Map<K, double[]> currentPositionByKey) {
+        var movingKeys = new LinkedHashSet<K>();
         for (var entry : currentPositionByKey.entrySet()) {
             var lastPosition = lastObservedPositionByKey.get(entry.getKey());
             // A first-seen key has no baseline, so it cannot be judged moving yet;

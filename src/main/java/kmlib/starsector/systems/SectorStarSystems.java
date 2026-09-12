@@ -14,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * Queries over the sector's whole set of star systems: where they sit, how to reach one by id or
@@ -60,47 +59,11 @@ public final class SectorStarSystems {
         var positions = new ArrayList<double[]>();
 
         walkStarSystems(sector, system -> {
-            var point = readPointOf(system);
-            if (point != null) {
-                positions.add(point);
+            // A system the sector never placed has no point to record.
+            var location = system.getLocation();
+            if (location != null) {
+                positions.add(new double[] {location.x, location.y});
             }
-        });
-
-        return positions;
-    }
-
-    /**
-     * Collects the live hyperspace position of every star system the predicate selects, keyed by
-     * system id - the id-addressed counterpart of {@link #collectHyperspacePositions}, for callers
-     * that must match a position back to the system it belongs to (tracking motion, diffing a
-     * layout).
-     *
-     * @param sector        the sector to read; null yields an empty map
-     * @param shouldInclude which systems to keep; a system it rejects is left out. Null applies no
-     *                      filter - every located system is kept, making this the id-keyed twin of
-     *                      {@link #collectHyperspacePositions}
-     * @return each selected system's {x, y} position keyed by id, in the sector's star-system
-     *         order; a system with no location is skipped, having no position to record. An id is
-     *         not unique (see {@link #indexByKey}), so several systems sharing one leave a single
-     *         entry holding the last of their positions
-     */
-    public static Map<String, double[]> collectPositionsById(
-            SectorAPI sector,
-            Predicate<StarSystemAPI> shouldInclude) {
-
-        var positions = new LinkedHashMap<String, double[]>();
-
-        walkStarSystems(sector, system -> {
-            var point = readPointOf(system);
-            if (point == null) {
-                return;
-            }
-            // A null predicate means no scoping was asked for, so every located
-            // system is kept rather than the walk failing on the missing filter.
-            if (shouldInclude != null && !shouldInclude.test(system)) {
-                return;
-            }
-            positions.put(system.getId(), point);
         });
 
         return positions;
@@ -258,16 +221,6 @@ public final class SectorStarSystems {
         // Charged at what the walk reached rather than at what a caller's filter kept: a read
         // keeping one system of two did not make the traversal any shorter.
         SectorWalkCounters.countSectorWalk(systems.size());
-    }
-
-    // Where a system sits, as the {x, y} pair every layout read here answers in, or nothing for a
-    // system the sector never placed. Shared because the two position reads differ in what they key
-    // the point by rather than in what a point is.
-    private static double[] readPointOf(StarSystemAPI system) {
-
-        var location = system.getLocation();
-
-        return location == null ? null : new double[] {location.x, location.y};
     }
 
     // Puts a system under its id, keeping the one already indexed there.
