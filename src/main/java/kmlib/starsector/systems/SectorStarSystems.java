@@ -125,17 +125,17 @@ public final class SectorStarSystems {
      * The star systems reachable by id, keyed by their {@code getId}, for a caller resolving many
      * ids rather than one.
      *
-     * <p>The bulk counterpart of {@link #findById}, which walks the system list per lookup: a pass
-     * resolving an id for each of a few hundred systems would otherwise walk that list once per
-     * system. Keyed on {@code getId} for the same reason {@link #findById} matches on it - vanilla's
-     * own {@code SectorAPI#getStarSystem} matches the optional unique id first and silently misses a
-     * system whose base name is what every system-keyed map is built on.
+     * <p>The bulk counterpart of {@link #findSystemById}, which walks the system list per lookup: a
+     * pass resolving an id for each of a few hundred systems would otherwise walk that list once per
+     * system. Keyed on {@code getId} for the same reason {@link #findSystemById} matches on it -
+     * vanilla's own {@code SectorAPI#getStarSystem} matches the optional unique id first and
+     * silently misses a system whose base name is what every system-keyed map is built on.
      *
      * <p>Not every system in the sector: an id is not unique, and a modded install holds several
      * that share one. The first system carrying an id is the one indexed under it, which is the
-     * system {@link #findById} answers with as well, so both id reads name the same system. Each
-     * further one is stated in the log rather than quietly taking the entry. A pass that must reach
-     * every system asks {@link #indexByKey} instead.
+     * system {@link #findSystemById} answers with as well, so both id reads name the same system.
+     * Each further one is stated in the log rather than quietly taking the entry. A pass that must
+     * reach every system asks {@link #indexByKey} instead.
      *
      * <p>Read off the key index rather than by a walk of its own, so the sector is traversed once
      * however a caller asks for it. The complete index is the one a coarser address is taken from,
