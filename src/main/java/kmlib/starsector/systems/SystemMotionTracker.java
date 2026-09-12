@@ -7,21 +7,13 @@ import java.util.Set;
 
 /**
  * Tracks which star systems move across hyperspace between polls, among the systems whose
- * positions a caller hands it.
+ * positions a caller hands it: {@link MotionTracker} bound to {@link SystemKey} and to the floor a
+ * hyperspace shift has to clear to read as motion rather than float noise.
  *
- * <p>Some mods make a system a mobile entity that rewrites its own
- * {@code getLocation()} and drifts, which breaks any layout that assumes a fixed
- * position - a map partition, a proximity index. This observes each handed system's
- * live position each poll and reports the ones that moved, so a caller can
- * leave a mover out of its layout rather than chase it. Detection is by observation
- * only, with no coupling to how a system is moved; see {@link MotionTracker}.
- *
- * <p>Observed under {@link SystemKey} rather than under the system id, because an id is not
- * unique: a live modded sector holds several systems sharing one, and two of them co-located
- * under one id would be one observation, so a move by either read as a move by the one recorded
- * last. Which systems are in scope is the caller's alone - those a given feature draws, owns, or
- * otherwise cares about - so this stays agnostic to any one feature's membership rule while
- * sharing the detection.
+ * <p>Keyed by {@link SystemKey} rather than by system id because an id is not unique: two systems
+ * co-located under one id would be one observation, and a move by either would read as a move by
+ * the one recorded last. Which systems are in scope is the caller's alone, so this stays agnostic
+ * to any one feature's membership rule.
  */
 public final class SystemMotionTracker {
     // The floor a system's hyperspace position must shift between polls to read as
