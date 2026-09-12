@@ -288,6 +288,17 @@ final class SectorPassIndexTest {
         }
 
         @Test
+        void answersTheFirstOfTwoSystemsSharingAnId() {
+            // What this address costs, and the reason a pass accounting for every system takes the
+            // other one. Taken off the systems the key index holds rather than a walk of its own,
+            // so the case is also what says that re-addressing kept the id rule it is named for.
+            var world = buildTwoSystemsSharingAnId();
+
+            assertThat(new SectorPassIndex(world.sector()).readSystemsById())
+                .containsExactly(entry("deep space", world.first()));
+        }
+
+        @Test
         void traversesTheSectorOnceAcrossRepeatedAsks() {
             // This is what a reader resolving many ids takes instead of indexing the sector for
             // itself, so it has to be cheaper than doing so - otherwise the reader has bought the
