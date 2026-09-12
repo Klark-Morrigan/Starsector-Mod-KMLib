@@ -1,14 +1,8 @@
 # Klark Morrigan's Library (KMLib)
 
-Starsector utility mod that hosts shared Java helpers used by the
-other KM mod series members
-(e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)). Its jar is
-what those mods depend on at compile and runtime; beyond it KMLib ships a
-[settings tab](#requirements), a set of
-[console commands](#console-commands), and a mod plugin that binds the
-settings and registers its
-[optional-mod adapters](#optional-mod-seams) at application load. It runs
-nothing per frame of its own.
+Starsector library/dependency mod that hosts reusable(feature-agnostic) code, and primarily serves other KM mod series members (e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)).
+Its jar is what those mods depend on at compile and runtime;
+beyond it KMLib ships a [settings tab](#requirements), a set of [console commands](#console-commands), and a mod plugin that binds the settings and registers its [optional-mod adapters](#optional-mod-seams) at application load. It runs nothing per frame of its own.
 
 ## Index
 
