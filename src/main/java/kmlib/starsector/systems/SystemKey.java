@@ -1,5 +1,6 @@
 package kmlib.starsector.systems;
 
+import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import kmlib.text.KmlibStrings;
@@ -54,9 +55,9 @@ public record SystemKey(
      * way as one read off a system.
      */
     public SystemKey {
-        systemId = KmlibStrings.hasText(systemId) ? systemId : ABSENT_ARM;
-        centreEntityId = KmlibStrings.hasText(centreEntityId) ? centreEntityId : ABSENT_ARM;
-        anchorEntityId = KmlibStrings.hasText(anchorEntityId) ? anchorEntityId : ABSENT_ARM;
+        systemId = readStatedArm(systemId);
+        centreEntityId = readStatedArm(centreEntityId);
+        anchorEntityId = readStatedArm(anchorEntityId);
     }
 
     /**
@@ -77,12 +78,22 @@ public record SystemKey(
         if (system == null) {
             return null;
         }
-        var centre = system.getCenter();
-        var anchor = system.getHyperspaceAnchor();
-
         return new SystemKey(
             system.getId(),
-            centre == null ? ABSENT_ARM : centre.getId(),
-            anchor == null ? ABSENT_ARM : anchor.getId());
+            readEntityId(system.getCenter()),
+            readEntityId(system.getHyperspaceAnchor()));
+    }
+
+    // An arm as its holder stated it, or the absent token where nothing was stated. The one place
+    // absence is decided, so a key read off a system and one built by hand from partial reads
+    // cannot disagree about what "not there" is.
+    private static String readStatedArm(String arm) {
+        return KmlibStrings.hasText(arm) ? arm : ABSENT_ARM;
+    }
+
+    // An entity's id, or nothing where the system carries no such entity - which the constructor
+    // then reads as an absent arm, rather than this read naming the absent token itself.
+    private static String readEntityId(SectorEntityToken entity) {
+        return entity == null ? null : entity.getId();
     }
 }
