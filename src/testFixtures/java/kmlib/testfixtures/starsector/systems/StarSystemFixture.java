@@ -99,6 +99,23 @@ public final class StarSystemFixture {
     }
 
     /**
+     * Gives an already posed system its hyperspace anchor, and answers it - so a case can tell two
+     * systems posed under one id apart on top of whatever else they were built to carry, the
+     * anchor being the arm that separates such a pair in a live sector.
+     */
+    public static StarSystemAPI anchorSystemTo(StarSystemAPI system, String anchorEntityId) {
+
+        // The anchor finishes its own wiring before the system's opens, since building one inside
+        // a when(...) call leaves Mockito's stubbing half finished.
+        var anchorMock = buildEntity(anchorEntityId);
+
+        when(system.getHyperspaceAnchor())
+            .thenReturn(anchorMock);
+
+        return system;
+    }
+
+    /**
      * Gives an already posed system the name a surface titles it by, and answers it. Vanilla
      * composes that name from the system's own name plus its type, so a case about what is said
      * about a system states it rather than leaving the system nameless.
