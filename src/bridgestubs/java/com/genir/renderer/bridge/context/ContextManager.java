@@ -1,8 +1,8 @@
 package com.genir.renderer.bridge.context;
 
 /**
- * Compile-only mirror of Fast Rendering's {@code ContextManager}, and the entry point of the three
- * stubs in this source set.
+ * Compile-only mirror of Fast Rendering's {@code ContextManager}, and the entry point of the stubs
+ * in this source set.
  *
  * <p>These exist so KMLib compiles identically on a stock install and a Fast-Rendering-patched one.
  * The real classes ship in {@code starsector-core/fr.jar}, which only a patched install has, so a

@@ -12,35 +12,39 @@ compiled fine against real LWJGL binds to the bridge at runtime and dies with a
 `NoSuchMethodError` the first time it reads a matrix back - from inside its render pass, so it
 takes the screen down with it rather than failing at load.
 
-Verified against **v0.8.5rc1** (`fr.jar`, SHA-256
-`85db8158414547f4c4b56302c0ca8644e62fb4043156e485ae84b5098d7a8ee3`, 642412 bytes) on Starsector
-0.98a-RC8. Identifying that build takes the hash: v0.8.5rc1 ships the v0.8.4 version strings
-unchanged, so `Version.getVersion()`, the agent's startup log line and the `FR8.4` on the launcher
-all still read v0.8.4.
+Verified against **v0.8.8** (`fr.jar`, SHA-256
+`a3c5bbaf60a2399aea1968fab7855f062386f7d1158d168225bdedf336065bd6`, 669864 bytes) on Starsector
+0.98a-RC8.
 
-It was first written against v0.7.2 and re-read on every release since: no `glGet*` entry point has
-been added or removed across any of them, while everything around it has - v0.7.4 moved the
-bridge from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command
+It was first written against v0.7.2 and re-read on every release since. One `glGet*` entry point
+has been added in that whole span - `glGetTexParameteri`, in v0.8.7 - and it is telling: it closed
+exactly this class of bug (a `NoSuchMethodError` from a read the bridge did not implement) for a
+different pname family, by delegating through `exec.get`. So the gap reported here is a known
+shape with a known remedy; the matrix reads are simply the ones still missing.
+
+Everything around that surface has meanwhile turned over repeatedly - v0.7.4 moved the bridge
+from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command
 interfaces to `com.genir.renderer.bridge.interfaces`; v0.8.0 replaced the system classloader with
 a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`,
 `com.genir.renderer.agent`); v0.8.3 added a compressed-texture path inside `glGetTexImage`;
 v0.8.4 repacked `VertexInterceptor`'s vertex arrays and moved program tracking from
-`AttribTracker` to a `ShaderTracker`; and v0.8.5rc1 moved that tracking back to `AttribTracker`,
-reworked context creation, and moved texture loading off the startup path. None of that touches
-which state a caller can read back.
+`AttribTracker` to a `ShaderTracker`; v0.8.5rc1 moved that tracking back to `AttribTracker`,
+reworked context creation, and moved texture loading off the startup path; v0.8.6 rewrote
+`TextureTracker` to record each texture's bound target; and v0.8.7rc1 re-laid-out the frame's
+packed command arguments. None of that touches which matrix a caller can read back.
 
 ## Details
 
 The bridge's entire `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`,
-`glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, and two
-`glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.8.5rc1 jar it
-decompiles to L1288-L1501). `glGetFloat` exists only in its scalar form, which cannot take a
-matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked
-state without a stall is already there, and it keeps being reached for. `glIsTexture` took it in
-v0.8.4 and `glGetTexLevelParameteri`'s three size pnames in v0.8.5rc1: both now answer from a
-caller-side `TextureTracker` and demote the real GL call to a deferred assertion, turning reads
-that used to stall into ones that cannot. The modelview is the same shape of problem with no
-such treatment.
+`glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`,
+`glGetTexParameteri`, and two `glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the
+shipped v0.8.8 jar it decompiles to L1230-L1484). `glGetFloat` exists only in its scalar form,
+which cannot take a matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a
+value from tracked state without a stall is already there, and it keeps being reached for.
+`glIsTexture` took it in v0.8.4 and `glGetTexLevelParameteri`'s three size pnames in v0.8.5rc1:
+both now answer from a caller-side `TextureTracker` and demote the real GL call to a deferred
+assertion, turning reads that used to stall into ones that cannot. The modelview is the same shape
+of problem with no such treatment.
 
 The affected pattern is the standard one for turning a cursor into world coordinates:
 
@@ -98,9 +102,17 @@ fatal. `Executor.wait` calls `StallDetector.detectStall`
 open map runs every frame, so a synchronous read there stalls 60 of 60 and brings the game down
 within about a second. A mod cannot read the modelview synchronously every frame at all.
 
-Detection is armed on the first combat frame rendered (`overrides/CombatEngine.render`), so a
-stalling read is silently tolerated until then. That makes the failure look intermittent to mod
-authors: the same code can survive a menu-and-map session and die on the first battle.
+Since v0.8.7 detection is armed at the end of game initialisation, in
+`ResourceLoader.initEpilogue` - after every mod's `onApplicationLoad`, before the main menu is
+drawn - so a per-frame stalling read is fatal the first time the campaign map is opened. Through
+v0.8.7rc1 it was armed on the first combat frame instead (`overrides/CombatEngine.render`), which
+made the same code survive a menu-and-map session and die on the first battle.
+
+Worth noting in both directions. The v0.8.7 arming point is the better one, and it removes the
+intermittency that made this hard for mod authors to diagnose. It also means a mod that worked
+around the missing matrix read with a synchronous `Executor.get` now fails immediately rather than
+eventually, so the pressure to get the read right has moved earlier - which is part of why an
+inline answer is worth having.
 
 This is a constraint on mods, not on the bridge itself: the bridge owns the detector, so an
 in-bridge implementation is free of it.
