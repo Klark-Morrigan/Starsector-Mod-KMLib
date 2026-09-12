@@ -3,7 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
@@ -23,8 +23,8 @@ import java.util.List;
  *
  * <p>The one shared {@link PanelPlacement} a renderer draws and an input listener hit-tests is what keeps
  * the drawn box and the clickable box in step. UI coordinates throughout (origin bottom-left, y grows up);
- * text snapping runs through the injected {@link LineWidthMeasurer}, so the layout depends on a width
- * measurement rather than a concrete font and stays a pure computation. The panel hangs from the screen's
+ * text snapping runs through the injected {@link StripTextMeasurers}, so the layout depends on width
+ * measurements rather than concrete fonts and stays a pure computation. The panel hangs from the screen's
  * top-left by its paddings and caps its height to a bottom margin; that anchoring is the caller's to
  * supply through the paddings.
  */
@@ -43,7 +43,7 @@ public final class PanelLayout {
      * @param chrome          the room the panel spends on chrome rather than content: the border framing
      *                        the footprint, and the thickness of the bar its body reserves a gutter for
      * @param bodyControls    the body controls, top to bottom (empty for no body)
-     * @param measurer        measures each label's rendered width for text snapping
+     * @param measurers       measure each label's rendered width for text snapping
      * @param rawScrollOffset the requested scroll offset for the body's scrolling control, in pixels;
      *                        clamped to its overflow by the capped layout
      * @return the box, body, laid-out body controls, and the scroll geometry, in UI coordinates
@@ -53,7 +53,7 @@ public final class PanelLayout {
             Padding padding,
             PanelChrome chrome,
             List<ControlSpec> bodyControls,
-            LineWidthMeasurer measurer,
+            StripTextMeasurers measurers,
             float rawScrollOffset) {
 
         var border = chrome.border();
@@ -70,7 +70,7 @@ public final class PanelLayout {
             origin.limitBodyTo(maxBodyHeight),
             chrome.scrollbarThickness(),
             bodyControls,
-            measurer,
+            measurers,
             rawScrollOffset);
 
         return framePlacement(

@@ -14,7 +14,8 @@ import org.lazywizard.lazylib.ui.LazyFont;
  *
  * @param font the loaded face whose glyph metrics measure each line; must be non-null
  */
-public record LazyFontMeasurer(LazyFont font) implements LineWidthMeasurer {
+public record LazyFontMeasurer(
+    LazyFont font) implements LineWidthMeasurer {
 
     // The glyph a face's lower-case band is read off. An x is the letter with a flat top and a flat
     // bottom on every atlas here, so it states where lower-case letters actually sit without the
@@ -43,6 +44,7 @@ public record LazyFontMeasurer(LazyFont font) implements LineWidthMeasurer {
      * @return the drop from the line's top edge to the middle of its lower-case band, in UI units
      */
     public double measureLowercaseBandCentreDrop(double fontSize) {
+
         var lowercaseGlyph = font.getChar(LOWERCASE_BAND_GLYPH);
 
         // The atlas's own units brought to the size the line draws at, by the same scale LazyLib places

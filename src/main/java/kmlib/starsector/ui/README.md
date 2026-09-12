@@ -19,6 +19,7 @@ content. Pairs that look like duplication across the tiers usually are not - see
   - [`ImageSpan` versus `RowSlot.Image`](#imagespan-versus-rowslotimage)
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
+- [A strip is measured in two faces](#a-strip-is-measured-in-two-faces)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
 - [A panel of one's own over a core screen](#a-panel-of-ones-own-over-a-core-screen)
 - [The list picker holds no store](#the-list-picker-holds-no-store)
@@ -297,6 +298,26 @@ implements it per surface: the binding closes over `TextSpanMeasurer`, so the La
 adapter is still the only thing that knows a glyph width. And it lives in `text` rather
 than beside its sibling in `font` because `text` already reads `font` (a `TextStyle` holds
 a `TextFace`), so a port in `font` naming `TextSpan` would close that into a cycle.
+
+## A strip is measured in two faces
+
+A control strip is not lettered in one atlas. A [`ControlSpec.Tabs`](controls/ControlSpec.java)
+row - as a panel's header band or as a body row - reads in the tab face its
+[`TabStyle`](widgets/tabs/style/TabStyle.java) states; every other control reads in the body face
+its [`WidgetStyle`](render/gl/style/WidgetStyle.java) states. So
+[`ControlStripLayout`](layout/ControlStripLayout.java) and the layouts above it take a
+[`StripTextMeasurers`](font/StripTextMeasurers.java) pair, and charge each row the measurement for
+the face it paints in.
+
+One measurer for both would size half the rows against letters they are never drawn in. That error
+does not stay local: a strip is framed to its widest row, so a body row mismeasured by a few pixels
+per glyph moves the whole panel's width - and where two hosts state different tab faces, the same
+body comes out a different width under each.
+
+The pair is built from the faces themselves
+(`StripTextMeasurers.loadFaceMeasurers`), taking a `TextFace` and a `StarsectorFont`: two members of
+one type would swap silently in a positional hand-off, which is the very fault the pair exists to
+remove. The canonical constructor stays open for a caller supplying its own metrics.
 
 ## Two hosts, one map widget
 

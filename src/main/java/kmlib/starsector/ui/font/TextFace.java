@@ -11,6 +11,6 @@ package kmlib.starsector.ui.font;
  * @param size the size the text draws at, which need not be the atlas's native size
  */
 public record TextFace(
-        StarsectorFont font,
-        double size) {
+    StarsectorFont font,
+    double size) {
 }

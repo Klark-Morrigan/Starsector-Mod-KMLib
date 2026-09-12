@@ -40,8 +40,10 @@ public final class DrawableStringCache {
      *         the face will not load
      */
     public static DrawableString resolveRun(TextFace face, String text) {
+
         var run = new TextRun(face, text);
         var cached = RUN_BY_TEXT.get(run);
+
         if (cached != null) {
             return cached;
         }

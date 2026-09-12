@@ -5,6 +5,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -47,9 +48,10 @@ import java.util.List;
  * <p>The header is laid through {@link TabsControlLayout#layoutHeaderControl}, so a header tab measures,
  * draws, and hit-tests through the same tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
  * coordinates throughout (origin bottom-left, y grows up); text snapping runs through the injected
- * {@link LineWidthMeasurer}, so the layout is a pure computation. The panel hangs from the screen's
- * top-left by its paddings and caps its height to a bottom margin; that anchoring is the caller's to
- * supply through the paddings.
+ * {@link StripTextMeasurers} - the header row and a body tabs row read its tab-face measurement, every
+ * other body control its body-face one - so the layout is a pure computation. The panel hangs from the
+ * screen's top-left by its paddings and caps its height to a bottom margin; that anchoring is the
+ * caller's to supply through the paddings.
  *
  * <p>The body collapses horizontally on a fraction: at 0 it lays out at its full width, and as the
  * fraction climbs to 1 the interior narrows to nothing and the box reduces to a border-only rail at the
@@ -94,7 +96,7 @@ public final class TabPanelLayout {
      *                       tabs themselves, and the panel's own button after them. The button's own band
      *                       height is not honoured - it stands in this panel's band, not one of its own
      * @param bodyControls   the active tab's body controls, top to bottom (empty for no body)
-     * @param measurer       measures each label's rendered width for text snapping
+     * @param measurers      measure each label's rendered width for text snapping
      * @param viewState      how far the panel is scrolled and folded
      * @return the laid-out tabs header, the band button standing after it (null where none was asked for),
      *         how much of that whole band the fold leaves on screen, the body placement carrying the framed
@@ -107,7 +109,7 @@ public final class TabPanelLayout {
             PanelChrome chrome,
             HeaderBandSpec headerBand,
             List<ControlSpec> bodyControls,
-            LineWidthMeasurer measurer,
+            StripTextMeasurers measurers,
             TabPanelViewState viewState) {
 
         var tabStyle = headerBand.style();
@@ -148,7 +150,7 @@ public final class TabPanelLayout {
             origin.contentX(),
             bandTopY,
             tabStyle,
-            measurer);
+            measurers.tabFaceMeasurer());
 
         // The panel's own button, laid where the tabs leave off so the band simply grows by one box, and at
         // its own look rather than the row's: it is a button standing beside tabs, so it wears a button's
@@ -163,7 +165,7 @@ public final class TabPanelLayout {
             tabsHeader.bounds().x() + tabsHeader.bounds().width(),
             bandTopY,
             tabStyle.headerBandHeight(),
-            measurer);
+            measurers.tabFaceMeasurer());
 
         // Body: the same shared composition a plain panel frames, hung beneath the header band and capped so
         // the row and the box together clear the bottom margin - the band height counted against the
@@ -185,7 +187,7 @@ public final class TabPanelLayout {
             origin.limitBodyTo(maxBodyHeight),
             chrome.scrollbarThickness(),
             bodyControls,
-            measurer,
+            measurers,
             viewState.rawScrollOffset());
 
         // Collapse the interior horizontally by the fraction: the controls keep their laid-out positions
@@ -246,7 +248,7 @@ public final class TabPanelLayout {
             float bandLeftX,
             float bandTopY,
             float bandHeight,
-            LineWidthMeasurer measurer) {
+            LineWidthMeasurer tabFaceMeasurer) {
 
         if (bandButtonSpec == null) {
             return null;
@@ -259,7 +261,7 @@ public final class TabPanelLayout {
                 bandLeftX,
                 bandTopY,
                 buttonStyle,
-                measurer),
+                tabFaceMeasurer),
             buttonStyle,
             bandButtonSpec.icon());
     }

@@ -6,7 +6,7 @@ import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
@@ -54,7 +54,11 @@ final class PanelLayoutTest {
     // expected geometry is arithmetic rather than a measured constant.
     private static final float WIDTH_PER_CHAR = 10f;
 
-    private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
+    // Both faces measure alike here, so every expectation below stays a plain character count; the
+    // faces being told apart is pinned where that is the point under test.
+    private final StripTextMeasurers measurersFake = new StripTextMeasurers(
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR),
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR));
 
     // A representative body of generic control specs the way any host would supply: a checkbox, a
     // two-option radio with a trailing caption, and a toggle. The layout snaps and stacks by geometry
@@ -391,7 +395,7 @@ final class PanelLayoutTest {
                 new Padding(PADDING_TOP, 0, PADDING_BOTTOM, PADDING_LEFT),
                 buildChrome(scrollbarThickness),
                 bodyControls,
-                measurerFake,
+                measurersFake,
                 0f);
         }
 
@@ -408,7 +412,7 @@ final class PanelLayoutTest {
                 new Padding(PADDING_TOP, 0, TIGHT_PADDING_BOTTOM, PADDING_LEFT),
                 buildChrome(scrollbarThickness),
                 buildScrollingBody(),
-                measurerFake,
+                measurersFake,
                 rawScrollOffset);
         }
 

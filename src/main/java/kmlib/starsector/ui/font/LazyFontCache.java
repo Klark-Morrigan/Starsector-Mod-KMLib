@@ -25,6 +25,7 @@ import java.util.Set;
  * {@code mod_info.json} dependency instead.
  */
 public final class LazyFontCache {
+
     private static final Logger LOG = Global.getLogger(LazyFontCache.class);
 
     // Faces loaded so far, cached by path so a face already selected loads once even
@@ -53,6 +54,7 @@ public final class LazyFontCache {
     // without retrying; a FontException (a missing or malformed .fnt) is logged once for
     // that path so a caller in a per-frame rebuild loop does not flood the log or throw.
     private static LazyFont getFont(String fontPath) {
+
         var cached = FONT_BY_PATH.get(fontPath);
         if (cached != null) {
             return cached;
@@ -64,7 +66,9 @@ public final class LazyFontCache {
             var loaded = LazyFont.loadFont(fontPath);
             FONT_BY_PATH.put(fontPath, loaded);
             return loaded;
+
         } catch (FontException exception) {
+
             FAILED_FONT_PATHS.add(fontPath);
             LOG.error(
                 "Could not load font '"

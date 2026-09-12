@@ -5,7 +5,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
@@ -91,7 +91,11 @@ final class TabPanelLayoutTest {
 
     private static final float HEADER_WIDTH = FIRST_TAB_WIDTH + SECOND_TAB_WIDTH;
 
-    private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
+    // Both faces measure alike here, so every expectation below stays a plain character count; the
+    // faces being told apart is pinned where that is the point under test.
+    private final StripTextMeasurers measurersFake = new StripTextMeasurers(
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR),
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR));
 
     private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
         List.of("No Layer", "Political Map"),
@@ -475,7 +479,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(0f), ScrollbarThickness.DEFAULT),
                 new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
                 BODY,
-                measurerFake,
+                measurersFake,
                 new TabPanelViewState(0f, 1f));
 
             var box = placement.body().box();
@@ -806,7 +810,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
                 new HeaderBandSpec(tabStyle, TABS, BAND_BUTTON),
                 bodyControls,
-                measurerFake,
+                measurersFake,
                 TabPanelViewState.RESTING);
         }
 
@@ -828,7 +832,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), scrollbarThickness),
                 new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
                 bodyControls,
-                measurerFake,
+                measurersFake,
                 new TabPanelViewState(0f, collapseFraction));
         }
 
@@ -839,7 +843,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH), ScrollbarThickness.DEFAULT),
                 new HeaderBandSpec(tabStyle, TABS, NO_BAND_BUTTON),
                 bodyControls,
-                measurerFake,
+                measurersFake,
                 TabPanelViewState.RESTING);
         }
 
@@ -857,7 +861,7 @@ final class TabPanelLayoutTest {
                 new PanelChrome(new BoxBorder(BORDER_WIDTH, borderedEdges), ScrollbarThickness.DEFAULT),
                 new HeaderBandSpec(DEFAULT_TAB_STYLE, TABS, NO_BAND_BUTTON),
                 bodyControls,
-                measurerFake,
+                measurersFake,
                 new TabPanelViewState(0f, collapseFraction));
         }
     }

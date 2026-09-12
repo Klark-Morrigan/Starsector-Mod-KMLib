@@ -5,6 +5,7 @@ import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.text.LabelRun;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.StyledSpanMeasurer;
@@ -30,10 +31,12 @@ import java.util.List;
  * and splits is {@link TabsControlLayout}'s, and this stacks the result like any other row.
  *
  * <p>UI coordinates throughout (origin bottom-left, y grows up); text snapping runs through the
- * injected {@link LineWidthMeasurer}, so the layout depends on a width measurement rather than a
- * concrete font and stays a pure computation. Measuring once and placing from the same row
- * dimensions lets a renderer and an input listener share one placement, so what is drawn is exactly
- * what the player clicks.
+ * injected {@link StripTextMeasurers}, so the layout depends on width measurements rather than
+ * concrete fonts and stays a pure computation. The pair is what lets a strip lettered in two faces be
+ * snapped in both: a tabs row is charged the tab-face measurement and every other control the
+ * body-face one, so no row is sized against letters it will not be drawn in. Measuring once and placing
+ * from the same row dimensions lets a renderer and an input listener share one placement, so what is
+ * drawn is exactly what the player clicks.
  */
 public final class ControlStripLayout {
 
@@ -79,13 +82,14 @@ public final class ControlStripLayout {
      * two columns plus their gap and as tall as its taller column, and is later flattened into its
      * children's controls at placement.
      *
-     * @param specs    the controls to measure, top to bottom
-     * @param measurer measures each label's rendered width for text snapping
+     * @param specs     the controls to measure, top to bottom
+     * @param measurers measure each label's rendered width for text snapping, one per face the strip
+     *                  letters in
      * @return the strip footprint and the per-row dimensions behind it, for {@link #layoutControls}
      */
     public static StripMeasurement measureStrip(
             List<ControlSpec> specs,
-            LineWidthMeasurer measurer) {
+            StripTextMeasurers measurers) {
 
         if (specs.isEmpty()) {
             return StripMeasurement.EMPTY;
@@ -95,12 +99,12 @@ public final class ControlStripLayout {
         var contentWidth = 0f;
 
         for (var spec : specs) {
-            var rowWidth = measureRowWidth(spec, measurer);
+            var rowWidth = measureRowWidth(spec, measurers);
             rowWidths.add(rowWidth);
             rowHeights.add(measureRowHeight(spec));
             contentWidth = Math.max(
                 contentWidth,
-                rowWidth + measureTrailingWidth(spec, measurer));
+                rowWidth + measureTrailingWidth(spec, measurers.bodyFaceMeasurer()));
         }
         // A divider carries no intrinsic width here (it measures zero) - it is stretched to the full
         // framed body at placement time, once the host has framed a body rectangle, so it never drives
@@ -126,7 +130,7 @@ public final class ControlStripLayout {
      * @param specs      the controls to place, top to bottom (must match the measured specs)
      * @param rowHeights the measured row heights, from {@link StripMeasurement#rowHeights()}
      * @param rowWidths  the measured row widths, from {@link StripMeasurement#rowWidths()}
-     * @param measurer   measures each label's rendered width, for snapping a tabs row's per-tab segments
+     * @param measurers  measure each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, top to bottom; empty when {@code specs} is empty
      */
     public static List<Control> layoutControls(
@@ -134,7 +138,7 @@ public final class ControlStripLayout {
             List<ControlSpec> specs,
             List<Float> rowHeights,
             List<Float> rowWidths,
-            LineWidthMeasurer measurer) {
+            StripTextMeasurers measurers) {
 
         if (specs.isEmpty()) {
             return List.of();
@@ -150,7 +154,7 @@ public final class ControlStripLayout {
         return toControls(
             specs,
             spanDividerRowsToBody(specs, rows, body),
-            measurer);
+            measurers);
     }
 
     /**
@@ -177,15 +181,15 @@ public final class ControlStripLayout {
      * row) pairs into laid-out controls, so this layout's plain stack and the capped strip layout's
      * pinned header and footer runs build their controls the same way rather than each re-zipping.
      *
-     * @param specs    the controls, in stack order
-     * @param rows     their snapped rows, the same size and order as {@code specs}
-     * @param measurer measures each label's rendered width, for snapping a tabs row's per-tab segments
+     * @param specs     the controls, in stack order
+     * @param rows      their snapped rows, the same size and order as {@code specs}
+     * @param measurers measure each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, in the same order
      */
     static List<Control> toControls(
             List<ControlSpec> specs,
             List<Rectangle> rows,
-            LineWidthMeasurer measurer) {
+            StripTextMeasurers measurers) {
 
         var controls = new ArrayList<Control>(specs.size());
 
@@ -199,12 +203,12 @@ public final class ControlStripLayout {
                 controls.addAll(expandSideBySide(
                     pair,
                     rows.get(index),
-                    measurer));
+                    measurers));
             } else {
                 controls.add(toControl(
                     spec,
                     rows.get(index),
-                    measurer));
+                    measurers));
             }
         }
         return List.copyOf(controls);
@@ -214,25 +218,25 @@ public final class ControlStripLayout {
      * Pairs one spec with the row it was snapped into, splitting a radio or a tabs row into its per-hit
      * segments and leaving every other kind a single-hit row. Package-private so the capped strip layout,
      * which places the flex list itself, builds its list control through the same segment rule this
-     * layout uses rather than re-deriving it. The measurer is only read for a tabs row, whose per-tab
-     * segments snap to text; every other kind splits geometrically and ignores it.
+     * layout uses rather than re-deriving it. A measurement is only read for a radio and a tabs row,
+     * whose segments snap to text; every other kind splits geometrically and ignores both.
      *
-     * @param spec     the control to pair with its row
-     * @param row      the row the strip snapped it into
-     * @param measurer measures each tab label's rendered width, for a tabs row's per-tab segments
+     * @param spec      the control to pair with its row
+     * @param row       the row the strip snapped it into
+     * @param measurers measure each label's rendered width, each row read in the face it letters in
      * @return the laid-out control, its segments split for a radio or tabs row and empty for other kinds
      */
-    static Control toControl(ControlSpec spec, Rectangle row, LineWidthMeasurer measurer) {
+    static Control toControl(ControlSpec spec, Rectangle row, StripTextMeasurers measurers) {
         // A radio (horizontal cells or the vertical stacked table) and a tabs row split into per-hit
-        // segments; a tabs row snaps its tabs to text, so it alone reads the measurer. Every other kind
-        // is a single-hit row with no segments.
+        // segments, each snapping to text in its own face - a radio's cells in the body face, a tabs
+        // row's tabs in the tab face. Every other kind is a single-hit row with no segments.
         List<Rectangle> segments;
 
         if (spec instanceof ControlSpec.HorizontalRadio radio) {
             segments = splitHorizontalRadioIntoSegments(
                 radio,
                 row,
-                measurer);
+                measurers.bodyFaceMeasurer());
         } else if (spec instanceof ControlSpec.VerticalTable table) {
             segments = RadioRow.splitIntoGrid(
                 row,
@@ -242,7 +246,7 @@ public final class ControlStripLayout {
             segments = TabsControlLayout.splitIntoSegments(
                 tabs,
                 row,
-                measurer);
+                measurers.tabFaceMeasurer());
         } else {
             segments = List.of();
         }
@@ -289,23 +293,23 @@ public final class ControlStripLayout {
     private static List<Control> expandSideBySide(
             ControlSpec.SideBySide pair,
             Rectangle row,
-            LineWidthMeasurer measurer) {
+            StripTextMeasurers measurers) {
 
         var rowTopY = row.y() + row.height();
         var leftControls = layoutColumn(
             pair.leftColumn(),
             row.x(),
             rowTopY,
-            measurer);
+            measurers);
 
         var rightX = row.x()
-            + measureColumnWidth(pair.leftColumn(), measurer)
+            + measureColumnWidth(pair.leftColumn(), measurers)
             + COLUMN_GAP;
         var rightControls = layoutColumn(
             pair.rightColumn(),
             rightX,
             rowTopY,
-            measurer);
+            measurers);
 
         var controls = new ArrayList<Control>(leftControls.size() + rightControls.size());
         controls.addAll(leftControls);
@@ -322,13 +326,13 @@ public final class ControlStripLayout {
             List<ControlSpec> specs,
             float columnX,
             float columnTopY,
-            LineWidthMeasurer measurer) {
+            StripTextMeasurers measurers) {
 
         var rowHeights = new ArrayList<Float>(specs.size());
         var rowWidths = new ArrayList<Float>(specs.size());
         for (var spec : specs) {
             rowHeights.add(measureRowHeight(spec));
-            rowWidths.add(measureRowWidth(spec, measurer));
+            rowWidths.add(measureRowWidth(spec, measurers));
         }
         var rows = RowStack.layoutRows(
             columnX,
@@ -337,7 +341,7 @@ public final class ControlStripLayout {
             rowHeights,
             rowWidths);
 
-        return toControls(specs, rows, measurer);
+        return toControls(specs, rows, measurers);
     }
 
     // The per-cell hit segments of a horizontal radio row, sized through the radio's own segment rule
@@ -346,12 +350,12 @@ public final class ControlStripLayout {
     private static List<Rectangle> splitHorizontalRadioIntoSegments(
             ControlSpec.HorizontalRadio radio,
             Rectangle row,
-            LineWidthMeasurer measurer) {
+            LineWidthMeasurer bodyMeasurer) {
 
         var widths = HorizontalSegments.computeSegmentWidths(
             radio.labels(),
             radioSegmentSpec(radio.segmentSizing()),
-            measurer);
+            bodyMeasurer);
 
         return HorizontalSegments.placeSegments(
             row.x(),
@@ -365,35 +369,39 @@ public final class ControlStripLayout {
     // segment column wide; a toggle is its label plus padding; a label is just its measured text,
     // since it has no widget chrome around it. A divider has no intrinsic width - it measures zero and
     // is stretched to the full framed body at placement - so it contributes nothing to the width here.
-    private static float measureRowWidth(ControlSpec spec, LineWidthMeasurer measurer) {
+    private static float measureRowWidth(ControlSpec spec, StripTextMeasurers measurers) {
+        var bodyMeasurer = measurers.bodyFaceMeasurer();
+
         if (spec instanceof ControlSpec.Checkbox checkbox) {
             return Checkbox.measureRowWidth(
                 CONTROL_ROW_HEIGHT,
-                measureLabelWidth(checkbox.labelRuns(), measurer));
+                measureLabelWidth(checkbox.labelRuns(), bodyMeasurer));
         }
         if (spec instanceof ControlSpec.Toggle toggle) {
-            return measureLabelWidth(toggle.labelRuns(), measurer) + TOGGLE_TEXT_PADDING;
+            return measureLabelWidth(toggle.labelRuns(), bodyMeasurer) + TOGGLE_TEXT_PADDING;
         }
         if (spec instanceof ControlSpec.Label label) {
-            return measureLabelWidth(label.labelRuns(), measurer);
+            return measureLabelWidth(label.labelRuns(), bodyMeasurer);
         }
         if (spec instanceof ControlSpec.HorizontalRadio radio) {
             return HorizontalSegments.measureRowWidth(
                 radio.labels(),
                 radioSegmentSpec(radio.segmentSizing()),
-                measurer);
+                bodyMeasurer);
         }
         if (spec instanceof ControlSpec.VerticalTable table) {
-            return measureVerticalTableRowWidth(table, measurer);
+            return measureVerticalTableRowWidth(table, bodyMeasurer);
         }
         if (spec instanceof ControlSpec.Tabs tabs) {
-            return TabsControlLayout.measureRowWidth(tabs, measurer);
+            // The one row lettered in the tab face rather than the body one, so it is charged the
+            // letters it will actually be drawn in.
+            return TabsControlLayout.measureRowWidth(tabs, measurers.tabFaceMeasurer());
         }
         if (spec instanceof ControlSpec.SideBySide pair) {
             // The two columns side by side: the left column, the gap parting them, then the right.
-            return measureColumnWidth(pair.leftColumn(), measurer)
+            return measureColumnWidth(pair.leftColumn(), measurers)
                 + COLUMN_GAP
-                + measureColumnWidth(pair.rightColumn(), measurer);
+                + measureColumnWidth(pair.rightColumn(), measurers);
         }
         return 0f;
     }
@@ -401,12 +409,13 @@ public final class ControlStripLayout {
     // The width one column of a side-by-side group needs: its widest control row, each sized as the top-
     // level strip sizes it (its snapped row plus any trailing caption), so a column reserves exactly the
     // room the same controls take when stacked at the top level. An empty column needs no width.
-    private static float measureColumnWidth(List<ControlSpec> specs, LineWidthMeasurer measurer) {
+    private static float measureColumnWidth(List<ControlSpec> specs, StripTextMeasurers measurers) {
         var widest = 0f;
         for (var spec : specs) {
             widest = Math.max(
                 widest,
-                measureRowWidth(spec, measurer) + measureTrailingWidth(spec, measurer));
+                measureRowWidth(spec, measurers)
+                    + measureTrailingWidth(spec, measurers.bodyFaceMeasurer()));
         }
         return widest;
     }
@@ -428,11 +437,11 @@ public final class ControlStripLayout {
     // plain single-column stack.
     private static float measureVerticalTableRowWidth(
             ControlSpec.VerticalTable table,
-            LineWidthMeasurer measurer) {
+            LineWidthMeasurer bodyMeasurer) {
 
         var columnWidth = switch (table.rowGeometry()) {
-            case COLUMNS -> measureColumnTableRowWidth(table, measurer);
-            case UNIFORM_SEGMENTS -> measureSegmentedListColumnWidth(table, measurer);
+            case COLUMNS -> measureColumnTableRowWidth(table, bodyMeasurer);
+            case UNIFORM_SEGMENTS -> measureSegmentedListColumnWidth(table, bodyMeasurer);
         };
         return table.columnCount() * columnWidth;
     }
@@ -470,9 +479,9 @@ public final class ControlStripLayout {
     // and the column is wide enough that the longest name still clears its right-aligned value.
     private static float measureColumnTableRowWidth(
             ControlSpec.VerticalTable table,
-            LineWidthMeasurer measurer) {
+            LineWidthMeasurer bodyMeasurer) {
 
-        var spanMeasurer = bindBodySpanMeasurer(measurer);
+        var spanMeasurer = bindBodySpanMeasurer(bodyMeasurer);
         var widest = 0f;
         for (var labelledRow : table.labelledRows()) {
             var rowWidth = IconLabelRow.measureRowWidth(
@@ -493,9 +502,9 @@ public final class ControlStripLayout {
     // will lay into it run by run.
     private static float measureLabelWidth(
             List<LabelRun> labelRuns,
-            LineWidthMeasurer measurer) {
+            LineWidthMeasurer bodyMeasurer) {
 
-        return measureLabelWidth(labelRuns, bindBodySpanMeasurer(measurer));
+        return measureLabelWidth(labelRuns, bindBodySpanMeasurer(bodyMeasurer));
     }
 
     // The same width, for a caller that has already bound the body measurement and is charging a row
@@ -514,8 +523,8 @@ public final class ControlStripLayout {
     // The body-line measurement bound to the face and size the strip paints its rows in, so a slot
     // charges its own width without learning which face it will be drawn in - the binding the styled
     // measurement exists to hold.
-    private static StyledSpanMeasurer bindBodySpanMeasurer(LineWidthMeasurer measurer) {
-        return textSpan -> measurer.measureLineWidth(textSpan.text(), BODY_FONT_SIZE);
+    private static StyledSpanMeasurer bindBodySpanMeasurer(LineWidthMeasurer bodyMeasurer) {
+        return textSpan -> bodyMeasurer.measureLineWidth(textSpan.text(), BODY_FONT_SIZE);
     }
 
     // The width of one uniform-cell list column: the uniform segment width its widest option needs, read
@@ -524,12 +533,12 @@ public final class ControlStripLayout {
     // widths, so it falls back to the bare segment padding.
     private static float measureSegmentedListColumnWidth(
             ControlSpec.VerticalTable table,
-            LineWidthMeasurer measurer) {
+            LineWidthMeasurer bodyMeasurer) {
 
         var widths = HorizontalSegments.computeSegmentWidths(
             table.labels(),
             radioSegmentSpec(SegmentSizing.UNIFORM),
-            measurer);
+            bodyMeasurer);
 
         return widths.isEmpty()
             ? RADIO_SEGMENT_PADDING
@@ -550,15 +559,15 @@ public final class ControlStripLayout {
 
     // Extra footprint a trailing label adds past the control's own row, or none when it is blank. Only a
     // horizontal radio carries a trailing caption; every other control reserves nothing here.
-    private static float measureTrailingWidth(ControlSpec spec, LineWidthMeasurer measurer) {
+    private static float measureTrailingWidth(ControlSpec spec, LineWidthMeasurer bodyMeasurer) {
         if (!(spec instanceof ControlSpec.HorizontalRadio radio) || !radio.hasTrailingCaption()) {
             return 0f;
         }
-        return TRAILING_LABEL_GAP + measureWidth(measurer, radio.trailingLabel());
+        return TRAILING_LABEL_GAP + measureWidth(bodyMeasurer, radio.trailingLabel());
     }
 
-    private static float measureWidth(LineWidthMeasurer measurer, String text) {
-        return (float) measurer.measureLineWidth(text, BODY_FONT_SIZE);
+    private static float measureWidth(LineWidthMeasurer bodyMeasurer, String text) {
+        return (float) bodyMeasurer.measureLineWidth(text, BODY_FONT_SIZE);
     }
 
     /**

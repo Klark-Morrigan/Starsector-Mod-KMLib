@@ -3,7 +3,7 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
@@ -64,7 +64,7 @@ public final class CappedStripLayout {
      * @param thickness       how wide the scrolling control's bar draws; a bar wider than the padding
      *                        already holds clear widens the body by the excess
      * @param bodyControls    the body controls, top to bottom (empty for no body)
-     * @param measurer        measures each label's rendered width for text snapping
+     * @param measurers       measure each label's rendered width for text snapping
      * @param rawScrollOffset the requested scroll offset for the scrolling control; clamped to its overflow
      * @return the framed body rectangle and the capped, placed controls inside it
      */
@@ -72,10 +72,10 @@ public final class CappedStripLayout {
             BodyRoom room,
             ScrollbarThickness thickness,
             List<ControlSpec> bodyControls,
-            LineWidthMeasurer measurer,
+            StripTextMeasurers measurers,
             float rawScrollOffset) {
 
-        var strip = measureStrip(bodyControls, measurer);
+        var strip = measureStrip(bodyControls, measurers);
         var bodyHeight = capBodyHeight(strip, room.maxHeight());
 
         // Grow rightward for a bar the padding cannot swallow, which is the direction a panel already
@@ -89,7 +89,7 @@ public final class CappedStripLayout {
 
         return new BodyStrip(
             bounds,
-            layoutCappedControls(bounds, strip, thickness, rawScrollOffset, measurer));
+            layoutCappedControls(bounds, strip, thickness, rawScrollOffset, measurers));
     }
 
     /**
@@ -97,14 +97,14 @@ public final class CappedStripLayout {
      * Pairs the measurement with the specs it was taken of and the flex index read off those same specs,
      * so no caller can hand a phase a measurement of one strip and the controls of another.
      *
-     * @param specs    the strip's controls, top to bottom
-     * @param measurer measures each label's rendered width for text snapping
+     * @param specs     the strip's controls, top to bottom
+     * @param measurers measure each label's rendered width for text snapping
      * @return the specs, their measurement, and the scrolling control's index
      */
-    static MeasuredStrip measureStrip(List<ControlSpec> specs, LineWidthMeasurer measurer) {
+    static MeasuredStrip measureStrip(List<ControlSpec> specs, StripTextMeasurers measurers) {
         return new MeasuredStrip(
             specs,
-            ControlStripLayout.measureStrip(specs, measurer),
+            ControlStripLayout.measureStrip(specs, measurers),
             findScrollingIndex(specs));
     }
 
@@ -170,7 +170,7 @@ public final class CappedStripLayout {
      * @param thickness       how wide the scrollbar draws, deciding how much of the body's right side the
      *                        flex region leaves clear for it
      * @param rawScrollOffset the requested scroll offset in pixels; clamped to the available overflow
-     * @param measurer        measures each label's rendered width, for snapping a tabs row's segments
+     * @param measurers       measure each label's rendered width, for snapping a tabs row's segments
      * @return the laid-out controls, the flex viewport, the clamped offset, and the overflow
      */
     static CappedStripPlacement layoutCappedControls(
@@ -178,7 +178,7 @@ public final class CappedStripLayout {
             MeasuredStrip strip,
             ScrollbarThickness thickness,
             float rawScrollOffset,
-            LineWidthMeasurer measurer) {
+            StripTextMeasurers measurers) {
 
         var specs = strip.specs();
         if (specs.isEmpty()) {
@@ -191,7 +191,7 @@ public final class CappedStripLayout {
                 specs,
                 strip.rowHeights(),
                 strip.rowWidths(),
-                measurer);
+                measurers);
 
             return new CappedStripPlacement(pinned, NO_VIEWPORT, 0f, 0f);
         }
@@ -228,9 +228,9 @@ public final class CappedStripLayout {
         // Assemble in strip order: the pinned header, the scrolled flex list, then the pinned footer -
         // each run turned into controls through the shared zip so segments split identically everywhere.
         var controls = new ArrayList<Control>(specs.size());
-        controls.addAll(ControlStripLayout.toControls(header.specs(), headerRows, measurer));
-        controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds, measurer));
-        controls.addAll(ControlStripLayout.toControls(footer.specs(), footerRows, measurer));
+        controls.addAll(ControlStripLayout.toControls(header.specs(), headerRows, measurers));
+        controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds, measurers));
+        controls.addAll(ControlStripLayout.toControls(footer.specs(), footerRows, measurers));
 
         return new CappedStripPlacement(
             List.copyOf(controls),

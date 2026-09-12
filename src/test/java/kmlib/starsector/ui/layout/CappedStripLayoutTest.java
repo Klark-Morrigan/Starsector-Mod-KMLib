@@ -5,7 +5,7 @@ import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.layout.CappedStripLayout.CappedStripPlacement;
 import kmlib.starsector.ui.layout.CappedStripLayout.MeasuredStrip;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -51,7 +51,11 @@ final class CappedStripLayoutTest {
     private static final ScrollbarThickness OVERSIZE_BAR = new ScrollbarThickness(12f);
     private static final float OVERSIZE_BAR_EXCESS = 9f;
 
-    private final LineWidthMeasurer measurerFake = new LineWidthMeasurerFake(WIDTH_PER_CHAR);
+    // Both faces measure alike here, so every expectation below stays a plain character count; the
+    // faces being told apart is pinned where that is the point under test.
+    private final StripTextMeasurers measurersFake = new StripTextMeasurers(
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR),
+        new LineWidthMeasurerFake(WIDTH_PER_CHAR));
 
     // A header checkbox, a four-option scrolling list, and a footer checkbox - the shape the political
     // map's picker takes under the alliances view (a recede control pins below the list). Row heights
@@ -115,7 +119,7 @@ final class CappedStripLayoutTest {
         void measureStripPairsTheMeasurementWithTheStripItWasTakenOf() {
 
             var specs = buildHeaderFlexFooterStrip();
-            var strip = CappedStripLayout.measureStrip(specs, measurerFake);
+            var strip = CappedStripLayout.measureStrip(specs, measurersFake);
 
             // One reading of one strip: the specs it holds are the ones measured, and there is a row
             // measured for each of them, so no phase downstream can be handed a mismatched pair.
@@ -130,7 +134,7 @@ final class CappedStripLayoutTest {
         @Test
         void measureStripReadsTheScrollingRegionOffTheSameSpecs() {
 
-            var strip = CappedStripLayout.measureStrip(buildHeaderFlexFooterStrip(), measurerFake);
+            var strip = CappedStripLayout.measureStrip(buildHeaderFlexFooterStrip(), measurersFake);
 
             assertThat(strip.flexIndex())
                 .isEqualTo(1);
@@ -141,7 +145,7 @@ final class CappedStripLayoutTest {
         @Test
         void measureStripReportsNoScrollingRegionWhenNoneScroll() {
 
-            var strip = CappedStripLayout.measureStrip(buildPinnedOnlyStrip(), measurerFake);
+            var strip = CappedStripLayout.measureStrip(buildPinnedOnlyStrip(), measurersFake);
 
             assertThat(strip.hasScrollingRegion())
                 .isFalse();
@@ -214,7 +218,7 @@ final class CappedStripLayoutTest {
                 strip.specs(),
                 strip.rowHeights(),
                 strip.rowWidths(),
-                measurerFake);
+                measurersFake);
 
             // A strip with no flex region pins whole, so the capped placement is the plain stack with no
             // viewport and no overflow.
@@ -529,7 +533,7 @@ final class CappedStripLayoutTest {
             new BodyRoom(BODY_LEFT_X, BODY_TOP_Y, UNCAPPED_BODY_HEIGHT),
             thickness,
             specs,
-            measurerFake,
+            measurersFake,
             0f);
     }
 
@@ -545,7 +549,7 @@ final class CappedStripLayoutTest {
             strip,
             ScrollbarThickness.DEFAULT,
             rawScrollOffset,
-            measurerFake);
+            measurersFake);
     }
 
     // The flex list's laid-out bounds - the second control, between the header and the footer.
@@ -563,7 +567,7 @@ final class CappedStripLayoutTest {
     }
 
     private MeasuredStrip measure(List<ControlSpec> specs) {
-        return CappedStripLayout.measureStrip(specs, measurerFake);
+        return CappedStripLayout.measureStrip(specs, measurersFake);
     }
 
     private static float readNaturalHeight(MeasuredStrip strip) {
