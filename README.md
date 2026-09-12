@@ -1,8 +1,12 @@
 # Klark Morrigan's Library (KMLib)
 
-Starsector library/dependency mod that hosts reusable(feature-agnostic) code, and primarily serves other KM mod series members (e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)).
+Starsector library/dependency mod that hosts reusable(feature-agnostic) code,
+and primarily serves other KM mod series members (e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)).
 Its jar is what those mods depend on at compile and runtime;
-beyond it KMLib ships a [settings tab](#requirements), a set of [console commands](#console-commands), and a mod plugin that binds the settings and registers its [optional-mod adapters](#optional-mod-seams) at application load. It runs nothing per frame of its own.
+beyond it KMLib ships a [settings tab](#requirements),
+a set of [console commands](#console-commands),
+and a mod plugin that binds the settings and registers its [optional-mod adapters](#optional-mod-seams) at application load.
+It runs nothing per frame of its own.
 
 ## Index
 
@@ -29,29 +33,23 @@ beyond it KMLib ships a [settings tab](#requirements), a set of [console command
 
 Hard dependencies:
 
-- **LazyLib** - exposes game fonts to be used for drawing labels directly with GL:
-  [UI primitives](src/main/java/kmlib/starsector/ui/README.md).
-- **LunaLib** - backs in-game mod settings, including the log-verbosity binding
-  registered through `KmLogging` and KMLib's own (`kmlib_logLevel`, on its Dev tab).
-  The library needs a switch of its own because log4j scopes a level to a package subtree:
-  a mod's verbosity governs that mod's lines and cannot reach `kmlib` beneath them, and a
-  mod that set `kmlib` would be setting it for every other mod in the game.
+- **LazyLib** - exposes game fonts to be used for drawing labels directly with GL: [UI primitives](src/main/java/kmlib/starsector/ui/README.md).
+- **LunaLib** - backs in-game mod settings, including the log-verbosity binding registered through `KmLogging` and KMLib's own (`kmlib_logLevel`, on its Dev tab). The library needs a switch of its own because log4j scopes a level to a package subtree: a mod's verbosity governs that mod's lines and cannot reach `kmlib` beneath them, and a mod that set `kmlib` would be setting it for every other mod in the game.
 - **MagicLib** - provides code reflection utilities.
 
-Soft dependencies - compiled against, absent from `mod_info.json`, and reached only
-behind a presence gate, so an install without any of them is ordinary
+Soft dependencies - compiled against,
+absent from `mod_info.json`,
+and reached only behind a presence gate,
+so an install without any of them is ordinary
 (see [Optional mod seams](#optional-mod-seams)):
 
 - **Console Commands**
-  - KMLib registers its own commands, listed under
-    [Console commands](#console-commands);
-  - KMLib publishes whether the console is up and taking text entry,
-    which anything drawing over the screen should stand down for.  
+  - KMLib registers its own commands, listed under [Console commands](#console-commands);
+  - KMLib publishes whether the console is up and taking text entry, which anything drawing over the screen should stand down for.  
 - **Nexerelin**
   - KMLib's colony related console commands account for Nexerelin implementation.
 - **Random Assortment of Things** (RAT)
-  - KMLib recognises Abyssal Fractures, and counts them as valid access points into
-    attached systems;
+  - KMLib recognises Abyssal Fractures, and counts them as valid access points into attached systems;
   - KMLib reports whether RAT's mini-map has replaced the campaign radar.
 
 ## Layout
@@ -60,62 +58,31 @@ behind a presence gate, so an install without any of them is ordinary
 
 What the game reads:
 
-- [`mod_info.json`](mod_info.json) - mod id, version, dependencies, and the
-  plugin class the launcher loads.
-- [`data/config/LunaSettings.csv`](data/config/LunaSettings.csv) - LunaLib
-  settings declarations.
-- [`data/config/version/version_files.csv`](data/config/version/version_files.csv)
-  - names the `.version` file VersionChecker reads.
-- [`data/console/commands.csv`](data/console/commands.csv) - Console Commands
-  registrations, and the per-command help the console prints.
-- [`data/strings/strings.json`](data/strings/strings.json) - localisation
-  lookups.
-- `kmlib.version.template` - the VersionChecker template, filled into
-  `kmlib.version` by a release and by `gradlew jar`. Generated output, never
-  committed - see [Build & Test](#build--test) and
-  [Reusable CI / release actions](#reusable-ci--release-actions).
+- [`mod_info.json`](mod_info.json) - mod id, version, dependencies, and the plugin class the launcher loads.
+- [`data/config/LunaSettings.csv`](data/config/LunaSettings.csv) - LunaLib settings declarations.
+- [`data/config/version/version_files.csv`](data/config/version/version_files.csv) - names the `.version` file VersionChecker reads.
+- [`data/console/commands.csv`](data/console/commands.csv) - Console Commands registrations, and the per-command help the console prints.
+- [`data/strings/strings.json`](data/strings/strings.json) - localisation lookups.
+- `kmlib.version.template` - the VersionChecker template, filled into `kmlib.version` by a release and by `gradlew jar`. Generated output, never committed - see [Build & Test](#build--test) and [Reusable CI / release actions](#reusable-ci--release-actions).
 
 Sources, one tree per audience:
 
-- [`src/main/java/kmlib/`](src/main/java/kmlib/) - the shipped library; see
-  [Packages](#packages).
-- [`src/bridgestubs/java/`](src/bridgestubs/java/) - compile-only mirrors of
-  the Fast Rendering bridge members KMLib reads, so an install without
-  `fr.jar` still compiles (see [Build & Test](#build--test)). Never shipped,
-  never loaded.
-- [`src/testFixtures/java/`](src/testFixtures/java/) - the fakes and builders
-  a consumer's tests may take, published as a variant beside the jar rather
-  than inside it. See [Test fixtures](#test-fixtures).
-- [`src/test/java/`](src/test/java/) - JUnit 5 and Mockito suites, and the
-  fixtures only they use.
-- [`src/buildScriptTest/java/`](src/buildScriptTest/java/) - TestKit suites over
-  the scripts in [`gradle/`](gradle/), run by `testBuildScripts`. See
-  [Build & Test](#build--test).
+- [`src/main/java/kmlib/`](src/main/java/kmlib/) - the shipped library; see [Packages](#packages).
+- [`src/bridgestubs/java/`](src/bridgestubs/java/) - compile-only mirrors of the Fast Rendering bridge members KMLib reads, so an install without `fr.jar` still compiles (see [Build & Test](#build--test)). Never shipped, never loaded.
+- [`src/testFixtures/java/`](src/testFixtures/java/) - the fakes and builders a consumer's tests may take, published as a variant beside the jar rather than inside it. See [Test fixtures](#test-fixtures).
+- [`src/test/java/`](src/test/java/) - JUnit 5 and Mockito suites, and the fixtures only they use.
+- [`src/buildScriptTest/java/`](src/buildScriptTest/java/) - TestKit suites over the scripts in [`gradle/`](gradle/), run by `testBuildScripts`. See [Build & Test](#build--test).
 - `jars/` - build output, gitignored; holds `KMLib.jar`.
 
 Build:
 
 - `build.gradle`, `settings.gradle`, `gradlew[.bat]` - the build entry points.
-- [`gradle/starsector-mod.gradle`](gradle/starsector-mod.gradle) - the
-  Starsector build conventions every KM mod applies by path: the game's API
-  jars on the compile and test classpath, `mod_info.json` as the version
-  source, and the jar output location the launcher expects.
-- [`gradle/starsector-install-locator.gradle`](gradle/starsector-install-locator.gradle)
-  - the lookups those conventions and a mod's own build call: the install root,
-  a core jar by name or by pattern, an installed mod's jar, and this checkout.
-  Applied by the conventions script, so a consumer gets it from the one
-  `apply from`.
-- [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle)
-  - KMLib's own, not shared: binds the modelview reader to Fast Rendering's real
-  bridge or to the compile-only mirrors of it, and owns the stub source set and
-  the `-PvanillaOnly` / `-PrequireFastRendering` legs. See
-  [Rendering environment](#rendering-environment).
-- [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle)
-  - warns when a mod compiles against one KMLib and asks players for another.
-- [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle)
-  - registers `writeVersionFile` for a mod that commits a template.
-- [`.gitattributes`](.gitattributes) - line-ending pins: `*.sh` and `gradlew`
-  to LF, `*.bat` and `gradlew.bat` to CRLF.
+- [`gradle/starsector-mod.gradle`](gradle/starsector-mod.gradle) - the Starsector build conventions every KM mod applies by path: the game's API jars on the compile and test classpath, `mod_info.json` as the version source, and the jar output location the launcher expects.
+- [`gradle/starsector-install-locator.gradle`](gradle/starsector-install-locator.gradle) - the lookups those conventions and a mod's own build call: the install root, a core jar by name or by pattern, an installed mod's jar, and this checkout. Applied by the conventions script, so a consumer gets it from the one `apply from`.
+- [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle) - KMLib's own, not shared: binds the modelview reader to Fast Rendering's real bridge or to the compile-only mirrors of it, and owns the stub source set and the `-PvanillaOnly` / `-PrequireFastRendering` legs. See [Rendering environment](#rendering-environment).
+- [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle) - warns when a mod compiles against one KMLib and asks players for another.
+- [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle) - registers `writeVersionFile` for a mod that commits a template.
+- [`.gitattributes`](.gitattributes) - line-ending pins: `*.sh` and `gradlew` to LF, `*.bat` and `gradlew.bat` to CRLF.
 
 Local runners in [`scripts/`](scripts/), all with a `.sh` and a `.bat` face:
 
