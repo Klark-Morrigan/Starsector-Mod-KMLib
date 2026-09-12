@@ -37,12 +37,14 @@ public final class SystemColoniesIndex {
     // A read is of one system, and the counter takes an amount rather than a call.
     private static final long ONE_SYSTEM = 1L;
 
-    private final Map<String, Colonies> coloniesBySystemId = new HashMap<>();
+    private final Map<SystemKey, Colonies> coloniesBySystemKey = new HashMap<>();
     private final SectorAPI sector;
 
-    // Built on the first ask that needs the sector's systems resolved, and only then: a pass whose
-    // readers all hold the system in hand never indexes the sector at all.
+    // Each built on the first ask that needs the sector's systems resolved that way, and only then:
+    // a pass whose readers all hold the system in hand indexes the sector neither way, and one that
+    // never asks by id pays for no id index.
     private Map<String, StarSystemAPI> systemById;
+    private Map<SystemKey, StarSystemAPI> systemByKey;
 
     /**
      * Opens an index over {@code sector} for one pass.
@@ -79,53 +81,60 @@ public final class SystemColoniesIndex {
         if (system == null) {
             return Colonies.NONE;
         }
-        var systemId = system.getId();
-
-        if (!KmlibStrings.hasText(systemId)) {
-            // Nothing to key the memo on. Reading afresh costs a walk a second ask would have
-            // saved, which is the honest price of an unkeyable system - pooling every one of
-            // them under a shared key would hand one system's colonies to another.
-            return readAndCountColoniesIn(system);
-        }
-        return coloniesBySystemId.computeIfAbsent(
-            systemId,
-            id -> readAndCountColoniesIn(system));
+        // Memoised under the whole key rather than under the id, because an id is not unique: a
+        // sector holding two systems under one id would otherwise pool them into a single entry and
+        // hand the first one's colonies to the second. Every system has a key, and a system missing
+        // both entity arms still has one, so there is no shape left that cannot be memoised.
+        return coloniesBySystemKey.computeIfAbsent(
+            SystemKey.readKeyOf(system),
+            key -> readAndCountColoniesIn(system));
     }
 
     /**
      * The colonies in the system with this id, for a reader holding an id rather than a system
      * - which is what a pass keyed by system id mostly holds.
      *
-     * <p>Answers off the memo before resolving the id at all, so a system already read through
-     * {@link #readColoniesIn} is never walked again for having been asked about the other way.
+     * <p>Kept on the bare id because this is the arm anything addressed from outside speaks - an
+     * override table, a saved preference, a console argument. An id is not unique, so this answers
+     * about the first system carrying it, the one {@link #readSystemsById} holds.
+     *
+     * <p>Resolves the id to a system and then reads through {@link #readColoniesIn}, so a system
+     * already read that way is never walked again for having been asked about the other way. The
+     * resolution comes first because the colony memo is keyed by {@link SystemKey}, which an id
+     * alone cannot address.
      *
      * @param systemId the system id, as {@code StarSystemAPI#getId} reports it; null or blank
      *                 yields {@link Colonies#NONE}
-     * @return the system's colony set, or {@link Colonies#NONE} when no system has that id
+     * @return the colony set of the first system with that id, or {@link Colonies#NONE} when no
+     *         system has it
      */
     public Colonies readColoniesById(String systemId) {
 
         if (!KmlibStrings.hasText(systemId)) {
             return Colonies.NONE;
         }
-        var memoisedColonies = coloniesBySystemId.get(systemId);
-
-        if (memoisedColonies != null) {
-            return memoisedColonies;
-        }
-        return readColoniesIn(findSystemById(systemId));
+        // Resolved through the id index rather than by a match written here, so what an id answers
+        // is decided in one place: the index and SectorStarSystems#findSystemById both name the
+        // first system under a repeated id, and a third rule here could only disagree with them.
+        return readColoniesIn(readSystemsById().get(systemId));
     }
 
     /**
-     * The sector's star systems keyed by id, traversed on the first ask and remembered thereafter.
+     * The sector's star systems keyed by id, traversed on the first ask and remembered thereafter -
+     * the read for a caller holding an id, which is what anything addressed from outside holds.
      *
      * <p>Published for the same reason the colony sets are: a reader resolving ids off this pass
      * would otherwise open a traversal of its own, and two traversals for one pass is exactly what
      * an index exists to stop. The pass's readers share this one whether they came for a system or
      * for its colonies.
      *
-     * @return each system keyed by its id, in the sector's star-system order; empty for an index
-     *         opened over no sector. Read-only - the map is the index's own memo
+     * <p>Not every system in the sector. An id is not unique and a modded install holds several
+     * systems sharing one, of which this holds the first - the same one
+     * {@link SectorStarSystems#findSystemById} answers with, so an id names one system whichever
+     * way it is asked. A pass that must account for every system asks {@link #readSystemsByKey}.
+     *
+     * @return the first system found under each id, in the sector's star-system order; empty for an
+     *         index opened over no sector. Read-only - the map is the index's own memo
      */
     public Map<String, StarSystemAPI> readSystemsById() {
 
@@ -133,6 +142,27 @@ public final class SystemColoniesIndex {
             systemById = Collections.unmodifiableMap(SectorStarSystems.indexById(sector));
         }
         return systemById;
+    }
+
+    /**
+     * Every one of the sector's star systems keyed by its {@link SystemKey}, traversed on the first
+     * ask and remembered thereafter - the read for a pass that must account for each system rather
+     * than for each id.
+     *
+     * <p>What separates it from {@link #readSystemsById}: a key is unique where an id is not, so an
+     * install holding several systems under one id has an entry here for each of them. A pass built
+     * on the id index is short those systems in everything it derives, and the loss reads as a
+     * system missing from the map with nothing naming its cause.
+     *
+     * @return each system keyed by its key, in the sector's star-system order; empty for an index
+     *         opened over no sector. Read-only - the map is the index's own memo
+     */
+    public Map<SystemKey, StarSystemAPI> readSystemsByKey() {
+
+        if (systemByKey == null) {
+            systemByKey = Collections.unmodifiableMap(SectorStarSystems.indexByKey(sector));
+        }
+        return systemByKey;
     }
 
     // One system read for real, counted as the visit it is. Only the misses reach here, which is
@@ -143,12 +173,5 @@ public final class SystemColoniesIndex {
         SectorWalkCounters.countSystemsVisited(ONE_SYSTEM);
 
         return SystemColonies.readColoniesIn(sector, system);
-    }
-
-    // The system carrying this id, off the one index every reader of this pass shares. Matched on
-    // getId for the same reason SectorStarSystems.indexById is: vanilla's own lookup matches the
-    // optional unique id first and silently misses a system keyed by its base name.
-    private StarSystemAPI findSystemById(String systemId) {
-        return readSystemsById().get(systemId);
     }
 }

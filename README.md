@@ -474,11 +474,14 @@ No Starsector API on the signature.
   its name, so what tells two systems apart is the key pairing that id with
   the ids of the system's centre and hyperspace anchor - the arms the engine
   mints and the save keeps. A pass that must account for every system indexes
-  by that key; the id index holds the first system found under each id, which
-  is the one the id lookup answers with as well, and states in the log which
-  system a repeated id left out. Anything addressed from outside a running
-  pass - an override table, a persisted preference, a console argument - stays
-  on the vanilla id, being the only arm a person can write.
+  by that key, which is also what the per-pass index memoises a system's
+  colonies under, so two systems sharing an id are two entries rather than one
+  being handed the other's colonies; the id index holds the first system found
+  under each id, which is the one the id lookup answers with as well, and
+  states in the log which system a repeated id left out. Anything addressed
+  from outside a running pass - an override table, a persisted preference, a
+  console argument - stays on the vanilla id, being the only arm a person can
+  write, and the id-keyed reads answer about the first system carrying it.
 - [`starsector/systems/claims/`](src/main/java/kmlib/starsector/systems/claims/)
   - vanilla system claims behind a port, with a second port for the scored
   contest behind one - down to the terms each market's score is the sum of -

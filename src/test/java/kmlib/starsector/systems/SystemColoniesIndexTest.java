@@ -1,6 +1,8 @@
 package kmlib.starsector.systems;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
@@ -8,6 +10,9 @@ import kmlib.starsector.markets.colonies.Colonies;
 import kmlib.starsector.markets.colonies.Colony;
 import kmlib.starsector.markets.colonies.SystemColonies;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyFixture;
+import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
+import kmlib.testfixtures.starsector.markets.colonies.ColonyPlacementFixture;
+import kmlib.testfixtures.starsector.systems.StarSystemFixture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,16 +22,21 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link SystemColoniesIndex#readColoniesIn},
- * {@link SystemColoniesIndex#readColoniesById}, {@link SystemColoniesIndex#readSystemsById} and
- * {@link SystemColoniesIndex#getSector}: that the index answers exactly what the direct read
- * answers, that it pays for a system's walk once however it is asked, that one traversal of the
- * sector serves every reader of it, and that it names the sector it answers out of. Each method's
- * cases live in a {@link Nested} group so the suite reports as a per-method tree; the world they
- * are posed against is {@link ColonyFixture}, shared with the direct read's suite - which
- * is what lets the two answers be compared at all.
+ * {@link SystemColoniesIndex#readColoniesById}, {@link SystemColoniesIndex#readSystemsById},
+ * {@link SystemColoniesIndex#readSystemsByKey} and {@link SystemColoniesIndex#getSector}: that the
+ * index answers exactly what the direct read answers, that it pays for a system's walk once however
+ * it is asked, that one traversal of the sector serves every reader keyed the same way, and that it
+ * names the sector it answers out of. Each method's cases live in a {@link Nested} group so the
+ * suite reports as a per-method tree; the world they are posed against is {@link ColonyFixture},
+ * shared with the direct read's suite - which is what lets the two answers be compared at all.
+ *
+ * <p>The cases posing two systems under one id build their world from {@link StarSystemFixture}
+ * instead, that fixture holding a sector of one system: a colliding pair is the shape the id-keyed
+ * memo answered wrongly, and it takes two systems to pose.
  */
 final class SystemColoniesIndexTest {
 
@@ -105,10 +115,31 @@ final class SystemColoniesIndexTest {
         }
 
         @Test
-        void walksASystemCarryingNoIdAfreshOnEveryAsk() {
-            // There is nothing to key the memo on, so the walk is paid again - which is the
-            // honest price of an unkeyable system, pooling every one of them under a shared key
-            // being the alternative, and that hands one system's colonies to another.
+        void answersEachOfTwoSystemsSharingAnIdItsOwnColonies() {
+            // The defect a memo keyed on the id carries: a sector holds two systems under one id,
+            // so the pair is a single entry and the second system is handed the first's colonies.
+            // The key separates them, an anchor id being minted per system.
+            var firstColony = ColonyMarketFixture.buildVisibleColony("hegemony");
+            var secondColony = ColonyMarketFixture.buildVisibleColony("tritachyon");
+            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+            var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
+
+            ColonyPlacementFixture.placeColonies(first, firstColony);
+            ColonyPlacementFixture.placeColonies(second, secondColony);
+
+            var index = new SystemColoniesIndex(buildSectorHoldingSystems(first, second));
+
+            assertThat(index.readColoniesIn(first).colonies())
+                .containsExactly(new Colony(firstColony, false));
+            assertThat(index.readColoniesIn(second).colonies())
+                .containsExactly(new Colony(secondColony, false));
+        }
+
+        @Test
+        void walksASystemCarryingNoIdOnceAcrossRepeatedAsks() {
+            // A system with no id still has a key, so the memo covers it like any other and the
+            // walk is paid once. Nothing is pooled by that: two such systems differ in their
+            // entity arms, which is what the key is three arms wide for.
             var fixture = new ColonyFixture(null);
             var colony = fixture.buildVisibleColony("hegemony");
 
@@ -122,7 +153,7 @@ final class SystemColoniesIndexTest {
 
             index.readColoniesIn(fixture.getSystem());
 
-            verify(fixture.getSystem(), times(2)).getAllEntities();
+            verify(fixture.getSystem(), times(1)).getAllEntities();
         }
 
         @Test
@@ -264,6 +295,86 @@ final class SystemColoniesIndexTest {
             assertThat(new SystemColoniesIndex(null).readSystemsById())
                 .isEmpty();
         }
+    }
+
+    @Nested
+    class ReadSystemsByKey {
+
+        @Test
+        void answersEachOfTheSectorSSystemsKeyedByItsKey() {
+
+            var corvus = StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893");
+            var index = new SystemColoniesIndex(buildSectorHoldingSystems(corvus));
+
+            assertThat(index.readSystemsByKey())
+                .containsExactly(entry(new SystemKey("corvus", "corvus_star", "893"), corvus));
+        }
+
+        @Test
+        void holdsBothSystemsOfAPairSharingAnId() {
+            // Why a pass takes this read instead of the id one: the four systems a live sector
+            // loses to a repeated id are here, so everything derived from this index accounts for
+            // every system the sector lists.
+            var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
+            var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
+            var index = new SystemColoniesIndex(buildSectorHoldingSystems(first, second));
+
+            assertThat(index.readSystemsByKey())
+                .containsExactly(
+                    entry(new SystemKey("deep space", "", "8b3"), first),
+                    entry(new SystemKey("deep space", "", "38d53"), second));
+        }
+
+        @Test
+        void traversesTheSectorOnceAcrossRepeatedAsks() {
+            // The same bargain the id index offers, and the reason a pass reaches for either: a
+            // reader that had to index the sector itself has bought the traversal it came to avoid.
+            var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
+            var index = new SystemColoniesIndex(sector);
+
+            index.readSystemsByKey();
+            index.readSystemsByKey();
+
+            verify(sector, times(1)).getStarSystems();
+        }
+
+        @Test
+        void countsAPassAskingBothWaysAsTwoWalks() {
+            // The two indexes are separate traversals, and a pass whose bound is stated in walks
+            // has to be able to read that it took both. Deriving one from the other would be a
+            // second place the first-under-an-id rule is decided.
+            var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
+            var index = new SystemColoniesIndex(sector);
+
+            var counts = WalkCountCapture.captureCountsOf(() -> {
+                index.readSystemsByKey();
+                index.readSystemsById();
+            });
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(2L);
+        }
+
+        @Test
+        void yieldsNoSystemsWhenTheSectorIsUnreachable() {
+
+            assertThat(new SystemColoniesIndex(null).readSystemsByKey())
+                .isEmpty();
+        }
+    }
+
+    // A sector holding the given systems, with an economy that lists nothing anywhere - so what a
+    // colony read finds is what was sited in a system, which is the half these cases pose. Built
+    // here rather than taken from ColonyFixture because that one's sector holds a single system,
+    // and a pair sharing an id cannot be posed with one.
+    private static SectorAPI buildSectorHoldingSystems(StarSystemAPI... systems) {
+
+        var sectorMock = StarSystemFixture.buildSectorOf(systems);
+
+        when(sectorMock.getEconomy())
+            .thenReturn(mock(EconomyAPI.class));
+
+        return sectorMock;
     }
 
     // The plainest system the index can be posed with: one ordinary colony, both sited and
