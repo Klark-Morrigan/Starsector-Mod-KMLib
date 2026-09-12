@@ -108,6 +108,15 @@ final class SystemKeyTest {
         }
 
         @Test
+        void tellsApartTwoKeysCarryingTheOneEntityIdOnDifferentArms() {
+            // What holding the arms apart buys over composing them into one string: a system whose
+            // only entity is its centre and one whose only entity is its anchor stay distinct,
+            // where a composition of the same three pieces would run them together.
+            assertThat(new SystemKey("deep space", "8aa", ""))
+                .isNotEqualTo(new SystemKey("deep space", "", "8aa"));
+        }
+
+        @Test
         void holdsTwoSystemsSharingAnIdAsTwoEntriesOfAKeyedMap() {
             // What the collision costs today: keyed by id, the later system displaces the earlier
             // one and no pass built on that map ever sees it.
