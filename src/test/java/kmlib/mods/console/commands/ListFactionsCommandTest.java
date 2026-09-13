@@ -1,23 +1,11 @@
 package kmlib.mods.console.commands;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.LocationAPI;
-import com.fs.starfarer.api.campaign.RepLevel;
-import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.campaign.StarSystemAPI;
-import com.fs.starfarer.api.campaign.econ.EconomyAPI;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
-import com.fs.starfarer.api.characters.RelationshipAPI;
 
-import kmlib.mods.console.commands.ListFactionsCommand.FactionListingFilter;
-import kmlib.mods.console.commands.ListFactionsCommand.ListingOption;
-import kmlib.starsector.factions.FactionCustomFixture;
-import kmlib.starsector.settings.modmanager.ModSource;
+import kmlib.mods.console.commands.output.GameLogCommandOutput;
+import kmlib.testfixtures.logging.LogAppenderFake;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
-import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
-import kmlib.testfixtures.starsector.markets.colonies.ColonyPlacementFixture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,456 +17,19 @@ import org.lazywizard.console.BaseCommand.CommandContext;
 import org.lazywizard.console.BaseCommand.CommandResult;
 import org.mockito.MockedStatic;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 /**
- * Pins {@link ListFactionsCommand}: {@code buildReport} names every faction with
- * the places it holds, counts a body carrying several markets once, reports
- * concealment and discovery as separate overlapping columns, names hyperspace
- * where a colony sits outside every system, keeps the counts whole under a filter
- * while narrowing the systems clause, and honours each of the four filter
- * keywords; and {@code runCommand} prints the report, accepts one keyword, and
- * rejects a keyword pair and an unknown word as bad syntax.
+ * Pins what the command does with the words the player typed: prints the listing, accepts one
+ * filter keyword and any of the options alongside it, rejects a keyword pair and an unknown word as
+ * bad syntax, and sends the listing to the log rather than the console where asked.
  *
- * <p>The options are pinned on both sides: what each leaves out of the report, and that each is a
- * word the command accepts alongside a filter and alongside the others - the latter being what a
- * keyword registered on the enum but not on the spec would fail.
- *
- * <p>Colonies come from {@link ColonyMarketFixture}, so a colony posed here is the
- * same shape the sector's own colony read is posed against - what counts as one
- * belongs to that read's suites, not this one. The factions are this suite's own:
- * the listing reads them for their name, territoriality and player relationship,
- * none of which a colony fixture has business carrying.
+ * <p>What the listing says is {@link FactionListingReportTest}'s. Each keyword is asserted here
+ * only as far as reaching the run, which is what a keyword declared on an enum but never registered
+ * on the parameter spec would fail.
  */
 final class ListFactionsCommandTest {
-
-    // A colony bigger than the fixture's default, so a colliding pair reads as
-    // "the larger of the two" rather than as two loose numbers.
-    private static final int LARGER_COLONY_SIZE = 6;
-    private static final int NEUTRAL_REPUTATION = 0;
-
-    @Nested
-    class BuildReport {
-
-        @Test
-        void namesEveryFactionWithThePlacesItHolds() {
-
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addFaction(buildFaction("derelict", "Derelict"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("hegemony"),
-                ColonyMarketFixture.buildVisibleColony("hegemony"));
-
-            var report = readReport(sector, FactionListingFilter.ALL);
-
-            assertThat(report)
-                .contains("[hegemony] Hegemony - Neutral (0 / 100)"
-                    + "\n    holdings: 2 (0 hidden, 0 discoverable)  systems: corvus");
-        }
-
-        @Test
-        void printsNoVisibilityCountsOrSystemsForAFactionHoldingNothing() {
-            // A row of noughts and an empty systems clause read as a finding rather
-            // than as the absence they are, and "holdings: 0" already says it.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("derelict", "Derelict"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("[derelict] Derelict - Neutral (0 / 100)\n    holdings: 0")
-                .doesNotContain("hidden")
-                .doesNotContain("systems:");
-        }
-
-        @Test
-        void countsTwoMarketsOnOneBodyAsOneHolding() {
-            // A mod supersedes a colony by adding its own market beside vanilla's on
-            // the same body. Counted per market, that place is banked twice and its
-            // owner reads as holding twice what the player can see.
-            var sector = new SectorFixture();
-            var vanillaMarket = ColonyMarketFixture.buildVisibleColony("independent");
-            var moddedMarket =
-                ColonyMarketFixture.buildSiblingMarketOn(vanillaMarket, LARGER_COLONY_SIZE);
-
-            sector.addFaction(buildFaction("independent", "Independents"));
-            sector.addSystemHolding("galatia", vanillaMarket, moddedMarket);
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("holdings: 1 (0 hidden, 0 discoverable)  systems: galatia");
-        }
-
-        @Test
-        void countsAFoundConcealedPlaceAsHiddenOnly() {
-            // The hidden flag never clears, so a raided pirate base stays hidden while
-            // being perfectly well known - it must not also count as undiscovered.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("pirates", "Pirates"));
-            sector.addSystemHolding(
-                "kumari_kandam",
-                ColonyMarketFixture.buildFoundConcealedColony("pirates"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("holdings: 1 (1 hidden, 0 discoverable)");
-        }
-
-        @Test
-        void countsAnUndiscoveredConcealedPlaceInBothColumns() {
-            // Neither column is a subset of the other: an undiscovered base is concealed AND
-            // still to be found, which is why the two are reported side by side.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("pirates", "Pirates"));
-            sector.addSystemHolding(
-                "kumari_kandam",
-                ColonyMarketFixture.buildUndiscoveredConcealedColony("pirates"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("holdings: 1 (1 hidden, 1 discoverable)");
-        }
-
-        @Test
-        void namesHyperspaceAfterTheStarSystems() {
-            // Vanilla puts no colony out there, but mods do, and a sector-wide count
-            // that quietly dropped them would be wrong rather than merely incomplete.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("independent", "Independents"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("independent"));
-            sector.setHyperspaceHolding(
-                ColonyMarketFixture.buildVisibleColony("independent"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("holdings: 2 (0 hidden, 0 discoverable)  systems: corvus, (hyperspace)");
-        }
-
-        @Test
-        void marksATerritorialFaction() {
-
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildTerritorialFaction("hegemony", "Hegemony"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("[hegemony] Hegemony [territorial] - Neutral (0 / 100)");
-        }
-
-        @Test
-        void reportsThePlayerSOwnFactionAsSelf() {
-            // The engine answers for a relationship with oneself; printed, it reads as
-            // a finding about the player's standing with the player.
-            var sector = new SectorFixture();
-            var playerFactionMock = buildFaction("player", "Sindrian Diktat");
-
-            sector.addFaction(playerFactionMock);
-            sector.setPlayerFaction(playerFactionMock);
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("[player] Sindrian Diktat - (self)");
-        }
-
-        @Test
-        void namesAFactionCarryingAPlaceholderDisplayNameByItsId() {
-            // A stock Nexerelin player.faction reports the literal "player" as its
-            // display name, and vanilla reports "Independent" before the first colony.
-            // Repeating the id says no more than is known, which is the point.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("player", "player"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("[player] player");
-        }
-
-        @Test
-        void ordersTheFactionsById() {
-            // The sector's own order is load order, which differs between installs and
-            // makes two runs hard to compare.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("tritachyon", "Tri-Tachyon"));
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addFaction(buildFaction("derelict", "Derelict"));
-
-            var report = readReport(sector, FactionListingFilter.ALL);
-
-            assertThat(report.indexOf("derelict"))
-                .isLessThan(report.indexOf("hegemony"));
-            assertThat(report.indexOf("hegemony"))
-                .isLessThan(report.indexOf("tritachyon"));
-        }
-
-        @Test
-        void listsOnlyFactionsHoldingSomethingUnderTheMarketsKeyword() {
-
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addFaction(buildFaction("derelict", "Derelict"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("hegemony"));
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_ANYTHING))
-                .contains("hegemony")
-                .doesNotContain("derelict");
-        }
-
-        @Test
-        void listsOnlyFactionsHoldingNothingUnderTheNoMarketsKeyword() {
-
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addFaction(buildFaction("derelict", "Derelict"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("hegemony"));
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_NOTHING))
-                .contains("derelict")
-                .doesNotContain("hegemony");
-        }
-
-        @Test
-        void listsOnlyFactionsHoldingAConcealedPlaceUnderTheHiddenKeyword() {
-
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("pirates", "Pirates"));
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addSystemHolding(
-                "kumari_kandam",
-                ColonyMarketFixture.buildFoundConcealedColony("pirates"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("hegemony"));
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_HIDDEN))
-                .contains("pirates")
-                .doesNotContain("hegemony");
-        }
-
-        @Test
-        void listsOnlyFactionsHoldingAnUndiscoveredPlaceUnderTheDiscoverableKeyword() {
-            // A found concealed base is hidden but no longer findable, so it must not
-            // satisfy this keyword - which is what keeps the two columns distinct.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("pathers", "Luddic Path"));
-            sector.addFaction(buildFaction("pirates", "Pirates"));
-            sector.addSystemHolding(
-                "hybrasil",
-                ColonyMarketFixture.buildUndiscoveredConcealedColony("pathers"));
-            sector.addSystemHolding(
-                "kumari_kandam",
-                ColonyMarketFixture.buildFoundConcealedColony("pirates"));
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_DISCOVERABLE))
-                .contains("pathers")
-                .doesNotContain("pirates");
-        }
-
-        @Test
-        void keepsTheCountsWholeAndNarrowsTheSystemsClauseUnderAKeyword() {
-            // The keyword decides who is listed, not what is reported about them - but
-            // the clause does narrow, since finding WHERE the matches are is what a
-            // filtered run is for.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("pirates", "Pirates"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("pirates"));
-            sector.addSystemHolding(
-                "kumari_kandam",
-                ColonyMarketFixture.buildFoundConcealedColony("pirates"));
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_HIDDEN))
-                .contains("holdings: 2 (1 hidden, 0 discoverable)  systems: kumari_kandam");
-        }
-
-        @Test
-        void namesBothNamesWhereAFactionCarriesADistinctLongOne() {
-            // The long name is the one a player reads in prose and the short one what the UI
-            // labels it with; a listing meant for looking a faction up is worth both.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildNamedFaction("tritachyon", "Tri-Tachyon Corporation", "Tri-Tachyon"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("[tritachyon] Tri-Tachyon Corporation / Tri-Tachyon - Neutral (0 / 100)");
-        }
-
-        @Test
-        void namesOneNameWhereTheLongOneSaysNothingMore() {
-            // Most factions declare no long name or the same one twice, and the pair repeated on
-            // every line costs more width than it carries.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildNamedFaction("hegemony", "Hegemony", "Hegemony"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("[hegemony] Hegemony - Neutral (0 / 100)")
-                .doesNotContain("Hegemony / Hegemony");
-        }
-
-        @Test
-        void namesTheModAFactionWasDeclaredByWithItsId() {
-            // The id alone says nothing about where a faction came from, which on a heavily
-            // modded install is most of what a reader opens this listing to find out. The mod id
-            // rides along because it is what another command takes as an argument.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("tahlan_greathouses", "Great Houses"));
-
-            assertThat(readReport(
-                    sector,
-                    FactionListingFilter.ALL,
-                    Map.of("tahlan_greathouses", new ModSource("Tahlan Shipworks", "tahlan"))))
-                .contains("[tahlan_greathouses] Great Houses - Neutral (0 / 100)"
-                    + " - from: Tahlan Shipworks [tahlan]");
-        }
-
-        @Test
-        void namesASourceWithoutAModIdOnItsOwn() {
-            // The base game is not a mod and has no id to give; a bracket around nothing would
-            // read as one it failed to report.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-
-            assertThat(readReport(
-                    sector,
-                    FactionListingFilter.ALL,
-                    Map.of("hegemony", new ModSource("vanilla", null))))
-                .contains("[hegemony] Hegemony - Neutral (0 / 100) - from: vanilla")
-                .doesNotContain("vanilla [");
-        }
-
-        @Test
-        void marksAFactionNoDeclarationNamesAsUnattributed() {
-            // A faction a mod built at runtime is in no spreadsheet, and saying so beats a blank
-            // where every neighbouring line carries a name.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addFaction(buildFaction("runtime_faction", "Someone's Own"));
-
-            var report = readReport(
-                sector,
-                FactionListingFilter.ALL,
-                Map.of("hegemony", new ModSource("vanilla", null)));
-
-            assertThat(report)
-                .contains("[hegemony] Hegemony - Neutral (0 / 100) - from: vanilla")
-                .contains("[runtime_faction] Someone's Own - Neutral (0 / 100)"
-                    + " - from: (unattributed)");
-        }
-
-        @Test
-        void dropsTheSourceClauseWhenNothingWasDeclared() {
-            // Nothing read is the read having failed or the game not being up, neither of which
-            // is a fact about any faction - marking them all unattributed would report it as one.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-
-            assertThat(readReport(sector, FactionListingFilter.ALL, Map.of()))
-                .doesNotContain("from:");
-        }
-
-        @Test
-        void dropsTheHoldingsLineUnderTheNoHoldingsKeyword() {
-            // One line per faction is what makes a sector's worth of them scannable side by side.
-            // The header goes with it: a listing reporting no holdings must not open by saying it
-            // does, which is the half a check for the line alone would miss.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addSystemHolding(
-                "corvus",
-                ColonyMarketFixture.buildVisibleColony("hegemony"));
-
-            assertThat(readReport(
-                    sector,
-                    FactionListingFilter.ALL,
-                    EnumSet.of(ListingOption.OMIT_HOLDINGS),
-                    Map.of()))
-                .isEqualTo("Factions:\n[hegemony] Hegemony - Neutral (0 / 100)");
-        }
-
-        @Test
-        void dropsTheAttitudeUnderTheNoAttitudeKeyword() {
-            // Dropped with its separator rather than leaving the gap it sat in, which would read
-            // as a standing the listing failed to report.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-
-            assertThat(readReport(
-                    sector,
-                    FactionListingFilter.ALL,
-                    EnumSet.of(ListingOption.OMIT_ATTITUDE),
-                    Map.of("hegemony", new ModSource("vanilla", null))))
-                .contains("[hegemony] Hegemony - from: vanilla")
-                .doesNotContain("Neutral");
-        }
-
-        @Test
-        void keepsTheFilterAndTheOptionsIndependent() {
-            // The filter decides who is listed and the options what is shown of them, which is
-            // what lets a run name one of each - the pair a narrowed one-line listing needs.
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("pirates", "Pirates"));
-            sector.addFaction(buildFaction("hegemony", "Hegemony"));
-            sector.addSystemHolding(
-                "kumari_kandam",
-                ColonyMarketFixture.buildFoundConcealedColony("pirates"));
-
-            assertThat(readReport(
-                    sector,
-                    FactionListingFilter.HOLDS_HIDDEN,
-                    EnumSet.of(ListingOption.OMIT_HOLDINGS),
-                    Map.of()))
-                .isEqualTo("Factions (hidden):\n[pirates] Pirates - Neutral (0 / 100)");
-        }
-
-        @Test
-        void namesTheKeywordInTheHeader() {
-
-            var sector = new SectorFixture();
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_HIDDEN))
-                .contains("Factions and their holdings (hidden):");
-        }
-
-        @Test
-        void reportsNoneWhenNoFactionMatches() {
-
-            var sector = new SectorFixture();
-
-            sector.addFaction(buildFaction("derelict", "Derelict"));
-
-            assertThat(readReport(sector, FactionListingFilter.HOLDS_ANYTHING))
-                .contains("(none)");
-        }
-    }
 
     @Nested
     class RunCommand {
@@ -492,7 +43,7 @@ final class ListFactionsCommandTest {
 
             // The fixture finishes its own stubbing before the static mock's opens,
             // so the two do not nest into an unfinished-stubbing error.
-            var sector = new SectorFixture().getSector();
+            var sector = new FactionListingFixture().getSector();
 
             globalMock = mockStatic(Global.class);
             globalMock
@@ -584,15 +135,35 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void tellsTheConsoleWhereTheReportWentUnderTheToLogKeyword() {
-            // The report itself goes to the log; a run that printed nothing where the player is
-            // looking would otherwise read as a run that did nothing.
-            var result = command.runCommand("to_log", CommandContext.CAMPAIGN_MAP);
+        void writesTheReportToTheLogUnderTheToLogKeyword() {
+            // Both halves, because either alone passes a run that lost the other: a console
+            // asserted on its own stays green with the log write deleted, and the notice is what
+            // keeps a run that printed nothing where the player is looking from reading as a run
+            // that did nothing.
+            var logFake = LogAppenderFake.captureLogOf(
+                GameLogCommandOutput.class,
+                () -> assertThat(command.runCommand("to_log", CommandContext.CAMPAIGN_MAP))
+                    .isEqualTo(CommandResult.SUCCESS));
 
-            assertThat(result)
-                .isEqualTo(CommandResult.SUCCESS);
+            assertThat(logFake.getMessages())
+                .anyMatch(message -> message.contains("Factions and their holdings:"));
             assertThat(outputFake.getMessages())
                 .containsExactly("Faction listing written to the game log.");
+        }
+
+        @Test
+        void writesTheReportToTheConsoleWithoutTheToLogKeyword() {
+            // The pair to the case above: without the keyword nothing reaches the log, which is
+            // what makes the routing a choice rather than a copy to both.
+            var logFake = LogAppenderFake.captureLogOf(
+                GameLogCommandOutput.class,
+                () -> assertThat(command.runCommand("", CommandContext.CAMPAIGN_MAP))
+                    .isEqualTo(CommandResult.SUCCESS));
+
+            assertThat(logFake.getMessages())
+                .isEmpty();
+            assertThat(outputFake.getMessages())
+                .anyMatch(message -> message.contains("Factions and their holdings:"));
         }
 
         @Test
@@ -615,182 +186,6 @@ final class ListFactionsCommandTest {
                 .isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("can only run in a campaign"));
-        }
-    }
-
-    // The full listing with nothing declared, which is what every case not about the source clause
-    // or the options poses: an empty map drops the clause, so those cases assert on the rest of the
-    // line without it.
-    private static String readReport(SectorFixture sector, FactionListingFilter filter) {
-        return readReport(sector, filter, Map.of());
-    }
-
-    private static String readReport(
-            SectorFixture sector,
-            FactionListingFilter filter,
-            Map<String, ModSource> sourcesByFactionId) {
-
-        return readReport(sector, filter, EnumSet.noneOf(ListingOption.class), sourcesByFactionId);
-    }
-
-    private static String readReport(
-            SectorFixture sector,
-            FactionListingFilter filter,
-            Set<ListingOption> options,
-            Map<String, ModSource> sourcesByFactionId) {
-
-        return ListFactionsCommand.buildReport(
-            sector.getSector(),
-            filter,
-            options,
-            sourcesByFactionId);
-    }
-
-    /**
-     * A faction the listing can name: not territorial, neutral to the player, and declaring no
-     * long name - which most do not, and which is what keeps the cases about something else
-     * asserting on one name rather than a pair.
-     */
-    private static FactionAPI buildFaction(String id, String displayName) {
-        return buildFaction(id, null, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, false);
-    }
-
-    /** A faction declaring both names, as the listing prints a pair for. */
-    private static FactionAPI buildNamedFaction(
-            String id,
-            String displayNameLong,
-            String displayName) {
-
-        return buildFaction(
-            id, displayNameLong, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, false);
-    }
-
-    /** A faction that treats the space around its holdings as its own. */
-    private static FactionAPI buildTerritorialFaction(String id, String displayName) {
-        return buildFaction(id, null, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, true);
-    }
-
-    // A faction wired the way the listing reads one. The relationship is stubbed
-    // through the live-relationship arm on purpose: the fallback arm ends at
-    // Misc's colour palette, which reads from settings the test JVM never loads.
-    private static FactionAPI buildFaction(
-            String id,
-            String displayNameLong,
-            String displayName,
-            RepLevel level,
-            int reputation,
-            boolean isTerritorial) {
-
-        // The relationship finishes its own stubbing before the faction's opens, so
-        // the two do not nest into an unfinished-stubbing error.
-        var relationshipMock = mock(RelationshipAPI.class);
-
-        when(relationshipMock.getLevel())
-            .thenReturn(level);
-        when(relationshipMock.getRepInt())
-            .thenReturn(reputation);
-
-        var custom = isTerritorial
-            ? FactionCustomFixture.buildPunitiveExpeditionCustom(true)
-            : null;
-        var factionMock = mock(FactionAPI.class);
-
-        when(factionMock.getId())
-            .thenReturn(id);
-        when(factionMock.getDisplayName())
-            .thenReturn(displayName);
-        when(factionMock.getDisplayNameLong())
-            .thenReturn(displayNameLong);
-        when(factionMock.getRelToPlayer())
-            .thenReturn(relationshipMock);
-        when(factionMock.getCustom())
-            .thenReturn(custom);
-
-        return factionMock;
-    }
-
-    /**
-     * A sector holding as many factions and places as a case needs: factions added
-     * in any order (the listing sorts them), star systems each under their own id,
-     * and at most one hyperspace.
-     *
-     * <p>Places are wired the way the game wires one - the economy lists the
-     * colonies, and the location carries the entities they sit on - so both halves
-     * of the colony read find them. Each colony is also told which system it is in,
-     * since that is what the systems clause is built from; a colony sited in
-     * hyperspace is told nothing, which is exactly how the game answers for one.
-     */
-    private static final class SectorFixture {
-
-        private final EconomyAPI economyMock = mock(EconomyAPI.class);
-        private final SectorAPI sectorMock = mock(SectorAPI.class);
-
-        // Handed to the sector mock once and added to afterwards. Mockito answers the
-        // same list instance every call, so a faction or system added later is still
-        // listed - which is what lets a case read as "open a sector, then fill it".
-        private final List<FactionAPI> factions = new ArrayList<>();
-        private final List<StarSystemAPI> systems = new ArrayList<>();
-
-        private SectorFixture() {
-
-            when(sectorMock.getAllFactions())
-                .thenReturn(factions);
-            when(sectorMock.getEconomy())
-                .thenReturn(economyMock);
-            when(sectorMock.getStarSystems())
-                .thenReturn(systems);
-        }
-
-        private SectorAPI getSector() {
-            return sectorMock;
-        }
-
-        private void addFaction(FactionAPI faction) {
-            factions.add(faction);
-        }
-
-        private void addSystemHolding(String systemId, MarketAPI... locationColonies) {
-
-            var systemMock = mock(StarSystemAPI.class);
-
-            when(systemMock.getId())
-                .thenReturn(systemId);
-
-            // Each colony names the system it sits in, as a market does once its
-            // entity is in one; the sector read itself never asks, so this is the
-            // listing's own input rather than the read's.
-            for (var colony : locationColonies) {
-                when(colony.getStarSystem())
-                    .thenReturn(systemMock);
-            }
-            placeColoniesIn(systemMock, locationColonies);
-            systems.add(systemMock);
-        }
-
-        private void setHyperspaceHolding(MarketAPI... locationColonies) {
-
-            var hyperspaceMock = mock(LocationAPI.class);
-
-            placeColoniesIn(hyperspaceMock, locationColonies);
-
-            when(sectorMock.getHyperspace())
-                .thenReturn(hyperspaceMock);
-        }
-
-        private void setPlayerFaction(FactionAPI faction) {
-
-            when(sectorMock.getPlayerFaction())
-                .thenReturn(faction);
-        }
-
-        // Sites the colonies in one location: the economy lists them, and the
-        // location carries the entity each sits on. Both halves, since every case
-        // here poses ordinary registered colonies - the listed-versus-unlisted split
-        // is the colony read's own suites' business.
-        private void placeColoniesIn(LocationAPI location, MarketAPI[] locationColonies) {
-
-            ColonyPlacementFixture.placeColonies(location, locationColonies);
-            ColonyPlacementFixture.listColonies(economyMock, location, locationColonies);
         }
     }
 }

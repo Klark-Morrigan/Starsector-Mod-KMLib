@@ -131,6 +131,22 @@ final class FactionSourceModsTest {
         }
 
         @Test
+        void namesTheBaseGameForARowCarryingNoSourceColumnAtAll() {
+            // Not a shape the merger writes - it stamps the column onto every row it emits - but
+            // the answer is the same one a folder-less row gets rather than a blank or a throw, and
+            // which of those it is decides what a reader sees if the engine ever stops stamping it.
+            var data = new GameDataFixture();
+
+            data.declareFactionWithoutSourceColumn(
+                "data/world/factions/hegemony.faction",
+                "hegemony");
+            data.install();
+
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(unidentifiedEntry("hegemony", "vanilla"));
+        }
+
+        @Test
         void skipsARowNamingNoFactionFile() {
             // A trailing blank line in a mod's spreadsheet is an ordinary thing to ship, and it
             // declares nothing.
@@ -220,6 +236,23 @@ final class FactionSourceModsTest {
 
             factionIdsByFilePath.put(factionFilePath, factionId);
             declarationRows.add(buildRow(sourceFolderPath, factionFilePath));
+        }
+
+        // A row the merger never stamped its source column onto.
+        private void declareFactionWithoutSourceColumn(String factionFilePath, String factionId) {
+
+            factionIdsByFilePath.put(factionFilePath, factionId);
+
+            var row = new JSONObject();
+
+            try {
+                row.put("faction", factionFilePath);
+
+            } catch (JSONException putFailed) {
+                // The put call declares it for keys and values this never poses.
+                throw new IllegalStateException(putFailed);
+            }
+            declarationRows.add(row);
         }
 
         // A row whose file column is blank, as a spreadsheet's trailing empty line arrives.

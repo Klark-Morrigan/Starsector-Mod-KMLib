@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Which mod each faction was declared by, named the way a player would recognise it.
+ * Which mod each faction was declared by.
  *
  * <p>A faction cannot be asked: neither it nor its spec carries where it came from. The loader
  * reads {@code data/world/factions/factions.csv}, opens each {@code .faction} file the rows name,
