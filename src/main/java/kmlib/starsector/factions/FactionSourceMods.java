@@ -3,6 +3,7 @@ package kmlib.starsector.factions;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 
+import kmlib.starsector.settings.modmanager.ModSource;
 import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
@@ -64,7 +65,7 @@ public final class FactionSourceMods {
      *         and where the spreadsheet will not open, both of which leave a caller with nothing
      *         to say rather than with a wrong answer
      */
-    public static Map<String, FactionSource> readSourcesByFactionId() {
+    public static Map<String, ModSource> readSourcesByFactionId() {
 
         var settings = Global.getSettings();
 
@@ -89,7 +90,7 @@ public final class FactionSourceMods {
         }
 
         var modsByDirectory = readModsByDirectory(settings);
-        var sources = new HashMap<String, FactionSource>();
+        var sources = new HashMap<String, ModSource>();
 
         for (var rowIndex = 0; rowIndex < declarationRows.length(); rowIndex++) {
 
@@ -111,18 +112,18 @@ public final class FactionSourceMods {
     // one, the base game where the row reports no folder at all, and the folder itself otherwise -
     // a source the manager does not account for is still better named by the folder it sits in
     // than left unnamed, even though there is no mod id to name beside it.
-    private static FactionSource readSourceOf(
+    private static ModSource readSourceOf(
             JSONObject declarationRow,
-            Map<String, FactionSource> modsByDirectory) {
+            Map<String, ModSource> modsByDirectory) {
 
         var sourceDirectory = readSourceDirectoryOf(declarationRow);
 
         if (sourceDirectory.isEmpty() || MISSING_DIRECTORY.equals(sourceDirectory)) {
-            return new FactionSource(BASE_GAME_SOURCE_NAME, null);
+            return new ModSource(BASE_GAME_SOURCE_NAME, null);
         }
         return modsByDirectory.getOrDefault(
             sourceDirectory,
-            new FactionSource(sourceDirectory, null));
+            new ModSource(sourceDirectory, null));
     }
 
     // The id the row's faction file declares, or null where the row names no file or the file will
@@ -174,7 +175,7 @@ public final class FactionSourceMods {
 
     // The enabled mods keyed by the folder each is installed in. Keyed by folder rather than by id
     // because the folder is all a row reports, and a mod's id is not what its folder is called.
-    private static Map<String, FactionSource> readModsByDirectory(SettingsAPI settings) {
+    private static Map<String, ModSource> readModsByDirectory(SettingsAPI settings) {
 
         var modManager = settings.getModManager();
 
@@ -184,7 +185,7 @@ public final class FactionSourceMods {
             // name, which places it well enough to be worth printing.
             return Map.of();
         }
-        var mods = new HashMap<String, FactionSource>();
+        var mods = new HashMap<String, ModSource>();
 
         for (var mod : modManager.getEnabledModsCopy()) {
 
@@ -197,7 +198,7 @@ public final class FactionSourceMods {
                 ? mod.getName()
                 : modDirectory;
 
-            mods.put(modDirectory, new FactionSource(modName, mod.getId()));
+            mods.put(modDirectory, new ModSource(modName, mod.getId()));
         }
         return mods;
     }

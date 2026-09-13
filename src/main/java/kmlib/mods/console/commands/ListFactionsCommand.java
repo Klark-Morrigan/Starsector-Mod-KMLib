@@ -9,7 +9,6 @@ import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
 import kmlib.mods.console.commands.parsing.ParsedParameters;
 import kmlib.starsector.factions.FactionFlags;
-import kmlib.starsector.factions.FactionSource;
 import kmlib.starsector.factions.FactionSourceMods;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.factions.relation.StarsectorPlayerRelations;
@@ -17,6 +16,7 @@ import kmlib.starsector.factions.relation.StarsectorRelationFormatter;
 import kmlib.starsector.markets.MarketVisibility;
 import kmlib.starsector.markets.colonies.Colony;
 import kmlib.starsector.markets.colonies.SectorColonies;
+import kmlib.starsector.settings.modmanager.ModSource;
 import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
@@ -195,7 +195,7 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
             SectorAPI sector,
             FactionListingFilter filter,
             Set<ListingOption> options,
-            Map<String, FactionSource> sourcesByFactionId) {
+            Map<String, ModSource> sourcesByFactionId) {
         // One walk of the sector answers every faction's row, so the read happens
         // here rather than once per faction.
         var coloniesByFactionId = groupColoniesByFactionId(SectorColonies.readColonies(sector));
@@ -251,7 +251,7 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
             FactionAPI faction,
             String playerFactionId,
             Set<ListingOption> options,
-            Map<String, FactionSource> sourcesByFactionId) {
+            Map<String, ModSource> sourcesByFactionId) {
 
         var segments = new ArrayList<String>();
 
@@ -323,7 +323,7 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
 
     // Where a faction came from, with the mod id beside the name for a source that has
     // one - the name is what a reader recognises, the id what another command takes.
-    private static String describeSource(FactionSource source) {
+    private static String describeSource(ModSource source) {
 
         if (source == null) {
             return UNATTRIBUTED_SOURCE;

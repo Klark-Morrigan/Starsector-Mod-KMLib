@@ -1,4 +1,4 @@
-package kmlib.starsector.settings;
+package kmlib.starsector.settings.modmanager;
 
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 

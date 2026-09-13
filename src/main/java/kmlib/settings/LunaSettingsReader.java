@@ -1,6 +1,6 @@
 package kmlib.settings;
 
-import kmlib.starsector.settings.ModPresence;
+import kmlib.starsector.settings.modmanager.ModPresence;
 
 import lunalib.lunaSettings.LunaSettings;
 import lunalib.lunaSettings.LunaSettingsListener;

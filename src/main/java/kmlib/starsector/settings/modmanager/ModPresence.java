@@ -1,4 +1,4 @@
-package kmlib.starsector.settings;
+package kmlib.starsector.settings.modmanager;
 
 import com.fs.starfarer.api.Global;
 
@@ -19,9 +19,12 @@ import com.fs.starfarer.api.Global;
  * one thing that is genuinely theirs, and a register of every third-party id in the series would
  * put an edit to one integration in a file all of them read.
  *
- * <p>Sits beside the game's settings rather than in {@code kmlib.settings}, which is the LunaLib
+ * <p>Under the game's settings rather than in {@code kmlib.settings}, which is the LunaLib
  * read/write surface: the mod set is the game's own, and is readable on an install carrying no
- * settings library at all.
+ * settings library at all. In a package of its own beneath them because {@code ModManagerAPI} is
+ * reached only through {@code SettingsAPI.getModManager()} - the nesting is the engine's own - and
+ * because the mod set and the common-data folder its parent package reads are two subjects a reader
+ * should not have to open a file to tell apart.
  */
 public final class ModPresence {
 

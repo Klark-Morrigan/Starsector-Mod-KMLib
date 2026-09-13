@@ -1,6 +1,6 @@
 package kmlib.mods.console;
 
-import kmlib.starsector.settings.ModPresence;
+import kmlib.starsector.settings.modmanager.ModPresence;
 
 /**
  * Whether Console Commands is enabled this run.

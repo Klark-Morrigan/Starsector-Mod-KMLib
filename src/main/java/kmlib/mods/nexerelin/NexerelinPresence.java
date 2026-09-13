@@ -1,6 +1,6 @@
 package kmlib.mods.nexerelin;
 
-import kmlib.starsector.settings.ModPresence;
+import kmlib.starsector.settings.modmanager.ModPresence;
 
 /**
  * Whether Nexerelin is enabled this run.

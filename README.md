@@ -634,16 +634,21 @@ No Starsector API on the signature.
   over the same sector.
 - [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) -
   the game's own settings:
-  whether a mod is enabled,
-  answered the same way for every optional-mod gate
-  and answering "not installed" before the game is up;
-  and the common-data folder behind a preference about the interface,
+  the common-data folder behind a preference about the interface,
   which is per user and per install rather than per save.
   A port rather than a static reach,
   and one that fails open at both ends -
   an absent,
   unopenable or hand-edited file answers nothing,
   and a write that will not land is reported rather than thrown.
+- [`starsector/settings/modmanager/`](src/main/java/kmlib/starsector/settings/modmanager/) -
+  the mod set the install is running,
+  which the engine hangs off settings rather than exposing on its own:
+  whether a mod is enabled,
+  answered the same way for every optional-mod gate
+  and answering "not installed" before the game is up;
+  and the source a piece of game data was read from,
+  named for a player and carrying the mod id where the manager accounts for one.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) -
   defensive wrapper around settings.json localisation lookups
   (loud REDACTED on missing or malformed entries),

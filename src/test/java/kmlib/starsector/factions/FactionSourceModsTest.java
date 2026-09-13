@@ -5,6 +5,8 @@ import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.ModSpecAPI;
 import com.fs.starfarer.api.SettingsAPI;
 
+import kmlib.starsector.settings.modmanager.ModSource;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -176,21 +178,21 @@ final class FactionSourceModsTest {
     }
 
     // A mod source: named, and carrying the id another command would take.
-    private static Map.Entry<String, FactionSource> modEntry(
+    private static Map.Entry<String, ModSource> modEntry(
             String factionId,
             String modName,
             String modId) {
 
-        return Map.entry(factionId, new FactionSource(modName, modId));
+        return Map.entry(factionId, new ModSource(modName, modId));
     }
 
     // A source that is not an installed mod, and so has no id to carry. Map.entry
     // rejects a null value, so the pair is built rather than named.
-    private static Map.Entry<String, FactionSource> unidentifiedEntry(
+    private static Map.Entry<String, ModSource> unidentifiedEntry(
             String factionId,
             String sourceName) {
 
-        return Map.entry(factionId, new FactionSource(sourceName, null));
+        return Map.entry(factionId, new ModSource(sourceName, null));
     }
 
     /**

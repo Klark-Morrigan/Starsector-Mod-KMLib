@@ -89,4 +89,7 @@ enforcePackageLayering {
                  of: ['kmlib.starsector.markets.colonies',
                       'kmlib.starsector.markets.colonisation',
                       'kmlib.starsector.markets.ownership']
+
+    forbidImport exactly: 'kmlib.starsector.settings',
+                 of: 'kmlib.starsector.settings.modmanager'
 }

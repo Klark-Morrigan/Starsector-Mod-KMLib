@@ -98,6 +98,7 @@ No Starsector API on the signature.
 - `kmlib.starsector.memory`
 - `kmlib.starsector.scripts`
 - `kmlib.starsector.settings`
+- `kmlib.starsector.settings.modmanager`
 - `kmlib.starsector.strings`
 - `kmlib.starsector.systems`
 - `kmlib.starsector.systems.claims`

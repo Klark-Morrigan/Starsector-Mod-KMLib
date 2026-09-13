@@ -13,7 +13,7 @@ import com.fs.starfarer.api.characters.RelationshipAPI;
 import kmlib.mods.console.commands.ListFactionsCommand.FactionListingFilter;
 import kmlib.mods.console.commands.ListFactionsCommand.ListingOption;
 import kmlib.starsector.factions.FactionCustomFixture;
-import kmlib.starsector.factions.FactionSource;
+import kmlib.starsector.settings.modmanager.ModSource;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
@@ -349,7 +349,7 @@ final class ListFactionsCommandTest {
             assertThat(readReport(
                     sector,
                     FactionListingFilter.ALL,
-                    Map.of("tahlan_greathouses", new FactionSource("Tahlan Shipworks", "tahlan"))))
+                    Map.of("tahlan_greathouses", new ModSource("Tahlan Shipworks", "tahlan"))))
                 .contains("[tahlan_greathouses] Great Houses - Neutral (0 / 100)"
                     + " - from: Tahlan Shipworks [tahlan]");
         }
@@ -365,7 +365,7 @@ final class ListFactionsCommandTest {
             assertThat(readReport(
                     sector,
                     FactionListingFilter.ALL,
-                    Map.of("hegemony", new FactionSource("vanilla", null))))
+                    Map.of("hegemony", new ModSource("vanilla", null))))
                 .contains("[hegemony] Hegemony - Neutral (0 / 100) - from: vanilla")
                 .doesNotContain("vanilla [");
         }
@@ -382,7 +382,7 @@ final class ListFactionsCommandTest {
             var report = readReport(
                 sector,
                 FactionListingFilter.ALL,
-                Map.of("hegemony", new FactionSource("vanilla", null)));
+                Map.of("hegemony", new ModSource("vanilla", null)));
 
             assertThat(report)
                 .contains("[hegemony] Hegemony - Neutral (0 / 100) - from: vanilla")
@@ -434,7 +434,7 @@ final class ListFactionsCommandTest {
                     sector,
                     FactionListingFilter.ALL,
                     EnumSet.of(ListingOption.OMIT_ATTITUDE),
-                    Map.of("hegemony", new FactionSource("vanilla", null))))
+                    Map.of("hegemony", new ModSource("vanilla", null))))
                 .contains("[hegemony] Hegemony - from: vanilla")
                 .doesNotContain("Neutral");
         }
@@ -628,7 +628,7 @@ final class ListFactionsCommandTest {
     private static String readReport(
             SectorFixture sector,
             FactionListingFilter filter,
-            Map<String, FactionSource> sourcesByFactionId) {
+            Map<String, ModSource> sourcesByFactionId) {
 
         return readReport(sector, filter, EnumSet.noneOf(ListingOption.class), sourcesByFactionId);
     }
@@ -637,7 +637,7 @@ final class ListFactionsCommandTest {
             SectorFixture sector,
             FactionListingFilter filter,
             Set<ListingOption> options,
-            Map<String, FactionSource> sourcesByFactionId) {
+            Map<String, ModSource> sourcesByFactionId) {
 
         return ListFactionsCommand.buildReport(
             sector.getSector(),

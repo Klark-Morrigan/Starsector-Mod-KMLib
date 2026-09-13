@@ -1,6 +1,6 @@
 package kmlib.mods.rat;
 
-import kmlib.starsector.settings.ModPresence;
+import kmlib.starsector.settings.modmanager.ModPresence;
 
 /**
  * Whether Random Assortment of Things is enabled this runs.
