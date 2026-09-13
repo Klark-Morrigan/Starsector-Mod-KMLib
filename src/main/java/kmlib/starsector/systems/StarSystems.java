@@ -228,50 +228,84 @@ public final class StarSystems {
     }
 
     /**
-     * Decides whether a star system has a normal means of arrival.
+     * Whether the system holds a gate that is lit.
      *
-     * <p>Access is defined by the means of arrival a system actually offers, not
-     * by trusting the {@code SYSTEM_CUT_OFF_FROM_HYPER} tag - that tag is set by
-     * specific procgen paths, so a hand-built hidden system can be unreachable
-     * without ever carrying it. An <em>active</em> gate always grants access.
-     * Otherwise the system must be wired into hyperspace by at least one jump
-     * point and not be flagged cut off. A transverse-only system - reachable
-     * solely via a nascent gravity well, with no jump point - confers no access
-     * and is not reachable, even though the engine never tags it cut off; a
-     * present but inactive gate does not rescue it. Gate activation flips
-     * {@link GateEntityPlugin#isActive}, so reachability tracks the real state.
+     * <p>Published beside {@link #isReachable}, which folds it in, because a lit gate says more
+     * than that the player can arrive: the gate joins the network every other gate lists, so it is
+     * a thing the player can see from elsewhere and draw conclusions about. A caller deciding what
+     * to show rather than where fleets can go needs that fact on its own, and composing it from
+     * {@code getEntitiesWithTag} at each such caller would be the walk restated.
      *
-     * <p>An installed mod may supply a further means of arrival that the engine
-     * does not model - one that moves fleets in without a jump point, so that a
-     * system entered only that way would otherwise read as cut off. Such a route
-     * grants access the same way an active gate does, bypassing both the
-     * jump-point and cut-off checks. Which routes this install has is
-     * {@link SystemAccessRoutes}' to hold: the mods that supply them register
-     * there, so nothing named here is a mod, and an install with none answers
-     * from the vanilla reads alone.
+     * <p>Activation flips {@link GateEntityPlugin#isActive}, so the answer tracks the live state
+     * rather than the gate merely being present.
+     *
+     * @param system the system being asked about; null holds no gate, there being no system
+     * @return true when at least one of the system's gates is active
+     */
+    public static boolean hasActiveGate(StarSystemAPI system) {
+        if (system == null) {
+            return false;
+        }
+        for (var gate : system.getEntitiesWithTag(Tags.GATE)) {
+            if (GateEntityPlugin.isActive(gate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether the system is wired into hyperspace by a jump point fleets can use.
+     *
+     * <p>The ordinary means of arrival, and the one arm of {@link #isReachable} the engine models
+     * with an entity a fleet traverses. Published beside that fold so a caller weighing the arms
+     * against each other rather than taking their sum asks for this one alone, instead of re-asking
+     * the fold and paying again for the two arms it has already ruled out.
+     *
+     * <p>Access is defined by what the system actually offers rather than by trusting the
+     * {@code SYSTEM_CUT_OFF_FROM_HYPER} tag - that tag is set by specific procgen paths, so a
+     * hand-built hidden system can be unreachable without ever carrying it. The tag rejects a
+     * system whose jump points are disabled; an empty jump-point list rejects a transverse-only
+     * system, reachable solely via a nascent gravity well, which no tag marks.
+     *
+     * @param system the system being asked about; null offers no arrival, there being no system
+     * @return true when the system carries at least one jump point and is not flagged cut off
+     */
+    public static boolean hasJumpPointArrival(StarSystemAPI system) {
+        if (system == null || system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) {
+            return false;
+        }
+        return !system.getJumpPoints().isEmpty();
+    }
+
+    /**
+     * Decides whether a star system has any means of arrival at all.
+     *
+     * <p>The sum of the three arms, each published in its own right above: an <em>active</em> gate,
+     * an installed mod's route, or an ordinary jump point. Gate activation flips
+     * {@link GateEntityPlugin#isActive}, so reachability tracks the real state; a present but
+     * inactive gate rescues nothing.
+     *
+     * <p>An installed mod may supply a means of arrival the engine does not model - one that moves
+     * fleets in without a jump point, so that a system entered only that way would otherwise read
+     * as cut off. Such a route grants access the same way an active gate does, bypassing both the
+     * jump-point and cut-off checks. Which routes this install has is {@link SystemAccessRoutes}'
+     * to hold: the mods that supply them register there, so nothing named here is a mod, and an
+     * install with none answers from the vanilla reads alone.
      *
      * @param system the system being asked about; null is not reachable, there being no system to
      *               arrive at
-     * @return true when the player has a normal means of reaching it
+     * @return true when the player has some means of reaching it
      */
     public static boolean isReachable(StarSystemAPI system) {
         if (system == null) {
             return false;
         }
-        // A lit gate or an installed access route reaches the system regardless
-        // of jump connectivity, so either overrides the cut-off flag and the
-        // absence of jump points.
-        if (hasActiveGate(system) || SystemAccessRoutes.isReachedByAnyRoute(system)) {
-            return true;
-        }
-        // No gate: the system must be reachable by ordinary hyperspace travel.
-        // The cut-off flag rejects a system whose jump points are disabled; an
-        // empty jump-point list rejects a transverse-only system whose sole
-        // entry is a nascent gravity well (not a jump point).
-        if (system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) {
-            return false;
-        }
-        return !system.getJumpPoints().isEmpty();
+        // A lit gate or an installed access route reaches the system regardless of jump
+        // connectivity, so either overrides the cut-off flag and the absence of jump points.
+        return hasActiveGate(system)
+            || SystemAccessRoutes.isReachedByAnyRoute(system)
+            || hasJumpPointArrival(system);
     }
 
     /**
@@ -300,16 +334,5 @@ public final class StarSystems {
             }
         }
         return null;
-    }
-
-    // Whether any gate in the system is lit. An inactive gate (unscanned, or the
-    // network not yet activated) grants nothing.
-    private static boolean hasActiveGate(StarSystemAPI system) {
-        for (var gate : system.getEntitiesWithTag(Tags.GATE)) {
-            if (GateEntityPlugin.isActive(gate)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

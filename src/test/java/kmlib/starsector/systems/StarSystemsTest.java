@@ -99,6 +99,23 @@ final class StarSystemsTest {
         }
 
         @Test
+        void keepsTheNearerStarWhenAFartherOneIsListedAfterIt() {
+            // The same pick from the other list order, which is what shows the ranking rejects a
+            // candidate rather than merely taking the last one it measures.
+            var centreMock = mock(SectorEntityToken.class);
+
+            when(centreMock.getLocation())
+                .thenReturn(new Vector2f(0, 0));
+
+            var nearStar = buildStarWithLocation(0, 0);
+            var farStar = buildStarWithLocation(5000, 0);
+            var system = buildSystemWithCentreAndStars(centreMock, nearStar, farStar);
+
+            assertThat(StarSystems.getCentremostStar(system))
+                .isSameAs(nearStar);
+        }
+
+        @Test
         void breaksAnEqualDistanceTieByLowestStarId() {
 
             var centreMock = mock(SectorEntityToken.class);
@@ -379,6 +396,98 @@ final class StarSystemsTest {
         void returnsNullForANullSystem() {
             assertThat(StarSystems.readFactionClaimOverride(null))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class HasActiveGate {
+
+        @Test
+        void returnsTrueForASystemWhoseGateIsLit() {
+            // What a caller deciding whether to show the system asks, apart from whether fleets
+            // can arrive: a lit gate is listed by every other gate, so the system is a thing the
+            // player can see from elsewhere.
+            var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(true)));
+
+            assertThat(StarSystems.hasActiveGate(system))
+                .isTrue();
+        }
+
+        @Test
+        void returnsFalseForASystemWhoseGateIsDark() {
+            // An unlit gate joins no network, so it says nothing about the system to anybody
+            // standing at another gate.
+            var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(false)));
+
+            assertThat(StarSystems.hasActiveGate(system))
+                .isFalse();
+        }
+
+        @Test
+        void returnsTrueWhenOneOfSeveralGatesIsLit() {
+            // A system can hold more than one, and one lit gate is enough to put it on the
+            // network - so the read answers on any rather than on all.
+            var system = cutOffSystem(
+                "a",
+                buildGateWithPlugin(buildGatePlugin(false)),
+                buildGateWithPlugin(buildGatePlugin(true)));
+
+            assertThat(StarSystems.hasActiveGate(system))
+                .isTrue();
+        }
+
+        @Test
+        void returnsFalseForASystemWithNoGateAtAll() {
+
+            assertThat(StarSystems.hasActiveGate(cutOffSystem("a")))
+                .isFalse();
+        }
+
+        @Test
+        void returnsFalseForANullSystem() {
+            assertThat(StarSystems.hasActiveGate(null))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class HasJumpPointArrival {
+
+        @Test
+        void returnsTrueForASystemCarryingAJumpPoint() {
+            assertThat(StarSystems.hasJumpPointArrival(buildSystemNotCutOff("a")))
+                .isTrue();
+        }
+
+        @Test
+        void returnsFalseForACutOffSystem() {
+            // The tag says the jump points are disabled, so carrying them is not arrival.
+            assertThat(StarSystems.hasJumpPointArrival(cutOffSystem("a")))
+                .isFalse();
+        }
+
+        @Test
+        void returnsFalseForATransverseOnlySystem() {
+            // Nothing tags it, and it holds no jump point: the absence is the whole answer.
+            assertThat(StarSystems.hasJumpPointArrival(buildTransverseOnlySystem("a")))
+                .isFalse();
+        }
+
+        @Test
+        void returnsFalseForACutOffSystemWhoseGateIsLit() {
+            // The arm is narrow on purpose. A lit gate reaches the system, and the fold says so -
+            // but a caller taking the arms singly is the one deciding what a gate buys, so this
+            // one must not answer for it.
+            var system = cutOffSystem("a", buildGateWithPlugin(buildGatePlugin(true)));
+
+            assertThat(StarSystems.hasJumpPointArrival(system))
+                .isFalse();
+        }
+
+        @Test
+        void returnsFalseForANullSystem() {
+            assertThat(StarSystems.hasJumpPointArrival(null))
+                .isFalse();
         }
     }
 

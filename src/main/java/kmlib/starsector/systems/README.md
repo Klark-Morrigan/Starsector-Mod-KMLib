@@ -36,7 +36,26 @@ answers about one system the caller already holds:
 what to call it (`readDisplayName`),
 what is in it
 (`getStars`, `readMarkets`, `readMarketsUnlistedByEconomy`, `findNearestMarket`, `findTaggedEntity`, `getCentremostStar`),
-and whether it can be reached at all (`isReachable`).
+and whether it can be reached at all
+(`isReachable`, and the arms it sums - `hasActiveGate`, `hasJumpPointArrival`).
+
+Reachability is a fold of three arms,
+each published in its own right:
+a lit gate,
+an installed mod's route ([`SystemAccessRoutes`](SystemAccessRoutes.java)),
+and an ordinary jump point.
+A caller wanting arrival takes the sum;
+one weighing the arms against each other takes them singly.
+
+A lit gate reads differently from the other two because it says more than that fleets can get there:
+it joins the network every other gate lists,
+so it is a thing the player is shown from wherever they stand.
+A caller deciding what to *show* rather than where fleets can *go* asks `hasActiveGate` on its own.
+
+Asking through the fold when only one arm is wanted is not free.
+`isReachable` walks the system's gates and consults every installed route before it reaches the jump points,
+so a caller that has already ruled those out and asks the fold anyway pays for both again -
+per system, on a set walked once per map rebuild.
 
 The split is by when a caller asks rather than by what the answer is about.
 A pass resolves the sector's layout once and then asks about systems many times over,
