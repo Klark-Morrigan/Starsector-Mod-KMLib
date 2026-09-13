@@ -46,7 +46,7 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
         var id = parsed.get(SPEC.id);
         var gate = StarSystems.findTaggedEntity(system, Tags.GATE, id);
         if (gate == null) {
-            output.showMessage("No gate with id '"
+            output.showMessage("No gate with ID '"
                 + id
                 + "' in "
                 + StarSystems.readDisplayName(system)
@@ -66,7 +66,7 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
     /**
      * What {@code kmlib_activate_gate} accepts: the ID of the gate to activate,
      * required so an empty invocation is rejected as bad syntax rather than
-     * searching for a blank id.
+     * searching for a blank ID.
      */
     private static final class ActivateGateSpec extends ParameterSpec {
         private final Parameter<String> id =

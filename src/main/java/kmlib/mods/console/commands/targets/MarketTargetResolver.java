@@ -41,7 +41,7 @@ public final class MarketTargetResolver {
     // and the way out said in the same breath, since naming a place is not a narrowing of the
     // search but the alternative to it.
     private static final String NO_SYSTEM_MESSAGE =
-        "Not in a star system - name an entity id to point at a place directly.";
+        "Not in a star system - name an entity ID to point at a place directly.";
 
     private MarketTargetResolver() {
         // utility class, no instances.
@@ -90,7 +90,7 @@ public final class MarketTargetResolver {
         var entity = sector.getEntityById(entityId);
 
         if (entity == null) {
-            return new UnresolvedTarget<>("No entity with id '" + entityId + "' in the sector.");
+            return new UnresolvedTarget<>("No entity with ID '" + entityId + "' in the sector.");
         }
         var market = entity.getMarket();
 

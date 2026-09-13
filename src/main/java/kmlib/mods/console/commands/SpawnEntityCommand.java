@@ -156,7 +156,7 @@ public final class SpawnEntityCommand extends BaseKmlibCommand {
             var focusId = focusArg.trim();
             var focus = system.getEntityById(focusId);
             if (focus == null) {
-                output.showMessage("No entity with id '"
+                output.showMessage("No entity with ID '"
                     + focusId
                     + "' in "
                     + StarSystems.readDisplayName(system)
@@ -171,7 +171,7 @@ public final class SpawnEntityCommand extends BaseKmlibCommand {
                 + " stars ("
                 + KmlibCollections.join(stars, ", ", PlanetAPI::getId)
                 + "). Re-run with an orbit_focus_id -"
-                + " one of those star ids, or any entity id in the system.");
+                + " one of those star IDs, or any entity ID in the system.");
             return null;
         }
         return system.getCenter();
@@ -223,10 +223,10 @@ public final class SpawnEntityCommand extends BaseKmlibCommand {
 
             @Override
             String describeSpawn(SectorEntityToken spawned, StarSystemAPI system) {
-                return "Added an inactive gate (id "
+                return "Added an inactive gate (ID "
                     + spawned.getId()
                     + ") at your fleet position."
-                    + " Activate it with the gate-activation command and this id.";
+                    + " Activate it with the gate-activation command and this ID.";
             }
         },
         JUMP_POINT("jump_point") {

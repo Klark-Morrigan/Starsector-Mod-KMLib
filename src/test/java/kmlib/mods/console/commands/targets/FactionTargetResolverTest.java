@@ -64,7 +64,7 @@ final class FactionTargetResolverTest {
             assertThat(FactionTargetResolver.resolveOwningFaction(
                     mock(SectorAPI.class),
                     "hegmony"))
-                .isEqualTo(new UnresolvedTarget<FactionAPI>("No faction with id 'hegmony'."));
+                .isEqualTo(new UnresolvedTarget<FactionAPI>("No faction with ID 'hegmony'."));
         }
 
         @Test
@@ -72,7 +72,7 @@ final class FactionTargetResolverTest {
             // The default is looked up like any other ID, so a sector that cannot answer for the
             // player says so under that ID rather than under the blank the caller passed.
             assertThat(FactionTargetResolver.resolveOwningFaction(mock(SectorAPI.class), null))
-                .isEqualTo(new UnresolvedTarget<FactionAPI>("No faction with id 'player'."));
+                .isEqualTo(new UnresolvedTarget<FactionAPI>("No faction with ID 'player'."));
         }
 
         @Test

@@ -112,7 +112,7 @@ final class ActivateGateCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.ERROR);
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("No gate with id 'ghost'"));
+                .anyMatch(message -> message.contains("No gate with ID 'ghost'"));
 
             // A typo'd ID must leave the gate network dark.
             gatesMock

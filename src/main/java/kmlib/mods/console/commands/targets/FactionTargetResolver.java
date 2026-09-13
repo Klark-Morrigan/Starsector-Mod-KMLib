@@ -61,7 +61,7 @@ public final class FactionTargetResolver {
         var faction = sector.getFaction(requestedId);
 
         if (faction == null) {
-            return new UnresolvedTarget<>("No faction with id '" + requestedId + "'.");
+            return new UnresolvedTarget<>("No faction with ID '" + requestedId + "'.");
         }
         return new ResolvedTarget<>(faction);
     }

@@ -29,8 +29,8 @@ final class MarketOwnerTargetResolverTest {
 
     private static final String ENTITY_ID = "corvus_iii";
     private static final String FACTION_ID = "hegemony";
-    private static final String NO_ENTITY_MESSAGE = "No entity with id 'corvus_iv' in the sector.";
-    private static final String NO_FACTION_MESSAGE = "No faction with id 'hegmony'.";
+    private static final String NO_ENTITY_MESSAGE = "No entity with ID 'corvus_iv' in the sector.";
+    private static final String NO_FACTION_MESSAGE = "No faction with ID 'hegmony'.";
 
     private MockedStatic<MarketTargetResolver> marketTargetResolverMock;
     private MockedStatic<FactionTargetResolver> factionTargetResolverMock;

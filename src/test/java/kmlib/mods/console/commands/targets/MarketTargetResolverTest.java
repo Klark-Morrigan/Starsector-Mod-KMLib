@@ -64,7 +64,7 @@ final class MarketTargetResolverTest {
         @Test
         void resolvesANamedEntityTheEconomyDoesNotList() {
             // The named place is found on the entity itself, so a body carrying only survey data
-            // - which the economy never lists - can still be pointed at by id.
+            // - which the economy never lists - can still be pointed at by ID.
             var sectorMock = buildSectorAround(buildSystemNamed(SYSTEM_NAME));
             var surveyData = MarketPlacementFixture.buildMarketOnBodyAt("corvus_iii", 500, 0);
 
@@ -121,7 +121,7 @@ final class MarketTargetResolverTest {
                     "jangala",
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedTarget<MarketAPI>(
-                    "No entity with id 'jangala' in the sector."));
+                    "No entity with ID 'jangala' in the sector."));
         }
 
         @Test
@@ -207,7 +207,7 @@ final class MarketTargetResolverTest {
                     null,
                     ANY_MARKET))
                 .isEqualTo(new UnresolvedTarget<MarketAPI>(
-                    "Not in a star system - name an entity id to point at a place directly."));
+                    "Not in a star system - name an entity ID to point at a place directly."));
         }
 
         @Test
@@ -278,7 +278,7 @@ final class MarketTargetResolverTest {
         return sectorMock;
     }
 
-    // Makes the sector answer for the entity under its ID, which is what an id-named resolution
+    // Makes the sector answer for the entity under its ID, which is what an ID-named resolution
     // looks one up through - the sector rather than a system, IDs being unique sector-wide.
     private static void answerForEntityById(SectorAPI sectorMock, SectorEntityToken entityMock) {
 

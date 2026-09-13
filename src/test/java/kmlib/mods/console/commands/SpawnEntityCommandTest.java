@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
  * jump-point kind a working jump point; an omitted speed is derived from the
  * orbit radius while an explicit one sets the base, and the (default or named)
  * jitter widens whichever before it reaches the spawner; and the focus resolution
- * refuses an ambiguous multi-star system or an unknown id. Feedback is read back
+ * refuses an ambiguous multi-star system or an unknown ID. Feedback is read back
  * through a recording {@code CommandOutput} binding.
  *
  * <p>The static seams - {@code Global}, {@code StarSystems},
@@ -521,7 +521,7 @@ final class SpawnEntityCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("No entity with id 'ghost'"));
+                .anyMatch(message -> message.contains("No entity with ID 'ghost'"));
 
             spawnerMock
                 .verifyNoInteractions();
