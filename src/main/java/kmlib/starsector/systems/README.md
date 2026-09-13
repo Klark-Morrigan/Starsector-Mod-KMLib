@@ -44,18 +44,18 @@ so the two are reached at different moments by different code.
 Kept in one class they read as a grab-bag that any new system read could be added to,
 with no rule saying which.
 
-Every read that traverses the system list reports it through
-[`SectorWalkCounters`](../SectorWalkCounters.java),
+Every read that traverses the system list reports it through [`SectorWalkCounters`](../SectorWalkCounters.java),
 so a caller's profiling row states the walks it caused without having asked for any of them to be counted.
 
 ## What tells two systems apart
 
 `StarSystemAPI#getId` is not unique.
-A live heavily modded sector reports 502 systems under 498 distinct IDs, and three of the four collisions are vanilla
-content rather than anything a mod added.
-The colliding systems share their name as well, so neither arm alone separates them.
-Anything keyed on the ID keeps one of a colliding set and drops the rest, which is a system missing from every structure
-built on that map with nothing anywhere saying so.
+A live heavily modded sector reports 502 systems under 498 distinct IDs,
+and three of the four collisions are vanilla content rather than anything a mod added.
+The colliding systems share their name as well,
+so neither arm alone separates them.
+Anything keyed on the ID keeps one of a colliding set and drops the rest,
+which is a system missing from every structure built on that map with nothing anywhere saying so.
 
 [`SystemKey`](SystemKey.java) is the triple that does separate them:
 the system's own ID,
@@ -88,17 +88,14 @@ so `hasStatedArm` is asked before keying anything on one.
 
 [`SectorPassIndex`](SectorPassIndex.java)
 is one pass's whole reading of a sector:
-which systems it holds
-(`readSystemsByKey`, `readSystemsById`)
-and the colonies in each
-(`readColoniesIn`, `readColoniesById`).
+which systems it holds (`readSystemsByKey`, `readSystemsById`) and the colonies in each (`readColoniesIn`, `readColoniesById`).
 
 Readers are handed this instead of the `SectorAPI`,
 and that substitution is the point.
 A reader given a sector is a reader that can still walk a system again;
 one given this cannot,
-so the one-walk-per-pass
-rule is enforced by what a reader is able to reach rather than by everyone remembering it.
+so the one-walk-per-pass rule is enforced by what a reader is able to reach
+rather than by everyone remembering it.
 
 A rebuild addresses its systems both ways at once -
 its cells by key,
@@ -123,7 +120,8 @@ and states the two rules every such memo owes so that none restates them:
   which is the honest price of a system the sector states nothing about.
 
 The colony memo behind `readColoniesIn` is one of these.
-A caller adding a per-system memo of its own takes this type rather than writing the two rules again.
+A caller adding a per-system memo of its own takes this type
+rather than writing the two rules again.
 
 ## Systems that move
 
@@ -139,9 +137,11 @@ so the tracker stays agnostic to any one feature's membership rule.
 
 ## Ways in the engine does not model
 
-Whether a system can be reached is a question about hyperspace, but the answer can turn on a single mod's entity.
+Whether a system can be reached is a question about hyperspace,
+but the answer can turn on a single mod's entity.
 Random Assortment of Things moves fleets through an Abyssal Fracture by a manual hyperspace transition rather than a jump point,
-so a system entered only that way holds no jump point and may carry the cut-off tag while being perfectly reachable.
+so a system entered only that way holds no jump point
+and may carry the cut-off tag while being perfectly reachable.
 
 [`SystemAccessRoute`](SystemAccessRoute.java)
 is that exception stated by whoever knows the mod,
@@ -149,8 +149,8 @@ and [`SystemAccessRoutes`](SystemAccessRoutes.java)
 is the register a mod fills at load.
 The reachability read consults them and names no mod.
 
-A collection rather than one slot, which is what separates this from an
-[extension point](../../extensions/README.md):
+A collection rather than one slot,
+which is what separates this from an [extension point](../../extensions/README.md):
 work taken over whole admits one implementation,
 but access is not taken over.
 Two mods can each add a way in,
@@ -160,7 +160,8 @@ A route answering false leaves the question exactly where it found it,
 which is what lets an install carry several without them having to agree about anything.
 
 A route also vouches that the mod marks the system on the hyperspace map,
-since a mod carrying fleets somewhere shows the player where by a marker of its own making that no scan of the game's star anchors can see.
+since a mod carrying fleets somewhere shows the player
+where by a marker of its own making that no scan of the game's star anchors can see.
 
 ## Ids that reach in from outside
 
@@ -183,7 +184,8 @@ and that line is what turns the next report of something missing into a one-line
 - Who claims a system -
   [`claims/`](claims/)
   holds vanilla's claim behind a port,
-  and the scored contest behind a second one for callers that must justify a claim rather than merely colour by it.
+  and the scored contest behind a second one for callers that must justify a claim
+  rather than merely colour by it.
 - What a colony is -
   [`markets/colonies/`](../markets/colonies/)
   owns the colony set the per-pass index memoises per system.

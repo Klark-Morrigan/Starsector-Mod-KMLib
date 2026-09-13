@@ -1,13 +1,15 @@
 # KMLib UI
 
-Part of [KMLib](../../../../../../README.md). The mods this package forces on a consumer
-are listed under [Requirements](../../../../../../README.md#requirements).
+Part of [KMLib](../../../../../../README.md).
+The mods this package forces on a consumer are listed under [Requirements](../../../../../../README.md#requirements).
 
-The UI primitives a KM mod draws with, tiered by the surface they reach the screen
-through. The tiering is the point of the package: content is authored once in types that
-name no surface, and each surface has its own thin edge that paints or projects that
-content. Pairs that look like duplication across the tiers usually are not - see
-[pairs that look like duplicates](#pairs-that-look-like-duplicates).
+The UI primitives a KM mod draws with,
+tiered by the surface they reach the screen through.
+The tiering is the point of the package:
+content is authored once in types that name no surface,
+and each surface has its own thin edge that paints or projects that content.
+Pairs that look like duplication across the tiers usually are not -
+see [pairs that look like duplicates](#pairs-that-look-like-duplicates).
 
 ## Index
 
@@ -29,164 +31,239 @@ content. Pairs that look like duplication across the tiers usually are not - see
 
 A KM UI reaches the screen one of two ways:
 
-- **The game's widget API** - `TooltipMakerAPI`, `TextPanelAPI`, `LabelAPI`. Available
-  wherever a screen offers a panel to hang a component on.
-- **Raw GL**, in a [render pass](../../../../../../docs/dev/rendering-environment.md). The
-  only option on a core screen that offers no such
-  panel: the sector map and the intel screen are opaque surfaces composited over, so
-  anything a mod puts there is painted directly, in UI coordinates, above the pass the
-  screen itself drew.
+- **The game's widget API** -
+  `TooltipMakerAPI`,
+  `TextPanelAPI`,
+  `LabelAPI`.
+  Available wherever a screen offers a panel to hang a component on.
+- **Raw GL**,
+  in a [render pass](../../../../../../docs/dev/rendering-environment.md).
+  The only option on a core screen that offers no such panel:
+  the sector map and the intel screen are opaque surfaces composited over,
+  so anything a mod puts there is painted directly,
+  in UI coordinates,
+  above the pass the screen itself drew.
 
-Neither surface is a superset of the other, and which one is available is a fact about
-the screen rather than about the content. So the content model sits between them and
-names neither.
+Neither surface is a superset of the other,
+and which one is available is a fact about the screen rather than about the content.
+So the content model sits between them and names neither.
 
 ## The neutral middle
 
-`text`, `controls`, `widgets`, `layout`, and `label` hold content and geometry that name
-no drawing surface. A row says what it carries; a layout says where its parts land;
+`text`,
+`controls`,
+`widgets`,
+`layout`,
+and `label` hold content and geometry that name no drawing surface.
+A row says what it carries;
+a layout says where its parts land;
 neither says what paints them.
 
-`TextAlignment` is the clearest statement of why, and its own Javadoc makes the argument:
-both surfaces already have a nine-position vocabulary - LazyLib's `LazyFont.TextAnchor`
-for GL, `com.fs.starfarer.api.ui.Alignment` for vanilla widgets - so adopting either
-would tie every styled control to one surface and force a translation out of a vocabulary
-it has no part in.
+`TextAlignment` is the clearest statement of why,
+and its own Javadoc makes the argument:
+both surfaces already have a nine-position vocabulary -
+LazyLib's `LazyFont.TextAnchor` for GL,
+`com.fs.starfarer.api.ui.Alignment` for vanilla widgets -
+so adopting either would tie every styled control to one surface
+and force a translation out of a vocabulary it has no part in.
 
-There is a second reason specific to the GL side, and it is the reason LazyLib is the one
-mod KMLib declares a hard dependency on.
+There is a second reason specific to the GL side,
+and it is the reason LazyLib is the one mod KMLib declares a hard dependency on.
 
-The game exposes no way to draw text at arbitrary coordinates in a render pass, so every
-GL surface here goes through LazyLib's `LazyFont`. That dependency cannot be made
-optional the way LunaLib and Console Commands are: each of those gates behind a
-mod-enabled check that does nothing when the mod is absent, whereas an absent LazyLib raises
-`NoClassDefFoundError` from inside a render pass, once per frame. No guard prevents it -
-`LabelRenderer` names `LazyFont.TextAnchor` in its own signature, so a caller resolves the
-class before any check could run. `LazyFontCache` catches `FontException`, which is a
-missing or malformed `.fnt` and a different failure entirely. The launcher enforcing the
-dependency is what replaces the guard that cannot exist.
+The game exposes no way to draw text at arbitrary coordinates in a render pass,
+so every GL surface here goes through LazyLib's `LazyFont`.
+That dependency cannot be made optional the way LunaLib and Console Commands are:
+each of those gates behind a mod-enabled check that does nothing when the mod is absent,
+whereas an absent LazyLib raises `NoClassDefFoundError` from inside a render pass,
+once per frame.
+No guard prevents it -
+`LabelRenderer` names `LazyFont.TextAnchor` in its own signature,
+so a caller resolves the class before any check could run.
+`LazyFontCache` catches `FontException`,
+which is a missing or malformed `.fnt` and a different failure entirely.
+The launcher enforcing the dependency is what replaces the guard that cannot exist.
 
-Declaring it does not license the neutral tier to name it. A look value is carried by
-every styled control, including in mods that draw no text and load no drawing class, so
-naming a LazyLib type in one would pull the library into paths that have no use for it -
-and would tie the value to a single surface, which is the first argument again.
+Declaring it does not license the neutral tier to name it.
+A look value is carried by every styled control,
+including in mods that draw no text and load no drawing class,
+so naming a LazyLib type in one would pull the library into paths that have no use for it -
+and would tie the value to a single surface,
+which is the first argument again.
 
 ## A row states its kind, the box states the look
 
-The neutral middle's rule applied to typography: a row carries no face. It says which kind
-of line it is - [`TooltipLineStyle`](widgets/tooltip/TooltipLineStyle.java) - and the box hosting it
-says what each kind draws in - [`TooltipStyle`](widgets/tooltip/TooltipStyle.java), a
-[`TextStyle`](text/TextStyle.java) per kind.
+The neutral middle's rule applied to typography:
+a row carries no face.
+It says which kind of line it is -
+[`TooltipLineStyle`](widgets/tooltip/TooltipLineStyle.java) -
+and the box hosting it says what each kind draws in -
+[`TooltipStyle`](widgets/tooltip/TooltipStyle.java),
+a [`TextStyle`](text/TextStyle.java) per kind.
 
-Splitting it there follows the owners. Whatever knows the subject matter knows a line is a
-heading; whatever knows the surface knows what a heading looks like on it. So a row builder
-holds no opinion about faces, two builders feeding one box cannot disagree about them, and one
-decision on the box restyles every line of a kind at once - on either surface, since a GL box
-reads those styles into its own draws while a vanilla-widget tooltip reads the same two into
-`setTitleFont` / `setParaFont`.
+Splitting it there follows the owners.
+Whatever knows the subject matter knows a line is a heading;
+whatever knows the surface knows what a heading looks like on it.
+So a row builder holds no opinion about faces,
+two builders feeding one box cannot disagree about them,
+and one decision on the box restyles every line of a kind at once -
+on either surface,
+since a GL box reads those styles into its own draws
+while a vanilla-widget tooltip reads the same two into `setTitleFont` / `setParaFont`.
 
-The kinds are a heading, a line of the body, and a footnote - a line about the box rather than
-about its subject, which the game's own boxes end their key hints in and set in a smaller,
-narrower face than the content above. Most boxes note nothing, so the footnote look defaults to
-the body's and a box that does note something layers its own on with `footnotedIn`.
+The kinds are a heading,
+a line of the body,
+and a footnote -
+a line about the box rather than about its subject,
+which the game's own boxes end their key hints in and set in a smaller,
+narrower face than the content above.
+Most boxes note nothing,
+so the footnote look defaults to the body's
+and a box that does note something layers its own on with `footnotedIn`.
 
-A table row carries one more fact of the same sort: its **subordination level**, how many steps it
-stands under the voice the box speaks in, which the host turns into a size through
-`TooltipStyle.shrunkPerLevel`. It is deliberately three things it might be mistaken for and is not.
-Not the indent - a group's members are inset beneath it while remaining the same kind of statement
-it is, so the two move independently. Not tree depth - those members are children of the line above
-without being subordinate to it. And not a size, for the reason this whole section exists. It also
-says nothing about *why* a line stands under another: a stack of rows may be a breakdown, a
-hierarchy, a list with sub-items, or an aside beneath a finding, and all a widget that knows none of
-them can name is the one step down they share.
+A table row carries one more fact of the same sort:
+its **subordination level**,
+how many steps it stands under the voice the box speaks in,
+which the host turns into a size through `TooltipStyle.shrunkPerLevel`.
+It is deliberately three things it might be mistaken for and is not.
+Not the indent -
+a group's members are inset beneath it while remaining the same kind of statement it is,
+so the two move independently.
+Not tree depth -
+those members are children of the line above without being subordinate to it.
+And not a size,
+for the reason this whole section exists.
+It also says nothing about *why* a line stands under another:
+a stack of rows may be a breakdown,
+a hierarchy,
+a list with sub-items,
+or an aside beneath a finding,
+and all a widget that knows none of them can name is the one step down they share.
 
-Sizing follows the kind rather than the box: each row is measured on the face its own kind
-resolved to, or a heading in a wider face overflows the box that was sized for it. That is
-what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.
+Sizing follows the kind rather than the box:
+each row is measured on the face its own kind resolved to,
+or a heading in a wider face overflows the box that was sized for it.
+That is what [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes a face per call for.
 
-Spacing is settled the same way, and from structure rather than from any line's own request.
-A box's content reaches [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) as
-[`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks: lines within one block stand a line gap
-apart, and two blocks the box's own `sectionBreak`. A parting is a fact about two blocks
-meeting, so neither of them can own it - carried as a flag on the line that opens a block, it
-varies with whatever size that line happens to be, and the gap under a box's title then comes
-out different from the gaps between its body blocks for no reason a reader can see.
+Spacing is settled the same way,
+and from structure rather than from any line's own request.
+A box's content reaches [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) as [`TooltipSection`](widgets/tooltip/TooltipSection.java) blocks:
+lines within one block stand a line gap apart,
+and two blocks the box's own `sectionBreak`.
+A parting is a fact about two blocks meeting,
+so neither of them can own it -
+carried as a flag on the line that opens a block,
+it varies with whatever size that line happens to be,
+and the gap under a box's title then comes out different from the gaps between its body blocks for no reason a reader can see.
 
-Every measurement of room a box spends travels as one
-[`TooltipSpacing`](widgets/tooltip/TooltipSpacing.java) on its style, since the three are one subject
-and are read together by whatever stacks the content. The line gap within it is a
-[`TooltipLineGaps`](widgets/tooltip/TooltipLineGaps.java) rather than a single width, because it is the
-one of the three that varies by depth: a box states a gap per subordination level, each statement
-governs the tiers nested under it until another is stated, and whatever stands above the shallowest
-statement keeps the base gap. Inherited downward because a box cannot know how deep its subject
-matter goes - a line below the deepest stated tier belongs to that tier's account, and given the base
-gap instead the innermost lines of a listing would be the airiest in the box.
-The gap belongs to the tier of the line **just drawn**, not
-of the line about to be - a run of lines at one depth is what a reader takes in as a unit, so it is
-the run that tightens, and resolved the other way the first line of a run would take its own tier's
-gap and pull the whole run up against the line it stands under. A map rather than a width per tier
-for the same reason `shrunkPerLevel` is one step rather than a look per level: a listing goes as deep
-as its subject matter does. The block partings are not tiered - a boundary is the same width wherever
-it falls, and both still win where they apply.
+Every measurement of room a box spends travels as one [`TooltipSpacing`](widgets/tooltip/TooltipSpacing.java) on its style,
+since the three are one subject and are read together by whatever stacks the content.
+The line gap within it is a [`TooltipLineGaps`](widgets/tooltip/TooltipLineGaps.java) rather than a single width,
+because it is the one of the three that varies by depth:
+a box states a gap per subordination level,
+each statement governs the tiers nested under it until another is stated,
+and whatever stands above the shallowest statement keeps the base gap.
+Inherited downward because a box cannot know how deep its subject matter goes -
+a line below the deepest stated tier belongs to that tier's account,
+and given the base gap instead the innermost lines of a listing would be the airiest in the box.
+The gap belongs to the tier of the line **just drawn**,
+not of the line about to be -
+a run of lines at one depth is what a reader takes in as a unit,
+so it is the run that tightens,
+and resolved the other way the first line of a run would take its own tier's gap
+and pull the whole run up against the line it stands under.
+A map rather than a width per tier for the same reason `shrunkPerLevel` is one step
+rather than a look per level:
+a listing goes as deep as its subject matter does.
+The block partings are not tiered -
+a boundary is the same width wherever it falls,
+and both still win where they apply.
 
-One thing a box measures is not room but a **leader rule**: the stretch a row leads a hairline along
-from the end of its label across to the start of its value, since the value column is pinned to the
-box's right edge however short the label is and a reader tracking a number back to its name otherwise
-has nothing to follow. It is measured with the columns
+One thing a box measures is not room but a **leader rule**:
+the stretch a row leads a hairline along from the end of its label across to the start of its value,
+since the value column is pinned to the box's right edge however short the label is
+and a reader tracking a number back to its name otherwise has nothing to follow.
+It is measured with the columns
 ([`TooltipLeaderLine`](widgets/tooltip/TooltipLeaderLine.java)) rather than derived where it is painted,
-because it is worked out from the label and value widths the layout already took - a rule derived from a
-second measurement of the row could only drift from the two columns it exists to join. It stands off
-each end by the row's *own* face's word space, the same space the label parts its own runs by, so a
-mark set among a line's words keeps that line's rhythm at whatever size the row draws at. Where what is
-left is shorter than that space it is not led at all: the two columns are already close enough to read
-as one line, and the aid is only wanted where the eye could lose it.
+because it is worked out from the label and value widths the layout already took -
+a rule derived from a second measurement of the row could only drift from the two columns it exists to join.
+It stands off each end by the row's *own* face's word space,
+the same space the label parts its own runs by,
+so a mark set among a line's words keeps that line's rhythm at whatever size the row draws at.
+Where what is left is shorter than that space it is not led at all:
+the two columns are already close enough to read as one line,
+and the aid is only wanted where the eye could lose it.
 
-Where it sits vertically is not the layout's to say. The rule is set on the middle of the face's
-lower-case band, read off that face's own glyph box
-([`LazyFontMeasurer`](font/LazyFontMeasurer.java)) rather than taken as a fraction of the line - a
-bitmap face's lower-case letters sit wherever its atlas puts them, and the fraction that centres one
-face's band rides high on the next. That is a metric only a surface holding a loaded face can read, so
-it stays with the [paint](render/gl/tooltip/TooltipLeaderLineRenderer.java).
+Where it sits vertically is not the layout's to say.
+The rule is set on the middle of the face's lower-case band,
+read off that face's own glyph box
+([`LazyFontMeasurer`](font/LazyFontMeasurer.java)) rather than taken as a fraction of the line -
+a bitmap face's lower-case letters sit wherever its atlas puts them,
+and the fraction that centres one face's band rides high on the next.
+That is a metric only a surface holding a loaded face can read,
+so it stays with the [paint](render/gl/tooltip/TooltipLeaderLineRenderer.java).
 
-How *heavily* it lands is neither's to decide. The rule's colour is the paint's - a leader is the
-quietest mark on the line by definition, so it takes the engine's grey whatever the box states for its
-own text - but its thickness and how far it is let down from the box's opacity are a
-[`TooltipLeaderLineStyle`](render/gl/tooltip/TooltipLeaderLineStyle.java) the host states, because the
-balance cannot be settled from the code: a solid run covers every pixel it crosses outright where a
-glyph stroke of the same shade spends much of its footprint at partial alpha, and by how much depends on
-the face, the size, and how that atlas was rasterised. `TEXT_WEIGHTED` is the pair that puts it level
-with greyed-out text on the faces a KM tooltip is ordinarily set in; a host with a slider moves from
-there.
+How *heavily* it lands is neither's to decide.
+The rule's colour is the paint's -
+a leader is the quietest mark on the line by definition,
+so it takes the engine's grey whatever the box states for its own text -
+but its thickness and how far it is let down from the box's opacity are a [`TooltipLeaderLineStyle`](render/gl/tooltip/TooltipLeaderLineStyle.java) the host states,
+because the balance cannot be settled from the code:
+a solid run covers every pixel it crosses outright
+where a glyph stroke of the same shade spends much of its footprint at partial alpha,
+and by how much depends on the face,
+the size,
+and how that atlas was rasterised.
+`TEXT_WEIGHTED` is the pair that puts it level with greyed-out text on the faces a KM tooltip is ordinarily set in;
+a host with a slider moves from there.
 
-Blocks nest, so the same reading spaces a listing at every depth: a block holds its own opening
-lines over member blocks, and a member takes the narrower `groupBreak` above itself where the
-member before it came to more than one line. That parting is spent by the member that follows
-and never above a block's first, which is what stops it piling up where several groups close on
-the one row - a colony's last term, the colony, and the faction holding it all end together, and
-the next faction is set off by one gap rather than three.
+Blocks nest,
+so the same reading spaces a listing at every depth:
+a block holds its own opening lines over member blocks,
+and a member takes the narrower `groupBreak` above itself
+where the member before it came to more than one line.
+That parting is spent by the member that follows and never above a block's first,
+which is what stops it piling up where several groups close on the one row -
+a colony's last term,
+the colony,
+and the faction holding it all end together,
+and the next faction is set off by one gap rather than three.
 
-A box is sized by its content and then clamped, so content taller than the screen is drawn with its
-ends past both edges and nothing on screen says what was cut. So the stack is weighable before it is
-drawn: `CursorTooltip.measureBoxHeight` answers how tall the same blocks would stand in the same
-style, and [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) offers that beside
-`resolveHeightBudget`, the height of the very bound it clamps the box inside. Both answers come off
-the one walk of the blocks that lays them out, so a box weighed as fitting is the box then drawn.
-What to do about an overflow stays the caller's - cut content, restyle it smaller, or accept it.
+A box is sized by its content and then clamped,
+so content taller than the screen is drawn with its ends past both edges
+and nothing on screen says what was cut.
+So the stack is weighable before it is drawn:
+`CursorTooltip.measureBoxHeight` answers how tall the same blocks would stand in the same style,
+and [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) offers that beside `resolveHeightBudget`,
+the height of the very bound it clamps the box inside.
+Both answers come off the one walk of the blocks that lays them out,
+so a box weighed as fitting is the box then drawn.
+What to do about an overflow stays the caller's -
+cut content,
+restyle it smaller,
+or accept it.
 
-One of those answers is packaged, for a box whose content is the player's to ask for rather than the
-caller's to choose: [`TooltipHeightFit`](widgets/tooltip/TooltipHeightFit.java) gives up size instead
-of lines. It re-anchors the level shrink at the deepest line the blocks hold, so that line keeps its
-size while the tiers above it draw smaller and closer together, and solves for the gentlest ramp that
-brings the box inside the budget - `CursorTooltipRenderer.renderFitted` does it against the screen.
-Anchored the ordinary way the compression would quiet the deepest lines, which are the ones a reader
-who asked for that depth is there to read; anchored at the bottom it is the account they stand under
-that comes down to meet them. That inverts how a listing reads, and it scales more of the box off its
-atlas, which is why a box that fits is drawn untouched rather than the compression being a look.
+One of those answers is packaged,
+for a box whose content is the player's to ask for rather than the caller's to choose:
+[`TooltipHeightFit`](widgets/tooltip/TooltipHeightFit.java) gives up size instead of lines.
+It re-anchors the level shrink at the deepest line the blocks hold,
+so that line keeps its size while the tiers above it draw smaller and closer together,
+and solves for the gentlest ramp that brings the box inside the budget -
+`CursorTooltipRenderer.renderFitted` does it against the screen.
+Anchored the ordinary way the compression would quiet the deepest lines,
+which are the ones a reader who asked for that depth is there to read;
+anchored at the bottom it is the account they stand under that comes down to meet them.
+That inverts how a listing reads,
+and it scales more of the box off its atlas,
+which is why a box that fits is drawn untouched rather than the compression being a look.
 
-Sizes and line gaps move together under it - the gaps keep the share one step of the ramp leaves of a
-body line - because leading is most of what a row costs, so a compression spending glyphs alone would
-give up legibility for a fraction of the height it needs. The block partings hold: a boundary reads as
-one at any size. What no ramp can reach still overflows, and that is content the caller has to give up.
+Sizes and line gaps move together under it -
+the gaps keep the share one step of the ramp leaves of a body line -
+because leading is most of what a row costs,
+so a compression spending glyphs alone would give up legibility for a fraction of the height it needs.
+The block partings hold:
+a boundary reads as one at any size.
+What no ramp can reach still overflows,
+and that is content the caller has to give up.
 
 ## Pairs that look like duplicates
 
@@ -200,71 +277,101 @@ one at any size. What no ramp can reach still overflows, and that is content the
 
 ### `Highlight` versus `TextSpan`
 
-Identical shape - text plus a colour - and they must not be merged. The difference is how
-each addresses the text it colours:
+Identical shape -
+text plus a colour -
+and they must not be merged.
+The difference is how each addresses the text it colours:
 
-- `TextSpan` is a **run**: a stretch of characters that carries its own colour by
-  position. Exact, and unambiguous by construction. A run may
-  [join](text/LabelRun.java) the one before it rather than standing a word space clear of
-  it, which is what lets a colour be picked out of the middle of a word.
-- `Highlight` is a **token**: vanilla's `LabelAPI.setHighlight(String[])` searches the
-  paragraph for that substring. "3 of 3 markets" cannot say which "3" it means.
+- `TextSpan` is a **run**:
+  a stretch of characters that carries its own colour by position.
+  Exact,
+  and unambiguous by construction.
+  A run may [join](text/LabelRun.java) the one before it
+  rather than standing a word space clear of it,
+  which is what lets a colour be picked out of the middle of a word.
+- `Highlight` is a **token**:
+  vanilla's `LabelAPI.setHighlight(String[])` searches the paragraph for that substring.
+  "3 of 3 markets" cannot say which "3" it means.
 
-The token form is lossy, and it is lossy because the vanilla API is - `Highlight` exists
-to bind a substring to its colour so the two cannot drift apart on the way into the
-engine's parallel arrays, which is the most that API allows. The precise form therefore
-belongs in the model and the lossy one at the adapter: runs project down to tokens when
-they reach a vanilla surface, and never the other way, because recovering positions from
-a substring search is exactly the ambiguity being avoided.
+The token form is lossy,
+and it is lossy because the vanilla API is -
+`Highlight` exists to bind a substring to its colour
+so the two cannot drift apart on the way into the engine's parallel arrays,
+which is the most that API allows.
+The precise form therefore belongs in the model and the lossy one at the adapter:
+runs project down to tokens when they reach a vanilla surface,
+and never the other way,
+because recovering positions from a substring search is exactly the ambiguity being avoided.
 
-`HighlightedParagraph` stays on the vanilla side for the same reason, and additionally
-carries its own `addTo` render methods - it is an adapter, not content.
+`HighlightedParagraph` stays on the vanilla side for the same reason,
+and additionally carries its own `addTo` render methods -
+it is an adapter,
+not content.
 
 ### `ImageSpan` versus `RowSlot.Image`
 
-Both name a small image sized off its line, and they must not be merged. The difference is
-what the image is attached to:
+Both name a small image sized off its line,
+and they must not be merged.
+The difference is what the image is attached to:
 
-- [`ImageSpan`](text/ImageSpan.java) is a **run**: part of a label's sentence, spaced by a
-  word space and carried wherever that label goes. A mark belonging to the thing a line names
-  is one - it lands where the sentence puts it, at whatever indent the line sits at, which is
-  also what lets a centred line's image and its words centre together as a unit.
-- [`RowSlot.Image`](widgets/RowSlot.java) is a **column**: reserved at one width across a
-  whole stack of rows, so the labels past it line up, and an image-less row in that stack
-  still indents to meet them. That alignment is what it is for, so it earns its keep only
-  where the stack is flat: rows sitting at differing indents cannot share one gutter without
-  the deeper ones drawing their image left of the name it belongs to.
+- [`ImageSpan`](text/ImageSpan.java) is a **run**:
+  part of a label's sentence,
+  spaced by a word space and carried wherever that label goes.
+  A mark belonging to the thing a line names is one -
+  it lands where the sentence puts it,
+  at whatever indent the line sits at,
+  which is also what lets a centred line's image and its words centre together as a unit.
+- [`RowSlot.Image`](widgets/RowSlot.java) is a **column**:
+  reserved at one width across a whole stack of rows,
+  so the labels past it line up,
+  and an image-less row in that stack still indents to meet them.
+  That alignment is what it is for,
+  so it earns its keep only where the stack is flat:
+  rows sitting at differing indents cannot share one gutter without the deeper ones drawing their image left of the name it belongs to.
 
-The same crest reads differently in each: as a run it sits where the sentence puts it, as a
-slot it anchors to a gutter every row shares. So the choice is a statement about whether the
-image belongs to the words or to the table - and the two sets stay separate because a tick
-box or a sort triangle is a column that has no reading mid-word, and so is spelled only in
-`RowSlot`.
+The same crest reads differently in each:
+as a run it sits where the sentence puts it,
+as a slot it anchors to a gutter every row shares.
+So the choice is a statement about whether the image belongs to the words or to the table -
+and the two sets stay separate
+because a tick box or a sort triangle is a column that has no reading mid-word,
+and so is spelled only in `RowSlot`.
 
-Both carry a tint, and for the same reason: a mark that stands in for words has to read with
-them. A slot states the colour of a mark whose *row* reads back from the stack around it - a
-picker row that is worth offering but has nothing to show, whose crest has to recede with its
-words or the row reads as half-drawn. A run states the colour of a mark set inside a sentence,
-which is the same case one line deep: an asset authored to carry on some other surface arrives
-as the loudest thing on a line whose meaning is in the words, so a caller hands over the colour
-the words are drawn in. Either way the draw multiplies by the stated colour and a null is drawn
-as authored, which is what a mark that is a picture in its own right passes.
+Both carry a tint,
+and for the same reason:
+a mark that stands in for words has to read with them.
+A slot states the colour of a mark whose *row* reads back from the stack around it -
+a picker row that is worth offering but has nothing to show,
+whose crest has to recede with its words or the row reads as half-drawn.
+A run states the colour of a mark set inside a sentence,
+which is the same case one line deep:
+an asset authored to carry on some other surface arrives as the loudest thing on a line
+whose meaning is in the words,
+so a caller hands over the colour the words are drawn in.
+Either way the draw multiplies by the stated colour and a null is drawn as authored,
+which is what a mark that is a picture in its own right passes.
 
-The colour is the caller's rather than the asset's in both. A sprite cannot say which of the two
-kinds of mark it is - the same artwork can be a subject on one line and a shorthand on the next -
-so nothing here reads a colour off the asset, and a caller that has one authored beside the path
-decides for itself whether this surface is the one that should spend it.
+The colour is the caller's rather than the asset's in both.
+A sprite cannot say which of the two kinds of mark it is -
+the same artwork can be a subject on one line and a shorthand on the next -
+so nothing here reads a colour off the asset,
+and a caller that has one authored beside the path decides for itself
+whether this surface is the one that should spend it.
 
-The gutter stays even under that, which is what the column is for: a stack's tints come from
-one palette in whatever builds its rows, not from each item, so two receded rows cannot recede
-differently. And a tint darkens rather than fades - the alpha is the host's - so a tint stated
-with an alpha of its own would put a second opacity into a draw that already has one. Pass an
-opaque colour.
+The gutter stays even under that,
+which is what the column is for:
+a stack's tints come from one palette in whatever builds its rows,
+not from each item,
+so two receded rows cannot recede differently.
+And a tint darkens rather than fades -
+the alpha is the host's -
+so a tint stated with an alpha of its own would put a second opacity into a draw that already has one.
+Pass an opaque colour.
 
 ## Ports across the boundary
 
-Where the neutral middle needs something only a surface can answer, it takes a port and
-the surface supplies the implementation:
+Where the neutral middle needs something only a surface can answer,
+it takes a port and the surface supplies the implementation:
 
 | Port | Answers | Implementations |
 | --- | --- | --- |
@@ -278,53 +385,68 @@ the surface supplies the implementation:
 | [`CursorPosition`](input/CursorPosition.java) | where the pointer is, in UI units | [`VanillaCursorPosition`](input/VanillaCursorPosition.java), [`CursorPositionFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/input/CursorPositionFake.java) |
 | [`PointerButtonHold`](input/PointerButtonHold.java) | whether a pointer button is down this frame | [`VanillaPointerButtonHold`](input/VanillaPointerButtonHold.java), [`PointerButtonHoldFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/input/PointerButtonHoldFake.java) |
 
-`ControlSpec` and `ControlAction` split the same way within `controls`: the sealed spec is
-content, the action is behaviour the container owns. A content model that held its own
-`ControlAction` would have absorbed interaction it has no business holding.
+`ControlSpec` and `ControlAction` split the same way within `controls`:
+the sealed spec is content,
+the action is behaviour the container owns.
+A content model that held its own `ControlAction` would have absorbed interaction it has no business holding.
 
 ## Two span measurers
 
 [`TextSpanMeasurer`](font/TextSpanMeasurer.java) takes the face per call;
-[`StyledSpanMeasurer`](text/StyledSpanMeasurer.java) has the look bound and takes the span
-alone. Reach for the bound one wherever a piece of content is asked its own width - a
-[`RowSlot`](widgets/RowSlot.java) holding a value, say. Such a piece holds no face, and
-could not supply one without first learning which style its line resolved to, nor apply
-the casing that style shouts the text in - and text measured as authored measures narrower
-than it paints, so a box sized from that measurement clips what is drawn into it. Whatever
-resolved the style binds the measurement once and passes it down.
+[`StyledSpanMeasurer`](text/StyledSpanMeasurer.java) has the look bound and takes the span alone.
+Reach for the bound one wherever a piece of content is asked its own width -
+a [`RowSlot`](widgets/RowSlot.java) holding a value,
+say.
+Such a piece holds no face,
+and could not supply one without first learning which style its line resolved to,
+nor apply the casing that style shouts the text in -
+and text measured as authored measures narrower than it paints,
+so a box sized from that measurement clips what is drawn into it.
+Whatever resolved the style binds the measurement once and passes it down.
 
-Neither a port nor a duplicate, which is why it appears in neither table above. Nothing
-implements it per surface: the binding closes over `TextSpanMeasurer`, so the LazyLib
-adapter is still the only thing that knows a glyph width. And it lives in `text` rather
-than beside its sibling in `font` because `text` already reads `font` (a `TextStyle` holds
-a `TextFace`), so a port in `font` naming `TextSpan` would close that into a cycle.
+Neither a port nor a duplicate,
+which is why it appears in neither table above.
+Nothing implements it per surface:
+the binding closes over `TextSpanMeasurer`,
+so the LazyLib adapter is still the only thing that knows a glyph width.
+And it lives in `text` rather than beside its sibling in `font`
+because `text` already reads `font` (a `TextStyle` holds a `TextFace`),
+so a port in `font` naming `TextSpan` would close that into a cycle.
 
 ## A strip is measured in two faces
 
-A control strip is not lettered in one atlas. A [`ControlSpec.Tabs`](controls/ControlSpec.java)
-row - as a panel's header band or as a body row - reads in the tab face its
-[`TabStyle`](widgets/tabs/style/TabStyle.java) states; every other control reads in the body face
-its [`WidgetStyle`](render/gl/style/WidgetStyle.java) states. So
-[`ControlStripLayout`](layout/ControlStripLayout.java) and the layouts above it take a
-[`StripTextMeasurers`](font/StripTextMeasurers.java) pair, and charge each row the measurement for
-the face it paints in.
+A control strip is not lettered in one atlas.
+A [`ControlSpec.Tabs`](controls/ControlSpec.java)
+row -
+as a panel's header band or as a body row -
+reads in the tab face its [`TabStyle`](widgets/tabs/style/TabStyle.java) states;
+every other control reads in the body face its [`WidgetStyle`](render/gl/style/WidgetStyle.java) states.
+So [`ControlStripLayout`](layout/ControlStripLayout.java) and the layouts above it take a [`StripTextMeasurers`](font/StripTextMeasurers.java) pair,
+and charge each row the measurement for the face it paints in.
 
-One measurer for both would size half the rows against letters they are never drawn in. That error
-does not stay local: a strip is framed to its widest row, so a body row mismeasured by a few pixels
-per glyph moves the whole panel's width - and where two hosts state different tab faces, the same
-body comes out a different width under each.
+One measurer for both would size half the rows against letters they are never drawn in.
+That error does not stay local:
+a strip is framed to its widest row,
+so a body row mismeasured by a few pixels per glyph moves the whole panel's width -
+and where two hosts state different tab faces,
+the same body comes out a different width under each.
 
 The pair is built from the faces themselves
-(`StripTextMeasurers.loadFaceMeasurers`), taking a `TextFace` and a `StarsectorFont`: two members of
-one type would swap silently in a positional hand-off, which is the very fault the pair exists to
-remove. The canonical constructor stays open for a caller supplying its own metrics.
+(`StripTextMeasurers.loadFaceMeasurers`),
+taking a `TextFace` and a `StarsectorFont`:
+two members of one type would swap silently in a positional hand-off,
+which is the very fault the pair exists to remove.
+The canonical constructor stays open for a caller supplying its own metrics.
 
 ## Two hosts, one map widget
 
-The game shows the same map widget in two places, and each keeps its own filter state: the
-sector map on the `M` screen, and the intel screen's embedded map preview (its "map visor").
-So "is a map showing, and in which mode" has two answers at once, and which one a caller
-wants depends on what it is deciding.
+The game shows the same map widget in two places,
+and each keeps its own filter state:
+the sector map on the `M` screen,
+and the intel screen's embedded map preview (its "map visor").
+So "is a map showing,
+and in which mode" has two answers at once,
+and which one a caller wants depends on what it is deciding.
 
 | Question | Read | Why |
 | --- | --- | --- |
@@ -334,185 +456,270 @@ wants depends on what it is deciding.
 | which widget the map is | [`ShownMapTab`](map/probes/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
 | which widgets the *other* maps are | [`EmbeddedMapFinder`](map/probes/EmbeddedMapFinder.java) | a mod compositing a map into a panel of its own puts a map surface on screen that none of the reads above reports, and it is on screen precisely when they all answer no |
 
-The host-blind reads exist for one situation: code reached through a hook that is not told
-which host invoked it, so it cannot ask a host-specific question even though it would prefer
-to. Anything deciding **where** to draw, or whether to put controls over a particular
-surface, asks that surface instead - a blind read says only that some host is showing such a
-map, and is true while a different host entirely is the one showing it. That class states
-that limit and leaves the reasoning below to this section, so it is described once.
+The host-blind reads exist for one situation:
+code reached through a hook that is not told which host invoked it,
+so it cannot ask a host-specific question even though it would prefer to.
+Anything deciding **where** to draw,
+or whether to put controls over a particular surface,
+asks that surface instead -
+a blind read says only that some host is showing such a map,
+and is true while a different host entirely is the one showing it.
+That class states that limit and leaves the reasoning below to this section,
+so it is described once.
 
-Its three reads are three states the game is in rather than three settings of one, which is
-why none is written as another's negation: a screen showing no map leaves all three false.
+Its three reads are three states the game is in rather than three settings of one,
+which is why none is written as another's negation:
+a screen showing no map leaves all three false.
 The sector map reaches them as a single [`SectorMapState`](map/presence/SectorMapState.java)
-rather than as a boolean per read, so "not showing" cannot arrive carrying a filter setting.
+rather than as a boolean per read,
+so "not showing" cannot arrive carrying a filter setting.
 
-That is a disjunction rather than a switch, and the reason is worth knowing before trusting
-either read too far. One core tab shows at a time, so the two usually exclude each other -
-but they are not reading the same thing: the sector read goes through the core tab the
-campaign reports, while the intel read walks down to the panel that tab holds. Both answer
-for the **core UI in force** - an interaction dialog's own while such a dialog is showing
-one, the campaign's otherwise - so they cannot be aimed at two different trees, but nothing
-in either rules out both answering yes at once. Treat the exclusivity as the usual case
-rather than a guarantee.
+That is a disjunction rather than a switch,
+and the reason is worth knowing before trusting either read too far.
+One core tab shows at a time,
+so the two usually exclude each other -
+but they are not reading the same thing:
+the sector read goes through the core tab the campaign reports,
+while the intel read walks down to the panel that tab holds.
+Both answer for the **core UI in force** -
+an interaction dialog's own while such a dialog is showing one,
+the campaign's otherwise -
+so they cannot be aimed at two different trees,
+but nothing in either rules out both answering yes at once.
+Treat the exclusivity as the usual case rather than a guarantee.
 
-Neither goes through `getCurrentCoreTab()` raw, and the correction between them is what
-keeps the pair honest while the player is docked.
-[`CampaignScreenView`](coreui/CampaignScreenView.java) owns it: a dialog that hosts a core UI
-goes on handing it out after the player closes the screen it was showing, and that core -
-unlike the campaign's, which closes its tab - keeps naming the tab it last showed for the
-rest of the visit. So a reported tab stands only while the core UI it came from is still on
-screen, and the walk takes that dialog's core on the same terms. Read raw, opening the intel
-screen while docked and closing it again leaves every map-gated overlay believing it is
-still up.
+Neither goes through `getCurrentCoreTab()` raw,
+and the correction between them is what keeps the pair honest while the player is docked.
+[`CampaignScreenView`](coreui/CampaignScreenView.java) owns it:
+a dialog that hosts a core UI goes on handing it out after the player closes the screen it was showing,
+and that core -
+unlike the campaign's,
+which closes its tab -
+keeps naming the tab it last showed for the rest of the visit.
+So a reported tab stands only while the core UI it came from is still on screen,
+and the walk takes that dialog's core on the same terms.
+Read raw,
+opening the intel screen while docked
+and closing it again leaves every map-gated overlay believing it is still up.
 
-`ShownMapTab` does not take the tab id's word for it at all. It recognises the `M` screen's
-map by the tab being a `SectorMapAPI` - published API, so obfuscation-proof, and a test of
-what the widget **is** rather than of which tab the campaign UI reports, which is what a
-layout rule rooted at it actually needs. The visor is asked second and only when the current
-tab is not itself a map, since that screen hosts its map below a tab that is not one.
+`ShownMapTab` does not take the tab id's word for it at all.
+It recognises the `M` screen's map by the tab being a `SectorMapAPI` -
+published API,
+so obfuscation-proof,
+and a test of what the widget **is** rather than of which tab the campaign UI reports,
+which is what a layout rule rooted at it actually needs.
+The visor is asked second and only when the current tab is not itself a map,
+since that screen hosts its map below a tab that is not one.
 
-Filter state follows the same split, and it is per map rather than global. Each map widget
-binds to the filter its params carry, falling back to the campaign's persisted filter when
-they carry none. The core-UI map tab carries none - so the `M` screen and a dialog-hosted map
-tab share the persisted filter, which is the one the sector read reports. Every embedded
-preview supplies its own instead, the intel visor included, which is why that screen is asked
-about its own state and never about the campaign's.
+Filter state follows the same split,
+and it is per map rather than global.
+Each map widget binds to the filter its params carry,
+falling back to the campaign's persisted filter when they carry none.
+The core-UI map tab carries none -
+so the `M` screen and a dialog-hosted map tab share the persisted filter,
+which is the one the sector read reports.
+Every embedded preview supplies its own instead,
+the intel visor included,
+which is why that screen is asked about its own state and never about the campaign's.
 
-Those settings are independent, and they start out disagreeing: the persisted filter is built
-with Starscape on - a new game's first look at the sector map is the starfield - while every
-embedded filter is built with it off. Toggling one leaves the other alone, which is the whole
-reason the host-blind read is an OR over two sources rather than one flag consulted once.
+Those settings are independent,
+and they start out disagreeing:
+the persisted filter is built with Starscape on -
+a new game's first look at the sector map is the starfield -
+while every embedded filter is built with it off.
+Toggling one leaves the other alone,
+which is the whole reason the host-blind read is an OR over two sources
+rather than one flag consulted once.
 
-All three fail closed, so an unreadable link answers "not showing" rather than guessing.
+All three fail closed,
+so an unreadable link answers "not showing" rather than guessing.
 
 ## A panel of one's own over a core screen
 
-The game publishes no way to raise a custom panel over a core screen. Every published route -
-`InteractionDialogAPI.showCustomDialog` and its visual twin - hangs off an interaction dialog,
-and a screen the player opened from the campaign has none; standing one up to obtain the route
-would close the screen the panel was wanted on. `CampaignUIAPI` offers only the text prompts.
+The game publishes no way to raise a custom panel over a core screen.
+Every published route -
+`InteractionDialogAPI.showCustomDialog` and its visual twin -
+hangs off an interaction dialog,
+and a screen the player opened from the campaign has none;
+standing one up to obtain the route would close the screen the panel was wanted on.
+`CampaignUIAPI` offers only the text prompts.
 
-[`CoreUiOverlayPanels`](coreui/CoreUiOverlayPanels.java) is what is left: the core UI is a panel
-like any other, so a component added to it is drawn and hit-tested by the game beside the
-screen's own widgets rather than composited after them. Reached through the published panel
-interface rather than by name, so a build that renames the obfuscated class leaves it working
+[`CoreUiOverlayPanels`](coreui/CoreUiOverlayPanels.java) is what is left:
+the core UI is a panel like any other,
+so a component added to it is drawn
+and hit-tested by the game beside the screen's own widgets rather than composited after them.
+Reached through the published panel interface rather than by name,
+so a build that renames the obfuscated class leaves it working
 and one that stops answering the interface leaves it refusing.
 
-The parent is resolved at every call and never held, which settles both directions at once: a
-core UI is rebuilt as the player moves between screens, so a panel added back to a previously
-resolved root joins a tree nothing is drawing, and a removal that no longer finds its parent has
-nothing left to do - whatever discarded that root discarded the panel with it.
+The parent is resolved at every call and never held,
+which settles both directions at once:
+a core UI is rebuilt as the player moves between screens,
+so a panel added back to a previously resolved root joins a tree nothing is drawing,
+and a removal that no longer finds its parent has nothing left to do -
+whatever discarded that root discarded the panel with it.
 
-**It supplies no modality, and cannot.** The dimming and the event interception belong to the
-game's own modal base, the one [`CoreUiDialogView`](coreui/CoreUiDialogView.java) recognises a
-modal by, and nothing added this way descends from it. So a consumer wanting a modal paints its
-own backdrop, claims its own input, and publishes its own "I am up" reading for anything that
-stands down under a dialog - because that walk will not see it. Unlike the reads in that package
-this fails **closed**: a no means "the panel is not up", which is a state every consumer already
-handles, where a read failing closed would take away something that worked before it.
+**It supplies no modality,
+and cannot.** The dimming and the event interception belong to the game's own modal base,
+the one [`CoreUiDialogView`](coreui/CoreUiDialogView.java) recognises a modal by,
+and nothing added this way descends from it.
+So a consumer wanting a modal paints its own backdrop,
+claims its own input,
+and publishes its own "I am up" reading for anything that stands down under a dialog -
+because that walk will not see it.
+Unlike the reads in that package this fails **closed**:
+a no means "the panel is not up",
+which is a state every consumer already handles,
+where a read failing closed would take away something that worked before it.
 
 ## The list picker holds no store
 
-A picker list that ranks by a chosen metric, flips direction when the lit metric is
-re-picked, wraps across one or two columns, and spotlights the row it is clicked on is the
-same mechanism in every mod that draws one. [`widgets/lists`](widgets/lists/) is that
-mechanism, its own folder beside [`tabs`](widgets/tabs/) and
-[`segments`](widgets/segments/) because it is a family rather than a piece:
-[`ListSortMode`](widgets/lists/ListSortMode.java) is the seam a consumer's own
-vocabulary implements, [`ListSortModes`](widgets/lists/ListSortModes.java) bundles that
-vocabulary with the fallback an unrecognised key lands on,
-[`ListSort`](widgets/lists/ListSort.java) is how a list is ranked - the active mode, its
-[`SortDirection`](widgets/lists/SortDirection.java), and the vocabulary both were chosen
-from - [`ListPicker`](widgets/lists/ListPicker.java) is a list bundled with the vocabulary
-that ranks it, which is what a consumer hands over when *which* list it offers varies,
-[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice, and
-[`ActivePicks`](widgets/lists/ActivePicks.java) is a consumer's live read of all three of
-its stored picks - the spotlighted item, the sort, the column count - carried as one reading
-because they are read as one and because they are exactly what the store below writes.
-The two selectors - [`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and
-[`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) - draw and drive them.
+A picker list that ranks by a chosen metric,
+flips direction when the lit metric is re-picked,
+wraps across one or two columns,
+and spotlights the row it is clicked on is the same mechanism in every mod that draws one.
+[`widgets/lists`](widgets/lists/) is that mechanism,
+its own folder beside [`tabs`](widgets/tabs/) and [`segments`](widgets/segments/)
+because it is a family rather than a piece:
+[`ListSortMode`](widgets/lists/ListSortMode.java) is the seam a consumer's own vocabulary implements,
+[`ListSortModes`](widgets/lists/ListSortModes.java) bundles that vocabulary with the fallback an unrecognised key lands on,
+[`ListSort`](widgets/lists/ListSort.java) is how a list is ranked -
+the active mode,
+its [`SortDirection`](widgets/lists/SortDirection.java),
+and the vocabulary both were chosen from -
+[`ListPicker`](widgets/lists/ListPicker.java) is a list bundled with the vocabulary that ranks it,
+which is what a consumer hands over when *which* list it offers varies,
+[`ListColumns`](widgets/lists/ListColumns.java) is the one-or-two column choice,
+and [`ActivePicks`](widgets/lists/ActivePicks.java) is a consumer's live read of all three of its stored picks -
+the spotlighted item,
+the sort,
+the column count -
+carried as one reading because they are read as one and
+because they are exactly what the store below writes.
+The two selectors -
+[`SortSelectorControl`](widgets/lists/SortSelectorControl.java) and [`ColumnsSelectorControl`](widgets/lists/ColumnsSelectorControl.java) -
+draw and drive them.
 
-The vocabulary rides on the sort rather than beside it because nothing here reads one
-without the other: a mode with no set around it cannot say what clicking another row would
-select, and a set with no active mode cannot say which row is lit. Carrying them apart made
-every builder in the family take both and trust that the two matched, which is what
-`ListSort`'s constructor now checks instead. `ListPicker` is the same bundling one step
-earlier, before a sort is resolved at all: a consumer whose lists rank by different metrics
-hands over the list and the vocabulary that can read it as one value, so nothing between the
-two can pair a list with a vocabulary that cannot rank it. Its `empty()` is the offers-nothing
-answer, and it carries no fallback mode - an empty picker draws nothing, so the item list is
-read and found empty before any stored sort is resolved against it.
+The vocabulary rides on the sort rather than beside it
+because nothing here reads one without the other:
+a mode with no set around it cannot say what clicking another row would select,
+and a set with no active mode cannot say which row is lit.
+Carrying them apart made every builder in the family take both and trust that the two matched,
+which is what `ListSort`'s constructor now checks instead.
+`ListPicker` is the same bundling one step earlier,
+before a sort is resolved at all:
+a consumer whose lists rank by different metrics hands over the list
+and the vocabulary that can read it as one value,
+so nothing between the two can pair a list with a vocabulary that cannot rank it.
+Its `empty()` is the offers-nothing answer,
+and it carries no fallback mode -
+an empty picker draws nothing,
+so the item list is read and found empty before any stored sort is resolved against it.
 
-[`ListPickerControl`](widgets/lists/ListPickerControl.java) is what they compose into: a
-rule, the columns selector, a row pairing the sort selector with whatever the consumer
-pairs beside it, then a deselectable icon-radio list of the items. The arrangement is not
-what makes it worth sharing - three rules that are only obvious after getting them wrong
-are. Re-picking the lit row clears the spotlight rather than re-selecting it, the lit index
-is resolved against the *ranked* order rather than the order the caller handed over, and an
-index outside the rows is ignored rather than trusted. The row under the pointer reports
-through the same store and off that same ranked order, so a host can light what picking a row
-would show before it is picked; what a reading on no row means differs between the two
-channels, and is stated at the report itself.
-[`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn
-from - an id, a label, a crest, whether the row reads back (`isDimmed`), and nothing else -
-which a consumer implements on its own item type, so the list ranks through that consumer's own
-comparators and nothing is copied into a library value on the way in. `isDimmed` splits the
-question the way the rest of the package splits every question: the consumer answers *which*
-rows read back, because only it knows what its numbers mean, and the picker answers *how far*,
-so one mod's receded row cannot look unlike another's. It defaults to false, so a list whose
-every item is equally worth picking implements nothing. The right half of the sort row is a
-parameter for the same reason: pairing something with the sort is a layout decision this
-package can hold, what sits there is not.
+[`ListPickerControl`](widgets/lists/ListPickerControl.java) is what they compose into:
+a rule,
+the columns selector,
+a row pairing the sort selector with whatever the consumer pairs beside it,
+then a deselectable icon-radio list of the items.
+The arrangement is not what makes it worth sharing -
+three rules that are only obvious after getting them wrong are.
+Re-picking the lit row clears the spotlight rather than re-selecting it,
+the lit index is resolved against the *ranked* order rather than the order the caller handed over,
+and an index outside the rows is ignored rather than trusted.
+The row under the pointer reports through the same store and off that same ranked order,
+so a host can light what picking a row would show before it is picked;
+what a reading on no row means differs between the two channels,
+and is stated at the report itself.
+[`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn from -
+an id,
+a label,
+a crest,
+whether the row reads back (`isDimmed`),
+and nothing else -
+which a consumer implements on its own item type,
+so the list ranks through that consumer's own comparators
+and nothing is copied into a library value on the way in.
+`isDimmed` splits the question the way the rest of the package splits every question:
+the consumer answers *which* rows read back,
+because only it knows what its numbers mean,
+and the picker answers *how far*,
+so one mod's receded row cannot look unlike another's.
+It defaults to false,
+so a list whose every item is equally worth picking implements nothing.
+The right half of the sort row is a parameter for the same reason:
+pairing something with the sort is a layout decision this package can hold,
+what sits there is not.
 
-The value trailing each row splits the same way. `ListSortMode.resolveTrailingRuns` answers
-what the row is visibly ranked by as [`TextSpan`](text/TextSpan.java) runs rather than as one
-string, because a value is not always a plain number in the row's own tone - a reading the
-engine itself gives a colour to, or a range whose two ends read differently, needs its own
-shades inside the one slot. The offered colour rides in with the item, so a mode with no
-colour opinion answers a single run in it and draws exactly as a plain value always did. What
-stays the picker's is everything about *how* the value lands: it decides which of
-[`RowSlot`](widgets/RowSlot.java)'s three shapes carries it, folds a mode that answered no
-runs and one whose runs all came out blank into the same empty slot, and re-colours every run
-on a receding row - so a mode's own shades cannot survive beside a greyed name any more than a
-crest can.
+The value trailing each row splits the same way.
+`ListSortMode.resolveTrailingRuns` answers what the row is visibly ranked by as [`TextSpan`](text/TextSpan.java) runs rather than as one string,
+because a value is not always a plain number in the row's own tone -
+a reading the engine itself gives a colour to,
+or a range whose two ends read differently,
+needs its own shades inside the one slot.
+The offered colour rides in with the item,
+so a mode with no colour opinion answers a single run in it
+and draws exactly as a plain value always did.
+What stays the picker's is everything about *how* the value lands:
+it decides which of [`RowSlot`](widgets/RowSlot.java)'s three shapes carries it,
+folds a mode that answered no runs and one whose runs all came out blank into the same empty slot,
+and re-colours every run on a receding row -
+so a mode's own shades cannot survive beside a greyed name any more than a crest can.
 
-Which kind a slot is, is asked through [`RowSlotPainter`](widgets/RowSlotPainter.java) and never
-through an `instanceof` chain - the same role [`LabelRunPainter`](text/LabelRunPainter.java) plays
-for the kinds a label's runs come in, and for the same reason. The sealing alone does not deliver
-what it promises: the mod targets Java 17, whose `switch` is not exhaustive over a sealed set, so a
-painter with a kind unhandled compiles and leaves that column reserved by the polymorphic
-measurement and painted by nothing. A method per kind moves that to the compiler. A surface that
-shows nothing for a kind implements the method empty, so "no tick is drawn here" is written down
-rather than merely absent, and a kind added to either seal stops every painting surface from
-building until it says what the new kind looks like.
+Which kind a slot is,
+is asked through [`RowSlotPainter`](widgets/RowSlotPainter.java) and never through an `instanceof` chain -
+the same role [`LabelRunPainter`](text/LabelRunPainter.java) plays for the kinds a label's runs come in,
+and for the same reason.
+The sealing alone does not deliver what it promises:
+the mod targets Java 17,
+whose `switch` is not exhaustive over a sealed set,
+so a painter with a kind unhandled compiles
+and leaves that column reserved by the polymorphic measurement and painted by nothing.
+A method per kind moves that to the compiler.
+A surface that shows nothing for a kind implements the method empty,
+so "no tick is drawn here" is written down rather than merely absent,
+and a kind added to either seal stops every painting surface from building
+until it says what the new kind looks like.
 
-[`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved
-list between frames, since a body is built twice a frame (render and hit-test) and a picker
-list is typically a full pass over whatever the consumer scores its items from. What belongs
-in the revision is the caller's judgement, and how long a memo lives is the consumer's: it
-keys on the scope and the revision alone, so a list belonging to something that comes and goes
-is held in a memo per such thing and discarded with it.
+[`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved list between frames,
+since a body is built twice a frame (render and hit-test)
+and a picker list is typically a full pass over whatever the consumer scores its items from.
+What belongs in the revision is the caller's judgement,
+and how long a memo lives is the consumer's:
+it keys on the scope and the revision alone,
+so a list belonging to something that comes
+and goes is held in a memo per such thing and discarded with it.
 
-The division that makes all of it shareable is that **this package owns the model and the
-resolution rule; the consuming mod owns where the answer is kept**. Nothing here reads or
-writes a save. The stored mode and direction keys arrive as arguments to
-`ListSort.resolveStored`, each selector reports its pick back through a callback, and the
-picker's three picks - with the row the pointer is on beside them - report together through
-[`ListPickerStore`](widgets/lists/ListPickerStore.java) - write-only, because the live values
-arrive as the picker's own parameters and nothing here needs a read path into a save. The
-hover rides there rather than on a channel of its own because it is resolved from the very
-list the picks are, and what a consumer does with it - previewing, holding, or nothing at all -
-is that consumer's, exactly as where it keeps a pick is. A mod's
-own thin binder is what ties the two ends to its sector-memory keys or settings fields, and
-that binder is the only place those keys appear.
+The division that makes all of it shareable is that **this package owns the model and the resolution rule;
+the consuming mod owns where the answer is kept**.
+Nothing here reads or writes a save.
+The stored mode and direction keys arrive as arguments to `ListSort.resolveStored`,
+each selector reports its pick back through a callback,
+and the picker's three picks -
+with the row the pointer is on beside them -
+report together through [`ListPickerStore`](widgets/lists/ListPickerStore.java) -
+write-only,
+because the live values arrive as the picker's own parameters
+and nothing here needs a read path into a save.
+The hover rides there rather than on a channel of its own
+because it is resolved from the very list the picks are,
+and what a consumer does with it -
+previewing,
+holding,
+or nothing at all -
+is that consumer's,
+exactly as where it keeps a pick is.
+A mod's own thin binder is what ties the two ends to its sector-memory keys or settings fields,
+and that binder is the only place those keys appear.
 
-Labels follow the same rule for the same reason. A string id only means something against
-the category that registered it, and [`StarsectorStrings`](../strings/StarsectorStrings.java)
-takes `(category, key)` on every call precisely so nothing here has to know which mod is
-asking - so `ListSortMode.resolveLabelText()` and the columns selector's caption arrive as
-drawn text. `ListColumns` is the deliberate exception: its segment labels are the literals
-`1` and `2`, because the rule exists to keep player-visible *prose* translatable and a digit
-standing for a count is not prose.
+Labels follow the same rule for the same reason.
+A string id only means something against the category that registered it,
+and [`StarsectorStrings`](../strings/StarsectorStrings.java)
+takes `(category, key)` on every call precisely so nothing here has to know which mod is asking -
+so `ListSortMode.resolveLabelText()` and the columns selector's caption arrive as drawn text.
+`ListColumns` is the deliberate exception:
+its segment labels are the literals `1` and `2`,
+because the rule exists to keep player-visible *prose* translatable
+and a digit standing for a count is not prose.
 
 ## Where each package sits
 
@@ -551,47 +758,68 @@ standing for a count is not prose.
 | [`map/controls`](map/controls/) | vanilla | the writes into the map's own furniture, as against the reads below it: [`MapFilterRows`](map/controls/MapFilterRows.java) reaches the row of toggles a map screen is furnished from - the `M` screen's full-width strip and the intel visor's shorter band alike, both being the same widget reached by the same unobfuscated accessor off the map itself - and hands it back as a [`MapFilterRow`](map/controls/MapFilterRow.java) - a handle rather than the widget, answering only which row it is, for the reason that class states. [`VanillaToggleFactory`](map/controls/VanillaToggleFactory.java) is what then writes into one: it stands one more button at the end of the row, built by the row's own members and laid out by them, so the result is a toggle of the game's making rather than a lookalike. Those members are matched by signature and never by name - the two it needs carry the same regenerated name in every build - and a signature fitting twice is refused as readily as one fitting nothing, guessing there being a coin toss made inside another party's widget. A button's clicks are redirected before it is ever appended, the row answering a click by rewriting the whole of the player's map filters from its own toggles; the stand-in bound in its place is built over whatever interface the button names, through `java.lang.invoke` rather than the reflection proxy it resembles, the game's script classloader denying mod code `java.lang.reflect` by name and allowing what a proxy is made of underneath. [`MapFilterToggle`](map/controls/MapFilterToggle.java) is what a caller holds and what fits the control to the row before any of that is attempted: its height comes off the row and its width off the button already standing at the end of it, so one path lays a control on the `M` screen's larger buttons and on the intel band's smaller ones with no branch on which screen is up, and an append the width left will not take is declined outright. The row does not clip what it holds, so an unguarded one draws off the end of the strip rather than failing - and the guard is not there for the game's own rows, which both have room to spare, but for the row another mod reached first. The handle then answers the three things a holder has to ask: whether the button is ticked, how to set it without that travelling back out as a click, and whether it is still standing on the row currently on screen - the last being the one asked every frame, every open of the map screen building a new row. It also hangs the control's hover, six of the row's own carrying one - asked of the handle rather than of the button, which is never handed out, and placed above, where the row's own sit. A hover that cannot be hung costs the hover alone, the box being on the row already and the row offering no way to take one off again. It binds the control's key the same way, through the published call the game drives its own buttons by, and nothing has to be arranged for that key to be live in the right places: a button matches its key while it is on screen and its row is taking input, so a control that never reached a screen answers nothing on it and there is no listener to register or take away. A cleared binding reads as a code of zero rather than as an absent one, and is left unbound rather than passed through as a key nothing can press. The key is also said in the button's own words through [`buttons`](buttons/), because a key nothing shows is a key nobody presses - and the game will not say it here: its own key announcement writes into the words of one kind of button, and a filter row is furnished with another, so a control keyed by bare code is bound and silent. The game is not asked to spell it out as well, that being a request it cannot meet on this kind of button and a second announcement beside ours on any build that could. Nothing here names an obfuscated type, which is what lets the code that runs against the game's row be the same code a row standing in for it is put through |
 | [`map/probes`](map/probes/) | vanilla | the live reads into the map's widget tree over [`CoreUiTree`](coreui/CoreUiTree.java)'s by-name reach: [`ShownMapTab`](map/probes/ShownMapTab.java), the [surface bounds](map/probes/MapSurfaceBounds.java) that pick the map out of that tab by shape as a [surface area](map/probes/MapSurfaceArea.java) carrying the chrome drawn with it, the [finder](map/probes/EmbeddedMapFinder.java) that answers where the maps which are *not* that tab stand, as [one value per map](map/probes/EmbeddedMap.java) carrying the chain it hangs under and answering, live at each ask, the box it is currently drawn in - never kept, a panel a mod slides on and off screen having moved by the time a held one is read - and, for a caller whose subject is the widget rather than what shows of it, that map as a component, which answers where the box read does not since a map drawn to nothing is a widget still, and - off that same ancestry - the widget its owner docked, the outermost thing the map was wrapped in or the map itself where it was wrapped in nothing, so no caller has to index into a chain and be right about which end of it is which; [`VanillaMapTooltipProbe`](map/probes/VanillaMapTooltipProbe.java) that hands the shown tooltip back rather than a yes/no, so a consumer can step aside for it or draw over it, searching under a root the caller supplies rather than the core tab, since a docked map surface is no tab at all and the frames one is up are frames where no tab is - what a vanilla tooltip *is* stays the probe's, which surfaces exist is the caller's, the [widget trace](map/probes/MapTabWidgetTrace.java) that describes what the cursor is inside, the [host trace](map/probes/EmbeddedMapHostTrace.java) that names whoever owns an embedded map off that same finder's walk, the [icon-order trace](map/probes/MapIconOrderTrace.java) that describes which terrain the widget paints over which - all three handing the line back for a consumer to log as its own - and the [layering probe](map/probes/MapIconLayeringProbe.java) that answers the same subject for one entity as a value to act on. Both icon reads reach the icon map through one shared [reader](map/probes/MapWidgetIcons.java), so the walk and the one warning about it stopping working exist once. The two probes that want *the first* widget under a root answering for something - that icon reader and the tooltip probe - descend through one [subtree search](map/probes/SubtreeSearch.java); the walks that collect rather than stop do not, each carrying something different down with it (a full ancestry, a parent and a depth, a capped running set), so folding them together would need a visit result and a context object to save five lines of skeleton apiece |
 
-The map is five packages rather than one. Three of them read different things - GL state, the
-campaign's persisted UI data, the live widget tree - and a fourth reads nothing at all: it
-acts, moving an entity so the widget seeds its icon later. **No class in any of those four
-references another's.** That independence is the reason the split is worth keeping: a probe that
-started reaching for the transform, or a presence read that had to walk the tree, would be the
-signal that one of these has taken on a job belonging to another.
+The map is five packages rather than one.
+Three of them read different things -
+GL state,
+the campaign's persisted UI data,
+the live widget tree -
+and a fourth reads nothing at all:
+it acts,
+moving an entity so the widget seeds its icon later.
+**No class in any of those four references another's.** That independence is the reason the split is worth keeping:
+a probe that started reaching for the transform,
+or a presence read that had to walk the tree,
+would be the signal that one of these has taken on a job belonging to another.
 
-`map/controls` is the fifth and sits above them rather than beside them, which is why it is the one
-package here that names another's classes. It writes into the map's own furniture, and a write has
-to be aimed: where the row stands is a reading, so the reach starts at
-[`ShownMapTab`](map/probes/ShownMapTab.java) or at an [`EmbeddedMap`](map/probes/EmbeddedMap.java)
-the finder handed over. The arrow runs that way and never back - a probe reaching into this package
-would be a read that had started changing what it describes, which is the contract those four are
-worth keeping literal.
+`map/controls` is the fifth and sits above them rather than beside them,
+which is why it is the one package here that names another's classes.
+It writes into the map's own furniture,
+and a write has to be aimed:
+where the row stands is a reading,
+so the reach starts at [`ShownMapTab`](map/probes/ShownMapTab.java) or at an [`EmbeddedMap`](map/probes/EmbeddedMap.java)
+the finder handed over.
+The arrow runs that way and never back -
+a probe reaching into this package would be a read that had started changing what it describes,
+which is the contract those four are worth keeping literal.
 
-[`MapIconLayering`](map/MapIconLayering.java) sits above the four rather than in one of them, and
-is the only thing they share. `map/probes` reads a placement and `map/icons` acts on one, so both
-need the word for it and neither can own it - putting it in either would be exactly the reference
-the rule above forbids. The act half takes its placement as a port, wired by the consuming mod, so
-it still reads nothing.
+[`MapIconLayering`](map/MapIconLayering.java) sits above the four rather than in one of them,
+and is the only thing they share.
+`map/probes` reads a placement and `map/icons` acts on one,
+so both need the word for it and neither can own it -
+putting it in either would be exactly the reference the rule above forbids.
+The act half takes its placement as a port,
+wired by the consuming mod,
+so it still reads nothing.
 
-`map/icons` and the icon reads in `map/probes` are the write and the read of one subject, and they
-are apart on the tier the rest of this table splits on: a probe describes the live tree and never
-touches it, which is a contract worth keeping literal. Those reads are also the only way to check
-the reseat landed, since where an icon sits is an insertion-order artefact the engine promises
-nothing about.
+`map/icons` and the icon reads in `map/probes` are the write and the read of one subject,
+and they are apart on the tier the rest of this table splits on:
+a probe describes the live tree and never touches it,
+which is a contract worth keeping literal.
+Those reads are also the only way to check the reseat landed,
+since where an icon sits is an insertion-order artefact the engine promises nothing about.
 
-Two packages are named `tooltip`, and the pair is the tier split rather than a collision to
-resolve. `widgets/tooltip` is what a hover box *is* - lines, blocks, and where they land, naming
-no drawing surface; `tooltip` is what the vanilla widget API needs to be handed one; and
-`render/gl` paints the neutral model itself. One subject, three homes, exactly as the table of
-[pairs](#pairs-that-look-like-duplicates) above sets out. An import naming the simple name alone
-is the thing to look twice at.
+Two packages are named `tooltip`,
+and the pair is the tier split rather than a collision to resolve.
+`widgets/tooltip` is what a hover box *is* -
+lines,
+blocks,
+and where they land,
+naming no drawing surface;
+`tooltip` is what the vanilla widget API needs to be handed one;
+and `render/gl` paints the neutral model itself.
+One subject,
+three homes,
+exactly as the table of [pairs](#pairs-that-look-like-duplicates) above sets out.
+An import naming the simple name alone is the thing to look twice at.
 
-`layout.VanillaPositions` is the one deliberate exception in a neutral package: it holds
-vanilla screen coordinates, which are a fact about the game's own layout rather than
-about any KM content. It states a position rather than fetching one, which is the line
-that keeps it the only exception - `screen.VanillaScreen` is the same subject read live,
-and reaching the running game for its numbers is exactly what puts it outside the neutral
-tier however naturally it would have sat beside the layout maths it feeds. Its counterpart on the test side is
-[`PositionFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/layout/PositionFake.java), a widget position
-already laid out at a given [`Rectangle`](../../math/geometry/Rectangle.java) - anything that reads
-where a widget is takes one of those instead of stubbing six of `PositionAPI`'s thirty-odd methods,
+`layout.VanillaPositions` is the one deliberate exception in a neutral package:
+it holds vanilla screen coordinates,
+which are a fact about the game's own layout rather than about any KM content.
+It states a position rather than fetching one,
+which is the line that keeps it the only exception -
+`screen.VanillaScreen` is the same subject read live,
+and reaching the running game for its numbers is exactly what puts it outside the neutral tier however naturally it would have sat beside the layout maths it feeds.
+Its counterpart on the test side is [`PositionFake`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/layout/PositionFake.java),
+a widget position already laid out at a given [`Rectangle`](../../math/geometry/Rectangle.java) -
+anything that reads where a widget is takes one of those instead of stubbing six of `PositionAPI`'s thirty-odd methods,
 and a consuming mod's tests can lay a widget out without a mocking framework to describe a box.
