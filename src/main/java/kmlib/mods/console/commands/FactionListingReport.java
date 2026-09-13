@@ -289,7 +289,7 @@ final class FactionListingReport {
         return identity.toString();
     }
 
-    // Every faction the sector knows, ordered by id. The sector's own order is load order, which
+    // Every faction the sector knows, ordered by ID. The sector's own order is load order, which
     // differs between installs and makes two runs hard to compare; a listing of thirty-odd factions
     // is also read by looking one up.
     private static List<FactionAPI> collectFactionsSortedById(SectorAPI sector) {
