@@ -42,7 +42,7 @@ and whether it can be reached at all
 Reachability is a fold of three arms,
 each published in its own right:
 a lit gate,
-an installed mod's route ([`SystemAccessRoutes`](SystemAccessRoutes.java)),
+an installed mod's route ([`ModdedSystemAccessRoutes`](ModdedSystemAccessRoutes.java)),
 and an ordinary jump point.
 A caller wanting arrival takes the sum;
 one weighing the arms against each other takes them singly.
@@ -162,9 +162,9 @@ Random Assortment of Things moves fleets through an Abyssal Fracture by a manual
 so a system entered only that way holds no jump point
 and may carry the cut-off tag while being perfectly reachable.
 
-[`SystemAccessRoute`](SystemAccessRoute.java)
+[`ModdedSystemAccessRoute`](ModdedSystemAccessRoute.java)
 is that exception stated by whoever knows the mod,
-and [`SystemAccessRoutes`](SystemAccessRoutes.java)
+and [`ModdedSystemAccessRoutes`](ModdedSystemAccessRoutes.java)
 is the register a mod fills at load.
 The reachability read consults them and names no mod.
 

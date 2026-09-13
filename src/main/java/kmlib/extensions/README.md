@@ -116,7 +116,7 @@ rather than replacing it -
 a means of reaching a star system that the engine does not model.
 
 A **register of many**,
-`SystemAccessRoutes`,
+`ModdedSystemAccessRoutes`,
 keyed by the name each was registered under and consulted in insertion order.
 Not an `ExtensionPoint`:
 access is not taken over,

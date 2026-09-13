@@ -57,7 +57,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
 
         installGuarded(
             "Random Assortment of Things system access routes",
-            RandomAssortmentOfThingsIntegration::installSystemAccessRoutes);
+            RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
     }
 
     // One guarded step per integration, so a mod whose registration throws costs only its own

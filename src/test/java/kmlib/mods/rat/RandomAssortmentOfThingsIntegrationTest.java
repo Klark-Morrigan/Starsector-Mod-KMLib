@@ -1,6 +1,6 @@
 package kmlib.mods.rat;
 
-import kmlib.starsector.systems.SystemAccessRoutes;
+import kmlib.starsector.systems.ModdedSystemAccessRoutes;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,16 +31,16 @@ final class RandomAssortmentOfThingsIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        SystemAccessRoutes.clearRoutes();
+        ModdedSystemAccessRoutes.clearRoutes();
     }
 
     @AfterEach
     void tearDown() {
-        SystemAccessRoutes.clearRoutes();
+        ModdedSystemAccessRoutes.clearRoutes();
     }
 
     @Nested
-    class InstallSystemAccessRoutes {
+    class InstallModdedSystemAccessRoutes {
 
         @Test
         void putsARouteInFrontOfTheReachabilityReadUnderTheModSName() {
@@ -48,10 +48,10 @@ final class RandomAssortmentOfThingsIntegrationTest {
             // model. A registration missed here is a system quietly reading as cut off on a save
             // whose fleets get there every day. The name is asserted with it because what the
             // startup log is read for is which mod supplies the way in.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+            RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(
                 WITH_RANDOM_ASSORTMENT_OF_THINGS);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .containsExactly(INTEGRATION_NAME);
         }
 
@@ -59,12 +59,12 @@ final class RandomAssortmentOfThingsIntegrationTest {
         void installsOneRouteWhenTheInstallIsComposedTwice() {
             // Keyed by name, so a second composition replaces this integration's own route rather
             // than adding a second one that would be walked for nothing on every read.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+            RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(
                 WITH_RANDOM_ASSORTMENT_OF_THINGS);
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+            RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(
                 WITH_RANDOM_ASSORTMENT_OF_THINGS);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .containsExactly(INTEGRATION_NAME);
         }
 
@@ -73,10 +73,10 @@ final class RandomAssortmentOfThingsIntegrationTest {
             // What keeps the reachability read clear of a class naming a Random Assortment of
             // Things type: with nothing registered, no route is ever consulted and no such class
             // is ever reached.
-            RandomAssortmentOfThingsIntegration.installSystemAccessRoutes(
+            RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(
                 WITHOUT_RANDOM_ASSORTMENT_OF_THINGS);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .isEmpty();
         }
     }

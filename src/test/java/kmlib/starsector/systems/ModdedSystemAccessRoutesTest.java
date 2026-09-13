@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
- * Pins the contracts of {@link SystemAccessRoutes#registerRoute},
- * {@link SystemAccessRoutes#readRouteNames}, {@link SystemAccessRoutes#clearRoutes} and
- * {@link SystemAccessRoutes#isReachedByAnyRoute}.
+ * Pins the contracts of {@link ModdedSystemAccessRoutes#registerRoute},
+ * {@link ModdedSystemAccessRoutes#readRouteNames}, {@link ModdedSystemAccessRoutes#clearRoutes} and
+ * {@link ModdedSystemAccessRoutes#isReachedByAnyRoute}.
  *
  * <p>What is load-bearing here is that the set accumulates. A single-slot point would keep only
  * the last registered, which on an install running two mods that each add a way in would silently
@@ -23,19 +23,19 @@ import static org.mockito.Mockito.mock;
  * <p>The routes are one set per running game, so every case empties them before and after itself.
  * Each method's cases live in a {@link Nested} group so the suite reports as a per-method tree.
  */
-final class SystemAccessRoutesTest {
+final class ModdedSystemAccessRoutesTest {
 
-    private static final SystemAccessRoute DECLINING_ROUTE = anySystem -> false;
-    private static final SystemAccessRoute GRANTING_ROUTE = anySystem -> true;
+    private static final ModdedSystemAccessRoute DECLINING_ROUTE = anySystem -> false;
+    private static final ModdedSystemAccessRoute GRANTING_ROUTE = anySystem -> true;
 
     @BeforeEach
     void setUp() {
-        SystemAccessRoutes.clearRoutes();
+        ModdedSystemAccessRoutes.clearRoutes();
     }
 
     @AfterEach
     void tearDown() {
-        SystemAccessRoutes.clearRoutes();
+        ModdedSystemAccessRoutes.clearRoutes();
     }
 
     @Nested
@@ -45,10 +45,10 @@ final class SystemAccessRoutesTest {
         void keepsEveryRouteRegisteredUnderADistinctName() {
             // The difference from a single-slot extension point: a second mod adding a way in
             // must not displace the first mod's.
-            SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
-            SystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .containsExactly("first mod", "second mod");
         }
 
@@ -56,12 +56,12 @@ final class SystemAccessRoutesTest {
         void replacesARouteRegisteredAgainUnderTheSameName() {
             // An integration composing itself twice - a reload, a settings save that re-runs the
             // composition - is one way in rather than two identical ones stacked.
-            SystemAccessRoutes.registerRoute("a mod", DECLINING_ROUTE);
-            SystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("a mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .containsExactly("a mod");
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .isTrue();
         }
 
@@ -69,10 +69,10 @@ final class SystemAccessRoutesTest {
         void passesOverANullRoute() {
             // An absent integration is a state to leave alone. Registering nothing must not
             // disturb what another mod did install, so the standing route survives.
-            SystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
-            SystemAccessRoutes.registerRoute("an absent mod", null);
+            ModdedSystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("an absent mod", null);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .containsExactly("a mod");
         }
 
@@ -83,16 +83,16 @@ final class SystemAccessRoutesTest {
 
         @Test
         void returnsEmptyOnAnInstallThatRegisteredNone() {
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .isEmpty();
         }
 
         @Test
         void returnsTheNamesInTheOrderTheyWereRegistered() {
-            SystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
-            SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .containsExactly("second mod", "first mod");
         }
     }
@@ -102,13 +102,13 @@ final class SystemAccessRoutesTest {
 
         @Test
         void emptiesTheSetSoAnInstallCanBeComposedAgainFromNothing() {
-            SystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE);
 
-            SystemAccessRoutes.clearRoutes();
+            ModdedSystemAccessRoutes.clearRoutes();
 
-            assertThat(SystemAccessRoutes.readRouteNames())
+            assertThat(ModdedSystemAccessRoutes.readRouteNames())
                 .isEmpty();
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .isFalse();
         }
     }
@@ -118,16 +118,16 @@ final class SystemAccessRoutesTest {
 
         @Test
         void returnsFalseOnAnInstallThatRegisteredNone() {
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .isFalse();
         }
 
         @Test
         void returnsFalseWhenEveryRouteDeclines() {
-            SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
-            SystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("second mod", DECLINING_ROUTE);
 
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .isFalse();
         }
 
@@ -135,10 +135,10 @@ final class SystemAccessRoutesTest {
         void returnsTrueWhenOneRouteOfSeveralGrantsAccess() {
             // One route answering false leaves the question where it found it, so the granting
             // route behind it still decides the answer.
-            SystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
-            SystemAccessRoutes.registerRoute("second mod", GRANTING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("first mod", DECLINING_ROUTE);
+            ModdedSystemAccessRoutes.registerRoute("second mod", GRANTING_ROUTE);
 
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .isTrue();
         }
 
@@ -149,13 +149,13 @@ final class SystemAccessRoutesTest {
             var reachableSystemMock = mock(StarSystemAPI.class);
             var unreachableSystemMock = mock(StarSystemAPI.class);
 
-            SystemAccessRoutes.registerRoute(
+            ModdedSystemAccessRoutes.registerRoute(
                 "a mod",
                 askedSystem -> askedSystem == reachableSystemMock);
 
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(reachableSystemMock))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(reachableSystemMock))
                 .isTrue();
-            assertThat(SystemAccessRoutes.isReachedByAnyRoute(unreachableSystemMock))
+            assertThat(ModdedSystemAccessRoutes.isReachedByAnyRoute(unreachableSystemMock))
                 .isFalse();
         }
     }

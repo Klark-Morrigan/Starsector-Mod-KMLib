@@ -28,13 +28,13 @@ import java.util.Map;
  * <p>Final class with a private constructor: the routes are the state, and they are one set per
  * running game rather than one per holder of a reference to it.
  */
-public final class SystemAccessRoutes {
+public final class ModdedSystemAccessRoutes {
 
-    private static final Logger LOG = Global.getLogger(SystemAccessRoutes.class);
+    private static final Logger LOG = Global.getLogger(ModdedSystemAccessRoutes.class);
 
-    private static final Map<String, SystemAccessRoute> INSTALLED_ROUTES = new LinkedHashMap<>();
+    private static final Map<String, ModdedSystemAccessRoute> INSTALLED_ROUTES = new LinkedHashMap<>();
 
-    private SystemAccessRoutes() {
+    private ModdedSystemAccessRoutes() {
         // utility class, no instances.
     }
 
@@ -45,7 +45,7 @@ public final class SystemAccessRoutes {
     public static void clearRoutes() {
 
         if (!INSTALLED_ROUTES.isEmpty()) {
-            LOG.debug("Clearing system access routes: " + readRouteNames());
+            LOG.debug("Clearing modded system access routes: " + readRouteNames());
         }
         INSTALLED_ROUTES.clear();
     }
@@ -69,7 +69,7 @@ public final class SystemAccessRoutes {
      *                        a state to leave alone rather than one that should disturb the routes
      *                        another mod did install
      */
-    public static void registerRoute(String integrationName, SystemAccessRoute accessRoute) {
+    public static void registerRoute(String integrationName, ModdedSystemAccessRoute accessRoute) {
 
         if (accessRoute == null) {
             return;
@@ -79,9 +79,9 @@ public final class SystemAccessRoutes {
         // to be there and is not turns up much later as "that system reads as cut off", with
         // nothing anywhere naming the moment it was decided.
         if (INSTALLED_ROUTES.put(integrationName, accessRoute) != null) {
-            LOG.info("System access route replaced under the same name: " + integrationName);
+            LOG.info("Modded system access route replaced under the same name: " + integrationName);
         } else {
-            LOG.info("System access route installed: " + integrationName);
+            LOG.info("Modded system access route installed: " + integrationName);
         }
     }
 

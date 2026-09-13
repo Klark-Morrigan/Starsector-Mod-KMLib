@@ -25,7 +25,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
  * agree about anything.
  */
 @FunctionalInterface
-public interface SystemAccessRoute {
+public interface ModdedSystemAccessRoute {
 
     /**
      * @param system the system being asked about; never null

@@ -289,7 +289,7 @@ public final class StarSystems {
      * <p>An installed mod may supply a means of arrival the engine does not model - one that moves
      * fleets in without a jump point, so that a system entered only that way would otherwise read
      * as cut off. Such a route grants access the same way an active gate does, bypassing both the
-     * jump-point and cut-off checks. Which routes this install has is {@link SystemAccessRoutes}'
+     * jump-point and cut-off checks. Which routes this install has is {@link ModdedSystemAccessRoutes}'
      * to hold: the mods that supply them register there, so nothing named here is a mod, and an
      * install with none answers from the vanilla reads alone.
      *
@@ -304,7 +304,7 @@ public final class StarSystems {
         // A lit gate or an installed access route reaches the system regardless of jump
         // connectivity, so either overrides the cut-off flag and the absence of jump points.
         return hasActiveGate(system)
-            || SystemAccessRoutes.isReachedByAnyRoute(system)
+            || ModdedSystemAccessRoutes.isReachedByAnyRoute(system)
             || hasJumpPointArrival(system);
     }
 

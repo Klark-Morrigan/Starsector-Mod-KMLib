@@ -499,12 +499,12 @@ final class StarSystemsTest {
         // the cases that install none are then posed on a genuinely empty install.
         @BeforeEach
         void setUp() {
-            SystemAccessRoutes.clearRoutes();
+            ModdedSystemAccessRoutes.clearRoutes();
         }
 
         @AfterEach
         void tearDown() {
-            SystemAccessRoutes.clearRoutes();
+            ModdedSystemAccessRoutes.clearRoutes();
         }
 
         @Test
@@ -562,7 +562,7 @@ final class StarSystemsTest {
             // point, so it overrides the cut-off flag the way an active gate
             // does. Stated as a route rather than as any one mod's entity: what
             // this pins is that the read defers at all.
-            SystemAccessRoutes.registerRoute("granting route", anySystem -> true);
+            ModdedSystemAccessRoutes.registerRoute("granting route", anySystem -> true);
 
             assertThat(StarSystems.isReachable(cutOffSystem("a")))
                 .isTrue();
@@ -572,7 +572,7 @@ final class StarSystemsTest {
         void returnsFalseForACutOffSystemNoInstalledRouteReaches() {
             // A route that declines leaves the question where it found it, so
             // the system reads as the cut-off system it is.
-            SystemAccessRoutes.registerRoute("declining route", anySystem -> false);
+            ModdedSystemAccessRoutes.registerRoute("declining route", anySystem -> false);
 
             assertThat(StarSystems.isReachable(cutOffSystem("a")))
                 .isFalse();

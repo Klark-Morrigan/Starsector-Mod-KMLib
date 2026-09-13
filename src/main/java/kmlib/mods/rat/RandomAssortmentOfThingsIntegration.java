@@ -2,7 +2,7 @@ package kmlib.mods.rat;
 
 import com.fs.starfarer.api.Global;
 
-import kmlib.starsector.systems.SystemAccessRoutes;
+import kmlib.starsector.systems.ModdedSystemAccessRoutes;
 
 import org.apache.log4j.Logger;
 
@@ -49,14 +49,14 @@ public final class RandomAssortmentOfThingsIntegration {
      * <p>Routes are keyed by name, so a second call replaces this integration's own route rather
      * than adding a second one beside it - which is the same install either way.
      */
-    public static void installSystemAccessRoutes() {
-        installSystemAccessRoutes(RandomAssortmentOfThingsPresence.isModEnabled());
+    public static void installModdedSystemAccessRoutes() {
+        installModdedSystemAccessRoutes(RandomAssortmentOfThingsPresence.isModEnabled());
     }
 
     // The same installation against a stated answer rather than the live one, which is what lets an
     // install with the mod and one without be posed on a machine that has whichever mods it
     // happens to have.
-    static void installSystemAccessRoutes(boolean isRandomAssortmentOfThingsEnabled) {
+    static void installModdedSystemAccessRoutes(boolean isRandomAssortmentOfThingsEnabled) {
 
         if (!isRandomAssortmentOfThingsEnabled) {
 
@@ -72,7 +72,7 @@ public final class RandomAssortmentOfThingsIntegration {
         // The fracture also satisfies the other half of what a route vouches for: this mod gives it
         // a map icon of its own, so the player sees the way in marked where it is, and nothing has
         // to find a star drawn for a destination that was never given one.
-        SystemAccessRoutes.registerRoute(
+        ModdedSystemAccessRoutes.registerRoute(
             INTEGRATION_NAME,
             RandomAssortmentOfThingsMatcher::hasAbyssalFracture);
     }
