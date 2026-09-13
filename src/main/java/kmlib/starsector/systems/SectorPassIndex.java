@@ -9,7 +9,6 @@ import kmlib.starsector.markets.colonies.SystemColonies;
 import kmlib.text.KmlibStrings;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -42,7 +41,7 @@ public final class SectorPassIndex {
     // A read is of one system, and the counter takes an amount rather than a call.
     private static final long ONE_SYSTEM = 1L;
 
-    private final Map<SystemKey, Colonies> coloniesBySystemKey = new HashMap<>();
+    private final SystemKeyedMemo<Colonies> coloniesBySystem = new SystemKeyedMemo<>();
     private final SectorAPI sector;
 
     // Each built on the first ask that needs the sector's systems resolved that way, and only then:
@@ -79,9 +78,8 @@ public final class SectorPassIndex {
     /**
      * The colonies in {@code system}, walked on the first ask and remembered thereafter.
      *
-     * <p>The exception is the system the sector states nothing about - no id and neither entity -
-     * which is walked afresh every ask, its {@link SystemKey#hasStatedArm blank key} standing for no
-     * system in particular.
+     * <p>Remembered on {@link SystemKeyedMemo}'s terms: under the whole key rather than the id, and
+     * walked afresh every ask for the system the sector states nothing about.
      *
      * @param system the system to read; null yields {@link Colonies#NONE}
      * @return the system's colony set
@@ -91,19 +89,7 @@ public final class SectorPassIndex {
         if (system == null) {
             return Colonies.NONE;
         }
-        var key = SystemKey.readKeyOf(system);
-
-        if (!key.hasStatedArm()) {
-            // Nothing to tell this system from another. Reading afresh costs a walk a second ask
-            // would have saved, which is the honest price of a system the sector states nothing
-            // about - pooling every one of them under the blank key would hand one's colonies to
-            // another. A system carrying any one arm is memoised like the rest.
-            return readAndCountColoniesIn(system);
-        }
-        // Memoised under the whole key rather than under the id, because an id is not unique: a
-        // sector holding two systems under one id would otherwise pool them into a single entry
-        // and hand the first one's colonies to the second.
-        return coloniesBySystemKey.computeIfAbsent(key, memoKey -> readAndCountColoniesIn(system));
+        return coloniesBySystem.readValueFor(system, this::readAndCountColoniesIn);
     }
 
     /**

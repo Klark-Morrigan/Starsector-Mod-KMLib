@@ -16,6 +16,7 @@ import java.util.Set;
  * to any one feature's membership rule.
  */
 public final class SystemMotionTracker {
+
     // The floor a system's hyperspace position must shift between polls to read as
     // motion rather than float noise. Star systems sit thousands of units apart, so a
     // one-unit floor separates a genuine move from jitter without risking a real move
