@@ -60,11 +60,11 @@ public final class FactionSourceMods {
     /**
      * Every faction the game's data declares, keyed by the id the loader builds it under.
      *
-     * @return the source name per faction id; empty where the game is not up far enough to hold
-     *         data and where the spreadsheet will not open, both of which leave a caller with
-     *         nothing to say rather than with a wrong answer
+     * @return the source per faction id; empty where the game is not up far enough to hold data
+     *         and where the spreadsheet will not open, both of which leave a caller with nothing
+     *         to say rather than with a wrong answer
      */
-    public static Map<String, String> readSourceNamesByFactionId() {
+    public static Map<String, FactionSource> readSourcesByFactionId() {
 
         var settings = Global.getSettings();
 
@@ -88,8 +88,8 @@ public final class FactionSourceMods {
             return Map.of();
         }
 
-        var modNamesByDirectory = readModNamesByDirectory(settings);
-        var sourceNames = new HashMap<String, String>();
+        var modsByDirectory = readModsByDirectory(settings);
+        var sources = new HashMap<String, FactionSource>();
 
         for (var rowIndex = 0; rowIndex < declarationRows.length(); rowIndex++) {
 
@@ -101,26 +101,28 @@ public final class FactionSourceMods {
             var factionId = readDeclaredFactionIdOf(settings, declarationRow);
 
             if (factionId != null) {
-                sourceNames.put(factionId, nameSourceOf(declarationRow, modNamesByDirectory));
+                sources.put(factionId, readSourceOf(declarationRow, modsByDirectory));
             }
         }
-        return sourceNames;
+        return sources;
     }
 
-    // What to call the source a row was read from: the mod's own name where the folder is one of
-    // the enabled mods, the base game where the row reports no folder at all, and the bare folder
-    // otherwise - a source the mod manager does not list is still better named by the folder it
-    // sits in than left unnamed.
-    private static String nameSourceOf(
+    // The source a row was read from: the mod installed in that folder where the mod manager lists
+    // one, the base game where the row reports no folder at all, and the folder itself otherwise -
+    // a source the manager does not account for is still better named by the folder it sits in
+    // than left unnamed, even though there is no mod id to name beside it.
+    private static FactionSource readSourceOf(
             JSONObject declarationRow,
-            Map<String, String> modNamesByDirectory) {
+            Map<String, FactionSource> modsByDirectory) {
 
         var sourceDirectory = readSourceDirectoryOf(declarationRow);
 
         if (sourceDirectory.isEmpty() || MISSING_DIRECTORY.equals(sourceDirectory)) {
-            return BASE_GAME_SOURCE_NAME;
+            return new FactionSource(BASE_GAME_SOURCE_NAME, null);
         }
-        return modNamesByDirectory.getOrDefault(sourceDirectory, sourceDirectory);
+        return modsByDirectory.getOrDefault(
+            sourceDirectory,
+            new FactionSource(sourceDirectory, null));
     }
 
     // The id the row's faction file declares, or null where the row names no file or the file will
@@ -172,17 +174,17 @@ public final class FactionSourceMods {
 
     // The enabled mods keyed by the folder each is installed in. Keyed by folder rather than by id
     // because the folder is all a row reports, and a mod's id is not what its folder is called.
-    private static Map<String, String> readModNamesByDirectory(SettingsAPI settings) {
+    private static Map<String, FactionSource> readModsByDirectory(SettingsAPI settings) {
 
         var modManager = settings.getModManager();
 
         if (modManager == null) {
             // Settings that are up without a mod manager on them is the half-built state a read
             // taken while the game is still coming up meets; every source then keeps its folder
-            // name, which names a mod well enough to be worth printing.
+            // name, which places it well enough to be worth printing.
             return Map.of();
         }
-        var modNames = new HashMap<String, String>();
+        var mods = new HashMap<String, FactionSource>();
 
         for (var mod : modManager.getEnabledModsCopy()) {
 
@@ -195,9 +197,9 @@ public final class FactionSourceMods {
                 ? mod.getName()
                 : modDirectory;
 
-            modNames.put(modDirectory, modName);
+            mods.put(modDirectory, new FactionSource(modName, mod.getId()));
         }
-        return modNames;
+        return mods;
     }
 
     // The folder a row was read from: its source is that folder joined to the file path, so cutting

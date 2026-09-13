@@ -11,7 +11,9 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.characters.RelationshipAPI;
 
 import kmlib.mods.console.commands.ListFactionsCommand.FactionListingFilter;
+import kmlib.mods.console.commands.ListFactionsCommand.ListingOption;
 import kmlib.starsector.factions.FactionCustomFixture;
+import kmlib.starsector.factions.FactionSource;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
@@ -28,8 +30,10 @@ import org.lazywizard.console.BaseCommand.CommandResult;
 import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -44,6 +48,10 @@ import static org.mockito.Mockito.when;
  * while narrowing the systems clause, and honours each of the four filter
  * keywords; and {@code runCommand} prints the report, accepts one keyword, and
  * rejects a keyword pair and an unknown word as bad syntax.
+ *
+ * <p>The options are pinned on both sides: what each leaves out of the report, and that each is a
+ * word the command accepts alongside a filter and alongside the others - the latter being what a
+ * keyword registered on the enum but not on the spec would fail.
  *
  * <p>Colonies come from {@link ColonyMarketFixture}, so a colony posed here is the
  * same shape the sector's own colony read is posed against - what counts as one
@@ -76,7 +84,7 @@ final class ListFactionsCommandTest {
             var report = readReport(sector, FactionListingFilter.ALL);
 
             assertThat(report)
-                .contains("hegemony  -  Hegemony  Neutral (0 / 100)"
+                .contains("[hegemony] Hegemony - Neutral (0 / 100)"
                     + "\n    holdings: 2 (0 hidden, 0 discoverable)  systems: corvus");
         }
 
@@ -89,7 +97,7 @@ final class ListFactionsCommandTest {
             sector.addFaction(buildFaction("derelict", "Derelict"));
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("derelict  -  Derelict  Neutral (0 / 100)\n    holdings: 0")
+                .contains("[derelict] Derelict - Neutral (0 / 100)\n    holdings: 0")
                 .doesNotContain("hidden")
                 .doesNotContain("systems:");
         }
@@ -166,7 +174,7 @@ final class ListFactionsCommandTest {
             sector.addFaction(buildTerritorialFaction("hegemony", "Hegemony"));
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("hegemony  -  Hegemony  [territorial]  Neutral (0 / 100)");
+                .contains("[hegemony] Hegemony [territorial] - Neutral (0 / 100)");
         }
 
         @Test
@@ -180,7 +188,7 @@ final class ListFactionsCommandTest {
             sector.setPlayerFaction(playerFactionMock);
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("player  -  Sindrian Diktat  (self)");
+                .contains("[player] Sindrian Diktat - (self)");
         }
 
         @Test
@@ -193,7 +201,7 @@ final class ListFactionsCommandTest {
             sector.addFaction(buildFaction("player", "player"));
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
-                .contains("player  -  player");
+                .contains("[player] player");
         }
 
         @Test
@@ -305,9 +313,35 @@ final class ListFactionsCommandTest {
         }
 
         @Test
-        void namesTheModAFactionWasDeclaredBy() {
+        void namesBothNamesWhereAFactionCarriesADistinctLongOne() {
+            // The long name is the one a player reads in prose and the short one what the UI
+            // labels it with; a listing meant for looking a faction up is worth both.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildNamedFaction("tritachyon", "Tri-Tachyon Corporation", "Tri-Tachyon"));
+
+            assertThat(readReport(sector, FactionListingFilter.ALL))
+                .contains("[tritachyon] Tri-Tachyon Corporation / Tri-Tachyon - Neutral (0 / 100)");
+        }
+
+        @Test
+        void namesOneNameWhereTheLongOneSaysNothingMore() {
+            // Most factions declare no long name or the same one twice, and the pair repeated on
+            // every line costs more width than it carries.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildNamedFaction("hegemony", "Hegemony", "Hegemony"));
+
+            assertThat(readReport(sector, FactionListingFilter.ALL))
+                .contains("[hegemony] Hegemony - Neutral (0 / 100)")
+                .doesNotContain("Hegemony / Hegemony");
+        }
+
+        @Test
+        void namesTheModAFactionWasDeclaredByWithItsId() {
             // The id alone says nothing about where a faction came from, which on a heavily
-            // modded install is most of what a reader opens this listing to find out.
+            // modded install is most of what a reader opens this listing to find out. The mod id
+            // rides along because it is what another command takes as an argument.
             var sector = new SectorFixture();
 
             sector.addFaction(buildFaction("tahlan_greathouses", "Great Houses"));
@@ -315,9 +349,25 @@ final class ListFactionsCommandTest {
             assertThat(readReport(
                     sector,
                     FactionListingFilter.ALL,
-                    Map.of("tahlan_greathouses", "Tahlan Shipworks")))
-                .contains("tahlan_greathouses  -  Great Houses  Neutral (0 / 100)"
-                    + "  from: Tahlan Shipworks");
+                    Map.of("tahlan_greathouses", new FactionSource("Tahlan Shipworks", "tahlan"))))
+                .contains("[tahlan_greathouses] Great Houses - Neutral (0 / 100)"
+                    + " - from: Tahlan Shipworks [tahlan]");
+        }
+
+        @Test
+        void namesASourceWithoutAModIdOnItsOwn() {
+            // The base game is not a mod and has no id to give; a bracket around nothing would
+            // read as one it failed to report.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("hegemony", "Hegemony"));
+
+            assertThat(readReport(
+                    sector,
+                    FactionListingFilter.ALL,
+                    Map.of("hegemony", new FactionSource("vanilla", null))))
+                .contains("[hegemony] Hegemony - Neutral (0 / 100) - from: vanilla")
+                .doesNotContain("vanilla [");
         }
 
         @Test
@@ -332,12 +382,12 @@ final class ListFactionsCommandTest {
             var report = readReport(
                 sector,
                 FactionListingFilter.ALL,
-                Map.of("hegemony", "vanilla"));
+                Map.of("hegemony", new FactionSource("vanilla", null)));
 
             assertThat(report)
-                .contains("hegemony  -  Hegemony  Neutral (0 / 100)  from: vanilla")
-                .contains("runtime_faction  -  Someone's Own  Neutral (0 / 100)"
-                    + "  from: (unattributed)");
+                .contains("[hegemony] Hegemony - Neutral (0 / 100) - from: vanilla")
+                .contains("[runtime_faction] Someone's Own - Neutral (0 / 100)"
+                    + " - from: (unattributed)");
         }
 
         @Test
@@ -350,6 +400,63 @@ final class ListFactionsCommandTest {
 
             assertThat(readReport(sector, FactionListingFilter.ALL, Map.of()))
                 .doesNotContain("from:");
+        }
+
+        @Test
+        void dropsTheHoldingsLineUnderTheNoHoldingsKeyword() {
+            // One line per faction is what makes a sector's worth of them scannable side by side.
+            // The header goes with it: a listing reporting no holdings must not open by saying it
+            // does, which is the half a check for the line alone would miss.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("hegemony", "Hegemony"));
+            sector.addSystemHolding(
+                "corvus",
+                ColonyMarketFixture.buildVisibleColony("hegemony"));
+
+            assertThat(readReport(
+                    sector,
+                    FactionListingFilter.ALL,
+                    EnumSet.of(ListingOption.OMIT_HOLDINGS),
+                    Map.of()))
+                .isEqualTo("Factions:\n[hegemony] Hegemony - Neutral (0 / 100)");
+        }
+
+        @Test
+        void dropsTheAttitudeUnderTheNoAttitudeKeyword() {
+            // Dropped with its separator rather than leaving the gap it sat in, which would read
+            // as a standing the listing failed to report.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("hegemony", "Hegemony"));
+
+            assertThat(readReport(
+                    sector,
+                    FactionListingFilter.ALL,
+                    EnumSet.of(ListingOption.OMIT_ATTITUDE),
+                    Map.of("hegemony", new FactionSource("vanilla", null))))
+                .contains("[hegemony] Hegemony - from: vanilla")
+                .doesNotContain("Neutral");
+        }
+
+        @Test
+        void keepsTheFilterAndTheOptionsIndependent() {
+            // The filter decides who is listed and the options what is shown of them, which is
+            // what lets a run name one of each - the pair a narrowed one-line listing needs.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("pirates", "Pirates"));
+            sector.addFaction(buildFaction("hegemony", "Hegemony"));
+            sector.addSystemHolding(
+                "kumari_kandam",
+                ColonyMarketFixture.buildFoundConcealedColony("pirates"));
+
+            assertThat(readReport(
+                    sector,
+                    FactionListingFilter.HOLDS_HIDDEN,
+                    EnumSet.of(ListingOption.OMIT_HOLDINGS),
+                    Map.of()))
+                .isEqualTo("Factions (hidden):\n[pirates] Pirates - Neutral (0 / 100)");
         }
 
         @Test
@@ -446,7 +553,46 @@ final class ListFactionsCommandTest {
                 .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Give at most one filter. "
-                    + "Usage: kmlib_list_factions [markets|hidden|discoverable|no_markets]."));
+                    + "Usage: kmlib_list_factions [markets|hidden|discoverable|no_markets] "
+                    + "[no_holdings] [no_attitude] [to_log]."));
+        }
+
+        // Every option spelled out, each asserted to reach the run rather than to be reported as a
+        // stray word - which is what a keyword the spec never registered would be.
+        @ParameterizedTest
+        @ValueSource(strings = {"no_holdings", "no_attitude", "to_log"})
+        void acceptsEachOptionKeyword(String keyword) {
+
+            var result = command.runCommand(keyword, CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result)
+                .isEqualTo(CommandResult.SUCCESS);
+        }
+
+        @Test
+        void acceptsAFilterAndTheOptionsTogether() {
+            // The options compose with each other and with a filter, which is what makes them
+            // options rather than more filters.
+            var result = command.runCommand(
+                "hidden no_holdings no_attitude",
+                CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result)
+                .isEqualTo(CommandResult.SUCCESS);
+            assertThat(outputFake.getMessages())
+                .anyMatch(message -> message.contains("Factions (hidden):"));
+        }
+
+        @Test
+        void tellsTheConsoleWhereTheReportWentUnderTheToLogKeyword() {
+            // The report itself goes to the log; a run that printed nothing where the player is
+            // looking would otherwise read as a run that did nothing.
+            var result = command.runCommand("to_log", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result)
+                .isEqualTo(CommandResult.SUCCESS);
+            assertThat(outputFake.getMessages())
+                .containsExactly("Faction listing written to the game log.");
         }
 
         @Test
@@ -472,8 +618,9 @@ final class ListFactionsCommandTest {
         }
     }
 
-    // The unattributed run, which is what every case not about the source clause poses: an empty
-    // map drops the clause, so those cases assert on the line the listing had before it existed.
+    // The full listing with nothing declared, which is what every case not about the source clause
+    // or the options poses: an empty map drops the clause, so those cases assert on the rest of the
+    // line without it.
     private static String readReport(SectorFixture sector, FactionListingFilter filter) {
         return readReport(sector, filter, Map.of());
     }
@@ -481,22 +628,46 @@ final class ListFactionsCommandTest {
     private static String readReport(
             SectorFixture sector,
             FactionListingFilter filter,
-            Map<String, String> sourceNamesByFactionId) {
+            Map<String, FactionSource> sourcesByFactionId) {
+
+        return readReport(sector, filter, EnumSet.noneOf(ListingOption.class), sourcesByFactionId);
+    }
+
+    private static String readReport(
+            SectorFixture sector,
+            FactionListingFilter filter,
+            Set<ListingOption> options,
+            Map<String, FactionSource> sourcesByFactionId) {
 
         return ListFactionsCommand.buildReport(
             sector.getSector(),
             filter,
-            sourceNamesByFactionId);
+            options,
+            sourcesByFactionId);
     }
 
-    /** A faction the listing can name: not territorial, and neutral to the player. */
+    /**
+     * A faction the listing can name: not territorial, neutral to the player, and declaring no
+     * long name - which most do not, and which is what keeps the cases about something else
+     * asserting on one name rather than a pair.
+     */
     private static FactionAPI buildFaction(String id, String displayName) {
-        return buildFaction(id, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, false);
+        return buildFaction(id, null, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, false);
+    }
+
+    /** A faction declaring both names, as the listing prints a pair for. */
+    private static FactionAPI buildNamedFaction(
+            String id,
+            String displayNameLong,
+            String displayName) {
+
+        return buildFaction(
+            id, displayNameLong, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, false);
     }
 
     /** A faction that treats the space around its holdings as its own. */
     private static FactionAPI buildTerritorialFaction(String id, String displayName) {
-        return buildFaction(id, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, true);
+        return buildFaction(id, null, displayName, RepLevel.NEUTRAL, NEUTRAL_REPUTATION, true);
     }
 
     // A faction wired the way the listing reads one. The relationship is stubbed
@@ -504,6 +675,7 @@ final class ListFactionsCommandTest {
     // Misc's colour palette, which reads from settings the test JVM never loads.
     private static FactionAPI buildFaction(
             String id,
+            String displayNameLong,
             String displayName,
             RepLevel level,
             int reputation,
@@ -527,6 +699,8 @@ final class ListFactionsCommandTest {
             .thenReturn(id);
         when(factionMock.getDisplayName())
             .thenReturn(displayName);
+        when(factionMock.getDisplayNameLong())
+            .thenReturn(displayNameLong);
         when(factionMock.getRelToPlayer())
             .thenReturn(relationshipMock);
         when(factionMock.getCustom())

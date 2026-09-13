@@ -25,9 +25,13 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the recovery of where a faction came from: that a row's folder is matched to the mod
- * installed in it, that the base game's folder-less rows are named as such, that an unmatched
- * folder still names itself, and that the id comes out of the faction file rather than off its
- * name.
+ * installed in it and carries that mod's own id, that the base game's folder-less rows are named as
+ * such, that an unmatched folder still names itself but offers no id, and that the faction id comes
+ * out of the faction file rather than off its name.
+ *
+ * <p>A mod's folder and its id are posed as different strings throughout, because they usually are
+ * and because the match is made on one while the answer carries the other - posing them alike would
+ * pass whichever of the two the code actually used.
  *
  * <p>Rows are posed the way the game's CSV merger writes them - an absolute install path, in the
  * separators the platform hands the loader, joined to the spreadsheet path - because the parsing of
@@ -44,22 +48,22 @@ final class FactionSourceModsTest {
     }
 
     @Nested
-    class ReadSourceNamesByFactionId {
+    class ReadSourcesByFactionId {
 
         @Test
         void namesTheModInstalledInTheFolderARowWasReadFrom() {
 
             var data = new GameDataFixture();
 
-            data.enableMod("tahlan", "Tahlan Shipworks");
+            data.enableMod("tahlan", "Tahlan Shipworks", "tahlan_shipworks");
             data.declareFaction(
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
             data.install();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
-                .containsExactly(entry("tahlan_greathouses", "Tahlan Shipworks"));
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(modEntry("tahlan_greathouses", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
         @Test
@@ -71,8 +75,8 @@ final class FactionSourceModsTest {
             data.declareBaseGameFaction("data/world/factions/hegemony.faction", "hegemony");
             data.install();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
-                .containsExactly(entry("hegemony", "vanilla"));
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(unidentifiedEntry("hegemony", "vanilla"));
         }
 
         @Test
@@ -87,8 +91,8 @@ final class FactionSourceModsTest {
                 "unlisted");
             data.install();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
-                .containsExactly(entry("unlisted", "some_unlisted_mod"));
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(unidentifiedEntry("unlisted", "some_unlisted_mod"));
         }
 
         @Test
@@ -97,15 +101,15 @@ final class FactionSourceModsTest {
             // disagree with the sector about which faction a row declared.
             var data = new GameDataFixture();
 
-            data.enableMod("tahlan", "Tahlan Shipworks");
+            data.enableMod("tahlan", "Tahlan Shipworks", "tahlan_shipworks");
             data.declareFaction(
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/tahlan_cieveFaction.faction",
                 "tahlan_cieve");
             data.install();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
-                .containsExactly(entry("tahlan_cieve", "Tahlan Shipworks"));
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(modEntry("tahlan_cieve", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
         @Test
@@ -120,8 +124,8 @@ final class FactionSourceModsTest {
                 "tahlan_greathouses");
             data.installWithoutModManager();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
-                .containsExactly(entry("tahlan_greathouses", "tahlan"));
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(unidentifiedEntry("tahlan_greathouses", "tahlan"));
         }
 
         @Test
@@ -133,7 +137,7 @@ final class FactionSourceModsTest {
             data.declareNothing("C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan");
             data.install();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId())
                 .isEmpty();
         }
 
@@ -148,7 +152,7 @@ final class FactionSourceModsTest {
                 "data/world/factions/broken.faction");
             data.install();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId())
                 .isEmpty();
         }
 
@@ -156,7 +160,7 @@ final class FactionSourceModsTest {
         void reportsNothingBeforeTheGameSettingsAreUp() {
             // A read taken outside a running game, which has no data to consult and must answer
             // rather than throw.
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId())
                 .isEmpty();
         }
 
@@ -166,13 +170,27 @@ final class FactionSourceModsTest {
             // it.
             new GameDataFixture().installWithUnreadableSpreadsheet();
 
-            assertThat(FactionSourceMods.readSourceNamesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId())
                 .isEmpty();
         }
     }
 
-    private static Map.Entry<String, String> entry(String factionId, String sourceName) {
-        return Map.entry(factionId, sourceName);
+    // A mod source: named, and carrying the id another command would take.
+    private static Map.Entry<String, FactionSource> modEntry(
+            String factionId,
+            String modName,
+            String modId) {
+
+        return Map.entry(factionId, new FactionSource(modName, modId));
+    }
+
+    // A source that is not an installed mod, and so has no id to carry. Map.entry
+    // rejects a null value, so the pair is built rather than named.
+    private static Map.Entry<String, FactionSource> unidentifiedEntry(
+            String factionId,
+            String sourceName) {
+
+        return Map.entry(factionId, new FactionSource(sourceName, null));
     }
 
     /**
@@ -212,12 +230,16 @@ final class FactionSourceModsTest {
             declarationRows.add(buildRow(sourceFolderPath, factionFilePath));
         }
 
-        private void enableMod(String modFolderName, String modName) {
+        // The folder and the id are separate on purpose: they are rarely the same string, and a
+        // fixture conflating them could not pose the folder-to-mod match this is built to pin.
+        private void enableMod(String modFolderName, String modName, String modId) {
 
             var modSpecMock = mock(ModSpecAPI.class);
 
             when(modSpecMock.getDirName())
                 .thenReturn(modFolderName);
+            when(modSpecMock.getId())
+                .thenReturn(modId);
             when(modSpecMock.getName())
                 .thenReturn(modName);
 

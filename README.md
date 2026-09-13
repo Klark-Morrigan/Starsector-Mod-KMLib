@@ -1342,7 +1342,7 @@ so the command is a thin front on work a consuming mod would otherwise have to e
 | --- | --- | --- |
 | `kmlib_activate_gate` | `<id>` | Activates the gate with that id in the current system. |
 | `kmlib_colonise` | `[entity-id] [faction-id]` | Founds a colony on a body that so far carries only survey data, skipping the survey, the outpost cost and the proximity the survey panel asks for. |
-| `kmlib_list_factions` | `[markets\|hidden\|discoverable\|no_markets]` | Lists every faction with the mod that declared it and what it holds - how many places, how many hidden, how many still to find, and the systems they sit in. |
+| `kmlib_list_factions` | `[markets\|hidden\|discoverable\|no_markets] [no_holdings] [no_attitude] [to_log]` | Lists every faction with the mod that declared it and what it holds - how many places, how many hidden, how many still to find, and the systems they sit in. `no_holdings` leaves one line per faction, `no_attitude` drops the standing with the player, and `to_log` writes the listing to the game log instead of the console. |
 | `kmlib_list_map_spoilers` | *no arguments* | Lists faction-owned systems as a tree of system, entities and factions, flagging cut-off systems and undiscovered markets. |
 | `kmlib_list_system_entities` | `[gates]` | Lists the current system's entities as an orbit tree, then the unorbited ones and fleets with coordinates. |
 | `kmlib_spawn` | `<kind> [orbit_focus_id] [speed] [jitter=<frac>]` | Spawns a gate or a jump point at the fleet position, orbiting a focus. |
