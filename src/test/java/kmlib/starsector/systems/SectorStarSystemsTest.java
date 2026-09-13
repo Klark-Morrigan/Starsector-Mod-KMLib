@@ -22,9 +22,9 @@ import static org.mockito.Mockito.when;
 /**
  * Pins the contracts of {@link SectorStarSystems#collectHyperspacePositions},
  * {@link SectorStarSystems#getPlayerStarSystem}, {@link SectorStarSystems#indexById},
- * {@link SectorStarSystems#indexHeldSystemsById}, {@link SectorStarSystems#indexByKey} and
- * {@link SectorStarSystems#findSystemById}. Each method's cases live in a {@link Nested} group so
- * the suite reports as a per-method tree.
+ * {@link SectorStarSystems#indexHeldSystemsById}, {@link SectorStarSystems#indexByKey},
+ * {@link SectorStarSystems#findSystemById} and {@link SectorStarSystems#findSystemByKey}. Each
+ * method's cases live in a {@link Nested} group so the suite reports as a per-method tree.
  *
  * <p>Every read keyed on something gets a case posing two systems that share an id, since a live
  * modded sector holds several such pairs and the two addresses answer differently: the key index
@@ -141,6 +141,86 @@ final class SectorStarSystemsTest {
 
             assertThat(SectorStarSystems.getPlayerStarSystem(sectorMock))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class FindSystemByKey {
+
+        @Test
+        void returnsTheSystemWhoseKeyMatches() {
+
+            var wanted = StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893");
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildKeyedSystem("yma", "yma_star", "89a"),
+                wanted);
+
+            assertThat(SectorStarSystems.findSystemByKey(
+                    sector,
+                    new SystemKey("corvus", "corvus_star", "893")))
+                .isSameAs(wanted);
+        }
+
+        @Test
+        void answersTheNamedSystemOfAPairSharingAnId() {
+            // What the key lookup is for: the id lookup answers the first of the pair whichever of
+            // them was asked about, so the second is unreachable by id and reachable by key.
+            var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildKeyedSystem("deep space", null, "8b3"),
+                second);
+
+            assertThat(SectorStarSystems.findSystemByKey(
+                    sector,
+                    new SystemKey("deep space", null, "38d53")))
+                .isSameAs(second);
+        }
+
+        @Test
+        void returnsNullWhenNoSystemCarriesThatKey() {
+
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893"));
+
+            assertThat(SectorStarSystems.findSystemByKey(
+                    sector,
+                    new SystemKey("corvus", "corvus_star", "999")))
+                .isNull();
+        }
+
+        @Test
+        void returnsNullForANullSector() {
+            assertThat(SectorStarSystems.findSystemByKey(null, new SystemKey("corvus", null, null)))
+                .isNull();
+        }
+
+        @Test
+        void returnsNullForAKeyStatingNothing() {
+            // The blank key equals every other blank one, so answering with a system would name
+            // whichever the sector happens to list first rather than the one asked about.
+            assertThat(SectorStarSystems.findSystemByKey(
+                    mock(SectorAPI.class),
+                    new SystemKey(null, null, null)))
+                .isNull();
+        }
+
+        @Test
+        void countsTheWalkAtTheSystemsItExaminedBeforeTheMatch() {
+            // Charged as the id lookup charges its own: a search that stopped at the first system
+            // did not visit the sector.
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893"),
+                StarSystemFixture.buildKeyedSystem("yma", "yma_star", "89a"));
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> SectorStarSystems.findSystemByKey(
+                    sector,
+                    new SystemKey("corvus", "corvus_star", "893")));
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(1L);
+            assertThat(counts.readCount(SectorWalkCounters.SYSTEMS_VISITED))
+                .isEqualTo(1L);
         }
     }
 

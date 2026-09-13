@@ -203,6 +203,41 @@ public final class SectorStarSystems {
         return found;
     }
 
+    /**
+     * The star system whose {@link SystemKey} equals {@code key} - the lookup for a caller holding
+     * a key rather than an id.
+     *
+     * <p>The same walk {@link #findSystemById} makes, comparing all three arms instead of the id
+     * alone, so it names one system where the id lookup names the first of however many share an
+     * id. A key stating nothing at all matches nothing: it equals every other blank key, so the
+     * system it answered with would be whichever the sector listed first.
+     *
+     * @param sector the sector to search; null yields null
+     * @param key    the key to match, as {@link SystemKey#readKeyOf} reads it; null or stating no
+     *               arm yields null
+     * @return the system carrying that key, or null when none matches
+     */
+    public static StarSystemAPI findSystemByKey(SectorAPI sector, SystemKey key) {
+        if (sector == null || key == null || !key.hasStatedArm()) {
+            return null;
+        }
+        StarSystemAPI found = null;
+        var systemsExamined = 0;
+
+        for (var system : sector.getStarSystems()) {
+            systemsExamined++;
+            if (key.equals(SystemKey.readKeyOf(system))) {
+                found = system;
+                break;
+            }
+        }
+        // Reported on the one exit for the reason the id lookup reports on its own: a match part way
+        // through still charges what it went over rather than the whole sector.
+        SectorWalkCounters.countSectorWalk(systemsExamined);
+
+        return found;
+    }
+
     // The one traversal every bulk read here is built on: the reads differ only in what each
     // collects off a system, so the loop and the walk it charges live in one place. Written out per
     // read they were also as many places the counter could drift away from what was visited.
