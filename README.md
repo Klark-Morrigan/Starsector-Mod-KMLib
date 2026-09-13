@@ -37,7 +37,7 @@ It runs nothing per frame of its own.
 Hard dependencies:
 
 - **LazyLib** -
-  exposes game fonts to be used for drawing labels directly with GL:
+  exposes game fonts:
   [UI primitives](src/main/java/kmlib/starsector/ui/README.md).
 - **LunaLib** -
   backs in-game mod settings,
@@ -1332,11 +1332,6 @@ what moves here is what a consumer actually asks for,
 so the published surface stays a decision rather than a default.
 
 ## Console commands
-
-KMLib registers seven commands with Console Commands,
-all campaign-only.
-They exist because the library already holds the reads and operations behind them,
-so the command is a thin front on work a consuming mod would otherwise have to expose itself.
 
 | Command | Syntax | What it does |
 | --- | --- | --- |
