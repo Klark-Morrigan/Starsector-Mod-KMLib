@@ -30,7 +30,7 @@ answers about the sector's whole set:
 where the systems sit (`collectHyperspacePositions`),
 which one the player is in (`getPlayerStarSystem`),
 and how to reach one by ID or by key
-(`indexById`, `indexByKey`, `indexHeldSystemsById`, `findSystemById`).
+(`indexById`, `indexByKey`, `indexHeldSystemsById`, `findSystemById`, `findSystemByKey`).
 [`StarSystems`](StarSystems.java)
 answers about one system the caller already holds:
 what to call it (`readDisplayName`),
