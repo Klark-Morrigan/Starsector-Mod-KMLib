@@ -173,337 +173,481 @@ all with a `.sh` and a `.bat` face:
 - `fix-permissions` -
   re-stages `+x` on tracked `*.sh` files.
 
-CI and release, under [`.github/`](.github/). The composite actions are what
-other KM mods consume; see
-[Reusable CI / release actions](#reusable-ci--release-actions):
+CI and release,
+under [`.github/`](.github/).
+The composite actions are what other KM mods consume;
+see [Reusable CI / release actions](#reusable-ci--release-actions):
 
-- [`workflows/ci-gradle.yml`](.github/workflows/ci-gradle.yml) - the Gradle
-  gate on the self-hosted `kmlib-runner`, built twice: with and without Fast
-  Rendering's jar.
+- [`workflows/ci-gradle.yml`](.github/workflows/ci-gradle.yml) -
+  the Gradle gate on the self-hosted `kmlib-runner`,
+  built twice:
+  with and without Fast Rendering's jar.
 - [`workflows/ci-yaml.yml`](.github/workflows/ci-yaml.yml) and
-  [`ci-bash.yml`](.github/workflows/ci-bash.yml) - YAML, Actions and Bash lint
-  plus bats, via Common-Automation.
-- [`workflows/release.yml`](.github/workflows/release.yml) - the release entry
-  point, delegating to
-  [`mod-release.yml`](.github/workflows/mod-release.yml), the reusable
-  pipeline this repo hosts for the whole KM series.
-- [`actions/read-mod-info/`](.github/actions/read-mod-info/) - derives mod id,
-  version, runner label, dist dir, zip name and jar source from a caller's
-  `mod_info.json`.
-- [`actions/check-version/`](.github/actions/check-version/) - compares
-  `mod_info.json`'s version to the latest git tag, gating the pipeline.
+  [`ci-bash.yml`](.github/workflows/ci-bash.yml) -
+  YAML,
+  Actions and Bash lint plus bats,
+  via Common-Automation.
+- [`workflows/release.yml`](.github/workflows/release.yml) -
+  the release entry point,
+  delegating to [`mod-release.yml`](.github/workflows/mod-release.yml),
+  the reusable pipeline this repo hosts for the whole KM series.
+- [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
+  derives mod id,
+  version,
+  runner label,
+  dist dir,
+  zip name and jar source from a caller's `mod_info.json`.
+- [`actions/check-version/`](.github/actions/check-version/) -
+  compares `mod_info.json`'s version to the latest git tag,
+  gating the pipeline.
 - [`actions/validate-versioning/`](.github/actions/validate-versioning/) -
-  enforces the versioning policy at release time: changelog section,
-  `mod_info.json` version match, version shape, and the kmlib dependency's
-  SemVer pin.
-- [`actions/check-dependency-release/`](.github/actions/check-dependency-release/)
-  - confirms a pinned dependency version exists as a published release of the
-  repo shipping it, and emits that release's URL.
-- [`actions/compose-dependency-note/`](.github/actions/compose-dependency-note/)
-  - composes the release-body line naming that dependency release and linking
-  it.
-- [`actions/fill-version-file-template/`](.github/actions/fill-version-file-template/)
-  - fills the caller's committed `<mod-id>.version.template` from
-  `mod_info.json`, producing the VersionChecker file for the release being
-  cut.
-- [`actions/_lib/mod_info.sh`](.github/actions/_lib/mod_info.sh) - what
-  `mod_info.json` contains and what shape its fields take; sourced by the four
-  scripts above.
-- [`tests/`](.github/tests/) - bats-core tests for the action scripts.
+  enforces the versioning policy at release time:
+  changelog section,
+  `mod_info.json` version match,
+  version shape,
+  and the kmlib dependency's SemVer pin.
+- [`actions/check-dependency-release/`](.github/actions/check-dependency-release/) -
+  confirms a pinned dependency version exists as a published release of the repo shipping it,
+  and emits that release's URL.
+- [`actions/compose-dependency-note/`](.github/actions/compose-dependency-note/) -
+  composes the release-body line naming that dependency release and linking it.
+- [`actions/fill-version-file-template/`](.github/actions/fill-version-file-template/) -
+  fills the caller's committed `<mod-id>.version.template` from `mod_info.json`,
+  producing the VersionChecker file for the release being cut.
+- [`actions/_lib/mod_info.sh`](.github/actions/_lib/mod_info.sh) -
+  what `mod_info.json` contains and what shape its fields take;
+  sourced by the four scripts above.
+- [`tests/`](.github/tests/) -
+  bats-core tests for the action scripts.
 
 ### Packages
 
-One line each, saying what the package is for. Where a package has more behind
-it than a line can carry, the line ends with where to read it. The current
-release's full inventory is in the
+One line each,
+saying what the package is for.
+Where a package has more behind it than a line can carry,
+the line ends with where to read it.
+The current release's full inventory is in the
 [changelog](CHANGELOG.md#010---2026-08-30).
 
 #### Game-agnostic helpers
 
 No Starsector API on the signature.
 
-- [`animation/`](src/main/java/kmlib/animation/) - what time does to a value,
-  in two families: stepped envelopes the caller advances each frame, and read
-  ones that are a function of the instant they are asked at. Which to reach
-  for, and why a triggered lift and a shape read off a phase share the word
-  envelope without being alternatives, is in
+- [`animation/`](src/main/java/kmlib/animation/) -
+  what time does to a value,
+  in two families:
+  stepped envelopes the caller advances each frame,
+  and read ones that are a function of the instant they are asked at.
+  Which to reach for,
+  and why a triggered lift and a shape read off a phase share the word envelope
+  without being alternatives,
+  is in
   [Stepped and read animation](src/main/java/kmlib/animation/README.md).
-- [`collections/`](src/main/java/kmlib/collections/) - small Collection and
-  Map helpers.
-- [`colour/`](src/main/java/kmlib/colour/) - AWT Color to normalised GL
-  channels folding in an alpha multiplier so one factor fades a palette, plus
-  darkening, blends, flattening onto a backdrop, and additive overlay and
-  light.
-- [`extensions/`](src/main/java/kmlib/extensions/) - the point an operation
-  offers its work to, so what a piece of work is stays the library's and which
-  mod on this install does it is settled where the install is composed. One
-  implementation, the last registered, since work is taken over whole or not
-  at all. The three optional-mod seam shapes are set beside each other in
+- [`collections/`](src/main/java/kmlib/collections/) -
+  small Collection and Map helpers.
+- [`colour/`](src/main/java/kmlib/colour/) -
+  AWT Color to normalised GL channels folding in an alpha multiplier
+  so one factor fades a palette,
+  plus darkening,
+  blends,
+  flattening onto a backdrop,
+  and additive overlay and light.
+- [`extensions/`](src/main/java/kmlib/extensions/) -
+  the point an operation offers its work to,
+  so what a piece of work is stays the library's
+  and which mod on this install does it is settled where the install is composed.
+  One implementation,
+  the last registered,
+  since work is taken over whole or not at all.
+  The three optional-mod seam shapes are set beside each other in
   [its own README](src/main/java/kmlib/extensions/README.md).
-- [`input/`](src/main/java/kmlib/input/) - rising-edge click detection, for
-  polled input with no discrete event to consume.
-- [`logging/`](src/main/java/kmlib/logging/) - log4j level control over one
-  mod's package subtree bound to a LunaLib setting, the scoped names that put
-  library work under the mod it was done for, and warn-once-per-session
-  reporting.
-- [`math/easing/`](src/main/java/kmlib/math/easing/) - ease-in-out over the
-  unit range.
-- [`math/geometry/`](src/main/java/kmlib/math/geometry/) - 2D shapes, the
-  polygon passes over them, and the point arithmetic underneath. See
+- [`input/`](src/main/java/kmlib/input/) -
+  rising-edge click detection,
+  for polled input with no discrete event to consume.
+- [`logging/`](src/main/java/kmlib/logging/) -
+  log4j level control over one mod's package subtree bound to a LunaLib setting,
+  the scoped names that put library work under the mod it was done for,
+  and warn-once-per-session reporting.
+- [`math/easing/`](src/main/java/kmlib/math/easing/) -
+  ease-in-out over the unit range.
+- [`math/geometry/`](src/main/java/kmlib/math/geometry/) -
+  2D shapes,
+  the polygon passes over them,
+  and the point arithmetic underneath.
+  See
   [2D shapes and polygon passes](src/main/java/kmlib/math/geometry/README.md).
-- [`math/hashing/`](src/main/java/kmlib/math/hashing/) - avalanche bit mixing,
-  multi-part content fingerprints, and the fixed share of the unit range a
-  name holds.
-- [`math/motion/`](src/main/java/kmlib/math/motion/) - which keyed positions
-  moved between two observations, over a movement threshold.
-- [`math/random/`](src/main/java/kmlib/math/random/) - bounded jitter around a
-  value.
-- [`math/ranges/`](src/main/java/kmlib/math/ranges/) - clamping to the unit
-  range or into arbitrary bounds.
-- [`math/solving/`](src/main/java/kmlib/math/solving/) - bisection to the
-  largest value passing a monotone predicate, and picking the higher of two by
-  a score.
-- [`opengl/`](src/main/java/kmlib/opengl/) - GL primitive emission (lines,
-  dashed segments, quads, triangles, vertex runs), the saved-state scope a
-  blended 2D pass draws inside, how a pass blends and how a texture is
-  sampled, polygon tessellation, viewport and scissor reads, and what KM code
-  must know about Fast Rendering. See
-  [Rendering environment](#rendering-environment).
-- [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) - hatch fills across a
-  polygon, with a tally of how cleanly the runs join.
-- [`profiling/`](src/main/java/kmlib/profiling/) - the vocabulary a caller
-  names: the profiler seam a mod binds, silent until it does, the sections and
-  counters a call is filed under, the scope a section is opened as, the
-  sections whose calls run a loop, declared with the steps one turn is split
-  into, and the origin a root and everything under it is grouped by, so a
-  capture says which game each row was measured in. A shared read holding no
-  scope of its own counts onto whichever section is open, and onto a reserved
-  row of the reserved origin when none is, so work from an unprofiled path is
-  seen rather than dropped. Also the level a section states it is only worth
-  timing at, against the level a bound profiler is keeping: a section on a
-  per-item path opens silently under a capture taken to read whole frames, so it
-  costs a comparison rather than a clock read per item. What each level is worth
-  asking for, what a section may state about itself, and how a capture is read
-  back are in
+- [`math/hashing/`](src/main/java/kmlib/math/hashing/) -
+  avalanche bit mixing,
+  multi-part content fingerprints,
+  and the fixed share of the unit range a name holds.
+- [`math/motion/`](src/main/java/kmlib/math/motion/) -
+  which keyed positions moved between two observations,
+  over a movement threshold.
+- [`math/random/`](src/main/java/kmlib/math/random/) -
+  bounded jitter around a value.
+- [`math/ranges/`](src/main/java/kmlib/math/ranges/) -
+  clamping to the unit range or into arbitrary bounds.
+- [`math/solving/`](src/main/java/kmlib/math/solving/) -
+  bisection to the largest value passing a monotone predicate,
+  and picking the higher of two by a score.
+- [`opengl/`](src/main/java/kmlib/opengl/) -
+  GL primitive emission
+  (lines, dashed segments, quads, triangles, vertex runs),
+  the saved-state scope a blended 2D pass draws inside,
+  how a pass blends and how a texture is sampled,
+  polygon tessellation,
+  viewport and scissor reads,
+  and what KM code must know about Fast Rendering.
+  See [Rendering environment](#rendering-environment).
+- [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) -
+  hatch fills across a polygon,
+  with a tally of how cleanly the runs join.
+- [`profiling/`](src/main/java/kmlib/profiling/) -
+  the vocabulary a caller names:
+  the profiler seam a mod binds,
+  silent until it does,
+  the sections and counters a call is filed under,
+  the scope a section is opened as,
+  the sections whose calls run a loop,
+  declared with the steps one turn is split into,
+  and the origin a root and everything under it is grouped by,
+  so a capture says which game each row was measured in.
+  A shared read holding no scope of its own counts onto whichever section is open,
+  and onto a reserved row of the reserved origin when none is,
+  so work from an unprofiled path is seen rather than dropped.
+  Also the level a section states it is only worth timing at,
+  against the level a bound profiler is keeping:
+  a section on a per-item path opens silently under a capture taken to read whole frames,
+  so it costs a comparison rather than a clock read per item.
+  What each level is worth asking for,
+  what a section may state about itself,
+  and how a capture is read back are in
   [Profiling](src/main/java/kmlib/profiling/README.md).
-- [`profiling/budget/`](src/main/java/kmlib/profiling/budget/) - what one call
-  of a section is allowed: an amount of a counter, a duration read as the call
-  closes, or both. A call that breaks one is warned about once and takes the
-  row's kept-call record whatever it took, the row then reporting its latest
-  breach where an unbreached row reports its slowest call. That is what turns a
-  capture into findings rather than numbers.
-- [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) - the
-  profiler that keeps what it is handed, and the open stack and per-row tallies
-  it accumulates a capture in.
-- [`profiling/report/`](src/main/java/kmlib/profiling/report/) - the readings
-  of a capture, and the request naming one. The capture as it was measured, as
-  a listing worst first with each row named by its whole path, or as what one
-  counter says with the rows that never counted it dropped - narrowed to a
-  namespace and to however many rows are wanted, the rows those rows ran inside
-  kept either way, and optionally divided by the calls of a named beat so a
-  total reads as what one frame spends.
-- [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) - what a
-  reader is handed after a capture: one section tree per origin, each row's
-  count, total, min, max, average and self time, what it counted, what the call
-  it kept was doing and under what conditions it ran, what it broke of what its
-  section allows, what the loops inside its calls ran, and how its calls fell
-  across doubling duration bands. The conditions are the first-call bit and how
-  far the JVM's compilation clock moved under the call, which is what tells a
-  cold reading from a slow one - read only for the sections whose calls are
-  events, since the bean is a native read and a per-frame path has nothing to
-  gain from it.
-- [`settings/`](src/main/java/kmlib/settings/) - LunaLib settings read and
-  write, immediate and deferred, change callbacks, and labelled choices. The
-  write path goes through a port to the mod's backing store, so which mods owe
-  a disk write is the writer's own state rather than the game's, and a store
-  LunaLib has not loaded is a refusal a caller is told about rather than a
-  reach that can only run inside a running game.
-- [`text/`](src/main/java/kmlib/text/) - string and number formatting, plus
-  the reads over a string every surface shares: is there text here, what are
-  its words, and the stutter left where one phrase was appended to another
-  ending on the same word. Plus the grid a monospaced table is laid out in:
-  cells padded into columns that never close below a floor, so one capture's
-  columns sit where the last one's did, and lines written across the whole
-  width for what belongs to no column.
-- [`time/`](src/main/java/kmlib/time/) - nanosecond conversion and duration
-  formatting, for anything reading the clock: a measured span, a diagnostic
-  trace, an animation phased off it.
+- [`profiling/budget/`](src/main/java/kmlib/profiling/budget/) -
+  what one call of a section is allowed:
+  an amount of a counter,
+  a duration read as the call closes,
+  or both.
+  A call that breaks one is warned about once
+  and takes the row's kept-call record whatever it took,
+  the row then reporting its latest breach where an unbreached row reports its slowest call.
+  That is what turns a capture into findings rather than numbers.
+- [`profiling/recording/`](src/main/java/kmlib/profiling/recording/) -
+  the profiler that keeps what it is handed,
+  and the open stack and per-row tallies it accumulates a capture in.
+- [`profiling/report/`](src/main/java/kmlib/profiling/report/) -
+  the readings of a capture,
+  and the request naming one.
+  The capture as it was measured,
+  as a listing worst first with each row named by its whole path,
+  or as what one counter says with the rows that never counted it dropped -
+  narrowed to a namespace and to however many rows are wanted,
+  the rows those rows ran inside kept either way,
+  and optionally divided by the calls of a named beat
+  so a total reads as what one frame spends.
+- [`profiling/snapshot/`](src/main/java/kmlib/profiling/snapshot/) -
+  what a reader is handed after a capture:
+  one section tree per origin,
+  each row's count,
+  total,
+  min,
+  max,
+  average and self time,
+  what it counted,
+  what the call it kept was doing and under what conditions it ran,
+  what it broke of what its section allows,
+  what the loops inside its calls ran,
+  and how its calls fell across doubling duration bands.
+  The conditions are the first-call bit
+  and how far the JVM's compilation clock moved under the call,
+  which is what tells a cold reading from a slow one -
+  read only for the sections whose calls are events,
+  since the bean is a native read and a per-frame path has nothing to gain from it.
+- [`settings/`](src/main/java/kmlib/settings/) -
+  LunaLib settings read and write,
+  immediate and deferred,
+  change callbacks,
+  and labelled choices.
+  The write path goes through a port to the mod's backing store,
+  so which mods owe a disk write is the writer's own state rather than the game's,
+  and a store LunaLib has not loaded is a refusal a caller is told about
+  rather than a reach that can only run inside a running game.
+- [`text/`](src/main/java/kmlib/text/) -
+  string and number formatting,
+  plus the reads over a string every surface shares:
+  is there text here,
+  what are its words,
+  and the stutter left where one phrase was appended to another ending on the same word.
+  Plus the grid a monospaced table is laid out in:
+  cells padded into columns that never close below a floor,
+  so one capture's columns sit where the last one's did,
+  and lines written across the whole width for what belongs to no column.
+- [`time/`](src/main/java/kmlib/time/) -
+  nanosecond conversion and duration formatting,
+  for anything reading the clock:
+  a measured span,
+  a diagnostic trace,
+  an animation phased off it.
 
 #### Starsector-facing wrappers and seams
 
-- [`kmlib/`](src/main/java/kmlib/) - the mod plugin the launcher loads. At
-  application load it binds the library's own log verbosity, registers the
-  optional-mod adapters, and states which GL renderer every KM draw call
-  reaches. Each step is guarded on its own, so a failure costs that step
-  rather than every mod depending on the library.
-- [`mods/`](src/main/java/kmlib/mods/) - every adapter to a third-party mod,
-  one package per mod and nothing else here. What belongs is what stands
-  behind a presence gate, so a mod this library is compiled against but cannot
-  run without - LunaLib under `settings/`, Fast Rendering under `opengl/` - is
-  not one of these. How one is written, and which way the arrows run, is in
+- [`kmlib/`](src/main/java/kmlib/) -
+  the mod plugin the launcher loads.
+  At application load it binds the library's own log verbosity,
+  registers the optional-mod adapters,
+  and states which GL renderer every KM draw call reaches.
+  Each step is guarded on its own,
+  so a failure costs that step rather than every mod depending on the library.
+- [`mods/`](src/main/java/kmlib/mods/) -
+  every adapter to a third-party mod,
+  one package per mod and nothing else here.
+  What belongs is what stands behind a presence gate,
+  so a mod this library is compiled against but cannot run without -
+  LunaLib under `settings/`,
+  Fast Rendering under `opengl/` -
+  is not one of these.
+  How one is written,
+  and which way the arrows run,
+  is in
   [extensions/README.md](src/main/java/kmlib/extensions/README.md).
 - [`mods/console/`](src/main/java/kmlib/mods/console/) -
-  Console Commands as something to stand down for: whether the mod is enabled,
-  and whether a console is taking text entry this frame - the latter as a role
-  any caller holds, answered by one shared fail-open reader that settles the
-  mod state once and warns once naming whichever hop broke.
+  Console Commands as something to stand down for:
+  whether the mod is enabled,
+  and whether a console is taking text entry this frame -
+  the latter as a role any caller holds,
+  answered by one shared fail-open reader
+  that settles the mod state once and warns once naming whichever hop broke.
 - [`mods/console/commands/`](src/main/java/kmlib/mods/console/commands/) -
-  the Console Commands base class and KMLib's own commands, listed under
-  [Console commands](#console-commands).
+  the Console Commands base class and KMLib's own commands,
+  listed under [Console commands](#console-commands).
 - [`mods/console/commands/input/`](src/main/java/kmlib/mods/console/commands/input/) -
-  one command invocation, its context, argument text and output channel, with
-  the requirements a command states before parsing.
+  one command invocation,
+  its context,
+  argument text and output channel,
+  with the requirements a command states before parsing.
 - [`mods/console/commands/output/`](src/main/java/kmlib/mods/console/commands/output/) -
-  where a command's messages go, behind an interface so a test can take them:
-  the live overlay, or the game log for what a player was asked to send on
-  rather than read now.
+  where a command's messages go,
+  behind an interface so a test can take them:
+  the live overlay,
+  or the game log for what a player was asked to send on rather than read now.
 - [`mods/console/commands/parsing/`](src/main/java/kmlib/mods/console/commands/parsing/) -
-  declarative parameter specs with required and defaulted parameters, typed
-  value parsers, and a parsed result reporting validity and which parameters
-  were supplied.
+  declarative parameter specs with required and defaulted parameters,
+  typed value parsers,
+  and a parsed result reporting validity and which parameters were supplied.
 - [`mods/console/commands/targets/`](src/main/java/kmlib/mods/console/commands/targets/) -
-  what a command was pointed at, found or refused with a reason under one
-  sealed answer: which place - named by id anywhere in the sector, or the
-  nearest one meeting what the command needs of it - and which faction it acts
-  for, named by id or the player's own.
+  what a command was pointed at,
+  found or refused with a reason under one sealed answer:
+  which place -
+  named by id anywhere in the sector,
+  or the nearest one meeting what the command needs of it -
+  and which faction it acts for,
+  named by id or the player's own.
 - [`mods/console/commands/validation/`](src/main/java/kmlib/mods/console/commands/validation/) -
-  the context checks a command runs before it does anything, with the
-  player-facing feedback they print.
-- [`mods/nexerelin/`](src/main/java/kmlib/mods/nexerelin/) - Nexerelin:
-  founding a colony through that mod's own colonisation, handing an existing
-  colony over through that mod's own transfer, stated as a hand-over rather
-  than a capture, and the trading counters that mod's own rule decides.
-  Registered with the operations in `starsector/markets/` at load, and only
-  where the mod is enabled.
-- [`mods/rat/`](src/main/java/kmlib/mods/rat/) - Random Assortment of Things:
-  Abyssal Fracture matching, registered with the reachability read in
-  `starsector/systems/` at load as a means of arrival, and only where the mod
-  is enabled; plus the campaign-minimap role answered for its mini-map, which
-  a caller holds directly rather than reaching through a register.
-- [`starsector/`](src/main/java/kmlib/starsector/) - how a sector is named to a
-  reader who has to match it back to a save: the seed it was generated from
-  with the player beside it, which is the pair a save browser shows. Plus what
-  the reads below report having traversed - the walks they made, and the
-  systems, markets, entities and colonies those walks touched - counted where
-  the sector is actually walked, so a caller states how much it touched without
-  having written a profiling line, and a second traversal shows on the row that
-  made it.
+  the context checks a command runs before it does anything,
+  with the player-facing feedback they print.
+- [`mods/nexerelin/`](src/main/java/kmlib/mods/nexerelin/) -
+  Nexerelin:
+  founding a colony through that mod's own colonisation,
+  handing an existing colony over through that mod's own transfer,
+  stated as a hand-over rather than a capture,
+  and the trading counters that mod's own rule decides.
+  Registered with the operations in `starsector/markets/` at load,
+  and only where the mod is enabled.
+- [`mods/rat/`](src/main/java/kmlib/mods/rat/) -
+  Random Assortment of Things:
+  Abyssal Fracture matching,
+  registered with the reachability read in `starsector/systems/` at load as a means of arrival,
+  and only where the mod is enabled;
+  plus the campaign-minimap role answered for its mini-map,
+  which a caller holds directly rather than reaching through a register.
+- [`starsector/`](src/main/java/kmlib/starsector/) -
+  how a sector is named to a reader who has to match it back to a save:
+  the seed it was generated from with the player beside it,
+  which is the pair a save browser shows.
+  Plus what the reads below report having traversed -
+  the walks they made,
+  and the systems,
+  markets,
+  entities and colonies those walks touched -
+  counted where the sector is actually walked,
+  so a caller states how much it touched without having written a profiling line,
+  and a second traversal shows on the row that made it.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
-  spawning custom campaign entities and jump points, name generation, gate
-  activation, and how an entity is identified to a reader: its name paired with
-  the map glyph it is marked with. Where a body goes around its focus travels as
-  one value - how far out, how fast, and where on the circle it starts - so the
-  three do not cross every placing signature as interchangeable floats, and a
-  standstill is said in the signature rather than in a nought. Beside it the
-  orbit arithmetic itself: the vanilla-paced rate for a radius, the random
-  spread over any rate, the placement, the speed read back off an orbit, and the
-  orbit-focus chain every "how far out does this sit" question walks. Then the
-  things standing on an entity, each as the plain facts it carries and each with
-  the search for the ones in a location: the built structures - relays, buoys,
-  arrays, whether broken, disrupted or being sniffed - selected on the objective
-  tag so a mod's own kind joins by tagging it rather than by being listed here;
-  and the custom entities no market hangs on, from stations and habitats down to
-  cargo pods, where the market is the whole of the exclusion, because picking
-  the man-made places worth listing out of that set is the caller's judgement
-  and a line drawn here would be one caller's written into a search shared by
-  all of them. What both read through: the faction an entity names, and whether
-  the player has found it - the game stating the second backwards, as a flag an
-  entity loses once found, so the inversion is made in one place.
-- [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) - what a
-  faction is in itself: player-faction lifecycle, faction colours, crests and
-  flags. See [Player Faction Resolution](#player-faction-resolution). Where a
-  faction stands against another is a package in, since that reading is held of
-  a pair rather than of either side alone.
-- [`starsector/factions/relation/`](src/main/java/kmlib/starsector/factions/relation/)
-  - where one faction stands with another, as one value: the level, the signed
-  reputation and the colour the game paints them in, off a single read. Answered
-  of any pair, or of a faction against the player - the player having a live
-  relationship object no other pair does, so that one extra tier sits with the
-  player-fixed read rather than branching the general one. Beside it, the same
-  relation worded the way the engine words it; whether a disposition clears the
-  scale's own step from indifference to goodwill, asked of a faction in hand or
-  as a pair test over ids bound to one sector, so a caller composing
-  dispositions takes the read rather than writing the lookup; the continuous
-  relation ramp - a relationship value as the shade the engine paints it, or as
-  the bright and dark pair a map owner draws in; and which of several relations
-  decides, taken at either end of the scale, ties settled by the order they were
-  handed over in and an empty set answered by no relation rather than by a
-  nought. A direction carries the band it is about alongside the end it takes and
-  the order it ranks in, so nothing can pick the most hostile relation of a set
+  spawning custom campaign entities and jump points,
+  name generation,
+  gate activation,
+  and how an entity is identified to a reader:
+  its name paired with the map glyph it is marked with.
+  Where a body goes around its focus travels as one value -
+  how far out,
+  how fast,
+  and where on the circle it starts -
+  so the three do not cross every placing signature as interchangeable floats,
+  and a standstill is said in the signature rather than in a nought.
+  Beside it the orbit arithmetic itself:
+  the vanilla-paced rate for a radius,
+  the random spread over any rate,
+  the placement,
+  the speed read back off an orbit,
+  and the orbit-focus chain every "how far out does this sit" question walks.
+  Then the things standing on an entity,
+  each as the plain facts it carries and each with the search for the ones in a location:
+  the built structures -
+  relays,
+  buoys,
+  arrays,
+  whether broken,
+  disrupted or being sniffed -
+  selected on the objective tag
+  so a mod's own kind joins by tagging it rather than by being listed here;
+  and the custom entities no market hangs on,
+  from stations and habitats down to cargo pods,
+  where the market is the whole of the exclusion,
+  because picking the man-made places worth listing out of that set is the caller's judgement
+  and a line drawn here would be one caller's written into a search shared by all of them.
+  What both read through:
+  the faction an entity names,
+  and whether the player has found it -
+  the game stating the second backwards,
+  as a flag an entity loses once found,
+  so the inversion is made in one place.
+- [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) -
+  what a faction is in itself:
+  player-faction lifecycle,
+  faction colours,
+  crests and flags.
+  See [Player Faction Resolution](#player-faction-resolution).
+  Where a faction stands against another is a package in,
+  since that reading is held of a pair rather than of either side alone.
+- [`starsector/factions/relation/`](src/main/java/kmlib/starsector/factions/relation/) -
+  where one faction stands with another,
+  as one value:
+  the level,
+  the signed reputation and the colour the game paints them in,
+  off a single read.
+  Answered of any pair,
+  or of a faction against the player -
+  the player having a live relationship object no other pair does,
+  so that one extra tier sits with the player-fixed read rather than branching the general one.
+  Beside it,
+  the same relation worded the way the engine words it;
+  whether a disposition clears the scale's own step from indifference to goodwill,
+  asked of a faction in hand or as a pair test over ids bound to one sector,
+  so a caller composing dispositions takes the read rather than writing the lookup;
+  the continuous relation ramp -
+  a relationship value as the shade the engine paints it,
+  or as the bright and dark pair a map owner draws in;
+  and which of several relations decides,
+  taken at either end of the scale,
+  ties settled by the order they were handed over in
+  and an empty set answered by no relation rather than by a nought.
+  A direction carries the band it is about alongside the end it takes and the order it ranks in,
+  so nothing can pick the most hostile relation of a set
   while asking whether that same set is uniformly friendly.
-- [`starsector/fleet/`](src/main/java/kmlib/starsector/fleet/) - player fleet
-  proximity.
+- [`starsector/fleet/`](src/main/java/kmlib/starsector/fleet/) -
+  player fleet proximity.
 - [`starsector/geometry/`](src/main/java/kmlib/starsector/geometry/) -
-  distance and bearing between campaign entities, and how a nearest search
-  settles an equal distance; the game-typed sibling of `math/geometry/`.
-- [`starsector/graphics/`](src/main/java/kmlib/starsector/graphics/) - sprite
-  lookup.
-- [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) - intel-plugin
-  base classes. See [Intel Base Classes](#intel-base-classes).
-- [`starsector/listeners/`](src/main/java/kmlib/starsector/listeners/) - sector
-  listener registration: transient, with the listener's class cleared before it
-  is added so an install is idempotent and never keeps a stale instance, and
-  cleared again for a feature switched off mid-session.
-- [`starsector/map/`](src/main/java/kmlib/starsector/map/) - which systems the
-  sector map marks with a star.
-- [`starsector/markets/`](src/main/java/kmlib/starsector/markets/) - what a
-  market is, read and never changed: the queries (including whether one is a
-  derelict station rather than a place anybody lives), visibility and
-  discovery, which of several speaks for a place, decivilised worlds and the
-  survey bar the fog puts over one (including what a bare sighting is worth
-  against that bar), patrol counts, and the searches over a location - every
-  market in one, and the
-  nearest meeting what a caller needs of it. What can be done *to* a market is
-  a package in, one per operation, so a class that answers a question and a
-  class that rewrites a colony are never the same word shape in the same
-  place. What a market is as a place somebody holds - the colony set - is a
-  package in as well, a read like this root and gated off the operations the
-  same way.
-- [`starsector/markets/colonies/`](src/main/java/kmlib/starsector/markets/colonies/)
-  - the shared colony set every "who is here" read selects through - one rule,
-  one entry per place and owner, unfogged - stated once over a location and
-  read per kind of place above it: a star system, hyperspace, and the whole
-  sector as the composition of the two. Each colony carries its market and the
-  listing it was found in, and answers concealment, discovery and ownership.
-  What may be *shown* of the set is no part of it - withholding a colony is a
-  judgement made for a purpose, and it needs facts the sector does not hold -
-  so a consumer states its own projection and hands one in through
-  `KnownColonyReader`.
-- [`starsector/markets/colonisation/`](src/main/java/kmlib/starsector/markets/colonisation/)
-  - founding a colony on a body that carries only survey data: whether it can
-  be, the owner-neutral sequence that settles it, the owner it is founded
-  under, and the register whatever colonisation this install supplies is
-  offered the founding through before that sequence is composed.
-- [`starsector/markets/ownership/`](src/main/java/kmlib/starsector/markets/ownership/)
-  - what holding a colony makes true of it - flag, submarkets and tariff,
-  stated so that either owner can be applied over the other, with the counters
-  deferrable to a mod's own rule - and handing an existing colony to another
-  owner: what its outgoing one leaves behind (administrator, free port,
-  stockpiling, unrest, and the account at the counter their production was
-  sold over, settled while the colony is still theirs to bill), with the owner
-  it already has refused rather than costing it all of that for nothing, and
-  the registers whatever hand-over and submarket rule this install supplies
+  distance and bearing between campaign entities,
+  and how a nearest search settles an equal distance;
+  the game-typed sibling of `math/geometry/`.
+- [`starsector/graphics/`](src/main/java/kmlib/starsector/graphics/) -
+  sprite lookup.
+- [`starsector/intel/`](src/main/java/kmlib/starsector/intel/) -
+  intel-plugin base classes.
+  See [Intel Base Classes](#intel-base-classes).
+- [`starsector/listeners/`](src/main/java/kmlib/starsector/listeners/) -
+  sector listener registration:
+  transient,
+  with the listener's class cleared before it is added
+  so an install is idempotent and never keeps a stale instance,
+  and cleared again for a feature switched off mid-session.
+- [`starsector/map/`](src/main/java/kmlib/starsector/map/) -
+  which systems the sector map marks with a star.
+- [`starsector/markets/`](src/main/java/kmlib/starsector/markets/) -
+  what a market is,
+  read and never changed:
+  the queries
+  (including whether one is a derelict station rather than a place anybody lives),
+  visibility and discovery,
+  which of several speaks for a place,
+  decivilised worlds and the survey bar the fog puts over one
+  (including what a bare sighting is worth against that bar),
+  patrol counts,
+  and the searches over a location -
+  every market in one,
+  and the nearest meeting what a caller needs of it.
+  What can be done *to* a market is a package in,
+  one per operation,
+  so a class that answers a question and a class that rewrites a colony
+  are never the same word shape in the same place.
+  What a market is as a place somebody holds -
+  the colony set -
+  is a package in as well,
+  a read like this root and gated off the operations the same way.
+- [`starsector/markets/colonies/`](src/main/java/kmlib/starsector/markets/colonies/) -
+  the shared colony set every "who is here" read selects through -
+  one rule,
+  one entry per place and owner,
+  unfogged -
+  stated once over a location and read per kind of place above it:
+  a star system,
+  hyperspace,
+  and the whole sector as the composition of the two.
+  Each colony carries its market and the listing it was found in,
+  and answers concealment,
+  discovery and ownership.
+  What may be *shown* of the set is no part of it -
+  withholding a colony is a judgement made for a purpose,
+  and it needs facts the sector does not hold -
+  so a consumer states its own projection and hands one in through `KnownColonyReader`.
+- [`starsector/markets/colonisation/`](src/main/java/kmlib/starsector/markets/colonisation/) -
+  founding a colony on a body that carries only survey data:
+  whether it can be,
+  the owner-neutral sequence that settles it,
+  the owner it is founded under,
+  and the register whatever colonisation this install supplies is offered the founding through
+  before that sequence is composed.
+- [`starsector/markets/ownership/`](src/main/java/kmlib/starsector/markets/ownership/) -
+  what holding a colony makes true of it -
+  flag,
+  submarkets and tariff,
+  stated so that either owner can be applied over the other,
+  with the counters deferrable to a mod's own rule -
+  and handing an existing colony to another owner:
+  what its outgoing one leaves behind
+  (administrator, free port, stockpiling, unrest,
+  and the account at the counter their production was sold over,
+  settled while the colony is still theirs to bill),
+  with the owner it already has refused rather than costing it all of that for nothing,
+  and the registers whatever hand-over and submarket rule this install supplies
   are offered their work through.
-- [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) - typed
-  sector-memory accessors (flag, string).
-- [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) - sector
-  script registration, one shape per lifetime: a persisted script added only if
-  absent, so the state it carries survives; a transient one installed fresh with
-  its own exact class cleared first, and cleared again for a feature switched off
-  mid-session; and a by-instance slot for a script whose class a sibling mod may
-  also be running over the same sector.
-- [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) - the
-  game's own settings: whether a mod is enabled, answered the same way for
-  every optional-mod gate and answering "not installed" before the game is up;
-  and the common-data folder behind a preference about the interface, which is
-  per user and per install rather than per save. A port rather than a static
-  reach, and one that fails open at both ends - an absent, unopenable or
-  hand-edited file answers nothing, and a write that will not land is reported
-  rather than thrown.
-- [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) - defensive
-  wrapper around settings.json localisation lookups (loud REDACTED on missing
-  or malformed entries), plus the number-to-copy shaping that fills their
-  numeric slots.
+- [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) -
+  typed sector-memory accessors (flag, string).
+- [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) -
+  sector script registration,
+  one shape per lifetime:
+  a persisted script added only if absent,
+  so the state it carries survives;
+  a transient one installed fresh with its own exact class cleared first,
+  and cleared again for a feature switched off mid-session;
+  and a by-instance slot for a script whose class a sibling mod may also be running
+  over the same sector.
+- [`starsector/settings/`](src/main/java/kmlib/starsector/settings/) -
+  the game's own settings:
+  whether a mod is enabled,
+  answered the same way for every optional-mod gate
+  and answering "not installed" before the game is up;
+  and the common-data folder behind a preference about the interface,
+  which is per user and per install rather than per save.
+  A port rather than a static reach,
+  and one that fails open at both ends -
+  an absent,
+  unopenable or hand-edited file answers nothing,
+  and a write that will not land is reported rather than thrown.
+- [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) -
+  defensive wrapper around settings.json localisation lookups
+  (loud REDACTED on missing or malformed entries),
+  plus the number-to-copy shaping that fills their numeric slots.
 - [`starsector/systems/`](src/main/java/kmlib/starsector/systems/) -
   star system queries at two altitudes,
   the sector's whole set and one system a caller holds.
@@ -515,311 +659,430 @@ No Starsector API on the signature.
   which the mods supplying them fill at load so the
   read itself names no mod.
   [Star systems](src/main/java/kmlib/starsector/systems/README.md).
-- [`starsector/systems/claims/`](src/main/java/kmlib/starsector/systems/claims/)
-  - vanilla system claims behind a port, with a second port for the scored
-  contest behind one - down to the terms each market's score is the sum of -
-  for callers that must justify a claim rather than merely colour by it. A
-  standing in that contest states its own kind: weighed, resting on the market
-  the mechanic scored, or presence-only at a nought, for a faction holding
-  nothing the mechanic ever reached.
-- [`starsector/time/`](src/main/java/kmlib/starsector/time/) - campaign clock
-  wrapper.
+- [`starsector/systems/claims/`](src/main/java/kmlib/starsector/systems/claims/) -
+  vanilla system claims behind a port,
+  with a second port for the scored contest behind one -
+  down to the terms each market's score is the sum of -
+  for callers that must justify a claim rather than merely colour by it.
+  A standing in that contest states its own kind:
+  weighed,
+  resting on the market the mechanic scored,
+  or presence-only at a nought,
+  for a faction holding nothing the mechanic ever reached.
+- [`starsector/time/`](src/main/java/kmlib/starsector/time/) -
+  campaign clock wrapper.
 
-The UI toolkit is tiered by render substrate: a spec names content (controls,
-built out of widgets' shared rows), a layout places it, `render/gl/` paints
-it. How the tiers meet is in
+The UI toolkit is tiered by render substrate:
+a spec names content
+(controls, built out of widgets' shared rows),
+a layout places it,
+`render/gl/` paints it.
+How the tiers meet is in
 [UI primitives, tiered by surface](src/main/java/kmlib/starsector/ui/README.md).
 
-- [`starsector/ui/buttons/`](src/main/java/kmlib/starsector/ui/buttons/) - the
-  words on a button the game built, for a caller decorating a widget it did not
-  draw. Read and written through the label the engine draws them with rather
-  than through the published text accessors, which serve one of the several
-  kinds of button the game builds and quietly do nothing for the rest. What a
-  key is called there follows the game's own rule: lit in the words where they
-  already hold it, spelled out after them where they do not. Beside that, the ID
-  a caller put on a widget, found again in either of the two objects an action
-  listener is handed - which one carries it depends on the widget, so a reader
-  committed to one position silently drops every press from the others.
+- [`starsector/ui/buttons/`](src/main/java/kmlib/starsector/ui/buttons/) -
+  the words on a button the game built,
+  for a caller decorating a widget it did not draw.
+  Read and written through the label the engine draws them with
+  rather than through the published text accessors,
+  which serve one of the several kinds of button the game builds
+  and quietly do nothing for the rest.
+  What a key is called there follows the game's own rule:
+  lit in the words where they already hold it,
+  spelled out after them where they do not.
+  Beside that,
+  the ID a caller put on a widget,
+  found again in either of the two objects an action listener is handed -
+  which one carries it depends on the widget,
+  so a reader committed to one position silently drops every press from the others.
 - [`starsector/ui/colour/`](src/main/java/kmlib/starsector/ui/colour/) -
-  palette enum and Misc-backed resolver, with the accent triple a look is
-  built from. See [UI Colour Palette](#ui-colour-palette).
+  palette enum and Misc-backed resolver,
+  with the accent triple a look is built from.
+  See [UI Colour Palette](#ui-colour-palette).
 - [`starsector/ui/controls/`](src/main/java/kmlib/starsector/ui/controls/) -
-  declarative control specs and their actions: what a control is, not how it
-  paints.
+  declarative control specs and their actions:
+  what a control is,
+  not how it paints.
 - [`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) -
-  name-based reach into the game's concrete UI classes. See
-  [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
+  name-based reach into the game's concrete UI classes.
+  See [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
 - [`starsector/ui/debug/`](src/main/java/kmlib/starsector/ui/debug/) -
   quadrant-anchored on-screen debug HUD.
-- [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/) - the face
-  enum every caller names an atlas through, the font and glyph-run caches, and
-  width measurers. See [Caching](#caching).
+- [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/) -
+  the face enum every caller names an atlas through,
+  the font and glyph-run caches,
+  and width measurers.
+  See [Caching](#caching).
 - [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) -
-  highlight, paragraph and message types, rendering to text panel, tooltip,
-  label and MessageIntel. See [Highlighted Text](#highlighted-text).
-- [`starsector/ui/input/`](src/main/java/kmlib/starsector/ui/input/) - pointer
-  and key controllers driving panel and tab-panel state (scroll, drag,
-  collapse), the hover fades and press lifts its parts animate by, and the
-  moments it answers audibly - detected here, with which sound each makes left
-  to the look.
+  highlight,
+  paragraph and message types,
+  rendering to text panel,
+  tooltip,
+  label and MessageIntel.
+  See [Highlighted Text](#highlighted-text).
+- [`starsector/ui/input/`](src/main/java/kmlib/starsector/ui/input/) -
+  pointer and key controllers driving panel and tab-panel state
+  (scroll, drag, collapse),
+  the hover fades and press lifts its parts animate by,
+  and the moments it answers audibly -
+  detected here,
+  with which sound each makes left to the look.
 - [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/) -
-  obf-cast seam onto the intel screen: tab open, map visor rect, that map's
-  starscape flag. See
-  [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
-- [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) - label
-  length estimation and box fitting. See [Caching](#caching).
-- [`starsector/ui/layout/`](src/main/java/kmlib/starsector/ui/layout/) - pure
-  placement maths: padding, anchors, strips, panel and tab-panel layout.
-- [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/) - how
-  readable a map icon is under the nebulae drawn over it, with the campaign
-  map seam split into the five packages under it. See
+  obf-cast seam onto the intel screen:
+  tab open,
+  map visor rect,
+  that map's starscape flag.
+  See [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
+- [`starsector/ui/label/`](src/main/java/kmlib/starsector/ui/label/) -
+  label length estimation and box fitting.
+  See [Caching](#caching).
+- [`starsector/ui/layout/`](src/main/java/kmlib/starsector/ui/layout/) -
+  pure placement maths:
+  padding,
+  anchors,
+  strips,
+  panel and tab-panel layout.
+- [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/) -
+  how readable a map icon is under the nebulae drawn over it,
+  with the campaign map seam split into the five packages under it.
+  See
   [Rendering environment](#rendering-environment) and
   [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
-- [`starsector/ui/map/controls/`](src/main/java/kmlib/starsector/ui/map/controls/)
-  - the writes into the map screen's own furniture, sitting above the reads in
-  `map/probes/` and the one map package that names another's classes, since a
-  write has to be aimed by a reading. It reaches the row of toggles a map is
-  furnished with - the `M` screen's strip and the intel screen's map visor
-  alike, both being one widget behind one accessor - and hands back a handle
-  saying which row it is and where it was laid out, rather than the widget. On
-  that it stands one more toggle, sized off the row so one path serves both
-  screens, declining a row it cannot measure or that has no room left. The
-  toggle carries the hover tooltip the row's own buttons carry, binds its key
-  live only while the button is on screen, says that key in the button's own
-  words, and answers whether it still stands on the row currently shown.
+- [`starsector/ui/map/controls/`](src/main/java/kmlib/starsector/ui/map/controls/) -
+  the writes into the map screen's own furniture,
+  sitting above the reads in `map/probes/`
+  and the one map package that names another's classes,
+  since a write has to be aimed by a reading.
+  It reaches the row of toggles a map is furnished with -
+  the `M` screen's strip and the intel screen's map visor alike,
+  both being one widget behind one accessor -
+  and hands back a handle saying which row it is and where it was laid out,
+  rather than the widget.
+  On that it stands one more toggle,
+  sized off the row so one path serves both screens,
+  declining a row it cannot measure or that has no room left.
+  The toggle carries the hover tooltip the row's own buttons carry,
+  binds its key live only while the button is on screen,
+  says that key in the button's own words,
+  and answers whether it still stands on the row currently shown.
 - [`starsector/ui/map/icons/`](src/main/java/kmlib/starsector/ui/map/icons/) -
   reseating a map icon once the layering over it settles.
-- [`starsector/ui/map/presence/`](src/main/java/kmlib/starsector/ui/map/presence/)
-  - which campaign map surface is up and in what mode, folded across hosts,
-  plus the campaign-minimap role for the surface that replaces the radar
-  rather than opening as a screen.
-- [`starsector/ui/map/probes/`](src/main/java/kmlib/starsector/ui/map/probes/)
-  - obf-cast reads of the live map: the shown tab, its surface area, embedded
-  maps, icon layering, the vanilla map tooltip, and the traces that describe
-  them.
-- [`starsector/ui/map/transform/`](src/main/java/kmlib/starsector/ui/map/transform/)
-  - screen and world transform for the campaign map, and the modelview matrix
-  readers behind it for both the GL and Fast Rendering paths.
+- [`starsector/ui/map/presence/`](src/main/java/kmlib/starsector/ui/map/presence/) -
+  which campaign map surface is up and in what mode,
+  folded across hosts,
+  plus the campaign-minimap role for the surface
+  that replaces the radar rather than opening as a screen.
+- [`starsector/ui/map/probes/`](src/main/java/kmlib/starsector/ui/map/probes/) -
+  obf-cast reads of the live map:
+  the shown tab,
+  its surface area,
+  embedded maps,
+  icon layering,
+  the vanilla map tooltip,
+  and the traces that describe them.
+- [`starsector/ui/map/transform/`](src/main/java/kmlib/starsector/ui/map/transform/) -
+  screen and world transform for the campaign map,
+  and the modelview matrix readers behind it for both the GL and Fast Rendering paths.
 - [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) -
-  the GL paint layer, and the drawing surface itself: fills, borders, sprites,
-  scissor, labels, and the paint a caller hands them. A package per subject is
-  composed over it, below. See
-  [Rendering environment](#rendering-environment).
-- [`starsector/ui/render/gl/controls/`](src/main/java/kmlib/starsector/ui/render/gl/controls/)
-  - painting a control: checkbox, toggle, radio rows and grids, icon lists,
-  segment washes and seam dividers, over per-cell hover wash and press light
-  sources.
-- [`starsector/ui/render/gl/panel/`](src/main/java/kmlib/starsector/ui/render/gl/panel/)
-  - painting a panel: bordered box, scrollbar, and the collapse notch with its
-  chevron.
-- [`starsector/ui/render/gl/style/`](src/main/java/kmlib/starsector/ui/render/gl/style/)
-  - the look a host hands in: box colours, accents, the hover wash and press
-  light resolved to a paint at a fraction, notch colours, body font, tab style
-  and sound scheme, gathered into one widget style.
-- [`starsector/ui/render/gl/tabs/`](src/main/java/kmlib/starsector/ui/render/gl/tabs/)
-  - painting both tab chromes, the panel they head, and centred tab labels,
+  the GL paint layer,
+  and the drawing surface itself:
+  fills,
+  borders,
+  sprites,
+  scissor,
+  labels,
+  and the paint a caller hands them.
+  A package per subject is composed over it,
+  below.
+  See [Rendering environment](#rendering-environment).
+- [`starsector/ui/render/gl/controls/`](src/main/java/kmlib/starsector/ui/render/gl/controls/) -
+  painting a control:
+  checkbox,
+  toggle,
+  radio rows and grids,
+  icon lists,
+  segment washes and seam dividers,
+  over per-cell hover wash and press light sources.
+- [`starsector/ui/render/gl/panel/`](src/main/java/kmlib/starsector/ui/render/gl/panel/) -
+  painting a panel:
+  bordered box,
+  scrollbar,
+  and the collapse notch with its chevron.
+- [`starsector/ui/render/gl/style/`](src/main/java/kmlib/starsector/ui/render/gl/style/) -
+  the look a host hands in:
+  box colours,
+  accents,
+  the hover wash and press light resolved to a paint at a fraction,
+  notch colours,
+  body font,
+  tab style and sound scheme,
+  gathered into one widget style.
+- [`starsector/ui/render/gl/tabs/`](src/main/java/kmlib/starsector/ui/render/gl/tabs/) -
+  painting both tab chromes,
+  the panel they head,
+  and centred tab labels,
   behind one chrome-selecting renderer.
-- [`starsector/ui/render/gl/tooltip/`](src/main/java/kmlib/starsector/ui/render/gl/tooltip/)
-  - painting a cursor tooltip and the leader lines ruling its rows.
-- [`starsector/ui/screen/`](src/main/java/kmlib/starsector/ui/screen/) - the
-  UI screen box and the pixel-to-UI axis conversions over it.
-- [`starsector/ui/sound/`](src/main/java/kmlib/starsector/ui/sound/) - the
-  engine's interface sounds a KM control answers with, the cue binding one to
-  a volume, and the scheme naming what each moment sounds like - carried in
-  the panel's look, so a control inherits its sound as it inherits its accent
-  - and the player port behind them.
-- [`starsector/ui/suppression/`](src/main/java/kmlib/starsector/ui/suppression/)
-  - hiding a widget while it sits off the surface it belongs to.
+- [`starsector/ui/render/gl/tooltip/`](src/main/java/kmlib/starsector/ui/render/gl/tooltip/) -
+  painting a cursor tooltip and the leader lines ruling its rows.
+- [`starsector/ui/screen/`](src/main/java/kmlib/starsector/ui/screen/) -
+  the UI screen box and the pixel-to-UI axis conversions over it.
+- [`starsector/ui/sound/`](src/main/java/kmlib/starsector/ui/sound/) -
+  the engine's interface sounds a KM control answers with,
+  the cue binding one to a volume,
+  and the scheme naming what each moment sounds like -
+  carried in the panel's look,
+  so a control inherits its sound as it inherits its accent -
+  and the player port behind them.
+- [`starsector/ui/suppression/`](src/main/java/kmlib/starsector/ui/suppression/) -
+  hiding a widget while it sits off the surface it belongs to.
 - [`starsector/ui/text/`](src/main/java/kmlib/starsector/ui/text/) -
-  substrate-neutral text look: the face, colour, casing and anchoring a run of
-  text draws with, with each render substrate owning the adapter into its own
-  anchors, plus a run's width in a settled look. See
+  substrate-neutral text look:
+  the face,
+  colour,
+  casing and anchoring a run of text draws with,
+  with each render substrate owning the adapter into its own anchors,
+  plus a run's width in a settled look.
+  See
   [Two span measurers](src/main/java/kmlib/starsector/ui/README.md#two-span-measurers).
 - [`starsector/ui/tooltip/`](src/main/java/kmlib/starsector/ui/tooltip/) -
   vanilla TooltipMakerAPI helpers.
 - [`starsector/ui/widgets/`](src/main/java/kmlib/starsector/ui/widgets/) -
-  widget models and their geometry: one shared labelled-row core - a label
-  read as one sentence with a slot to either side - and the rows and boxes
-  built on it.
-- [`starsector/ui/widgets/lists/`](src/main/java/kmlib/starsector/ui/widgets/lists/)
-  - the spotlight picker: the sort-mode, direction and column-count model it
-  ranks and wraps by, the item seam it draws rows from, and the memo a
-  consumer holds its list in - holding no store of its own.
-- [`starsector/ui/widgets/scroll/`](src/main/java/kmlib/starsector/ui/widgets/scroll/)
-  - scroll offset state and scrollbar geometry.
-- [`starsector/ui/widgets/segments/`](src/main/java/kmlib/starsector/ui/widgets/segments/)
-  - splitting a row into segments and the dividers and channels between them.
-- [`starsector/ui/widgets/tabs/`](src/main/java/kmlib/starsector/ui/widgets/tabs/)
-  - tab strip geometry, collapse, hotkeys, and the interaction sources a tab
-  header reads, split from the style a host varies.
-- [`starsector/ui/widgets/tabs/style/`](src/main/java/kmlib/starsector/ui/widgets/tabs/style/)
-  - the tab look a host varies: chrome, box, palette, hotkey style and text
-  halo.
-- [`starsector/ui/widgets/tooltip/`](src/main/java/kmlib/starsector/ui/widgets/tooltip/)
-  - the cursor tooltip's rows and sections, and the spacing they stack at.
+  widget models and their geometry:
+  one shared labelled-row core -
+  a label read as one sentence with a slot to either side -
+  and the rows and boxes built on it.
+- [`starsector/ui/widgets/lists/`](src/main/java/kmlib/starsector/ui/widgets/lists/) -
+  the spotlight picker:
+  the sort-mode,
+  direction and column-count model it ranks and wraps by,
+  the item seam it draws rows from,
+  and the memo a consumer holds its list in -
+  holding no store of its own.
+- [`starsector/ui/widgets/scroll/`](src/main/java/kmlib/starsector/ui/widgets/scroll/) -
+  scroll offset state and scrollbar geometry.
+- [`starsector/ui/widgets/segments/`](src/main/java/kmlib/starsector/ui/widgets/segments/) -
+  splitting a row into segments and the dividers and channels between them.
+- [`starsector/ui/widgets/tabs/`](src/main/java/kmlib/starsector/ui/widgets/tabs/) -
+  tab strip geometry,
+  collapse,
+  hotkeys,
+  and the interaction sources a tab header reads,
+  split from the style a host varies.
+- [`starsector/ui/widgets/tabs/style/`](src/main/java/kmlib/starsector/ui/widgets/tabs/style/) -
+  the tab look a host varies:
+  chrome,
+  box,
+  palette,
+  hotkey style and text halo.
+- [`starsector/ui/widgets/tooltip/`](src/main/java/kmlib/starsector/ui/widgets/tooltip/) -
+  the cursor tooltip's rows and sections,
+  and the spacing they stack at.
 
 ### Reaching the game's own UI classes
 
-Three packages reach into the game's concrete UI classes, by two mechanisms
-that differ in what a broken link costs the caller.
+Three packages reach into the game's concrete UI classes,
+by two mechanisms that differ in what a broken link costs the caller.
 
-The obf-cast seams, [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/)
-and [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/), compile against
-the obfuscated jars and cast. Both fail closed - an unresolvable link reports
-"nothing there" instead of throwing on a live screen.
+The obf-cast seams,
+[`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/) and
+[`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/),
+compile against the obfuscated jars and cast.
+Both fail closed -
+an unresolvable link reports "nothing there" instead of throwing on a live screen.
 
-[`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) reaches the same
-classes by *name* instead, which is the only way in for members an obfuscated build
-leaves unwritable in Java source. It is deliberately policy-free: a hop either
-answers or throws, and what a failure means is the caller's to decide, since a read
-that suppresses a feature and one that draws it want opposite defaults. So a
-consumer of that package writes its own guard - over `Throwable`, the reach
-declaring nothing - where a consumer of the cast seams inherits one.
+[`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) reaches the same classes
+by *name* instead,
+which is the only way in for members an obfuscated build leaves unwritable in Java source.
+It is deliberately policy-free:
+a hop either answers or throws,
+and what a failure means is the caller's to decide,
+since a read that suppresses a feature and one that draws it want opposite defaults.
+So a consumer of that package writes its own guard -
+over `Throwable`,
+the reach declaring nothing -
+where a consumer of the cast seams inherits one.
 
 ## Reusable CI / release actions
 
-KMLib hosts six composite actions and the release workflow other KM mods
-consume, via `uses: <owner>/KMLib/.github/actions/<name>@<tag>`. Each action
-delegates to a shell script under its own `scripts/` directory, so the logic
-stays unit-testable with bats-core.
+KMLib hosts six composite actions and the release workflow other KM mods consume,
+via `uses: <owner>/KMLib/.github/actions/<name>@<tag>`.
+Each action delegates to a shell script under its own `scripts/` directory,
+so the logic stays unit-testable with bats-core.
 
-Run the tests with `bats .github/tests/` from the KMLib root; they need
-`bats-core` and `jq`. [ci-bash.yml](.github/workflows/ci-bash.yml) runs the
-same suite on every pull request through Common-Automation's reusable bash
-workflow. [action_outputs.bats](.github/tests/action_outputs.bats) covers the
-seam rather than either half's logic: an `action.yml` and its script declare
-and emit outputs in separate files, and a key present in only one costs a
-consumer a blank string rather than an error. The Gradle build is gated
-separately in [ci-gradle.yml](.github/workflows/ci-gradle.yml), which needs
-Starsector binaries and so runs on the self-hosted `kmlib-runner`.
+Run the tests with `bats .github/tests/` from the KMLib root;
+they need `bats-core` and `jq`.
+[ci-bash.yml](.github/workflows/ci-bash.yml) runs the same suite on every pull request
+through Common-Automation's reusable bash workflow.
+[action_outputs.bats](.github/tests/action_outputs.bats) covers the seam
+rather than either half's logic:
+an `action.yml` and its script declare and emit outputs in separate files,
+and a key present in only one costs a consumer a blank string rather than an error.
+The Gradle build is gated separately in [ci-gradle.yml](.github/workflows/ci-gradle.yml),
+which needs Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 
-**[read-mod-info](.github/actions/read-mod-info/action.yml)** reads the
-caller's `mod_info.json` and emits what every other workflow derives from it
-by convention - its `outputs:` block is the statement of that convention:
+**[read-mod-info](.github/actions/read-mod-info/action.yml)** reads the caller's `mod_info.json`
+and emits what every other workflow derives from it by convention -
+its `outputs:` block is the statement of that convention:
 
-- The mod id and version verbatim, the `<mod-id>-runner` label, the first
-  declared jar, and the repos to clone beside the checkout.
-- The shipped folder name, the `dist/<mod-folder-name>/` directory and the
-  `<mod-folder-name>-<version>.zip` release name, all named after that jar
-  rather than after the mod id, so a zip install and a hand-deployed one share
-  one folder layout.
-- `version-file-name` goes the other way, `<mod-id>.version`, because the
-  hand-written `version_files.csv` points at it by that name.
-- `kmlib-dependency-version`, which KMLib the caller pins or nothing when it
-  declares no such dependency - how the release pipeline tells a consumer
-  apart from KMLib releasing itself - and `kmlib-repo`, where that KMLib is
-  published. The latter is emitted from the same constant the sibling checkout
-  set is built from, so the release a pin is checked against is the repository
-  the build compiles it against.
+- The mod id and version verbatim,
+  the `<mod-id>-runner` label,
+  the first declared jar,
+  and the repos to clone beside the checkout.
+- The shipped folder name,
+  the `dist/<mod-folder-name>/` directory
+  and the `<mod-folder-name>-<version>.zip` release name,
+  all named after that jar rather than after the mod id,
+  so a zip install and a hand-deployed one share one folder layout.
+- `version-file-name` goes the other way,
+  `<mod-id>.version`,
+  because the hand-written `version_files.csv` points at it by that name.
+- `kmlib-dependency-version`,
+  which KMLib the caller pins or nothing when it declares no such dependency -
+  how the release pipeline tells a consumer apart from KMLib releasing itself -
+  and `kmlib-repo`,
+  where that KMLib is published.
+  The latter is emitted from the same constant the sibling checkout set is built from,
+  so the release a pin is checked against is the repository the build compiles it against.
 
-**[check-version](.github/actions/check-version/action.yml)** compares
-`mod_info.json`'s `.version` to the latest git tag in the caller checkout and
-emits `version` plus `version-updated`, which gates the release pipeline.
+**[check-version](.github/actions/check-version/action.yml)** compares `mod_info.json`'s
+`.version` to the latest git tag in the caller checkout
+and emits `version` plus `version-updated`,
+which gates the release pipeline.
 
-**[validate-versioning](.github/actions/validate-versioning/action.yml)** takes
-a `version` and fails the release if the caller's `CHANGELOG.md` has no
-`## [<version>]` section, `mod_info.json` `.version` does not equal the input,
-or either that version or a declared `kmlib` pin is not well-formed
-`MAJOR.MINOR.PATCH`. The shape is enforced here because every downstream
-consumer of a malformed version degrades in silence rather than erroring.
+**[validate-versioning](.github/actions/validate-versioning/action.yml)** takes a `version`
+and fails the release if the caller's `CHANGELOG.md` has no `## [<version>]` section,
+`mod_info.json` `.version` does not equal the input,
+or either that version or a declared `kmlib` pin is not well-formed `MAJOR.MINOR.PATCH`.
+The shape is enforced here
+because every downstream consumer of a malformed version degrades in silence
+rather than erroring.
 Policy itself lives in [versioning](docs/dev/versioning.md).
 
 **[check-dependency-release](.github/actions/check-dependency-release/action.yml)**
-takes a `repo` and a `version`, fails unless that version exists as a published
-release of that repository, and emits its `release-url`. The pipeline runs it
-against a consumer's `kmlib` pin before building anything, so a pin bumped
-ahead of the KMLib it names stops the release instead of publishing a mod the
-game refuses to load. One API call answers both questions, and the URL is read
-from the response rather than assembled from the tag, so the link the release
-body carries cannot name a release nothing confirmed. An absent release and a
-lookup that could not be completed both fail, with different messages: the
-first is a verdict on the pin, the second explicitly is not.
+takes a `repo` and a `version`,
+fails unless that version exists as a published release of that repository,
+and emits its `release-url`.
+The pipeline runs it against a consumer's `kmlib` pin before building anything,
+so a pin bumped ahead of the KMLib it names stops the release
+instead of publishing a mod the game refuses to load.
+One API call answers both questions,
+and the URL is read from the response rather than assembled from the tag,
+so the link the release body carries cannot name a release nothing confirmed.
+An absent release and a lookup that could not be completed both fail,
+with different messages:
+the first is a verdict on the pin,
+the second explicitly is not.
 
 **[compose-dependency-note](.github/actions/compose-dependency-note/action.yml)**
-takes a `dependency-name`, `version` and `release-url`, and emits the `note`
-the release body carries below its changelog section: a markdown line naming
-and linking that dependency release. It is an action rather than an inline
-step because the line is player-facing copy with a condition attached - an
-absent version emits no line, which is the case for KMLib releasing itself,
-and an absent URL emits no line either, a dropped line beating one whose link
-goes nowhere.
+takes a `dependency-name`,
+`version` and `release-url`,
+and emits the `note` the release body carries below its changelog section:
+a markdown line naming and linking that dependency release.
+It is an action rather than an inline step
+because the line is player-facing copy with a condition attached -
+an absent version emits no line,
+which is the case for KMLib releasing itself,
+and an absent URL emits no line either,
+a dropped line beating one whose link goes nowhere.
 
 **[fill-version-file-template](.github/actions/fill-version-file-template/action.yml)**
-takes an `output-path` and a `zip-name` and writes the mod's VersionChecker
-`.version` file there. The caller commits a complete
-`<mod-id>.version.template` whose release-varying values are tokens -
-`{{modName}}`, `{{major}}` / `{{minor}}` / `{{patch}}`,
-`{{starsectorVersion}}`, `{{directDownloadURL}}` - each substituted from
-`mod_info.json`, so no version number is restated by hand outside that file.
+takes an `output-path` and a `zip-name`
+and writes the mod's VersionChecker `.version` file there.
+The caller commits a complete `<mod-id>.version.template`
+whose release-varying values are tokens -
+`{{modName}}`,
+`{{major}}` / `{{minor}}` / `{{patch}}`,
+`{{starsectorVersion}}`,
+`{{directDownloadURL}}` -
+each substituted from `mod_info.json`,
+so no version number is restated by hand outside that file.
 
-- `{{directDownloadURL}}` is the one token not read from there. It is built
-  from the version, the `zip-name` input and the publishing repository the
-  Actions runtime exports, so the link cannot name a repository or an asset
-  other than the one being released. Both of those have a fallback for callers
-  outside Actions, which is what lets the local Gradle task run this same
-  script rather than a second implementation: an omitted `zip-name` is derived
-  from `mod_info.json` `jars[0]` by the same lib rule `read-mod-info` uses, and
-  an absent `GITHUB_REPOSITORY` falls back to the checkout's `origin` remote.
-- Substitution is by whole value, which is how the version components come out
-  as JSON numbers rather than quoted digits. Every other key is carried through
-  untouched, so the template states the published shape, and a token left
-  unsubstituted fails the release rather than shipping literal braces to
-  players.
-- The committed name carries the `.template` suffix because a dev install
-  symlinks the repo into `mods/`: `version_files.csv` names the bare
-  `<mod-id>.version`, and under one name the committed file would hand
-  VersionChecker quoted tokens where it expects numbers. The bare name exists
-  only where something generated it.
-- `mod-root` says where to read `mod_info.json` and the template from, and
-  defaults to the working directory - where a job with the mod checked out at
-  the workspace root already stands. The release pipeline sets it because its
-  checkout is one level down and Actions permits no `working-directory` on a
-  `uses:` step. `output-path` is unaffected by it, always relative to the job,
-  so a caller writing into the checkout and one writing beside it each state
-  the path they would state anyway.
+- `{{directDownloadURL}}` is the one token not read from there.
+  It is built from the version,
+  the `zip-name` input and the publishing repository the Actions runtime exports,
+  so the link cannot name a repository or an asset other than the one being released.
+  Both of those have a fallback for callers outside Actions,
+  which is what lets the local Gradle task run this same script
+  rather than a second implementation:
+  an omitted `zip-name` is derived from `mod_info.json` `jars[0]`
+  by the same lib rule `read-mod-info` uses,
+  and an absent `GITHUB_REPOSITORY` falls back to the checkout's `origin` remote.
+- Substitution is by whole value,
+  which is how the version components come out as JSON numbers rather than quoted digits.
+  Every other key is carried through untouched,
+  so the template states the published shape,
+  and a token left unsubstituted fails the release
+  rather than shipping literal braces to players.
+- The committed name carries the `.template` suffix
+  because a dev install symlinks the repo into `mods/`:
+  `version_files.csv` names the bare `<mod-id>.version`,
+  and under one name the committed file would hand VersionChecker quoted tokens
+  where it expects numbers.
+  The bare name exists only where something generated it.
+- `mod-root` says where to read `mod_info.json` and the template from,
+  and defaults to the working directory -
+  where a job with the mod checked out at the workspace root already stands.
+  The release pipeline sets it
+  because its checkout is one level down
+  and Actions permits no `working-directory` on a `uses:` step.
+  `output-path` is unaffected by it,
+  always relative to the job,
+  so a caller writing into the checkout and one writing beside it
+  each state the path they would state anyway.
 
-Four of the six read `mod_info.json`, so what that file contains and what shape
-its fields take live once in
-[_lib/mod_info.sh](.github/actions/_lib/mod_info.sh), which they source: the
-filename, the SemVer shape, the "this field is present" check, and the names
-that follow from `jars[0]` - the shipped mod folder and the release zip. The
-zip name is there rather than in one script because two of them need it and
-neither may guess: the pipeline uploads an asset under that name while the
-version file points a download URL at it, so a rule spelled twice would give a
-working link and a 404 the same spelling. The file sits under `actions/` rather
-than beside it so it is where the scripts sourcing it look, each reaching it
-relative to its own location; the leading underscore marks it as
-not-an-action.
+Four of the six read `mod_info.json`,
+so what that file contains and what shape its fields take live once in
+[_lib/mod_info.sh](.github/actions/_lib/mod_info.sh),
+which they source:
+the filename,
+the SemVer shape,
+the "this field is present" check,
+and the names that follow from `jars[0]` -
+the shipped mod folder and the release zip.
+The zip name is there rather than in one script
+because two of them need it and neither may guess:
+the pipeline uploads an asset under that name
+while the version file points a download URL at it,
+so a rule spelled twice would give a working link and a 404 the same spelling.
+The file sits under `actions/` rather than beside it
+so it is where the scripts sourcing it look,
+each reaching it relative to its own location;
+the leading underscore marks it as not-an-action.
 
 `mod-release.yml` names the actions in registry form
-(`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`), which
-the runner resolves without checking this repo out into the consumer's
-workspace. That form accepts no token, so a consumer's release can only reach
-them once this repository is public or shared for Actions use. KMLib's own
-release is unaffected, a workflow always reaching its own repository.
+(`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`),
+which the runner resolves without checking this repo out into the consumer's workspace.
+That form accepts no token,
+so a consumer's release can only reach them
+once this repository is public or shared for Actions use.
+KMLib's own release is unaffected,
+a workflow always reaching its own repository.
 
-Cutting the release itself - extracting the `## [<version>]` section for the
-body and attaching the assets - is delegated to Common-Automation's
-stack-agnostic `create-github-release`; only the six actions above live in
-KMLib.
+Cutting the release itself -
+extracting the `## [<version>]` section for the body and attaching the assets -
+is delegated to Common-Automation's stack-agnostic `create-github-release`;
+only the six actions above live in KMLib.
 
-A release carries two assets. The mod zip is what a player downloads, with the
-generated `.version` file riding inside it so an install knows which version it
-is. The same file is attached in its own right because that is the only form an
-update checker can reach: it polls
-`releases/latest/download/<mod-id>.version` without downloading the mod, and a
-copy sealed inside the zip answers nothing. GitHub excludes prereleases from
-`releases/latest`, so a mod marked prerelease would publish a URL resolving to
-an earlier release or to nothing - which is why nothing in this pipeline can
-mark one.
+A release carries two assets.
+The mod zip is what a player downloads,
+with the generated `.version` file riding inside it
+so an install knows which version it is.
+The same file is attached in its own right
+because that is the only form an update checker can reach:
+it polls `releases/latest/download/<mod-id>.version` without downloading the mod,
+and a copy sealed inside the zip answers nothing.
+GitHub excludes prereleases from `releases/latest`,
+so a mod marked prerelease would publish a URL resolving to an earlier release or to nothing -
+which is why nothing in this pipeline can mark one.
 
 ## Build & Test
 
-KMLib uses Gradle with the Java plugin. JDK 17+ must be on PATH; the
-toolchain is intentionally not auto-provisioned so the project compiles
-on whichever JDK is already installed.
+KMLib uses Gradle with the Java plugin.
+JDK 17+ must be on PATH;
+the toolchain is intentionally not auto-provisioned
+so the project compiles on whichever JDK is already installed.
 
-```
+```powershell
 ./gradlew test              # JUnit 5 unit tests
 ./gradlew testBuildScripts  # the gradle/ scripts, against throwaway builds
 ./gradlew coverage          # tests + JaCoCo HTML/XML report in build/reports/
@@ -827,118 +1090,148 @@ on whichever JDK is already installed.
 ```
 
 `testBuildScripts` runs [`src/buildScriptTest/java`](src/buildScriptTest/java/)
-through Gradle TestKit and is wired into `check`. Its own source set rather than
-a package in the main suite: TestKit brings Gradle's runtime with it, and on the
-same classpath that runtime's logging backend answers instead of the game's.
+through Gradle TestKit and is wired into `check`.
+Its own source set rather than a package in the main suite:
+TestKit brings Gradle's runtime with it,
+and on the same classpath that runtime's logging backend answers instead of the game's.
 
-The version file comes from `writeVersionFile`, which `jar` depends on. It fills
-`kmlib.version.template` into `kmlib.version` at the repo root by running the same
+The version file comes from `writeVersionFile`,
+which `jar` depends on.
+It fills `kmlib.version.template` into `kmlib.version` at the repo root
+by running the same
 [fill-version-file-template](.github/actions/fill-version-file-template/action.yml)
-script the release pipeline runs, so a checkout symlinked into `mods/` as a dev
-install reports to VersionChecker exactly what a published zip would. It needs a
-bash, located on Windows from the git on `PATH`.
+script the release pipeline runs,
+so a checkout symlinked into `mods/` as a dev install
+reports to VersionChecker exactly what a published zip would.
+It needs a bash,
+located on Windows from the git on `PATH`.
 
 - Registered by
   [write-version-file.gradle](gradle/tasks/release/write-version-file.gradle),
-  which the shared Starsector conventions apply, rather than by this repo's
-  `build.gradle` - so every mod applying those conventions gets it, KMLib being one
-  consumer of its own conventions among several. A mod opts in by committing a
-  `<mod-id>.version.template`; no template, no task, which is where the KM mods
-  that publish no update information stay.
-- Tied to the jar rather than to `assemble`, because refreshing a dev install is
-  what building the jar is: the install picks up the new jar immediately, and a
-  version file left behind would report a version that is no longer there.
+  which the shared Starsector conventions apply,
+  rather than by this repo's `build.gradle` -
+  so every mod applying those conventions gets it,
+  KMLib being one consumer of its own conventions among several.
+  A mod opts in by committing a `<mod-id>.version.template`;
+  no template,
+  no task,
+  which is where the KM mods that publish no update information stay.
+- Tied to the jar rather than to `assemble`,
+  because refreshing a dev install is what building the jar is:
+  the install picks up the new jar immediately,
+  and a version file left behind would report a version that is no longer there.
 - Outside Actions there is no release to name the zip and no `GITHUB_REPOSITORY`,
-  so the script derives the zip name from `mod_info.json` and reads the repository
-  half of the download URL from the checkout's `origin` remote. A local build
-  therefore cannot name a repository this clone does not push to, and the build
-  restates neither rule.
-- `mod_info.json`, the template and the script are its inputs, so it re-runs only
-  when one of them - or the remote - changes.
+  so the script derives the zip name from `mod_info.json`
+  and reads the repository half of the download URL from the checkout's `origin` remote.
+  A local build therefore cannot name a repository this clone does not push to,
+  and the build restates neither rule.
+- `mod_info.json`,
+  the template and the script are its inputs,
+  so it re-runs only when one of them -
+  or the remote -
+  changes.
 
 The Starsector install root is discovered in this order:
-`-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this
-folder (the canonical layout when the mod lives at
-`<starsector>/mods/KMLib`).
+`-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this folder
+(the canonical layout when the mod lives at `<starsector>/mods/KMLib`).
 
-One part of the compile classpath varies by machine. KMLib reads the modelview
-from Fast Rendering's bridge when that mod is in force, and the bridge ships in
-`starsector-core/fr.jar`, which only an install patched by it has. Requiring that
-jar would make KMLib buildable only on a patched machine, so the build binds it
-when the install has one and falls back to compile-only mirrors of the three
-members it reads ([src/bridgestubs/java](src/bridgestubs/java)) when it does not.
+One part of the compile classpath varies by machine.
+KMLib reads the modelview from Fast Rendering's bridge when that mod is in force,
+and the bridge ships in `starsector-core/fr.jar`,
+which only an install patched by it has.
+Requiring that jar would make KMLib buildable only on a patched machine,
+so the build binds it when the install has one
+and falls back to compile-only mirrors of the three members it reads
+([src/bridgestubs/java](src/bridgestubs/java)) when it does not.
 Every build logs which of the two it used.
 
-The stubs are never in `KMLib.jar` and never loaded - they exist only so javac has
-a signature to resolve. Because a patched install compiles against genir's real
-bytes, stub drift shows up as an ordinary compile error there. Either leg can be
-built on demand, so neither is only ever exercised on the machine that happens to
-select it:
+The stubs are never in `KMLib.jar` and never loaded -
+they exist only so javac has a signature to resolve.
+Because a patched install compiles against genir's real bytes,
+stub drift shows up as an ordinary compile error there.
+Either leg can be built on demand,
+so neither is only ever exercised on the machine that happens to select it:
 
-```
+```powershell
 ./gradlew build -PvanillaOnly=true           # build as an unpatched install would
 ./gradlew build -PrequireFastRendering=true  # fail unless the real fr.jar is bound
 ```
 
-Each flag names the install it stands in for; the bridge stubs are how the
-vanilla one is arranged, which is why the two words are not interchangeable
-here. The CI legs carry the same two names.
+Each flag names the install it stands in for;
+the bridge stubs are how the vanilla one is arranged,
+which is why the two words are not interchangeable here.
+The CI legs carry the same two names.
 
-Both flags refuse to degrade quietly, in opposite directions.
-`-PrequireFastRendering` fails rather than falling back to the stubs. The
-vanilla binding - whether forced by `-PvanillaOnly` or reached because the
-install has no `fr.jar` - fails if the stub source set turns up empty, naming
-the directories Gradle actually read. Without that check an absent stub tree
-produces four `package com.genir.renderer.bridge.* does not exist` errors that
-point at the file importing the stubs rather than at the stubs that went
-missing. The case that motivated it: a source set named `bridgeStubs` reads
-`src/bridgeStubs/java` by convention, which is the same directory as
-`src/bridgestubs` on Windows and a different one on Linux.
+Both flags refuse to degrade quietly,
+in opposite directions.
+`-PrequireFastRendering` fails rather than falling back to the stubs.
+The vanilla binding -
+whether forced by `-PvanillaOnly` or reached because the install has no `fr.jar` -
+fails if the stub source set turns up empty,
+naming the directories Gradle actually read.
+Without that check an absent stub tree produces four
+`package com.genir.renderer.bridge.* does not exist` errors
+that point at the file importing the stubs rather than at the stubs that went missing.
+The case that motivated it:
+a source set named `bridgeStubs` reads `src/bridgeStubs/java` by convention,
+which is the same directory as `src/bridgestubs` on Windows and a different one on Linux.
 
-CI runs both on every PR (see
-[.github/workflows/ci-gradle.yml](.github/workflows/ci-gradle.yml)), which is why
-`kmlib-runner`'s install must be Fast-Rendering-patched. `-PrequireFastRendering`
-is what keeps that leg honest: without it an unpatched runner would compile the
-stubs and report green for a check that never ran.
+CI runs both on every PR
+(see [.github/workflows/ci-gradle.yml](.github/workflows/ci-gradle.yml)),
+which is why `kmlib-runner`'s install must be Fast-Rendering-patched.
+`-PrequireFastRendering` is what keeps that leg honest:
+without it an unpatched runner would compile the stubs
+and report green for a check that never ran.
 
 For double-click runs from Explorer,
 [scripts/run-tests-gradle.bat](scripts/run-tests-gradle.bat) and
-[scripts/run-coverage-gradle.bat](scripts/run-coverage-gradle.bat) wrap the
-`test` and `coverage` tasks above against the deployed install and pause on
-exit.
+[scripts/run-coverage-gradle.bat](scripts/run-coverage-gradle.bat)
+wrap the `test` and `coverage` tasks above against the deployed install
+and pause on exit.
 
 ## Local linting
 
-These gates cover the YAML / Actions / Bash surface only. The Gradle build and
-JUnit tests are no part of them - they run through Gradle, see
-[Build & Test](#build--test).
+These gates cover the YAML / Actions / Bash surface only.
+The Gradle build and JUnit tests are no part of them -
+they run through Gradle,
+see [Build & Test](#build--test).
 
 Two delegating workflows run on every pull request:
-[ci-yaml.yml](.github/workflows/ci-yaml.yml) calls Common-Automation's reusable
-`ci-yaml.yml` (actionlint, action-validator, yamllint, ansible-lint), and
-[ci-bash.yml](.github/workflows/ci-bash.yml) calls its reusable `ci-bash.yml`
-(shellcheck, check-sh-executable, bats). Each step auto-skips when its surface
-is absent, so a mod with no shell scripts still passes the Bash workflow.
+[ci-yaml.yml](.github/workflows/ci-yaml.yml) calls Common-Automation's reusable `ci-yaml.yml`
+(actionlint, action-validator, yamllint, ansible-lint),
+and [ci-bash.yml](.github/workflows/ci-bash.yml) calls its reusable `ci-bash.yml`
+(shellcheck, check-sh-executable, bats).
+Each step auto-skips when its surface is absent,
+so a mod with no shell scripts still passes the Bash workflow.
 
-Three shims in [`scripts/`](scripts/) reproduce that surface locally through Git
-Bash and Docker, each a thin delegate to Common-Automation's orchestrator - so
-all three need a Common-Automation checkout as a SIBLING directory
-(`..\Common-Automation`). Each has a `.sh` and a `.bat` face, the latter for
-`cmd` / PowerShell:
+Three shims in [`scripts/`](scripts/) reproduce that surface locally
+through Git Bash and Docker,
+each a thin delegate to Common-Automation's orchestrator -
+so all three need a Common-Automation checkout as a SIBLING directory
+(`..\Common-Automation`).
+Each has a `.sh` and a `.bat` face,
+the latter for `cmd` / PowerShell:
 
-- `run-ci-yaml-and-bash` - the MAIN entry, and what most contributors run: the
-  lint suite AND the bats tests in one go, the full local equivalent of
-  ci-yaml.yml + ci-bash.yml.
-- `run-lint-yaml-and-bash` - the lint half only (shellcheck, actionlint,
-  action-validator, yamllint, ansible-lint); no bats.
-- `run-tests-bash` - the bats tests only.
+- `run-ci-yaml-and-bash` -
+  the MAIN entry,
+  and what most contributors run:
+  the lint suite AND the bats tests in one go,
+  the full local equivalent of ci-yaml.yml + ci-bash.yml.
+- `run-lint-yaml-and-bash` -
+  the lint half only
+  (shellcheck, actionlint, action-validator, yamllint, ansible-lint);
+  no bats.
+- `run-tests-bash` -
+  the bats tests only.
 
-[`fix-permissions`](scripts/fix-permissions.sh) re-stages the executable bit on
-tracked `*.sh` files, which Windows checkouts drop; run it after adding a shell
-script so the `check-sh-executable` gate stays green.
-[.gitattributes](.gitattributes) pins line endings surgically - `*.sh` and
-`gradlew` to LF, `*.bat` and `gradlew.bat` to CRLF - and leaves binary / data
-assets to git's own detection.
+[`fix-permissions`](scripts/fix-permissions.sh) re-stages the executable bit
+on tracked `*.sh` files,
+which Windows checkouts drop;
+run it after adding a shell script so the `check-sh-executable` gate stays green.
+[.gitattributes](.gitattributes) pins line endings surgically -
+`*.sh` and `gradlew` to LF,
+`*.bat` and `gradlew.bat` to CRLF -
+and leaves binary / data assets to git's own detection.
 
 ## Consuming KMLib
 
@@ -952,241 +1245,325 @@ Downstream mods declare KMLib as a hard dependency in `mod_info.json`:
 }
 ```
 
-The `version` is required, not decoration: the game compares it for exact
-equality rather than as a minimum, and
-[validate-versioning](.github/actions/validate-versioning/action.yml) holds a
-consumer's pin to a well-formed SemVer at release time, checking the named
-release exists before anything is built. A consumer's workflow pin
+The `version` is required,
+not decoration:
+the game compares it for exact equality rather than as a minimum,
+and [validate-versioning](.github/actions/validate-versioning/action.yml)
+holds a consumer's pin to a well-formed SemVer at release time,
+checking the named release exists before anything is built.
+A consumer's workflow pin
 (`uses: <owner>/Starsector-Mod-KMLib/.github/workflows/mod-release.yml@<tag>`)
-must name the same version, and both move in the same commit - see
-[versioning](docs/dev/versioning.md).
+must name the same version,
+and both move in the same commit -
+see [versioning](docs/dev/versioning.md).
 
-Downstream mods pull the built jar as `compileOnly` in `build.gradle` so the file is
-visible at compile time and supplied by Starsector's mod classloader at
-runtime:
+Downstream mods pull the built jar as `compileOnly` in `build.gradle`
+so the file is visible at compile time
+and supplied by Starsector's mod classloader at runtime:
 
 ```groovy
 compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 ```
 
 Tests in consuming mods that touch KMLib types also add the same jar as
-`testCompileOnly` / `testRuntimeOnly`. KMLib's hard dependencies apply to every mod
-that depends on it - see [Requirements](#requirements).
+`testCompileOnly` / `testRuntimeOnly`.
+KMLib's hard dependencies apply to every mod that depends on it -
+see [Requirements](#requirements).
 
 ### Test fixtures
 
-[`testfixtures/`](src/testFixtures/java/kmlib/testfixtures/) holds what a consuming
-mod's tests stand their subjects on: fakes of KMLib's own ports (claims, fonts, the
-intel screen, the modelview, console output, a console overlay up or down as a test
-says), a recording appender that keeps what a class wrote to the game log - attached for
-the length of one call and detached whatever that call did, since an appender left on a
-logger goes on collecting what the rest of a suite writes - the core-UI hops and widget
-tree a layout rule walks, builders for the values
-those ports report, the market and colony shapes a "who is here" read is posed
-against, a listener manager that records what an installer registered with it beside
-the narrow sector that answers for nothing but that manager, a `Global` stand-in that
-still answers every class its own logger - owed wherever `Global` is mocked, since a
-static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM -
+[`testfixtures/`](src/testFixtures/java/kmlib/testfixtures/) holds
+what a consuming mod's tests stand their subjects on:
+fakes of KMLib's own ports
+(claims, fonts, the intel screen, the modelview, console output,
+a console overlay up or down as a test says),
+a recording appender that keeps what a class wrote to the game log -
+attached for the length of one call and detached whatever that call did,
+since an appender left on a logger goes on collecting what the rest of a suite writes -
+the core-UI hops and widget tree a layout rule walks,
+builders for the values those ports report,
+the market and colony shapes a "who is here" read is posed against,
+a listener manager that records what an installer registered with it
+beside the narrow sector that answers for nothing but that manager,
+a `Global` stand-in that still answers every class its own logger -
+owed wherever `Global` is mocked,
+since a static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM -
 and
 [`starsector/settings/`](src/testFixtures/java/kmlib/testfixtures/starsector/settings/)'s
-no-op `SettingsAPI` proxy, which a test installs into `Global` before touching `Misc`
-(whose static initialiser would otherwise NPE), and beside it a common-data folder that
-really holds what is written into it - map-backed rather than stubbed, so a file written
-under one name and read under another fails there rather than passing on two stubs that
-agree, and posable as a folder that will not open or will not take a write, failing open
-being the port's contract rather than an accident of it. A LunaLib settings store of the
-same shape sits beside it, counting saves as well as holding values, since what separates
-an immediate write from a deferred one is how many disk writes a burst of edits costs.
+no-op `SettingsAPI` proxy,
+which a test installs into `Global` before touching `Misc`
+(whose static initialiser would otherwise NPE),
+and beside it a common-data folder that really holds what is written into it -
+map-backed rather than stubbed,
+so a file written under one name and read under another fails there
+rather than passing on two stubs that agree,
+and posable as a folder that will not open or will not take a write,
+failing open being the port's contract rather than an accident of it.
+A LunaLib settings store of the same shape sits beside it,
+counting saves as well as holding values,
+since what separates an immediate write from a deferred one
+is how many disk writes a burst of edits costs.
 [`starsector/systems/`](src/testFixtures/java/kmlib/testfixtures/starsector/systems/)
-poses star systems the way the sector holds them - an id, a place in hyperspace, and the
-centre and anchor that tell two systems sharing an id apart - with identity and placement
-as separate calls, so a read over ids needs no coordinates invented for it.
+poses star systems the way the sector holds them -
+an id,
+a place in hyperspace,
+and the centre and anchor that tell two systems sharing an id apart -
+with identity and placement as separate calls,
+so a read over ids needs no coordinates invented for it.
 
-They are a source set of their own, published as a variant beside the jar. A consumer
-takes them with `testCompileOnly testFixtures('kmlib:KMLib')`, which resolves through
-the included build the same substitution already carries the main artifact over.
+They are a source set of their own,
+published as a variant beside the jar.
+A consumer takes them with `testCompileOnly testFixtures('kmlib:KMLib')`,
+which resolves through the included build
+the same substitution already carries the main artifact over.
 
-Three trees, three audiences: `src/main` is what the game loads, `src/testFixtures` is
-what consumers' tests may take, `src/test` stays private. That boundary is the reason
-for the split rather than a consequence of it - a fixture is a test artefact, and the
-jar the launcher loads must not carry classes that link against a test library. It is
-also what lets a fixture here mock a vanilla type, which nothing inside the shipped jar
-could do. A fixture only KMLib's own suites use therefore stays in `src/test`: what
-moves here is what a consumer actually asks for, so the published surface stays a
-decision rather than a default.
+Three trees,
+three audiences:
+`src/main` is what the game loads,
+`src/testFixtures` is what consumers' tests may take,
+`src/test` stays private.
+That boundary is the reason for the split rather than a consequence of it -
+a fixture is a test artefact,
+and the jar the launcher loads must not carry classes that link against a test library.
+It is also what lets a fixture here mock a vanilla type,
+which nothing inside the shipped jar could do.
+A fixture only KMLib's own suites use therefore stays in `src/test`:
+what moves here is what a consumer actually asks for,
+so the published surface stays a decision rather than a default.
 
 ## Console commands
 
-KMLib registers seven commands with Console Commands, all campaign-only. They exist
-because the library already holds the reads and operations behind them, so the command
-is a thin front on work a consuming mod would otherwise have to expose itself.
+KMLib registers seven commands with Console Commands,
+all campaign-only.
+They exist because the library already holds the reads and operations behind them,
+so the command is a thin front on work a consuming mod would otherwise have to expose itself.
 
 | Command | Syntax | What it does |
 | --- | --- | --- |
 | `kmlib_activate_gate` | `<id>` | Activates the gate with that id in the current system. |
 | `kmlib_colonise` | `[entity-id] [faction-id]` | Founds a colony on a body that so far carries only survey data, skipping the survey, the outpost cost and the proximity the survey panel asks for. |
-| `kmlib_list_factions` | `[markets\|hidden\|discoverable\|no_markets]` | Lists every faction with what it holds - how many places, how many hidden, how many still to find, and the systems they sit in. |
-| `kmlib_list_map_spoilers` | _no arguments_ | Lists faction-owned systems as a tree of system, entities and factions, flagging cut-off systems and undiscovered markets. |
+| `kmlib_list_factions` | `[markets\|hidden\|discoverable\|no_markets]` | Lists every faction with the mod that declared it and what it holds - how many places, how many hidden, how many still to find, and the systems they sit in. |
+| `kmlib_list_map_spoilers` | *no arguments* | Lists faction-owned systems as a tree of system, entities and factions, flagging cut-off systems and undiscovered markets. |
 | `kmlib_list_system_entities` | `[gates]` | Lists the current system's entities as an orbit tree, then the unorbited ones and fleets with coordinates. |
 | `kmlib_spawn` | `<kind> [orbit_focus_id] [speed] [jitter=<frac>]` | Spawns a gate or a jump point at the fleet position, orbiting a focus. |
 | `kmlib_transfer_market` | `[entity-id] [faction-id]` | Hands an existing colony to another owner. |
 
-Both colony commands defer to Nexerelin's own colonisation and transfer where that mod
-is enabled, through the registers in
+Both colony commands defer to Nexerelin's own colonisation and transfer
+where that mod is enabled,
+through the registers in
 [`markets/colonisation/`](src/main/java/kmlib/starsector/markets/colonisation/) and
-[`markets/ownership/`](src/main/java/kmlib/starsector/markets/ownership/) - so an install
-running Nexerelin gets a Nexerelin colony, intel entry included, rather than a
-library-shaped one. See [Optional mod seams](#optional-mod-seams).
+[`markets/ownership/`](src/main/java/kmlib/starsector/markets/ownership/) -
+so an install running Nexerelin gets a Nexerelin colony,
+intel entry included,
+rather than a library-shaped one.
+See [Optional mod seams](#optional-mod-seams).
 
-Arguments, defaults and the cases a command refuses are documented per command in
-[`data/console/commands.csv`](data/console/commands.csv), which is what the console reads
-and what `help <command>` prints in-game. That file is the single source for the detail;
+Arguments,
+defaults and the cases a command refuses are documented per command in
+[`data/console/commands.csv`](data/console/commands.csv),
+which is what the console reads and what `help <command>` prints in-game.
+That file is the single source for the detail;
 the table above only says which command to reach for.
 
 ## Rendering environment
 
-KMLib's map and UI code draws straight against OpenGL, where two things are not
-visible from the source: how the campaign UI sets up its matrices, and how the
-widely-installed Fast Rendering mod (`com.genir.renderer`) rebinds GL calls in
-every mod jar to its own batching bridge. That bridge tracks the modelview on the
-CPU, so GL state reads do not mean what they appear to mean.
+KMLib's map and UI code draws straight against OpenGL,
+where two things are not visible from the source:
+how the campaign UI sets up its matrices,
+and how the widely-installed Fast Rendering mod (`com.genir.renderer`)
+rebinds GL calls in every mod jar to its own batching bridge.
+That bridge tracks the modelview on the CPU,
+so GL state reads do not mean what they appear to mean.
 
-[docs/dev/rendering-environment.md](docs/dev/rendering-environment.md) records
-those facts, each cited into the decompiled sources cache so it can be
-re-verified rather than trusted. Read it before touching GL state, adding a
-matrix read, or diagnosing an overlay that misbehaves only for some players.
+[docs/dev/rendering-environment.md](docs/dev/rendering-environment.md) records those facts,
+each cited into the decompiled sources cache so it can be re-verified rather than trusted.
+Read it before touching GL state,
+adding a matrix read,
+or diagnosing an overlay that misbehaves only for some players.
 Consuming mods link there rather than restating it.
 
-[docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is
-the worked example: the bridge ships no buffer-taking `glGetFloat`, so reading
-`GL_MODELVIEW_MATRIX` throws `NoSuchMethodError` mid-render on an install that
-has Fast Rendering and never on one that does not. It is written up as an
-upstream report, and is why the matrix readers in
-[`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/) are behind a
-port with one implementation per environment.
+[docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is the worked
+example:
+the bridge ships no buffer-taking `glGetFloat`,
+so reading `GL_MODELVIEW_MATRIX` throws `NoSuchMethodError` mid-render
+on an install that has Fast Rendering and never on one that does not.
+It is written up as an upstream report,
+and is why the matrix readers in
+[`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/)
+are behind a port with one implementation per environment.
 
 ## Caching
 
-KMLib holds three caches, all of them in front of font work: the loaded faces, the
-glyph runs minted from them, and the balanced line wraps a label fitter searches
-through. All three are safe to hold indefinitely because none of them derives from
-the campaign - a cached value here cannot disagree with the sector, which is why
-nothing in this library carries an invalidation signal.
+KMLib holds three caches,
+all of them in front of font work:
+the loaded faces,
+the glyph runs minted from them,
+and the balanced line wraps a label fitter searches through.
+All three are safe to hold indefinitely because none of them derives from the campaign -
+a cached value here cannot disagree with the sector,
+which is why nothing in this library carries an invalidation signal.
 
-[docs/dev/caching.md](docs/dev/caching.md) records what each one keys on, how long
-it lives, and the two traps worth knowing (a never-evicting cache fed
-per-frame-varying strings, and who owns a GL text buffer's disposal). It also
-states what is deliberately *not* cached: every Starsector-facing wrapper reads
-live, because only a consumer knows which campaign changes it must react to.
+[docs/dev/caching.md](docs/dev/caching.md) records what each one keys on,
+how long it lives,
+and the two traps worth knowing
+(a never-evicting cache fed per-frame-varying strings,
+and who owns a GL text buffer's disposal).
+It also states what is deliberately *not* cached:
+every Starsector-facing wrapper reads live,
+because only a consumer knows which campaign changes it must react to.
 
-Consuming mods that cache derived campaign state should read it alongside their own
-invalidation model - KMU's is the worked example.
+Consuming mods that cache derived campaign state
+should read it alongside their own invalidation model -
+KMU's is the worked example.
 
 ## Optional mod seams
 
-An optional mod is reached in one of three shapes, all standing on the same presence gate, an
-adapter in the mod's own package, and a facade registering it at load:
+An optional mod is reached in one of three shapes,
+all standing on the same presence gate,
+an adapter in the mod's own package,
+and a facade registering it at load:
 
-- **A routine taken over** - the mod does the whole job instead of us, and ours stands down.
-- **A fact the mod publishes** - something only it can answer, held as a role the caller takes.
-- **An answer that composes** - the mod adds to an answer we already have, both standing.
+- **A routine taken over** -
+  the mod does the whole job instead of us,
+  and ours stands down.
+- **A fact the mod publishes** -
+  something only it can answer,
+  held as a role the caller takes.
+- **An answer that composes** -
+  the mod adds to an answer we already have,
+  both standing.
 
-Which to reach for, what backs each, and why the third is not the first:
+Which to reach for,
+what backs each,
+and why the third is not the first:
 [Optional mod seams](src/main/java/kmlib/extensions/README.md).
 
-Every mod reached any of these ways stays a soft dependency, absent from `mod_info.json`.
+Every mod reached any of these ways stays a soft dependency,
+absent from `mod_info.json`.
 
 ## Player Faction Resolution
 
 [StarsectorPlayerFactionResolver](src/main/java/kmlib/starsector/factions/StarsectorPlayerFactionResolver.java)
-centralises faction-display-name normalisation across consuming mods. The player
-faction's `getDisplayName()` is always non-empty but varies by environment:
-vanilla pre-first-colony reports `"Independent"`, Nexerelin's stock
-`player.faction` reports the literal `"player"`, and the user can edit either to
-a custom name later. Substituting the raw value into prose - "Production from a
-local player settlement...", "player leader in orbit" - reads poorly before the
-player has settled on an identity. Two rules share one placeholder set
+centralises faction-display-name normalisation across consuming mods.
+The player faction's `getDisplayName()` is always non-empty but varies by environment:
+vanilla pre-first-colony reports `"Independent"`,
+Nexerelin's stock `player.faction` reports the literal `"player"`,
+and the user can edit either to a custom name later.
+Substituting the raw value into prose -
+"Production from a local player settlement...",
+"player leader in orbit" -
+reads poorly before the player has settled on an identity.
+Two rules share one placeholder set
 (`Independent` / `player` / `Player`):
 
-- `isPlayerFactionEstablished()` returns `true` when the display name
-  is NOT in the placeholder set OR `Misc.getPlayerMarkets(false)` is
-  non-empty (`false` so Nex commission / governorship markets do not
-  count - those put the player under another flag, not their own).
-  The OR is deliberate: requiring both signals would mis-classify both
-  Nex's custom-faction-at-game-start flow and vanilla's
-  keeps-Independent-through-rename flow.
-  `isPlayerFactionEstablished(sector)` is the same rule with both
-  signals read off a named sector - the display name off its player
-  faction, the market off its own economy, applying the test
-  `Misc.getPlayerMarkets(false)` applies. It exists because that helper
-  is bound to `Global.getSector()`: a caller drawing anything but the
-  running sector would otherwise be told about the wrong one.
-- `resolveDisplayName(faction, fallback)` returns the live display
-  name when populated and not in the placeholder set, else the
-  caller's `fallback`. Generic - operates on any faction, not just the
-  player - so host-faction-in-contested-prose, remote-management-fee
-  tooltip, and any other faction-substituting surface share one policy.
+- `isPlayerFactionEstablished()` returns `true`
+  when the display name is NOT in the placeholder set
+  OR `Misc.getPlayerMarkets(false)` is non-empty
+  (`false` so Nex commission / governorship markets do not count -
+  those put the player under another flag,
+  not their own).
+  The OR is deliberate:
+  requiring both signals would mis-classify
+  both Nex's custom-faction-at-game-start flow
+  and vanilla's keeps-Independent-through-rename flow.
+  `isPlayerFactionEstablished(sector)` is the same rule
+  with both signals read off a named sector -
+  the display name off its player faction,
+  the market off its own economy,
+  applying the test `Misc.getPlayerMarkets(false)` applies.
+  It exists because that helper is bound to `Global.getSector()`:
+  a caller drawing anything but the running sector
+  would otherwise be told about the wrong one.
+- `resolveDisplayName(faction, fallback)` returns the live display name
+  when populated and not in the placeholder set,
+  else the caller's `fallback`.
+  Generic -
+  operates on any faction,
+  not just the player -
+  so host-faction-in-contested-prose,
+  remote-management-fee tooltip,
+  and any other faction-substituting surface share one policy.
 
-The established-check itself is one rule over two inputs - the player
-faction, and whether any market is player-owned - and where those come
-from is a `PlayerFactionSource`. Both public forms delegate to a
-package-private overload taking one: the no-arg form reads `Global` /
-`Misc`, the sector-bound form reads the sector. A caller already
-holding the two inputs - a unit test among them, which is how the live
-reads are stubbed without `mockStatic` - passes its own.
+The established-check itself is one rule over two inputs -
+the player faction,
+and whether any market is player-owned -
+and where those come from is a `PlayerFactionSource`.
+Both public forms delegate to a package-private overload taking one:
+the no-arg form reads `Global` / `Misc`,
+the sector-bound form reads the sector.
+A caller already holding the two inputs -
+a unit test among them,
+which is how the live reads are stubbed without `mockStatic` -
+passes its own.
 
 ## UI Colour Palette
 
 [StarsectorUiColour](src/main/java/kmlib/starsector/ui/colour/StarsectorUiColour.java)
-is the palette enum, in two bands that answer differently to a restyled
-install. `VANILLA_`-prefixed entries are live engine reads - through `Misc`
-suppliers or `settings.json` keys - so they follow a settings restyle or a
-player-faction recolour without a consumer doing anything. The rest are frozen
-literals that stay put. Which behaviour a callsite wants is the whole of the
-choice between them, which is why the bands are kept apart rather than
-interleaved by colour name.
+is the palette enum,
+in two bands that answer differently to a restyled install.
+`VANILLA_`-prefixed entries are live engine reads -
+through `Misc` suppliers or `settings.json` keys -
+so they follow a settings restyle or a player-faction recolour
+without a consumer doing anything.
+The rest are frozen literals that stay put.
+Which behaviour a callsite wants is the whole of the choice between them,
+which is why the bands are kept apart rather than interleaved by colour name.
 
-Call `resolve()` for the live `Color`; it null-checks the supplier output and
-tags the failure with the enum name, since `Misc` accessors can return null
-during early engine boot. The enum's own Javadoc carries the per-entry notes
-and the reason a composited shade - a fill over its backdrop, a glow added onto
-one - is deliberately not an entry here.
+Call `resolve()` for the live `Color`;
+it null-checks the supplier output and tags the failure with the enum name,
+since `Misc` accessors can return null during early engine boot.
+The enum's own Javadoc carries the per-entry notes
+and the reason a composited shade -
+a fill over its backdrop,
+a glow added onto one -
+is deliberately not an entry here.
 
 ## Highlighted Text
 
 [Highlight](src/main/java/kmlib/starsector/ui/highlight/Highlight.java)
-binds a substring to the colour it renders in. The Starsector text APIs take
-two parallel arrays, substrings and colours, that are easy to drift apart at
-the call site; binding them once removes the alignment risk.
+binds a substring to the colour it renders in.
+The Starsector text APIs take two parallel arrays,
+substrings and colours,
+that are easy to drift apart at the call site;
+binding them once removes the alignment risk.
 
 [HighlightedParagraph](src/main/java/kmlib/starsector/ui/highlight/HighlightedParagraph.java)
-is one line of text plus a base colour and its highlights, with render methods
-for `TextPanelAPI`, `TooltipMakerAPI` and `LabelAPI`.
+is one line of text plus a base colour and its highlights,
+with render methods for `TextPanelAPI`,
+`TooltipMakerAPI` and `LabelAPI`.
 
 [HighlightedMessage](src/main/java/kmlib/starsector/ui/highlight/HighlightedMessage.java)
-extends the family to the campaign side panel: an ordered list of paragraphs
+extends the family to the campaign side panel:
+an ordered list of paragraphs
 whose `toMessageIntel()` maps one paragraph per `MessageIntel.addLine(...)`,
-for vanilla-spaced multi-line notifications. Callers dispatch that
-`MessageIntel` themselves through
-`Global.getSector().getCampaignUI().addMessage(...)`, KMLib deliberately
-stopping at the value type so the campaign-API call stays visible at the call
-site. Icon, sound and the rest of the `MessageIntel` surface are not exposed
-yet; they will be added the first time a consumer needs them.
+for vanilla-spaced multi-line notifications.
+Callers dispatch that `MessageIntel` themselves through
+`Global.getSector().getCampaignUI().addMessage(...)`,
+KMLib deliberately stopping at the value type
+so the campaign-API call stays visible at the call site.
+Icon,
+sound and the rest of the `MessageIntel` surface are not exposed yet;
+they will be added the first time a consumer needs them.
 
 ## Intel Base Classes
 
 [BaseTaggedIntelPlugin](src/main/java/kmlib/starsector/intel/BaseTaggedIntelPlugin.java)
-is the bottom of the hierarchy: it extends vanilla's `BaseIntelPlugin` and
-takes mod-defined tab tags as varargs, its `getIntelTags` override calling
-`super` and mixing those in. A subclass becomes a pure declaration
-(`class MyIntel : BaseTaggedIntelPlugin(MyTags.SOMETHING)`) with no
-`getIntelTags` boilerplate. Zero varargs is valid and yields a pass-through,
+is the bottom of the hierarchy:
+it extends vanilla's `BaseIntelPlugin`
+and takes mod-defined tab tags as varargs,
+its `getIntelTags` override calling `super` and mixing those in.
+A subclass becomes a pure declaration
+(`class MyIntel : BaseTaggedIntelPlugin(MyTags.SOMETHING)`)
+with no `getIntelTags` boilerplate.
+Zero varargs is valid and yields a pass-through,
 which is what lets the expiring chain support untagged consumers.
 
 [BaseExpiringIntelPlugin](src/main/java/kmlib/starsector/intel/BaseExpiringIntelPlugin.java)
-extends it, so an expiring intel declares its tab tags through the same
-constructor channel; the no-arg form is for callers pinning to a vanilla tab.
-It captures the creation timestamp and auto-removes from the `IntelManager`
-once `getExpiryDays()` elapses, defaulting to one Starsector month. Static
-`findActive(Class)` returns the first non-expired item of a given subclass, so
-synchronous callers share one definition of "still within the current window".
+extends it,
+so an expiring intel declares its tab tags through the same constructor channel;
+the no-arg form is for callers pinning to a vanilla tab.
+It captures the creation timestamp
+and auto-removes from the `IntelManager` once `getExpiryDays()` elapses,
+defaulting to one Starsector month.
+Static `findActive(Class)` returns the first non-expired item of a given subclass,
+so synchronous callers share one definition of "still within the current window".
