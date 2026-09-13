@@ -1,5 +1,7 @@
 package kmlib.mods.console.commands;
 
+import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lazywizard.console.BaseCommand;
@@ -32,6 +34,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * output-injecting one used by these suites would register and then fail at the moment a player
  * typed it.
  *
+ * <p>A row can also drift in what it says rather than in what it points at: the arguments a command
+ * accepts are published here by hand and derived in the command from its own keywords, so help can
+ * go on describing a grammar the parser has moved past. That pair is pinned too.
+ *
  * <p>Reads the real data file and the real source directory rather than fixtures: a fixture would
  * agree with the code while the shipped table did not, which is precisely the failure.
  */
@@ -56,6 +62,15 @@ class ConsoleCommandsCsvIntegrationTest {
     // The first line names the columns rather than a command.
     private static final int HEADER_LINES = 1;
 
+    private static final String LIST_FACTIONS_COMMAND = "kmlib_list_factions";
+
+    // Spelled out rather than read off either surface, which is what makes the pair below a gate:
+    // a keyword added to a listing enum breaks the usage case, moving the literal breaks the table
+    // case, and the table is updated to clear it.
+    private static final String LIST_FACTIONS_SYNTAX =
+        "kmlib_list_factions [markets|hidden|discoverable|no_markets]"
+            + " [no_holdings] [no_attitude] [to_log]";
+
     // Every class the shipped table registers, in the order the file lists them. An empty answer
     // is a failure rather than a table with nothing in it: every case here walks what it is given,
     // so a read that came back with nothing would pass all of them without checking anything.
@@ -69,6 +84,24 @@ class ConsoleCommandsCsvIntegrationTest {
             throw new AssertionError("No command rows read from " + COMMANDS_CSV);
         }
         return registeredClassNames;
+    }
+
+    // The syntax column of one command's row. Cut at the quotes bounding the fields on either side
+    // of it rather than parsed as CSV: the tags before it and the help after it are the only quoted
+    // fields, and both carry commas a bare split would break on.
+    private static String readSyntaxColumnOf(String commandName) {
+
+        for (var row : readCommandRows()) {
+
+            if (!row.startsWith(commandName + ",")) {
+                continue;
+            }
+            var tagsEnd = row.indexOf("\",");
+            var helpStart = row.indexOf(",\"", tagsEnd + 2);
+
+            return row.substring(tagsEnd + 2, helpStart);
+        }
+        throw new AssertionError("No row for " + commandName + " in " + COMMANDS_CSV);
     }
 
     private static List<String> readCommandRows() {
@@ -168,6 +201,43 @@ class ConsoleCommandsCsvIntegrationTest {
                     "No public no-arg constructor on " + commandClass.getName(),
                     failure);
             }
+        }
+    }
+
+    /**
+     * The syntax the table publishes for {@code kmlib_list_factions}, and the usage line the
+     * command itself prints - one statement of the same grammar made twice.
+     *
+     * <p>The command derives its usage from the keyword enums, while the table's column is typed by
+     * hand. Only the typed one can be wrong, and nothing in play says so: a player reading help
+     * sees the table, while the parser answers to the enums. The command whose help omits an
+     * argument it accepts is the quieter half of the same drift the rest of this suite catches.
+     *
+     * <p>Both are asserted against a literal spelled out above rather than against each other,
+     * which would let the pair move together and reach a player undocumented.
+     */
+    @Nested
+    class ListFactionsSyntax {
+
+        @Test
+        void isWhatTheShippedTablePublishes() {
+
+            assertThat(readSyntaxColumnOf(LIST_FACTIONS_COMMAND))
+                .isEqualTo(LIST_FACTIONS_SYNTAX);
+        }
+
+        @Test
+        void isWhatTheCommandPrintsAsItsUsage() {
+            // Reached through the two-filter correction, the one path that prints the usage. No
+            // sector is needed for it: the command reaches the sector only after that check.
+            var outputFake = new CommandOutputFake();
+
+            new ListFactionsCommand(outputFake).runCommand(
+                "hidden discoverable",
+                BaseCommand.CommandContext.CAMPAIGN_MAP);
+
+            assertThat(outputFake.getMessages())
+                .anyMatch(message -> message.contains("Usage: " + LIST_FACTIONS_SYNTAX + "."));
         }
     }
 

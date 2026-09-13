@@ -94,18 +94,18 @@ final class ListFactionsCommandTest {
 
         @Test
         void reportsTwoFilterKeywordsAsBadSyntax() {
-            // The keywords are alternatives: a pair has no single honest answer for the
-            // systems clause, and no_markets contradicts the other three outright. The
-            // usage line is asserted as a literal because it is built from the filters
-            // rather than written out, so nothing else pins what the player is offered.
+            // The keywords are alternatives: a pair has no single honest answer for the systems
+            // clause, and no_markets contradicts the other three outright. Asserted as far as the
+            // correction naming the mistake and carrying the usage after it - what that usage
+            // actually offers is one grammar stated on two surfaces, and is pinned where both are
+            // read together rather than restated here.
             var result = command.runCommand("hidden discoverable", CommandContext.CAMPAIGN_MAP);
 
             assertThat(result)
                 .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("Give at most one filter. "
-                    + "Usage: kmlib_list_factions [markets|hidden|discoverable|no_markets] "
-                    + "[no_holdings] [no_attitude] [to_log]."));
+                .anyMatch(message ->
+                    message.contains("Give at most one filter. Usage: kmlib_list_factions "));
         }
 
         // Every option spelled out, each asserted to reach the run rather than to be reported as a
