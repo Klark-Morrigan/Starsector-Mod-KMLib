@@ -1,14 +1,8 @@
 # Changelog
 
-All notable changes to KMLib are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
-adheres to [Semantic Versioning](https://semver.org/). Versioning triggers
-for KMLib and its consumer mods are defined in
-[docs/dev/versioning.md](docs/dev/versioning.md).
+All notable changes to KMLib are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/). Versioning triggers for KMLib and its consumer mods are defined in [docs/dev/versioning.md](docs/dev/versioning.md).
 
-The reusable release workflow extracts the section matching the released
-version into the GitHub release body, so every released version must have a
-section here.
+The reusable release workflow extracts the section matching the released version into the GitHub release body, so every released version must have a section here.
 
 ## Index
 
@@ -19,18 +13,13 @@ section here.
 
 ## [0.1.0] - Unreleased
 
-First tagged release, so there is no prior version to diff against: this is the
-whole public surface - the commands a player types, the packages a consumer
-imports, and the test fixtures that ship as a second artifact for consumers' own
-suites.
+First tagged release, so there is no prior version to diff against: this is the whole public surface - the commands a player types, the packages a consumer imports, and the test fixtures that ship as a second artifact for consumers' own suites.
 
 ### Added
 
 #### Console commands
 
-Seven campaign-only commands, registered through `data/console/commands.csv` and
-reached only where Console Commands is installed. Both colony commands defer to
-Nexerelin's own colonisation and transfer where that mod is enabled.
+Seven campaign-only commands, registered through `data/console/commands.csv` and reached only where Console Commands is installed. Both colony commands defer to Nexerelin's own colonisation and transfer where that mod is enabled.
 
 - `kmlib_activate_gate`
 - `kmlib_colonise`
@@ -70,8 +59,7 @@ No Starsector API on the signature.
 
 #### Starsector-facing wrappers and seams
 
-- `kmlib` - the mod plugin the launcher loads, rather than a package a consumer
-  imports
+- `kmlib` - the mod plugin the launcher loads, rather than a package a consumer imports
 - `kmlib.mods.console`
 - `kmlib.mods.console.commands`
 - `kmlib.mods.console.commands.input`
@@ -141,9 +129,7 @@ No Starsector API on the signature.
 
 #### Test fixtures
 
-Shipped as a second artifact beside the jar, for a consumer's own suites. Fakes
-stand in for a seam the library inverted; fixtures build a world a case is posed
-against.
+Shipped as a second artifact beside the jar, for a consumer's own suites. Fakes stand in for a seam the library inverted; fixtures build a world a case is posed against.
 
 - `kmlib.testfixtures.logging`
 - `kmlib.testfixtures.mods.console`
