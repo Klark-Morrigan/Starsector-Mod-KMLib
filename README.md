@@ -224,10 +224,9 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
 
 One line each,
 saying what the package is for.
-Where a package has more behind it than a line can carry,
+Every package the jar ships has a line here;
+where a package has more behind it than a line can carry,
 the line ends with where to read it.
-The current release's full inventory is in the
-[changelog](CHANGELOG.md#010---2026-08-30).
 
 #### Game-agnostic helpers
 
