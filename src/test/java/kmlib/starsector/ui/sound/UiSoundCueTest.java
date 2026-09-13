@@ -81,7 +81,7 @@ final class UiSoundCueTest {
         @Test
         void constructorRejectsACueWithNoRole() {
             // A silent moment is a null cue, stated by the scheme, so a cue holding no role is a look
-            // that meant to sound and left out what with - which would otherwise surface as a null id
+            // that meant to sound and left out what with - which would otherwise surface as a null ID
             // inside a draw-time play call.
             assertThatThrownBy(() -> new UiSoundCue(null, UiSoundCue.FULL_VOLUME))
                 .isInstanceOf(NullPointerException.class)
@@ -103,7 +103,7 @@ final class UiSoundCueTest {
         @Test
         void constructorRejectsANegativeVolume() {
             // Below zero the engine has no meaning for the value and simply plays whatever it makes of
-            // it, so the fault would be as quiet as a wrong id - caught where the value is written.
+            // it, so the fault would be as quiet as a wrong ID - caught where the value is written.
             assertThatThrownBy(() -> new UiSoundCue(StarsectorUiSound.BUTTON_PRESSED, -0.5f))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("volume");

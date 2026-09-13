@@ -38,7 +38,7 @@ public final class MarketPlacementFixture {
     }
 
     /**
-     * A market on a body of its own, fixed at a location and answering to an id - the pair a
+     * A market on a body of its own, fixed at a location and answering to an ID - the pair a
      * nearest search ranks by and settles its ties on. Wired both ways, so the market is
      * reachable whether a read meets it through the economy or by walking the location.
      */
@@ -47,7 +47,7 @@ public final class MarketPlacementFixture {
     }
 
     /**
-     * A market on a body that sits nowhere in particular: an entity with an id and no location,
+     * A market on a body that sits nowhere in particular: an entity with an ID and no location,
      * which is every case about what is present rather than what is nearest.
      */
     public static MarketAPI buildMarketOnBody(String bodyId) {

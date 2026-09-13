@@ -44,8 +44,8 @@ final class ListPickerControlTest {
         new ListSortModes<>(MODES, AnomalySortMode.ALPHA);
 
     // The two items the picker lists in every test: a crested one that is harsher and wider and a
-    // crestless one, so the null-crest path is exercised. Their ids differ from their labels, so a
-    // row lit by id cannot be passing by matching a label.
+    // crestless one, so the null-crest path is exercised. Their IDs differ from their labels, so a
+    // row lit by ID cannot be passing by matching a label.
     private static final Anomaly STORM = new Anomaly("storm_1", "Storm", "crest_storm", 9, 8);
     private static final Anomaly DRIFT = new Anomaly("drift_1", "Drift", null, 2, 3);
 
@@ -376,7 +376,7 @@ final class ListPickerControlTest {
 
         @Test
         void buildPickerLightsTheSpotlightedItemsRow() {
-            // The lit row is resolved by the selected id, not by the label the row draws, so an id
+            // The lit row is resolved by the selected ID, not by the label the row draws, so an ID
             // that matches no label still lights its own item's row wherever the ranking put it.
             var picker = buildPickerFor(build(ANOMALIES, "storm_1", AnomalySortMode.ALPHA));
 
@@ -387,7 +387,7 @@ final class ListPickerControlTest {
 
         @Test
         void buildPickerLightsNoRowWhenTheSelectedItemIsNotInTheList() {
-            // A stale selected id (the caller's heal has not run, or the item lapsed mid-session)
+            // A stale selected ID (the caller's heal has not run, or the item lapsed mid-session)
             // lights nothing, so the list still shows every real option to pick from.
             var picker = buildPickerFor(build(ANOMALIES, "vanished", AnomalySortMode.ALPHA));
 
@@ -465,7 +465,7 @@ final class ListPickerControlTest {
 
             picker.action().activateCell(0);
 
-            // The item's own id is what is reported, not its label or its row index.
+            // The item's own ID is what is reported, not its label or its row index.
             assertThat(pickerStoreFake.pickedItemIds)
                 .containsExactly("drift_1");
             assertThat(pickerStoreFake.pickClearCount)

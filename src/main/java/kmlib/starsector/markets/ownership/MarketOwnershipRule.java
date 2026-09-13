@@ -38,7 +38,7 @@ import kmlib.starsector.markets.Markets;
  */
 public final class MarketOwnershipRule {
 
-    // Vanilla's own id for the tariff modifier a colony's base tax rate is filed under. No ids
+    // Vanilla's own ID for the tariff modifier a colony's base tax rate is filed under. No IDs
     // class names it - both of vanilla's colonisation routines write the literal - so this is
     // the named home for it. The same key is rewritten on every ownership change rather than a
     // new one added: a flat modifier is keyed by its source, so writing it again replaces the
@@ -63,11 +63,11 @@ public final class MarketOwnershipRule {
      * <p>The outgoing owner is read first and nothing else is: an installed submarket rule may
      * treat a colony that has actually changed hands differently from one restated under the owner
      * it already had, and the one thing that says which this is stops being readable the moment the
-     * incoming id lands. Everything after that reads the market rather than the argument, so the
+     * incoming ID lands. Everything after that reads the market rather than the argument, so the
      * market is coherent from the first mutation onwards and the tariff is charged at the incoming
      * owner's rate rather than the outgoing one's.
      *
-     * <p>Who counts as the player is decided by the id alone. Nexerelin's own submarket rule
+     * <p>Who counts as the player is decided by the ID alone. Nexerelin's own submarket rule
      * additionally accepts a market that already reports itself player-owned, which serves its
      * case of the player running a faction of their own; here it would be a trap, because this
      * method is what sets that flag - reading it back would make the player arm sticky and a
@@ -76,7 +76,7 @@ public final class MarketOwnershipRule {
      * run: what it reads back is the incoming owner, not the outgoing one.
      *
      * @param market    the market changing hands; null is left alone
-     * @param factionId the incoming owner's faction id, {@link Factions#PLAYER} for the player;
+     * @param factionId the incoming owner's faction ID, {@link Factions#PLAYER} for the player;
      *                  null leaves the market alone rather than unowning it
      */
     public static void applyOwnership(MarketAPI market, String factionId) {
@@ -94,7 +94,7 @@ public final class MarketOwnershipRule {
             return;
         }
 
-        // Read before the incoming id lands, because it is gone the moment it does. A rule an
+        // Read before the incoming ID lands, because it is gone the moment it does. A rule an
         // install supplies may restock the counters only where the colony has actually changed
         // hands, and the outgoing owner is the only thing that says whether it has.
         var outgoingFactionId = market.getFactionId();
@@ -107,10 +107,10 @@ public final class MarketOwnershipRule {
         applyOwnerTariff(market);
     }
 
-    // Whether the id names the player, which is the whole of the axis every aspect below turns on.
-    // Asked of the id at each point of use rather than worked out once and handed down: a colony is
+    // Whether the ID names the player, which is the whole of the axis every aspect below turns on.
+    // Asked of the ID at each point of use rather than worked out once and handed down: a colony is
     // the player's because of who owns it, so an aspect deciding otherwise from a flag it was
-    // passed is an aspect free to disagree with the id the change was made under.
+    // passed is an aspect free to disagree with the ID the change was made under.
     private static boolean isHeldByPlayer(String factionId) {
         return Factions.PLAYER.equals(factionId);
     }
@@ -265,7 +265,7 @@ public final class MarketOwnershipRule {
     }
 
     // The tax rate the new owner levies, read off the market once it flies their flag rather than
-    // off the id passed in - the faction is what carries the fraction, and vanilla's own
+    // off the ID passed in - the faction is what carries the fraction, and vanilla's own
     // colonisation reads it the same way round.
     private static void applyOwnerTariff(MarketAPI market) {
 

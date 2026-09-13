@@ -49,7 +49,7 @@ public final class MarketOwnershipTransfer {
 
     // The engine's own setting for how many times a month the economy is stepped. The last of those
     // steps is the one a counter's outstanding account is billed on, so the number is what says
-    // which step to ask for - no ids class names the key, so this is the named home for it.
+    // which step to ask for - no IDs class names the key, so this is the named home for it.
     private static final String ECONOMY_ITERATIONS_PER_MONTH_SETTING = "economyIterPerMonth";
 
     // What the outgoing owner's unrest is settled to. A colony's unrest is a record of how its
@@ -106,8 +106,8 @@ public final class MarketOwnershipTransfer {
      *                  passed on rather than read there. Null is passed on too, and a routine
      *                  needing it declines
      * @param market    the colony changing hands; null is left alone
-     * @param factionId the incoming owner's faction id; null leaves the colony alone rather than
-     *                  detaching it from an owner and giving it to nobody, as does the id of the
+     * @param factionId the incoming owner's faction ID; null leaves the colony alone rather than
+     *                  detaching it from an owner and giving it to nobody, as does the ID of the
      *                  faction already holding it
      */
     public static void transferOwnership(SectorAPI sector, MarketAPI market, String factionId) {

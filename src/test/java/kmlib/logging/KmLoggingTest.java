@@ -106,7 +106,7 @@ final class KmLoggingTest {
 
         @Test
         void bindingIgnoresChangesToOtherModsSettings() {
-            // A change notification carrying a different mod id must not retune
+            // A change notification carrying a different mod ID must not retune
             // this binding's logger subtree, so its explicit level stays unset.
             var root = Logger.getLogger("kmlibtest_filter_root");
             var binding =

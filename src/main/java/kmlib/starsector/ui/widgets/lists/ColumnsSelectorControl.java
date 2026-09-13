@@ -13,8 +13,8 @@ import java.util.function.Consumer;
  * per-frame body build then re-wraps its list under it, so the selector and the list always agree on
  * how many columns the rows spread across.
  *
- * <p>The caption arrives as drawn text rather than as a string id, for the same reason
- * {@link ListSortMode} hands its labels over drawn: a string id only means something against the mod
+ * <p>The caption arrives as drawn text rather than as a string ID, for the same reason
+ * {@link ListSortMode} hands its labels over drawn: a string ID only means something against the mod
  * category that registered it. The segment labels are the counts themselves and need no such
  * hand-over ({@link ListColumns#resolveLabelText()}).
  *

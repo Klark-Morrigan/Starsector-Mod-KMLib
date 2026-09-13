@@ -55,8 +55,8 @@ public class ColonyFixture {
     /**
      * Opens a sector holding exactly one system.
      *
-     * @param systemId the system's id, as {@code StarSystemAPI#getId} reports it; null poses a
-     *                 system answering to no id at all
+     * @param systemId the system's ID, as {@code StarSystemAPI#getId} reports it; null poses a
+     *                 system answering to no ID at all
      */
     public ColonyFixture(String systemId) {
 

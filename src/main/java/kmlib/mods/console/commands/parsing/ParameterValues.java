@@ -11,8 +11,8 @@ public final class ParameterValues {
     private ParameterValues() {
     }
 
-    // Identity parser: any token is already a valid free-form id, so this never
-    // fails - the command resolves the id later against live state.
+    // Identity parser: any token is already a valid free-form ID, so this never
+    // fails - the command resolves the ID later against live state.
     public static ValueParser<String> text() {
         return raw -> raw;
     }

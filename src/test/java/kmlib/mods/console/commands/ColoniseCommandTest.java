@@ -215,7 +215,7 @@ final class ColoniseCommandTest {
         }
     }
 
-    // Has the search answer with this suite's market held by a faction under the given id and
+    // Has the search answer with this suite's market held by a faction under the given ID and
     // display name, which is what the success message is built from.
     private void answerWithFaction(String factionId, String displayName) {
 

@@ -27,7 +27,7 @@ import org.apache.log4j.Logger;
  * API and so survives the obfuscator's reshuffling of the tab classes' own names between game
  * builds. That is a test of what the widget <em>is</em> rather than of which core tab the campaign
  * UI reports, and the difference matters: the widget is what a layout rule is applied to, so a rule
- * rooted at whatever the tab id named would be rooted at a tab that may not be a map at all.
+ * rooted at whatever the tab ID named would be rooted at a tab that may not be a map at all.
  *
  * <p>The visor is asked second and only when the current tab is not itself a map, because the intel
  * screen hosts its map below a tab that is not one. Its own read fails closed to "no visor" off that

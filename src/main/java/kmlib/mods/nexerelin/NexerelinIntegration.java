@@ -33,7 +33,7 @@ public final class NexerelinIntegration {
     private static final Logger LOG = Global.getLogger(NexerelinIntegration.class);
 
     // What this integration is called in a line about what is founding colonies or moving them on
-    // this install. The mod's own name rather than its id: what a log line is read for here is
+    // this install. The mod's own name rather than its ID: what a log line is read for here is
     // which mod is doing the work, and that is the name the reader knows it by.
     private static final String INTEGRATION_NAME = "Nexerelin";
 

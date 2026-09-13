@@ -210,7 +210,7 @@ final class MarketColocationTest {
 
         @Test
         void passesThroughMarketsOnOneEntityWhoseOwnerHasNoId() {
-            // An owner with no id cannot be told apart from any other, so keying on it
+            // An owner with no ID cannot be told apart from any other, so keying on it
             // would merge places that share nothing but an unreadable faction.
             var station = buildPlaceEntity();
             var unnamedOwner = buildFaction(null);

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins which of a picker's three live values may be absent: the spotlighted id, and only that one.
+ * Pins which of a picker's three live values may be absent: the spotlighted ID, and only that one.
  * A reading assembled without a sort or a column count is rejected where it is built, since both are
  * always in force wherever a list is drawn at all.
  */

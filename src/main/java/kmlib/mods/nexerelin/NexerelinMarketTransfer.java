@@ -88,10 +88,10 @@ public final class NexerelinMarketTransfer {
      * @param sector    the sector holding the faction the colony is being handed to; null is
      *                  declined
      * @param market    the colony changing hands; null is declined, as is one flying no flag at all,
-     *                  the mod's routine reading the outgoing owner's id off it
-     * @param factionId the incoming owner's faction id; null is declined, and so is an id no
+     *                  the mod's routine reading the outgoing owner's ID off it
+     * @param factionId the incoming owner's faction ID; null is declined, and so is an ID no
      *                  faction answers to - the routine reads that mod's own configuration and
-     *                  tariffs off the faction rather than off an id
+     *                  tariffs off the faction rather than off an ID
      * @return the hand-over performed by Nexerelin, or a decline naming what about this call it
      *         could not move - the colony left exactly as it was either way
      */
@@ -118,7 +118,7 @@ public final class NexerelinMarketTransfer {
                 + "', and Nexerelin's own hand-over reads its configuration and standing off one");
         }
 
-        // Both owners reach the routine as factions rather than ids: it reads each one's
+        // Both owners reach the routine as factions rather than IDs: it reads each one's
         // configuration, colours and remaining holdings, so an owner it cannot resolve is a decline
         // rather than a hand-over that dies partway through.
         var outgoingOwner = market.getFaction();

@@ -14,7 +14,7 @@ import java.util.List;
  * the save-stable key its choice persists under, the drawn label its selector row shows, the
  * direction it naturally runs in, and the comparator that lays the list out under it.
  *
- * <p>The label arrives already resolved rather than as a string id, because a string id only means
+ * <p>The label arrives already resolved rather than as a string ID, because a string ID only means
  * something against the mod category that registered it and this package is deliberately mod-agnostic
  * about strings ({@link kmlib.starsector.strings.StarsectorStrings} takes {@code (category, key)} on
  * every call). So the declaring consumer looks its own label up and hands over drawn text.

@@ -15,7 +15,7 @@ import com.fs.starfarer.api.Global;
  */
 public final class VanillaUiSoundPlayer implements UiSoundPlayer {
 
-    // The engine scales the id's configured pitch by this, so a KM sound is the sample vanilla recorded
+    // The engine scales the ID's configured pitch by this, so a KM sound is the sample vanilla recorded
     // rather than one bent by us. Only the volume is ours to scale, and that arrives with the cue.
     private static final float CONFIGURED_PITCH = 1f;
 
@@ -26,7 +26,7 @@ public final class VanillaUiSoundPlayer implements UiSoundPlayer {
         if (soundPlayer == null) {
             return;
         }
-        // Multiplied against the id's own configured volume by the engine, so what the cue names is a
+        // Multiplied against the ID's own configured volume by the engine, so what the cue names is a
         // scale over vanilla's balance for that sample rather than an absolute level laid over it - which
         // is what keeps a restyled install's own mix intact under a quietened panel.
         soundPlayer.playUISound(

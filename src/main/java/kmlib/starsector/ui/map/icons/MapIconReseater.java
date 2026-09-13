@@ -164,7 +164,7 @@ public final class MapIconReseater implements EveryFrameScript {
     }
 
     // Names what a reader can match against the icon-order trace, which reports the plugin class
-    // rather than an entity id - the id being absent on the decorative entities this tends to move.
+    // rather than an entity ID - the ID being absent on the decorative entities this tends to move.
     private static String describeEntity(SectorEntityToken entity) {
         return entity == null ? "no entity" : entity.getClass().getSimpleName();
     }

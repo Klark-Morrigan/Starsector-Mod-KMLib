@@ -58,19 +58,19 @@ public record MarketlessEntity(
      * applies its own concealment over this, there being no way back to the true owner once a
      * reading has substituted a neutral one.
      *
-     * @return the owning faction's id, or null where the entity names no faction
+     * @return the owning faction's ID, or null where the entity names no faction
      */
     public String readOwnerId() {
         return Entities.readFactionId(entity);
     }
 
     /**
-     * Which kind of entity this is, as the id the game builds it from.
+     * Which kind of entity this is, as the ID the game builds it from.
      *
-     * <p>The id rather than the spec's name, because this is what a classification keyed on entity
+     * <p>The ID rather than the spec's name, because this is what a classification keyed on entity
      * type matches against; a caller printing a label reads the spec instead.
      *
-     * @return the custom entity type id, or null where the entity carries none
+     * @return the custom entity type ID, or null where the entity carries none
      */
     public String readTypeId() {
         return entity.getCustomEntityType();

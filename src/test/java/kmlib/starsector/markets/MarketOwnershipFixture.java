@@ -44,7 +44,7 @@ import static org.mockito.Mockito.withSettings;
  *
  * <p>Two owners exist here, the player and one faction, and their tariff rates differ. Equal rates
  * would let a run that never recomputed the tariff pass, since the number already on the market
- * would be the number expected of it. A colony posed under any other id has no faction to read.
+ * would be the number expected of it. A colony posed under any other ID has no faction to read.
  *
  * <p>Separate from {@link MarketStateFixture}, which poses what kind of market a state read is
  * asked about, and from {@link MarketPlacementFixture}, which poses where one sits. Neither is
@@ -130,7 +130,7 @@ public final class MarketOwnershipFixture {
         return (StoragePlugin) market.getSubmarket(Submarkets.SUBMARKET_STORAGE).getPlugin();
     }
 
-    /** The flag an entity flies now, as the faction id, or null while it flies none. */
+    /** The flag an entity flies now, as the faction ID, or null while it flies none. */
     public static String readFactionId(SectorEntityToken entity) {
         return entity.getFaction() == null
             ? null
@@ -185,8 +185,8 @@ public final class MarketOwnershipFixture {
             .thenReturn(connectedEntities);
     }
 
-    // Who holds the colony, as the two reads that have to move together: the id it was last
-    // given, and the mark saying that id is the player's. Held apart in the market's own state
+    // Who holds the colony, as the two reads that have to move together: the ID it was last
+    // given, and the mark saying that ID is the player's. Held apart in the market's own state
     // rather than derived from each other, so a rule that sets one and forgets the other is
     // visible to a case instead of being papered over here.
     //
@@ -239,7 +239,7 @@ public final class MarketOwnershipFixture {
     }
 
     // The counters the colony trades over, opened and closed as it changes hands. A counter
-    // opened twice yields the same one back, because the map is keyed by submarket id - which is
+    // opened twice yields the same one back, because the map is keyed by submarket ID - which is
     // what lets a case tell a counter left alone from one closed and opened again.
     public static void stubSubmarkets(
             MarketAPI marketMock,

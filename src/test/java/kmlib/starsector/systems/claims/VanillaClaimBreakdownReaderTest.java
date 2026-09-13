@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.tuple;
  * since both read as drift to anyone checking the two side by side, and would otherwise be quietly
  * "corrected" back into a mechanic that leaves real colonies out of its account.
  *
- * <p>What identifies a market rather than scoring it - its id, its name and the glyph the map marks
+ * <p>What identifies a market rather than scoring it - its ID, its name and the glyph the map marks
  * its entity with - is pinned here too, since a surface listing the markets behind a standing reads
  * them off this walk rather than looking the market up again. That reading them changes no outcome
  * is asserted head-on beside them.
@@ -161,7 +161,7 @@ final class VanillaClaimBreakdownReaderTest {
             // A surface pairing a claim row back to anything else it knows about the system - how
             // old its news of that colony is, say - needs an identity rather than a label, and
             // vanilla names a station colony and its defending station alike. Read on the walk
-            // that met the market, so the id and the name on a row describe one colony.
+            // that met the market, so the ID and the name on a row describe one colony.
             var hegemony = claimContest.buildFaction("hegemony", true);
             var colony = claimContest.buildMarket(hegemony, 5);
             var defendingStation = claimContest.buildMarket(hegemony, 3);

@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
  */
 final class MarketOwnershipRuleTest {
 
-    // Vanilla's own id for the tariff modifier, spelt here rather than read off the class under
+    // Vanilla's own ID for the tariff modifier, spelt here rather than read off the class under
     // test: what is being pinned is that the rule writes the key vanilla's colonisation writes, and
     // a case reading the key from the code it checks would pass under any key at all.
     private static final String DEFAULT_TARIFF_MODIFIER_ID = "default_tariff";
@@ -306,7 +306,7 @@ final class MarketOwnershipRuleTest {
         void namesTheOutgoingOwnerToTheInstalledRuleAsWellAsTheIncomingOne() {
             // A rule may restock the counters only where the colony has actually changed hands, and
             // the outgoing owner is the only thing that says whether it has - so it is read before
-            // the incoming id lands rather than after, when it is gone.
+            // the incoming ID lands rather than after, when it is gone.
             var market = MarketOwnershipFixture.buildColonyHeldBy(
                 MarketOwnershipFixture.FACTION_OWNER_ID);
 

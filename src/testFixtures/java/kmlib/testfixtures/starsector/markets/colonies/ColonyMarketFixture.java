@@ -28,7 +28,7 @@ public final class ColonyMarketFixture {
     // of two markets on one place wins, so a case not posing that collision is not about size.
     public static final int DEFAULT_COLONY_SIZE = 3;
 
-    // How many markets have been built, so each takes an id no other one answers to.
+    // How many markets have been built, so each takes an ID no other one answers to.
     private static int builtMarketCount;
 
     private ColonyMarketFixture() {
@@ -304,9 +304,9 @@ public final class ColonyMarketFixture {
     // owner needs them to share the very object: a mechanic that groups by faction identity, or a
     // palette stubbed on it, sees nothing if each market carries a faction of its own.
     //
-    // Every market answers to an id of its own. Almost nothing reads it, and a mock answers null
+    // Every market answers to an ID of its own. Almost nothing reads it, and a mock answers null
     // until asked otherwise - which would have every market built here share one key in any
-    // register keyed by colony id, so marking one seen would mark the lot.
+    // register keyed by colony ID, so marking one seen would mark the lot.
     public static MarketAPI buildColonyOnItsOwnEntity(
             FactionAPI faction,
             int size,
@@ -356,7 +356,7 @@ public final class ColonyMarketFixture {
      * so a fixture that had neutral deny being neutral would pose an unowned hulk as a station
      * somebody keeps.
      *
-     * @param id the faction id
+     * @param id the faction ID
      * @return the faction mock, for a caller that means several markets to share one owner
      */
     public static FactionAPI buildFaction(String id) {

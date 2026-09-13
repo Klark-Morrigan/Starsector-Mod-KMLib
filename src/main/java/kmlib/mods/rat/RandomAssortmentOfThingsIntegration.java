@@ -34,7 +34,7 @@ public final class RandomAssortmentOfThingsIntegration {
     private static final Logger LOG = Global.getLogger(RandomAssortmentOfThingsIntegration.class);
 
     // What this integration is called in a line about what makes a system reachable on this
-    // install. The mod's name rather than its id: what such a line is read for is which mod is
+    // install. The mod's name rather than its ID: what such a line is read for is which mod is
     // supplying the way in, and that is the name the reader knows it by.
     private static final String INTEGRATION_NAME = "Random Assortment of Things";
 

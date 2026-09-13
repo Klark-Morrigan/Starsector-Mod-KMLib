@@ -290,7 +290,7 @@ final class MarketsTest {
         }
     }
 
-    // The colonies here answer a faction id rather than only a faction object, which is what this
+    // The colonies here answer a faction ID rather than only a faction object, which is what this
     // read asks for and what an ownership change writes - so they are MarketOwnershipFixture's.
     @Nested
     class IsOwnedBy {
@@ -314,7 +314,7 @@ final class MarketsTest {
         @Test
         void readsAColonyAsHeldByNobodyWhenNoFactionIsNamed() {
             // Asking whether a colony is held by nobody is not a question about its owner, and an
-            // operation guarding on this must not read a missing id as a match.
+            // operation guarding on this must not read a missing ID as a match.
             assertThat(Markets.isOwnedBy(
                     MarketOwnershipFixture.buildColonyHeldBy("hegemony"),
                     null))

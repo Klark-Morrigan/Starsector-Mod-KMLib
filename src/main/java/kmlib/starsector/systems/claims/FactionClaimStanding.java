@@ -25,7 +25,7 @@ public sealed interface FactionClaimStanding
     permits WeighedClaimStanding, PresenceOnlyClaimStanding {
 
     /**
-     * @return the id of the faction this standing belongs to
+     * @return the ID of the faction this standing belongs to
      */
     String factionId();
 

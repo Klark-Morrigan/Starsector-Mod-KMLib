@@ -26,7 +26,7 @@ public record MarketOwnerTarget(
      * <p>Not {@code getDisplayName()}, because the player's own faction reports a placeholder
      * until it has an identity of its own - "Independent" before the first colony, and the
      * literal "player" on a stock Nexerelin setup - either of which reads in a sentence as
-     * somebody else entirely. The id stands in until then, that being what was typed to name the
+     * somebody else entirely. The ID stands in until then, that being what was typed to name the
      * faction in the first place.
      *
      * @return the owner's name for prose

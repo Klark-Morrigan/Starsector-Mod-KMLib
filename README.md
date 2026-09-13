@@ -74,7 +74,7 @@ so an install without any of them is ordinary
 What the game reads:
 
 - [`mod_info.json`](mod_info.json) -
-  mod id,
+  mod ID,
   version,
   dependencies,
   and the plugin class the launcher loads.
@@ -192,7 +192,7 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   delegating to [`mod-release.yml`](.github/workflows/mod-release.yml),
   the reusable pipeline this repo hosts for the whole KM series.
 - [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
-  derives mod id,
+  derives mod ID,
   version,
   runner label,
   dist dir,
@@ -437,10 +437,10 @@ No Starsector API on the signature.
   what a command was pointed at,
   found or refused with a reason under one sealed answer:
   which place -
-  named by id anywhere in the sector,
+  named by ID anywhere in the sector,
   or the nearest one meeting what the command needs of it -
   and which faction it acts for,
-  named by id or the player's own.
+  named by ID or the player's own.
 - [`mods/console/commands/validation/`](src/main/java/kmlib/mods/console/commands/validation/) -
   the context checks a command runs before it does anything,
   with the player-facing feedback they print.
@@ -531,7 +531,7 @@ No Starsector API on the signature.
   Beside it,
   the same relation worded the way the engine words it;
   whether a disposition clears the scale's own step from indifference to goodwill,
-  asked of a faction in hand or as a pair test over ids bound to one sector,
+  asked of a faction in hand or as a pair test over IDs bound to one sector,
   so a caller composing dispositions takes the read rather than writing the lookup;
   the continuous relation ramp -
   a relationship value as the shade the engine paints it,
@@ -647,7 +647,7 @@ No Starsector API on the signature.
   answered the same way for every optional-mod gate
   and answering "not installed" before the game is up;
   and the source a piece of game data was read from,
-  named for a player and carrying the mod id where the manager accounts for one.
+  named for a player and carrying the mod ID where the manager accounts for one.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) -
   defensive wrapper around settings.json localisation lookups
   (loud REDACTED on missing or malformed entries),
@@ -656,7 +656,7 @@ No Starsector API on the signature.
   star system queries at two altitudes,
   the sector's whole set and one system a caller holds.
   Plus the per-pass index that holds a rebuild to one walk per system however many readers ask,
-  the key that tells apart the systems a modded sector lists under one id,
+  the key that tells apart the systems a modded sector lists under one ID,
   the memo every per-system value is remembered through,
   motion tracking across hyperspace,
   and the register of the means of arrival the engine does not model,
@@ -928,14 +928,14 @@ which needs Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 and emits what every other workflow derives from it by convention -
 its `outputs:` block is the statement of that convention:
 
-- The mod id and version verbatim,
+- The mod ID and version verbatim,
   the `<mod-id>-runner` label,
   the first declared jar,
   and the repos to clone beside the checkout.
 - The shipped folder name,
   the `dist/<mod-folder-name>/` directory
   and the `<mod-folder-name>-<version>.zip` release name,
-  all named after that jar rather than after the mod id,
+  all named after that jar rather than after the mod ID,
   so a zip install and a hand-deployed one share one folder layout.
 - `version-file-name` goes the other way,
   `<mod-id>.version`,
@@ -1309,11 +1309,11 @@ since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
 [`starsector/systems/`](src/testFixtures/java/kmlib/testfixtures/starsector/systems/)
 poses star systems the way the sector holds them -
-an id,
+an ID,
 a place in hyperspace,
-and the centre and anchor that tell two systems sharing an id apart -
+and the centre and anchor that tell two systems sharing an ID apart -
 with identity and placement as separate calls,
-so a read over ids needs no coordinates invented for it.
+so a read over IDs needs no coordinates invented for it.
 
 They are a source set of their own,
 published as a variant beside the jar.
@@ -1339,7 +1339,7 @@ so the published surface stays a decision rather than a default.
 
 | Command | Syntax | What it does |
 | --- | --- | --- |
-| `kmlib_activate_gate` | `<id>` | Activates the gate with that id in the current system. |
+| `kmlib_activate_gate` | `<id>` | Activates the gate with that ID in the current system. |
 | `kmlib_colonise` | `[entity-id] [faction-id]` | Founds a colony on a body that so far carries only survey data, skipping the survey, the outpost cost and the proximity the survey panel asks for. |
 | `kmlib_list_factions` | `[markets\|hidden\|discoverable\|no_markets] [no_holdings] [no_attitude] [to_log]` | Lists every faction with the mod that declared it and what it holds - how many places, how many hidden, how many still to find, and the systems they sit in. The three options drop the holdings line, drop the attitude, and write to the game log. |
 | `kmlib_list_map_spoilers` | *no arguments* | Lists faction-owned systems as a tree of system, entities and factions, flagging cut-off systems and undiscovered markets. |

@@ -24,12 +24,12 @@ Nothing in this package names the Starsector API or any mod.
 
 - **A presence gate**,
   one per mod,
-  holding that mod's id in one place -
+  holding that mod's ID in one place -
   `NexerelinPresence`,
   `RandomAssortmentOfThingsPresence`,
   `ConsoleCommandsPresence`.
-  Gate and id are both public,
-  so a consuming mod integrating with the same mod asks here rather than writing the id again.
+  Gate and ID are both public,
+  so a consuming mod integrating with the same mod asks here rather than writing the ID again.
 - **An adapter** in that mod's own package under `kmlib.mods`,
   which is where every one of these lives and the only place in the library allowed to name a mod -
   `kmlib.starsector` is closed to that subtree by the layering gate,

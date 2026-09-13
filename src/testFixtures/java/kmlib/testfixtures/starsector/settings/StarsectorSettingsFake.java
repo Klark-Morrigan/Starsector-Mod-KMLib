@@ -67,7 +67,7 @@ public final class StarsectorSettingsFake {
     /**
      * Pluggable adapter for {@link com.fs.starfarer.api.ModManagerAPI#isModEnabled(String)}, for a
      * test whose subject gates on another mod being installed. Implementations answer for the mod
-     * ids they know and {@code false} for the rest, which is what an install without those mods
+     * IDs they know and {@code false} for the rest, which is what an install without those mods
      * reports.
      */
     @FunctionalInterface

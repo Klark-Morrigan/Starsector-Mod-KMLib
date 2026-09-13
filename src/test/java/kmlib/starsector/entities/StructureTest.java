@@ -115,8 +115,8 @@ final class StructureTest {
 
         @Test
         void reportsATaggedVariantAsMakeshift() {
-            // Off the tag rather than off the entity id, so a mod's own improvised variant reads
-            // true without this having to know its id - which is the same reasoning that makes
+            // Off the tag rather than off the entity ID, so a mod's own improvised variant reads
+            // true without this having to know its ID - which is the same reasoning that makes
             // the objective tag the selection rule rather than a list of six ids.
             var entityMock = buildStructureEntity();
 

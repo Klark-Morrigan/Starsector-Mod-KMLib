@@ -10,11 +10,11 @@ import kmlib.starsector.markets.colonisation.MarketColoniser;
 
 /**
  * Console command (cheat): founds a colony on a body that so far carries only survey data. Takes
- * an optional entity id and an optional owning faction id, so a bare invocation colonises the
+ * an optional entity ID and an optional owning faction ID, so a bare invocation colonises the
  * nearest such body for the player.
  *
  * <p>Named, a body can be colonised from anywhere - another system, or hyperspace - since an
- * entity id points at one place in the whole sector. Only the bare invocation needs the player to
+ * entity ID points at one place in the whole sector. Only the bare invocation needs the player to
  * be in a star system, "nearest" having nowhere to measure from otherwise. That is one condition
  * of the search rather than of the command, so it is stated where the search is and this command
  * guards only on being in a campaign.

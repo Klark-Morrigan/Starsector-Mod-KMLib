@@ -51,9 +51,9 @@ public final class KmLogging {
     /**
      * Registers a live binding using the library default level
      * ({@link #DEFAULT_LEVEL}) as the fallback. Preferred entry point: a mod
-     * states only its own id, package, and field, never a default level.
+     * states only its own ID, package, and field, never a default level.
      *
-     * @param modId      the mod's LunaLib settings id; also the filter that
+     * @param modId      the mod's LunaLib settings ID; also the filter that
      *                   restricts the binding to this mod's own changes
      * @param loggerRoot the mod's top package (e.g. {@code "kmu"})
      * @param fieldId    the LunaSettings field holding the level name
@@ -72,7 +72,7 @@ public final class KmLogging {
      * Takes an explicit fallback for the rare mod that wants a default other
      * than {@link #DEFAULT_LEVEL}.
      *
-     * @param modId      the mod's LunaLib settings id; also the filter that
+     * @param modId      the mod's LunaLib settings ID; also the filter that
      *                   restricts the binding to this mod's own changes
      * @param loggerRoot the mod's top package (e.g. {@code "kmu"}); its logger
      *                   and, by inheritance, every logger beneath it take the

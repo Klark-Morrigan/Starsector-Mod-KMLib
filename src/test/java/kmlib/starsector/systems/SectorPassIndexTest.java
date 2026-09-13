@@ -114,8 +114,8 @@ final class SectorPassIndexTest {
 
         @Test
         void answersEachOfTwoSystemsSharingAnIdItsOwnColonies() {
-            // That the colony memo is addressed by the whole key and not by the id: a sector holds
-            // two systems under one id, and keyed on it the pair would be one entry handing the
+            // That the colony memo is addressed by the whole key and not by the ID: a sector holds
+            // two systems under one ID, and keyed on it the pair would be one entry handing the
             // second system the first's colonies. Which systems a key tells apart, and the blank
             // key that tells none apart, are SystemKeyedMemo's own and posed there - this is the
             // colony read reaching it.
@@ -164,7 +164,7 @@ final class SectorPassIndexTest {
 
         @Test
         void answersOffTheWalkAReadMadeWithTheSystemAlreadyPaidFor() {
-            // A pass keyed by system id and a reader holding the system itself are asking the
+            // A pass keyed by system ID and a reader holding the system itself are asking the
             // same question, so the second route must not buy a second traversal.
             var fixture = buildCorvusHoldingOneColony();
             var index = new SectorPassIndex(fixture.getSector());
@@ -186,7 +186,7 @@ final class SectorPassIndexTest {
 
         @Test
         void resolvesTheSectorSSystemsOnceAcrossRepeatedAsks() {
-            // Resolving an id is the index's other walk, and an id no system carries leaves no
+            // Resolving an ID is the index's other walk, and an ID no system carries leaves no
             // colony memo to answer off - so without keeping the resolution, a pass asking about
             // absent systems would re-index the whole sector on every ask.
             var fixture = buildCorvusHoldingOneColony();
@@ -200,8 +200,8 @@ final class SectorPassIndexTest {
 
         @Test
         void answersTheFirstOfTwoSystemsSharingAnId() {
-            // The id arm is what an override table or a saved preference writes, so it has to name
-            // one system - the one the id index holds, which is what this resolves through.
+            // The ID arm is what an override table or a saved preference writes, so it has to name
+            // one system - the one the ID index holds, which is what this resolves through.
             var world = buildTwoSystemsSharingAnId();
 
             assertThat(new SectorPassIndex(world.sector())
@@ -233,7 +233,7 @@ final class SectorPassIndexTest {
         void answersTheFirstOfTwoSystemsSharingAnId() {
             // What this address costs, and the reason a pass accounting for every system takes the
             // other one. Taken off the systems the key index holds rather than a walk of its own,
-            // so the case is also what says that re-addressing kept the id rule it is named for.
+            // so the case is also what says that re-addressing kept the ID rule it is named for.
             var world = buildTwoSystemsSharingAnId();
 
             assertThat(new SectorPassIndex(world.sector()).readSystemsById())
@@ -242,7 +242,7 @@ final class SectorPassIndexTest {
 
         @Test
         void traversesTheSectorOnceAcrossRepeatedAsks() {
-            // This is what a reader resolving many ids takes instead of indexing the sector for
+            // This is what a reader resolving many IDs takes instead of indexing the sector for
             // itself, so it has to be cheaper than doing so - otherwise the reader has bought the
             // traversal it came here to avoid.
             var fixture = buildCorvusHoldingOneColony();
@@ -307,8 +307,8 @@ final class SectorPassIndexTest {
 
         @Test
         void holdsBothSystemsOfAPairSharingAnId() {
-            // Why a pass takes this read instead of the id one: the four systems a live sector
-            // loses to a repeated id are here, so everything derived from this index accounts for
+            // Why a pass takes this read instead of the ID one: the four systems a live sector
+            // loses to a repeated ID are here, so everything derived from this index accounts for
             // every system the sector lists.
             var world = buildTwoSystemsSharingAnId();
 
@@ -320,7 +320,7 @@ final class SectorPassIndexTest {
 
         @Test
         void traversesTheSectorOnceAcrossRepeatedAsks() {
-            // The same bargain the id index offers, and the reason a pass reaches for either: a
+            // The same bargain the ID index offers, and the reason a pass reaches for either: a
             // reader that had to index the sector itself has bought the traversal it came to avoid.
             var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
             var index = new SectorPassIndex(sector);
@@ -334,9 +334,9 @@ final class SectorPassIndexTest {
         @Test
         void countsAPassAskingBothWaysAsOneWalk() {
             // A rebuild addresses its systems both ways at once - the cells by key, the readers
-            // holding a bare id by id - and its bound is one traversal for the whole of it. So the
-            // id index is taken off the systems this one holds rather than off a walk of its own,
-            // the rule for which system a repeated id names still being the sector read's.
+            // holding a bare ID by ID - and its bound is one traversal for the whole of it. So the
+            // ID index is taken off the systems this one holds rather than off a walk of its own,
+            // the rule for which system a repeated ID names still being the sector read's.
             var sector = buildSectorHoldingSystems(StarSystemFixture.buildSystem("corvus"));
             var index = new SectorPassIndex(sector);
 
@@ -373,10 +373,10 @@ final class SectorPassIndexTest {
         }
     }
 
-    // The pair of unnamed deep space systems the sector really holds under one id, each with a
+    // The pair of unnamed deep space systems the sector really holds under one ID, each with a
     // colony of its own, and separated only by the anchor the engine minted for each. Built here
     // rather than taken from ColonyFixture because that one's sector holds a single system, and a
-    // collision cannot be posed with one. The ids are the ones a live install reports.
+    // collision cannot be posed with one. The IDs are the ones a live install reports.
     private static CollidingSystemPair buildTwoSystemsSharingAnId() {
 
         var firstColony = ColonyMarketFixture.buildVisibleColony("hegemony");
@@ -420,7 +420,7 @@ final class SectorPassIndexTest {
         return fixture;
     }
 
-    // Two systems under one id and the sector listing them, each system beside the colony sited in
+    // Two systems under one ID and the sector listing them, each system beside the colony sited in
     // it. The colonies travel with the systems because what the cases turn on is which system's
     // colonies an answer came from - an assertion that cannot be made without naming both.
     private record CollidingSystemPair(

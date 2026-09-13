@@ -26,7 +26,7 @@ import java.util.function.Supplier;
  */
 public final class RevisionMemo<T> {
 
-    // The key the held value was resolved under. Starts null, which no scope id matches, so the
+    // The key the held value was resolved under. Starts null, which no scope ID matches, so the
     // first resolve always recomputes.
     private String cachedScopeId;
     private int cachedRevision;

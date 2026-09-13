@@ -14,7 +14,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * the second command to be written would settle it again from scratch.
  *
  * <p>Nothing is looked up after a refusal. The place is asked for first, so a run with two
- * mistakes in it reports the place: an id that names nothing is the likelier of the two to have
+ * mistakes in it reports the place: an ID that names nothing is the likelier of the two to have
  * been mistyped, and it is the argument a player can check without knowing what the sector calls
  * its factions.
  *
@@ -36,9 +36,9 @@ public final class MarketOwnerTargetResolver {
      *
      * @param sector      the sector the run is made against; without one there is nothing to look
      *                    either half up in
-     * @param entityId    the id of the entity to act on; null or blank asks for the nearest
+     * @param entityId    the ID of the entity to act on; null or blank asks for the nearest
      *                    qualifying place instead
-     * @param factionId   the id of the faction to act for; null or blank asks for the player's own
+     * @param factionId   the ID of the faction to act for; null or blank asks for the player's own
      * @param requirement what makes a market a candidate, and the phrase a refusal names it by
      * @return the place and the owner, or why the run cannot go ahead
      */

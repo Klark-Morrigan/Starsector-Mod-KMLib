@@ -41,7 +41,7 @@ import java.util.Set;
  * question of the same walk, and a class holding this one to put it would state no rule the two
  * ports do not already share.
  *
- * <p>It does not go through {@link #readBreakdown} to do it. The claimant is one faction id off a
+ * <p>It does not go through {@link #readBreakdown} to do it. The claimant is one faction ID off a
  * walk whose every other product exists to be read by a display - the nameplates, the standings and
  * the order they rank in, what each market reports about the player's knowledge of it - and a caller
  * resolving who claims each system of a sector would build all of that once per system and keep none
@@ -362,7 +362,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
 
         for (var factionMarkets : marketsByFactionId.values()) {
             // Read off the first of the faction's markets rather than carried alongside the group:
-            // the game holds one faction instance per id, so every market in a group names the
+            // the game holds one faction instance per ID, so every market in a group names the
             // same object and a second source for it could only ever be a way to disagree.
             var faction = factionMarkets.get(0).faction();
 
@@ -445,9 +445,9 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // not the market's.
     //
     // How the colony is identified - its name, the glyph the map marks its entity with, and the
-    // id that says which colony it actually is - is recorded here rather than looked up by
+    // ID that says which colony it actually is - is recorded here rather than looked up by
     // whatever lists it: reading them on the walk that met the market is what stops a second
-    // lookup answering for a different one. The id reaches no term of the arithmetic; it is what
+    // lookup answering for a different one. The ID reaches no term of the arithmetic; it is what
     // lets a display pair this row with whatever else it knows about the same colony, which a
     // display name cannot do - vanilla names a station colony and its defending station alike.
     private static MarketClaimBreakdown computeMarketClaim(

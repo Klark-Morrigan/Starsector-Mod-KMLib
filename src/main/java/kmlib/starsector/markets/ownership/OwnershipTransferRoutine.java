@@ -37,10 +37,10 @@ public interface OwnershipTransferRoutine {
      * belonging to, nothing having been changed about it yet, so passing it as well would let a
      * caller name an owner the colony never had.
      *
-     * @param sector    the sector the colony sits in, and the one the incoming owner's id is
+     * @param sector    the sector the colony sits in, and the one the incoming owner's ID is
      *                  resolved against
      * @param market    the colony changing hands
-     * @param factionId the incoming owner's faction id
+     * @param factionId the incoming owner's faction ID
      * @return a performed hand-over, or a decline saying what about this call it could not do -
      *         which the caller reads back to whoever is diagnosing the install
      */

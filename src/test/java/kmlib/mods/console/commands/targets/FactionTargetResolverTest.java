@@ -59,7 +59,7 @@ final class FactionTargetResolverTest {
 
         @Test
         void refusesAnIdNoFactionAnswersTo() {
-            // Refused rather than passed through: an ownership change takes an id, so a typo
+            // Refused rather than passed through: an ownership change takes an ID, so a typo
             // applied verbatim leaves a colony held by nobody and the command reporting success.
             assertThat(FactionTargetResolver.resolveOwningFaction(
                     mock(SectorAPI.class),
@@ -69,22 +69,22 @@ final class FactionTargetResolverTest {
 
         @Test
         void namesThePlayerFactionInARefusalItAskedForItself() {
-            // The default is looked up like any other id, so a sector that cannot answer for the
-            // player says so under that id rather than under the blank the caller passed.
+            // The default is looked up like any other ID, so a sector that cannot answer for the
+            // player says so under that ID rather than under the blank the caller passed.
             assertThat(FactionTargetResolver.resolveOwningFaction(mock(SectorAPI.class), null))
                 .isEqualTo(new UnresolvedTarget<FactionAPI>("No faction with id 'player'."));
         }
 
         @Test
         void refusesARunMadeWithoutASector() {
-            // Nothing to look an id up in, and no default to fall back to either - the player's
+            // Nothing to look an ID up in, and no default to fall back to either - the player's
             // faction is the sector's to answer for like any other.
             assertThat(FactionTargetResolver.resolveOwningFaction(null, "hegemony"))
                 .isEqualTo(new UnresolvedTarget<FactionAPI>("No sector to read factions from."));
         }
     }
 
-    // A sector that answers for one faction under one id, and for nothing else - which is what
+    // A sector that answers for one faction under one ID, and for nothing else - which is what
     // makes the refusal cases above a real miss rather than a missing stub.
     private static SectorAPI buildSectorAnswering(String factionId, FactionAPI faction) {
 

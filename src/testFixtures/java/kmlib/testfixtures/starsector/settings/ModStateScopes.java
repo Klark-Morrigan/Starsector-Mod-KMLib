@@ -6,7 +6,7 @@ package kmlib.testfixtures.starsector.settings;
  *
  * <p>Shared across the KM mod series rather than written out per suite because each such
  * integration opens by settling the same hop down to the mod manager, and a suite spelling it out
- * itself is free to settle a different mod id than the subject asks for and still pass. It also
+ * itself is free to settle a different mod ID than the subject asks for and still pass. It also
  * keeps the three states named: a mod that is off, a settings object with no mod manager on it,
  * and no settings at all are different halves of "not up yet", and a boolean argument would
  * flatten them at the call site.
@@ -26,7 +26,7 @@ public final class ModStateScopes {
 
     /**
      * Runs body with the mod set readable and one named mod enabled or not, as asked. Every other
-     * mod id reports disabled, so a subject reaching for one it was not given behaves as it does
+     * mod ID reports disabled, so a subject reaching for one it was not given behaves as it does
      * without it.
      *
      * @param modId        the mod the body's subject asks about

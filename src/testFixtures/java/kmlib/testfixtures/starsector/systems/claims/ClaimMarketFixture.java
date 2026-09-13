@@ -55,10 +55,10 @@ public final class ClaimMarketFixture {
     }
 
     /**
-     * Opens a market on a colony of the given name, marked with no glyph and identified by an id
+     * Opens a market on a colony of the given name, marked with no glyph and identified by an ID
      * derived from that name.
      *
-     * <p>The id follows the name so a case pairing a row with anything else it knows about the same
+     * <p>The ID follows the name so a case pairing a row with anything else it knows about the same
      * colony has one identity for it throughout, without stating the same string twice.
      *
      * @param marketName how the colony is named to a reader
@@ -81,7 +81,7 @@ public final class ClaimMarketFixture {
     }
 
     /**
-     * States the colony's id outright, for a case pairing this row with one built elsewhere.
+     * States the colony's ID outright, for a case pairing this row with one built elsewhere.
      *
      * @param marketId which colony this is, as {@code MarketAPI#getId} would report it
      * @return this fixture
@@ -178,11 +178,11 @@ public final class ClaimMarketFixture {
     }
 
     /**
-     * The id the walk that met a colony would have recorded for it, derived from the name so a case
+     * The ID the walk that met a colony would have recorded for it, derived from the name so a case
      * naming a market has one identity for it throughout.
      *
      * @param marketName the colony's name
-     * @return the id, lower-cased with its spacing joined
+     * @return the ID, lower-cased with its spacing joined
      */
     public static String nameMarketId(String marketName) {
         return marketName.toLowerCase(Locale.ROOT).replace(' ', '_');

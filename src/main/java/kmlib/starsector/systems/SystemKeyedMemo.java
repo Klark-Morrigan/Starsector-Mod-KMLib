@@ -11,9 +11,9 @@ import java.util.function.Function;
  * One value per star system, worked out on the first ask and remembered for the rest of a pass.
  *
  * <p>Two rules every memo keyed on a system has to state, held here so that none states them for
- * itself. It is keyed on the whole {@link SystemKey} rather than the id, because an id is not
- * unique: a sector holding two systems under one id would otherwise pool them into a single entry
- * and hand the first system's value to the second. And a system stating no arm at all - no id and
+ * itself. It is keyed on the whole {@link SystemKey} rather than the ID, because an ID is not
+ * unique: a sector holding two systems under one ID would otherwise pool them into a single entry
+ * and hand the first system's value to the second. And a system stating no arm at all - no ID and
  * neither entity - has the blank key, which equals every other blank one, so it is resolved afresh
  * on every ask rather than pooled: the repeat costs what a later ask would have saved, which is
  * the honest price of a system the sector states nothing about. A system carrying any one arm is

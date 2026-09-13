@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * to a surface nobody is pointing at, so the two false answers matter more than the true one.
  *
  * <p>The mod-absent case additionally pins that the switch is never read, since that read is the
- * only thing here that reaches LunaLib - which logs an error for a mod id it does not know, once
+ * only thing here that reaches LunaLib - which logs an error for a mod ID it does not know, once
  * per read, on an install that simply does not have the mod.
  *
  * <p>The read behind that switch is a passthrough to LunaLib and is exercised in-engine rather

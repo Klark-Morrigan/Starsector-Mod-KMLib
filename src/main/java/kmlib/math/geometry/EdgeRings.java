@@ -130,7 +130,7 @@ public final class EdgeRings {
     // Chains the segments into rings expressed as the ordered segment indices they
     // walk through, the shared core both public entry points map to their own output:
     // corners come from each index's segment start, and a carried per-edge value from
-    // each index's segment value. Welding to integer ids and the defensive walk are
+    // each index's segment value. Welding to integer IDs and the defensive walk are
     // unchanged; only the ring is recorded as segment indices rather than corners, so
     // the segment behind each edge stays recoverable.
     private static List<List<Integer>> chainIntoSegmentIndexRings(
@@ -141,8 +141,8 @@ public final class EdgeRings {
             return indexRings;
         }
 
-        // Weld first so the walk can compare corners as exact integer ids rather
-        // than by tolerance at every hop: a segment's end welds to the same id as
+        // Weld first so the walk can compare corners as exact integer IDs rather
+        // than by tolerance at every hop: a segment's end welds to the same ID as
         // the next segment's start, so chaining is a plain map lookup.
         var welder = new VertexWelder(weldTolerance);
         var startId = new int[segments.size()];
@@ -236,7 +236,7 @@ public final class EdgeRings {
         return -1;
     }
 
-    // Assigns each distinct corner a small integer id, treating two points within a
+    // Assigns each distinct corner a small integer ID, treating two points within a
     // tolerance as the same corner. Points are bucketed by a grid cell of the
     // tolerance's size so a lookup scans only the query point's cell and its eight
     // neighbours (a straddling point still finds its match), never the whole set.
@@ -251,7 +251,7 @@ public final class EdgeRings {
             this.toleranceSquared = tolerance * tolerance;
         }
 
-        // The id of the canonical corner within tolerance of (x, y), registering a
+        // The ID of the canonical corner within tolerance of (x, y), registering a
         // new one when none exists yet.
         private int weld(double x, double y) {
             var cellX = (long) Math.floor(x / tolerance);

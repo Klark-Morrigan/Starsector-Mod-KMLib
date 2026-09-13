@@ -14,7 +14,7 @@ import java.util.Objects;
  * are held in. That is what makes a list scrolling under a still pointer re-report: the rows move, so the
  * row index under the cursor changes, so the slot changes. It is also the cost of keying by the place - a
  * strip rebuilt with different items in the same slots reports nothing, the pointer having stayed where it
- * was, so a host holding an item id keeps one that its own rebuild may have moved.
+ * was, so a host holding an item ID keeps one that its own rebuild may have moved.
  *
  * <p>The channel a reading went out on is kept with it, so the leave reaches the same host that was told
  * about the arrival. It has to be kept rather than re-read: a host rebuilds its specs every frame, so by

@@ -18,7 +18,7 @@ import java.util.function.BiPredicate;
  *
  * <p>The predicate is named for the test rather than for whatever word a heading above it uses, so
  * nothing reading this concludes the answer means the single {@link RepLevel#FRIENDLY} level. It is
- * answered of a faction the caller already holds, or over a pair of ids bound to one sector - the
+ * answered of a faction the caller already holds, or over a pair of IDs bound to one sector - the
  * same rule at the two shapes callers ask it in, so a surface composing dispositions takes the pair
  * form rather than writing the lookup itself.
  *
@@ -51,7 +51,7 @@ public final class StarsectorFactionRelations {
      *
      * @param observer  the faction whose relation is read; nothing is read of no faction, so it
      *                  holds no relation
-     * @param subjectId the faction it is measured against; an id with no text names nobody to hold
+     * @param subjectId the faction it is measured against; an ID with no text names nobody to hold
      *                  a relation with
      * @return the relation, or none where there is no pair to read one from
      */
@@ -84,7 +84,7 @@ public final class StarsectorFactionRelations {
      *
      * @param faction        the faction whose disposition is read; nothing is read of no faction,
      *                       so it is not above neutral with anyone
-     * @param otherFactionId the faction it is disposed toward; an id with no text names nobody to
+     * @param otherFactionId the faction it is disposed toward; an ID with no text names nobody to
      *                       be disposed toward
      * @return true where the relation is {@link RepLevel#FAVORABLE} or better
      */
@@ -98,11 +98,11 @@ public final class StarsectorFactionRelations {
     }
 
     /**
-     * The same answer over a pair of faction ids, bound to one sector: whether the first is disposed
+     * The same answer over a pair of faction IDs, bound to one sector: whether the first is disposed
      * above neutral toward the second.
      *
      * <p>Offered because a rule composing dispositions takes the faction-level answer as a plain
-     * predicate over ids, and every such caller would otherwise write the same lookup-and-ask by
+     * predicate over IDs, and every such caller would otherwise write the same lookup-and-ask by
      * hand. Two copies of it are two bindings of one relation, free to drift in which side of the
      * pair is looked up - and a surface reporting one relation two ways is the fault composing them
      * centrally exists to prevent.

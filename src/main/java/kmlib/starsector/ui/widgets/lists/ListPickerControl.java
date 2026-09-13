@@ -52,7 +52,7 @@ public final class ListPickerControl {
      * Builds the picker block for one list of selectable items, top to bottom: the section rule,
      * the columns selector, a row pairing the sort selector beside the caller's trailing controls,
      * then the icon-radio list ranked by the sort mode (its lit row the spotlighted item, or none
-     * when the selected id is not among these items). Returns an empty list when there are no
+     * when the selected ID is not among these items). Returns an empty list when there are no
      * selectable items, so a caller with nothing to spotlight contributes no picker rather than an
      * empty list widget.
      *
@@ -266,8 +266,8 @@ public final class ListPickerControl {
         pickerStore.reportItemHover(items.get(hoveredCell).itemId());
     }
 
-    // The lit row: the index of the item whose id is selected, or no selection when that id is
-    // absent (nothing spotlighted) or names an item no longer in the list (a stale id the caller's
+    // The lit row: the index of the item whose ID is selected, or no selection when that ID is
+    // absent (nothing spotlighted) or names an item no longer in the list (a stale ID the caller's
     // own heal has not yet cleared). An unlit list still shows every option, so the player can pick
     // one.
     private static int resolveSelectedIndex(

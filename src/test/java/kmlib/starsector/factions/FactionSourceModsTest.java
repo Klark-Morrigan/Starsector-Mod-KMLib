@@ -27,11 +27,11 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the recovery of where a faction came from: that a row's folder is matched to the mod
- * installed in it and carries that mod's own id, that the base game's folder-less rows are named as
- * such, that an unmatched folder still names itself but offers no id, and that the faction id comes
+ * installed in it and carries that mod's own ID, that the base game's folder-less rows are named as
+ * such, that an unmatched folder still names itself but offers no ID, and that the faction ID comes
  * out of the faction file rather than off its name.
  *
- * <p>A mod's folder and its id are posed as different strings throughout, because they usually are
+ * <p>A mod's folder and its ID are posed as different strings throughout, because they usually are
  * and because the match is made on one while the answer carries the other - posing them alike would
  * pass whichever of the two the code actually used.
  *
@@ -99,7 +99,7 @@ final class FactionSourceModsTest {
 
         @Test
         void keysAFactionByTheIdItsFileDeclaresRatherThanByTheFileName() {
-            // The loader reads the id out of the file, so a listing keyed off the file name would
+            // The loader reads the ID out of the file, so a listing keyed off the file name would
             // disagree with the sector about which faction a row declared.
             var data = new GameDataFixture();
 
@@ -193,7 +193,7 @@ final class FactionSourceModsTest {
         }
     }
 
-    // A mod source: named, and carrying the id another command would take.
+    // A mod source: named, and carrying the ID another command would take.
     private static Map.Entry<String, ModSource> modEntry(
             String factionId,
             String modName,
@@ -202,7 +202,7 @@ final class FactionSourceModsTest {
         return Map.entry(factionId, new ModSource(modName, modId));
     }
 
-    // A source that is not an installed mod, and so has no id to carry. Map.entry
+    // A source that is not an installed mod, and so has no ID to carry. Map.entry
     // rejects a null value, so the pair is built rather than named.
     private static Map.Entry<String, ModSource> unidentifiedEntry(
             String factionId,
@@ -265,7 +265,7 @@ final class FactionSourceModsTest {
             declarationRows.add(buildRow(sourceFolderPath, factionFilePath));
         }
 
-        // The folder and the id are separate on purpose: they are rarely the same string, and a
+        // The folder and the ID are separate on purpose: they are rarely the same string, and a
         // fixture conflating them could not pose the folder-to-mod match this is built to pin.
         private void enableMod(String modFolderName, String modName, String modId) {
 

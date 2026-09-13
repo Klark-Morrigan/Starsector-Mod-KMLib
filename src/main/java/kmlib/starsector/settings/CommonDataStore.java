@@ -20,7 +20,7 @@ public interface CommonDataStore {
 
     /**
      * @param fileName the common-data file's name, which is one namespace across every installed
-     *                 mod - so a caller prefixes it with its own mod id
+     *                 mod - so a caller prefixes it with its own mod ID
      * @return what the file holds, or null where there is no such file, where it cannot be read,
      *         or where the game is not up far enough to have common data at all
      */
@@ -29,7 +29,7 @@ public interface CommonDataStore {
     /**
      * Writes {@code content} into the named file, replacing whatever it held.
      *
-     * @param fileName the common-data file's name, prefixed by the caller's own mod id
+     * @param fileName the common-data file's name, prefixed by the caller's own mod ID
      * @param content  what the file is to hold
      * @return whether the write landed, so a caller can say once that a preference is not being
      *         kept rather than leaving the player to find out across a restart

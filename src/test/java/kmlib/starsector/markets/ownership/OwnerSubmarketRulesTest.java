@@ -103,7 +103,7 @@ final class OwnerSubmarketRulesTest {
         @Test
         void handsTheInstalledRuleBothOwners() {
             // A rule may restock only where the colony has actually changed hands, which the
-            // incoming id alone cannot say - so both ids have to reach it.
+            // incoming ID alone cannot say - so both IDs have to reach it.
             var seenOwners = new ArrayList<String>();
 
             installPermittingFallback("Some Mod", (market, oldOwnerId, newOwnerId) -> {

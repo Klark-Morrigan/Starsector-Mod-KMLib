@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Also what each option leaves out - the holdings line with its header clause, and the attitude
  * with the separator it sat behind - and how a faction is named: both names where the long one says
- * something more, the mod that declared it with its id where there is one, and the unattributed
+ * something more, the mod that declared it with its ID where there is one, and the unattributed
  * mark where no row names it.
  *
  * <p>Colonies come from {@link ColonyMarketFixture}, so a colony posed here is the same shape the
@@ -166,7 +166,7 @@ final class FactionListingReportTest {
         void namesAFactionCarryingAPlaceholderDisplayNameByItsId() {
             // A stock Nexerelin player.faction reports the literal "player" as its
             // display name, and vanilla reports "Independent" before the first colony.
-            // Repeating the id says no more than is known, which is the point.
+            // Repeating the ID says no more than is known, which is the point.
             var sector = new FactionListingFixture();
 
             sector.addFaction(buildFaction("player", "player"));
@@ -310,8 +310,8 @@ final class FactionListingReportTest {
 
         @Test
         void namesTheModAFactionWasDeclaredByWithItsId() {
-            // The id alone says nothing about where a faction came from, which on a heavily
-            // modded install is most of what a reader opens this listing to find out. The mod id
+            // The ID alone says nothing about where a faction came from, which on a heavily
+            // modded install is most of what a reader opens this listing to find out. The mod ID
             // rides along because it is what another command takes as an argument.
             var sector = new FactionListingFixture();
 
@@ -327,7 +327,7 @@ final class FactionListingReportTest {
 
         @Test
         void namesASourceWithoutAModIdOnItsOwn() {
-            // The base game is not a mod and has no id to give; a bracket around nothing would
+            // The base game is not a mod and has no ID to give; a bracket around nothing would
             // read as one it failed to report.
             var sector = new FactionListingFixture();
 

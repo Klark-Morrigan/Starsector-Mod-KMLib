@@ -9,7 +9,7 @@ import java.util.function.BooleanSupplier;
  * The {@link CampaignMinimap} answer for Random Assortment of Things: the mod enabled, and its own
  * minimap switched on.
  *
- * <p>Here rather than beside that role because this is the half that knows the mod - its id, its
+ * <p>Here rather than beside that role because this is the half that knows the mod - its ID, its
  * settings field, and the value it ships - while the question the role puts is one any mod
  * replacing the radar could answer.
  *
@@ -20,11 +20,11 @@ import java.util.function.BooleanSupplier;
  *
  * <p>No Random Assortment of Things type is named here, unlike
  * {@link RandomAssortmentOfThingsMatcher} beside it: the minimap switch is a LunaLib field, read
- * by mod id and field id, so an install without the mod resolves nothing of that mod and this
+ * by mod ID and field ID, so an install without the mod resolves nothing of that mod and this
  * needs none of the deferred-reference machinery its own classes would demand. What the presence
  * gate buys here is therefore not safety - the field read alone answers false for a mod that
  * declares no settings - but silence: LunaLib logs an error line for each read of an unknown mod
- * id, so an ungated read asked once a frame would write one per frame, for the whole session, on
+ * ID, so an ungated read asked once a frame would write one per frame, for the whole session, on
  * every install without the mod.
  *
  * <p>Both reads are live rather than settled once, which is the cheaper answer and not a

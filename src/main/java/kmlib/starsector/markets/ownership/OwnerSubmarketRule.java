@@ -32,11 +32,11 @@ public interface OwnerSubmarketRule {
      * that should decide them, and says whether it did.
      *
      * <p>Both owners are stated because a rule may restock a counter only where the colony has
-     * actually changed hands, which the incoming id alone cannot say.
+     * actually changed hands, which the incoming ID alone cannot say.
      *
      * @param market     the colony whose counters are being decided
-     * @param oldOwnerId the outgoing owner's faction id, read before the incoming one landed
-     * @param newOwnerId the incoming owner's faction id
+     * @param oldOwnerId the outgoing owner's faction ID, read before the incoming one landed
+     * @param newOwnerId the incoming owner's faction ID
      * @return the counters decided, or a decline saying what about this call it could not do -
      *         which the caller reads back to whoever is diagnosing the install
      */

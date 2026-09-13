@@ -79,7 +79,7 @@ final class ColonyTest {
 
         @Test
         void reportsTheFactionIdTheMarketCarries() {
-            // Read off the market's own id rather than its faction object, which is what an
+            // Read off the market's own ID rather than its faction object, which is what an
             // ownership change writes - so a market answering one and not the other answers here.
             var marketMock = mock(MarketAPI.class);
 

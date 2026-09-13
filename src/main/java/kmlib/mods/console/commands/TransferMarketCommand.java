@@ -10,12 +10,12 @@ import kmlib.starsector.markets.Markets;
 import kmlib.starsector.markets.ownership.MarketOwnershipTransfer;
 
 /**
- * Console command (cheat): hands an existing colony to another owner. Takes an optional entity id
- * and an optional incoming faction id, so a bare invocation gives the nearest colony to the
+ * Console command (cheat): hands an existing colony to another owner. Takes an optional entity ID
+ * and an optional incoming faction ID, so a bare invocation gives the nearest colony to the
  * player.
  *
  * <p>Named, a colony can be handed over from anywhere - another system, or hyperspace - since an
- * entity id points at one place in the whole sector. Only the bare invocation needs the player to
+ * entity ID points at one place in the whole sector. Only the bare invocation needs the player to
  * be in a star system, "nearest" having nowhere to measure from otherwise. That is one condition
  * of the search rather than of the command, so it is stated where the search is and this command
  * guards only on being in a campaign.

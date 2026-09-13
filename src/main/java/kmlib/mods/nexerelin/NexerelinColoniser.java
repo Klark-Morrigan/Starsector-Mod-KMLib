@@ -23,7 +23,7 @@ import exerelin.campaign.intel.colony.ColonyExpeditionIntel;
  * install its routine takes the whole founding and the sequence this library composes is skipped
  * entirely rather than run underneath it.
  *
- * <p>Whose colony it is decided by the faction id alone, matching how ownership is stated
+ * <p>Whose colony it is decided by the faction ID alone, matching how ownership is stated
  * everywhere else here. The mod's routine draws the same distinction the game's two colonisation
  * routines do - the player's colony is flagged as theirs, gets a spaceport underway and a storage
  * hold already paid for, while a faction's arrives with industries and immigration incentives.
@@ -99,8 +99,8 @@ public final class NexerelinColoniser {
                 + "star system");
         }
 
-        // The faction is looked up rather than passed on as an id: the routine reads that mod's
-        // own configuration and tariffs off the faction object, so an id the sector does not know
+        // The faction is looked up rather than passed on as an ID: the routine reads that mod's
+        // own configuration and tariffs off the faction object, so an ID the sector does not know
         // is a decline rather than a founding that dies partway through.
         var faction = sector.getFaction(factionId);
 

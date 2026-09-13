@@ -41,7 +41,7 @@ public record Structure(
      * player is elsewhere, which is a display rule rather than a reading of the entity; a caller
      * wanting that concealment applies its own over this.
      *
-     * @return the holding faction's id, or null where the entity names no faction
+     * @return the holding faction's ID, or null where the entity names no faction
      */
     public String readHolderFactionId() {
         return Entities.readFactionId(entity);
@@ -78,7 +78,7 @@ public record Structure(
     /**
      * Whether this is one of the improvised variants rather than a full installation.
      *
-     * <p>Read off the tag rather than off the entity id, so a mod's own makeshift variant reads
+     * <p>Read off the tag rather than off the entity ID, so a mod's own makeshift variant reads
      * true without this having to know its id. The word is in the spec's default name as well,
      * which is what a caller printing a label uses; this is what a caller reasoning about the
      * structure uses.

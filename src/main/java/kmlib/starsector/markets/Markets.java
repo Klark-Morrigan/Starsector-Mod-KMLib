@@ -72,7 +72,7 @@ public final class Markets {
      * vanilla's own station reads test: a {@code "station"}-tagged entity not opted
      * out via {@code NO_ORBITAL_STATION}, which additionally has a station fleet.
      * Keying on the tag and the fleet captures vanilla and modded stations alike,
-     * so no industry ids are read.
+     * so no industry IDs are read.
      *
      * <p>The fleet half is what makes the answer a defensive station rather than a
      * place built on one. A market sited on a station is connected to its own
@@ -206,9 +206,9 @@ public final class Markets {
     /**
      * Whether a market is held by the named faction.
      *
-     * <p>Reads the market's own faction id rather than its faction object, that being what an
+     * <p>Reads the market's own faction ID rather than its faction object, that being what an
      * ownership change writes and therefore what is answering for the owner a moment after one.
-     * The ids are compared exactly: faction ids are keys rather than names, and a read that
+     * The IDs are compared exactly: faction IDs are keys rather than names, and a read that
      * matched loosely would have two mods' factions answer for each other.
      *
      * <p>Its callers are the operations that must not act twice. Handing a colony to the faction
@@ -216,7 +216,7 @@ public final class Markets {
      * and where such a call would still change the colony, this is the read that stops it.
      *
      * @param market    the market to test; null yields false
-     * @param factionId the faction id to test for; null yields false, no market being held by
+     * @param factionId the faction ID to test for; null yields false, no market being held by
      *                  nobody in the sense this asks about
      * @return true when the market flies that faction's flag
      */
@@ -258,9 +258,9 @@ public final class Markets {
      * holding all three. Asking whether that faction is anybody is what separates a settled place
      * from a flag flown over an empty one.
      *
-     * <p>The neutral question is put to the faction rather than answered by comparing an id here,
-     * which is how the engine's own code asks it. The id it settles on is the engine's own to
-     * change, and a library comparing its own copy of that id would be a second answer free to
+     * <p>The neutral question is put to the faction rather than answered by comparing an ID here,
+     * which is how the engine's own code asks it. The ID it settles on is the engine's own to
+     * change, and a library comparing its own copy of that ID would be a second answer free to
      * disagree with the game's.
      *
      * <p>Ownership is the whole of the rule. Whether the economy lists the colony is no part of
@@ -318,7 +318,7 @@ public final class Markets {
      * steps get skipped.
      *
      * @param market       the market whose counter is being reached; null yields null
-     * @param submarketId  the counter's submarket id
+     * @param submarketId  the counter's submarket ID
      * @param pluginType   the kind of plugin the caller is about to speak to
      * @param <T>          that kind
      * @return the counter's plugin as that kind, or null where there is none to speak to

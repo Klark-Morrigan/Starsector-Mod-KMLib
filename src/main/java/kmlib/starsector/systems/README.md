@@ -20,7 +20,7 @@ and that is the fact the package is shaped around.
 - [Remembering something per system](#remembering-something-per-system)
 - [Systems that move](#systems-that-move)
 - [Ways in the engine does not model](#ways-in-the-engine-does-not-model)
-- [Ids that reach in from outside](#ids-that-reach-in-from-outside)
+- [IDs that reach in from outside](#ids-that-reach-in-from-outside)
 - [What is not here](#what-is-not-here)
 
 ## Two altitudes
@@ -182,7 +182,7 @@ A route also vouches that the mod marks the system on the hyperspace map,
 since a mod carrying fleets somewhere shows the player
 where by a marker of its own making that no scan of the game's star anchors can see.
 
-## Ids that reach in from outside
+## IDs that reach in from outside
 
 The key is internal to code holding systems.
 Anything addressed from outside stays on the vanilla ID,

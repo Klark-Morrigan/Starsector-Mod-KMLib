@@ -64,7 +64,7 @@ final class NexerelinMarketTransferTest {
         @Test
         void declinesAnIncomingOwnerNoFactionAnswersTo() {
             // The routine reads that mod's settings, tariffs and colours off the faction rather
-            // than off an id, so an id the sector does not know is a decline rather than a
+            // than off an ID, so an ID the sector does not know is a decline rather than a
             // hand-over that dies partway through one.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclinedBecauseOf(
@@ -77,7 +77,7 @@ final class NexerelinMarketTransferTest {
 
         @Test
         void declinesAColonyFlyingNoFlagAtAll() {
-            // The outgoing owner reaches the routine as a faction too - it reads the id off it and
+            // The outgoing owner reaches the routine as a faction too - it reads the ID off it and
             // counts what that faction has left afterwards - so a colony nobody is recorded as
             // holding is a decline and the caller hands it over itself.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->

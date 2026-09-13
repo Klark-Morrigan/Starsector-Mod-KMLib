@@ -75,8 +75,8 @@ public record MarketClaimBreakdown(
      * so a hand-built market cannot fail late on either. The nameplate looks after its own
      * unstated half.
      *
-     * <p>An unstated id is left as it arrived. Nothing here reads it, and standing an empty string
-     * in would have a reader pairing rows by id match two colonies neither of which was named.
+     * <p>An unstated ID is left as it arrived. Nothing here reads it, and standing an empty string
+     * in would have a reader pairing rows by ID match two colonies neither of which was named.
      */
     public MarketClaimBreakdown {
         militaryBonus = militaryBonus == null ? OptionalInt.empty() : militaryBonus;

@@ -38,7 +38,7 @@ public final class MarketColocation {
      * merging two listings of markets rather than resolving one.
      *
      * <p>The market object itself is asked first, so a market is always the same place as
-     * itself. A market with no entity, or no owner whose id can be read, answers for nothing
+     * itself. A market with no entity, or no owner whose ID can be read, answers for nothing
      * but itself thereafter: a missing key is not a key two markets can share.
      *
      * @param left  one market; null is the same place as nothing at all
@@ -120,7 +120,7 @@ public final class MarketColocation {
         implements PlaceKey {
     }
 
-    // A market with no entity, or no owner whose id can be read. A class rather than a
+    // A market with no entity, or no owner whose ID can be read. A class rather than a
     // record because identity equality is the whole point: every instance equals only
     // itself, so such a market forms its own group and passes through. A record here
     // would make all instances equal and pool every unkeyable market into one.

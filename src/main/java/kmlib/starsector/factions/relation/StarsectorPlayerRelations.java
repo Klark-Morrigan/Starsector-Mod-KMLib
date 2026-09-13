@@ -55,7 +55,7 @@ public final class StarsectorPlayerRelations {
         }
 
         // Without a relationship object naming a level there is nothing the player tier can add, so
-        // the relation comes off the general read against the player id - the same faction and raw
+        // the relation comes off the general read against the player ID - the same faction and raw
         // number the object would have been carrying.
         return StarsectorFactionRelations.readRelation(faction, Factions.PLAYER);
     }

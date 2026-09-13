@@ -66,7 +66,7 @@ final class NexerelinSubmarketsTest {
 
         @Test
         void declinesAChangeNamingNoIncomingOwner() {
-            // The mod's routine reads every one of its verdicts off the incoming id, so a change
+            // The mod's routine reads every one of its verdicts off the incoming ID, so a change
             // that names nobody is a decline rather than a set of counters decided against nothing.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinSubmarkets.applySubmarkets(

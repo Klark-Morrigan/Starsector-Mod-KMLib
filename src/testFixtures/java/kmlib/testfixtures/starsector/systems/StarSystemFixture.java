@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Posing star systems the way the sector holds them: an id, a place in hyperspace, and the two
+ * Posing star systems the way the sector holds them: an ID, a place in hyperspace, and the two
  * entities the engine builds a system around.
  *
  * <p>Stated once here because a system is the subject of nearly every suite over the sector, and
@@ -21,11 +21,11 @@ import static org.mockito.Mockito.when;
  * suites pose one the same way.
  *
  * <p>Identity and placement are separate calls, which is what keeps either from carrying the
- * other's arguments. A read over ids never looks at where a system sits, and a case about it should
+ * other's arguments. A read over IDs never looks at where a system sits, and a case about it should
  * not have to invent coordinates to say so; {@link #placeSystemAt} is there for the reads that do.
  *
  * <p>The centre and the anchor are stated only where a case is about telling two systems apart,
- * since a system id is not unique across a modded sector and those are the arms that separate a
+ * since a system ID is not unique across a modded sector and those are the arms that separate a
  * colliding pair. A system built without them carries neither, which is a shape the sector holds
  * too.
  *
@@ -38,7 +38,7 @@ public final class StarSystemFixture {
     }
 
     /**
-     * A system answering to an id and nothing else - what a read keyed on the id alone needs, and
+     * A system answering to an ID and nothing else - what a read keyed on the ID alone needs, and
      * no more than that.
      */
     public static StarSystemAPI buildSystem(String systemId) {
@@ -52,7 +52,7 @@ public final class StarSystemFixture {
     }
 
     /**
-     * A system answering to an id and sitting at a hyperspace position - the pair every read over
+     * A system answering to an ID and sitting at a hyperspace position - the pair every read over
      * the sector's layout takes, and the commonest shape a case poses.
      */
     public static StarSystemAPI buildSystemAt(String systemId, float x, float y) {
@@ -60,10 +60,10 @@ public final class StarSystemFixture {
     }
 
     /**
-     * A system carrying the three arms a key is read off: its id, and the ids of the entities it is
-     * built around. Either entity id may be null, which poses a system that carries no such entity.
+     * A system carrying the three arms a key is read off: its ID, and the IDs of the entities it is
+     * built around. Either entity ID may be null, which poses a system that carries no such entity.
      *
-     * <p>What a case about two systems sharing an id poses, that being a pair the sector really
+     * <p>What a case about two systems sharing an ID poses, that being a pair the sector really
      * holds and one no other fact separates.
      */
     public static StarSystemAPI buildKeyedSystem(
@@ -100,7 +100,7 @@ public final class StarSystemFixture {
 
     /**
      * Gives an already posed system its hyperspace anchor, and answers it - so a case can tell two
-     * systems posed under one id apart on top of whatever else they were built to carry, the
+     * systems posed under one ID apart on top of whatever else they were built to carry, the
      * anchor being the arm that separates such a pair in a live sector.
      */
     public static StarSystemAPI anchorSystemTo(StarSystemAPI system, String anchorEntityId) {
@@ -143,7 +143,7 @@ public final class StarSystemFixture {
         return sectorMock;
     }
 
-    // An entity answering to an id, or nothing at all where the caller stated no id - which poses a
+    // An entity answering to an ID, or nothing at all where the caller stated no ID - which poses a
     // system that carries no such entity, rather than one carrying a nameless entity.
     private static SectorEntityToken buildEntity(String entityId) {
 

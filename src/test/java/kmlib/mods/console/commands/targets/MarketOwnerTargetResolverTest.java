@@ -81,7 +81,7 @@ final class MarketOwnerTargetResolverTest {
 
         @Test
         void posesEachSearchTheArgumentItAnswersFor() {
-            // The requirement goes to the place search and the faction id to the owner search,
+            // The requirement goes to the place search and the faction ID to the owner search,
             // and an omitted argument is passed on as omitted rather than defaulted here.
             MarketOwnerTargetResolver.resolveMarketAndOwner(
                 sectorMock,

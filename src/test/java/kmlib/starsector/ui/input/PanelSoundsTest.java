@@ -27,7 +27,7 @@ final class PanelSoundsTest {
     private static final PointerArrivalVolumes ARRIVAL_VOLUMES =
         new PointerArrivalVolumes(0.9f, 0.6f, 0.3f);
 
-    // One role per moment. The engine's own ids stand in for three distinguishable roles; nothing here reads
+    // One role per moment. The engine's own IDs stand in for three distinguishable roles; nothing here reads
     // what any of them sounds like.
     private static final UiSoundCue PRESS_CUE =
         UiSoundCue.createAtFullVolume(StarsectorUiSound.BUTTON_PRESSED);

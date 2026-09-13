@@ -252,7 +252,7 @@ final class ClaimContestFixture implements AutoCloseable {
 
     private MarketAPI createMarket(FactionAPI faction, int size, boolean isHidden) {
 
-        // The owner's id is read before the market's stubbing opens, so the two mocks do not nest
+        // The owner's ID is read before the market's stubbing opens, so the two mocks do not nest
         // into an unfinished-stubbing error.
         var factionId = faction == null ? null : faction.getId();
         var marketMock = mock(MarketAPI.class);

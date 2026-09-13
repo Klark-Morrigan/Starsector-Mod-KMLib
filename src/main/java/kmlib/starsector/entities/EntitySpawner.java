@@ -25,8 +25,8 @@ public final class EntitySpawner {
      * Adds a custom entity to {@code focus}'s location, orbiting {@code focus}.
      *
      * @param focus      the entity to orbit
-     * @param entityType the custom entity type id to spawn (e.g. a gate)
-     * @param factionId  the owning faction id
+     * @param entityType the custom entity type ID to spawn (e.g. a gate)
+     * @param factionId  the owning faction ID
      * @param placement  where around the focus the entity goes, and how fast
      * @return the spawned entity
      */
@@ -37,7 +37,7 @@ public final class EntitySpawner {
             OrbitPlacement placement) {
 
         var location = focus.getContainingLocation();
-        // id and name left null: the engine auto-assigns a unique id and the
+        // ID and name left null: the engine auto-assigns a unique ID and the
         // entity uses its type's default name. entityType is the type slot.
         var entity = location.addCustomEntity(null, null, entityType, factionId);
         EntityOrbits.applyCircularOrbit(entity, focus, placement);

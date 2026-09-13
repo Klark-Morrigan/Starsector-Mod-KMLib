@@ -40,7 +40,7 @@ final class StableFractionsTest {
         @Test
         void resolveFractionHoldsAKeyToOneShareInEveryRun() {
             // The stability claim, stated as the values themselves: a caller derives an emitter's place in a
-            // cycle from its id and expects that place to survive a restart, a save load and a new machine.
+            // cycle from its ID and expects that place to survive a restart, a save load and a new machine.
             assertThat(StableFractions.resolveFraction(NEIGHBOURING_KEY))
                 .isCloseTo(NEIGHBOURING_KEY_FRACTION, within(TOLERANCE));
 
@@ -50,7 +50,7 @@ final class StableFractionsTest {
 
         @Test
         void resolveFractionSeparatesKeysOneCharacterApart() {
-            // Ids in a set differ by a digit far more often than they differ wholesale, so this is the case
+            // IDs in a set differ by a digit far more often than they differ wholesale, so this is the case
             // that decides whether the spread works in practice rather than in principle.
             var separation = Math.abs(
                 StableFractions.resolveFraction(NEIGHBOURING_KEY)

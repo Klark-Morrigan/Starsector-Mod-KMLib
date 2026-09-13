@@ -15,7 +15,7 @@ import java.util.List;
  *
  * <p>Selection is the {@code objective} tag rather than a list of entity ids. The improvised
  * variants carry it, and a mod adding a fourth kind of structure joins the set by tagging its own
- * - which an id list could not admit without being edited for every mod that ships one.
+ * - which an ID list could not admit without being edited for every mod that ships one.
  *
  * <p>Nothing is filtered out here: an undiscovered structure comes back like any other, discovery
  * being a fact a caller reads off {@link Structure} and applies to its own purpose.

@@ -112,8 +112,8 @@ class StarsectorFactionRelationsTest {
         void readsAnUnnamedOtherFactionAsNotAboveNeutralWithoutAskingTheFaction() {
             // Nobody named on the other side, so there is nobody to be disposed toward. Pinned as
             // "never asked" rather than on the answer alone: a faction holding no relation for an
-            // unnamed id reads false either way, so the answer cannot fail if the guard goes and
-            // the unnamed id is put to a live faction that faults on one.
+            // unnamed ID reads false either way, so the answer cannot fail if the guard goes and
+            // the unnamed ID is put to a live faction that faults on one.
             var factionMock = buildFactionAt(RepLevel.COOPERATIVE);
 
             assertThat(isDispositionAboveNeutral(factionMock, null))
@@ -158,7 +158,7 @@ class StarsectorFactionRelationsTest {
 
         @Test
         void readsAFactionTheSectorDoesNotKnowAsNotAboveNeutral() {
-            // An id the sector answers nothing for is nobody to be disposed toward anyone, which is
+            // An ID the sector answers nothing for is nobody to be disposed toward anyone, which is
             // the shape a caller composing over a stale membership arrives in.
             var sectorMock = mock(SectorAPI.class);
 

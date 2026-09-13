@@ -24,7 +24,7 @@ import java.util.List;
  * it. It says what the faction is rather than what it did here, and a reader is free to want that
  * about a faction that scored nothing.
  *
- * @param factionId        the id of the faction this standing belongs to
+ * @param factionId        the ID of the faction this standing belongs to
  * @param isTerritorial    whether the faction's punitive-expedition data marks it territorial.
  *                         True is perfectly ordinary here - a territorial faction's only colony in
  *                         a system may well be a concealed base - and claims nothing either way,

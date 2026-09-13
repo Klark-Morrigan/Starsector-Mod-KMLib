@@ -74,7 +74,7 @@ final class EntitySpawnerTest {
             when(focusMock.getContainingLocation())
                 .thenReturn(locationMock);
 
-            // Null id and name let the engine auto-assign; the type and faction
+            // Null ID and name let the engine auto-assign; the type and faction
             // are the spawn slots passed through.
             when(locationMock.addCustomEntity(null, null, "inactive_gate", Factions.NEUTRAL))
                 .thenReturn(entityMock);

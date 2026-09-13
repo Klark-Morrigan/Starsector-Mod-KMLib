@@ -53,16 +53,16 @@ public final class NexerelinSubmarkets {
      * <p>The outgoing owner is asked for because the mod's routine restocks the counters that
      * participate in the economy when the colony has actually changed hands, and skips the restock
      * when it has not - a colony re-stated under the owner it already had keeping the stock it
-     * already carries. Passing the incoming id for both would therefore not fail; it would quietly
+     * already carries. Passing the incoming ID for both would therefore not fail; it would quietly
      * leave a colony that has changed hands trading the previous owner's stock. An outgoing owner
      * nobody can name reads as a change, which is the answer that restocks rather than the one that
      * silently does not.
      *
      * @param market        the colony whose counters are being brought to the incoming owner's;
      *                      null is declined
-     * @param oldOwnerId    the outgoing owner's faction id, read before the incoming one landed;
+     * @param oldOwnerId    the outgoing owner's faction ID, read before the incoming one landed;
      *                      null is taken as an owner that cannot be matched
-     * @param newOwnerId    the incoming owner's faction id; null is declined, the mod's routine
+     * @param newOwnerId    the incoming owner's faction ID; null is declined, the mod's routine
      *                      reading every one of its verdicts off it
      * @return the counters decided by Nexerelin, or a decline naming what about this call it could
      *         not decide - the counters left exactly as they were either way

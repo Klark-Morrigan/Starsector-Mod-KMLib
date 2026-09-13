@@ -9,11 +9,11 @@ import static org.mockito.Mockito.when;
 /**
  * The sector an adapter in this package resolves an owner against.
  *
- * <p>Every routine deferred to here is handed factions rather than ids - it reads that mod's own
+ * <p>Every routine deferred to here is handed factions rather than IDs - it reads that mod's own
  * configuration, tariffs and colours off them - so each adapter looks the owner up and declines an
- * id nothing answers to. That makes "a sector that knows one faction and nothing else" the shape
+ * ID nothing answers to. That makes "a sector that knows one faction and nothing else" the shape
  * every suite here poses, and a suite spelling it out itself is free to pose a sector that answers
- * every id and still pass the case about the one it does not.
+ * every ID and still pass the case about the one it does not.
  *
  * <p>Package-private: what it builds is general, but the reason it exists is the lookup these
  * adapters share, and a fixture offered wider would be inviting suites with their own faction
@@ -26,7 +26,7 @@ final class SectorFactionFixture {
     }
 
     /**
-     * A sector that knows the named faction and nothing else, so an id it was not given reads as an
+     * A sector that knows the named faction and nothing else, so an ID it was not given reads as an
      * owner that does not exist.
      *
      * @param factionId the one owner the sector can answer for

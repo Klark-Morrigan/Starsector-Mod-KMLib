@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins the shipped settings table against the code that reads it, because every way it can drift
  * fails silently in play rather than loudly at build.
  *
- * <p>A field id renamed on either side leaves the read finding nothing and falling back, so the
+ * <p>A field ID renamed on either side leaves the read finding nothing and falling back, so the
  * player's pick simply does nothing. A default that disagrees with the library's own means the level
  * before a player has ever touched the screen is not the level the code says it is. And an option
  * label is a stored key wearing the costume of a caption - tidying its wording resets that setting
@@ -56,7 +56,7 @@ class LunaSettingsCsvIntegrationTest {
 
         @Test
         void shipsARowForTheFieldTheBindingReads() {
-            // The binding asks LunaLib for this id; a row under any other name is a setting the
+            // The binding asks LunaLib for this ID; a row under any other name is a setting the
             // player can change and the library will never read.
             assertThat(readLogLevelRow()).startsWith(LOG_LEVEL_FIELD + ",");
         }

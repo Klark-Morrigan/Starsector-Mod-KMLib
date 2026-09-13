@@ -60,7 +60,7 @@ final class ListColumnsTest {
 
         @Test
         void resolveLabelTextIsTheCountItself() {
-            // The segments carry the digits directly rather than a string id a consumer resolves,
+            // The segments carry the digits directly rather than a string ID a consumer resolves,
             // since a count standing for itself is not prose to translate.
             assertThat(ListColumns.ONE.resolveLabelText())
                 .isEqualTo("1");

@@ -78,12 +78,12 @@ public record Colony(
     }
 
     /**
-     * Who holds this colony, as the faction id an ownership change writes.
+     * Who holds this colony, as the faction ID an ownership change writes.
      *
-     * <p>Read off the market's own id rather than its faction object, that being what a transfer
+     * <p>Read off the market's own ID rather than its faction object, that being what a transfer
      * writes and therefore what answers for the owner a moment after one.
      *
-     * @return the owning faction's id, or null where the market names none
+     * @return the owning faction's ID, or null where the market names none
      */
     public String readOwnerId() {
         return market.getFactionId();

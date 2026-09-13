@@ -171,7 +171,7 @@ public final class StarSystems {
     }
 
     /**
-     * The faction id decreed as {@code system}'s claimant by its
+     * The faction ID decreed as {@code system}'s claimant by its
      * {@link MemFlags#CLAIMING_FACTION} ({@code $claimingFaction}) memory flag.
      *
      * <p>This is the imposed claim only - a flag a script or mod sets to hand a system
@@ -181,7 +181,7 @@ public final class StarSystems {
      * not this flag.
      *
      * @param system the system to read; null (or one with no memory) yields null
-     * @return the decreed claimant's faction id, or null when no claim is imposed
+     * @return the decreed claimant's faction ID, or null when no claim is imposed
      */
     public static String readFactionClaimOverride(StarSystemAPI system) {
         if (system == null || system.getMemoryWithoutUpdate() == null) {
@@ -309,16 +309,16 @@ public final class StarSystems {
     }
 
     /**
-     * The first entity in {@code system} carrying {@code entityTag} whose id
+     * The first entity in {@code system} carrying {@code entityTag} whose ID
      * equals {@code id} - the targeted "find this one tagged entity" lookup
      * console commands and scripts need (e.g. a specific gate or comm relay),
      * so callers do not re-walk {@code getEntitiesWithTag} themselves.
      *
      * @param system    the star system to search; null yields null
      * @param entityTag the entity tag to filter on (e.g. {@code Tags.GATE})
-     * @param id        the entity id to match exactly; null or blank yields null
+     * @param id        the entity ID to match exactly; null or blank yields null
      * @return the first matching entity, or null when none in {@code system}
-     *         carries {@code entityTag} with that id
+     *         carries {@code entityTag} with that ID
      */
     public static SectorEntityToken findTaggedEntity(
             StarSystemAPI system,

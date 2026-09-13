@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins how the owner of a resolved target is named in something the player reads: by the faction's
- * own name where it has one, and by its id where the name is a placeholder standing in for an
+ * own name where it has one, and by its ID where the name is a placeholder standing in for an
  * identity the faction has not been given yet.
  *
  * <p>Cases live under a {@link Nested} group named for the method under test.
@@ -53,7 +53,7 @@ final class MarketOwnerTargetTest {
         }
     }
 
-    // A target held by a faction under the given id and display name, the market being beside the
+    // A target held by a faction under the given ID and display name, the market being beside the
     // point for every case here.
     private static MarketOwnerTarget buildTargetOwnedBy(String factionId, String displayName) {
 

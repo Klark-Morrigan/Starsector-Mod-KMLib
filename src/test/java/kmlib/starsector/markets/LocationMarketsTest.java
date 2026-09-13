@@ -356,7 +356,7 @@ final class LocationMarketsTest {
 
         @Test
         void settlesAnEqualDistanceOnTheLowestBodyId() {
-            // Listed high-id first, so the lower id is shown to be the deterministic pick rather
+            // Listed high-id first, so the lower ID is shown to be the deterministic pick rather
             // than whichever the traversal happened to meet first.
             var beta = MarketPlacementFixture.buildMarketOnBodyAt("beta", 0, 100);
             var alpha = MarketPlacementFixture.buildMarketOnBodyAt("alpha", 0, -100);

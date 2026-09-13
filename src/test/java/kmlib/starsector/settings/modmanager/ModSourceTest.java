@@ -7,13 +7,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins the one question a source answers about itself: whether it has a mod id to offer beside its
+ * Pins the one question a source answers about itself: whether it has a mod ID to offer beside its
  * name.
  *
  * <p>Three answers rather than two, because absence arrives two ways. A source that is not a mod is
- * built with no id at all, while one built from a spec takes whatever that spec reports - and a
+ * built with no ID at all, while one built from a spec takes whatever that spec reports - and a
  * blank string there is the mod manager saying nothing rather than saying "". A caller that treated
- * the second as an id would print an empty bracket and pass it on as an argument no command
+ * the second as an ID would print an empty bracket and pass it on as an argument no command
  * resolves.
  */
 final class ModSourceTest {

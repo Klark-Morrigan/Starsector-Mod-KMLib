@@ -10,8 +10,8 @@ import java.util.Set;
  * positions a caller hands it: {@link MotionTracker} bound to {@link SystemKey} and to the floor a
  * hyperspace shift has to clear to read as motion rather than float noise.
  *
- * <p>Keyed by {@link SystemKey} rather than by system id because an id is not unique: two systems
- * co-located under one id would be one observation, and a move by either would read as a move by
+ * <p>Keyed by {@link SystemKey} rather than by system ID because an ID is not unique: two systems
+ * co-located under one ID would be one observation, and a move by either would read as a move by
  * the one recorded last. Which systems are in scope is the caller's alone, so this stays agnostic
  * to any one feature's membership rule.
  */

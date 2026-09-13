@@ -12,7 +12,7 @@ package kmlib.starsector.ui.widgets.lists;
  * ranked numeric - a consumer's dim rule is its own business, and running the picker's tone split
  * against a rule the sort cannot see is what proves the picker asks the seam rather than the metric.
  *
- * @param itemId          the id a pick reports, kept apart from the label so a suite can tell an
+ * @param itemId          the ID a pick reports, kept apart from the label so a suite can tell an
  *                        id-resolved lit row from a label-matched one
  * @param displayName     the label a row draws, null standing in for a name that did not resolve
  * @param crestSpritePath the crest path the row draws beside the label, null standing in for none
@@ -33,7 +33,7 @@ record Anomaly(
      * An anomaly that reads at full strength - what almost every case lists, since the tone split is
      * asserted by two suites and assumed by the rest.
      *
-     * @param itemId          the id a pick reports
+     * @param itemId          the ID a pick reports
      * @param displayName     the label a row draws
      * @param crestSpritePath the crest path, null standing in for none
      * @param severity        one numeric a fixture mode ranks on
@@ -45,10 +45,10 @@ record Anomaly(
 
     /**
      * An anomaly listed for the sort suites, which rank on the name and the numerics and never read
-     * an id or a crest: the name doubles as the id and no crest is carried, so those suites name
+     * an ID or a crest: the name doubles as the ID and no crest is carried, so those suites name
      * only what they assert on.
      *
-     * @param displayName the label, also standing in as the id
+     * @param displayName the label, also standing in as the ID
      * @param severity    one numeric a fixture mode ranks on
      * @param radius      the other
      */

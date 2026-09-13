@@ -99,7 +99,7 @@ final class NexerelinColoniserTest {
         @Test
         void declinesAnOwnerNoFactionAnswersTo() {
             // The routine reads that mod's settings and tariffs off the faction rather than off an
-            // id, so an id the sector does not know is a decline rather than a founding that dies
+            // ID, so an ID the sector does not know is a decline rather than a founding that dies
             // partway through one.
             ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
                 assertDeclined(NexerelinColoniser.establishColony(

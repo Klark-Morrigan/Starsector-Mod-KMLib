@@ -14,9 +14,9 @@ import com.fs.starfarer.api.Global;
  * itself is free to leave that out, and the ones that do fail only on the installs and the moments
  * nobody develops on.
  *
- * <p>The mod id stays with the integration that needs it rather than being gathered here. What a
+ * <p>The mod ID stays with the integration that needs it rather than being gathered here. What a
  * caller shares with every other caller is the manner of asking; which mod is asked about is the
- * one thing that is genuinely theirs, and a register of every third-party id in the series would
+ * one thing that is genuinely theirs, and a register of every third-party ID in the series would
  * put an edit to one integration in a file all of them read.
  *
  * <p>Under the game's settings rather than in {@code kmlib.settings}, which is the LunaLib
@@ -35,7 +35,7 @@ public final class ModPresence {
     /**
      * Whether the game reports that mod as enabled.
      *
-     * @param modId the mod's own id, as its {@code mod_info.json} declares it; null yields false
+     * @param modId the mod's own ID, as its {@code mod_info.json} declares it; null yields false
      * @return true only where the game is up far enough to answer and answers yes - every other
      *         state reads as an install without the mod, which is the answer that leaves a caller
      *         doing whatever it does without it

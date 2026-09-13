@@ -9,7 +9,7 @@ package kmlib.starsector.ui.widgets.lists;
  * than re-deriving the count. Where the key is stored is the consumer's, so nothing here reaches a
  * save.
  *
- * <p>The labels are the literals "1" and "2" rather than string ids the consumer resolves, which is
+ * <p>The labels are the literals "1" and "2" rather than string IDs the consumer resolves, which is
  * the deliberate exception to {@link ListSortMode}'s hand-over-drawn-text rule: that rule exists so
  * player-visible prose stays translatable, and a digit standing for a count is not prose.
  *

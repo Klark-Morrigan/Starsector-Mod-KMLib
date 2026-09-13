@@ -46,7 +46,7 @@ public final class EntityNameGenerator {
      * ({@code "The Abyssal Depths Jump-point 1.8e1"}) and finally the focus id.
      *
      * @param focus       the body the jump point orbits; its name leads the
-     *                    label, falling back to its location name then its id
+     *                    label, falling back to its location name then its ID
      *                    when it has no name of its own
      * @param orbitRadius the orbit radius, rendered in scientific notation
      * @return the campaign-map display name
@@ -66,7 +66,7 @@ public final class EntityNameGenerator {
     // the focus's own name when it has a real one (stars do), else the name of
     // the location that contains it (so an abyssal system's unnamed center still
     // yields the system label, e.g. "The Abyssal Depths"), and finally the focus
-    // id as a last resort. Vanilla's "unknown location" placeholder is treated as
+    // ID as a last resort. Vanilla's "unknown location" placeholder is treated as
     // no name at each step so it never leaks into the label.
     private static String resolveFocusLabel(SectorEntityToken focus) {
 

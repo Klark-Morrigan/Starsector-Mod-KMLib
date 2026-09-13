@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
  * The answer a command's target search gives when it finds what the run was aimed at.
  *
  * <p>Every command here reports what it did by naming the place and its owner, so each suite
- * needs a faction that answers for an id and a display name, wrapped in the resolution the search
+ * needs a faction that answers for an ID and a display name, wrapped in the resolution the search
  * hands back. Spelt out per suite, that arrangement is three stubs a case has to be read past
  * before the case itself starts, and two suites' worth of them drift on which fields are stubbed.
  *
@@ -32,7 +32,7 @@ final class CommandTargetFixture {
      * The search's answer when the run was aimed at a place somebody is named to hold.
      *
      * @param market      the place the command acts on
-     * @param factionId   the id of the faction it acts for
+     * @param factionId   the ID of the faction it acts for
      * @param displayName the name that faction reports
      * @return the resolution a stubbed search hands back
      */
@@ -45,7 +45,7 @@ final class CommandTargetFixture {
             new MarketOwnerTarget(market, buildFaction(factionId, displayName)));
     }
 
-    // The faction the target is held by: an id and a display name, which is all any report here
+    // The faction the target is held by: an ID and a display name, which is all any report here
     // reads off one.
     private static FactionAPI buildFaction(String factionId, String displayName) {
 

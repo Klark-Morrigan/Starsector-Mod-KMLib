@@ -33,7 +33,7 @@ import lunalib.lunaSettings.LunaSettingsListener;
  */
 public final class LunaSettingsReader {
 
-    // LunaLib's own mod id, asked of the game's mod set to establish that both it and the settings
+    // LunaLib's own mod ID, asked of the game's mod set to establish that both it and the settings
     // behind it are up. Its own, rather than the calling mod's: what a read needs is the library
     // that answers it, and a mod may legitimately read a setting belonging to another.
     private static final String LUNALIB_MOD_ID = "lunalib";
@@ -44,8 +44,8 @@ public final class LunaSettingsReader {
     /**
      * Reads a boolean LunaLib setting, falling back when it is unavailable.
      *
-     * @param modId    the mod's LunaLib settings id
-     * @param fieldId  the boolean field's id
+     * @param modId    the mod's LunaLib settings ID
+     * @param fieldId  the boolean field's ID
      * @param fallback value returned when the setting is null (unset, or read
      *                 before LunaLib has loaded the mod's settings)
      * @return the stored boolean, or {@code fallback} when it is unavailable
@@ -63,8 +63,8 @@ public final class LunaSettingsReader {
     /**
      * Reads a double LunaLib setting, falling back when it is unavailable.
      *
-     * @param modId    the mod's LunaLib settings id
-     * @param fieldId  the double field's id
+     * @param modId    the mod's LunaLib settings ID
+     * @param fieldId  the double field's ID
      * @param fallback value returned when the setting is null (unset, or read
      *                 before LunaLib has loaded the mod's settings)
      * @return the stored double, or {@code fallback} when it is unavailable
@@ -83,8 +83,8 @@ public final class LunaSettingsReader {
      * Reads an integer LunaLib setting, falling back when it is unavailable. Serves
      * the Int field type (an integer slider).
      *
-     * @param modId    the mod's LunaLib settings id
-     * @param fieldId  the int field's id
+     * @param modId    the mod's LunaLib settings ID
+     * @param fieldId  the int field's ID
      * @param fallback value returned when the setting is null (unset, or read
      *                 before LunaLib has loaded the mod's settings)
      * @return the stored int, or {@code fallback} when it is unavailable
@@ -103,8 +103,8 @@ public final class LunaSettingsReader {
      * Reads a string LunaLib setting, falling back when it is unavailable. Serves
      * the Radio field type, whose stored value is the selected option's label.
      *
-     * @param modId    the mod's LunaLib settings id
-     * @param fieldId  the string (or Radio) field's id
+     * @param modId    the mod's LunaLib settings ID
+     * @param fieldId  the string (or Radio) field's ID
      * @param fallback value returned when the setting is null (unset, or read
      *                 before LunaLib has loaded the mod's settings)
      * @return the stored string, or {@code fallback} when it is unavailable

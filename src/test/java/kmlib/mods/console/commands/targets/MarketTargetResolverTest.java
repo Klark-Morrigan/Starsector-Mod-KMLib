@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
  * mock builders stay on the outer class.
  *
  * <p>The reach of each of the two ways to name a place is pinned here as much as the outcome is:
- * an id resolves across the whole sector, hyperspace included, while the nearest search is
+ * an ID resolves across the whole sector, hyperspace included, while the nearest search is
  * confined to the system the fleet is in and refuses outright when there is none.
  *
  * <p>Posed against a requirement of the suite's own rather than one the console ships, so the
@@ -79,7 +79,7 @@ final class MarketTargetResolverTest {
 
         @Test
         void resolvesANamedPlaceFromOutsideEveryStarSystem() {
-            // An id names one place in the whole sector, so it is reachable from hyperspace,
+            // An ID names one place in the whole sector, so it is reachable from hyperspace,
             // where there is no system to be scoped to at all. Nothing about naming a place
             // depends on where the player is standing - only "nearest" does.
             var sectorMock = buildSectorInHyperspace();
@@ -201,7 +201,7 @@ final class MarketTargetResolverTest {
         @Test
         void refusesABareRunMadeFromOutsideEveryStarSystem() {
             // A fleet in hyperspace has nowhere to measure "nearest" from, so the refusal names
-            // the way out rather than only the obstacle: an id reaches a place from here.
+            // the way out rather than only the obstacle: an ID reaches a place from here.
             assertThat(MarketTargetResolver.resolveTargetMarket(
                     buildSectorInHyperspace(),
                     null,
@@ -212,7 +212,7 @@ final class MarketTargetResolverTest {
 
         @Test
         void refusesARunMadeWithoutASector() {
-            // Nothing to look an id up in and nowhere to search from, so neither way of naming a
+            // Nothing to look an ID up in and nowhere to search from, so neither way of naming a
             // place is open.
             assertThat(MarketTargetResolver.resolveTargetMarket(null, "jangala", ANY_MARKET))
                 .isEqualTo(new UnresolvedTarget<MarketAPI>("No sector to search."));
@@ -236,7 +236,7 @@ final class MarketTargetResolverTest {
     // The sector a run is made against: an economy listing the given markets in the system, the
     // player's fleet sitting in that system at the origin - which is both where the search
     // measures from and how the resolution learns which system "here" is - and the sector
-    // answering for each listed market's body by id, which is the other way a resolution reaches
+    // answering for each listed market's body by ID, which is the other way a resolution reaches
     // one.
     private static SectorAPI buildSectorAround(StarSystemAPI systemMock, MarketAPI... markets) {
 
@@ -262,7 +262,7 @@ final class MarketTargetResolverTest {
         return sectorMock;
     }
 
-    // A sector whose fleet is in no star system - hyperspace, where an id still names a place and
+    // A sector whose fleet is in no star system - hyperspace, where an ID still names a place and
     // a nearest search has nowhere to start.
     private static SectorAPI buildSectorInHyperspace() {
         return buildSectorWithFleet(MarketPlacementFixture.buildFleetAt(0, 0));
@@ -278,11 +278,11 @@ final class MarketTargetResolverTest {
         return sectorMock;
     }
 
-    // Makes the sector answer for the entity under its id, which is what an id-named resolution
-    // looks one up through - the sector rather than a system, ids being unique sector-wide.
+    // Makes the sector answer for the entity under its ID, which is what an id-named resolution
+    // looks one up through - the sector rather than a system, IDs being unique sector-wide.
     private static void answerForEntityById(SectorAPI sectorMock, SectorEntityToken entityMock) {
 
-        // The id is read off the entity before the sector's stubbing opens, so calling one mock
+        // The ID is read off the entity before the sector's stubbing opens, so calling one mock
         // does not land inside a stubbing in progress on another.
         var entityId = entityMock.getId();
 

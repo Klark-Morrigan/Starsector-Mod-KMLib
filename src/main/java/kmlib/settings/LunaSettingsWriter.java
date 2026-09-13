@@ -43,8 +43,8 @@ public final class LunaSettingsWriter {
 
     private static final Logger LOG = Logger.getLogger(LunaSettingsWriter.class);
 
-    // Mod ids whose in-memory store carries an unsaved deferred write, awaiting a flush to disk. A
-    // mod id lingers here only until its next flush; a failed save keeps it so a later flush
+    // Mod IDs whose in-memory store carries an unsaved deferred write, awaiting a flush to disk. A
+    // mod ID lingers here only until its next flush; a failed save keeps it so a later flush
     // retries.
     private final Set<String> modsWithUnsavedWrites = ConcurrentHashMap.newKeySet();
 
@@ -61,8 +61,8 @@ public final class LunaSettingsWriter {
      * Writes a string setting and saves it to disk at once - the stored form of a Radio field,
      * whose value is the selected option's label.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @param value   the string (or Radio label) to store
      */
     public void putString(String modId, String fieldId, String value) {
@@ -72,8 +72,8 @@ public final class LunaSettingsWriter {
     /**
      * Writes a boolean setting and saves it to disk at once.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @param value   the boolean to store
      */
     public void putBoolean(String modId, String fieldId, boolean value) {
@@ -86,8 +86,8 @@ public final class LunaSettingsWriter {
      * redraw update on the spot while the file write batches. The stored value survives in memory
      * (readers see it at once); it reaches disk only when the mod is flushed.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @param value   the string (or Radio label) to store
      */
     public void putStringDeferred(String modId, String fieldId, String value) {
@@ -98,8 +98,8 @@ public final class LunaSettingsWriter {
      * Writes a boolean setting live but defers the disk write to the next
      * {@link #flushPendingWrites}, the boolean counterpart of {@link #putStringDeferred}.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @param value   the boolean to store
      */
     public void putBooleanDeferred(String modId, String fieldId, boolean value) {
@@ -158,8 +158,8 @@ public final class LunaSettingsWriter {
      * <p>A no-op where the key is absent, which is a fresh install and every load after the sweep
      * has run once - so the common case pays no disk write.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the retired field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the retired field's ID
      */
     public void removeSetting(String modId, String fieldId) {
 

@@ -17,7 +17,7 @@ import java.util.function.Predicate;
  */
 final class FactionHoldings {
 
-    // A colony outside every star system has no id to name it by. Vanilla builds none, but mods put
+    // A colony outside every star system has no ID to name it by. Vanilla builds none, but mods put
     // markets in hyperspace, so the clause says where they are rather than dropping them and
     // under-reporting the systems a faction is in.
     private static final String HYPERSPACE_LABEL = "(hyperspace)";
@@ -40,9 +40,9 @@ final class FactionHoldings {
         return !MarketVisibility.isDiscoveredByPlayer(colony.market());
     }
 
-    // The distinct systems the selected places sit in, sorted by id, with hyperspace named once and
+    // The distinct systems the selected places sit in, sorted by ID, with hyperspace named once and
     // last - as the sector read itself puts it after the systems, since it is not one and an
-    // ordinary id is what a reader should meet first.
+    // ordinary ID is what a reader should meet first.
     List<String> collectSystemLabels(Predicate<Colony> selection) {
 
         var systemIds = new TreeSet<String>();

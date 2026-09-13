@@ -85,7 +85,7 @@ final class MarketlessEntityTest {
 
         @Test
         void reportsTheTypeTheEntityWasBuiltFrom() {
-            // The id rather than the spec's name, that being what a classification keyed on entity
+            // The ID rather than the spec's name, that being what a classification keyed on entity
             // type matches against.
             assertThat(new MarketlessEntity(buildCustomEntity("station_mining")).readTypeId())
                 .isEqualTo("station_mining");

@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
  * which of the resulting shapes it meant. Two adjacent booleans are also transposable without
  * failing, so the named builders keep them behind this boundary and a case reads as the shape it
  * poses. The shapes a condition marks rather than a flag - a derelict, a decivilised world - are built
- * the same way for the same reason: a bare condition id in a case says nothing about what kind of
+ * the same way for the same reason: a bare condition ID in a case says nothing about what kind of
  * place it makes.
  *
  * <p>Separate from {@link MarketPlacementFixture}, which poses where a market sits rather than

@@ -29,7 +29,7 @@ public interface ClaimBreakdownReader {
 
     /**
      * @param system the star system to read the claiming-faction override of
-     * @return the id of the faction the system's claiming-faction memory flag imposes, or
+     * @return the ID of the faction the system's claiming-faction memory flag imposes, or
      *         {@code null} when no override is set (or the system cannot be read)
      */
     String readCoreFactionId(StarSystemAPI system);

@@ -27,7 +27,7 @@ import java.util.Map;
  * to reach rather than by everyone remembering it.
  *
  * <p>The system list and the colony sets are held together rather than in an object each, because
- * the colony reads resolve ids through that same list: split apart, a pass asking both would open
+ * the colony reads resolve IDs through that same list: split apart, a pass asking both would open
  * two traversals of it, which is the very cost an index exists to stop. The list is offered keyed
  * both ways a caller asks for it.
  *
@@ -45,7 +45,7 @@ public final class SectorPassIndex {
     private final SectorAPI sector;
 
     // Each built on the first ask that needs the sector's systems resolved that way, and only then:
-    // a pass whose readers all hold the system in hand indexes the sector neither way. The id index
+    // a pass whose readers all hold the system in hand indexes the sector neither way. The ID index
     // is taken off the key one, so a pass asking either way traverses the sector once and a pass
     // asking both ways pays the second index in a re-addressing rather than in a walk.
     private Map<String, StarSystemAPI> systemById;
@@ -78,7 +78,7 @@ public final class SectorPassIndex {
     /**
      * The colonies in {@code system}, walked on the first ask and remembered thereafter.
      *
-     * <p>Remembered on {@link SystemKeyedMemo}'s terms: under the whole key rather than the id, and
+     * <p>Remembered on {@link SystemKeyedMemo}'s terms: under the whole key rather than the ID, and
      * walked afresh every ask for the system the sector states nothing about.
      *
      * @param system the system to read; null yields {@link Colonies#NONE}
@@ -93,21 +93,21 @@ public final class SectorPassIndex {
     }
 
     /**
-     * The colonies in the system with this id, for a reader holding an id rather than a system
-     * - which is what a pass keyed by system id mostly holds.
+     * The colonies in the system with this ID, for a reader holding an ID rather than a system
+     * - which is what a pass keyed by system ID mostly holds.
      *
-     * <p>Kept on the bare id because this is the arm anything addressed from outside speaks - an
-     * override table, a saved preference, a console argument. Which system a repeated id names is
+     * <p>Kept on the bare ID because this is the arm anything addressed from outside speaks - an
+     * override table, a saved preference, a console argument. Which system a repeated ID names is
      * {@link #readSystemsById}'s answer, and this reads the colonies of that one.
      *
-     * <p>Resolves the id to a system and then reads through {@link #readColoniesIn}, so a system
+     * <p>Resolves the ID to a system and then reads through {@link #readColoniesIn}, so a system
      * already read that way is never walked again for having been asked about the other way. The
-     * resolution comes first because the colony memo is keyed by {@link SystemKey}, which an id
+     * resolution comes first because the colony memo is keyed by {@link SystemKey}, which an ID
      * alone cannot address.
      *
-     * @param systemId the system id, as {@code StarSystemAPI#getId} reports it; null or blank
+     * @param systemId the system ID, as {@code StarSystemAPI#getId} reports it; null or blank
      *                 yields {@link Colonies#NONE}
-     * @return the colony set of the system that id resolves to, or {@link Colonies#NONE} when no
+     * @return the colony set of the system that ID resolves to, or {@link Colonies#NONE} when no
      *         system has it
      */
     public Colonies readColoniesById(String systemId) {
@@ -115,17 +115,17 @@ public final class SectorPassIndex {
         if (!KmlibStrings.hasText(systemId)) {
             return Colonies.NONE;
         }
-        // Resolved through the id index rather than by a match written here, so which system a
-        // repeated id names is settled in one place rather than by a second rule free to disagree.
+        // Resolved through the ID index rather than by a match written here, so which system a
+        // repeated ID names is settled in one place rather than by a second rule free to disagree.
         return readColoniesIn(readSystemsById().get(systemId));
     }
 
     /**
      * {@link SectorStarSystems#indexById} held for the pass, traversed on the first ask and
-     * remembered thereafter - the read for a caller holding an id, which is what anything addressed
+     * remembered thereafter - the read for a caller holding an ID, which is what anything addressed
      * from outside holds. It answers on that read's terms, this adding only the memo.
      *
-     * <p>Published for the same reason the colony sets are: a reader resolving ids off this pass
+     * <p>Published for the same reason the colony sets are: a reader resolving IDs off this pass
      * would otherwise open a traversal of its own, and two traversals for one pass is exactly what
      * an index exists to stop. The pass's readers share this one whether they came for a system or
      * for its colonies.
@@ -141,7 +141,7 @@ public final class SectorPassIndex {
         if (systemById == null) {
             // Addressed off the systems the key index already holds rather than off a traversal of
             // its own. A pass whose readers ask both ways is bounded at one walk, and it is the
-            // same bound whichever way its first reader asked; which system a repeated id names is
+            // same bound whichever way its first reader asked; which system a repeated ID names is
             // still settled by the read owning that rule rather than by a second one here.
             systemById = Collections.unmodifiableMap(
                 SectorStarSystems.indexHeldSystemsById(readSystemsByKey().values()));
@@ -155,7 +155,7 @@ public final class SectorPassIndex {
      * for every id. It answers on that read's terms, this adding only the memo.
      *
      * <p>What every system-keyed structure a render pass derives is built from. Built on
-     * {@link #readSystemsById} instead, such a pass is short the systems a repeated id displaces,
+     * {@link #readSystemsById} instead, such a pass is short the systems a repeated ID displaces,
      * and the loss reads as a system missing from the map with nothing naming its cause.
      *
      * @return what {@link SectorStarSystems#indexByKey} answers; empty for an index opened over no

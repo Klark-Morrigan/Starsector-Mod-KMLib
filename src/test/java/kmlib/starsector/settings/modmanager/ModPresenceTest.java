@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 final class ModPresenceTest {
 
-    // A mod id of no significance: what is being pinned is the manner of asking, which is the same
+    // A mod ID of no significance: what is being pinned is the manner of asking, which is the same
     // whichever mod a caller names.
     private static final String MOD_ID = "some_mod";
 
@@ -41,7 +41,7 @@ final class ModPresenceTest {
 
         @Test
         void reportsNotEnabledForAModTheGameWasNeverGiven() {
-            // The id is what a caller brings, so a caller naming a mod this install does not have
+            // The ID is what a caller brings, so a caller naming a mod this install does not have
             // is the ordinary case rather than an error.
             ModStateScopes.runWithModEnabled(MOD_ID, true, () ->
                 assertThat(ModPresence.isModEnabled("a_mod_this_install_does_not_have"))

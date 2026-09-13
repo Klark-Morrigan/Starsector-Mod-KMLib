@@ -37,13 +37,13 @@ import static kmlib.mods.console.commands.parsing.ParameterValues.text;
  * positionally or by name ({@code focus=<id>}, {@code speed=<deg/day>}); a named
  * value drops its slot out of the positional order, so positionals fill the
  * remaining {@code [focus, speed]} slots in turn. A lone bare token therefore
- * reads as the focus id - use {@code speed=} to set the speed while keeping the
+ * reads as the focus ID - use {@code speed=} to set the speed while keeping the
  * default focus.
  *
  * <p>The orbit focus defaults to the system {@link StarSystemAPI#getCenter()
  * center}. A binary or trinary system has no single center (its stars orbit a
  * shared, invisible barycenter), so the command refuses to guess and asks for a
- * focus id - typically one of its stars.
+ * focus ID - typically one of its stars.
  *
  * <p>Speed is in degrees per day (the same unit {@code kmlib_list_system_entities}
  * reports). With no explicit speed it is derived from the orbit radius via
@@ -110,7 +110,7 @@ public final class SpawnEntityCommand extends BaseKmlibCommand {
 
         var system = SectorStarSystems.getPlayerStarSystem(readActiveSector());
         // resolveOrbitFocus returns null (having printed why) when the focus is
-        // ambiguous in a multi-star system or the supplied id matches no entity,
+        // ambiguous in a multi-star system or the supplied ID matches no entity,
         // so we surface that as bad syntax too.
         var focus = resolveOrbitFocus(system, parsed.get(SPEC.focus));
         if (focus == null) {
@@ -146,10 +146,10 @@ public final class SpawnEntityCommand extends BaseKmlibCommand {
      * caller can just return {@code BAD_SYNTAX}.
      *
      * <p>An explicit {@code orbit_focus_id} always wins and is looked up among
-     * the system's entities. With no id, a single-star system has an unambiguous
+     * the system's entities. With no ID, a single-star system has an unambiguous
      * {@link StarSystemAPI#getCenter() center} to orbit; a system with two or
      * more stars does not, so the caller must name a focus and the error lists
-     * the star ids as the likely candidates.
+     * the star IDs as the likely candidates.
      */
     private SectorEntityToken resolveOrbitFocus(StarSystemAPI system, String focusArg) {
         if (KmlibStrings.hasText(focusArg)) {

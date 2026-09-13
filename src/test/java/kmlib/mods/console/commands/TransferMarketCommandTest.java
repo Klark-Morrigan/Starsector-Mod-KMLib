@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  * {@link Nested} group named for the method under test.
  *
  * <p>One collaborator is deliberately not stubbed: the ownership read the same-owner refusal is
- * built on. It is a comparison of the colony's own faction id against the one resolved, so posing
+ * built on. It is a comparison of the colony's own faction ID against the one resolved, so posing
  * it through the market keeps the refusal standing on the rule the hand-over itself refuses on
  * rather than on a stub agreeing with the assertion.
  *
@@ -241,7 +241,7 @@ final class TransferMarketCommandTest {
         }
     }
 
-    // Has the search answer with this suite's colony held by a faction under the given id and
+    // Has the search answer with this suite's colony held by a faction under the given ID and
     // display name, which is what the reported message is built from.
     private void answerWithFaction(String factionId, String displayName) {
 

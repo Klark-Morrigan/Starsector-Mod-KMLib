@@ -50,7 +50,7 @@ public final class StarsectorPoints {
      * <p>The tie-break is what makes a nearest search answer the same entity twice running.
      * Equidistant bodies are ordinary in a star system - a shared orbit, a mirrored pair -
      * and with distance alone the winner is whichever the traversal happened to meet first,
-     * which is a listing order that differs between installs and between passes. An id is
+     * which is a listing order that differs between installs and between passes. An ID is
      * stable, so it settles the tie rather than leaving it to be settled arbitrarily.
      *
      * <p>Stated here, beside the distance the search ranks by, so every nearest search

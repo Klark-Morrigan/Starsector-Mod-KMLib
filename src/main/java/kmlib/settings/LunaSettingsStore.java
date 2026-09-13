@@ -9,7 +9,7 @@ package kmlib.settings;
  * inside a running game with LunaLib installed. Named as a role, so what keeps the settings is the
  * caller's to choose.
  *
- * <p>Keyed by mod id rather than handed out as a per-mod handle, because a handle is a thing a
+ * <p>Keyed by mod ID rather than handed out as a per-mod handle, because a handle is a thing a
  * caller can hold past the moment the store behind it is replaced. LunaLib reloads a mod's store
  * when its settings are re-read, and a stale handle would then write into an object nothing reads.
  *
@@ -20,14 +20,14 @@ package kmlib.settings;
 public interface LunaSettingsStore {
 
     /**
-     * @param modId the mod's LunaLib settings id
+     * @param modId the mod's LunaLib settings ID
      * @return whether the mod's settings have been loaded, so there is a store to write into at all
      */
     boolean hasStoreFor(String modId);
 
     /**
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @return whether the mod's store carries a value under that field
      */
     boolean hasValue(String modId, String fieldId);
@@ -35,8 +35,8 @@ public interface LunaSettingsStore {
     /**
      * Puts a value into the mod's store, where the readers see it at once.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @param value   what to store; a string or a boolean, being what LunaLib's fields hold
      * @return whether the value landed, so a caller can leave the store unmarked for a save that
      *         would have nothing new to write
@@ -46,8 +46,8 @@ public interface LunaSettingsStore {
     /**
      * Takes a field out of the mod's store altogether, which LunaLib itself never does.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @return whether a value was there to remove
      */
     boolean removeValue(String modId, String fieldId);
@@ -55,7 +55,7 @@ public interface LunaSettingsStore {
     /**
      * Writes the mod's whole store to disk, so what it holds survives a restart.
      *
-     * @param modId the mod's LunaLib settings id
+     * @param modId the mod's LunaLib settings ID
      * @return whether the file was written; false leaves the values live in memory and unsaved
      */
     boolean saveStore(String modId);
@@ -64,7 +64,7 @@ public interface LunaSettingsStore {
      * Tells LunaLib's listeners that a mod's settings changed, so the settings screen and any
      * change-driven state rebuild against what was just written.
      *
-     * @param modId the mod's LunaLib settings id
+     * @param modId the mod's LunaLib settings ID
      */
     void announceSettingsChanged(String modId);
 }

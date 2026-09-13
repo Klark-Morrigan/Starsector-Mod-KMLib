@@ -11,7 +11,7 @@ import java.util.Objects;
  * sounded at the press's level. Bound into one value, a moment that sounds at all sounds at the volume its
  * own look named for it.
  *
- * <p>The volume scales the engine's configured level for the id rather than replacing it, so
+ * <p>The volume scales the engine's configured level for the ID rather than replacing it, so
  * {@link #FULL_VOLUME} is vanilla's own balance for that sample and anything below it is a panel
  * quietening itself relative to that. Nothing caps it at full: a look with a reason to push a sample past
  * its configured level is making the same kind of decision as one turning it down, and a cap here would
@@ -41,14 +41,14 @@ public record UiSoundCue(
      * two places for it to be read differently.
      *
      * <p>Below it the engine has no meaning for the value, so a negative volume would fail as quietly as
-     * a wrong id does - which is why it is also what {@link #requirePlayableVolume} guards against.
+     * a wrong ID does - which is why it is also what {@link #requirePlayableVolume} guards against.
      */
     public static final float SILENT_VOLUME = 0f;
 
     /**
      * Rejects a cue that names no role, since silence is a null cue rather than a cue with nothing in it -
      * a scheme states a quiet moment by naming no cue for it, so a null role here is a look that meant to
-     * sound and left out what with. Rejects a negative volume for the same reason a wrong id is worth
+     * sound and left out what with. Rejects a negative volume for the same reason a wrong ID is worth
      * catching early: the engine simply plays it and no one hears which end went wrong.
      */
     public UiSoundCue {

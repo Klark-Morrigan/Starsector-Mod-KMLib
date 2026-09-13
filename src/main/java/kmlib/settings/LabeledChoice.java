@@ -7,7 +7,7 @@ package kmlib.settings;
  * reuse {@link LabeledChoices#fromLabel} instead of hand-rolling the match loop.
  *
  * <p>Because the label is the persisted value, it is a stored key wearing the costume of a
- * caption, and is frozen once shipped for the reason a field id is: reword one and the string
+ * caption, and is frozen once shipped for the reason a field ID is: reword one and the string
  * an existing save holds resolves to nothing, so the setting silently reverts to its default
  * for every player who had picked that option. Changing the wording is a migration, not a
  * caption edit.

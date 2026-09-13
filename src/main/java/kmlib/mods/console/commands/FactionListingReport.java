@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * The faction listing itself: every faction the filter admits, written as the id it is addressed
+ * The faction listing itself: every faction the filter admits, written as the ID it is addressed
  * by, the names it is known by, where it stands with the player, which mod declared it, and what it
  * holds.
  *
@@ -51,8 +51,8 @@ import java.util.Set;
  * read, along with what counts as a colony at all and whether one the economy never registered is
  * present, and is inherited by reading through it rather than walking the economy afresh.
  *
- * <p>Which mod a faction came from answers the question the id alone raises on a heavily modded
- * install - a listing of eighty factions is mostly a list of unfamiliar ids, and the mod they were
+ * <p>Which mod a faction came from answers the question the ID alone raises on a heavily modded
+ * install - a listing of eighty factions is mostly a list of unfamiliar IDs, and the mod they were
  * declared by is what makes it navigable. It is the one clause dropped outright when it cannot be
  * read: an unattributed mark against every faction would say only that the read failed, which the
  * clause's absence says more quietly.
@@ -158,7 +158,7 @@ final class FactionListingReport {
         return report.toString();
     }
 
-    // How a faction is named and where it stands: its id and names carrying the territorial mark,
+    // How a faction is named and where it stands: its ID and names carrying the territorial mark,
     // its attitude to the player, and the mod it came from.
     //
     // Assembled as segments and joined rather than appended in place, because two of the three are
@@ -232,8 +232,8 @@ final class FactionListingReport {
         }
     }
 
-    // Where a faction came from, with the mod id beside the name for a source that has one - the
-    // name is what a reader recognises, the id what another command takes.
+    // Where a faction came from, with the mod ID beside the name for a source that has one - the
+    // name is what a reader recognises, the ID what another command takes.
     private String describeSource(ModSource source) {
 
         if (source == null) {
@@ -258,13 +258,13 @@ final class FactionListingReport {
             .orElse(null);
     }
 
-    // Which faction this is: the id it is addressed by, the names it is known by, and whether it
+    // Which faction this is: the ID it is addressed by, the names it is known by, and whether it
     // treats the space around its holdings as its own.
     private static String describeIdentity(FactionAPI faction) {
 
         // Through the resolver rather than getDisplayName(), because a placeholder name reads as a
         // real one: the player faction reports "Independent" before its first colony and the
-        // literal "player" on a stock Nexerelin setup. Falling back to the id says no more than is
+        // literal "player" on a stock Nexerelin setup. Falling back to the ID says no more than is
         // known, at the cost of repeating it on a faction whose display name is itself one of the
         // placeholders.
         var shortName = StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId());
@@ -299,7 +299,7 @@ final class FactionListingReport {
         return factions;
     }
 
-    // The colonies keyed by the id of the faction holding them. Every colony the sector read yields
+    // The colonies keyed by the ID of the faction holding them. Every colony the sector read yields
     // is owned - that is the rule the read selects on - so the owner is always there to key by.
     private static Map<String, List<Colony>> groupColoniesByFactionId(List<Colony> colonies) {
 

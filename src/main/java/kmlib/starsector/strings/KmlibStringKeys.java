@@ -1,7 +1,7 @@
 package kmlib.starsector.strings;
 
 /**
- * The string ids KMLib registers in {@code data/strings/strings.json}, paired
+ * The string IDs KMLib registers in {@code data/strings/strings.json}, paired
  * with the category they live under. Call sites fetch through
  * {@link StarsectorStrings#get(String, String)} (or
  * {@link StarsectorStrings#format(String, String, Object...)}) using these

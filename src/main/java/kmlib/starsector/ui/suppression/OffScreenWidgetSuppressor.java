@@ -190,7 +190,7 @@ public final class OffScreenWidgetSuppressor implements EveryFrameScript {
     }
 
     // Names the widget by its class, which is what a reader can match against a tree trace. There is
-    // no id on a core-UI widget to name it by.
+    // no ID on a core-UI widget to name it by.
     private static String describeWidget(UIComponentAPI widget) {
         return widget.getClass().getSimpleName();
     }

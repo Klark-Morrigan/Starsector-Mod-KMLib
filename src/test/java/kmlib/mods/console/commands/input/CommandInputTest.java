@@ -32,8 +32,8 @@ final class CommandInputTest {
         outputFake = new CommandOutputFake();
     }
 
-    // A single required positional, enough to tell a parse failure (missing id)
-    // from a parse success (id supplied) apart from the context outcome.
+    // A single required positional, enough to tell a parse failure (missing ID)
+    // from a parse success (ID supplied) apart from the context outcome.
     private static final class SampleSpec extends ParameterSpec {
         private final Parameter<String> id =
             acceptsPositional("id", "<id>", ParameterValues.text()).markRequired();

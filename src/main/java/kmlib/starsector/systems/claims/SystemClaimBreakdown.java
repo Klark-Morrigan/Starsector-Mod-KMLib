@@ -15,10 +15,10 @@ import java.util.List;
  * still reading the winner out of that same pass. An explanation built from this can therefore
  * never disagree with the claim it explains.
  *
- * @param overrideFactionId the faction id imposed by the system's claiming-faction memory flag,
+ * @param overrideFactionId the faction ID imposed by the system's claiming-faction memory flag,
  *                          or null when no override is set. An override takes the system
  *                          outright, without being scored for it.
- * @param claimantFactionId the id of the faction claiming the system: the override when one is
+ * @param claimantFactionId the ID of the faction claiming the system: the override when one is
  *                          set, else the top-scoring territorial faction, else null when
  *                          nobody claims it
  * @param scores            every faction present, ordered by score descending. Ties keep economy

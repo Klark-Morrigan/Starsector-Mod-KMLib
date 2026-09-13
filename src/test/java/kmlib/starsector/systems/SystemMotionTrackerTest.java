@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins {@link SystemMotionTracker}: a system that moves across hyperspace between polls is
- * reported under its key, two systems sharing an id are told apart, an empty poll stops every
+ * reported under its key, two systems sharing an ID are told apart, an empty poll stops every
  * mover, and a cleared tracker judges the next poll afresh. The detection state machine itself is
  * pinned by {@link kmlib.math.motion.MotionTracker}'s tests; this covers the binding to
  * {@link SystemKey} the tracker layers on top.
@@ -20,7 +20,7 @@ final class SystemMotionTrackerTest {
     // taken from the code under test is no expectation at all.
     private static final SystemKey MOVER = new SystemKey("mover", "mover_star", "893");
 
-    // Vanilla's own deep space pair: one id, told apart by their anchors alone.
+    // Vanilla's own deep space pair: one ID, told apart by their anchors alone.
     private static final SystemKey FIRST_DEEP_SPACE = new SystemKey("deep space", "", "8b3");
     private static final SystemKey SECOND_DEEP_SPACE = new SystemKey("deep space", "", "38d53");
 
@@ -44,7 +44,7 @@ final class SystemMotionTrackerTest {
 
         @Test
         void keepsTwoSystemsSharingAnIdApart() {
-            // The pair a live sector holds co-located under one id. Observed by id they would be
+            // The pair a live sector holds co-located under one id. Observed by ID they would be
             // one entry, and the move below would read as a move by whichever the sector lists
             // last; observed by key the mover is reported and the other is not.
             var tracker = new SystemMotionTracker();

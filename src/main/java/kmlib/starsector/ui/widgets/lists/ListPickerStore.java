@@ -33,7 +33,7 @@ public interface ListPickerStore {
      * Reports the item the pointer has come onto - the same item a click on that row would
      * spotlight, both being resolved against the ranked order the rows are drawn in.
      *
-     * @param itemId the id of the item whose row the pointer is on, never null - the pointer being
+     * @param itemId the ID of the item whose row the pointer is on, never null - the pointer being
      *               on no row arrives through {@link #clearItemHover()} instead, so a consumer
      *               never has to read a null as an instruction
      */
@@ -49,7 +49,7 @@ public interface ListPickerStore {
     /**
      * Persists a picked item as the spotlighted one.
      *
-     * @param itemId the id of the item whose row was picked, never null - a pick that spotlights
+     * @param itemId the ID of the item whose row was picked, never null - a pick that spotlights
      *               nothing arrives through {@link #clearItemPick()} instead, so a consumer never
      *               has to read a null as an instruction
      */

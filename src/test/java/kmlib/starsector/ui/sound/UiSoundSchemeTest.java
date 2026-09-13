@@ -75,8 +75,8 @@ final class UiSoundSchemeTest {
 
         @Test
         void createVanillaSoundSchemeNamesTheEnginesOwnScrollingRoleForAList() {
-            // The engine keeps several ids over the one sample and this is the one named for scrolling, so
-            // a list wearing vanilla's look takes it. A wrong id is looked up by name at play time and
+            // The engine keeps several IDs over the one sample and this is the one named for scrolling, so
+            // a list wearing vanilla's look takes it. A wrong ID is looked up by name at play time and
             // fails in silence, which is why the choice is pinned rather than left to the ear.
             assertThat(UiSoundScheme.createVanillaSoundScheme().listScrollCue().sound())
                 .isEqualTo(StarsectorUiSound.LIST_SCROLLED);

@@ -502,7 +502,7 @@ Read raw,
 opening the intel screen while docked
 and closing it again leaves every map-gated overlay believing it is still up.
 
-`ShownMapTab` does not take the tab id's word for it at all.
+`ShownMapTab` does not take the tab ID's word for it at all.
 It recognises the `M` screen's map by the tab being a `SectorMapAPI` -
 published API,
 so obfuscation-proof,
@@ -631,7 +631,7 @@ so a host can light what picking a row would show before it is picked;
 what a reading on no row means differs between the two channels,
 and is stated at the report itself.
 [`SelectableListItem`](widgets/lists/SelectableListItem.java) is the seam its rows are drawn from -
-an id,
+an ID,
 a label,
 a crest,
 whether the row reads back (`isDimmed`),
@@ -712,7 +712,7 @@ A mod's own thin binder is what ties the two ends to its sector-memory keys or s
 and that binder is the only place those keys appear.
 
 Labels follow the same rule for the same reason.
-A string id only means something against the category that registered it,
+A string ID only means something against the category that registered it,
 and [`StarsectorStrings`](../strings/StarsectorStrings.java)
 takes `(category, key)` on every call precisely so nothing here has to know which mod is asking -
 so `ListSortMode.resolveLabelText()` and the columns selector's caption arrive as drawn text.

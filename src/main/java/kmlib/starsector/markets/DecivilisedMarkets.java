@@ -148,9 +148,9 @@ public final class DecivilisedMarkets {
             return false;
         }
         // getFirstCondition, not getSpecificCondition: the latter matches on a
-        // condition's plugin-modification id (the bare id plus a "_<unique>"
-        // suffix), so a bare condition id never matches it and it always returns
-        // null. getFirstCondition keys off the plain id, the same id the engine
+        // condition's plugin-modification ID (the bare ID plus a "_<unique>"
+        // suffix), so a bare condition ID never matches it and it always returns
+        // null. getFirstCondition keys off the plain ID, the same ID the engine
         // and the colony UI show.
         var condition = market.getFirstCondition(Conditions.DECIVILIZED);
         return condition != null

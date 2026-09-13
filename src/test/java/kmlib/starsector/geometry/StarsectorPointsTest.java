@@ -120,7 +120,7 @@ class StarsectorPointsTest {
         return entityMock;
     }
 
-    // An entity known only by its id, which is what a distance tie is settled on.
+    // An entity known only by its ID, which is what a distance tie is settled on.
     private SectorEntityToken buildEntityWithId(String id) {
         var entityMock = mock(SectorEntityToken.class);
         Mockito.when(entityMock.getId()).thenReturn(id);

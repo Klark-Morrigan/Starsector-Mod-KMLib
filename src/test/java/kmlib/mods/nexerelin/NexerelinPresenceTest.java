@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the gate every routine in this package stands behind. What is this class's own, rather than
- * the shared read beneath it, is the id: the cases name the mod through a spelling declared apart
- * from the production one, so an id that stops matching the mod's own fails here rather than
+ * the shared read beneath it, is the ID: the cases name the mod through a spelling declared apart
+ * from the production one, so an ID that stops matching the mod's own fails here rather than
  * silently turning every deferral into a decline nobody notices.
  */
 final class NexerelinPresenceTest {

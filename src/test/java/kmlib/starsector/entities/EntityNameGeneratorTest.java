@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
  * then the localised jump-point word, then the orbit radius in scientific
  * notation - and a focus with no display name of its own falls back to its
  * containing location's name (vanilla's "unknown location" placeholder counts as
- * no name) and finally its id, so a nameless abyssal center still yields a
+ * no name) and finally its ID, so a nameless abyssal center still yields a
  * readable label.
  *
  * <p>The localised word is pulled through {@code StarsectorStrings}, which reads
@@ -132,7 +132,7 @@ final class EntityNameGeneratorTest {
         @Test
         void fallsBackToTheFocusIdWhenTheFocusStandsInNoLocation() {
             // An entity the game holds outside any location has no second name to fall back on,
-            // so the id is reached without the location step being asked for a name it has not
+            // so the ID is reached without the location step being asked for a name it has not
             // got - the reading has to survive a focus that is not anywhere.
             var focusMock = mock(SectorEntityToken.class);
 

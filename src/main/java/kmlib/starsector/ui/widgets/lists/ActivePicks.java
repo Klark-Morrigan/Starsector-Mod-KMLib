@@ -22,7 +22,7 @@ import java.util.Objects;
  * in force: a list is always ordered somehow and always laid across some number of columns.
  *
  * @param <T>            the consuming mod's item type, which the bundled sort ranks
- * @param selectedItemId the spotlighted item's id, or null when nothing is spotlighted
+ * @param selectedItemId the spotlighted item's ID, or null when nothing is spotlighted
  * @param sort           how the list is ranked - the metric, its direction, and the vocabulary both
  *                       were chosen from
  * @param columns        how many columns the list wraps its rows across
@@ -35,7 +35,7 @@ public record ActivePicks<T>(
     /**
      * Rejects a missing sort or column count, so a half-built reading fails where it is assembled
      * rather than inside the frame that first tries to rank or lay out a list with it. The
-     * spotlighted id is unchecked, a null there being the state where nothing is spotlighted.
+     * spotlighted ID is unchecked, a null there being the state where nothing is spotlighted.
      */
     public ActivePicks {
         Objects.requireNonNull(sort, "sort");

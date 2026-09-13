@@ -43,7 +43,7 @@ final class LocationStructuresTest {
         @Test
         void yieldsEveryVanillaStructureTheTagAdmits() {
             // The makeshift variants carry the tag as the full installations do, so a selection
-            // keyed on the three whole-installation ids would drop half of what is built.
+            // keyed on the three whole-installation IDs would drop half of what is built.
             var locationMock = mock(LocationAPI.class);
 
             placeStructuresIn(locationMock, VANILLA_STRUCTURE_TYPES);

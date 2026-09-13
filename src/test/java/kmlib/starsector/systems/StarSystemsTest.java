@@ -127,7 +127,7 @@ final class StarSystemsTest {
             var starAlpha = buildStarWithIdAt("alpha", 0, -100);
 
             // Both stars sit the same distance from the centre; listed high-id first so the
-            // lower id is shown to be the deterministic pick rather than the planet-list order.
+            // lower ID is shown to be the deterministic pick rather than the planet-list order.
             var system = buildSystemWithCentreAndStars(centreMock, starBeta, starAlpha);
 
             assertThat(StarSystems.getCentremostStar(system))
@@ -667,8 +667,8 @@ final class StarSystemsTest {
         return starMock;
     }
 
-    // A star fixed at a location and carrying an id, so a central-star search's distance-tie
-    // resolution by id can be pinned.
+    // A star fixed at a location and carrying an ID, so a central-star search's distance-tie
+    // resolution by ID can be pinned.
     private static PlanetAPI buildStarWithIdAt(String id, float x, float y) {
 
         var starMock = buildStarWithLocation(x, y);
@@ -800,7 +800,7 @@ final class StarSystemsTest {
         return planetMock;
     }
 
-    // A system whose memory carries the claiming-faction flag at the given value; a null id
+    // A system whose memory carries the claiming-faction flag at the given value; a null ID
     // stands for the flag never having been set.
     private static StarSystemAPI buildSystemClaimedBy(String factionId) {
 

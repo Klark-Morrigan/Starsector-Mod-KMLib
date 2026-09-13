@@ -26,9 +26,9 @@ import static org.mockito.Mockito.when;
  * {@link SectorStarSystems#findSystemById} and {@link SectorStarSystems#findSystemByKey}. Each
  * method's cases live in a {@link Nested} group so the suite reports as a per-method tree.
  *
- * <p>Every read keyed on something gets a case posing two systems that share an id, since a live
+ * <p>Every read keyed on something gets a case posing two systems that share an ID, since a live
  * modded sector holds several such pairs and the two addresses answer differently: the key index
- * holds both, the id index and the id lookup hold the first.
+ * holds both, the ID index and the ID lookup hold the first.
  */
 final class SectorStarSystemsTest {
 
@@ -163,8 +163,8 @@ final class SectorStarSystemsTest {
 
         @Test
         void answersTheNamedSystemOfAPairSharingAnId() {
-            // What the key lookup is for: the id lookup answers the first of the pair whichever of
-            // them was asked about, so the second is unreachable by id and reachable by key.
+            // What the key lookup is for: the ID lookup answers the first of the pair whichever of
+            // them was asked about, so the second is unreachable by ID and reachable by key.
             var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
             var sector = StarSystemFixture.buildSectorOf(
                 StarSystemFixture.buildKeyedSystem("deep space", null, "8b3"),
@@ -206,7 +206,7 @@ final class SectorStarSystemsTest {
 
         @Test
         void countsTheWalkAtTheSystemsItExaminedBeforeTheMatch() {
-            // Charged as the id lookup charges its own: a search that stopped at the first system
+            // Charged as the ID lookup charges its own: a search that stopped at the first system
             // did not visit the sector.
             var sector = StarSystemFixture.buildSectorOf(
                 StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893"),
@@ -241,8 +241,8 @@ final class SectorStarSystemsTest {
 
         @Test
         void answersTheFirstSystemFoundUnderARepeatedId() {
-            // The invariant the id index is built to match: an id no system holds alone resolves to
-            // one system, whichever way a caller asks. An override table's id or a saved preference
+            // The invariant the ID index is built to match: an ID no system holds alone resolves to
+            // one system, whichever way a caller asks. An override table's ID or a saved preference
             // would otherwise address one system through the lookup and another through the index.
             var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
             var sector = StarSystemFixture.buildSectorOf(
@@ -303,7 +303,7 @@ final class SectorStarSystemsTest {
 
         @Test
         void returnsNullForABlankId() {
-            // A blank id short-circuits before the walk, so a posed system list is not even
+            // A blank ID short-circuits before the walk, so a posed system list is not even
             // needed - a blank query matches nothing rather than the first system by accident.
             assertThat(SectorStarSystems.findSystemById(mock(SectorAPI.class), " "))
                 .isNull();
@@ -315,7 +315,7 @@ final class SectorStarSystemsTest {
 
         @Test
         void keysEverySystemByItsOwnIdInTheSectorsOrder() {
-            // The bulk lookup a pass resolving many ids reaches for instead of walking the system
+            // The bulk lookup a pass resolving many IDs reaches for instead of walking the system
             // list once per id. The sector's own order is kept, so a caller iterating the index
             // sees the systems in the order the sector lists them rather than a hash's.
             var corvus = StarSystemFixture.buildSystem("corvus");
@@ -329,8 +329,8 @@ final class SectorStarSystemsTest {
 
         @Test
         void keepsTheFirstSystemFoundUnderARepeatedId() {
-            // An id is not unique in a modded sector, and the system kept is the one findSystemById
-            // answers with, so both id reads name one system.
+            // An ID is not unique in a modded sector, and the system kept is the one findSystemById
+            // answers with, so both ID reads name one system.
             var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
             var sector = StarSystemFixture.buildSectorOf(
                 first,
@@ -429,8 +429,8 @@ final class SectorStarSystemsTest {
 
         @Test
         void keepsTheFirstSystemHeldUnderARepeatedId() {
-            // The id rule is the sector read's, whichever way the systems arrive - so a caller
-            // re-addressing systems it holds gets the system every other id read answers with.
+            // The ID rule is the sector read's, whichever way the systems arrive - so a caller
+            // re-addressing systems it holds gets the system every other ID read answers with.
             var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
 
             assertThat(SectorStarSystems.indexHeldSystemsById(List.of(
@@ -463,7 +463,7 @@ final class SectorStarSystemsTest {
         @Test
         void keysEverySystemByItsOwnKeyInTheSectorsOrder() {
             // The key is the three arms the sector states, so a caller holding one can be handed
-            // back the system without the id having had to be unique for it to work.
+            // back the system without the ID having had to be unique for it to work.
             var corvus = StarSystemFixture.buildKeyedSystem("corvus", "corvus_star", "893");
             var yma = StarSystemFixture.buildKeyedSystem("yma", "yma_star", "89a");
 
@@ -475,8 +475,8 @@ final class SectorStarSystemsTest {
 
         @Test
         void holdsBothSystemsOfAPairSharingAnId() {
-            // The whole point of the key index, and the defect the id index carries: a sector
-            // holding two systems under one id has both of them here, so a pass built on this one
+            // The whole point of the key index, and the defect the ID index carries: a sector
+            // holding two systems under one ID has both of them here, so a pass built on this one
             // accounts for every system the sector lists.
             var first = StarSystemFixture.buildKeyedSystem("deep space", null, "8b3");
             var second = StarSystemFixture.buildKeyedSystem("deep space", null, "38d53");
@@ -489,7 +489,7 @@ final class SectorStarSystemsTest {
 
         @Test
         void keepsTheFirstOfTwoSystemsTheSectorStatesNothingAbout() {
-            // The one shape a key cannot part: neither system offers an id, a centre or an anchor,
+            // The one shape a key cannot part: neither system offers an ID, a centre or an anchor,
             // so both carry the blank key and the sector has said nothing that tells them apart.
             // The first is kept for the same reason every other read here keeps the first.
             var first = StarSystemFixture.buildKeyedSystem(null, null, null);

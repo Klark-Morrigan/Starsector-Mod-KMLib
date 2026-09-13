@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins the contracts of {@link SystemKey#readKeyOf}, {@link SystemKey#hasStatedArm} and of the
  * key's own equality.
  *
- * <p>What is load-bearing is that two systems sharing an id are two keys. That is the live defect:
- * a modded sector holds systems whose id and name are both the same, so a case asserting an id
+ * <p>What is load-bearing is that two systems sharing an ID are two keys. That is the live defect:
+ * a modded sector holds systems whose ID and name are both the same, so a case asserting an ID
  * alone would pass under the very keying this type replaces.
  *
  * <p>Each method's cases live in a {@link Nested} group so the suite reports as a per-method tree.
@@ -39,7 +39,7 @@ final class SystemKeyTest {
 
         @Test
         void tellsApartTwoSystemsSharingAnId() {
-            // The defect itself: vanilla's unnamed deep space systems share id and name, and are
+            // The defect itself: vanilla's unnamed deep space systems share ID and name, and are
             // separated only by the entities the engine minted for each.
             var firstKey = SystemKey.readKeyOf(StarSystemFixture.buildKeyedSystem("deep space", "8aa", "8b3"));
             var secondKey = SystemKey.readKeyOf(StarSystemFixture.buildKeyedSystem("deep space", "38d4c", "38d53"));
@@ -50,7 +50,7 @@ final class SystemKeyTest {
 
         @Test
         void tellsApartTwoSystemsSeparatedByTheAnchorAlone() {
-            // A centre id may be a literal its creator chose, so two systems can share one. The
+            // A centre ID may be a literal its creator chose, so two systems can share one. The
             // anchor is engine-minted per system, and carries the separation on its own.
             var firstKey = SystemKey.readKeyOf(
                 StarSystemFixture.buildKeyedSystem("abyss", "abyss_icon_star", "4379d"));
@@ -142,7 +142,7 @@ final class SystemKeyTest {
 
         @Test
         void holdsTwoSystemsSharingAnIdAsTwoEntriesOfAKeyedMap() {
-            // What the collision costs today: keyed by id, the later system displaces the earlier
+            // What the collision costs today: keyed by ID, the later system displaces the earlier
             // one and no pass built on that map ever sees it.
             var systemsByKey = new LinkedHashMap<SystemKey, String>();
 

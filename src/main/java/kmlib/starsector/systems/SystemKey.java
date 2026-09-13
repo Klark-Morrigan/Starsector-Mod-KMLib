@@ -6,23 +6,23 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import kmlib.text.KmlibStrings;
 
 /**
- * What tells one star system apart from another: the id it answers to, plus the ids of the two
+ * What tells one star system apart from another: the ID it answers to, plus the IDs of the two
  * entities the engine builds it around.
  *
  * <p>It exists because {@code StarSystemAPI#getId} is not unique. A modded sector holds several
- * systems sharing an id - vanilla's own unnamed deep space and abyssal systems among them - and
- * they share their name as well, so neither arm alone tells them apart. Anything keyed on the id
+ * systems sharing an ID - vanilla's own unnamed deep space and abyssal systems among them - and
+ * they share their name as well, so neither arm alone tells them apart. Anything keyed on the ID
  * silently keeps the last of a colliding set and drops the rest, which is a system missing from
  * every pass built on that map with nothing anywhere saying so.
  *
  * <p>The three arms are held as fields and compared as such rather than composed into one string,
- * so no separator has to be trusted not to occur inside an entity id - a composition where
+ * so no separator has to be trusted not to occur inside an entity ID - a composition where
  * {@code a + b} and {@code ab + absent} can meet reintroduces the collision it was meant to break.
  *
- * <p>The anchor arm is the load-bearing one: an anchor's id is engine-minted per system and
+ * <p>The anchor arm is the load-bearing one: an anchor's ID is engine-minted per system and
  * persisted in the save as entity identity, so it is both distinct and stable across reloads. The
- * centre arm would not do on its own, since a centre id may be a literal its creator passed to
- * {@code initStar} and two authors can pick the same one. The id arm is the collision itself, kept
+ * centre arm would not do on its own, since a centre ID may be a literal its creator passed to
+ * {@code initStar} and two authors can pick the same one. The ID arm is the collision itself, kept
  * because it is what a person and every external input call the system, and because it is the arm
  * that is never absent.
  *
@@ -36,13 +36,13 @@ import kmlib.text.KmlibStrings;
  * caller keying a map on this asks {@link #hasStatedArm} first and holds them apart some other way.
  *
  * <p>The key is internal to code holding systems. A surface addressed from outside - an override
- * table, a persisted preference, a console argument, a log line - stays on the vanilla id, because
+ * table, a persisted preference, a console argument, a log line - stays on the vanilla ID, because
  * that is the only arm a person or a data file can write.
  *
  * @param systemId       the system's own {@code getId}, the name every external input calls it by,
  *                       so a holder of a key can name the system without going back to it
- * @param centreEntityId the id of the entity the system is built around, empty where it has none
- * @param anchorEntityId the id of the system's hyperspace anchor, empty where it has none
+ * @param centreEntityId the ID of the entity the system is built around, empty where it has none
+ * @param anchorEntityId the ID of the system's hyperspace anchor, empty where it has none
  */
 public record SystemKey(
     String systemId,
@@ -68,7 +68,7 @@ public record SystemKey(
      * Whether this key states anything at all about the system it was read off.
      *
      * <p>A key with every arm absent equals every other such key, so it identifies nothing: two
-     * systems the sector names with neither an id nor an entity would share one entry of any map
+     * systems the sector names with neither an ID nor an entity would share one entry of any map
      * keyed on it, which is the very conflation this type exists to prevent. The question is asked
      * here rather than by each keyed map testing three arms for itself.
      *
@@ -79,11 +79,11 @@ public record SystemKey(
     }
 
     /**
-     * The key identifying {@code system}, read off the system's own id and the ids of its centre
+     * The key identifying {@code system}, read off the system's own ID and the IDs of its centre
      * and hyperspace anchor.
      *
      * <p>Both entity reads are null-safe: a system may carry neither, and one that carries neither
-     * is keyed by its id alone rather than failing the read.
+     * is keyed by its ID alone rather than failing the read.
      *
      * <p>A null system yields null rather than a blank key. A blank key would equal every other
      * blank key, so two callers holding nothing would read as holding the same system - the exact
@@ -109,7 +109,7 @@ public record SystemKey(
         return KmlibStrings.hasText(arm) ? arm : ABSENT_ARM;
     }
 
-    // An entity's id, or nothing where the system carries no such entity - which the constructor
+    // An entity's ID, or nothing where the system carries no such entity - which the constructor
     // then reads as an absent arm, rather than this read naming the absent token itself.
     private static String readEntityId(SectorEntityToken entity) {
         return entity == null ? null : entity.getId();

@@ -75,7 +75,7 @@ public final class StarsectorPlayerFactionResolver {
 
     /** Default display-name values that signal the player has not
      *  customised their faction yet (either the pre-first-colony vanilla
-     *  placeholder or the literal id casings used by Nexerelin's stock
+     *  placeholder or the literal ID casings used by Nexerelin's stock
      *  {@code player.faction} file). Any of these as a live
      *  {@code displayName} reads worse in prose than a context fallback. */
     private static final Set<String> DEFAULT_UNESTABLISHED_PLACEHOLDERS =

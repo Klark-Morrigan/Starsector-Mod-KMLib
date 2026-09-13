@@ -27,8 +27,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins {@link ActivateGateCommand#runCommand} on its in-system outcome
- * branches: a resolved id activates the gate via {@link Gates#activateGate} and
- * reports success; an unknown id activates nothing and reports the miss. Player
+ * branches: a resolved ID activates the gate via {@link Gates#activateGate} and
+ * reports success; an unknown ID activates nothing and reports the miss. Player
  * feedback is read back through a recording {@code CommandOutput} binding, so the
  * message text is asserted without a live console.
  *
@@ -114,7 +114,7 @@ final class ActivateGateCommandTest {
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("No gate with id 'ghost'"));
 
-            // A typo'd id must leave the gate network dark.
+            // A typo'd ID must leave the gate network dark.
             gatesMock
                 .verifyNoInteractions();
         }
@@ -153,7 +153,7 @@ final class ActivateGateCommandTest {
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Missing required parameter 'id'"));
 
-            // With no id there is nothing to resolve or activate.
+            // With no ID there is nothing to resolve or activate.
             gatesMock
                 .verifyNoInteractions();
         }

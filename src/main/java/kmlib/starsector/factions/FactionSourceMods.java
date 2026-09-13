@@ -18,7 +18,7 @@ import java.util.Map;
  *
  * <p>A faction cannot be asked: neither it nor its spec carries where it came from. The loader
  * reads {@code data/world/factions/factions.csv}, opens each {@code .faction} file the rows name,
- * takes the id out of that file and keeps nothing else. The one place the answer survives is the
+ * takes the ID out of that file and keeps nothing else. The one place the answer survives is the
  * spreadsheet, which is why this reads game data rather than the sector.
  *
  * <p>What makes the read possible is {@code fs_rowSource}, a column the game's own CSV merger
@@ -28,7 +28,7 @@ import java.util.Map;
  * is the one source with no folder to report, since it loads from the working directory rather than
  * from a named one, and the join stringifies that absence rather than leaving the column empty.
  *
- * <p>The id comes out of the {@code .faction} file rather than off its name. The two agree on
+ * <p>The ID comes out of the {@code .faction} file rather than off its name. The two agree on
  * nearly every file, but the loader reads the file, and a listing that disagreed with the loader
  * about which faction a row declares would be wrong in exactly the case worth running it for.
  *
@@ -59,9 +59,9 @@ public final class FactionSourceMods {
     }
 
     /**
-     * Every faction the game's data declares, keyed by the id the loader builds it under.
+     * Every faction the game's data declares, keyed by the ID the loader builds it under.
      *
-     * @return the source per faction id; empty where the game is not up far enough to hold data
+     * @return the source per faction ID; empty where the game is not up far enough to hold data
      *         and where the spreadsheet will not open, both of which leave a caller with nothing
      *         to say rather than with a wrong answer
      */
@@ -111,7 +111,7 @@ public final class FactionSourceMods {
     // The source a row was read from: the mod installed in that folder where the mod manager lists
     // one, the base game where the row reports no folder at all, and the folder itself otherwise -
     // a source the manager does not account for is still better named by the folder it sits in
-    // than left unnamed, even though there is no mod id to name beside it.
+    // than left unnamed, even though there is no mod ID to name beside it.
     private static ModSource readSourceOf(
             JSONObject declarationRow,
             Map<String, ModSource> modsByDirectory) {
@@ -126,7 +126,7 @@ public final class FactionSourceMods {
             new ModSource(sourceDirectory, null));
     }
 
-    // The id the row's faction file declares, or null where the row names no file or the file will
+    // The ID the row's faction file declares, or null where the row names no file or the file will
     // not open. A file that will not open here did not become a faction either - the loader reads
     // it the same way, from the same merge - so such a row has no faction to attribute rather than
     // a faction whose attribution was lost.
@@ -173,8 +173,8 @@ public final class FactionSourceMods {
         return normalised.substring(normalised.lastIndexOf(PATH_SEPARATOR) + 1);
     }
 
-    // The enabled mods keyed by the folder each is installed in. Keyed by folder rather than by id
-    // because the folder is all a row reports, and a mod's id is not what its folder is called.
+    // The enabled mods keyed by the folder each is installed in. Keyed by folder rather than by ID
+    // because the folder is all a row reports, and a mod's ID is not what its folder is called.
     private static Map<String, ModSource> readModsByDirectory(SettingsAPI settings) {
 
         var modManager = settings.getModManager();

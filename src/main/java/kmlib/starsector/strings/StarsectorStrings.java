@@ -29,7 +29,7 @@ import java.util.Objects;
  *
  * <p>The public API is static and takes {@code (category, key)} on
  * every call. Mods that want category-bound ergonomics keep a small
- * constants holder of their own (string ids + the category id) and
+ * constants holder of their own (string IDs + the category ID) and
  * pass both through; that avoids leaking per-mod knowledge into KMLib
  * while still letting each call site reference typed key constants.
  */

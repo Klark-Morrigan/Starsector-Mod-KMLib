@@ -38,7 +38,7 @@ import java.util.Objects;
  * <p>Only the moments a KM control actually answers are named. The engine keeps a sound for a press that
  * lands on a control too disabled to take it, and nothing here has a disabled state to press yet - so
  * that role is left to whatever grows one, on the same rule {@link StarsectorUiSound} follows about not
- * guessing at ids nothing plays.
+ * guessing at IDs nothing plays.
  *
  * <p>The wheel moving a list is a moment of the same order and deliberately not an arrival: what the
  * player did was turn the wheel once, so one sound answers the whole movement however many rows went past
@@ -63,7 +63,7 @@ public record UiSoundScheme(
     PointerArrivalVolumes pointerArrivalVolumes,
     UiSoundCue listScrollCue) {
 
-    // The library's own level for a list moving under the wheel: vanilla's own balance for the id halved,
+    // The library's own level for a list moving under the wheel: vanilla's own balance for the ID halved,
     // on the same argument the arrival levels answer to. A wheel spun down a long list is one act however
     // far it travels, so what the level is set against is a single tick beside the panel's other moments
     // rather than a run of them.
@@ -109,7 +109,7 @@ public record UiSoundScheme(
      * own balance, being one act the player asked for; the arrivals take the library's defaults, because
      * what vanilla mixed its mouseover for is a screen with a handful of hit targets on it and not a column
      * of them. Matching the engine's chrome means sounding like it under one pointer sweep, which is what
-     * the levels answer for and the ids cannot. The wheel is quietened on the same argument: it lands
+     * the levels answer for and the IDs cannot. The wheel is quietened on the same argument: it lands
      * among those arrivals rather than on a screen of its own.
      *
      * @return the scheme a vanilla-looking control sounds by

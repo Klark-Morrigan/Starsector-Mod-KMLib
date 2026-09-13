@@ -218,7 +218,7 @@ final class SpawnEntityCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            // The spawned id must reach the player so they can target it with the
+            // The spawned ID must reach the player so they can target it with the
             // gate-activation command.
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("gate_42"));
@@ -401,7 +401,7 @@ final class SpawnEntityCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            // First bare token is the focus id, the second the speed (base 5), which
+            // First bare token is the focus ID, the second the speed (base 5), which
             // the default jitter widens before it reaches the spawner.
             entityOrbitsMock
                 .verify(() -> EntityOrbits.applyJitter(

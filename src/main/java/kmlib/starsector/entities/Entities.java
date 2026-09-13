@@ -31,7 +31,7 @@ public final class Entities {
      * against whatever a caller compares factions for, and an absent one has nothing to fail on.
      *
      * @param entity the entity to read; null yields null
-     * @return the faction's id, or null where the entity names none
+     * @return the faction's ID, or null where the entity names none
      */
     public static String readFactionId(SectorEntityToken entity) {
 

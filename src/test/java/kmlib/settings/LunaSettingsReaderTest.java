@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class LunaSettingsReaderTest {
 
-    // Ids of no consequence: every case here is refused before either is looked at.
+    // IDs of no consequence: every case here is refused before either is looked at.
     private static final String MOD_ID = "some_mod";
     private static final String FIELD_ID = "some_field";
 

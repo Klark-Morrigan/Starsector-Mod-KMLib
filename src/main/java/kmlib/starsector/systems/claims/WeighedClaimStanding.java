@@ -19,7 +19,7 @@ import java.util.List;
  * but it is present and it is competing for the space, and a reader asking who holds a system
  * is better served by seeing that than by seeing it silently dropped.
  *
- * @param factionId      the id of the faction this standing belongs to
+ * @param factionId      the ID of the faction this standing belongs to
  * @param isTerritorial  whether the faction's punitive-expedition data marks it territorial -
  *                       the gate a faction must pass before any score can claim a system
  * @param standingMarket the faction's strongest scoring market in the system, the one its

@@ -82,7 +82,7 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
      * Poses a mod whose settings LunaLib has loaded, which is the state every write needs and the
      * one a session reaches the first time any of that mod's settings is read.
      *
-     * @param modId the mod's LunaLib settings id
+     * @param modId the mod's LunaLib settings ID
      */
     public void openStoreFor(String modId) {
         valuesByMod.put(modId, new LinkedHashMap<>());
@@ -91,7 +91,7 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
     /**
      * Poses settings LunaLib has not loaded, or has reloaded away, so a write has nowhere to land.
      *
-     * @param modId the mod's LunaLib settings id
+     * @param modId the mod's LunaLib settings ID
      */
     public void loseStoreFor(String modId) {
         valuesByMod.remove(modId);
@@ -101,8 +101,8 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
      * Seeds a field as though an earlier session had stored it. Counted as no save, standing for
      * what the file held before the case began.
      *
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @param value   what the store holds under it
      */
     public void storeValue(String modId, String fieldId, Object value) {
@@ -110,8 +110,8 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
     }
 
     /**
-     * @param modId   the mod's LunaLib settings id
-     * @param fieldId the field's id
+     * @param modId   the mod's LunaLib settings ID
+     * @param fieldId the field's ID
      * @return what the store holds under it, or null where it holds nothing
      */
     public Object readStoredValue(String modId, String fieldId) {
@@ -119,7 +119,7 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
     }
 
     /**
-     * @param modId the mod's LunaLib settings id
+     * @param modId the mod's LunaLib settings ID
      * @return how many times the mod's store has been written to disk, so a case can show a save
      *         was deferred rather than only that the value ended up stored
      */

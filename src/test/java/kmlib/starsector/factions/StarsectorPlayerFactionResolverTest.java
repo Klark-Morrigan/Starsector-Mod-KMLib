@@ -75,7 +75,7 @@ class StarsectorPlayerFactionResolverTest {
 
         @Test
         void establishedFalseForBothNexPlayerCasings() {
-            // Both the lowercase id (Nex's stock player.faction) and the
+            // Both the lowercase ID (Nex's stock player.faction) and the
             // capitalised variant must resolve as unestablished.
             assertThat(StarsectorPlayerFactionResolver.isPlayerFactionEstablished(
                 stubSource("player", false))).isFalse();
@@ -317,7 +317,7 @@ class StarsectorPlayerFactionResolverTest {
 
         var sectorMock = Mockito.mock(SectorAPI.class);
         Mockito.when(sectorMock.getPlayerFaction()).thenReturn(playerFactionMock);
-        // The literal id vanilla's own market walk looks the player up by.
+        // The literal ID vanilla's own market walk looks the player up by.
         Mockito.when(sectorMock.getFaction("player")).thenReturn(playerFactionMock);
         Mockito.when(sectorMock.getEconomy()).thenReturn(economyMock);
 

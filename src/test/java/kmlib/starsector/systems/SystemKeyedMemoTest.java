@@ -16,8 +16,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Pins {@link SystemKeyedMemo#readValueFor}: that a value is worked out once per system and
- * remembered, that the memo tells apart what the key tells apart - two systems sharing an id, a
- * system with no id at all - and that it declines to pool the one shape the key cannot separate.
+ * remembered, that the memo tells apart what the key tells apart - two systems sharing an ID, a
+ * system with no ID at all - and that it declines to pool the one shape the key cannot separate.
  */
 final class SystemKeyedMemoTest {
 
@@ -45,9 +45,9 @@ final class SystemKeyedMemoTest {
 
         @Test
         void keepsTwoSystemsSharingAnIdApart() {
-            // The defect a memo keyed on the id carries: a sector holds two systems under one id,
+            // The defect a memo keyed on the ID carries: a sector holds two systems under one ID,
             // so the pair is a single entry and the second system is handed the first's value. The
-            // key separates them, an anchor id being minted per system.
+            // key separates them, an anchor ID being minted per system.
             var first = StarSystemFixture.buildKeyedSystem(SHARED_SYSTEM_ID, null, "8b3");
             var second = StarSystemFixture.buildKeyedSystem(SHARED_SYSTEM_ID, null, "38d53");
             var memo = new SystemKeyedMemo<Object>();
@@ -58,7 +58,7 @@ final class SystemKeyedMemoTest {
 
         @Test
         void remembersASystemCarryingNoIdButAnAnchor() {
-            // What the key buys over keying on the id: an id is only one of three arms, so a system
+            // What the key buys over keying on the ID: an ID is only one of three arms, so a system
             // the sector never named is still remembered by the entity the engine minted for it.
             var system = StarSystemFixture.buildKeyedSystem(null, null, "8b3");
             var resolver = new CountingResolver();
@@ -73,7 +73,7 @@ final class SystemKeyedMemoTest {
 
         @Test
         void resolvesASystemStatingNoArmAtAllAfreshOnEveryAsk() {
-            // No id and neither entity, so the key is blank and equals every other blank one. The
+            // No ID and neither entity, so the key is blank and equals every other blank one. The
             // resolver is paid again, which is the honest price: pooling every such system under
             // the one key would hand the first one's value to the second.
             var system = StarSystemFixture.buildKeyedSystem(null, null, null);

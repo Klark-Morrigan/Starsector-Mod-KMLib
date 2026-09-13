@@ -12,10 +12,10 @@ import kmlib.starsector.systems.StarSystems;
 import static kmlib.mods.console.commands.parsing.ParameterValues.text;
 
 /**
- * Console command (dev tool): activates the gate with the given id in the
- * current system. In-system only. Takes the target gate's id as its argument.
+ * Console command (dev tool): activates the gate with the given ID in the
+ * current system. In-system only. Takes the target gate's ID as its argument.
  *
- * <p>Resolves the gate by id within the current system and hands it to
+ * <p>Resolves the gate by ID within the current system and hands it to
  * {@link Gates#activateGate}, which owns the gate-state mechanics. Player
  * feedback goes through the inherited {@link CommandOutput} seam so the command's
  * outcome branches stay independent of the live console sink.
@@ -32,7 +32,7 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
-        // Context guards run first; the id is then required, so a missing or
+        // Context guards run first; the ID is then required, so a missing or
         // surplus argument is reported as bad syntax before any gate lookup.
         var parsed = readInput(context, args)
             .requireCampaign()
@@ -64,7 +64,7 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
     }
 
     /**
-     * What {@code kmlib_activate_gate} accepts: the id of the gate to activate,
+     * What {@code kmlib_activate_gate} accepts: the ID of the gate to activate,
      * required so an empty invocation is rejected as bad syntax rather than
      * searching for a blank id.
      */

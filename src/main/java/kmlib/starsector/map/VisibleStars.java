@@ -42,7 +42,7 @@ public final class VisibleStars {
      *
      * @param sector the sector to scan; null, or a sector with no hyperspace,
      *               yields an empty index (no star treated as visible)
-     * @return an index of the ids of systems whose star the map draws
+     * @return an index of the IDs of systems whose star the map draws
      */
     public static VisibleStars scan(SectorAPI sector) {
         var visibleStarSystemIds = new HashSet<String>();

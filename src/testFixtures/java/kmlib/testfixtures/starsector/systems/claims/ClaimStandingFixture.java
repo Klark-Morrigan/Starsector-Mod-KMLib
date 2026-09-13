@@ -65,7 +65,7 @@ public final class ClaimStandingFixture {
     // Which colony each standing rests on. A case about what a contest means is not a case about
     // pairing a row with anything else, so each builder's market is identified once here rather
     // than offered for a caller to vary - distinct per builder, so a box listing several kinds of
-    // standing still has one id per line.
+    // standing still has one ID per line.
     private static final String STANDING_MARKET_ID = "standing_colony";
     private static final String UNWEIGHED_MARKET_ID = "unweighed_colony";
     private static final String UNKNOWN_MARKET_ID = "unknown_colony";
