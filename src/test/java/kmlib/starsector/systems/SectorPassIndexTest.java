@@ -114,9 +114,11 @@ final class SectorPassIndexTest {
 
         @Test
         void answersEachOfTwoSystemsSharingAnIdItsOwnColonies() {
-            // The defect a memo keyed on the id carries: a sector holds two systems under one id,
-            // so the pair is a single entry and the second system is handed the first's colonies.
-            // The key separates them, an anchor id being minted per system.
+            // That the colony memo is addressed by the whole key and not by the id: a sector holds
+            // two systems under one id, and keyed on it the pair would be one entry handing the
+            // second system the first's colonies. Which systems a key tells apart, and the blank
+            // key that tells none apart, are SystemKeyedMemo's own and posed there - this is the
+            // colony read reaching it.
             var world = buildTwoSystemsSharingAnId();
             var index = new SectorPassIndex(world.sector());
 
@@ -124,66 +126,6 @@ final class SectorPassIndexTest {
                 .containsExactly(new Colony(world.firstColony(), false));
             assertThat(index.readColoniesIn(world.second()).colonies())
                 .containsExactly(new Colony(world.secondColony(), false));
-        }
-
-        @Test
-        void memoisesASystemCarryingNoIdButAnAnchor() {
-            // What the key buys over keying on the id: an id is only one of three arms, so a system
-            // the sector never named is still remembered by the entity the engine minted for it.
-            var system = StarSystemFixture.buildKeyedSystem(null, null, "8b3");
-            var colony = ColonyMarketFixture.buildVisibleColony("hegemony");
-
-            ColonyPlacementFixture.placeColonies(system, colony);
-
-            var index = new SectorPassIndex(buildSectorHoldingSystems(system));
-
-            assertThat(index.readColoniesIn(system).colonies())
-                .containsExactly(new Colony(colony, false));
-
-            index.readColoniesIn(system);
-
-            verify(system, times(1)).getAllEntities();
-        }
-
-        @Test
-        void walksASystemStatingNoArmAtAllAfreshOnEveryAsk() {
-            // No id and neither entity, so the key is blank and equals every other blank one. The
-            // walk is paid again, which is the honest price: pooling every such system under the
-            // one key would hand the first one's colonies to the second.
-            var fixture = new ColonyFixture(null);
-            var colony = fixture.buildVisibleColony("hegemony");
-
-            fixture.placeColoniesInSystem(colony);
-            fixture.listColoniesInEconomy(colony);
-
-            var index = new SectorPassIndex(fixture.getSector());
-
-            assertThat(index.readColoniesIn(fixture.getSystem()).colonies())
-                .containsExactly(new Colony(colony, true));
-
-            index.readColoniesIn(fixture.getSystem());
-
-            verify(fixture.getSystem(), times(2)).getAllEntities();
-        }
-
-        @Test
-        void keepsTwoSystemsStatingNoArmAtAllApart() {
-            // The conflation the blank key would cause, posed outright: two systems the sector
-            // names with nothing are two systems, and each has to answer with its own colonies.
-            var firstColony = ColonyMarketFixture.buildVisibleColony("hegemony");
-            var secondColony = ColonyMarketFixture.buildVisibleColony("tritachyon");
-            var first = StarSystemFixture.buildKeyedSystem(null, null, null);
-            var second = StarSystemFixture.buildKeyedSystem(null, null, null);
-
-            ColonyPlacementFixture.placeColonies(first, firstColony);
-            ColonyPlacementFixture.placeColonies(second, secondColony);
-
-            var index = new SectorPassIndex(buildSectorHoldingSystems(first, second));
-
-            assertThat(index.readColoniesIn(first).colonies())
-                .containsExactly(new Colony(firstColony, false));
-            assertThat(index.readColoniesIn(second).colonies())
-                .containsExactly(new Colony(secondColony, false));
         }
 
         @Test
