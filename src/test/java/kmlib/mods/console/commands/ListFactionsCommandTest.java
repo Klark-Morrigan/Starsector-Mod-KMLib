@@ -13,6 +13,7 @@ import com.fs.starfarer.api.characters.RelationshipAPI;
 import kmlib.mods.console.commands.ListFactionsCommand.FactionListingFilter;
 import kmlib.starsector.factions.FactionCustomFixture;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyPlacementFixture;
 
@@ -28,6 +29,7 @@ import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -303,6 +305,54 @@ final class ListFactionsCommandTest {
         }
 
         @Test
+        void namesTheModAFactionWasDeclaredBy() {
+            // The id alone says nothing about where a faction came from, which on a heavily
+            // modded install is most of what a reader opens this listing to find out.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("tahlan_greathouses", "Great Houses"));
+
+            assertThat(readReport(
+                    sector,
+                    FactionListingFilter.ALL,
+                    Map.of("tahlan_greathouses", "Tahlan Shipworks")))
+                .contains("tahlan_greathouses  -  Great Houses  Neutral (0 / 100)"
+                    + "  from: Tahlan Shipworks");
+        }
+
+        @Test
+        void marksAFactionNoDeclarationNamesAsUnattributed() {
+            // A faction a mod built at runtime is in no spreadsheet, and saying so beats a blank
+            // where every neighbouring line carries a name.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("hegemony", "Hegemony"));
+            sector.addFaction(buildFaction("runtime_faction", "Someone's Own"));
+
+            var report = readReport(
+                sector,
+                FactionListingFilter.ALL,
+                Map.of("hegemony", "vanilla"));
+
+            assertThat(report)
+                .contains("hegemony  -  Hegemony  Neutral (0 / 100)  from: vanilla")
+                .contains("runtime_faction  -  Someone's Own  Neutral (0 / 100)"
+                    + "  from: (unattributed)");
+        }
+
+        @Test
+        void dropsTheSourceClauseWhenNothingWasDeclared() {
+            // Nothing read is the read having failed or the game not being up, neither of which
+            // is a fact about any faction - marking them all unattributed would report it as one.
+            var sector = new SectorFixture();
+
+            sector.addFaction(buildFaction("hegemony", "Hegemony"));
+
+            assertThat(readReport(sector, FactionListingFilter.ALL, Map.of()))
+                .doesNotContain("from:");
+        }
+
+        @Test
         void namesTheKeywordInTheHeader() {
 
             var sector = new SectorFixture();
@@ -341,6 +391,11 @@ final class ListFactionsCommandTest {
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sector);
+
+            // Owed because the run reaches the source read, whose logger is resolved once for the
+            // JVM - left as the stand-in's null, every later suite logging through that class
+            // faults on a line it never wrote.
+            StubbedGlobalLogger.answerLoggersOn(globalMock);
 
             outputFake = new CommandOutputFake();
             command = new ListFactionsCommand(outputFake);
@@ -417,8 +472,21 @@ final class ListFactionsCommandTest {
         }
     }
 
+    // The unattributed run, which is what every case not about the source clause poses: an empty
+    // map drops the clause, so those cases assert on the line the listing had before it existed.
     private static String readReport(SectorFixture sector, FactionListingFilter filter) {
-        return ListFactionsCommand.buildReport(sector.getSector(), filter);
+        return readReport(sector, filter, Map.of());
+    }
+
+    private static String readReport(
+            SectorFixture sector,
+            FactionListingFilter filter,
+            Map<String, String> sourceNamesByFactionId) {
+
+        return ListFactionsCommand.buildReport(
+            sector.getSector(),
+            filter,
+            sourceNamesByFactionId);
     }
 
     /** A faction the listing can name: not territorial, and neutral to the player. */

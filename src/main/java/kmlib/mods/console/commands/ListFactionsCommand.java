@@ -8,6 +8,7 @@ import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
 import kmlib.mods.console.commands.parsing.ParsedParameters;
 import kmlib.starsector.factions.FactionFlags;
+import kmlib.starsector.factions.FactionSourceMods;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.factions.relation.StarsectorPlayerRelations;
 import kmlib.starsector.factions.relation.StarsectorRelationFormatter;
@@ -25,11 +26,11 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /**
- * Console command (dev tool): lists every faction in the sector with what it
- * holds - how many places, how many of those are concealed, how many the player
- * has still to find, and which systems they sit in. Prints to the console, two
- * lines per faction. Takes an optional filter keyword narrowing which factions
- * are listed.
+ * Console command (dev tool): lists every faction in the sector with which mod
+ * it came from and what it holds - how many places, how many of those are
+ * concealed, how many the player has still to find, and which systems they sit
+ * in. Prints to the console, two lines per faction. Takes an optional filter
+ * keyword narrowing which factions are listed.
  *
  * <p>Every faction is listed unfiltered, {@code neutral} and {@code derelict} and
  * the internal placeholders included, because the holdings counts are exactly
@@ -51,6 +52,14 @@ import java.util.function.Predicate;
  * counts as a colony at all and whether one the economy never registered is
  * present, and is inherited by reading through it rather than walking the economy
  * afresh.
+ *
+ * <p>Which mod a faction came from answers the question the id alone raises on a
+ * heavily modded install - a listing of eighty factions is mostly a list of
+ * unfamiliar ids, and the folder they were declared in is what makes it
+ * navigable. It is read once per run rather than per faction, and is the one
+ * clause that is dropped outright when it cannot be read: an unattributed mark
+ * against every faction would say only that the read failed, which the clause's
+ * absence says more quietly.
  *
  * <p>Shaping is the command's own: grouping the colonies by owner, counting them,
  * naming their systems and labelling hyperspace are this listing's questions
@@ -86,7 +95,13 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
     private static final String NO_FACTIONS_LINE = "\n  (none)";
     private static final String RELATIONSHIP_SEPARATOR = "  ";
     private static final String SELF_RELATIONSHIP = "(self)";
+    private static final String SOURCE_SEPARATOR = "  from: ";
     private static final String TERRITORIAL_MARK = "  [territorial]";
+
+    // A faction the sector holds that no row in the game's data declares - one a mod built at
+    // runtime rather than from a file. Named rather than left blank, so a reader can tell it apart
+    // from a faction whose clause was simply not printed.
+    private static final String UNATTRIBUTED_SOURCE = "(unattributed)";
 
     private static final ListFactionsSpec SPEC = new ListFactionsSpec();
 
@@ -124,21 +139,31 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
             ? FactionListingFilter.ALL
             : selectedFilters.get(0);
 
-        output.showMessage(buildReport(readActiveSector(), filter));
+        output.showMessage(buildReport(
+            readActiveSector(),
+            filter,
+            FactionSourceMods.readSourceNamesByFactionId()));
+
         return CommandResult.SUCCESS;
     }
 
     /**
      * Builds the faction listing for {@code sector} under {@code filter}. Free of
      * {@code Global} and the console, so the grouping, the counts, the filtering
-     * and the formatting turn on the sector it is handed and nothing else.
+     * and the formatting turn on what it is handed and nothing else.
      *
-     * @param sector the sector whose factions and colonies to read
-     * @param filter which factions to list, and which of their holdings the
-     *               systems clause names
+     * @param sector                 the sector whose factions and colonies to read
+     * @param filter                 which factions to list, and which of their
+     *                               holdings the systems clause names
+     * @param sourceNamesByFactionId what mod declared each faction; empty for a run
+     *                               with nothing to report, which drops the clause
+     *                               rather than marking every faction unattributed
      * @return the formatted report, or a notice line when no faction matches
      */
-    static String buildReport(SectorAPI sector, FactionListingFilter filter) {
+    static String buildReport(
+            SectorAPI sector,
+            FactionListingFilter filter,
+            Map<String, String> sourceNamesByFactionId) {
         // One walk of the sector answers every faction's row, so the read happens
         // here rather than once per faction.
         var coloniesByFactionId = groupColoniesByFactionId(SectorColonies.readColonies(sector));
@@ -164,7 +189,7 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
             }
             listedCount++;
 
-            appendFactionLine(report, faction, playerFactionId);
+            appendFactionLine(report, faction, playerFactionId, sourceNamesByFactionId);
             appendHoldingsLine(report, holdings, filter);
         }
         if (listedCount == 0) {
@@ -174,11 +199,12 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
     }
 
     // How a faction is named and where it stands: its id, its display name, the
-    // territorial mark, and its relationship to the player.
+    // territorial mark, its relationship to the player, and the mod it came from.
     private static void appendFactionLine(
             StringBuilder report,
             FactionAPI faction,
-            String playerFactionId) {
+            String playerFactionId,
+            Map<String, String> sourceNamesByFactionId) {
 
         report
             .append('\n')
@@ -206,6 +232,17 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
 
         if (relationship != null) {
             report.append(RELATIONSHIP_SEPARATOR).append(relationship);
+        }
+
+        // Nothing read means nothing to say about any faction, so the clause goes
+        // rather than standing on every line as a mark the reader cannot act on.
+        if (!sourceNamesByFactionId.isEmpty()) {
+
+            report
+                .append(SOURCE_SEPARATOR)
+                .append(sourceNamesByFactionId.getOrDefault(
+                    faction.getId(),
+                    UNATTRIBUTED_SOURCE));
         }
     }
 
