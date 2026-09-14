@@ -6,12 +6,9 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
-- [Unreleased](#unreleased)
-- [0.1.0](#010---unreleased)
+- [0.1.0](#010---2026-09-14)
 
-## [Unreleased]
-
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-09-14
 
 First tagged release, so there is no prior version to diff against: this is the whole public surface - the commands a player types, the packages a consumer imports, and the test fixtures that ship as a second artifact for consumers' own suites.
 
