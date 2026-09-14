@@ -1,0 +1,451 @@
+package kmlib.math.geometry;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.lwjgl.util.vector.Vector2f;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
+import static org.assertj.core.api.Assertions.withinPercentage;
+
+class PointsTest {
+
+    @Nested
+    class ComputeMean {
+        @Test
+        void computeMeanAveragesEachCoordinateOverEveryPoint() {
+            var mean = Points.computeMean(List.of(
+                new double[] {0, 0}, new double[] {4, 0}, new double[] {2, 6}));
+
+            assertThat(mean).containsExactly(2.0, 2.0);
+        }
+
+        @Test
+        void computeMeanOfOnePointIsThatPoint() {
+            assertThat(Points.computeMean(List.of(new double[] {3, -7})))
+                .containsExactly(3.0, -7.0);
+        }
+
+        @Test
+        void computeMeanLeansTowardWhereThePointsAreBunched() {
+            // Unweighted, so three coincident vertices outvote the lone far one: the mean
+            // answers where the vertices are, not where a shape's area is.
+            var mean = Points.computeMean(List.of(
+                new double[] {0, 0}, new double[] {0, 0}, new double[] {0, 0},
+                new double[] {8, 0}));
+
+            assertThat(mean).containsExactly(2.0, 0.0);
+        }
+
+        @Test
+        void computeMeanThrowsForNoPoints() {
+            assertThatThrownBy(() -> Points.computeMean(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class ComputeDistance {
+        @Test
+        void computeDistanceIsEuclidean() {
+            assertThat(Points.computeDistance(0, 0, 3, 4)).isEqualTo(5.0);
+        }
+
+        @Test
+        void computeDistanceIsZeroForCoincidentPoints() {
+            assertThat(Points.computeDistance(2, 7, 2, 7)).isZero();
+        }
+
+        @Test
+        void computeDistanceArrayOverloadMatchesCoordinateForm() {
+            assertThat(Points.computeDistance(new double[] {1, 1}, new double[] {4, 5}))
+                .isEqualTo(5.0);
+        }
+
+        @Test
+        void computeDistanceVectorOverloadMatchesCoordinateForm() {
+            assertThat(Points.computeDistance(new Vector2f(1, 1), new Vector2f(4, 5)))
+                .isEqualTo(5.0);
+        }
+    }
+
+    @Nested
+    class ComputeDistanceSquared {
+        @Test
+        void computeDistanceSquaredIsTheSquareOfTheEuclideanDistance() {
+            // 3-4-5 triangle: the squared distance is 25, the distance squared.
+            assertThat(Points.computeDistanceSquared(0, 0, 3, 4)).isEqualTo(25.0);
+        }
+
+        @Test
+        void computeDistanceSquaredIsZeroForCoincidentPoints() {
+            assertThat(Points.computeDistanceSquared(2, 7, 2, 7)).isZero();
+        }
+
+        @Test
+        void computeDistanceSquaredArrayOverloadMatchesCoordinateForm() {
+            assertThat(Points.computeDistanceSquared(new double[] {1, 1}, new double[] {4, 5}))
+                .isEqualTo(25.0);
+        }
+    }
+
+    @Nested
+    class ComputeVectorLength {
+        @Test
+        void computeVectorLengthIsTheEuclideanMagnitude() {
+            assertThat(Points.computeVectorLength(3, 4)).isEqualTo(5.0);
+        }
+
+        @Test
+        void computeVectorLengthMatchesFurtherPythagoreanTriples() {
+            // Independent integer right triangles pin the magnitude at more than one
+            // point, so a passing test is not a single-triple coincidence.
+            assertThat(Points.computeVectorLength(5, 12)).isEqualTo(13.0);
+            assertThat(Points.computeVectorLength(8, 15)).isEqualTo(17.0);
+            assertThat(Points.computeVectorLength(7, 24)).isEqualTo(25.0);
+        }
+
+        @Test
+        void computeVectorLengthIsZeroForTheZeroVector() {
+            assertThat(Points.computeVectorLength(0, 0)).isZero();
+        }
+
+        @Test
+        void computeVectorLengthEqualsTheLoneComponentWhenAxisAligned() {
+            // With one component zero the magnitude collapses to the other's absolute
+            // value - the vector lies flat along an axis.
+            assertThat(Points.computeVectorLength(5, 0)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(0, 5)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(-5, 0)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(0, -5)).isEqualTo(5.0);
+        }
+
+        @Test
+        void computeVectorLengthIgnoresComponentSign() {
+            // Magnitude squares each component, so every sign pairing of the same
+            // two components shares one length.
+            assertThat(Points.computeVectorLength(-3, -4)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(-3, 4)).isEqualTo(5.0);
+            assertThat(Points.computeVectorLength(3, -4)).isEqualTo(5.0);
+        }
+
+        @Test
+        void computeVectorLengthIsSymmetricInItsComponents() {
+            // Swapping x and y cannot change a sum of squares, so the length is the
+            // same either way round.
+            assertThat(Points.computeVectorLength(3, 4))
+                .isEqualTo(Points.computeVectorLength(4, 3));
+        }
+
+        @Test
+        void computeVectorLengthHandlesEqualComponents() {
+            // A 45-degree vector: both legs equal, so the magnitude is that leg times
+            // root two.
+            assertThat(Points.computeVectorLength(1, 1)).isCloseTo(Math.sqrt(2), within(1e-12));
+        }
+
+        @Test
+        void computeVectorLengthHandlesFractionalComponents() {
+            assertThat(Points.computeVectorLength(0.3, 0.4)).isCloseTo(0.5, within(1e-12));
+        }
+
+        @Test
+        void computeVectorLengthScalesLinearlyWithItsComponents() {
+            // Scaling both components by k scales the magnitude by |k| - the positive
+            // homogeneity any norm must hold.
+            var base = Points.computeVectorLength(3, 4);
+            assertThat(Points.computeVectorLength(30, 40)).isCloseTo(base * 10, within(1e-9));
+        }
+
+        @Test
+        void computeVectorLengthStaysFiniteWhenSquaringWouldOverflow() {
+            // Each squared component (1e200^2 = 1e400) overflows a double to infinity,
+            // so a naive sqrt(x*x + y*y) reports infinity here; the true magnitude is
+            // 1e200 * sqrt(2), well within range. An overflow-safe evaluation keeps
+            // the answer finite and correct.
+            assertThat(Points.computeVectorLength(1e200, 1e200))
+                .isCloseTo(1e200 * Math.sqrt(2), withinPercentage(1e-6));
+        }
+
+        @Test
+        void computeVectorLengthStaysAccurateWhenSquaringWouldUnderflow() {
+            // The mirror case: 1e-200^2 = 1e-400 underflows to zero, so a naive sqrt
+            // reports zero for a non-zero vector. An overflow-safe evaluation keeps
+            // the small magnitude 1e-200 * sqrt(2).
+            assertThat(Points.computeVectorLength(1e-200, 1e-200))
+                .isCloseTo(1e-200 * Math.sqrt(2), withinPercentage(1e-6));
+        }
+    }
+
+    @Nested
+    class ComputeUnitVector {
+        @Test
+        void computeUnitVectorReturnsTheDirectionScaledToUnitLength() {
+            var unit = Points.computeUnitVector(3, 4, 1e-9);
+
+            assertThat(unit).isNotNull();
+            assertThat(Math.hypot(unit[0], unit[1])).isCloseTo(1.0, within(1e-12));
+            assertThat(unit[0]).isCloseTo(0.6, within(1e-12));
+            assertThat(unit[1]).isCloseTo(0.8, within(1e-12));
+        }
+
+        @Test
+        void computeUnitVectorKeepsTheComponentSigns() {
+            var unit = Points.computeUnitVector(-3, -4, 1e-9);
+
+            assertThat(unit[0]).isCloseTo(-0.6, within(1e-12));
+            assertThat(unit[1]).isCloseTo(-0.8, within(1e-12));
+        }
+
+        @Test
+        void computeUnitVectorReturnsTheAxisForAnAxisAlignedInput() {
+            assertThat(Points.computeUnitVector(5, 0, 1e-9)).containsExactly(1.0, 0.0);
+            assertThat(Points.computeUnitVector(0, 5, 1e-9)).containsExactly(0.0, 1.0);
+            assertThat(Points.computeUnitVector(-5, 0, 1e-9)).containsExactly(-1.0, 0.0);
+        }
+
+        @Test
+        void computeUnitVectorIsNullForTheZeroVector() {
+            assertThat(Points.computeUnitVector(0, 0, 1e-9)).isNull();
+        }
+
+        @Test
+        void computeUnitVectorIsNullBelowTheGivenFloor() {
+            // Length 1 sits under a floor of 2, so the direction counts as undefined.
+            assertThat(Points.computeUnitVector(1, 0, 2.0)).isNull();
+        }
+
+        @Test
+        void computeUnitVectorAcceptsALengthExactlyAtTheFloor() {
+            // The floor is a strict lower bound: a vector whose length equals it keeps
+            // its direction and normalises rather than returning null.
+            assertThat(Points.computeUnitVector(2, 0, 2.0)).containsExactly(1.0, 0.0);
+        }
+
+        @Test
+        void computeUnitVectorScalesTheFloorToTheCallersOwnMagnitude() {
+            // The same tiny vector is a valid direction under a tiny floor and a
+            // degenerate one under a coarse floor - the caller chooses the scale.
+            assertThat(Points.computeUnitVector(1e-4, 0, 1e-9)).containsExactly(1.0, 0.0);
+            assertThat(Points.computeUnitVector(1e-4, 0, 1e-3)).isNull();
+        }
+
+        @Test
+        void computeUnitVectorStaysUnitLengthWhenSquaringWouldOverflow() {
+            // The shared magnitude step is overflow-safe, so even a huge input yields a
+            // genuine unit vector rather than NaN from an infinity divided by infinity.
+            var unit = Points.computeUnitVector(1e200, 1e200, 1e-9);
+
+            assertThat(unit).isNotNull();
+            assertThat(Math.hypot(unit[0], unit[1])).isCloseTo(1.0, within(1e-12));
+            assertThat(unit[0]).isCloseTo(Math.sqrt(0.5), within(1e-12));
+            assertThat(unit[1]).isCloseTo(Math.sqrt(0.5), within(1e-12));
+        }
+    }
+
+    @Nested
+    class ProjectPointOnto {
+        @Test
+        void projectPointOntoReturnsTheDistanceAlongAUnitAxis() {
+            // (3, 4) onto the unit 3-4-5 direction lands at the point's own length, since
+            // the point lies along that direction.
+            assertThat(Points.projectPointOnto(3, 4, 0.6, 0.8)).isCloseTo(5.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoIsZeroPerpendicularToTheAxis() {
+            // A point straight up the y-axis has no position along the x-axis.
+            assertThat(Points.projectPointOnto(0, 5, 1, 0)).isCloseTo(0.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoIsNegativeBehindTheOrigin() {
+            // The projection is signed, so the far side of the origin reads negative - what
+            // a caller keying on which side of a line a point falls on relies on.
+            assertThat(Points.projectPointOnto(-2, 0, 1, 0)).isCloseTo(-2.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoScalesWithANonUnitAxis() {
+            // Doubling the axis doubles the projection, so only a unit axis reads as a
+            // world distance.
+            assertThat(Points.projectPointOnto(3, 4, 1.2, 1.6)).isCloseTo(10.0, within(1e-12));
+        }
+
+        @Test
+        void projectPointOntoReadsAPointAndAxisGivenAsArrays() {
+            // The {x, y} form the rest of the geometry package passes points in, so a
+            // caller holding arrays need not spread them into four loose doubles.
+            assertThat(Points.projectPointOnto(new double[] {3, 4}, new double[] {0.6, 0.8}))
+                .isCloseTo(5.0, within(1e-12));
+        }
+    }
+
+    @Nested
+    class ProjectExtentOnto {
+        @Test
+        void projectExtentOntoReturnsTheMinAndMaxProjection() {
+            // Projected onto the x-axis the cloud spans x 1..7; the y values do not
+            // reach the x-axis projection, so the extent is {1, 7}.
+            var extent = Points.projectExtentOnto(
+                List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
+                1, 0);
+
+            assertThat(extent).containsExactly(1.0, 7.0);
+        }
+
+        @Test
+        void projectExtentOntoProjectsOntoAnArbitraryAxis() {
+            // Onto the y-axis the same cloud spans y 2..9.
+            var extent = Points.projectExtentOnto(
+                List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9}),
+                0, 1);
+
+            assertThat(extent).containsExactly(2.0, 9.0);
+        }
+
+        @Test
+        void projectExtentOntoCollapsesToAPointForASingleInput() {
+            // One point projects to a single value, so min and max coincide - a
+            // zero-width extent.
+            var extent = Points.projectExtentOnto(List.of(new double[] {3, 4}), 0.6, 0.8);
+
+            assertThat(extent[0]).isCloseTo(5.0, within(1e-12));
+            assertThat(extent[1]).isCloseTo(5.0, within(1e-12));
+        }
+
+        @Test
+        void projectExtentOntoScalesWithANonUnitAxis() {
+            // Doubling the axis doubles every projection, so the extent doubles while
+            // the same points still attain its bounds.
+            var points = List.of(new double[] {1, 0}, new double[] {5, 0});
+
+            assertThat(Points.projectExtentOnto(points, 2, 0)).containsExactly(2.0, 10.0);
+        }
+
+        @Test
+        void projectExtentOntoThrowsForNoPoints() {
+            assertThatThrownBy(() -> Points.projectExtentOnto(List.of(), 1, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class ProjectCombinedExtentOnto {
+        @Test
+        void projectCombinedExtentOntoUnionsTheGroupsExtents() {
+            // Two groups projected onto the x-axis: the first spans x 1..4, the second
+            // x 6..9, so the combined extent is {1, 9}.
+            var extent = Points.projectCombinedExtentOnto(
+                List.of(
+                    List.of(new double[] {1, 5}, new double[] {4, 2}),
+                    List.of(new double[] {6, 0}, new double[] {9, 3})),
+                1, 0);
+
+            assertThat(extent[0]).isCloseTo(1.0, within(1e-12));
+            assertThat(extent[1]).isCloseTo(9.0, within(1e-12));
+        }
+
+        @Test
+        void projectCombinedExtentOntoMatchesTheSingleGroupProjection() {
+            // One group reduces to the single-cloud projection, so the combined extent
+            // equals projectExtentOnto on that group.
+            var group = List.of(new double[] {1, 5}, new double[] {7, 2}, new double[] {4, 9});
+
+            assertThat(Points.projectCombinedExtentOnto(List.of(group), 0, 1))
+                .containsExactly(Points.projectExtentOnto(group, 0, 1));
+        }
+
+        @Test
+        void projectCombinedExtentOntoThrowsForNoGroups() {
+            assertThatThrownBy(() -> Points.projectCombinedExtentOnto(List.of(), 1, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void projectCombinedExtentOntoThrowsWhenAGroupIsEmpty() {
+            // An empty group has no extent to contribute, so the projection rejects it
+            // rather than folding in a nonsensical infinite bound.
+            assertThatThrownBy(() -> Points.projectCombinedExtentOnto(
+                List.of(List.of(new double[] {1, 2}), List.of()), 1, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class ComputeAngleDegrees {
+        @Test
+        void computeAngleDegreesVectorOverloadMatchesCoordinateForm() {
+            assertThat(Points.computeAngleDegrees(new Vector2f(0, 0), new Vector2f(1, 1)))
+                .isEqualTo(45.0);
+        }
+
+        @Test
+        void computeAngleDegreesIsCounterClockwiseFromPositiveX() {
+            assertThat(Points.computeAngleDegrees(0, 0, 1, 1)).isEqualTo(45.0);
+            assertThat(Points.computeAngleDegrees(0, 0, 0, 1)).isEqualTo(90.0);
+            assertThat(Points.computeAngleDegrees(0, 0, -1, 0)).isEqualTo(180.0);
+        }
+
+        @Test
+        void computeAngleDegreesIsRelativeToTheFirstPoint() {
+            assertThat(Points.computeAngleDegrees(2, 2, 5, 6)).isCloseTo(53.13,
+                within(0.01));
+        }
+
+        @Test
+        void computeAngleDegreesReadsTwoPointsGivenAsArrays() {
+            // The {x, y} form the rest of the geometry package passes points in.
+            assertThat(Points.computeAngleDegrees(new double[] {0, 0}, new double[] {1, 1}))
+                .isEqualTo(45.0);
+        }
+    }
+
+    @Nested
+    class ComputeAngleBetween {
+        @Test
+        void computeAngleBetweenIsZeroForTheSameDirection() {
+            assertThat(Points.computeAngleBetween(3, 0, 5, 0, 1e-6)).isCloseTo(0.0, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsPiForOppositeDirections() {
+            assertThat(Points.computeAngleBetween(1, 0, -4, 0, 1e-6))
+                .isCloseTo(Math.PI, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsARightAngleForPerpendicularVectors() {
+            assertThat(Points.computeAngleBetween(1, 0, 0, 1, 1e-6))
+                .isCloseTo(Math.PI / 2, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsUnsignedSoALeftAndRightTurnReadAlike() {
+            // The angle is blind to which side the turn is on: (1,0) opens the same
+            // amount to (0,1) as to (0,-1).
+            var left = Points.computeAngleBetween(1, 0, 0, 1, 1e-6);
+            var right = Points.computeAngleBetween(1, 0, 0, -1, 1e-6);
+
+            assertThat(left).isCloseTo(right, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIgnoresVectorLength() {
+            // Only direction matters, so scaling either vector leaves the angle put.
+            assertThat(Points.computeAngleBetween(100, 0, 0, 0.01, 1e-6))
+                .isCloseTo(Math.PI / 2, within(1e-9));
+        }
+
+        @Test
+        void computeAngleBetweenIsNaNWhenEitherVectorIsDegenerate() {
+            // A vector shorter than minLength has no direction, so there is no angle
+            // to report - NaN, leaving the caller to decide what that should mean.
+            assertThat(Points.computeAngleBetween(0, 0, 1, 0, 1e-6)).isNaN();
+            assertThat(Points.computeAngleBetween(1, 0, 0, 0, 1e-6)).isNaN();
+        }
+    }
+}

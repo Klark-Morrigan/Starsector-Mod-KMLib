@@ -1,0 +1,110 @@
+package kmlib.starsector.ui.widgets;
+
+import kmlib.math.geometry.Rectangle;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Pins {@link IconLabelRow}'s geometry: the icon is a square inset off the row's top and bottom and
+ * flush with its left padding, the label anchors past the icon (or at the left inset for an icon-less
+ * option), a trailing value right-aligns to the row's right inset, and the measured row width reserves
+ * the icon and the value only when the option has each - so the drawn icon, the drawn label, the drawn
+ * value, and the sized column all read the same layout.
+ */
+class IconLabelRowTest {
+    // A 24-tall row: the icon inset is 2 off each edge, so the icon square is 20 and the label sits
+    // 6 past it. Reused across the cases so their numbers line up.
+    private final Rectangle row = new Rectangle(10f, 20f, 100f, 24f);
+
+    @Nested
+    class ComputeIconBox {
+        @Test
+        void placesASquareInsetOffTheTopAndBottomFlushWithTheLeftPadding() {
+            // Left padding 4 -> x=14; vertical inset 2 -> y=22 and side 24-2*2=20.
+            assertThat(IconLabelRow.computeIconBox(row))
+                .isEqualTo(new Rectangle(14f, 22f, 20f, 20f));
+        }
+    }
+
+    @Nested
+    class ComputeLabelAnchorX {
+        @Test
+        void anchorsPastTheIconAndItsGapWhenTheOptionHasAnIcon() {
+            // Left padding 4 + icon side 20 + gap 6 = 30 past the row's left edge (x=10) -> 40.
+            assertThat(IconLabelRow.computeLabelAnchorX(row, true))
+                .isEqualTo(40f);
+        }
+
+        @Test
+        void anchorsAtTheLeftPaddingWhenTheOptionHasNoIcon() {
+            assertThat(IconLabelRow.computeLabelAnchorX(row, false))
+                .isEqualTo(14f);
+        }
+    }
+
+    @Nested
+    class ComputeTrailingAnchorX {
+        @Test
+        void anchorsAtTheRightEdgeLessTheTrailingInset() {
+            // Row right edge 10 + 100 = 110, less trailing padding 4 -> 106; the value right-aligns
+            // here so a stack of equal-width rows lines its values up.
+            assertThat(IconLabelRow.computeTrailingAnchorX(row))
+                .isEqualTo(106f);
+        }
+    }
+
+    @Nested
+    class ComputeDirectionTriangleBox {
+        @Test
+        void rightAlignsToTheTrailingInsetAndCentresVerticallyInTheRow() {
+
+            var box = IconLabelRow.computeDirectionTriangleBox(row);
+            // Its width is the slot width, its right edge the same trailing inset a value anchors to,
+            // and its centre the row's centre, so a triangle column lines up where a value column would.
+            assertThat(box.width())
+                .isEqualTo(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
+            assertThat(box.x() + box.width())
+                .isEqualTo(IconLabelRow.computeTrailingAnchorX(row));
+            assertThat(box.computeCenterY())
+                .isEqualTo(row.computeCenterY());
+        }
+
+        @Test
+        void sizesTheTriangleOffTheRowHeightSoAStackReadsEven() {
+            // A taller row yields a wider slot, so a stack of equal-height rows shows even triangles.
+            var tallerRow = new Rectangle(10f, 20f, 100f, 40f);
+
+            assertThat(IconLabelRow.computeDirectionTriangleSlotWidth(tallerRow.height()))
+                .isGreaterThan(IconLabelRow.computeDirectionTriangleSlotWidth(row.height()));
+        }
+    }
+
+    @Nested
+    class MeasureRowWidth {
+        @Test
+        void reservesTheIconAndItsGapAheadOfTheLabelWhenTheOptionHasAnIcon() {
+            // Left padding 4 + (icon side 20 + gap 6) + label 50 + trailing padding 4 = 84. A row with
+            // no value is charged neither the value nor the gap that would part it from the label.
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, RowSlot.NO_WIDTH))
+                .isEqualTo(84f);
+        }
+
+        @Test
+        void reservesOnlyTheLabelAndPaddingWhenTheOptionHasNoIcon() {
+            // Left padding 4 + label 50 + trailing padding 4 = 58, no icon extent.
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, false, RowSlot.NO_WIDTH))
+                .isEqualTo(58f);
+        }
+
+        @Test
+        void reservesTheTrailingValueAndItsGapWhenTheOptionHasAValue() {
+            // Left padding 4 + (icon 20 + gap 6) + label 50 + (value gap 6 + value 15) + trailing
+            // padding 4 = 105, the icon-and-value case the picker's ranked rows take.
+            assertThat(IconLabelRow.measureRowWidth(24f, 50f, true, 15f))
+                .isEqualTo(105f);
+        }
+    }
+}

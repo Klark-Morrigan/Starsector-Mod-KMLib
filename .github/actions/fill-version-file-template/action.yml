@@ -1,0 +1,60 @@
+# Fills the caller's committed VersionChecker template from its
+# mod_info.json, so the version an update checker reads is the same string
+# the game reads and is never restated by hand.
+#
+# The action shells out to scripts/fill_version_file_template.sh so the
+# logic is unit-tested with bats. Composite actions are not unit-testable.
+name: Fill version file template
+description: >-
+  Substitutes the tokens in the caller's committed <mod-id>.version.template
+  from mod_info.json - mod name, version components, game version, and the
+  direct download URL for the release being cut - and writes the result to
+  the given path.
+
+inputs:
+  output-path:
+    description: >-
+      Where to write the filled file, relative to the job's working directory
+      rather than to mod-root. Parent directories are created if absent, so a
+      path inside the assembled dist payload is as valid as one at the
+      workspace root.
+    required: true
+  zip-name:
+    description: >-
+      Filename of the release zip the generated directDownloadURL points at.
+      Supplied by mod-release.yml from the read-mod-info action's output so
+      the URL and the uploaded asset cannot name different files. Optional
+      because a caller with no release to name - a local build filling the
+      template for a dev install - has nothing to state; left empty, the name
+      is derived from mod_info.json jars[0] by the rule read-mod-info derives
+      it by, so the two cannot disagree.
+    required: false
+    default: ''
+  mod-root:
+    description: >-
+      Directory holding mod_info.json and the <mod-id>.version.template file.
+      Defaults to the working directory, which is where a job checking the
+      mod out at the workspace root already stands. Set it when the checkout
+      is elsewhere: Actions permits no working-directory on a `uses:` step,
+      so an action cannot be positioned the way a `run:` step can.
+    required: false
+    default: '.'
+
+# The other half of directDownloadURL is the publishing repository, taken
+# from the GITHUB_REPOSITORY variable the Actions runtime exports rather than
+# from an input: an owner/repo passed by hand could name a repository other
+# than the one the release is being cut in, and the URL would 404 for every
+# player. Stated here because it is a required input in every sense except
+# the declared one - the action fails without it.
+
+runs:
+  using: composite
+  steps:
+    - id: fill
+      shell: bash
+      # GITHUB_ACTION_PATH points at this action's directory regardless of
+      # the caller's working directory, so the script path is stable.
+      run: |
+        "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh" \
+          "${{ inputs.output-path }}" "${{ inputs.zip-name }}" \
+          "${{ inputs.mod-root }}"

@@ -1,0 +1,177 @@
+// Binds FastRenderingModelviewMatrixReader to either Fast Rendering's real
+// bridge or the compile-only mirrors of it, and owns everything that decision
+// touches: the stub source set, the version report, and the guards that keep a
+// binding from being taken by accident.
+//
+// KMLib's own, applied from its build.gradle - NOT part of the shared Starsector
+// conventions, and no consumer mod applies it. It sits in its own file because a
+// classpath that varies by machine is the one thing in this build that a reader
+// has to follow end to end, and it reads better whole than scattered through the
+// dependency list.
+//
+// The reader exists because Fast Rendering keeps the modelview in the renderer's
+// own TransformManager rather than in GL, so there is nowhere else to read it
+// from under that mod.
+//
+// It is bound differently from the soft dependencies a mod folder can simply be
+// installed for: fr.jar exists only on an install patched IN PLACE, so requiring
+// it would make KMLib compilable only on a patched machine - including CI, which
+// would then need a patched game to compile a class it never runs.
+//
+// So the source is the constant and the classpath is not. A patched install
+// compiles the adapter against genir's actual bytes; a stock one falls back to
+// compile-only mirrors of the six members it reads (src/bridgestubs/java).
+// Development happens on patched installs, so the strict binding is the everyday
+// one and stub drift surfaces as an ordinary compile error rather than as a
+// promise nobody checks; the stubs only keep an unpatched machine's build green.
+//
+// compileOnly either way: the game classloader provides fr.jar at runtime on the
+// installs that have it, and the stubs must never reach the jar, where they
+// would shadow the real classes.
+//
+// Two properties make each leg buildable on demand rather than only on the
+// machine that happens to select it, which is what lets CI run both:
+//
+// -PvanillaOnly=true builds as an unpatched install would - the vanilla binding,
+// which in practice means compiling against the bridge stubs. Named for the
+// install it stands in for rather than for the stubs that do the standing: a
+// caller is choosing which player's game to prove buildable, and the stubs are
+// how that is arranged. Without it the vanilla leg is only ever exercised where
+// nobody is watching, which is the failure the stubs are meant to prevent.
+//
+// -PrequireFastRendering=true refuses to fall back, failing instead. A build
+// that means to check the adapter against genir's real bytes has to be able to
+// insist on them: silently compiling stubs would report success for a check that
+// never ran, which is worse than not running it, since the green tells a reader
+// the signatures were verified.
+def fastRenderingJarFile = resolveCoreJarFile('fr.jar')
+def isVanillaForced = findProperty('vanillaOnly') == 'true'
+def isFastRenderingRequired = findProperty('requireFastRendering') == 'true'
+def isFastRenderingInstalled = fastRenderingJarFile.exists() && !isVanillaForced
+
+if (isFastRenderingRequired && isVanillaForced) {
+    throw new GradleException('-PrequireFastRendering and -PvanillaOnly select opposite '
+        + 'bindings; pass one or neither.')
+}
+if (isFastRenderingRequired && !isFastRenderingInstalled) {
+    throw new GradleException(
+        "-PrequireFastRendering=true, but no Fast Rendering bridge at ${fastRenderingJarFile}. "
+            + 'This build machine needs a Fast-Rendering-patched Starsector install to '
+            + "verify KMLib's bridge adapter against the real jar.")
+}
+
+// Which Fast Rendering the adapter is type-checked against, read out of the jar
+// itself: fr.jar carries com.genir.renderer.Version.getVersion(). The jar is the
+// only source that exists everywhere the build does - a patched install is
+// patched in place, so there is no mod folder to read a mod_info.json from, and
+// CI has only the transported core jars.
+//
+// Loaded under a bootstrap-parented loader so the class cannot resolve against
+// the build's own classpath, and closed immediately; the method returns a
+// constant and touches nothing else, so nothing stays loaded. Any failure - an
+// older jar without the class, a renamed method - reports 'unknown version'.
+// Which Fast Rendering was bound is a thing to report, never a reason to fail a
+// build that would otherwise compile.
+def readFastRenderingVersion = { File jar ->
+    if (!jar.exists()) {
+        return null
+    }
+    try {
+        def loader = new URLClassLoader([jar.toURI().toURL()] as URL[], (ClassLoader) null)
+        try {
+            return loader.loadClass('com.genir.renderer.Version')
+                .getMethod('getVersion')
+                .invoke(null)
+        } finally {
+            loader.close()
+        }
+    } catch (Exception ignored) {
+        return null
+    }
+}
+
+sourceSets {
+    bridgeStubs {
+        // Declared explicitly to match the path used in the repo. If undeclared,
+        // Gradle derives the same path in camel case, which causes case-sensitive
+        // operating systems to look in the wrong place.
+        java.srcDirs = ['src/bridgestubs/java']
+    }
+}
+
+dependencies {
+    // The stubs name Matrix4f in the one signature they mirror, so they need the
+    // jar it lives in.
+    bridgeStubsCompileOnly files(resolveCoreJarFile('lwjgl_util.jar'))
+}
+
+// The stubs mirror a third party's signatures, so they are held to genir's shape
+// rather than to KM house style - the names are not ours to choose.
+tasks.named('checkstyleBridgeStubs') {
+    enabled = false
+}
+
+// Read at configuration time so the guard below touches no project state while
+// the task runs, and so the failure can quote the directories Gradle ACTUALLY
+// read rather than the ones the lifecycle message names.
+def bridgeStubsSrcDirs = sourceSets.bridgeStubs.java.srcDirs.join(', ')
+def hasBridgeStubSources = !sourceSets.bridgeStubs.java.files.isEmpty()
+
+// Reported at configuration time so it prints on EVERY invocation, including an
+// incremental build whose compile task is up-to-date or served from the cache -
+// the build most likely to be read after the fact is exactly that one.
+//
+// Only when a jar is bound. The vanilla binding has no Fast Rendering to report,
+// and naming the version sitting unused on the machine under a build that asked
+// for vanilla invites the misreading it would exist to prevent. The generic
+// toolchain line (Common-Java's java-conventions.gradle) still prints for both,
+// since Gradle and the JVM are the same question either way.
+if (isFastRenderingInstalled) {
+    def fastRenderingVersion = readFastRenderingVersion(fastRenderingJarFile) ?: 'unknown version'
+    logger.lifecycle("Fast Rendering: ${fastRenderingVersion} (bound from ${fastRenderingJarFile})")
+}
+
+tasks.named('compileJava') {
+    doFirst {
+
+        // Nothing to check on the Fast Rendering binding - the jar either exists or the
+        // build already failed above.
+        if (isFastRenderingInstalled) {
+            return
+        }
+
+        // Both remaining bindings compile against the stubs, so an empty stub source set is not
+        // a degraded build - it is a broken one. sourceSets.bridgeStubs.output lands on
+        // compileJava's classpath as an empty directory, and every com.genir.renderer.bridge.*
+        // import then fails naming the file that imports the stubs rather than the stubs that
+        // went missing. Guarded for the same reason -PrequireFastRendering refuses to fall back:
+        // a binding that is silently absent has to say so itself, or the reader debugs the
+        // wrong file.
+        if (!hasBridgeStubSources) {
+
+            // The parentheses around the else-branch are load-bearing: without them the ternary
+            // is a complete statement at the end of its own line, so the next line's leading '+'
+            // starts a NEW statement - unary plus on a String, which dies as "No signature of
+            // method: java.lang.String.positive()".
+            def selected = isVanillaForced
+                ? '-PvanillaOnly=true selected the vanilla binding'
+                : ("no Fast Rendering bridge at ${fastRenderingJarFile}, so the build fell "
+                    + 'back to the stub binding')
+
+            throw new GradleException("${selected}, but the bridgeStubs source set has no "
+                + "sources. Gradle read ${bridgeStubsSrcDirs}. Note that the conventional "
+                + "directory for a source set named 'bridgeStubs' is src/bridgeStubs/java, "
+                + "which is the same path as src/bridgestubs on a case-insensitive "
+                + 'filesystem and a different one on Linux.')
+        }
+    }
+}
+
+// Which binding this build took is settled above; here it is only a matter of
+// which of the two the compiler is pointed at. The stubs take the game-jar shape
+// for the same reason the real jar does - they stand in for a jar the game
+// provides, and must never reach the test runtime, where they would shadow the
+// real classes on a patched install.
+dependOnGameJars(isFastRenderingInstalled
+    ? files(fastRenderingJarFile)
+    : sourceSets.bridgeStubs.output)

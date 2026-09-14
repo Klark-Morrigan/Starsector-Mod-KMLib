@@ -1,0 +1,219 @@
+// KMLib's own build. The shared Starsector mod conventions live in
+// gradle/starsector-mod.gradle (hosted here, since KMLib owns the Starsector
+// build knowledge) and are applied below; this file keeps only what is
+// specific to KMLib.
+apply from: "${rootDir}/gradle/starsector-mod.gradle"
+
+// The fixtures a consuming mod's tests stand their subjects on, published as a
+// variant of their own rather than inside the jar the game loads. They are
+// test-only artefacts: the launcher never needs them, and a jar it does load
+// must not carry classes that link against a test library.
+apply plugin: 'java-test-fixtures'
+
+group = 'kmlib'
+
+// On-demand Java formatting (`gradlew spotlessApply`). The wiring and the
+// rationale live in the shared script; the only thing KMLib decides here is
+// that bridgeStubs is exempt, for the same reason
+// checkstyleBridgeStubs is disabled below - the stubs mirror a third party's
+// shape, which is not ours to restyle.
+ext.formatterExcludedSourceSets = ['bridgeStubs']
+apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
+
+// The scripts under gradle/ are Groovy evaluated against a project, so what they decide can only be
+// checked by running a build. TestKit does that, and it brings Gradle's own runtime with it - which
+// is why these tests get a source set rather than a package in the main suite: on the same classpath
+// its logging backend answers instead of the game's, and KMLib's log-level tests read the wrong
+// level. Separate task, wired into `check` so it is not a suite someone has to remember.
+sourceSets {
+    buildScriptTest {
+    }
+}
+
+// The same stack the main suite runs on, taken by extending its configuration rather than by naming
+// versions again: a second pinning is a second thing to bump, and the two suites drifting onto
+// different assertion libraries is not a difference anyone would choose.
+//
+// Only the compile-side configuration is extended. The test RUNTIME carries the game's own jars, and
+// putting those behind TestKit is how the wrong logging backend answers - the reason these tests sit
+// apart in the first place.
+configurations.buildScriptTestImplementation.extendsFrom(configurations.testImplementation)
+
+dependencies {
+    buildScriptTestImplementation gradleTestKit()
+}
+
+def testBuildScripts = tasks.register('testBuildScripts', Test) {
+    group = 'verification'
+    description = 'Runs the build scripts under gradle/ against throwaway Gradle builds.'
+    testClassesDirs = sourceSets.buildScriptTest.output.classesDirs
+    classpath = sourceSets.buildScriptTest.runtimeClasspath
+    useJUnitPlatform()
+}
+
+reportTestOutcomesOf(testBuildScripts.get())
+
+tasks.named('check') {
+    dependsOn testBuildScripts
+}
+
+enforcePackageVocabulary {
+    // To curb usage of non-fitting words in relation to fills.
+    forbidWords under: 'kmlib', words: ['ground']
+}
+
+enforceNoTestVocabulary {
+
+    exemptSourceSet name: 'testFixtures'
+
+    // The suites that drive Gradle itself: a test source set by purpose, but not one of the names
+    // the gate knows on sight.
+    exemptSourceSet name: 'buildScriptTest'
+
+    // The hand-written bridge stubs mirror a third party's shape rather than
+    // ours, on the same grounds that exempt them from the formatter and from
+    // checkstyle below.
+    exemptSourceSet name: 'bridgestubs'
+
+    // The one README that documents the shipped fixtures has to say what they
+    // are for, and what they are for is stated in the words of a suite. Each
+    // entry is per file and per word, so this unlocks nothing in the code
+    // sitting next to it.
+    // 'fake', 'testfixtures' and 'test fixtures' are the fixture types' own
+    // names and the paths that link to them: the seam table lists each seam
+    // beside the Fake that stands in for it, so the catalogue cannot be written
+    // without saying them. 'testfixtures' is also the source set they live in,
+    // which a relative link out of this tree has to cross.
+    allowWords words: ['fake', 'testfixtures', 'test fixtures', 'stubbing', 'mocking', 'tests can'],
+        inFile: 'src/main/java/kmlib/starsector/ui/README.md'
+}
+
+// KMLib's layering edges, which describe the library's architecture rather than
+// its build. Applied here rather than declared inline so build.gradle stays a
+// reader's account of how the library is assembled.
+apply from: "${rootDir}/gradle/package-layering.gradle"
+
+// LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
+// declared in mod_info.json so a consumer can call into kmlib.logging and
+// kmlib.settings unconditionally; the game classloader provides the jar at
+// runtime. testRuntimeOnly so classes implementing LunaLib's listener interface
+// can be loaded and verified under test.
+def lunaLibJarFile = resolveModJarFile('lunalib', 'LunaLib.jar')
+
+// Soft dependency: compileOnly, and KMLib declares no Console Commands mod
+// dependency. Command classes load only when Console Commands reads KMLib's
+// commands.csv, so a game without it never touches these classes and KMLib
+// stays usable on its own. Located by jar name since the install folder is
+// version-stamped.
+def consoleCommandsJars = findModJars('lw_Console.jar')
+
+// LazyLib backs LazyFontCache's bitmap-font loading; the game exposes no way to draw
+// text at arbitrary coordinates in a render pass. compileOnly, and declared in
+// mod_info.json: absent LazyLib raises NoClassDefFoundError inside a render pass, and
+// no guard can prevent it - LabelRenderer names LazyFont.TextAnchor in its own
+// signature, so the class resolves before any guard runs. testRuntimeOnly so the
+// class can load under test.
+def lazyLibJarFile = resolveModJarFile('lw_lazylib', 'LazyLib.jar')
+
+// LazyLib is written in Kotlin, so its types carry Kotlin-generated bytecode: an enum's static
+// initialiser calls kotlin.enums.EnumEntriesKt, which lives in the Kotlin runtime LazyLib ships
+// beside its own jar and declares in its mod_info. In-game the game classloader has both loaded, so
+// nothing else in KMLib has to know; under test the enum fails to initialise without it, which is
+// how a test that merely names a LazyFont anchor dies on NoClassDefFoundError.
+//
+// It is a compile input too, despite no KMLib source naming a Kotlin type. LazyFont's
+// DrawableString carries Kotlin @Deprecated annotations whose level is a kotlin.DeprecationLevel
+// constant, and javac reads the annotations on every member it resolves. Off the compile
+// classpath the enum cannot be resolved and each one warns "unknown enum constant
+// DeprecationLevel.HIDDEN" - noise that reads like a real problem and is not one.
+//
+// compileOnly like the other soft dependencies, so it stays out of the produced artifact.
+def lazyLibKotlinRuntimeJarFile = resolveModJarFile('lw_lazylib', 'internal/Kotlin-Runtime.jar')
+
+// Random Assortment of Things backs RandomAssortmentOfThingsMatcher (and, through
+// it, StarSystems' reachability read): compiling against RAT's Abyssal Fracture
+// type lets a caller treat a fracture as a means of arrival. Soft dependency, the
+// same stance as LunaLib/LazyLib/Console above - KMLib declares no RAT mod
+// dependency, the matcher gates every use behind a mod-enabled check so a RAT-free
+// install never resolves the type, and the game classloader supplies the jar at
+// runtime for installs that ship it. Located by jar name since the install folder
+// is version-stamped; testRuntimeOnly so the matcher's tests can load under test.
+def ratJars = findModJars('RandomAssortmentofThings.jar')
+
+// Nexerelin backs NexerelinColoniser: on an install running it, a colony has to be founded by
+// Nexerelin's own routine or the rest of that mod never fully recognises the place, so compiling
+// against its colony-expedition entry point is what lets KMLib defer to it. Soft dependency, the
+// same stance as RAT above - KMLib declares no Nexerelin mod dependency, the presence gate keeps
+// an install without it from resolving the type, and the game classloader supplies the jar at
+// runtime for installs that ship it. Located by jar name since the install folder is
+// version-stamped; testRuntimeOnly so the wrapper's tests can load under test.
+def nexerelinJars = findModJars('ExerelinCore.jar')
+
+// MagicLib backs CoreUiTree, the one place that reflects into the live core-UI widget tree: its
+// ReflectionUtils drives the java.lang.reflect ops through method handles, the sanctioned bypass
+// of the script classloader's reflection ban. Every probe that walks that tree goes through it, so
+// this is a single seam rather than a per-probe dependency. compileOnly, and declared in
+// mod_info.json: its absence leaves the reach throwing, which each probe answers with its own
+// fail-open or fail-closed policy rather than breaking. Located by jar name since the install
+// folder can vary; testRuntimeOnly so the class can load under test.
+def magicLibJars = findModJars('MagicLib.jar')
+
+// org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
+// LazyLib CommonDataJSONObject, which extends org.json.JSONObject, so javac must
+// resolve JSONObject#put and JSONException to compile the write. The classes ship
+// in starsector-core/json.jar, provided by the game classloader at runtime, so
+// compileOnly like the rest (testRuntime already sees it via starsectorCoreJars).
+def jsonJarFile = resolveCoreJarFile('json.jar')
+
+// The game's core (obfuscated) jar backs the two casts to concrete campaign classes
+// the API jar does not publish: CampaignMapView's campaign-UI-data class, and the
+// intel screen's EventsPanel that its visor readings come off. Reflection is not an
+// option in its place: the game's script classloader denies java.lang.reflect to
+// mod code outright, while loading core classes is permitted. The classes KMLib
+// touches are marked DoNotObfuscate, so their names are stable across game builds.
+// compileOnly: the game classloader provides the jar at runtime. This coupling
+// stays in KMLib (not consumer mods) so exactly one place compiles against the
+// core jar. Test runtime already sees it via the shared starsectorCoreJars set.
+// fs.common_obf.jar rides along because the core classes implement its
+// DoNotObfuscate marker, which javac must resolve to compile a cast to them.
+def starfarerObfJarFile = resolveCoreJarFile('starfarer_obf.jar')
+def fsCommonObfJarFile = resolveCoreJarFile('fs.common_obf.jar')
+
+// The one classpath entry that varies by machine: KMLib's Fast Rendering adapter compiles against
+// that mod's real bridge on a patched install and against compile-only mirrors of it elsewhere. The
+// whole decision - the stub source set it needs, the version it reports, and the properties that
+// force either leg - lives in the applied script, which is KMLib's own rather than shared.
+apply from: "${rootDir}/gradle/select-fast-rendering-binding.gradle"
+
+dependencies {
+    // The suite implements a launcher SPI (see kmlib.testbootstrap), which has to be compiled
+    // against. The shared Java conventions put the launcher on testRuntimeOnly - enough to run the
+    // platform, not to implement it - so this raises it to the compile classpath here rather than
+    // for every repo on those conventions. No version: the JUnit BOM the conventions apply to
+    // testImplementation supplies it, so the family still bumps JUnit in one place.
+    testImplementation 'org.junit.platform:junit-platform-launcher'
+
+
+    // The common-data fake poses a port whose signatures are spelled in org.json, so the fixtures
+    // need the jar too. Not covered by dependOnGameJars below, which adds the two compile
+    // classpaths a shipped class is built against and leaves the fixtures - a source set most
+    // game jars have nothing to do with - out of it.
+    testFixturesCompileOnly files(jsonJarFile)
+}
+
+dependOnModJars(files(lunaLibJarFile))
+dependOnModJars(consoleCommandsJars)
+dependOnModJars(ratJars)
+dependOnModJars(nexerelinJars)
+dependOnModJars(magicLibJars)
+dependOnModJars(files(lazyLibJarFile))
+dependOnModJars(files(lazyLibKotlinRuntimeJarFile))
+
+dependOnGameJars(files(jsonJarFile))
+dependOnGameJars(files(starfarerObfJarFile))
+dependOnGameJars(files(fsCommonObfJarFile))
+
+// Deliberately no version-file wiring here. Filling kmlib.version.template locally
+// is the shared conventions script's job (gradle/starsector-mod.gradle), which
+// registers writeVersionFile for any mod that commits a template - KMLib being one
+// consumer of its own conventions among several.

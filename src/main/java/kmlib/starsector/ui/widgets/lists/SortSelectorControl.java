@@ -1,0 +1,114 @@
+package kmlib.starsector.ui.widgets.lists;
+
+import kmlib.starsector.ui.colour.StarsectorUiColour;
+import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.LabelledRow;
+import kmlib.starsector.ui.widgets.RowSlot;
+import kmlib.starsector.ui.widgets.TriangleDirection;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * A picker's sort selector: a vertical radio table with one row per mode of the calling mod's
+ * {@link ListSortMode} set, the lit row the mode the list is currently ranked by, and each row's
+ * trailing slot showing the direction that mode would sort in. Picking a row reports the resulting
+ * sort back to the caller, which persists it however it keeps such state; the caller's next
+ * per-frame body build then reorders its list under it, so the selector and the list always agree on
+ * the active metric and direction.
+ *
+ * <p>A sort is always active (the list is always ordered somehow), so this radio never clears to
+ * nothing. Instead it re-fires on a re-pick ({@link ReselectBehaviour#REFIRE}): clicking the
+ * already-lit mode flips its direction, while clicking a different mode switches to it at that
+ * mode's default direction. Each row's direction is drawn as a small filled triangle (up for
+ * ascending, down for descending) rather than a letter, since a sidebar body font renders no
+ * up/down glyph.
+ *
+ * <p>The rows lead with nothing, and the selector is laid out as a column table all the same, so it
+ * reads as a left-aligned list of mode names with their directions flush right - the picker list's own
+ * geometry, which is what makes the two blocks of a picker read as one. The rows are drawn in the
+ * caller's mode order, so the row index a click reports maps straight back to a mode by position.
+ */
+public final class SortSelectorControl {
+
+    private SortSelectorControl() {
+    }
+
+    /**
+     * Builds the sort selector for the active mode and direction: a vertical radio lit on that
+     * mode's row, each row labelled with its mode's own text and trailed by a direction triangle -
+     * the active mode's current direction on the lit row, each other mode's default direction on
+     * its own row, so every row previews the order picking it would give.
+     *
+     * <p>{@code activeSort} is both what the selector lights and what a re-pick flips from, so it
+     * must be the caller's live read of its stored sort rather than a value held across frames: a
+     * stale one would light the wrong row and flip away from a direction the store no longer holds.
+     *
+     * @param <T>          the list item type the modes rank
+     * @param activeSort   the sort the list is currently ranked by - the mode this lights, the
+     *                     direction that mode is ranking in, and the vocabulary whose modes the
+     *                     rows stack in order, top to bottom
+     * @param onSortPicked told the sort a click lands on, for the caller to persist
+     * @return the vertical, re-firing sort-selector radio table
+     */
+    public static <T> ControlSpec.VerticalTable buildSelector(
+            ListSort<T> activeSort,
+            Consumer<ListSort<T>> onSortPicked) {
+
+        var modes = activeSort.sortModes().modes();
+        var labelledRows = new ArrayList<LabelledRow>(modes.size());
+        var labelColour = StarsectorUiColour.VANILLA_TEXT.resolve();
+
+        for (var mode : modes) {
+            // The lit mode shows its live direction; every other row previews its own default, so a
+            // row reads as "pick me and the list sorts this way".
+            var rowDirection = mode.equals(activeSort.mode())
+                ? activeSort.direction()
+                : mode.defaultDirection();
+
+            labelledRows.add(LabelledRow
+                .createRow(new TextSpan(mode.resolveLabelText(), labelColour))
+                .trailsWith(new RowSlot.Triangle(resolveTriangleDirection(rowDirection))));
+        }
+        return ControlSpec.VerticalTable
+            .createColumnTable(
+                labelledRows,
+                modes.indexOf(activeSort.mode()),
+                cellIndex -> applySelection(activeSort, modes, onSortPicked, cellIndex))
+            .handlesReselect(ReselectBehaviour.REFIRE);
+    }
+
+    // The triangle that previews a sort direction: ascending points up, descending down. The
+    // selector draws this shape in each row's trailing slot in place of a direction word, since the
+    // body font renders no up/down glyph.
+    private static TriangleDirection resolveTriangleDirection(SortDirection direction) {
+        return direction == SortDirection.ASCENDING
+            ? TriangleDirection.UP
+            : TriangleDirection.DOWN;
+    }
+
+    // Applies a click on a sort row and reports the whole resulting sort, so the caller writes one
+    // consistent pair rather than reconstructing which half moved. Re-picking the lit mode flips its
+    // direction; picking a different mode switches to it at that mode's default direction. Any index
+    // outside the mode rows is ignored, so a stray hit changes nothing.
+    private static <T> void applySelection(
+            ListSort<T> activeSort,
+            List<? extends ListSortMode<T>> modes,
+            Consumer<ListSort<T>> onSortPicked,
+            int cellIndex) {
+
+        if (!ListOptions.isOptionAt(modes, cellIndex)) {
+            return;
+        }
+
+        ListSortMode<T> clickedMode = modes.get(cellIndex);
+        var direction = clickedMode.equals(activeSort.mode())
+            ? activeSort.direction().opposite()
+            : clickedMode.defaultDirection();
+
+        onSortPicked.accept(new ListSort<>(clickedMode, direction, activeSort.sortModes()));
+    }
+}

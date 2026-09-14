@@ -1,0 +1,213 @@
+package kmlib.math.geometry;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * Turning angles into a form that can be compared, and the constants that define one.
+ *
+ * <p>An angle carries no record of which turn it came from, so two of them computed
+ * separately are not comparable until something says which turn to read them in. That is
+ * what is here: put an angle in a known range, measure how far apart two are, and place one
+ * in the same turn as another so a comparison means something. Without it every caller
+ * re-inlines its own {@code while (a > PI) a -= 2 * PI}, and two that disagree about the
+ * open end of the range disagree about whether a point is inside an interval.
+ *
+ * <p>Spans of angle too, as {@code {start, width}} pairs. The width rather than an end,
+ * which is the opposite of {@link Spans} and deliberately so: along a
+ * line an end is unambiguous and a width is redundant, while on a circle an end is
+ * ambiguous - 0.1 is both before and after 6.2 - and only a width says which way round the
+ * span was meant. The two are not the same operation and must not be made to look like it.
+ *
+ * <p>Shape operations do not belong IN here, for all that it sits among them. A span is not
+ * an arc until something pairs it with a circle, and that pairing belongs to whatever owns
+ * the circle.
+ */
+public final class Angles {
+
+    /** A whole turn, in radians. */
+    public static final double FULL_TURN = 2 * Math.PI;
+
+    /** Half a turn, in radians - the furthest apart two directions can be. */
+    public static final double HALF_TURN = Math.PI;
+
+    /** A quarter turn, in radians - the furthest apart two undirected lines can be. */
+    public static final double QUARTER_TURN = Math.PI / 2;
+
+    private Angles() {
+    }
+
+    /**
+     * The same direction expressed in the first turn.
+     *
+     * @param angle any angle
+     * @return the same direction, from zero up to but not including a full turn
+     */
+    public static double normalise(double angle) {
+
+        var turned = angle % FULL_TURN;
+        return turned < 0 ? turned + FULL_TURN : turned;
+    }
+
+    /**
+     * How far apart two directions are, whichever way round is shorter.
+     *
+     * @param from one direction
+     * @param to   the other
+     * @return the angle between them, never more than a half turn
+     */
+    public static double measureGap(double from, double to) {
+
+        var turned = normalise(to - from);
+        return turned > HALF_TURN ? FULL_TURN - turned : turned;
+    }
+
+    /**
+     * The same direction, moved into the turn that begins at {@code origin}.
+     *
+     * <p>What makes an angle comparable to an interval. An interval is carried as a pair of
+     * angles that may run past a full turn, so an angle taken fresh from {@code atan2} is in
+     * the wrong turn as often as not, and comparing the two directly puts a direction outside
+     * an interval that in fact contains it.
+     *
+     * @param angle  the direction to move
+     * @param origin where the turn begins
+     * @return the same direction, at or after {@code origin} and less than a turn past it
+     */
+    public static double placeAfter(double angle, double origin) {
+        return origin + normalise(angle - origin);
+    }
+
+    /**
+     * A turn as the shorter way round, signed: positive anticlockwise, negative clockwise.
+     *
+     * <p>What a sweep between two directions wants. The difference of two angles taken raw
+     * can be most of two turns, and taking it at face value sweeps the long way round the
+     * circle - which for anything drawn along that sweep is the arc on the wrong side.
+     *
+     * @param angle the turn to shorten
+     * @return the same turn, more than a half turn back and at most a half turn on
+     */
+    public static double measureSignedTurn(double angle) {
+
+        var turned = normalise(angle);
+        return turned > HALF_TURN ? turned - FULL_TURN : turned;
+    }
+
+    /**
+     * The same direction taken as an UNDIRECTED line, which folds a turn onto a half turn.
+     *
+     * <p>A line and its opposite are one line, so both fold to a single representative angle
+     * within a quarter turn of level. What a slant, a lean or an axis direction wants:
+     * without it a fitted axis reads as level or vertical depending on which end of itself
+     * it happened to be measured from.
+     *
+     * <p>An angle already within the range is left exactly as it is, so both ends of the
+     * range are directions in their own right rather than one folding onto the other. A
+     * quarter turn is the same line as its negative, and which of the two a caller gets is
+     * therefore the one it asked with.
+     *
+     * @param angle any angle
+     * @return the same undirected line, from minus a quarter turn to a quarter turn
+     */
+    public static double foldToHalfTurn(double angle) {
+
+        var folded = angle;
+
+        while (folded > QUARTER_TURN) {
+            folded -= HALF_TURN;
+        }
+        while (folded < -QUARTER_TURN) {
+            folded += HALF_TURN;
+        }
+        return folded;
+    }
+
+    /**
+     * How far apart two UNDIRECTED lines are, which is never more than a quarter turn.
+     *
+     * <p>The counterpart of {@link #measureGap} for lines rather than directions. Two lines a
+     * hair either side of level are nearly parallel however their directions were measured,
+     * and a gap that can reach a half turn would call one of those pairs opposite.
+     *
+     * @param first  one line's angle
+     * @param second the other's
+     * @return the angle between them, never more than a quarter turn
+     */
+    public static double measureUndirectedGap(double first, double second) {
+
+        var apart = Math.abs(foldToHalfTurn(first) - foldToHalfTurn(second));
+        return Math.min(apart, HALF_TURN - apart);
+    }
+
+    /**
+     * The spans two sets of them have in common.
+     *
+     * <p>Each pair is tried in the turn before, the same turn and the turn after, because two
+     * spans built about different axes need not have been built in the same turn and a
+     * comparison of raw angles would miss an overlap that is there. One pair can leave two
+     * pieces, which is a genuine answer rather than a duplicate: a long span can meet another
+     * at both of its ends.
+     *
+     * @param first  one set
+     * @param second the other
+     * @return what they share, in the turn the first set was built in
+     */
+    public static List<double[]> intersectSpans(List<double[]> first, List<double[]> second) {
+
+        var shared = new ArrayList<double[]>();
+
+        for (var one : first) {
+            for (var other : second) {
+                for (var turn = -1; turn <= 1; turn++) {
+
+                    var from = Math.max(one[0], other[0] + turn * FULL_TURN);
+                    var to = Math.min(one[0] + one[1], other[0] + other[1] + turn * FULL_TURN);
+
+                    if (to > from) {
+                        shared.add(new double[] {from, to - from});
+                    }
+                }
+            }
+        }
+        return shared;
+    }
+
+    /**
+     * Overlapping spans joined into the runs they make up.
+     *
+     * <p>Placed in the turn beginning half a turn before {@code about} first, so that spans
+     * built about different axes are comparable at all. Taking the direction they gather
+     * around as the middle of that window is what keeps a run from being split across its
+     * edge and handed back as two.
+     *
+     * @param spans what to join
+     * @param about the direction the runs are expected to gather around
+     * @return the maximal runs, in ascending order within that window
+     */
+    public static List<double[]> mergeSpans(List<double[]> spans, double about) {
+
+        var placed = new ArrayList<double[]>(spans.size());
+
+        for (var span : spans) {
+            placed.add(new double[] {placeAfter(span[0], about - HALF_TURN), span[1]});
+        }
+        placed.sort(Comparator.comparingDouble(span -> span[0]));
+
+        var merged = new ArrayList<double[]>();
+
+        for (var span : placed) {
+
+            var last = merged.isEmpty() ? null : merged.get(merged.size() - 1);
+
+            if (last != null && span[0] <= last[0] + last[1]) {
+
+                last[1] = Math.max(last[1], span[0] + span[1] - last[0]);
+                continue;
+            }
+            merged.add(new double[] {span[0], span[1]});
+        }
+        return merged;
+    }
+}

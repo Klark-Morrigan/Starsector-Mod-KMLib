@@ -1,0 +1,51 @@
+package kmlib.profiling;
+
+/**
+ * The scope that records nothing, handed out wherever a section is opened but
+ * nothing is listening.
+ *
+ * <p>One shared instance, because it holds no state: opening a section on a
+ * silent profiler then allocates nothing at all, which is what lets library
+ * code sit inside a scope on a per-frame path and cost nothing when no readout
+ * is bound.
+ */
+final class SilentProfileScope implements IterationScope {
+
+    static final SilentProfileScope INSTANCE = new SilentProfileScope();
+
+    private SilentProfileScope() {
+    }
+
+    @Override
+    public void addCount(ProfileCounter counter, long amount) {
+        // Adds to nothing, so a walker may count what it traverses on a
+        // per-frame path with no readout bound and pay only the call.
+    }
+
+    @Override
+    public void tagCall(String tag) {
+        // Named for a record nobody is keeping, so the name goes nowhere and
+        // this scope stays the stateless one every open can share.
+    }
+
+    @Override
+    public void beginIteration(String tag) {
+        // No clock read, which is what the silent profiler is for: a loop
+        // measuring itself per turn would cost per turn even with nothing bound.
+    }
+
+    @Override
+    public void markPhase(ProfilePhase phase) {
+        // The step of a turn nobody is timing, so there is no boundary to read.
+    }
+
+    @Override
+    public void endIteration() {
+        // A turn nobody counted, and this scope holds no tally to close it into.
+    }
+
+    @Override
+    public void close() {
+        // Nothing was timed, so there is nothing to attribute.
+    }
+}

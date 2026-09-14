@@ -1,0 +1,140 @@
+package kmlib.starsector.factions.relation;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static kmlib.starsector.factions.relation.RelationSamples.createRelationAt;
+import static kmlib.starsector.factions.relation.RelationSamples.createRelationsAt;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class RelationDirectionTest {
+
+    @Nested
+    class IsWithinBand {
+
+        @Test
+        void placesIllWillInTheHostileBand() {
+
+            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(createRelationAt(-0.50f)))
+                .isTrue();
+        }
+
+        @Test
+        void placesGoodwillOutsideTheHostileBand() {
+
+            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(createRelationAt(0.50f)))
+                .isFalse();
+        }
+
+        @Test
+        void placesGoodwillInTheFriendlyBand() {
+
+            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(createRelationAt(0.50f)))
+                .isTrue();
+        }
+
+        @Test
+        void placesIllWillOutsideTheFriendlyBand() {
+
+            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(createRelationAt(-0.50f)))
+                .isFalse();
+        }
+
+        @Test
+        void placesTheWholeNeutralBandInNeitherBand() {
+
+            // Indifference is a band the game spans from -9 to +9, not the single value nought, and
+            // no part of it belongs to a direction - which is what keeps a set of wholly
+            // indifferent factions from reading as uniform at both ends at once. Stated across the
+            // band rather than at its centre, so a rule taken on the sign of the number would fail
+            // here on the two edges even though nought would pass it.
+            for (var indifferent : List.of(
+                    createRelationAt(-0.09f),
+                    createRelationAt(0.00f),
+                    createRelationAt(0.09f))) {
+
+                assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(indifferent))
+                    .isFalse();
+                assertThat(RelationDirection.FRIENDLIEST.isWithinBand(indifferent))
+                    .isFalse();
+            }
+        }
+
+        @Test
+        void placesTheTopOfTheNeutralBandOutsideTheFriendlyBand() {
+
+            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(createRelationAt(0.09f)))
+                .isFalse();
+        }
+
+        @Test
+        void placesOneStepPastTheNeutralBandInTheFriendlyBand() {
+
+            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(createRelationAt(0.10f)))
+                .isTrue();
+        }
+
+        @Test
+        void placesTheBottomOfTheNeutralBandOutsideTheHostileBand() {
+
+            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(createRelationAt(-0.09f)))
+                .isFalse();
+        }
+
+        @Test
+        void placesOneStepPastTheNeutralBandInTheHostileBand() {
+
+            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(createRelationAt(-0.10f)))
+                .isTrue();
+        }
+
+        @Test
+        void placesNoRelationInNoBand() {
+
+            assertThat(RelationDirection.MOST_HOSTILE.isWithinBand(null))
+                .isFalse();
+            assertThat(RelationDirection.FRIENDLIEST.isWithinBand(null))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class ResolveDecidingOrder {
+
+        @Test
+        void ranksTheLeastFriendlyFirstUnderTheHostileDirection() {
+
+            var relations = createRelationsAt(40, -70, 5);
+
+            relations.sort(RelationDirection.MOST_HOSTILE.resolveDecidingOrder());
+
+            assertThat(relations)
+                .extracting(FactionRelation::reputation)
+                .containsExactly(-70, 5, 40);
+        }
+
+        @Test
+        void ranksTheFriendliestFirstUnderTheFriendlyDirection() {
+
+            var relations = createRelationsAt(40, -70, 5);
+
+            relations.sort(RelationDirection.FRIENDLIEST.resolveDecidingOrder());
+
+            assertThat(relations)
+                .extracting(FactionRelation::reputation)
+                .containsExactly(40, 5, -70);
+        }
+
+        @Test
+        void ranksEqualReadingsAsEqual() {
+
+            var order = RelationDirection.MOST_HOSTILE.resolveDecidingOrder();
+
+            assertThat(order.compare(createRelationAt(-0.30f), createRelationAt(-0.30f)))
+                .isZero();
+        }
+    }
+}

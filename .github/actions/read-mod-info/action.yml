@@ -1,0 +1,71 @@
+# Reads the caller's mod_info.json and emits the derived values KMLib's
+# reusable CI and release workflows run on, so a consumer passes no inputs:
+# each value is either stated in that file or follows from it by a convention
+# stated in the outputs below.
+#
+# The action shells out to scripts/read_mod_info.sh so the logic is unit-
+# tested with bats. Composite actions themselves are not unit-testable.
+name: Read mod info
+description: >-
+  Reads mod_info.json from the caller checkout and emits the mod id, version,
+  runner label, dist directory, zip name, jar source path, and sibling
+  checkout set as outputs.
+
+outputs:
+  mod-id:
+    description: "Mod id from mod_info.json (.id), verbatim."
+    value: ${{ steps.read.outputs.mod-id }}
+  version:
+    description: "Mod version from mod_info.json (.version)."
+    value: ${{ steps.read.outputs.version }}
+  runner-label:
+    description: "Self-hosted runner label: <mod-id>-runner."
+    value: ${{ steps.read.outputs.runner-label }}
+  mod-folder-name:
+    description: >-
+      Folder the mod ships and installs as, taken from the jar's basename
+      (jars/KMU.jar -> KMU) so a zip install matches a hand-deployed one.
+    value: ${{ steps.read.outputs.mod-folder-name }}
+  dist-dir:
+    description: "Distribution directory: dist/<mod-folder-name>/."
+    value: ${{ steps.read.outputs.dist-dir }}
+  zip-name:
+    description: "Release zip filename: <mod-folder-name>-<version>.zip."
+    value: ${{ steps.read.outputs.zip-name }}
+  version-file-name:
+    description: >-
+      VersionChecker file: <mod-id>.version. Named after the mod id, not the
+      jar, because version_files.csv - which a mod writes by hand - is what
+      points at it.
+    value: ${{ steps.read.outputs.version-file-name }}
+  jar-source:
+    description: "First jar path from mod_info.json (.jars[0])."
+    value: ${{ steps.read.outputs.jar-source }}
+  sibling-checkouts:
+    description: >-
+      JSON array of { repo, path } entries to clone beside the caller's
+      checkout, in the shape Common-Java's _ci-gradle sibling-checkouts input
+      takes: the repos hosting the shared Gradle scripts the build applies -
+      Common-Java always, plus KMLib for any mod that is not KMLib itself.
+    value: ${{ steps.read.outputs.sibling-checkouts }}
+  kmlib-dependency-version:
+    description: >-
+      Version the caller's kmlib dependency pins, or empty when it declares
+      none - the case for KMLib releasing itself. Empty is the signal to skip
+      both the release-exists check and the release-body link that consume it.
+    value: ${{ steps.read.outputs.kmlib-dependency-version }}
+  kmlib-repo:
+    description: >-
+      Repository publishing KMLib, emitted from the same constant the sibling
+      checkout set is built from so a release check and the build that
+      compiles against it name one repository.
+    value: ${{ steps.read.outputs.kmlib-repo }}
+
+runs:
+  using: composite
+  steps:
+    - id: read
+      shell: bash
+      # GITHUB_ACTION_PATH points at this action's directory regardless of
+      # the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/read_mod_info.sh"

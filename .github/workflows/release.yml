@@ -1,0 +1,26 @@
+# KMLib's own release entry point.
+#
+# Triggers on push to master and delegates the whole pipeline to the
+# reusable mod-release workflow that this same repo hosts. The pin is a
+# local ./ ref rather than @<tag>: KMLib cannot pin a tag of itself before
+# that tag exists, and a local ref always runs the pipeline as it stands on
+# the commit being released - exactly what a self-release wants.
+#
+# Consumer mods (KMU, KMO, ...) instead pin this repository's
+# .github/workflows/mod-release.yml@<tag>. See docs/dev/versioning.md.
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+# Capped onto the reusable workflow, which needs write access to publish the
+# tag and GitHub release.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: ./.github/workflows/mod-release.yml
+    secrets: inherit

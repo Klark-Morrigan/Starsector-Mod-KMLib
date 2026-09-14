@@ -1,0 +1,59 @@
+# Verifies that the version a mod pins for one of its dependencies exists as
+# a published release of the repository shipping that dependency, and emits
+# that release's URL.
+#
+# The release pipeline runs this before it builds anything, so a pin bumped
+# ahead of the library it names stops the release rather than publishing a
+# mod the game will refuse to load. The URL falls out of the same lookup and
+# is what the release body links to, so the link cannot name a release that
+# was never confirmed to exist.
+#
+# Delegates to scripts/check_dependency_release.sh so the logic is unit-
+# tested with bats. Composite actions themselves are not unit-testable.
+name: Check dependency release
+description: >-
+  Fails unless the given version exists as a published GitHub release of the
+  given repository, and emits that release's canonical URL. Distinguishes a
+  genuinely absent release from an API call that could not be completed.
+
+inputs:
+  repo:
+    description: >-
+      owner/name of the repository publishing the dependency, e.g.
+      Klark-Morrigan/Starsector-Mod-KMLib.
+    required: true
+  version:
+    description: >-
+      Version the caller pins, which is also the release tag looked for -
+      releases here are tagged with the bare version. See
+      docs/dev/versioning.md.
+    required: true
+
+outputs:
+  release-url:
+    description: >-
+      Canonical URL of the release that was found. Taken from the API
+      response rather than assembled from the tag, so it can only name a
+      release this action actually saw.
+    value: ${{ steps.check.outputs.release-url }}
+
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      # Passed as environment rather than interpolated into the run body, so
+      # an input cannot break out of the command and run as shell.
+      #
+      # The workflow's own GITHUB_TOKEN, with no input to override it: this
+      # action only reads the releases of a public repository, which any
+      # valid token may do, so there is no identity a caller could need
+      # instead. gh still requires the variable to be set even for a public
+      # read, which is why it is named here rather than left off.
+      env:
+        REPO: ${{ inputs.repo }}
+        VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ github.token }}
+      # GITHUB_ACTION_PATH points at this action's directory regardless
+      # of the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/check_dependency_release.sh"

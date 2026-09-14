@@ -1,0 +1,368 @@
+package kmlib.animation;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+
+/**
+ * Pins {@link PulseEnvelope}: one trigger produces a whole in-and-out cycle, the turn at the peak happens
+ * without a second call, and a retrigger climbs from wherever the lift currently stands rather than dropping
+ * it to nothing first. A held trigger takes the same rise and waits at the top instead of turning, so its
+ * length comes from the act it reports rather than from the pace. Elapsed times are expressed as fractions
+ * of one duration, keeping the arithmetic independent of the concrete pace, and the expectations are the
+ * smoothstep values of the linear positions those steps land on - the same curve every other animation on a
+ * surface eases along.
+ */
+final class PulseEnvelopeTest {
+
+    private static final float TOLERANCE = 0.0001f;
+
+    private static final float DURATION = 0.3f;
+    private static final float FULL_DURATION = DURATION;
+    private static final float HALF_DURATION = DURATION / 2f;
+    private static final float QUARTER_DURATION = DURATION / 4f;
+
+    // The same pace each way, so a step reads as a fraction of one duration whichever half of the cycle it
+    // lands in. The case that pins the two halves being timed apart names its own pair.
+    private static final TraverseDurations DURATIONS = TraverseDurations.createSymmetric(DURATION);
+
+    @Nested
+    class AdvanceByElapsedTime {
+
+        @Test
+        void advanceByElapsedTimeLeavesAnUntriggeredEnvelopeAtRest() {
+            // A render loop pumps every envelope it holds unconditionally, so one nothing has triggered must
+            // sit still rather than drift up on its own.
+            var envelope = new PulseEnvelope();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeReachesThePeakOneTraverseAfterATrigger() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeFallsBackToRestWithoutASecondTrigger() {
+            // The whole point of an envelope over a held fraction: the caller reports the event and nothing
+            // else, and the lift finds its own way back down.
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeWaitsAtThePeakWhileTheLiftIsHeld() {
+            // The whole of the held trigger: the act it reports has not ended, so the lift may not either,
+            // however many traverses pass. A self-timed one would drop out from under it.
+            var envelope = new PulseEnvelope();
+
+            envelope.startHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeFallsBackToRestOnceAHeldLiftIsReleased() {
+            // The release only lets go; the turn is still the advance's, so the frame after it turns the
+            // lift at the peak and the one after that runs it down.
+            var envelope = new PulseEnvelope();
+
+            envelope.startHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.releaseHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeFinishesTheClimbOfAHeldLiftReleasedOnTheWayUp() {
+            // A press over before the lift topped out still shows a whole cycle: the climb carries on to the
+            // peak and turns there of its own accord, rather than being cut short at whatever height it had
+            // reached, which would read as the lift being snatched away.
+            var envelope = new PulseEnvelope();
+
+            envelope.startHeldPulse();
+            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATIONS);
+            envelope.releaseHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeStandsPartWayUpHalfATraverseIn() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(HALF_DURATION, DURATIONS);
+
+            // The halfway position eases to the smoothstep midpoint, which happens to sit on the linear
+            // line - so a lift caught mid-rise reads as a real position rather than as either end.
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeHoldsAtThePeakForAFrameThatOverrunsTheRise() {
+
+            var envelope = new PulseEnvelope();
+            envelope.startPulse();
+
+            // A frame long enough for both halves of the cycle spends its remainder at the peak rather than
+            // carrying it into the fall, so a stalled frame cannot swallow a whole pulse unseen.
+            envelope.advanceByElapsedTime(FULL_DURATION * 2f, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeTimesTheFallApartFromTheRise() {
+            // What the pair buys a lift: it can strike quickly and release slowly. The rise here takes half
+            // a duration, so one half-step reaches the peak; the same step then spends only half of the
+            // longer fall, leaving the lift at the curve's midpoint rather than back at rest.
+            var envelope = new PulseEnvelope();
+            var durations = new TraverseDurations(HALF_DURATION, DURATION);
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(HALF_DURATION, durations);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+
+            envelope.advanceByElapsedTime(HALF_DURATION, durations);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0.5f, within(TOLERANCE));
+        }
+
+        @Test
+        void advanceByElapsedTimeSnapsToThePeakInOneStepWhenDurationIsZero() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(QUARTER_DURATION, TraverseDurations.SNAP);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class GetPulseFraction {
+
+        @Test
+        void getPulseFractionStartsAtRestForAFreshEnvelope() {
+            // A fresh envelope has confirmed nothing, so its first painted frame must lift nothing.
+            assertThat(new PulseEnvelope().getPulseFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class HasSettled {
+
+        @Test
+        void hasSettledIsTrueForAFreshEnvelope() {
+            // Nothing has run on it, so an owner minting one and finding it spent has lost nothing.
+            assertThat(new PulseEnvelope().hasSettled())
+                .isTrue();
+        }
+
+        @Test
+        void hasSettledIsFalseForATriggeredEnvelopeStillAtRest() {
+            // The half that a fraction alone cannot answer: an envelope triggered but not yet stepped stands
+            // at 0 like a spent one, and an owner pruning on the reading alone would drop it before it rose.
+            var envelope = new PulseEnvelope();
+            envelope.startPulse();
+
+            assertThat(envelope.hasSettled())
+                .isFalse();
+        }
+
+        @Test
+        void hasSettledIsFalseAtThePeak() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.hasSettled())
+                .isFalse();
+        }
+
+        @Test
+        void hasSettledIsTrueOnceTheCycleHasRunOut() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.hasSettled())
+                .isTrue();
+        }
+
+        @Test
+        void hasSettledIsFalseThroughoutAHeldLift() {
+            // A held lift is aimed at the peak for as long as it is held, so an owner pruning spent
+            // envelopes cannot drop one out from under the pointer still holding it down.
+            var envelope = new PulseEnvelope();
+
+            envelope.startHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.hasSettled())
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class StartPulse {
+
+        @Test
+        void startPulseAimsAFreshEnvelopeAtItsPeak() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATIONS);
+
+            // A quarter of the way up, the eased value trails the linear 0.25 - the slow, accelerating start
+            // a lift shares with every other motion on the surface.
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0.15625f, within(TOLERANCE));
+        }
+
+        @Test
+        void startPulseClimbsAgainFromWhereAFallingLiftStands() {
+
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(HALF_DURATION, DURATIONS);
+
+            // Retriggered halfway down and stepped a quarter, the lift stands three quarters up: it climbed
+            // on from where it was rather than dropping to nothing and rebuilding, which the player would
+            // see as a dip in answer to a second click.
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(QUARTER_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0.84375f, within(TOLERANCE));
+        }
+
+        @Test
+        void startPulseCannotDriveALiftPastItsPeak() {
+            // A repeated trigger restarts the curve rather than summing onto it, so a tab clicked twice in
+            // a frame is no brighter than one clicked once.
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void startPulseDropsAHoldSoTheLiftTimesItsOwnFall() {
+            // An envelope reused after a held lift must not inherit its hold: a self-timed trigger has no
+            // release owed to it, so the lift would stand at the peak with nothing left to bring it down.
+            var envelope = new PulseEnvelope();
+
+            envelope.startHeldPulse();
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(0f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class StartHeldPulse {
+
+        @Test
+        void startHeldPulseAimsAFreshEnvelopeAtItsPeak() {
+            // The rise is the plain trigger's; only the turn at the top differs, so a held lift arrives on
+            // the same traverse.
+            var envelope = new PulseEnvelope();
+
+            envelope.startHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+
+        @Test
+        void startHeldPulseTakesOverALiftAlreadyFallingRatherThanRunningASecond() {
+            // A press landing on an element whose last lift is still decaying climbs from where that one
+            // stands, so the two read as one lift the player drove back up.
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(HALF_DURATION, DURATIONS);
+            envelope.startHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+    }
+
+    @Nested
+    class ReleaseHeldPulse {
+
+        @Test
+        void releaseHeldPulseLeavesAnUnheldLiftAlone() {
+            // A caller reporting every release need not track which lifts it started, so releasing one that
+            // was never held is not allowed to disturb its cycle.
+            var envelope = new PulseEnvelope();
+
+            envelope.startPulse();
+            envelope.releaseHeldPulse();
+            envelope.advanceByElapsedTime(FULL_DURATION, DURATIONS);
+
+            assertThat(envelope.getPulseFraction())
+                .isCloseTo(1f, within(TOLERANCE));
+        }
+    }
+}

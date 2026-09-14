@@ -1,0 +1,71 @@
+# KMLib's Gradle CI gate. Delegates to Common-Java's reusable engine.
+# Runs on the self-hosted kmlib-runner because the build resolves
+# starfarer.api.jar from a Starsector install (STARSECTOR_HOME, set on
+# the runner) - a hosted runner has no Starsector binaries. This is the
+# self-hosted gate the old ci.yml deferred to in its header comment.
+#
+# Built twice, because one part of the compile classpath varies by the install
+# it is built against. KMLib reads the modelview from Fast Rendering's bridge,
+# which ships in starsector-core/fr.jar and so exists only on an install
+# patched by that mod. Each leg pins one of the two installs a player can have,
+# so neither is only ever built on a machine nobody is watching:
+#
+#   fast-rendering - a patched install. Type-checks the adapter against
+#                    genir's real bytes, so a refactor upstream that moves
+#                    what KMLib reads fails here rather than in a player's
+#                    game.
+#   vanilla        - an unpatched install, where the adapter compiles against
+#                    compile-only mirrors of the members it reads
+#                    (src/bridgestubs/java) instead. This is the leg that
+#                    keeps KMLib buildable without Fast Rendering at all.
+#
+# The legs are named for the INSTALL each one stands in for, not for the
+# mechanism behind it - a reader of a red check wants to know which player it
+# broke for, and the stubs are an implementation detail of standing in for one.
+#
+# The fast-rendering leg passes -PrequireFastRendering, which fails the
+# build when fr.jar is missing instead of quietly falling back. That
+# matters more than it looks: without it, an unpatched runner would build
+# both legs against stubs and report green for a check that never ran. So
+# this gate requires kmlib-runner's Starsector install to be patched by Fast
+# Rendering; if that ever stops being true, this leg fails with a message
+# saying so rather than degrading in silence.
+name: Common-Java
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gradle:
+    name: gradle (${{ matrix.leg }})
+    strategy:
+      # Both legs always report. A failure in one is a fact about that
+      # binding and says nothing about the other, so cancelling its sibling
+      # would only hide half the answer.
+      fail-fast: false
+      matrix:
+        include:
+          - leg: fast-rendering
+            gradle-tasks: coverage -PrequireFastRendering=true
+          - leg: vanilla
+            gradle-tasks: coverage -PvanillaOnly=true
+    uses: Klark-Morrigan/Common-Java/.github/workflows/_ci-gradle.yml@master
+    with:
+      runner: '["self-hosted", "kmlib-runner"]'
+      gradle-tasks: ${{ matrix.gradle-tasks }}
+      setup-java: false
+      # Both legs upload their test report into the one workflow run, where
+      # artifact names have to differ. The leg name is what tells them apart
+      # everywhere else in this file, so it is what tells the reports apart
+      # too.
+      artifact-suffix: ${{ matrix.leg }}
+      # gradle/starsector-mod.gradle applies Common-Java's java-conventions by a
+      # path relative to this repo's root, so Common-Java has to be cloned as a
+      # neighbour and the checkout has to sit one level down to leave room for
+      # it. The release path derives the same set from mod_info.json; here it is
+      # spelled out because this workflow never runs for another mod.
+      checkout-path: Starsector-Mod-KMLib
+      working-directory: Starsector-Mod-KMLib
+      sibling-checkouts: '[{"repo": "Klark-Morrigan/Common-Java", "path": "Common-Java"}]'
+    secrets: inherit

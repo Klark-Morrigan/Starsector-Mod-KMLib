@@ -1,0 +1,868 @@
+package kmlib.math.geometry;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
+import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
+import static kmlib.math.geometry.GeometryTestSupport.buildReferenceSquare;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Pins the contract of {@link RingPath#traceInsetRing}: the path starts at the top
+ * centre above the anchor, runs clockwise whatever winding the ring arrived in, and
+ * insets inward from a clockwise ring rather than outward; it falls back to the ring's
+ * own top corner when the anchor sits beside the shape rather than within its span; and
+ * it leaves nothing to trace when the ring encloses no area.
+ *
+ * <p>And of {@link RingPath#findStretchesHoldingItsInset}: a ring with room for its inset holds
+ * the whole path, a pinch is carved from the corner before the failing one to the corner after
+ * it, a pinch lying across the path's start is carved off both ends of it, and an empty path
+ * holds nothing.
+ *
+ * <p>And of {@link RingPath#findStretchesFailingItsInset}, the same measurement read from the
+ * other side: the carve is the stretch between the corners either side of a failing one, a ring
+ * with room gives nothing up, a carve across the start comes back as the two pieces it was split
+ * into, and an empty path carves nothing.
+ *
+ * <p>And of {@link RingPath#hasStretchHoldingItsInset}, which reads whether the first of those
+ * left anything: a ring with room for the inset holds it, a ring pinched in one place holds the
+ * rest of itself, and a ring overrun on every side at once or thin in one direction only holds
+ * none of it - which is where the whole-ring refusal a trace used to pronounce now comes from.
+ * An empty path holds nothing.
+ *
+ * <p>And of {@link RingPath#getPerimeter}: the traced inset ring's own length, and zero
+ * where there is no path.
+ *
+ * <p>And of {@link RingPath#computePointAt}: zero is the start, a distance within an edge
+ * interpolates along it, distances past the perimeter and before the start wrap round,
+ * and an empty path has nothing to measure.
+ *
+ * <p>And of {@link RingPath#collectPointsBetween}: a stretch within one edge is its two
+ * ends, a stretch spanning a corner keeps that corner, a stretch landing on a corner does
+ * not repeat it, a stretch of no length is the single point it sits at, a stretch wrapping
+ * past the start carries on round, one ending behind its start has no length, and one
+ * longer than the perimeter is cut to a lap.
+ *
+ * <p>And of {@link RingPath#findClearArcs}: the whole path is clear where nothing covers it,
+ * a shape over it leaves the stretches either side, a cover spanning several edges is one
+ * stretch rather than one per edge, a shape over the start leaves what lies between its two
+ * sides, several shapes each take their own bite, a shape covering everything leaves nothing,
+ * and a shape lying elsewhere costs nothing. A shape and a pinch carve the one ring between them,
+ * since a stretch with no room for the inset is as unusable as a stretch something covers.
+ *
+ * <p>And of {@link RingPath#fuseStretchAcrossStart}: the pair reaching the path's two ends
+ * comes back as the one stretch it is, closing past the perimeter, while stretches falling
+ * short of either end and a lone stretch are left exactly as they arrived.
+ *
+ * <p>And of {@link RingPath#placeSpanNearestStart}: a span sits as near the path's start as
+ * its stretch allows, which is on the start itself where there is room after it, backed up
+ * where the stretch closes too soon, at the stretch's own opening where a shape covers the
+ * start, and at whichever end of a far-off stretch puts the span's start nearer - ties
+ * taking the stretch's start. A span outrunning its stretch opens where the stretch does,
+ * and an empty path has no lap to place within.
+ */
+final class RingPathTest {
+
+    // A generous miter spike limit, as the inset suites use: high enough that the square
+    // fixtures keep crisp mitred corners, so a test asserting exact corner coordinates is
+    // asserting the inset rather than a bevel.
+    private static final double MITER_SPIKE_LIMIT = 4.0;
+
+    // The reference square's own centre. The anchor sits inside the traced ring, which is
+    // the ordinary case: the shape is traced around a point within it.
+    private static final double[] SQUARE_CENTRE = new double[] {5, 5};
+
+    // Inset of the side-10 reference square, leaving the square from (2,2) to (8,8): a
+    // 24-long ring whose corners and arc lengths are whole numbers, so every position
+    // assertion below is a literal rather than a computation.
+    private static final double INSET_DISTANCE = 2.0;
+
+    // The tabbed square's own centre, which puts the pinch well clear of where the path opens.
+    private static final double[] TABBED_SQUARE_CENTRE = new double[] {10, 10};
+
+    // An anchor beside the tab's mouth, so the path's own start lands within the pinch: the
+    // vertical line through it crosses the mouth's two edges rather than the square's sides.
+    private static final double[] TABBED_SQUARE_MOUTH = new double[] {19.4, 10};
+
+    // A layout a sixth of the path long. Short enough against the stretches it is placed on
+    // that where it sits is a decision rather than the only place it fits, which is the
+    // question the placement exists to answer.
+    private static final double SPAN_LENGTH = 4.0;
+
+    @Nested
+    class TraceInsetRing {
+
+        @Test
+        void pathStartsAtTheTopCentreAboveTheAnchor() {
+            // The vertical line through (5,5) crosses the inset ring at y = 2 and y = 8;
+            // the path starts at the higher one, which is the top centre.
+            assertThat(traceReferenceSquare().getPoints().get(0))
+                .containsExactly(new double[] {5, 8}, buildAssertionSlack());
+        }
+
+        @Test
+        void pathRunsClockwiseFromItsStart() {
+            // Leaving the top centre toward (8,8) is rightward along the top edge, which
+            // continues down the right-hand side - clockwise where y points up. A path
+            // running the other way would carry every layout on it backward.
+            var points = traceReferenceSquare().getPoints();
+
+            assertThat(points)
+                .hasSize(5);
+            assertThat(points.get(1))
+                .containsExactly(new double[] {8, 8}, buildAssertionSlack());
+            assertThat(points.get(2))
+                .containsExactly(new double[] {8, 2}, buildAssertionSlack());
+            assertThat(points.get(3))
+                .containsExactly(new double[] {2, 2}, buildAssertionSlack());
+            assertThat(points.get(4))
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
+        }
+
+        @Test
+        void pathOfAClockwiseRingIsThePathOfTheSameRingWoundTheOtherWay() {
+            // The winding is normalised before the offset, so a clockwise ring insets
+            // inward like any other. Un-normalised it would grow instead, putting the
+            // path outside the shape it is meant to run within - the corners here would
+            // come back at 12 and -2 rather than at 8 and 2.
+            var clockwise = buildReferenceSquare();
+
+            Collections.reverse(clockwise);
+
+            var traced = RingPath.traceInsetRing(
+                clockwise,
+                INSET_DISTANCE,
+                MITER_SPIKE_LIMIT,
+                SQUARE_CENTRE);
+
+            var expected = traceReferenceSquare().getPoints();
+
+            assertThat(traced.getPoints())
+                .hasSameSizeAs(expected);
+
+            for (var i = 0; i < expected.size(); i++) {
+                assertThat(traced.getPoints().get(i))
+                    .containsExactly(expected.get(i), buildAssertionSlack());
+            }
+        }
+
+        @Test
+        void pathStartsAtTheRingSTopCornerWhenTheAnchorSitsBesideIt() {
+            // No vertical line through x = 100 meets the ring at all, so there is no top
+            // centre to find. The topmost corner keeps the path starting somewhere along
+            // the ring's top rather than dropping it over an anchor that only says where
+            // to look.
+            var traced = RingPath.traceInsetRing(
+                buildReferenceSquare(),
+                INSET_DISTANCE,
+                MITER_SPIKE_LIMIT,
+                new double[] {100, 5});
+
+            assertThat(traced.getPoints().get(0))
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
+        }
+
+        @Test
+        void nothingIsLeftToTraceWhenTheRingEnclosesNoArea() {
+            // Two vertices bound nothing, so there is no interior to inset into.
+            var traced = RingPath.traceInsetRing(
+                Arrays.asList(new double[] {0, 0}, new double[] {10, 0}),
+                1.0,
+                MITER_SPIKE_LIMIT,
+                new double[] {5, 0});
+
+            assertThat(traced.isEmpty())
+                .isTrue();
+        }
+    }
+
+    @Nested
+    class FindStretchesHoldingItsInset {
+
+        @Test
+        void ringWithRoomForItsInsetHoldsTheWholePath() {
+            // Nothing carved, so the answer is the path itself as one stretch - the ordinary
+            // cell, and what every case below is a departure from.
+            assertThatArcsAre(
+                traceReferenceSquare().findStretchesHoldingItsInset(),
+                List.of(new double[] {0, 24}));
+        }
+
+        @Test
+        void stretchThatFailedTheInsetIsCarvedBetweenTheCornersEitherSideOfIt() {
+            // The tab's mouth stands 1.58 off the ring rather than the 2 it was built from,
+            // and what is given up for it is the mouth and the two edges reaching it - from
+            // the corner before it at (18,11) to the corner after it at (18,8). Clearance is
+            // sampled at corners, so the carve has to reach the neighbours: a point midway
+            // along an edge can stand nearer the ring than either end of it.
+            var path = traceTabbedSquare(TABBED_SQUARE_CENTRE);
+            var held = path.findStretchesHoldingItsInset();
+
+            assertThat(held)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(held.get(0).endArcLength()),
+                    path.computePointAt(held.get(1).startArcLength())),
+                List.of(
+                    new double[] {18, 11},
+                    new double[] {18, 8}));
+        }
+
+        @Test
+        void pinchLyingAcrossThePathSStartIsCarvedOffBothEndsOfIt() {
+            // The same tab, anchored so the path opens on the mouth itself. The carve around a
+            // path's first corner reaches back before the start, and these intervals do not
+            // wrap - so it is split there and taken off the path's end as well as its
+            // beginning. Left unsplit, the piece before the start is dropped and the tail of
+            // the path comes back held, which is the pinch offered as ring to lay a band on.
+            var path = traceTabbedSquare(TABBED_SQUARE_MOUTH);
+            var held = path.findStretchesHoldingItsInset();
+
+            assertThat(held)
+                .hasSize(1);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(held.get(0).startArcLength()),
+                    path.computePointAt(held.get(0).endArcLength())),
+                List.of(
+                    new double[] {18, 8},
+                    new double[] {18, 11}));
+        }
+
+        @Test
+        void anEmptyPathHoldsNoStretches() {
+            // A ring that left nothing to trace held nothing, which is the same answer a ring
+            // overrun everywhere gives - one shape of "no room" for a caller to read.
+            assertThat(RingPath.nothingLeftToTrace().findStretchesHoldingItsInset())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class FindStretchesFailingItsInset {
+
+        @Test
+        void carveIsTheStretchBetweenTheCornersEitherSideOfTheFailingOne() {
+            // The exact complement of the case above, stated from the other side: what the
+            // mouth cost is one stretch running from (18,11) round the mouth to (18,8). Pinned
+            // in its own right because a caller reporting on a ring draws this, and a carve
+            // that came back as the two edges without the mouth between them would look the
+            // same in every other test here.
+            var path = traceTabbedSquare(TABBED_SQUARE_CENTRE);
+            var failing = path.findStretchesFailingItsInset();
+
+            assertThat(failing)
+                .hasSize(1);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(failing.get(0).startArcLength()),
+                    path.computePointAt(failing.get(0).endArcLength())),
+                List.of(
+                    new double[] {18, 11},
+                    new double[] {18, 8}));
+        }
+
+        @Test
+        void nothingIsCarvedFromARingWithRoomForItsInset() {
+            // The ordinary cell gives nothing up, so a caller drawing the carve draws nothing
+            // rather than a ring stated twice.
+            assertThat(traceReferenceSquare().findStretchesFailingItsInset())
+                .isEmpty();
+        }
+
+        @Test
+        void carveAcrossThePathSStartComesBackAsTheTwoPiecesItWasSplitInto() {
+            // The split the intervals' not wrapping forces, seen from the carve's own side: the
+            // piece closing the path and the piece opening it, rather than one stretch running
+            // past the perimeter. Both are drawn, so both have to be stated.
+            var path = traceTabbedSquare(TABBED_SQUARE_MOUTH);
+            var failing = path.findStretchesFailingItsInset();
+
+            assertThat(failing)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                List.of(
+                    path.computePointAt(failing.get(0).startArcLength()),
+                    path.computePointAt(failing.get(0).endArcLength()),
+                    path.computePointAt(failing.get(1).startArcLength()),
+                    path.computePointAt(failing.get(1).endArcLength())),
+                List.of(
+                    new double[] {19.4, 9.6},
+                    new double[] {18, 8},
+                    new double[] {18, 11},
+                    new double[] {19.4, 9.6}));
+        }
+
+        @Test
+        void anEmptyPathCarvesNothing() {
+            // A path that was never traced failed no inset, so the carve is empty rather than
+            // the whole of a ring that does not exist.
+            assertThat(RingPath.nothingLeftToTrace().findStretchesFailingItsInset())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class HasStretchHoldingItsInset {
+
+        @Test
+        void ringWithRoomForTheInsetHoldsIt() {
+            // The ordinary case: every corner of the inset square stands its full 2 off the
+            // ring it came from, so the whole path is ring a layout may go on.
+            assertThat(traceReferenceSquare().hasStretchHoldingItsInset())
+                .isTrue();
+        }
+
+        @Test
+        void ringPinchedInOnePlaceHoldsTheRestOfItself() {
+            // The tab's mouth is the one place this ring has no room for the inset, and the
+            // three sides of the square it hangs off have room several times over. A verdict
+            // on the whole ring answers this shape the same way it answers a shape with no
+            // room anywhere, which is the reading the carve exists to replace.
+            assertThat(traceTabbedSquare(TABBED_SQUARE_CENTRE).hasStretchHoldingItsInset())
+                .isTrue();
+        }
+
+        @Test
+        void noStretchHoldsTheInsetWhenItOutrunsTheRing() {
+            // A side-10 square cannot hold an inset of 6: the four offset edges cross past
+            // one another and what comes back is a tidy side-2 square standing 4 off the
+            // ring rather than 6. Every corner of it fails, so every stretch is carved and
+            // the refusal a caller reads is the carve leaving nothing.
+            var traced = RingPath.traceInsetRing(
+                buildReferenceSquare(),
+                6.0,
+                MITER_SPIKE_LIMIT,
+                SQUARE_CENTRE);
+
+            assertThat(traced.hasStretchHoldingItsInset())
+                .isFalse();
+        }
+
+        @Test
+        void noStretchHoldsTheInsetWhenTheRingIsTooThinInOneDirectionOnly() {
+            // A 20-by-4 ring has length to spare and no width: inset by 3, its long sides
+            // cross while its ends do not, and what comes back is a tidy 14-by-2 rectangle
+            // whose corners stand 1 from the ring rather than 3. A ring thin in one
+            // direction is the shape a cell is most likely to be when it has no room, and
+            // no part of it is wide enough to rescue.
+            var thin = Arrays.asList(
+                new double[] {0, 0},
+                new double[] {20, 0},
+                new double[] {20, 4},
+                new double[] {0, 4});
+
+            var traced = RingPath.traceInsetRing(
+                thin,
+                3.0,
+                MITER_SPIKE_LIMIT,
+                new double[] {10, 2});
+
+            assertThat(traced.hasStretchHoldingItsInset())
+                .isFalse();
+        }
+
+        @Test
+        void anEmptyPathHoldsNothing() {
+            // A ring that left nothing to trace has no stretch to offer, which is the same
+            // answer a ring overrun everywhere gives - and the reason a caller choosing
+            // between insets can ask one question rather than two.
+            assertThat(RingPath.nothingLeftToTrace().hasStretchHoldingItsInset())
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class GetPerimeter {
+
+        @Test
+        void perimeterIsTheLengthOfTheInsetRing() {
+            // The inset square runs from (2,2) to (8,8): four sides of 6.
+            assertThat(traceReferenceSquare().getPerimeter())
+                .isCloseTo(24.0, buildAssertionSlack());
+        }
+
+        @Test
+        void perimeterIsZeroWhereThereIsNoPath() {
+            assertThat(RingPath.nothingLeftToTrace().getPerimeter())
+                .isCloseTo(0.0, buildAssertionSlack());
+        }
+    }
+
+    @Nested
+    class ComputePointAt {
+
+        @Test
+        void pointAtZeroIsTheStart() {
+            assertThat(traceReferenceSquare().computePointAt(0))
+                .containsExactly(new double[] {5, 8}, buildAssertionSlack());
+        }
+
+        @Test
+        void pointWithinAnEdgeIsInterpolatedAlongIt() {
+            // 1.5 along the top edge from (5,8), and 6 - three past the corner at 3 -
+            // partway down the right-hand edge.
+            var path = traceReferenceSquare();
+
+            assertThat(path.computePointAt(1.5))
+                .containsExactly(new double[] {6.5, 8}, buildAssertionSlack());
+            assertThat(path.computePointAt(6))
+                .containsExactly(new double[] {8, 5}, buildAssertionSlack());
+        }
+
+        @Test
+        void pointPastThePerimeterWrapsRoundToTheStart() {
+            // A layout running off the end of the path continues round it rather than
+            // having to be split by whoever laid it out.
+            var path = traceReferenceSquare();
+
+            assertThat(path.computePointAt(24))
+                .containsExactly(new double[] {5, 8}, buildAssertionSlack());
+            assertThat(path.computePointAt(25.5))
+                .containsExactly(new double[] {6.5, 8}, buildAssertionSlack());
+        }
+
+        @Test
+        void pointBeforeTheStartMeasuresBackFromTheEnd() {
+            // Three back from the top centre is the corner at (2,8), three before the
+            // path's end at 24.
+            assertThat(traceReferenceSquare().computePointAt(-3))
+                .containsExactly(new double[] {2, 8}, buildAssertionSlack());
+        }
+
+        @Test
+        void anEmptyPathHasNothingToMeasureBetween() {
+            assertThatThrownBy(() -> RingPath.nothingLeftToTrace().computePointAt(0))
+                .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
+    class CollectPointsBetween {
+
+        @Test
+        void stretchWithinOneEdgeIsItsTwoEnds() {
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(1, 2),
+                List.of(new double[] {6, 8}, new double[] {7, 8}));
+        }
+
+        @Test
+        void stretchSpanningACornerKeepsTheCorner() {
+            // From 1.5 along the top edge to 1.5 down the right-hand one. The corner at 3
+            // is where the stretch bends, so it has to survive into the polyline - the
+            // straight line between the two ends would cut across it.
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(1.5, 4.5),
+                List.of(
+                    new double[] {6.5, 8},
+                    new double[] {8, 8},
+                    new double[] {8, 6.5}));
+        }
+
+        @Test
+        void stretchEndingOnACornerDoesNotRepeatIt() {
+            // The corner is both the last turn and the end point; emitting it twice would
+            // leave a zero-length step for whatever gives the stretch girth.
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(1.5, 3),
+                List.of(new double[] {6.5, 8}, new double[] {8, 8}));
+        }
+
+        @Test
+        void stretchStartingOnACornerWalksForwardFromIt() {
+            // A start landing exactly on a corner belongs to the edge leaving it, so the
+            // walk steps forward down the right-hand edge rather than back along the top.
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(3, 4),
+                List.of(new double[] {8, 8}, new double[] {8, 7}));
+        }
+
+        @Test
+        void stretchOfNoLengthIsTheSinglePointItSitsAt() {
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(5, 5),
+                List.of(new double[] {8, 6}));
+        }
+
+        @Test
+        void stretchWrappingPastTheStartCarriesOnRound() {
+            // From 1 before the end to 1 after it. The start point is a listed corner of
+            // the path - it split the edge it sits on - so it appears on the way past.
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(23, 25),
+                List.of(
+                    new double[] {4, 8},
+                    new double[] {5, 8},
+                    new double[] {6, 8}));
+        }
+
+        @Test
+        void stretchEndingBehindItsStartIsOfNoLength() {
+            // The walk only runs forward, and an end behind its start is a caller's
+            // arithmetic having gone wrong. Reading it as "almost all the way round" would
+            // turn that slip into a nearly complete lap; a point is the safer reading.
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(5, 4),
+                List.of(new double[] {8, 6}));
+        }
+
+        @Test
+        void stretchLongerThanThePerimeterIsCutToOneLap() {
+            // Going round twice would only retrace the same geometry, so the walk stops
+            // where it began - both ends of the lap kept, since they are the two ends of
+            // a polyline rather than a repeated corner.
+            assertThatPointsAre(
+                traceReferenceSquare().collectPointsBetween(0, 30),
+                List.of(
+                    new double[] {5, 8},
+                    new double[] {8, 8},
+                    new double[] {8, 2},
+                    new double[] {2, 2},
+                    new double[] {2, 8},
+                    new double[] {5, 8}));
+        }
+
+        @Test
+        void anEmptyPathHasNothingToWalkBetween() {
+            assertThatThrownBy(() -> RingPath.nothingLeftToTrace().collectPointsBetween(0, 1))
+                .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
+    class FindClearArcs {
+
+        @Test
+        void wholePathIsClearWhenNoShapeCoversIt() {
+            // The ordinary case, and the one every layout that asks for nothing to be kept
+            // clear of lands in: one interval, the path from end to end.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of()),
+                List.of(new double[] {0, 24}));
+        }
+
+        @Test
+        void shapeOverThePathLeavesTheStretchesEitherSideOfIt() {
+            // A box over the top right corner, covering the top edge from x=6 and the right
+            // edge down to y=7. The path reaches x=6 one along and leaves y=7 four along, so
+            // what is left is the run up to the box and the run from it back round.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(buildBox(6, 7, 9, 9))),
+                List.of(
+                    new double[] {0, 1},
+                    new double[] {4, 24}));
+        }
+
+        @Test
+        void coverSpanningSeveralEdgesComesBackAsOneStretch() {
+            // The same box states the point on its own: it covers the end of one edge and the
+            // start of the next, and the corner between them is under it too. Reported as two
+            // intervals meeting at the corner, a layout would read a gap where the shape is
+            // continuous, and could lay a run in it.
+            assertThat(traceReferenceSquare().findClearArcs(List.of(buildBox(6, 7, 9, 9))))
+                .hasSize(2);
+        }
+
+        @Test
+        void shapeOverTheStartLeavesTheStretchBetweenItsTwoSides() {
+            // A box across the top centre covers the first stretch of the path and the last -
+            // they meet at the start, but the intervals do not wrap, so the pieces before and
+            // after the origin are stated separately and only the middle survives.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(buildBox(4, 7, 6, 9))),
+                List.of(new double[] {1, 23}));
+        }
+
+        @Test
+        void severalShapesOverThePathEachTakeTheirOwnStretch() {
+            // Every shape is tested, not just the nearest: two names over one cell take two
+            // bites out of its ring, which is the case a single-shape carve would half-answer.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(
+                    buildBox(6, 7, 9, 9),
+                    buildBox(1, 3, 3, 5))),
+                List.of(
+                    new double[] {0, 1},
+                    new double[] {4, 16},
+                    new double[] {18, 24}));
+        }
+
+        @Test
+        void shapeCoveringTheWholePathLeavesNothingClear() {
+            // A name across the whole shape. Nothing can be laid along what is left, and
+            // saying so is what lets a caller answer "then draw none" rather than draw a
+            // sliver somewhere.
+            assertThat(traceReferenceSquare().findClearArcs(List.of(buildBox(0, 0, 10, 10))))
+                .isEmpty();
+        }
+
+        @Test
+        void shapeLyingElsewhereCoversNothing() {
+            // The whole map's shapes are handed over, so most of them are nowhere near any one
+            // path - and a shape that misses must leave the path exactly as it found it.
+            assertThatArcsAre(
+                traceReferenceSquare().findClearArcs(List.of(buildBox(100, 100, 120, 120))),
+                List.of(new double[] {0, 24}));
+        }
+
+        @Test
+        void shapeOverThePathAndAPinchInItCarveTheOneRingBetweenThem() {
+            // Both are stretches the layout may not use, and a caller taking the longest of
+            // what is left has to see them in one list: read separately, the longest run
+            // clear of the shapes would be judged without knowing the pinch cuts it in two.
+            // The box takes 2 to 4 along the top edge and the mouth takes 15 to 19.24.
+            assertThatArcsAre(
+                traceTabbedSquare(TABBED_SQUARE_CENTRE).findClearArcs(List.of(buildBox(12, 17, 14, 19))),
+                List.of(
+                    new double[] {0, 2},
+                    new double[] {4, 15},
+                    new double[] {19.2426407, 65.2426407}));
+        }
+
+        @Test
+        void anEmptyPathHasNoStretchesToOffer() {
+            // A ring that left nothing to trace has nothing to carve either, and answering
+            // with a stretch of a path that does not exist would be worse than answering none.
+            assertThat(RingPath.nothingLeftToTrace().findClearArcs(List.of(buildBox(0, 0, 1, 1))))
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class FuseStretchAcrossStart {
+
+        @Test
+        void stretchesMeetingAtTheStartComeBackAsTheOneStretchTheyAre() {
+            // A shape on the far side of the path leaves one run, stated by the carve as the
+            // piece before the origin and the piece after it. Fused, it is the 20-long run it
+            // actually is, closing past the perimeter; read as carved, a caller comparing the
+            // two would take the longer half and give up the rest.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(0, 8),
+                    new RingStretch(12, 24))),
+                List.of(new double[] {12, 32}));
+        }
+
+        @Test
+        void stretchesBetweenTheTwoEndsAreLeftWhereTheyAre() {
+            // Only the pair reaching the two ends is fused. A stretch in the middle of the path
+            // neither moves nor changes order, so the fuse costs a caller nothing it did not
+            // ask for.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(0, 4),
+                    new RingStretch(8, 12),
+                    new RingStretch(16, 24))),
+                List.of(
+                    new double[] {8, 12},
+                    new double[] {16, 28}));
+        }
+
+        @Test
+        void stretchFallingShortOfTheStartIsNotFusedWithTheOneOpeningIt() {
+            // The two nearly meet, and nearly is not meeting: the path's start is covered, so
+            // there is one stretch either side of it rather than one stretch through it. Fused
+            // regardless, a layout would be laid straight over the shape at the origin.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(0, 8),
+                    new RingStretch(12, 23))),
+                List.of(
+                    new double[] {0, 8},
+                    new double[] {12, 23}));
+        }
+
+        @Test
+        void stretchOpeningPastTheStartIsNotFusedWithTheOneClosingThePath() {
+            // The same rule read from the other end, and worth posing separately: the pair is
+            // fused for reaching the start, so a stretch reaching only the perimeter is no more
+            // fusable than one reaching only the origin.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(
+                    new RingStretch(1, 8),
+                    new RingStretch(12, 24))),
+                List.of(
+                    new double[] {1, 8},
+                    new double[] {12, 24}));
+        }
+
+        @Test
+        void aSingleStretchIsNeverFusedWithItself() {
+            // The whole path uncovered is one stretch reaching both ends, and it is already the
+            // run it describes. Fused with itself it would come back twice as long as the path
+            // it lies on.
+            assertThatArcsAre(
+                traceReferenceSquare().fuseStretchAcrossStart(List.of(new RingStretch(0, 24))),
+                List.of(new double[] {0, 24}));
+        }
+    }
+
+    @Nested
+    class PlaceSpanNearestStart {
+
+        @Test
+        void spanStartsAtThePathStartWhereTheStretchHasRoomAfterIt() {
+            // The ordinary case: the path's start lies on the stretch with room clockwise of it,
+            // so the layout opens exactly on the landmark. The stretch is one fused across the
+            // start, so the landmark within it is the perimeter rather than the zero it would
+            // otherwise be measured back to.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(20, 30), SPAN_LENGTH))
+                .isEqualTo(24.0);
+        }
+
+        @Test
+        void spanBacksUpWhereTheStretchClosesTooSoonAfterThePathStart() {
+            // The path's start is on the stretch, but the stretch closes one after it and the
+            // span reaches four. The start backs up to the latest the stretch allows, so the
+            // landmark still falls on the span and only which part of it lands there moves.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(20, 25), SPAN_LENGTH))
+                .isEqualTo(21.0);
+        }
+
+        @Test
+        void spanOpensWhereTheStretchDoesWhereAShapeCoversThePathStart() {
+            // A shape over the start and one unit of path clockwise of it. The span begins as
+            // near the landmark as the shape allows rather than being thrown to the stretch's
+            // far end - which is what makes this a clamp rather than a preference with a
+            // fallback.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(1, 18), SPAN_LENGTH))
+                .isEqualTo(1.0);
+        }
+
+        @Test
+        void spanEndsNearThePathStartWhereTheStretchClosesJustBehindIt() {
+            // The stretch closes one short of the landmark and opens six the other side of it,
+            // so the span's start is nearer at the closing end: it sits at 19 and runs to 23.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(6, 23), SPAN_LENGTH))
+                .isEqualTo(19.0);
+        }
+
+        @Test
+        void spanTakesTheOnePositionAnExactFitStretchAllows() {
+            // A stretch the span exactly fills has one position, and the clamp reaches it
+            // however far off the landmark lies.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(8, 12), SPAN_LENGTH))
+                .isEqualTo(8.0);
+        }
+
+        @Test
+        void spanTakesTheStretchsOwnStartWhereBothItsEndsAreEquallyFar() {
+            // A stretch lying opposite the landmark: six of path from it round to where the
+            // stretch opens, and six from the latest start the stretch allows back to it. The
+            // tie takes the stretch's start, so such a stretch places the same way every call.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(6, 22), SPAN_LENGTH))
+                .isEqualTo(6.0);
+        }
+
+        @Test
+        void spanLongerThanItsStretchOpensWhereTheStretchDoes() {
+            // Sizing a layout to its stretch is the caller's, so a span that outruns the one it
+            // was handed is a length question asked of a placement. It opens where the stretch
+            // does and overruns the far end, rather than being refused an answer it cannot give.
+            assertThat(traceReferenceSquare()
+                    .placeSpanNearestStart(new RingStretch(8, 10), SPAN_LENGTH))
+                .isEqualTo(8.0);
+        }
+
+        @Test
+        void anEmptyPathHasNoLapToPlaceWithin() {
+            // A path that was never traced has no perimeter, and nearness the short way round is
+            // measured within one. Answering with a position on a path that does not exist would
+            // be worse than answering none.
+            assertThatThrownBy(() -> RingPath.nothingLeftToTrace()
+                    .placeSpanNearestStart(new RingStretch(0, 1), SPAN_LENGTH))
+                .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    // The path around the reference square inset by 2, anchored at its centre: the square
+    // from (2,2) to (8,8), traced clockwise from (5,8) - a 24-long path whose corners fall at
+    // 3, 9, 15 and 21.
+    private static RingPath traceReferenceSquare() {
+        return RingPath.traceInsetRing(
+            buildReferenceSquare(),
+            INSET_DISTANCE,
+            MITER_SPIKE_LIMIT,
+            SQUARE_CENTRE);
+    }
+
+    // The path around a side-20 square with a tab hanging off its right side, inset by 2: the
+    // shape a ring pinched in one place is posed with.
+    //
+    // The tab is 3 across against an inset of 2, so the two offset walls of it cross and the
+    // fold splice leaves the crossing as a single corner at (19.5,9.5) - a mouth standing 1.58
+    // off the ring it came from. The square itself has room several times over, so everything
+    // but the mouth and its two edges is ring a layout may go on.
+    //
+    // The anchor is the parameter because where the path opens decides whether the pinch is a
+    // stretch in the middle of it or one straddling its two ends: from the square's centre the
+    // path opens at (10,18) and the mouth sits 15 to 19.24 along, while from beside the mouth
+    // the path opens on the pinch itself.
+    private static RingPath traceTabbedSquare(double[] topAnchor) {
+        return RingPath.traceInsetRing(
+            List.of(
+                new double[] {0, 0},
+                new double[] {20, 0},
+                new double[] {20, 8},
+                new double[] {34, 8},
+                new double[] {34, 11},
+                new double[] {20, 11},
+                new double[] {20, 20},
+                new double[] {0, 20}),
+            INSET_DISTANCE,
+            MITER_SPIKE_LIMIT,
+            topAnchor);
+    }
+
+    // An axis-aligned keep-out box by its two opposite corners.
+    private static List<double[]> buildBox(
+            double fromX,
+            double fromY,
+            double toX,
+            double toY) {
+
+        return List.of(
+            new double[] {fromX, fromY},
+            new double[] {toX, fromY},
+            new double[] {toX, toY},
+            new double[] {fromX, toY});
+    }
+
+    // Asserts the stretches match the expected {start, end} intervals in order, at the
+    // shared slack. The points helper cannot stand in: these are parameters along a path
+    // rather than points, and reading them as coordinates would make a failure say the
+    // wrong thing.
+    private static void assertThatArcsAre(List<RingStretch> arcs, List<double[]> expected) {
+
+        assertThat(arcs)
+            .hasSameSizeAs(expected);
+
+        for (var i = 0; i < expected.size(); i++) {
+
+            assertThat(new double[] {
+                    arcs.get(i).startArcLength(),
+                    arcs.get(i).endArcLength()})
+                .containsExactly(expected.get(i), buildAssertionSlack());
+        }
+    }
+}

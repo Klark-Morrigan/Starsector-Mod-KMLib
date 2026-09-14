@@ -1,7 +1,15 @@
 .claude/
 .codex/
 .compile-check/
+
 .gradle/
+# Machine-local values. See gradle.properties.example.
+gradle.properties
+
+# Generated from kmlib.version.template; exists only where something
+# filled it (a release job, a local build), never committed.
+/kmlib.version
+
 .idea/
 .vscode/
 bin/
@@ -9,5 +17,8 @@ build/
 dist/
 jars/*.jar
 out/
-*.bat
 *.class
+
+# graphify knowledge graph artifacts (local; rebuilt by graphify)
+graphify-out/
+supersets-out/
