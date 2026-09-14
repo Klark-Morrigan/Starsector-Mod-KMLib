@@ -6,6 +6,8 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.testfixtures.starsector.systems.StarSystemFixture;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -19,10 +21,12 @@ import static org.mockito.Mockito.when;
  * Pins the contract of {@link VisibleStars#isStarVisibleForSystem}: a system is
  * map-visible when an untagged star anchor leads into it; a hidden anchor, a
  * non-anchor jump point, an anchor leading into a different system, an anchor
- * leading nowhere, or a missing hyperspace all read as not visible. Anchors are
- * resolved to systems by the destination they lead into, never by location. The
- * cases live in a {@link Nested} group so the suite reports as a per-method tree;
- * the shared mock builders stay on the outer class.
+ * leading nowhere, no system at all, or a missing hyperspace all read as not
+ * visible. Anchors are resolved to systems by the destination they lead into,
+ * never by location, and each destination is told from the next by its whole key
+ * rather than by its ID - two systems sharing an ID being the case the answer
+ * matters most in. The cases live in a {@link Nested} group so the suite reports
+ * as a per-method tree; the shared mock builders stay on the outer class.
  */
 final class VisibleStarsTest {
 
@@ -71,6 +75,35 @@ final class VisibleStarsTest {
                 buildSectorWithHyperEntities(buildStarAnchorLeadingTo(null, false)));
 
             assertThat(visibleStars.isStarVisibleForSystem(buildSystemWithId("alpha"))).isFalse();
+        }
+
+        @Test
+        void isFalseForTheHiddenHalfOfAPairSharingAnId() {
+            // The case the ID index could not answer, and vanilla's own abyssal pair: two systems
+            // under one ID, one reached by an untagged anchor and one by a hidden one. Keyed by ID
+            // the untagged anchor made both read as visible, so a hidden star was drawn as an
+            // ordinary one by whatever composed this.
+            var shownSystem = StarSystemFixture.buildKeyedSystem("abyssal depths", null, "425b5");
+            var hiddenSystem = StarSystemFixture.buildKeyedSystem("abyssal depths", null, "4379d");
+
+            var visibleStars = VisibleStars.scan(
+                buildSectorWithHyperEntities(
+                    buildStarAnchorLeadingTo(shownSystem, false),
+                    buildStarAnchorLeadingTo(hiddenSystem, true)));
+
+            assertThat(visibleStars.isStarVisibleForSystem(shownSystem)).isTrue();
+            assertThat(visibleStars.isStarVisibleForSystem(hiddenSystem)).isFalse();
+        }
+
+        @Test
+        void isFalseForNoSystem() {
+            // Asked of nothing rather than of a system, which the ID read answered by throwing.
+            // There is no star to draw, so the answer is the same as for a system with no anchor.
+            var visibleStars = VisibleStars.scan(
+                buildSectorWithHyperEntities(
+                    buildStarAnchorLeadingTo(buildSystemWithId("alpha"), false)));
+
+            assertThat(visibleStars.isStarVisibleForSystem(null)).isFalse();
         }
 
         @Test

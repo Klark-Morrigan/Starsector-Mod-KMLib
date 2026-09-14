@@ -6,6 +6,8 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.starsector.systems.SystemKey;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,19 +24,26 @@ import java.util.Set;
  *
  * <p>This scans hyperspace once and resolves each visible (untagged) star anchor
  * to the system it leads into via {@link JumpPointAPI#getDestinationStarSystem},
- * indexing those system ids. Resolving by identity, not by coordinates, is what
- * makes a barycenter or multi-star system match: its {@code getLocation} returns
- * an empty centre offset from where the star anchor actually sits, so a
- * position-based lookup would miss it. Building the index once keeps the
- * per-system query an O(1) lookup, so callers that walk every system do not
- * rescan hyperspace per system.
+ * indexing those systems by {@link SystemKey}. Resolving by identity, not by
+ * coordinates, is what makes a barycenter or multi-star system match: its
+ * {@code getLocation} returns an empty centre offset from where the star anchor
+ * actually sits, so a position-based lookup would miss it. Building the index
+ * once keeps the per-system query an O(1) lookup, so callers that walk every
+ * system do not rescan hyperspace per system.
+ *
+ * <p>Keyed by {@link SystemKey} rather than by system ID, because an ID is not
+ * unique and the systems that share one here are exactly the systems this read
+ * exists to separate: vanilla's abyssal pair holds one system whose anchor is
+ * tagged hidden and one whose anchor is not, so an ID-keyed index answers
+ * "visible" for both on the strength of the untagged one alone - which is a
+ * hidden star drawn as an ordinary one by whatever composes this.
  */
 public final class VisibleStars {
 
-    private final Set<String> visibleStarSystemIds;
+    private final Set<SystemKey> visibleStarSystemKeys;
 
-    private VisibleStars(Set<String> visibleStarSystemIds) {
-        this.visibleStarSystemIds = visibleStarSystemIds;
+    private VisibleStars(Set<SystemKey> visibleStarSystemKeys) {
+        this.visibleStarSystemKeys = visibleStarSystemKeys;
     }
 
     /**
@@ -42,27 +51,28 @@ public final class VisibleStars {
      *
      * @param sector the sector to scan; null, or a sector with no hyperspace,
      *               yields an empty index (no star treated as visible)
-     * @return an index of the IDs of systems whose star the map draws
+     * @return an index of the keys of systems whose star the map draws
      */
     public static VisibleStars scan(SectorAPI sector) {
-        var visibleStarSystemIds = new HashSet<String>();
+        var visibleStarSystemKeys = new HashSet<SystemKey>();
         var hyperspace = sector == null ? null : sector.getHyperspace();
         if (hyperspace != null) {
-            indexVisibleStarSystems(hyperspace, visibleStarSystemIds);
+            indexVisibleStarSystems(hyperspace, visibleStarSystemKeys);
         }
-        return new VisibleStars(visibleStarSystemIds);
+        return new VisibleStars(visibleStarSystemKeys);
     }
 
     /**
-     * @param system the system to test
+     * @param system the system to test; null reads as not visible, there being no
+     *               system whose star could be drawn
      * @return true when the vanilla map draws this system's star - a visible
      *         star anchor leads into it
      */
     public boolean isStarVisibleForSystem(StarSystemAPI system) {
-        return visibleStarSystemIds.contains(system.getId());
+        return visibleStarSystemKeys.contains(SystemKey.readKeyOf(system));
     }
 
-    private static void indexVisibleStarSystems(LocationAPI hyperspace, Set<String> ids) {
+    private static void indexVisibleStarSystems(LocationAPI hyperspace, Set<SystemKey> keys) {
         for (Object entity : hyperspace.getEntities(JumpPointAPI.class)) {
             var jumpPoint = (JumpPointAPI) entity;
             // Only a star anchor draws a system's star; one tagged hidden (an
@@ -74,8 +84,13 @@ public final class VisibleStars {
             var system = jumpPoint.getDestinationStarSystem();
             // A star anchor always leads into a system; the null guard keeps a
             // malformed anchor from failing the whole scan rather than expecting it.
+            //
+            // A system the sector states nothing at all about carries the blank key, which every
+            // other such system also carries; two of them share this entry, as they shared the
+            // empty ID before. That is the one shape a key cannot separate, and indexing it anyway
+            // keeps a lone arm-less system with a drawn star reading as visible.
             if (system != null) {
-                ids.add(system.getId());
+                keys.add(SystemKey.readKeyOf(system));
             }
         }
     }
