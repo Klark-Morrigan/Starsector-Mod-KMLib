@@ -6,7 +6,14 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [0.2.0] - 2026-09-14
+
+### Added
+
+- `Ranges.clampInto(int, int, int)` - the integer form of the existing clamp, on the same terms as the double one and including its empty-range rule. A caller whose value and bounds are all integers - a pixel width, a count, a cadence in seconds - had to cast at each end of the double-only form, which is why such callers inlined a `min`/`max` pair instead and left the one clamp unread. The new form is answered by the double one rather than by a second copy of the rule, so the empty case cannot drift between them.
 
 ## [0.1.0] - 2026-09-14
 

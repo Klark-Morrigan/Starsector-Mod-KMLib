@@ -23,6 +23,29 @@ public final class Ranges {
     }
 
     /**
+     * Confines an integer {@code value} between two integer bounds, on the same terms as
+     * {@link #clampInto(double, double, double)} - the empty range included.
+     *
+     * <p>Here so a caller whose value and bounds are all integers - a pixel width, a count, a
+     * cadence in seconds - reaches the one clamp rather than re-inlining a {@code min}/{@code max}
+     * pair to avoid a cast at each end of it. That cast is what the double-only form cost every such
+     * caller, and it is why they inlined instead.
+     *
+     * <p>Answered by the double form rather than by a second copy of the rule, so the empty case
+     * cannot drift between the two. Every {@code int} is exactly representable as a {@code double},
+     * and the answer is always one of the three values handed in, so the narrowing back is exact
+     * rather than a rounding.
+     *
+     * @param value   the value to confine
+     * @param lowest  the floor
+     * @param highest the ceiling
+     * @return the nearest allowed value
+     */
+    public static int clampInto(int value, int lowest, int highest) {
+        return (int) clampInto((double) value, lowest, highest);
+    }
+
+    /**
      * Confines {@code value} between two bounds, with an EMPTY range collapsing to whichever
      * of its ends is nearer rather than to a reversed interval.
      *
