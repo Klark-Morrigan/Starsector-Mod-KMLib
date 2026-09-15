@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.coreui;
 
-import org.magiclib.ReflectionUtils;
-
 import java.util.List;
 
 /**
@@ -14,21 +12,22 @@ import java.util.List;
  * and let the name fall where it may. That is a different question from {@link CoreUiTree}'s, which
  * names its hops because the ones it takes are part of the core UI's contract.
  *
- * <p>Wraps the reach rather than exposing it, so a caller holds a member it can call rather than a
- * reflection object it could drive itself. Naming that dependency stays this package's business, and
- * a member handed out of it is a member that has already been through the bypass.
+ * <p>Wraps the member rather than exposing it, so a caller holds something it can call rather than a
+ * reflection object it could drive itself. Reaching for reflection at all stays this package's
+ * business, and a member handed out of it is one that has already been through
+ * {@link ReflectionBypass}.
  */
 public final class CoreUiMethod {
 
-    private final ReflectionUtils.ReflectedMethod method;
+    private final ReflectedMethod method;
 
     /**
-     * Wraps a method the reach beside this one has already read off a shape, which is why it is not
-     * reachable from outside the package: what goes in is a reflection object nothing here may name.
+     * Wraps a member the reach beside this one has already found, which is why it is not reachable
+     * from outside the package: what goes in is the reach's own answer, not anything a caller has.
      *
-     * @param method the method as the reach hands it over
+     * @param method the member as the reach hands it over
      */
-    CoreUiMethod(ReflectionUtils.ReflectedMethod method) {
+    CoreUiMethod(ReflectedMethod method) {
         this.method = method;
     }
 
@@ -66,11 +65,11 @@ public final class CoreUiMethod {
      * @param arguments what to pass, matching the parameter list above
      * @return whatever it answered, or null for a void one
      * @throws RuntimeException when the call fails. It arrives undeclared and not necessarily as a
-     *                          {@link RuntimeException} - the bypass is Kotlin, which lets the
-     *                          checked exception wrapping the target's own throw escape unannounced -
-     *                          so a caller guarding this has to catch {@link Throwable}
+     *                          {@link RuntimeException} - the target's own throw comes back wrapped
+     *                          in a checked exception, rethrown as it was thrown rather than
+     *                          replaced - so a caller guarding this has to catch {@link Throwable}
      */
     public Object invokeOn(Object instance, Object... arguments) {
-        return method.invoke(instance, arguments);
+        return method.invokeOn(instance, arguments);
     }
 }

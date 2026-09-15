@@ -314,7 +314,7 @@ jobs:
       # so the upload path carries that prefix; the artifact NAME stays bare
       # because create-release downloads it by name into its own workspace root.
       - name: Upload artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ needs.config.outputs.zip-name }}
           path: ${{ needs.config.outputs.mod-id }}/${{ needs.config.outputs.zip-name }}
@@ -325,7 +325,7 @@ jobs:
       # artifact is downloaded whole. This one was written at the workspace
       # root, so unlike the zip its path carries no checkout prefix.
       - name: Upload version file artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ needs.config.outputs.version-file-name }}
           path: ${{ needs.config.outputs.version-file-name }}
@@ -376,7 +376,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Download release artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ needs.config.outputs.zip-name }}
 
@@ -385,7 +385,7 @@ jobs:
       # the generated file must not land on top of it. gh names an asset
       # after its basename, so the prefix does not reach the release.
       - name: Download version file artifact
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ${{ needs.config.outputs.version-file-name }}
           path: version-file

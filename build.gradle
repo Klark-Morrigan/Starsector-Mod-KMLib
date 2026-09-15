@@ -153,15 +153,6 @@ def ratJars = findModJars('RandomAssortmentofThings.jar')
 // version-stamped; testRuntimeOnly so the wrapper's tests can load under test.
 def nexerelinJars = findModJars('ExerelinCore.jar')
 
-// MagicLib backs CoreUiTree, the one place that reflects into the live core-UI widget tree: its
-// ReflectionUtils drives the java.lang.reflect ops through method handles, the sanctioned bypass
-// of the script classloader's reflection ban. Every probe that walks that tree goes through it, so
-// this is a single seam rather than a per-probe dependency. compileOnly, and declared in
-// mod_info.json: its absence leaves the reach throwing, which each probe answers with its own
-// fail-open or fail-closed policy rather than breaking. Located by jar name since the install
-// folder can vary; testRuntimeOnly so the class can load under test.
-def magicLibJars = findModJars('MagicLib.jar')
-
 // org.json backs LunaSettingsWriter's write path: LunaLib's backing store is a
 // LazyLib CommonDataJSONObject, which extends org.json.JSONObject, so javac must
 // resolve JSONObject#put and JSONException to compile the write. The classes ship
@@ -209,7 +200,6 @@ dependOnModJars(files(lunaLibJarFile))
 dependOnModJars(consoleCommandsJars)
 dependOnModJars(ratJars)
 dependOnModJars(nexerelinJars)
-dependOnModJars(magicLibJars)
 dependOnModJars(files(lazyLibJarFile))
 dependOnModJars(files(lazyLibKotlinRuntimeJarFile))
 

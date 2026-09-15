@@ -37,16 +37,16 @@ import java.util.function.Supplier;
  * which is the root a caller reading a vanilla map host wants.
  *
  * <p>The private core-UI methods and the private tooltip host are reached through {@link CoreUiTree},
- * which is where the by-name reach and the library behind it are answered for; nothing here names that
- * library itself. The tooltip is matched by the returned value's runtime class <em>name</em> walked up
+ * which is where the by-name reach is answered for; nothing here reflects on its own account. The
+ * tooltip is matched by the returned value's runtime class <em>name</em> walked up
  * its hierarchy, not by a field name or {@code Class} identity, so an obfuscated rename or a classloader
  * mismatch cannot make a real tooltip read as foreign.
  *
  * <p>The whole read is best-effort, since reflecting into obfuscated internals can fail on any game
  * build. On any failure it reports no tooltip - the overlay then draws, so a broken read costs a
  * possible double tooltip rather than a missing overlay - and warns once per session so the failure is
- * visible without flooding the log. A missing MagicLib is not among those failures - it is a
- * declared {@code mod_info.json} dependency.
+ * visible without flooding the log. An absent reach is not among those failures - the by-name reach is
+ * the library's own code rather than a mod it has to find installed.
  *
  * <p>Because the reach is fragile and only observable in-engine, the read narrates itself at DEBUG:
  * each time its outcome changes it logs one line naming the search root, how many nodes it walked,

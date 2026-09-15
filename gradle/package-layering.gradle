@@ -24,7 +24,7 @@ def treesClosedToOptionalMods = ['kmlib.animation', 'kmlib.collections',
     'kmlib.testfixtures', 'kmlib.text', 'kmlib.time']
 
 // The mods a consumer may run without: named only by the adapter that stands
-// behind a presence gate for each. LazyLib, LunaLib, MagicLib and Fast Rendering
+// behind a presence gate for each. LazyLib, LunaLib and Fast Rendering
 // are deliberately absent - the library is compiled against them and cannot run
 // without them, so they belong with the code that uses them rather than under
 // kmlib.mods, and closing a tree to them would be a rule against the build.

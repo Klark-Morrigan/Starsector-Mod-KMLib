@@ -1,7 +1,5 @@
 package kmlib.starsector.ui.coreui;
 
-import org.magiclib.ReflectionUtils;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,13 +60,14 @@ public final class CoreUiMethods {
         return readMethods(shape.getMethods());
     }
 
-    // The methods arrive as bare objects because their own type is one the game's script classloader
+    // The methods arrive as bare objects because their own type is one the game's mod classloader
     // denies mod code outright: naming it here would resolve it through that loader and fail with a
     // security error, where the array they arrive in is nothing the loader has to be asked about.
     private static List<CoreUiMethod> readMethods(Object[] methods) {
 
         return Arrays.stream(methods)
-            .map(method -> new CoreUiMethod(new ReflectionUtils.ReflectedMethod(method)))
+            .map(ReflectedMethod::new)
+            .map(CoreUiMethod::new)
             .toList();
     }
 }

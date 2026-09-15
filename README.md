@@ -11,6 +11,8 @@ and a mod plugin that binds the settings and registers its
 at application load.
 It runs nothing per frame of its own.
 
+[Install with **TriOS**](https://trilink.wispborne.com/open.html?mod=%7B%22url%22%3A%22https%3A%2F%2Fgithub.com%2FKlark-Morrigan%2FStarsector-Mod-KMLib%2Freleases%2Flatest%2Fdownload%2Fkmlib.version%22%2C%22id%22%3A%22kmlib%22%7D&dep=%7B%22url%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2FLazyWizard%2Flazylib%2Fmaster%2Fmod%2Flazylib.version%22%2C%22id%22%3A%22lw_lazylib%22%7D&dep=%7B%22url%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2FLukas22041%2FLunaLib%2Fmain%2FLunaLib.version%22%2C%22id%22%3A%22lunalib%22%7D)
+
 ## Index
 
 - [Requirements](#requirements)
@@ -31,6 +33,7 @@ It runs nothing per frame of its own.
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
 - [Intel Base Classes](#intel-base-classes)
+- [Licence](#licence)
 
 ## Requirements
 
@@ -46,8 +49,6 @@ Hard dependencies:
   The library needs a switch of its own because log4j scopes a level to a package subtree:
   a mod's verbosity governs that mod's lines and cannot reach `kmlib` beneath them,
   and a mod that set `kmlib` would be setting it for every other mod in the game.
-- **MagicLib** -
-  provides code reflection utilities.
 
 Soft dependencies - compiled against,
 absent from `mod_info.json`,
@@ -130,7 +131,17 @@ Build:
   the Starsector build conventions every KM mod applies by path:
   the game's API jars on the compile and test classpath,
   `mod_info.json` as the version source,
-  and the jar output location the launcher expects.
+  the jar output location the launcher expects,
+  and the two facts about the game every mod would otherwise restate -
+  which namespace the game's type names are not promised in,
+  and which package inside it is the published API.
+- [`gradle/referenced-types.gradle`](gradle/referenced-types.gradle) -
+  what KMLib adds to those:
+  the concrete game classes whose names are kept,
+  each named because the API publishes no equivalent.
+  A mod declares its own list the same way;
+  everything outside it is reached by method name at runtime,
+  since the game's obfuscated names differ between its per-platform builds.
 - [`gradle/starsector-install-locator.gradle`](gradle/starsector-install-locator.gradle) -
   the lookups those conventions and a mod's own build call:
   the install root,
@@ -906,6 +917,23 @@ over `Throwable`,
 the reach declaring nothing -
 where a consumer of the cast seams inherits one.
 
+Reaching by name means reflection,
+and the game's mod classloader refuses `java.lang.reflect` to mod code
+alongside `java.io`, `javax.script` and `java.util.prefs` -
+a sandbox over what a downloaded jar can reach on a player's machine.
+[`ReflectionBypass`](src/main/java/kmlib/starsector/ui/coreui/ReflectionBypass.java)
+routes around it,
+by asking the bootstrap loader for the reflection types and driving them through method handles,
+which is what every library reaching the game's UI by name does.
+It holds the route and nothing else;
+the searches and the by-name reads, writes and calls built over it are
+[`ReflectedMembers`](src/main/java/kmlib/starsector/ui/coreui/ReflectedMembers.java).
+Worth knowing if you depend on KMLib:
+that route restores the whole capability, not a slice of it.
+Both are package-private and hand out answers rather than reflection objects,
+so nothing above `starsector/ui/coreui/` can reach them,
+and KMLib uses them for nothing but reading and calling the game's own live UI objects.
+
 ## Reusable CI / release actions
 
 KMLib hosts six composite actions and the release workflow other KM mods consume,
@@ -1566,3 +1594,21 @@ and auto-removes from the `IntelManager` once `getExpiryDays()` elapses,
 defaulting to one Starsector month.
 Static `findActive(Class)` returns the first non-expired item of a given subclass,
 so synchronous callers share one definition of "still within the current window".
+
+## Licence
+
+KMLib is licensed under the
+[GNU Lesser General Public License version 3](LICENSE),
+with the GPL it incorporates by reference at [LICENSE.GPL](LICENSE.GPL).
+
+LGPL rather than a permissive licence for what this mod is:
+a library other mods depend on.
+Linking imposes nothing -
+a mod that declares KMLib as a dependency keeps whatever terms it likes,
+and conveys none of KMLib itself,
+so it inherits no obligations.
+What the licence does ask is that a *fork of KMLib* stays open under the same terms.
+
+Part of [`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) derives from
+third-party LGPL code and carries its author's copyright alongside;
+see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
