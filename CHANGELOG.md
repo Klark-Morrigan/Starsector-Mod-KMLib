@@ -17,7 +17,7 @@ The reusable release workflow extracts the section matching the released version
 
 - Reflection utils are lifted from **MagicLib** per **Numan**'s recommendation. Scoped to **coreui** package.
 - **MagicLib** dependency is removed.
-- The project is relicenced under under **LGPL-3.0-only** to comply with licencing of the copied code.
+- The project is relicenced under under **LGPL-3.0-only** to comply with licencing of donor code.
 
 ## [0.3.0] - 2026-09-15
 
