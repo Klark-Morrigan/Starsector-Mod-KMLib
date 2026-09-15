@@ -6,7 +6,7 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
-- [Unrelease](#unreleased)
+- [Unreleased](#unreleased)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
 
@@ -14,7 +14,9 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- Crash on Linux. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
+- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
+- **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature in now handled and logged, resulting in terrain reseating standing down for the rest of the section.
+- **Altered map render state**. Failed terrain reseating now restores reseated terrain placement before standing down.
 
 ## [0.2.0] - 2026-09-14
 
