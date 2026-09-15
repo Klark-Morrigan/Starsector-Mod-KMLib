@@ -4,6 +4,7 @@ import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.intel.IntelScreenView;
+import kmlib.starsector.ui.intel.MapVisorState;
 
 /**
  * An {@link IntelScreenView} whose reads are set directly, so code that gates on the intel screen
@@ -19,6 +20,11 @@ import kmlib.starsector.ui.intel.IntelScreenView;
  * derives one from the other, because a test drives whichever of the two its subject reads and
  * building a component mock to set a rectangle would be ceremony for every test that wants neither.
  * A test whose subject reads both is the one that has to set both.
+ *
+ * <p>The combined visor state is the exception: it is derived from the rectangle and the starscape
+ * flag rather than set on its own. The live binding takes all three off one reading, so a fake that
+ * let them be set apart could pose a screen no game can be in - a visor that is showing to one read
+ * and absent to the next - and a subject that passed against it would still be wrong in the game.
  */
 public final class IntelScreenViewFake implements IntelScreenView {
     private boolean isIntelTabOpen;
@@ -55,6 +61,18 @@ public final class IntelScreenViewFake implements IntelScreenView {
     @Override
     public UIComponentAPI getMapVisorWidget() {
         return mapVisorWidget;
+    }
+
+    @Override
+    public MapVisorState readMapVisorState() {
+
+        if (mapVisorRect == null) {
+            return MapVisorState.NOT_SHOWING;
+        }
+
+        return isMapStarscapeModeOn
+            ? MapVisorState.SHOWING_IN_STARSCAPE_MODE
+            : MapVisorState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     @Override

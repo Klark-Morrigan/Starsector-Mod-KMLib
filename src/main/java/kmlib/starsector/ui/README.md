@@ -451,7 +451,7 @@ and which one a caller wants depends on what it is deciding.
 | Question | Read | Why |
 | --- | --- | --- |
 | about the sector map | [`CampaignMapView`](map/presence/CampaignMapView.java) | the `M` screen's own tab, sub-view and filter |
-| about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own widget, rectangle and filter |
+| about the intel screen | [`IntelScreenView`](intel/IntelScreenView.java) | the visor's own widget, rectangle and filter, plus the [state](intel/MapVisorState.java) that carries presence and filter together for a caller wanting both off one walk |
 | about whichever screen is up | [`MapPresence`](map/presence/MapPresence.java) | either screen counts, and the asker cannot tell which it was called from - one read per look, plus one indifferent to it, over one pair of sources |
 | which widget the map is | [`ShownMapTab`](map/probes/ShownMapTab.java) | a rule about map-tab layout has to be rooted at the map tab, wherever it is |
 | which widgets the *other* maps are | [`EmbeddedMapFinder`](map/probes/EmbeddedMapFinder.java) | a mod compositing a map into a panel of its own puts a map surface on screen that none of the reads above reports, and it is on screen precisely when they all answer no |

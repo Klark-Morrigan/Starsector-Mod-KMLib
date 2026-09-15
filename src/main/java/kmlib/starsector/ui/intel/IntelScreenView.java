@@ -53,6 +53,20 @@ public interface IntelScreenView {
     UIComponentAPI getMapVisorWidget();
 
     /**
+     * The visor's presence and its filter as one reading, for a caller that wants both.
+     *
+     * <p>Asking {@link #getMapVisorRect()} and {@link #isMapStarscapeModeOn()} in turn answers the
+     * same question, and reaches the intel panel twice to do it - a walk down the live widget tree
+     * per read. A caller on a per-frame path therefore takes that walk twice to describe one frame,
+     * which is what this exists to spare it. A caller that wants one of the two signals asks for
+     * that one instead; this is not the cheaper way to ask a single question.
+     *
+     * @return what the visor is doing this frame, never null; {@link MapVisorState#NOT_SHOWING} in
+     *         exactly the cases {@link #getMapVisorRect()} answers {@code null}
+     */
+    MapVisorState readMapVisorState();
+
+    /**
      * Whether the map visor is in starscape mode: its Starscape filter checked while it shows
      * hyperspace. The game then paints the stylised starfield in place of the ordinary map and
      * suppresses the terrain layers drawn above it, so a custom overlay riding those layers is not

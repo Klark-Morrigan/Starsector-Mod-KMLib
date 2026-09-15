@@ -1,6 +1,10 @@
 package kmlib.starsector.ui.map.presence;
 
+import com.fs.starfarer.api.ui.UIComponentAPI;
+
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.intel.IntelScreenView;
+import kmlib.starsector.ui.intel.MapVisorState;
 import kmlib.testfixtures.starsector.ui.intel.IntelScreenViewFake;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -205,11 +209,56 @@ class MapPresenceTest {
                 buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isStarscapeMapShowing())
                 .isFalse();
         }
+
+        @Test
+        void takesOneReadingOfTheVisorRatherThanASignalEachFromIt() {
+            // Behind the intel port is a walk down the live widget tree, taken per read. This runs
+            // every frame of a campaign, so pairing the visor's presence with its filter out of two
+            // reads would take that walk twice to describe one frame.
+            var intelScreenFake =
+                new SingleReadingIntelScreenFake(MapVisorState.SHOWING_IN_STARSCAPE_MODE);
+
+            assertThat(new MapPresence(() -> SectorMapState.NOT_SHOWING, intelScreenFake)
+                .isStarscapeMapShowing())
+                .isTrue();
+        }
     }
 
     // The sector read is a plain supplier here rather than the live static, so each case names the
     // state its screen is in and the intel fake carries the rest.
     private MapPresence buildPresence(SectorMapState sectorMapState) {
         return new MapPresence(() -> sectorMapState, intelScreenViewFake);
+    }
+
+    // An intel screen that answers the combined reading and faults on either signal asked alone, so
+    // a read that went back for the second one says so by failing rather than in a comment. A case
+    // that has to pose a whole screen uses the shared fake; this poses one question about how the
+    // port is used.
+    private record SingleReadingIntelScreenFake(MapVisorState mapVisorState) implements IntelScreenView {
+
+        @Override
+        public boolean isIntelTabOpen() {
+            return true;
+        }
+
+        @Override
+        public Rectangle getMapVisorRect() {
+            throw new AssertionError("the visor's box must not be read beside its combined state");
+        }
+
+        @Override
+        public UIComponentAPI getMapVisorWidget() {
+            throw new AssertionError("the visor's widget must not be read beside its combined state");
+        }
+
+        @Override
+        public MapVisorState readMapVisorState() {
+            return mapVisorState;
+        }
+
+        @Override
+        public boolean isMapStarscapeModeOn() {
+            throw new AssertionError("the visor's filter must not be read beside its combined state");
+        }
     }
 }
