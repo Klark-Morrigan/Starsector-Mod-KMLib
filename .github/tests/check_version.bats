@@ -29,47 +29,65 @@ stub_jq() {
     chmod +x "$STUBS_DIR/jq"
 }
 
-# Writes a git stub. Passing "none" makes it exit 1 to simulate no tags,
-# which causes the script's `|| echo "none"` fallback to fire.
-stub_git() {
-    local tag="$1"
-    if [ "$tag" = "none" ]; then
-        printf '#!/bin/sh\nexit 1\n' > "$STUBS_DIR/git"
-    else
-        printf '#!/bin/sh\necho "%s"\n' "$tag" > "$STUBS_DIR/git"
-    fi
+# Writes a git stub standing in for `git rev-parse --verify refs/tags/<v>^{}`:
+# it exits 0 only for the tag names it is given and 1 for every other ref,
+# the way rev-parse reports an absent one. Call it with no arguments for a
+# repository that carries no tags at all.
+stub_git_tags() {
+    local tags="$*"
+    cat > "$STUBS_DIR/git" <<EOF
+#!/bin/sh
+TAGS="${tags}"
+for tag in \$TAGS; do
+  case "\$*" in
+    *"refs/tags/\${tag}^{}"*) exit 0 ;;
+  esac
+done
+exit 1
+EOF
     chmod +x "$STUBS_DIR/git"
 }
 
-@test "version_updated=false when version matches latest tag" {
-    stub_jq  "1.2.3"
-    stub_git "1.2.3"
+@test "version_updated=false when a tag already names the version" {
+    stub_jq "1.2.3"
+    stub_git_tags "1.2.3"
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     grep -q "version_updated=false" "$GITHUB_OUTPUT"
 }
 
-@test "version_updated=true when version differs from latest tag" {
+@test "version_updated=true when no tag names the version" {
     # A patch bump, the smallest release the scheme allows and so the case
     # most at risk of being compared as equal.
-    stub_jq  "1.2.4"
-    stub_git "1.2.3"
+    stub_jq "1.2.4"
+    stub_git_tags "1.2.3"
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     grep -q "version_updated=true" "$GITHUB_OUTPUT"
 }
 
 @test "version_updated=true when no tags exist" {
-    stub_jq  "1.0.0"
-    stub_git "none"
+    stub_jq "1.0.0"
+    stub_git_tags
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     grep -q "version_updated=true" "$GITHUB_OUTPUT"
 }
 
+# The case that made every push to master read as a bump: the released
+# version is tagged, but that tag is not the newest one and need not be
+# reachable from HEAD. Any tag naming the version settles it.
+@test "version_updated=false when the version's tag is not the newest tag" {
+    stub_jq "1.2.3"
+    stub_git_tags "1.2.3 2.0.0"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -q "version_updated=false" "$GITHUB_OUTPUT"
+}
+
 @test "version value is written to GITHUB_OUTPUT" {
-    stub_jq  "2.5.0"
-    stub_git "2.4.9"
+    stub_jq "2.5.0"
+    stub_git_tags "2.4.9"
     run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     grep -q "version=2.5.0" "$GITHUB_OUTPUT"

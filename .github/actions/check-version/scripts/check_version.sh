@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Compares the version in mod_info.json to the latest git tag and writes
-# two outputs to $GITHUB_OUTPUT:
+# Decides whether the version in mod_info.json still needs releasing and
+# writes two outputs to $GITHUB_OUTPUT:
 #   version         - the value from mod_info.json
-#   version_updated - "true" if version differs from the latest tag,
-#                     "false" otherwise (including when no tags exist and
-#                     the version happens to equal the "none" sentinel -
-#                     an impossible case in practice)
+#   version_updated - "true" if no tag names that version yet, "false" if
+#                     one already does
 #
 # Runs against the caller's checkout: mod_info.json is read from the
 # current working directory, which GitHub sets to the caller's repo root
@@ -21,9 +19,16 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 source "${LIB_DIR}/mod_info.sh"
 
 VERSION=$(jq -r .version "${MOD_INFO_FILE}")
-LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
 
-if [[ "${VERSION}" == "${LATEST_TAG}" ]]; then
+# Ask whether a tag already names this exact version, rather than comparing
+# against the nearest tag reachable from HEAD. Reachability answers a
+# different question and gets two cases wrong: a shallow checkout reports
+# "no tags" and releases an already-released version, and a version moved
+# backwards counts as a bump because it merely differs from the newest tag.
+#
+# ^{} peels an annotated tag to the commit it points at, so the check treats
+# both tag flavours alike; only whether the ref resolves at all matters here.
+if git rev-parse -q --verify "refs/tags/${VERSION}^{}" >/dev/null 2>&1; then
   version_updated="false"
 else
   version_updated="true"
