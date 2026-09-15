@@ -10,6 +10,7 @@ import kmlib.starsector.ui.map.MapIconLayering;
 import org.apache.log4j.Logger;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -19,13 +20,19 @@ import java.util.function.Supplier;
  * icon's placement rather than on a map having opened; this is the two engine calls that carry it
  * out and the guard that keeps a fault in either out of the campaign's frame.
  *
- * <p>Everything it decides from is a port: which entity, which maps matter, and where that entity's
+ * <p>Everything it decides from is a port: which entity, which maps matter, and where an entity's
  * icon currently sits. The first two only a caller can answer. The third has an answer in this
  * library - {@code MapIconLayeringProbe} reads it off the live widget - but it is wired in rather
  * than reached for, because this package writes to the map's draw order and reads nothing, which is
- * what keeps it independent of the packages that only read. Each is asked again at every step rather
- * than cached at construction, so an entity a save load replaced is the one moved rather than a
- * stale instance nothing draws.
+ * what keeps it independent of the packages that only read. Each is asked again at every advance
+ * rather than cached at construction, so an entity a save load replaced is the one moved rather than
+ * a stale instance nothing draws.
+ *
+ * <p>The placement port is asked <em>about</em> an entity rather than standing for one, so it cannot
+ * be pointed at a different entity from the one moved. Stated as two independent readings it would
+ * be the caller's job to aim both at the same thing, which is a rule nothing could check and one a
+ * reader of the wiring would have to be told. Within an advance the entity is read once and handed
+ * to both, so the pairing costs a walk rather than three.
  *
  * <p>Every move it makes is logged at DEBUG on this library's own logger, not the calling mod's, so
  * following a layering problem means turning KMLib's verbosity up rather than the mod's. A move is
@@ -46,7 +53,7 @@ public final class MapIconReseater implements EveryFrameScript {
 
     private final BooleanSupplier isMapShowing;
     private final Supplier<SectorEntityToken> findEntityToReseat;
-    private final Supplier<MapIconLayering> readIconLayering;
+    private final Function<SectorEntityToken, MapIconLayering> readIconLayeringOf;
     private final MapIconReseatDecision reseatDecision = new MapIconReseatDecision();
 
     // The entity taken out, with the location it came from, held for the single advance it spends
@@ -66,19 +73,20 @@ public final class MapIconReseater implements EveryFrameScript {
      * @param isMapShowing whether a map whose icon order matters is on screen; it scopes the move to
      *        the maps the caller cares about rather than triggering it
      * @param findEntityToReseat the entity to move, or null when its location holds none
-     * @param readIconLayering where that entity's icon currently sits; {@code MapIconLayeringProbe}
+     * @param readIconLayeringOf where an entity's icon currently sits; {@code MapIconLayeringProbe}
      *        answers it from the live widget, and a caller wires that in rather than this reaching
      *        for it - this package writes to the map's draw order and reads nothing, which is what
-     *        keeps it independent of the probes that only read
+     *        keeps it independent of the probes that only read. Asked about an entity rather than
+     *        standing for one, so it cannot be pointed at a different entity from the one moved
      */
     public MapIconReseater(
             BooleanSupplier isMapShowing,
             Supplier<SectorEntityToken> findEntityToReseat,
-            Supplier<MapIconLayering> readIconLayering) {
+            Function<SectorEntityToken, MapIconLayering> readIconLayeringOf) {
 
         this.isMapShowing = isMapShowing;
         this.findEntityToReseat = findEntityToReseat;
-        this.readIconLayering = readIconLayering;
+        this.readIconLayeringOf = readIconLayeringOf;
     }
 
     @Override
@@ -114,21 +122,24 @@ public final class MapIconReseater implements EveryFrameScript {
 
     private void applyReseatAction() {
 
+        // One reading of the entity for the whole advance, handed to everything below. The decision's
+        // two lazy reads and the move itself are all about the same entity, and asking the caller's
+        // supplier at each would pay three times over for a walk across what a location holds.
+        var entityThisAdvance = new EntityThisAdvance(findEntityToReseat);
+
         var action = reseatDecision.decideReseatAction(
             isMapShowing.getAsBoolean(),
-            readIconLayering,
-            () -> findEntityToReseat.get() != null);
+            () -> readIconLayeringOf.apply(entityThisAdvance.resolveEntity()),
+            () -> entityThisAdvance.resolveEntity() != null);
 
         switch (action) {
-            case REMOVE -> detachMapIcon();
+            case REMOVE -> detachMapIcon(entityThisAdvance.resolveEntity());
             case ADD -> attachMapIcon();
-            case NONE -> reportStandingDownOnce();
+            case NONE -> reportStandingDownOnce(entityThisAdvance);
         }
     }
 
-    private void detachMapIcon() {
-
-        var entity = findEntityToReseat.get();
+    private void detachMapIcon(SectorEntityToken entity) {
 
         // The location is read before the removal and kept, because an entity taken out of one no
         // longer names it - and the put-back has to reach the same location this took it from
@@ -137,8 +148,12 @@ public final class MapIconReseater implements EveryFrameScript {
         if (location == null) {
             return;
         }
-        detachedMapIcon = new DetachedMapIcon(entity, location);
+
+        // Recorded only once the removal has actually happened, so a location that refuses it leaves
+        // nothing owed: a pair held for an entity still in its location would have the next advance
+        // add a second copy of it.
         location.removeEntity(entity);
+        detachedMapIcon = new DetachedMapIcon(entity, location);
 
         // One line per move, and moves are rare - one per re-seeding of the widget's icon map. A
         // run of them says the lift is being attempted and not taking, which is the state the
@@ -193,13 +208,14 @@ public final class MapIconReseater implements EveryFrameScript {
     // Says once that the lift has been abandoned, which is the only state a player could otherwise
     // only diagnose from the picture. WARN rather than DEBUG: unlike the moves above, this one
     // reports something that will not come right on its own.
-    private void reportStandingDownOnce() {
+    private void reportStandingDownOnce(EntityThisAdvance entityThisAdvance) {
 
         if (hasLoggedStandDown || !reseatDecision.hasStoodDown()) {
             return;
         }
         hasLoggedStandDown = true;
-        LOG.warn("Map icon reseat: gave up lifting " + describeEntity(findEntityToReseat.get())
+        LOG.warn("Map icon reseat: gave up lifting "
+            + describeEntity(entityThisAdvance.resolveEntity())
             + " past the map's nebulae after " + MapIconReseatDecision.MAX_ATTEMPTS
             + " attempts that did not clear them. Its layering is left as the widget seeded it "
             + "for the rest of this session.");
@@ -227,5 +243,36 @@ public final class MapIconReseater implements EveryFrameScript {
 
     // An entity out of its location, with the location owed it back.
     private record DetachedMapIcon(SectorEntityToken entity, LocationAPI location) {
+    }
+
+    // One advance's entity, asked for at most once and answered from what came back after that.
+    //
+    // Lazy because the ordinary campaign frame - which is nearly every frame - must not pay for a
+    // walk over what a location holds, and asked-once because an advance that acts wants the same
+    // entity three times over: to place its icon, to say whether it is there at all, and to move it.
+    //
+    // Built fresh per advance rather than held as a field, so an entity a save load replaced is read
+    // again on the next advance instead of being answered for out of the last frame's reading.
+    private static final class EntityThisAdvance {
+
+        private final Supplier<SectorEntityToken> findEntity;
+
+        private SectorEntityToken entity;
+        private boolean hasAsked;
+
+        private EntityThisAdvance(Supplier<SectorEntityToken> findEntity) {
+            this.findEntity = findEntity;
+        }
+
+        // Null is an answer like any other here - the entity is not there - so what says the read has
+        // happened is a flag rather than the value, which would otherwise re-ask on every absence.
+        private SectorEntityToken resolveEntity() {
+
+            if (!hasAsked) {
+                hasAsked = true;
+                entity = findEntity.get();
+            }
+            return entity;
+        }
     }
 }

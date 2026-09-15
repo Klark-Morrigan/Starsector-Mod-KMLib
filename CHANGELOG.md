@@ -17,6 +17,11 @@ The reusable release workflow extracts the section matching the released version
 - **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
 - **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature in now handled and logged, resulting in terrain reseating standing down for the rest of the section.
 - **Altered map render state**. Failed terrain reseating now restores reseated terrain placement before standing down.
+- **Duplicate map entity**. A location that refuses to give an entity up no longer leaves the reseat owing a put-back for an entity that never left, which added a second copy of it on the next advance.
+
+### Public contracts changed (**breaking**)
+
+- `MapIconReseater`'s third constructor argument is now `Function<SectorEntityToken, MapIconLayering>` - a read asked about an entity - where it was `Supplier<MapIconLayering>`, a reading that a caller had to keep aimed at the same entity as the second argument with nothing checking that it was. Callers pass the placement read itself (`MapIconLayeringProbe::readLayeringOf`) rather than a closure over their own entity lookup.
 
 ## [0.2.0] - 2026-09-14
 

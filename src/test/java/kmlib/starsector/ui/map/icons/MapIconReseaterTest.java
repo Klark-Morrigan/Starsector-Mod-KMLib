@@ -8,12 +8,15 @@ import kmlib.starsector.ui.map.MapIconLayering;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,15 +40,17 @@ class MapIconReseaterTest {
     // The placement that owes a move. A port on the script rather than something it reads, so the
     // cases below can drive the move at all - the live read walks the widget tree and answers
     // nothing outside a running game.
-    private static final Supplier<MapIconLayering> ICON_BURIED =
-        () -> MapIconLayering.BURIED_UNDER_NEBULAE;
+    private static final Function<SectorEntityToken, MapIconLayering> ICON_BURIED =
+        entity -> MapIconLayering.BURIED_UNDER_NEBULAE;
 
     // Faults if it is asked, so a case that must not reach the widget says so by construction rather
     // than in a comment. The read costs a walk into the live tree, and the ordinary campaign frame -
     // which is nearly every frame - must not pay for one.
-    private static final Supplier<MapIconLayering> ICON_PLACEMENT_NOT_TO_BE_READ = () -> {
-        throw new AssertionError("the icon's placement must not be read while no map is showing");
-    };
+    private static final Function<SectorEntityToken, MapIconLayering> ICON_PLACEMENT_NOT_TO_BE_READ =
+        entity -> {
+            throw new AssertionError(
+                "the icon's placement must not be read while no map is showing");
+        };
 
     @Nested
     class Advance {
@@ -101,6 +106,76 @@ class MapIconReseaterTest {
             reseater.advance(ONE_FRAME);
 
             verify(locationMock)
+                .addEntity(entityMock);
+        }
+
+        @Test
+        void asksWhereTheIconSitsForTheEntityItIsAboutToMove() {
+            // The placement and the move have to be about one entity. Taking the placement as a
+            // reading rather than as a read would leave that to whoever wires the two up, where
+            // nothing checks it and a wiring aimed at a second entity moves the wrong one on a
+            // reading of the right one.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var entitiesAskedAbout = new ArrayList<SectorEntityToken>();
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                () -> entityMock,
+                entityAskedAbout -> {
+                    entitiesAskedAbout.add(entityAskedAbout);
+                    return MapIconLayering.BURIED_UNDER_NEBULAE;
+                });
+
+            reseater.advance(ONE_FRAME);
+
+            verify(locationMock)
+                .removeEntity(entityMock);
+            assertThat(entitiesAskedAbout)
+                .containsExactly(entityMock);
+        }
+
+        @Test
+        void readsTheEntityOnceOnAnAdvanceThatMovesIt() {
+            // Three readings want it - the placement, the presence test and the move - and the live
+            // read walks what a location holds, so asking per reading pays for the same walk three
+            // times on every advance that acts.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var entityReadCount = new int[1];
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                () -> {
+                    entityReadCount[0]++;
+                    return entityMock;
+                },
+                ICON_BURIED);
+
+            reseater.advance(ONE_FRAME);
+
+            assertThat(entityReadCount[0])
+                .isEqualTo(1);
+        }
+
+        @Test
+        void keepsNothingOwedWhenTheLocationRefusesTheRemoval() {
+            // The pair is recorded only once the entity is actually out. Recorded before, a refused
+            // removal would leave this holding an entity that never left, and the put-back owed for
+            // it would add a second copy of it to the location it is already in.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+
+            doThrow(new IllegalStateException("this location will not give the entity up"))
+                .when(locationMock)
+                .removeEntity(entityMock);
+
+            var reseater = new MapIconReseater(MAP_SHOWING, () -> entityMock, ICON_BURIED);
+
+            reseater.advance(ONE_FRAME);
+            reseater.advance(ONE_FRAME);
+
+            verify(locationMock, never())
                 .addEntity(entityMock);
         }
 
