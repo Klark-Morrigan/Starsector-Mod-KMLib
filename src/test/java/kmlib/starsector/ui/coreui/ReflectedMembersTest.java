@@ -273,6 +273,81 @@ class ReflectedMembersTest {
     }
 
     @Nested
+    class ReadStaticFieldValue {
+
+        @Test
+        void readStaticFieldValueReachesAStaticFieldTheShapeKeepsToItself() {
+            // Its own read rather than the instance one with null handed in: a Class passed where an
+            // instance is expected would search java.lang.Class, which compiles and finds nothing
+            // the caller meant.
+            assertThat(ReflectedMembers.readStaticFieldValue(ShapeFake.class,
+                FieldQuery.named("hiddenStaticReading")))
+                .isEqualTo(11L);
+        }
+
+        @Test
+        void readStaticFieldValueThrowsWhenNothingMatches() {
+
+            assertThatThrownBy(() -> ReflectedMembers.readStaticFieldValue(ShapeFake.class,
+                FieldQuery.named("noSuchFieldAnywhere")))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class WriteStaticFieldValue {
+
+        @Test
+        void writeStaticFieldValueReachesAStaticFieldTheShapeKeepsToItself() {
+
+            ReflectedMembers.writeStaticFieldValue(ShapeFake.class,
+                FieldQuery.named("hiddenStaticWritable"), 23L);
+
+            assertThat(ShapeFake.readStaticWritable())
+                .isEqualTo(23L);
+        }
+
+        @Test
+        void writeStaticFieldValueThrowsWhenTheValueDoesNotFitTheField() {
+
+            assertThatThrownBy(() -> ReflectedMembers.writeStaticFieldValue(ShapeFake.class,
+                FieldQuery.named("hiddenStaticWritable"), LABEL))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class HasMethodNamed {
+
+        @Test
+        void hasMethodNamedIsTrueForAShapeCarryingTheName() {
+            // Answered off a memo the reach keeps, so a walk asking per node per frame resolves each
+            // shape once - which is why it is answered here rather than by a caller's own map.
+            assertThat(ReflectedMembers.hasMethodNamed(ShapeFake.class, "readHiddenCount"))
+                .isTrue();
+        }
+
+        @Test
+        void hasMethodNamedIsFalseForAShapeCarryingNoSuchName() {
+            // The common leaf, and what this exists for: answered without building a match, so a
+            // per-frame walk stays off the thrown-exception path at every ordinary component.
+            assertThat(ReflectedMembers.hasMethodNamed(ShapeFake.class, "noSuchMemberAnywhere"))
+                .isFalse();
+        }
+
+        @Test
+        void hasMethodNamedAnswersAlikeOnASecondAsk() {
+            // The memo has to answer what the scan behind it would, both ways round - a cache that
+            // returned a stale or default answer on the second ask would be invisible in a single
+            // call and wrong in the walk that matters.
+            assertThat(ReflectedMembers.hasMethodNamed(ShapeFake.class, "readHiddenCount"))
+                .isEqualTo(ReflectedMembers.hasMethodNamed(ShapeFake.class, "readHiddenCount"));
+            assertThat(ReflectedMembers.hasMethodNamed(ShapeFake.class, "noSuchMemberAnywhere"))
+                .isEqualTo(ReflectedMembers.hasMethodNamed(ShapeFake.class, "noSuchMemberAnywhere"));
+        }
+    }
+
+    @Nested
     class InvokeStaticByName {
 
         @Test
