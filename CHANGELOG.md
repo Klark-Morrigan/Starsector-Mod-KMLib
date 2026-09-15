@@ -6,10 +6,17 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [0.3.2](#032---2026-09-15)
 - [0.3.1](#031---2026-09-15)
 - [0.3.0](#030---2026-09-15)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [0.3.2] - 2026-09-15
+
+### Fixed
+
+- **Release pipeline** ran on pushes to master carrying no version bump, and didn't detect version numbers going down.
 
 ## [0.3.1] - 2026-09-15
 
