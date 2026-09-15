@@ -25,6 +25,7 @@ The reusable release workflow extracts the section matching the released version
 ### Public contracts changed (**breaking**)
 
 - `check-version` takes a required `version` input and no longer emits `version`. It asks git about the version it is given rather than reading `mod_info.json` itself, so the gate and the rest of the pipeline cannot rule on different strings. Callers of the reusable `mod-release.yml` need no change; a workflow calling the action directly must now pass `version`.
+- `Hatching.computeHatchRun` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
 
 ## [0.3.1] - 2026-09-15
 

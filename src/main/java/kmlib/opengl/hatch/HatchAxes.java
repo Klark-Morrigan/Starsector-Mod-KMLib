@@ -22,11 +22,13 @@ record HatchAxes(
     double spacing) {
 
     // The lines run along the direction; the level axis is that direction turned 90 degrees, so
-    // the hatch lines are the loci where the level is an integer multiple of the spacing.
-    static HatchAxes computeAxesFromAngle(double angleRadians, double spacing) {
-        var directionX = Math.cos(angleRadians);
-        var directionY = Math.sin(angleRadians);
-        return new HatchAxes(directionX, directionY, -directionY, directionX, spacing);
+    // the hatch lines are the loci where the level is an integer multiple of the spacing. The
+    // pattern's join tolerance is not resolved into the axes: it belongs to putting one line's
+    // crossings back together rather than to where the lines lie.
+    static HatchAxes computeAxesOf(HatchPattern pattern) {
+        var directionX = Math.cos(pattern.angleRadians());
+        var directionY = Math.sin(pattern.angleRadians());
+        return new HatchAxes(directionX, directionY, -directionY, directionX, pattern.spacing());
     }
 
     // How far along the line direction the point sits - the ordering a clipped span's two ends

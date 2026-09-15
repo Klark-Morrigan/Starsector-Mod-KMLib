@@ -301,9 +301,7 @@ final class HatchingTest {
 
             return Hatching.computeHatchRun(
                 triangleSoup,
-                angleRadians,
-                spacing,
-                joinToleranceFraction);
+                new HatchPattern(spacing, angleRadians, joinToleranceFraction));
         }
 
         // A GL_LINES run packs four floats per segment (two endpoints).
