@@ -313,6 +313,9 @@ No Starsector API on the signature.
 - [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) -
   hatch fills across a polygon,
   with a tally of how cleanly the runs join.
+  A cut takes a `HatchPattern` -
+  the line family as one value -
+  so a caller holds what shapes its geometry apart from how it strokes the result.
 - [`profiling/`](src/main/java/kmlib/profiling/) -
   the vocabulary a caller names:
   the profiler seam a mod binds,

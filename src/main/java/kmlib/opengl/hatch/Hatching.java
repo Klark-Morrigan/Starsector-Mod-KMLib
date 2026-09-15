@@ -42,34 +42,24 @@ public final class Hatching {
      * segments as a flat {@code [x1, y1, x2, y2, ...]} {@code GL_LINES} run in the soup's own
      * coordinate space.
      *
-     * <p>The lines run in the {@code angleRadians} direction and are spaced {@code spacing}
-     * apart measured perpendicular to that direction; line zero passes through the origin, so
-     * the pattern is stable frame to frame rather than jittering with the region's position.
+     * <p>Line zero of the family passes through the origin, so the pattern is anchored to the
+     * coordinate space rather than to the region, and is stable frame to frame rather than
+     * jittering with the region's position.
      *
-     * @param triangleSoup          the region to hatch, as {@code [x, y, x, y, ...]} with every
-     *                              six floats one triangle - exactly what {@link
-     *                              PolygonTessellator#tessellateToTriangles} emits
-     * @param angleRadians          the direction the hatch lines run in
-     * @param spacing               the perpendicular distance between adjacent hatch lines, in
-     *                              the soup's own (world) units; a non-positive value hatches
-     *                              nothing, since it defines no line family
-     * @param joinToleranceFraction how far apart two of one line's crossings may sit and still
-     *                              count as the same stroke, as a fraction of the spacing; zero
-     *                              merges only crossings that coincide exactly
+     * @param triangleSoup the region to hatch, as {@code [x, y, x, y, ...]} with every six floats
+     *                     one triangle - exactly what {@link
+     *                     PolygonTessellator#tessellateToTriangles} emits
+     * @param pattern      the line family to cut it with
      * @return the clipped hatch as a {@code GL_LINES} run and the tally of how its joins closed;
-     *         nothing hatched when the spacing is non-positive or the soup encloses no area for a
-     *         line to cross
+     *         nothing hatched when the pattern's spacing is non-positive or the soup encloses no
+     *         area for a line to cross
      */
-    public static HatchRun computeHatchRun(
-            float[] triangleSoup,
-            double angleRadians,
-            double spacing,
-            double joinToleranceFraction) {
-        if (spacing <= 0 || triangleSoup.length < FLOATS_PER_TRIANGLE) {
+    public static HatchRun computeHatchRun(float[] triangleSoup, HatchPattern pattern) {
+        if (pattern.spacing() <= 0 || triangleSoup.length < FLOATS_PER_TRIANGLE) {
             return HatchRun.NOTHING_HATCHED;
         }
-        var axes = HatchAxes.computeAxesFromAngle(angleRadians, spacing);
-        var merger = new HatchSpanMerger(axes, joinToleranceFraction);
+        var axes = HatchAxes.computeAxesOf(pattern);
+        var merger = new HatchSpanMerger(axes, pattern.joinToleranceFraction());
         for (var i = 0; i + FLOATS_PER_TRIANGLE <= triangleSoup.length; i += FLOATS_PER_TRIANGLE) {
             hatchTriangle(readLevelledTriangle(triangleSoup, i, axes), axes, merger);
         }
