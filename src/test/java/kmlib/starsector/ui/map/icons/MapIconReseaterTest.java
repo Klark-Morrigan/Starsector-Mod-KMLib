@@ -163,6 +163,58 @@ class MapIconReseaterTest {
         }
 
         @Test
+        void putsTheEntityBackAfterAFaultConsumesThePutBackItWasOwed() {
+            // The removal is recorded twice - by the decision, which orders the put-back on the next
+            // advance, and here, as the pair to move back. A fault on that next advance spends the
+            // decision's record without the move being made, and nothing afterwards asks again: the
+            // placement a later advance reads is gone along with the entity. Left there, the caller
+            // loses the surface this exists to keep drawing for the rest of the session.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var isEntityReadable = new boolean[] { true };
+
+            Supplier<SectorEntityToken> findEntityUntilTheSectorFaults = () -> {
+                if (!isEntityReadable[0]) {
+                    throw new IllegalStateException("the sector cannot be read on this frame");
+                }
+                return entityMock;
+            };
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                findEntityUntilTheSectorFaults,
+                ICON_BURIED);
+
+            reseater.advance(ONE_FRAME);
+            isEntityReadable[0] = false;
+            reseater.advance(ONE_FRAME);
+
+            verify(locationMock)
+                .addEntity(entityMock);
+        }
+
+        @Test
+        void leavesTheEntityOutForTheOneAdvanceTheLiftNeeds() {
+            // The removal only works because a frame renders without the icon. Putting the entity
+            // back on the advance that took it out would undo the lift before it could take, which
+            // is what a recovery aimed at the wrong state would do on every move.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                buildEntityReadThatEmptiesOnRemovalFrom(locationMock, entityMock),
+                ICON_BURIED);
+
+            reseater.advance(ONE_FRAME);
+
+            verify(locationMock)
+                .removeEntity(entityMock);
+            verify(locationMock, never())
+                .addEntity(entityMock);
+        }
+
+        @Test
         void keepsAdvancingAfterASupplierFaults() {
             // A caller's supplier reaching a live sector can throw on a frame where the game is
             // between states. The script advances on the campaign thread, so a fault escaping here

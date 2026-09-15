@@ -35,9 +35,10 @@ import java.util.function.Supplier;
  * <p>Runs while paused. Opening a map holds the campaign paused for as long as it is up, which is
  * the whole window this works in - a script standing down while paused would never advance here.
  *
- * <p>The entity is out of its location for exactly one advance, which is worth knowing for anything
- * that reads the location on a timer: a save written inside that window does not hold it, so
- * whatever put the entity there is what has to put it back on the next load.
+ * <p>The entity is out of its location for one advance - a few more where a fault delays the
+ * put-back - which is worth knowing for anything that reads the location on a timer: a save written
+ * inside that window does not hold it, so whatever put the entity there is what has to put it back
+ * on the next load.
  */
 public final class MapIconReseater implements EveryFrameScript {
 
@@ -107,6 +108,7 @@ public final class MapIconReseater implements EveryFrameScript {
         } catch (RuntimeException | LinkageError reseatFailure) {
             reportReseatFailureOnce(reseatFailure);
         }
+        returnAStrandedEntity();
     }
 
     private void applyReseatAction() {
@@ -150,6 +152,35 @@ public final class MapIconReseater implements EveryFrameScript {
         LOG.debug("Map icon reseat: reattached " + describeEntity(detachedMapIcon.entity())
             + "; its icon re-enters at the tail on the next frame that draws a map");
         detachedMapIcon = null;
+    }
+
+    // Puts the entity back when nothing else is going to. A removal is owed its put-back on the very
+    // next advance and the decision is what orders it, but the two records of that removal can part
+    // company: the decision's is spent the moment the next advance asks, while the pair held here
+    // lasts until the move is actually made. A fault between the two therefore leaves an entity out
+    // of its location that no later advance has any reason to return - the placement it would read
+    // is gone along with the entity - which would cost the caller the very surface the lift exists
+    // to keep drawing, for the rest of the session.
+    //
+    // Guarded on its own, and quietly: it runs on a frame whose fault has already been reported, and
+    // an entity it cannot return now stays held, so the next advance tries again.
+    private void returnAStrandedEntity() {
+
+        if (detachedMapIcon == null || reseatDecision.isPutBackOwed()) {
+            return;
+        }
+
+        try {
+            attachMapIcon();
+
+        } catch (RuntimeException | LinkageError putBackError) {
+
+            LOG.debug(
+                "Map icon reseat: "
+                    + "could not return a detached entity; "
+                    + "holding it for the next advance",
+                putBackError);
+        }
     }
 
     // Says once that the lift has been abandoned, which is the only state a player could otherwise
