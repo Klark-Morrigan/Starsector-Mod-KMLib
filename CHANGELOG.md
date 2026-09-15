@@ -6,9 +6,12 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [0.3.1](#030---2026-09-15)
 - [0.3.0](#030---2026-09-15)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [0.3.1] - 2026-09-15
 
 ## [0.3.0] - 2026-09-15
 
