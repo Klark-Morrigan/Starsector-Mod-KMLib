@@ -118,6 +118,22 @@ final class MapIconReseatDecision {
     }
 
     /**
+     * Whether the next advance will order the put-back, so the caller holding an entity out of its
+     * location can tell a removal still in progress from one nothing is coming back for.
+     *
+     * <p>Published because the two records of the same removal can part company: this one is
+     * consumed the moment the next advance asks, while the caller's - the entity and the location
+     * owed it - is held until the move is made. A fault in between leaves the caller holding an
+     * entity no later advance has any reason to put back, and only the caller can tell that state
+     * from the ordinary one frame it spends out.
+     *
+     * @return whether a removal is still awaiting its put-back
+     */
+    boolean isPutBackOwed() {
+        return isEntityDetached;
+    }
+
+    /**
      * What one advance owes the location holding the entity. Named for the move rather than for the
      * reason behind it, so the caller stays a switch over two engine calls and holds no second copy
      * of the rule that chose them.

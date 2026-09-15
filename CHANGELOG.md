@@ -6,15 +6,27 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
-- [Unrelease](#unreleased)
+- [0.3.0](#030---2026-09-15)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
 
-## [Unreleased]
+## [0.3.0] - 2026-09-15
 
 ### Fixed
 
-- Crash on Linux. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
+- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
+- **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature in now handled and logged, resulting in terrain reseating standing down for the rest of the section.
+- **Altered map render state**. Failed terrain reseating now restores reseated terrain placement before standing down.
+- **Duplicate map entity**. A location that refuses to give an entity up no longer leaves the reseat owing a put-back for an entity that never left, which added a second copy of it on the next advance.
+
+### Added
+
+- `IntelScreenView.readMapVisorState()` and `MapVisorState` - the visor's presence and its Starscape filter as one reading. Asking `getMapVisorRect()` and `isMapStarscapeModeOn()` in turn answers the same question and walks the live widget tree twice to do it, which `MapPresence` was paying for on every frame of a campaign.
+- `MapIconOrderWidgetFake` - a test fixture standing for the map widget's icon order, so a rule about where an icon sits can be driven without a running game.
+
+### Public contracts changed (**breaking**)
+
+- `MapIconReseater`'s third constructor argument is now `Function<SectorEntityToken, MapIconLayering>` - a read asked about an entity - where it was `Supplier<MapIconLayering>`, a reading that a caller had to keep aimed at the same entity as the second argument with nothing checking that it was. Callers pass the placement read itself (`MapIconLayeringProbe::readLayeringOf`) rather than a closure over their own entity lookup.
 
 ## [0.2.0] - 2026-09-14
 

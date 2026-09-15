@@ -93,6 +93,10 @@ enforceNoTestVocabulary {
 // reader's account of how the library is assembled.
 apply from: "${rootDir}/gradle/package-layering.gradle"
 
+// Which of the game's own type names the compiled library may carry, for the
+// same reason and on the same terms.
+apply from: "${rootDir}/gradle/referenced-types.gradle"
+
 // LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
 // declared in mod_info.json so a consumer can call into kmlib.logging and
 // kmlib.settings unconditionally; the game classloader provides the jar at

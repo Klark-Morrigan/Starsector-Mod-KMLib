@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.map.presence;
 
 import kmlib.starsector.ui.intel.IntelScreenView;
+import kmlib.starsector.ui.intel.MapVisorState;
 import kmlib.starsector.ui.intel.VanillaIntelScreenView;
 
 import java.util.function.Supplier;
@@ -31,11 +32,16 @@ import java.util.function.Supplier;
  * {@link SectorMapState}, the intel screen as {@link IntelScreenView} - because the live readings
  * are statics and game-only widget walks that nothing outside a running game can stand up. The
  * sector side arrives as that one enumerated state rather than as a boolean per question, so no
- * caller can describe a map that is absent and filtered at once. The intel side pairs its filter read with the
- * visor rectangle: the preview's panel survives a switch to the sibling sub-tabs that share the
- * intel tab, so its filter state can still read either way while no visor is on screen at all, and
- * the rectangle is the signal that says one is. Both ports fail closed, so an unreadable host
- * reports no map.
+ * caller can describe a map that is absent and filtered at once. The intel side answers the
+ * look-aware pair with a state of the same shape and for the same reason, with one more behind it:
+ * its two signals are read off a walk down the live widget tree, so asking them separately would
+ * take that walk twice to describe one frame. Both ports fail closed, so an unreadable host reports
+ * no map.
+ *
+ * <p>The visor's filter cannot be read against its presence in any case. The preview's panel
+ * survives a switch to the sibling sub-tabs that share the intel tab, so its filter state still
+ * reads either way while no visor is on screen at all - which is why the intel side's states carry
+ * the presence within them rather than leaving a caller to pair two answers.
  */
 public final class MapPresence {
     private final IntelScreenView intelScreen;
@@ -59,6 +65,8 @@ public final class MapPresence {
         if (readSectorMapState.get().isShowing()) {
             return true;
         }
+        // The rectangle rather than the combined state, which is the whole of the saving this read
+        // is described as making: the filter is never asked, so the visor's own mode is never read.
         return intelScreen.getMapVisorRect() != null;
     }
 
@@ -70,7 +78,7 @@ public final class MapPresence {
         if (readSectorMapState.get() == SectorMapState.SHOWING_WITH_STARSCAPE_OFF) {
             return true;
         }
-        return intelScreen.getMapVisorRect() != null && !intelScreen.isMapStarscapeModeOn();
+        return intelScreen.readMapVisorState() == MapVisorState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     /**
@@ -81,6 +89,6 @@ public final class MapPresence {
         if (readSectorMapState.get() == SectorMapState.SHOWING_IN_STARSCAPE_MODE) {
             return true;
         }
-        return intelScreen.getMapVisorRect() != null && intelScreen.isMapStarscapeModeOn();
+        return intelScreen.readMapVisorState() == MapVisorState.SHOWING_IN_STARSCAPE_MODE;
     }
 }

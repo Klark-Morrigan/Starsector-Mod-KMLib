@@ -1,0 +1,50 @@
+// The game types KMLib is allowed to name, on top of what every KM mod inherits.
+//
+// Its own file for the reason the layering edges have one: these are a
+// description of what the library is allowed to depend on rather than of how it
+// is built, and a reader opening build.gradle to find out how the library is
+// assembled should not have to scroll past the whole shape of that dependency
+// first. The mechanism they are declared through stays in Common-Java's
+// gradle/tasks/lint/structure/enforce-referenced-types.gradle, and the namespace
+// and published API in starsector-mod.gradle - being facts about the game rather
+// than about this library. What is left here is the part that is KMLib's own.
+//
+// Applied AFTER the shared conventions, since those are what register the task
+// this configures and what declare the two names it reads. Applied before them,
+// either resolves to nothing and the build fails at configuration time.
+
+// The concrete classes whose names the game keeps, which the build cannot read
+// off them: not every kept name carries the do-not-obfuscate marker, so the ones
+// relied on are named one by one and each is a line a reviewer sees in the diff.
+//
+// Each is reached for because the API publishes no equivalent, and each is named
+// rather than reached by method name because it is the type a seam is written
+// against - a walk that cannot name what it is looking for cannot recognise it
+// either. Everything else is reached by name through kmlib.starsector.ui.coreui.
+def stableGameTypes = [
+    // The fade state every core-UI component carries, and the only thing that
+    // says whether a panel is still on screen.
+    'com.fs.graphics.util.Fader',
+
+    // The campaign UI's persisted data, which carries the sector map's sub-view
+    // and filter state; the API publishes neither.
+    'com.fs.starfarer.campaign.CampaignUIPersistentData',
+
+    // The intel screen's own panel, which the visor readings are taken off.
+    'com.fs.starfarer.campaign.comms.v2.EventsPanel',
+
+    // The application's own state machine, which is what says the codex is up:
+    // the codex is not a core-UI tab, so no tab read reports it.
+    'com.fs.state.AppDriver',
+    'com.fs.state.AppState',
+]
+
+// The whole rule in one call, the inherited halves and this library's own
+// together: the gate takes a namespace once, so a second declaration over the
+// same one would judge every class twice and allow it under neither.
+enforceReferencedTypes {
+
+    restrictReferences namespace: gameNamespace,
+        allowingPackages: publishedGameApiPackages,
+        allowingTypes: stableGameTypes
+}

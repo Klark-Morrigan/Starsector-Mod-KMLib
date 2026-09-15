@@ -56,23 +56,39 @@ final class MapWidgetIcons {
      */
     static Map<?, ?> readIconMapOfShownMap() {
         try {
-            // Null off the map screens, and quietly so: a screen showing no map is the ordinary
-            // state rather than a reach that stopped working.
-            var mapTab = ShownMapTab.resolveShownMapTab();
-            if (mapTab == null) {
-                return null;
-            }
-            var icons = SubtreeSearch.findFirstUnder(mapTab, MapWidgetIcons::readIconMapOf);
-            if (icons == null) {
-                warnOnce("no component under the map tab answers " + GET_ICONS_METHOD, null);
-            }
-            return icons;
+            return readIconMapUnder(ShownMapTab.resolveShownMapTab());
+
         } catch (Throwable failure) {
             // Swallowed rather than raised: callers ask this from inside a render pass or a
             // campaign frame, and a reach that cannot read the tree must not take either down.
             warnOnce("the map widget's icon map could not be read by reflection", failure);
             return null;
         }
+    }
+
+    /**
+     * The same read over a tab a caller already holds, so which shapes answer and which are reported
+     * can be settled without a live screen to resolve one from.
+     *
+     * <p>Left unguarded: it is the tab resolution above that decides what a failed walk means, and a
+     * second policy here would have to agree with that one forever.
+     *
+     * @param mapTab the tab to search below, or null when no map screen is up
+     * @return the widget's live icon map, or null when there is no tab or nothing under it answers
+     */
+    static Map<?, ?> readIconMapUnder(Object mapTab) {
+
+        // Null off the map screens, and quietly so: a screen showing no map is the ordinary state
+        // rather than a reach that stopped working.
+        if (mapTab == null) {
+            return null;
+        }
+        var icons = SubtreeSearch.findFirstUnder(mapTab, MapWidgetIcons::readIconMapOf);
+
+        if (icons == null) {
+            warnOnce("no component under the map tab answers " + GET_ICONS_METHOD, null);
+        }
+        return icons;
     }
 
     // On this library's own logger, since a reach that stopped fitting the game is the library's

@@ -258,6 +258,43 @@ class MapIconReseatDecisionTest {
         }
     }
 
+    @Nested
+    class IsPutBackOwed {
+
+        @Test
+        void isPutBackOwedIsFalseBeforeAnythingHasBeenTakenOut() {
+
+            assertThat(new MapIconReseatDecision().isPutBackOwed())
+                .isFalse();
+        }
+
+        @Test
+        void isPutBackOwedIsTrueWhileTheEntityIsOutOfItsLocation() {
+            // What a caller holding the entity reads to tell the one advance it is meant to spend
+            // out from an entity nothing is coming back for.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.isPutBackOwed())
+                .isTrue();
+        }
+
+        @Test
+        void isPutBackOwedIsFalseOnceTheAdvanceOwedThePutBackHasAsked() {
+            // Spent by the asking rather than by the move: a caller whose put-back faulted after
+            // this point is holding an entity no later advance will order back, which is the whole
+            // state this read exists to expose.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.isPutBackOwed())
+                .isFalse();
+        }
+    }
+
     // Runs whole lift cycles - out on one advance, back on the next - that never clear the fog, which
     // is the sequence the attempt bound is about.
     private static void driveFailedLifts(MapIconReseatDecision reseatDecision, int liftCount) {

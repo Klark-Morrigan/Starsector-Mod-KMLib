@@ -49,6 +49,31 @@ def starsectorImportGroups = 'com.fs.starfarer,kmlib,kmo,kmp,kmu,/^(org|lunalib)
 checkstyle.configProperties.importGroups = starsectorImportGroups
 checkstyle.configProperties.staticImportGroups = starsectorImportGroups
 
+// Which of the game's type names a compiled mod may carry, as far as this is a
+// fact about the game rather than about any one mod.
+//
+// The game ships a build per platform and its obfuscator hands out fresh names
+// in each: the same class at the same game version is com.fs.starfarer.coreui.A.G
+// on one and A.H on another. A call compiled against one of those carries that
+// spelling in its own descriptor, so it links on the platform it was built on
+// and throws NoSuchMethodError on the next - at the call, on whichever screen
+// first reaches it, with nothing said at compile time or at load.
+//
+// The two values below are the whole of what every mod would otherwise restate.
+// A mod declares what it is allowed to name out of that namespace itself, in its
+// own gradle/referenced-types.gradle, because which of the game's internals a
+// project reaches for is a statement about that project: KMLib owns the by-name
+// walk into the live widget tree, and a mod naming a second such type is
+// reaching past that seam. Here for the reason the import groups are: every name
+// in them is the game's, and the generic tier knows no game.
+ext.gameNamespace = 'com.fs'
+
+// The published API. Names in it are the game's contract with mods, kept across
+// builds and platforms alike, which is the whole of what makes them safe to
+// name. Everything else in the namespace is reached by method name at runtime,
+// or declared one type at a time by the mod that reaches it.
+ext.publishedGameApiPackages = ['com.fs.starfarer.api']
+
 // Mod metadata is the single source of truth for the artifact version, so
 // the jar name and Starsector's mod listing cannot drift.
 def modInfoFile = file('mod_info.json')

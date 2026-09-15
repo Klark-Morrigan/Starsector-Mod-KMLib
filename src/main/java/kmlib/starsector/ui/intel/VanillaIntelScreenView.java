@@ -114,50 +114,43 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     public UIComponentAPI getMapVisorWidget() {
 
         var intelPanel = resolveIntelPanel();
-        if (intelPanel == null) {
-            return null;
-        }
-
-        var mapWidget = readMapWidgetOf(intelPanel);
-        if (mapWidget == null) {
-            return null;
-        }
-
-        // The fader is read directly where the map is not: its type is a do-not-obfuscate one, so
-        // the call's descriptor reads the same in every build, which is the whole of what decides
-        // whether a hop may be taken as a plain call.
-        if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
-            return null;
-        }
-
-        // A widget the layout never positioned is reported as no visor at all, not as a visor with
-        // no box. It occupies nothing on screen, so there is nothing to draw over or measure
-        // against - and answering the two reads the same way is what lets a caller take either.
-        var position = mapWidget.getPosition();
-        return position == null
+        return intelPanel == null
             ? null
-            : mapWidget;
+            : readLitMapVisorOf(intelPanel);
+    }
+
+    @Override
+    public MapVisorState readMapVisorState() {
+
+        // The one walk both signals are taken off, which is the whole of why this is published
+        // beside the reads that answer them one at a time.
+        var intelPanel = resolveIntelPanel();
+        var mapWidget = intelPanel == null
+            ? null
+            : readLitMapVisorOf(intelPanel);
+
+        if (mapWidget == null) {
+            return MapVisorState.NOT_SHOWING;
+        }
+
+        return isStarscapeModeOnIn(mapWidget)
+            ? MapVisorState.SHOWING_IN_STARSCAPE_MODE
+            : MapVisorState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     @Override
     public boolean isMapStarscapeModeOn() {
 
         var intelPanel = resolveIntelPanel();
-        if (intelPanel == null) {
-            return false;
-        }
 
-        // Two steps in: the panel's map member is the framed holder widget, and the map inside it is
-        // what owns the filter state. Its own starscape read is used rather than the raw filter flag,
-        // so this says exactly what the game says - the filter alone is not starscape mode, which
-        // also needs the map to be showing hyperspace.
-        var mapWidget = readMapWidgetOf(intelPanel);
-        var map = mapWidget == null
+        // Read off the visor whether or not it is lit, which is what makes this the filter's own
+        // question rather than a second way of asking whether a visor is showing.
+        var mapWidget = intelPanel == null
             ? null
-            : CoreUiTree.readHopIfOffered(mapWidget, GET_MAP_METHOD);
+            : readMapWidgetOf(intelPanel);
 
-        return map != null
-            && Boolean.TRUE.equals(CoreUiTree.readHopIfOffered(map, IS_STARSCAPE_MODE_METHOD));
+        return mapWidget != null
+            && isStarscapeModeOnIn(mapWidget);
     }
 
     // Whether the two live signals add up to a lit map visor. Kept apart from the walk that fetches
@@ -275,6 +268,47 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             level = nextLevel;
         }
         return null;
+    }
+
+    // The panel's map visor, but only while it is a visor there is any point handing out: the
+    // sub-tab showing, the preview unblanked, and the widget laid out somewhere.
+    //
+    // Shared by the reads that answer for a showing visor rather than restated in each, so they
+    // cannot come to disagree about what counts as one - and so a caller handed a rectangle, a
+    // component or a state is looking at the same widget under the same conditions.
+    private UIComponentAPI readLitMapVisorOf(EventsPanel intelPanel) {
+
+        var mapWidget = readMapWidgetOf(intelPanel);
+        if (mapWidget == null) {
+            return null;
+        }
+
+        // The fader is read directly where the map is not: its type is a do-not-obfuscate one, so
+        // the call's descriptor reads the same in every build, which is the whole of what decides
+        // whether a hop may be taken as a plain call.
+        if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
+            return null;
+        }
+
+        // A widget the layout never positioned is reported as no visor at all, not as a visor with
+        // no box. It occupies nothing on screen, so there is nothing to draw over or measure
+        // against - and answering the reads the same way is what lets a caller take any of them.
+        return mapWidget.getPosition() == null
+            ? null
+            : mapWidget;
+    }
+
+    // Whether the map inside the visor has its starscape filter on and is showing hyperspace.
+    //
+    // Two steps in: the panel's map member is the framed holder widget, and the map inside it is
+    // what owns the filter state. The map's own starscape read is used rather than the raw filter
+    // flag, so this says exactly what the game says - the filter alone is not starscape mode.
+    private static boolean isStarscapeModeOnIn(UIComponentAPI mapWidget) {
+
+        var map = CoreUiTree.readHopIfOffered(mapWidget, GET_MAP_METHOD);
+
+        return map != null
+            && Boolean.TRUE.equals(CoreUiTree.readHopIfOffered(map, IS_STARSCAPE_MODE_METHOD));
     }
 
     // The panel's map visor widget as the published component type, or null when the hop leads
