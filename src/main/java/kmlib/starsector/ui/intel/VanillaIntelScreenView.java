@@ -2,7 +2,6 @@ package kmlib.starsector.ui.intel;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CoreUITabId;
-import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
@@ -31,10 +30,16 @@ import java.util.List;
  * positioned is reported as no visor rather than as a visor with no box, which is what lets the two
  * answer null in exactly the same cases.
  *
- * <p>Nothing in the reach names a class the obfuscator chose. The intel tab's own class name is
- * single-letter obfuscator output and is reshuffled between game builds, so recognising the tab
- * would break silently on the next one; {@code EventsPanel} is a readable name, which is what a
- * do-not-obfuscate class looks like, and it is the type the visor readings are taken off anyway.
+ * <p>Nothing in the reach names a class the obfuscator chose, and nothing calls a method whose
+ * signature names one. The intel tab's own class name is single-letter obfuscator output and is
+ * reshuffled between game builds, so recognising the tab would break silently on the next one;
+ * {@code EventsPanel} is a readable name, which is what a do-not-obfuscate class looks like, and it
+ * is the type the visor readings are taken off anyway. Its map accessors are the other half of the
+ * same rule: they hand back obfuscated widget types, and a direct call bakes the obfuscator's
+ * letters into the call site's own descriptor - which the game's builds for the other platforms
+ * spell differently, leaving a call that links on one operating system and not on the next. So the
+ * widget hops are taken by name, and the widget is held as the published component interface, whose
+ * reads carry signatures every build agrees on.
  *
  * <p>The reach into the concrete panel fails closed: a missing or unexpected link, a sibling sub-tab
  * showing instead, or a blanked preview all resolve to "no visor", so a caller reading the visor
@@ -53,6 +58,14 @@ import java.util.List;
 public final class VanillaIntelScreenView implements IntelScreenView {
 
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
+
+    // The panel's map hops, taken by name. Both widgets answer the same name: the panel hands back
+    // the framed holder, and the holder hands back the map proper. Contract names on the game's own
+    // widgets, so they survive obfuscation the way the core UI's accessors do.
+    private static final String GET_MAP_METHOD = "getMap";
+
+    // The map's own reading of whether it is in starscape mode, which is more than its filter flag.
+    private static final String IS_STARSCAPE_MODE_METHOD = "isStarscapeMode";
 
     // The preview widget's opacity is hard-set to 1.0 while it is showing and 0.0 when a
     // large-description item blanks it, so any threshold between the two reads "is the preview lit".
@@ -90,7 +103,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         // Derived from the widget read rather than walking to the panel a second time, so the two
         // cannot disagree about whether there is a visor: a caller handed a rectangle and a caller
         // handed the component are looking at the same widget under the same conditions.
-        UIComponentAPI mapWidget = getMapVisorWidget();
+        var mapWidget = getMapVisorWidget();
 
         return mapWidget == null
             ? null
@@ -100,16 +113,19 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     @Override
     public UIComponentAPI getMapVisorWidget() {
 
-        EventsPanel intelPanel = resolveIntelPanel();
+        var intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
             return null;
         }
 
-        var mapWidget = intelPanel.getMap();
+        var mapWidget = readMapWidgetOf(intelPanel);
         if (mapWidget == null) {
             return null;
         }
 
+        // The fader is read directly where the map is not: its type is a do-not-obfuscate one, so
+        // the call's descriptor reads the same in every build, which is the whole of what decides
+        // whether a hop may be taken as a plain call.
         if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
             return null;
         }
@@ -117,7 +133,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         // A widget the layout never positioned is reported as no visor at all, not as a visor with
         // no box. It occupies nothing on screen, so there is nothing to draw over or measure
         // against - and answering the two reads the same way is what lets a caller take either.
-        PositionAPI position = mapWidget.getPosition();
+        var position = mapWidget.getPosition();
         return position == null
             ? null
             : mapWidget;
@@ -126,7 +142,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     @Override
     public boolean isMapStarscapeModeOn() {
 
-        EventsPanel intelPanel = resolveIntelPanel();
+        var intelPanel = resolveIntelPanel();
         if (intelPanel == null) {
             return false;
         }
@@ -135,11 +151,13 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         // what owns the filter state. Its own starscape read is used rather than the raw filter flag,
         // so this says exactly what the game says - the filter alone is not starscape mode, which
         // also needs the map to be showing hyperspace.
-        var mapWidget = intelPanel.getMap();
-        var map = mapWidget == null ? null : mapWidget.getMap();
+        var mapWidget = readMapWidgetOf(intelPanel);
+        var map = mapWidget == null
+            ? null
+            : CoreUiTree.readHopIfOffered(mapWidget, GET_MAP_METHOD);
 
         return map != null
-            && map.isStarscapeMode();
+            && Boolean.TRUE.equals(CoreUiTree.readHopIfOffered(map, IS_STARSCAPE_MODE_METHOD));
     }
 
     // Whether the two live signals add up to a lit map visor. Kept apart from the walk that fetches
@@ -257,5 +275,20 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             level = nextLevel;
         }
         return null;
+    }
+
+    // The panel's map visor widget as the published component type, or null when the hop leads
+    // nowhere.
+    //
+    // Taken by name and handed back as the interface, so that neither the hop nor anything a caller
+    // does with what comes back is compiled against a type the obfuscator named: the widget's own
+    // class is obfuscator output, while the position and opacity a visor reading needs are published
+    // on the interface it implements. A hop that answers something else is read as no widget, which
+    // is the same answer a caller gets for a panel showing no map at all.
+    private static UIComponentAPI readMapWidgetOf(EventsPanel intelPanel) {
+
+        return CoreUiTree.readHopIfOffered(intelPanel, GET_MAP_METHOD) instanceof UIComponentAPI mapWidget
+            ? mapWidget
+            : null;
     }
 }
