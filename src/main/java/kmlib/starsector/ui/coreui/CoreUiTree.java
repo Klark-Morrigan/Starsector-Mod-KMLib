@@ -4,8 +4,6 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The reach into the live core-UI widget tree: the hops from the campaign UI down to the tab that
@@ -55,15 +53,6 @@ public final class CoreUiTree {
     // cost rather than avoiding it.
     private static final Object[] NO_ARGS = new Object[0];
 
-    // Which shapes carry which names, so a walk pays the by-name resolution once per question
-    // instead of once per node on every frame. Held beside the walk that asks rather than inside
-    // the reach, since the presence question is answered without building a match at all and so has
-    // nothing there to be memoised against - and held once here rather than per caller, since every
-    // walk asks about the same handful of names over the same tree. Whether a class carries a name
-    // is fixed for the run, so the answer belongs to the shape rather than to the moment, and the
-    // map is bounded by the classes met times the few names this library asks about.
-    private static final Map<MethodNameQuery, Boolean> SHAPES_CARRYING_NAME = new ConcurrentHashMap<>();
-
     private CoreUiTree() {
     }
 
@@ -97,9 +86,9 @@ public final class CoreUiTree {
      * <p>Answers the name only, not the argument shape. A caller that goes on to invoke with
      * arguments can still find that nothing takes them.
      *
-     * <p>Answered from a memo, since a class carries a name or does not for the whole run. A walk
-     * asking per node per frame therefore resolves each shape once rather than each time it meets
-     * one.
+     * <p>Answered from a memo the reach keeps, since a class carries a name or does not for the
+     * whole run. A walk asking per node per frame therefore resolves each shape once rather than
+     * each time it meets one.
      *
      * @param instance   the object whose class to look in
      * @param methodName the method name to look for
@@ -107,9 +96,7 @@ public final class CoreUiTree {
      */
     public static boolean hasMethodNamed(Object instance, String methodName) {
 
-        return SHAPES_CARRYING_NAME.computeIfAbsent(
-            new MethodNameQuery(instance.getClass(), methodName),
-            query -> ReflectedMembers.hasMethodNamed(query.shape(), query.methodName()));
+        return ReflectedMembers.hasMethodNamed(instance.getClass(), methodName);
     }
 
     /**
@@ -311,12 +298,5 @@ public final class CoreUiTree {
         return isComponentShowing(dialogCore)
             ? dialogCore
             : invokeNoArg(campaignUi, GET_CORE_METHOD);
-    }
-
-    // The one thing that keys the memo: a shape and a name are what decide the answer together, and
-    // neither alone identifies the question being asked.
-    private record MethodNameQuery(
-        Class<?> shape,
-        String methodName) {
     }
 }

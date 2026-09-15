@@ -1,9 +1,5 @@
 package kmlib.starsector.ui.coreui;
 
-import kmlib.starsector.ui.coreui.ReflectedMembers.ConstructorQuery;
-import kmlib.starsector.ui.coreui.ReflectedMembers.FieldQuery;
-import kmlib.starsector.ui.coreui.ReflectedMembers.MethodQuery;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +62,7 @@ class ReflectedMembersTest {
         void findFieldsMatchingSelectsByDeclaredTypeWhenNoNameSurvives() {
             // The obfuscated case: no usable name, so the declared type is the whole description.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
-                FieldQuery.ofExactType(int.class)))
+                FieldQuery.anyField().ofExactType(int.class)))
                 .singleElement()
                 .extracting(ReflectedField::getName)
                 .isEqualTo("hiddenCount");
@@ -77,7 +73,7 @@ class ReflectedMembersTest {
             // Assignable rather than exact, for a caller that knows what it wants to do with the
             // value rather than exactly how the field was declared.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
-                FieldQuery.assignableTo(CharSequence.class)))
+                FieldQuery.anyField().assignableTo(CharSequence.class)))
                 .singleElement()
                 .extracting(ReflectedField::getName)
                 .isEqualTo("hiddenLabel");
@@ -88,7 +84,7 @@ class ReflectedMembersTest {
             // The opposite direction to the read above, and the one a write is aimed by: what the
             // field would accept rather than what its value could be handed to.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
-                FieldQuery.accepting(String.class)))
+                FieldQuery.anyField().accepting(String.class)))
                 .singleElement()
                 .extracting(ReflectedField::getName)
                 .isEqualTo("hiddenLabel");
@@ -100,7 +96,7 @@ class ReflectedMembersTest {
             // top of whatever the caller meant. Counted, it would turn a search that identified one
             // field into an ambiguity, and the caller would never learn which field it wanted.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
-                FieldQuery.accepting(String.class)))
+                FieldQuery.anyField().accepting(String.class)))
                 .noneMatch(field -> "hiddenAnythingFake".equals(field.getName()));
         }
 
@@ -109,7 +105,7 @@ class ReflectedMembersTest {
             // The one case where those fields are the answer rather than noise, which is why the
             // exclusion turns on what was asked for and not on the field alone.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
-                FieldQuery.ofExactType(Object.class)))
+                FieldQuery.anyField().ofExactType(Object.class)))
                 .singleElement()
                 .extracting(ReflectedField::getName)
                 .isEqualTo("hiddenAnythingFake");
@@ -133,7 +129,7 @@ class ReflectedMembersTest {
             // The last way in when neither the field nor its type carries a usable name: an
             // obfuscated widget's parts are recognised by what they are capable of.
             assertThat(ReflectedMembers.findFieldsHoldingMethodMatching(
-                ShapeFake.class, MethodQuery.named("readPartLabel"), false))
+                ShapeFake.class, FieldQuery.anyField(), MethodQuery.named("readPartLabel")))
                 .singleElement()
                 .extracting(ReflectedField::getName)
                 .isEqualTo("hiddenPartFake");
@@ -143,7 +139,7 @@ class ReflectedMembersTest {
         void findFieldsHoldingMethodMatchingLeavesOutAFieldWhoseTypeCannot() {
 
             assertThat(ReflectedMembers.findFieldsHoldingMethodMatching(
-                ShapeFake.class, MethodQuery.named("noSuchMemberAnywhere"), false))
+                ShapeFake.class, FieldQuery.anyField(), MethodQuery.named("noSuchMemberAnywhere")))
                 .isEmpty();
         }
 
@@ -156,7 +152,7 @@ class ReflectedMembersTest {
             shapeFake.fillAnythingWithAPart();
 
             assertThat(ReflectedMembers.findFieldsHoldingMethodMatching(
-                ShapeFake.class, MethodQuery.named("readPartLabel"), false))
+                ShapeFake.class, FieldQuery.anyField(), MethodQuery.named("readPartLabel")))
                 .noneMatch(field -> "hiddenAnythingFake".equals(field.getName()));
         }
     }
@@ -186,7 +182,7 @@ class ReflectedMembersTest {
             // Two fields of one type is ordinary, and picking either would make the answer turn on
             // declaration order - which an obfuscated build reshuffles between releases.
             assertThatThrownBy(() -> ReflectedMembers.readFieldValue(new ShapeFake(),
-                FieldQuery.ofExactType(boolean.class)))
+                FieldQuery.anyField().ofExactType(boolean.class)))
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -223,7 +219,7 @@ class ReflectedMembersTest {
             // A constructor has no name of its own, so its parameter list is the only thing telling
             // one from another.
             assertThat(ReflectedMembers.findConstructorsMatching(BuiltShapeFake.class,
-                ConstructorQuery.taking(List.of(String.class))))
+                ConstructorQuery.anyConstructor().taking(String.class)))
                 .singleElement()
                 .extracting(constructor -> constructor.getParameterTypes().length)
                 .isEqualTo(1);
@@ -233,7 +229,7 @@ class ReflectedMembersTest {
         void findConstructorsMatchingSelectsByHowManyItTakes() {
 
             assertThat(ReflectedMembers.findConstructorsMatching(BuiltShapeFake.class,
-                ConstructorQuery.takingCount(0)))
+                ConstructorQuery.anyConstructor().takingCount(0)))
                 .hasSize(1);
         }
 
@@ -241,7 +237,7 @@ class ReflectedMembersTest {
         void findConstructorsMatchingReachesOneTheShapeKeepsToItself() {
 
             assertThat(ReflectedMembers.findConstructorsMatching(BuiltShapeFake.class,
-                ConstructorQuery.taking(List.of(int.class))))
+                ConstructorQuery.anyConstructor().takingArgumentTypes(List.of(int.class))))
                 .hasSize(1);
         }
     }
@@ -355,6 +351,13 @@ class ReflectedMembersTest {
     @SuppressWarnings("unused")
     private static class ShapeFake {
 
+        // Two statics rather than one, and both of a type no search here narrows by: reading and
+        // writing need different fields, or whichever test ran first would decide what the other
+        // saw.
+        private static final long hiddenStaticReading = 11L;
+
+        private static long hiddenStaticWritable;
+
         private final String hiddenLabel = LABEL;
         private final PartFake hiddenPartFake = new PartFake();
         private final boolean isHiddenFlagSet = true;
@@ -368,6 +371,10 @@ class ReflectedMembersTest {
 
         private static String buildStaticLabel() {
             return LABEL;
+        }
+
+        static long readStaticWritable() {
+            return hiddenStaticWritable;
         }
 
         void fillAnythingWithAPart() {

@@ -925,11 +925,14 @@ a sandbox over what a downloaded jar can reach on a player's machine.
 routes around it,
 by asking the bootstrap loader for the reflection types and driving them through method handles,
 which is what every library reaching the game's UI by name does.
+It holds the route and nothing else;
+the searches and the by-name reads, writes and calls built over it are
+[`ReflectedMembers`](src/main/java/kmlib/starsector/ui/coreui/ReflectedMembers.java).
 Worth knowing if you depend on KMLib:
 that route restores the whole capability, not a slice of it.
-It is package-private and hands out answers rather than reflection objects,
-so nothing above `starsector/ui/coreui/` can reach it,
-and KMLib uses it for nothing but reading and calling the game's own live UI objects.
+Both are package-private and hand out answers rather than reflection objects,
+so nothing above `starsector/ui/coreui/` can reach them,
+and KMLib uses them for nothing but reading and calling the game's own live UI objects.
 
 ## Reusable CI / release actions
 
