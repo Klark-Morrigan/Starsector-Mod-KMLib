@@ -6,8 +6,15 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [Unrelease](#unreleased)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [Unreleased]
+
+### Fixed
+
+- Crash on Linux. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
 
 ## [0.2.0] - 2026-09-14
 
