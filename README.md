@@ -131,7 +131,17 @@ Build:
   the Starsector build conventions every KM mod applies by path:
   the game's API jars on the compile and test classpath,
   `mod_info.json` as the version source,
-  and the jar output location the launcher expects.
+  the jar output location the launcher expects,
+  and the two facts about the game every mod would otherwise restate -
+  which namespace the game's type names are not promised in,
+  and which package inside it is the published API.
+- [`gradle/referenced-types.gradle`](gradle/referenced-types.gradle) -
+  what KMLib adds to those:
+  the concrete game classes whose names are kept,
+  each named because the API publishes no equivalent.
+  A mod declares its own list the same way;
+  everything outside it is reached by method name at runtime,
+  since the game's obfuscated names differ between its per-platform builds.
 - [`gradle/starsector-install-locator.gradle`](gradle/starsector-install-locator.gradle) -
   the lookups those conventions and a mod's own build call:
   the install root,
