@@ -66,6 +66,54 @@ write_changelog_for() {
     printf '## [Unreleased]\n\n## [%s]\nEntry.\n' "$1" > CHANGELOG.md
 }
 
+# Writes a changelog carrying a navigation index, so the index rule has
+# something to rule on. The indexed versions are given separately from the
+# sectioned one, which is how a missed entry is posed.
+write_changelog_with_index() {
+    local sectionVersion="$1"
+    shift
+    {
+        printf '# Changelog\n\n## Index\n\n'
+        for indexed in "$@"; do
+            printf -- '- [%s](#%s)\n' "$indexed" "${indexed//./}"
+        done
+        printf '\n## [%s] - 2026-09-15\nEntry.\n' "$sectionVersion"
+    } > CHANGELOG.md
+}
+
+@test "passes when the changelog index lists the released version" {
+    write_changelog_with_index "1.2.0" "1.2.0" "1.1.0"
+    write_mod_info "1.2.0"
+    run bash "$SCRIPT" "1.2.0"
+    [ "$status" -eq 0 ]
+}
+
+@test "fails when the changelog has an index but no entry for the version" {
+    write_changelog_with_index "1.2.0" "1.1.0"
+    write_mod_info "1.2.0"
+    run bash "$SCRIPT" "1.2.0"
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q "no entry linking to 1.2.0"
+}
+
+# The rule checks a convention, so a changelog that never adopted it is not
+# failed for lacking one.
+@test "passes when the changelog carries no index at all" {
+    printf '%s' "$CHANGELOG_WITH_SECTION" > CHANGELOG.md
+    write_mod_info "1.2.0"
+    run bash "$SCRIPT" "1.2.0"
+    [ "$status" -eq 0 ]
+}
+
+# Only the version being released has to be indexed; a gap in an older entry
+# is not a reason to stop today's release.
+@test "passes when an older version is missing from the index" {
+    write_changelog_with_index "1.2.0" "1.2.0"
+    write_mod_info "1.2.0"
+    run bash "$SCRIPT" "1.2.0"
+    [ "$status" -eq 0 ]
+}
+
 @test "passes when changelog section, version, and no kmlib dep" {
     printf '%s' "$CHANGELOG_WITH_SECTION" > CHANGELOG.md
     write_mod_info "1.2.0"

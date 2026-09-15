@@ -14,6 +14,9 @@
 #      field is present and well-formed SemVer too. Gated on the
 #      dependency being present so KMLib's own release uses this same
 #      action without needing a self-dependency.
+#   5. If CHANGELOG.md carries an "## Index" section, it lists the version
+#      being released. Gated on the index existing, for the same reason as
+#      rule 4: it checks a convention a mod opted into.
 #
 # Usage: validate_versioning.sh <version>
 #
@@ -21,7 +24,9 @@
 # non-zero with a clear message on the first failed rule.
 set -euo pipefail
 
-VERSION="${1:?version argument required}"
+# Prefixes every message the shared lib reports, so a failure names the step
+# a reader saw fail rather than the lib's default.
+SCRIPT_NAME="validate_versioning"
 
 # Supplies MOD_INFO_FILE and SEMVER_REGEX. Resolved from this script's own
 # location, not from $PWD: these scripts run against the caller's checkout,
@@ -31,30 +36,30 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
 
+VERSION="${1:?${SCRIPT_NAME}: version argument required}"
+
 CHANGELOG_FILE="CHANGELOG.md"
+CHANGELOG_INDEX_HEADING="## Index"
 
 # Rule 1: changelog section must exist for this version. A literal-string
 # match on "## [<version>]" is sufficient because the date suffix is
 # optional and any text after the closing bracket is permitted.
 if [[ ! -f "${CHANGELOG_FILE}" ]]; then
-  echo "ERROR: ${CHANGELOG_FILE} not found in ${PWD}" >&2
+  echo "${SCRIPT_NAME}: ${CHANGELOG_FILE} not found in ${PWD}" >&2
   exit 1
 fi
 if ! grep -qF "## [${VERSION}]" "${CHANGELOG_FILE}"; then
-  echo "ERROR: no '## [${VERSION}]' section found in ${CHANGELOG_FILE}" >&2
+  echo "${SCRIPT_NAME}: no '## [${VERSION}]' section found in ${CHANGELOG_FILE}" >&2
   exit 1
 fi
 
 # Rule 2: mod_info.json .version must equal the input. Without this a
 # tag-only bump could publish a release that disagrees with the file the
 # game actually reads.
-if [[ ! -f "${MOD_INFO_FILE}" ]]; then
-  echo "ERROR: ${MOD_INFO_FILE} not found in ${PWD}" >&2
-  exit 1
-fi
+mod_info_require_file
 MOD_INFO_VERSION="$(jq -r '.version' "${MOD_INFO_FILE}")"
 if [[ "${MOD_INFO_VERSION}" != "${VERSION}" ]]; then
-  echo "ERROR: ${MOD_INFO_FILE} .version (${MOD_INFO_VERSION}) does not match released version (${VERSION})" >&2
+  echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} .version (${MOD_INFO_VERSION}) does not match released version (${VERSION})" >&2
   exit 1
 fi
 
@@ -64,7 +69,7 @@ fi
 # split into 2-4 components - so this gate is the only place the mistake
 # surfaces.
 if ! [[ "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
-  echo "ERROR: version '${VERSION}' is not well-formed SemVer (MAJOR.MINOR.PATCH, digits only)" >&2
+  echo "${SCRIPT_NAME}: version '${VERSION}' is not well-formed SemVer (MAJOR.MINOR.PATCH, digits only)" >&2
   exit 1
 fi
 
@@ -77,11 +82,31 @@ HAS_KMLIB_DEP="$(mod_info_has_dependency "${KMLIB_MOD_ID}")"
 if [[ "${HAS_KMLIB_DEP}" == "true" ]]; then
   KMLIB_DEP_VERSION="$(mod_info_read_dependency_version "${KMLIB_MOD_ID}")"
   if [[ -z "${KMLIB_DEP_VERSION}" ]]; then
-    echo "ERROR: ${MOD_INFO_FILE} kmlib dependency is missing a 'version' field" >&2
+    echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} kmlib dependency is missing a 'version' field" >&2
     exit 1
   fi
   if ! [[ "${KMLIB_DEP_VERSION}" =~ ${SEMVER_REGEX} ]]; then
-    echo "ERROR: ${MOD_INFO_FILE} kmlib dependency version '${KMLIB_DEP_VERSION}' is not well-formed SemVer (MAJOR.MINOR.PATCH)" >&2
+    echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} kmlib dependency version '${KMLIB_DEP_VERSION}' is not well-formed SemVer (MAJOR.MINOR.PATCH)" >&2
+    exit 1
+  fi
+fi
+
+# Rule 5: a changelog carrying a navigation index must list the version
+# being released in it. The index is a second place every version is written
+# down, and nothing else reads it - a missed entry ships a changelog whose
+# index link resolves to nothing, which only a reader clicking it finds out.
+#
+# Conditional on the index existing rather than required, so this stays a
+# consistency check on a convention a mod opted into rather than a new rule
+# imposed on consumers whose changelog has no index at all. Only the
+# released version is checked: a gap left in some older entry is not a
+# reason to stop today's release.
+if grep -qF "${CHANGELOG_INDEX_HEADING}" "${CHANGELOG_FILE}"; then
+  # From the index heading to the first version section, which is where the
+  # entries sit in the format this checks.
+  CHANGELOG_INDEX=$(sed -n "/^${CHANGELOG_INDEX_HEADING}/,/^## \[/p" "${CHANGELOG_FILE}")
+  if ! grep -qF "[${VERSION}](" <<< "${CHANGELOG_INDEX}"; then
+    echo "${SCRIPT_NAME}: ${CHANGELOG_FILE} has an index but no entry linking to ${VERSION}" >&2
     exit 1
   fi
 fi

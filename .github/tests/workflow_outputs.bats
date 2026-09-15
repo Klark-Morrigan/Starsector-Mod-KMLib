@@ -64,6 +64,25 @@ read_declared_outputs() {
     fi
 }
 
+# The version gate's correctness is split across two files: check_version.sh
+# asks which tags exist, and this workflow is what puts them within reach.
+# The script's own suite passes either way, so nothing but this case notices
+# a checkout that fetches a shallow slice of history and no tags - which is
+# what once made every push to master build and package a release.
+@test "the config job checks out full history for the version gate" {
+    configCheckout="$(sed -n '/^  config:/,/^      - name: Derive/p' "$WORKFLOW")"
+
+    # Non-empty first, so a renamed job or step cannot pass by matching
+    # nothing at all.
+    [ -n "$configCheckout" ]
+
+    if ! grep -qE '^ +fetch-depth: 0$' <<< "$configCheckout"; then
+        echo "config's checkout must set fetch-depth: 0 - check-version reads" >&2
+        echo "the tag refs, and a shallow checkout carries too few of them" >&2
+        return 1
+    fi
+}
+
 @test "config is still the only job declaring outputs" {
     # Without this the test above silently stops covering the workflow the
     # moment a second job starts publishing values.

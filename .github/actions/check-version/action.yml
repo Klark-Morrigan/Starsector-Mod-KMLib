@@ -1,22 +1,30 @@
-# Compares mod_info.json's version to the latest git tag in the caller's
-# checkout and emits whether the release pipeline should proceed.
+# Reports whether a git tag already names the version about to be released,
+# which is what decides whether the release pipeline should proceed.
+#
+# The caller must check out with full history and tags: the answer is read
+# from the tag refs, and a shallow checkout carries too few of them to tell
+# a released version from an unreleased one.
 #
 # Delegates to scripts/check_version.sh so the logic is unit-tested with
 # bats. Composite actions themselves are not unit-testable.
 name: Check version
 description: >-
-  Reads the version from mod_info.json and compares it to the latest git
-  tag in the caller checkout. Emits the version and a flag indicating
-  whether the version differs from the latest tag (i.e. needs releasing).
+  Looks for a git tag naming the given version in the caller checkout and
+  emits whether that version is still untagged (i.e. needs releasing).
+
+inputs:
+  version:
+    description: >-
+      The version to look for. Supplied by mod-release.yml from the
+      read-mod-info action's output, so the version this gate rules on and
+      the one the rest of the pipeline builds are one read of one file.
+    required: true
 
 outputs:
-  version:
-    description: "Mod version from mod_info.json (.version)."
-    value: ${{ steps.check.outputs.version }}
   version-updated:
     description: >-
-      "true" when mod_info.json's version differs from the latest git tag,
-      "false" otherwise. Drives whether the release pipeline runs.
+      "true" when no git tag names the given version, "false" when one
+      already does. Drives whether the release pipeline runs.
     # The script writes the underscored name (version_updated) to keep its
     # bats tests stable. The action surfaces the conventional hyphenated
     # name to consumers.
@@ -27,6 +35,12 @@ runs:
   steps:
     - id: check
       shell: bash
+      # Passed as an environment variable rather than interpolated into the
+      # run body: this action runs against a consumer repo's mod_info.json,
+      # and a value expanded into the command itself would be that repo's
+      # chance to run shell on the runner.
+      env:
+        VERSION: ${{ inputs.version }}
       # GITHUB_ACTION_PATH points at this action's directory regardless
       # of the caller's working directory, so the script path is stable.
       run: "$GITHUB_ACTION_PATH/scripts/check_version.sh"

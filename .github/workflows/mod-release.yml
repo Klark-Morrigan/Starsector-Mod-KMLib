@@ -52,7 +52,9 @@ jobs:
   config:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.check.outputs.version }}
+      # Read from mod_info.json once, by the action whose job that is, and
+      # handed to every step and job that needs it - the tag gate included.
+      version: ${{ steps.read.outputs.version }}
       version-updated: ${{ steps.check.outputs.version-updated }}
       mod-id: ${{ steps.read.outputs.mod-id }}
       # Folder the mod ships as (KMU, KMLib), which is not the mod id - see
@@ -80,9 +82,18 @@ jobs:
     steps:
       # Default checkout pulls the CONSUMER repo (the one that triggered the
       # release), so mod_info.json and CHANGELOG.md below are the consumer's.
+      # Full history rather than checkout's default shallow depth of 1. The
+      # gate below decides whether a release is due by asking git which tags
+      # exist, and a shallow fetch brings down only tags pointing into the
+      # history it downloaded - so an already-released version looks untagged
+      # and every push to master reads as a version bump. fetch-tags is kept
+      # alongside because the tag refs are the thing the gate reads; asking
+      # for them explicitly costs nothing and does not depend on reading the
+      # depth rule to know they arrive.
       - name: Check out consumer repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
+          fetch-depth: 0
           fetch-tags: true
 
       # KMLib's composite actions live in this workflow's home repo, not in the
@@ -109,9 +120,11 @@ jobs:
           echo 'json=["self-hosted","${{ steps.read.outputs.runner-label }}"]' \
             >> "$GITHUB_OUTPUT"
 
-      - name: Compare version to latest tag
+      - name: Check whether this version is already tagged
         id: check
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/check-version@master
+        with:
+          version: ${{ steps.read.outputs.version }}
 
       # Enforce the versioning policy only when a release is actually due:
       # changelog section present, mod_info version matches, kmlib pin (if
@@ -121,7 +134,7 @@ jobs:
         if: steps.check.outputs.version-updated == 'true'
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/validate-versioning@master
         with:
-          version: ${{ steps.check.outputs.version }}
+          version: ${{ steps.read.outputs.version }}
 
       # The game refuses to load a mod whose declared dependency version is
       # not installed, and a player installs KMLib from its release page - so
@@ -198,28 +211,14 @@ jobs:
         with:
           path: ${{ needs.config.outputs.mod-id }}
 
-      # Mirrors the clone step inside Common-Java's _ci-gradle and consumes the
-      # identical { repo, path } shape, so both build jobs see one workspace
-      # layout. It is a second copy of that loop, so a change to the clone
-      # contract has to land in both places.
-      # TODO: extract into a shared composite - a registry-form `uses:` needs
-      # no checkout to resolve, as the cleanup step above demonstrates.
+      # The same action Common-Java's _ci-gradle clones its siblings with, so
+      # the build job and this packaging job lay the workspace out by one
+      # rule rather than by two copies of a loop that drifted.
       - name: Check out sibling repos
-        env:
-          # Assigned to env (not interpolated into the script body) so the
-          # JSON cannot break out of the shell command.
-          SIBLINGS: ${{ needs.config.outputs.sibling-checkouts }}
-          GH_TOKEN: ${{ secrets.sibling_checkout_token || github.token }}
-        run: |
-          set -euo pipefail
-          echo "$SIBLINGS" | jq -c '.[]' | while read -r entry; do
-            repo=$(jq -rn --argjson e "$entry" '$e.repo')
-            path=$(jq -rn --argjson e "$entry" '$e.path')
-            echo "::group::clone ${repo} -> ${path}"
-            git clone --depth 1 \
-              "https://x-access-token:${GH_TOKEN}@github.com/${repo}.git" "${path}"
-            echo "::endgroup::"
-          done
+        uses: Klark-Morrigan/Common-Automation/.github/actions/checkout-siblings@master
+        with:
+          siblings: ${{ needs.config.outputs.sibling-checkouts }}
+          token: ${{ secrets.sibling_checkout_token || github.token }}
 
       - name: Set up Java 17
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
@@ -259,22 +258,6 @@ jobs:
           done
           cp "${JAR_SOURCE}" "${DIST}/jars/"
 
-      # The steps below run from the workspace root, where the mod sits one
-      # level down, so the path into its dist folder is three derived values
-      # deep. Composed here rather than inline so the `with:` blocks stay
-      # readable, matching how the config job composes its runner label set.
-      - name: Compose the dist path for the version file
-        id: version-file
-        env:
-          MOD_ID: ${{ needs.config.outputs.mod-id }}
-          DIST: ${{ needs.config.outputs.dist-dir }}
-          VERSION_FILE: ${{ needs.config.outputs.version-file-name }}
-        run: |
-          set -euo pipefail
-          # dist-dir is emitted with a trailing slash, trimmed here so the
-          # path reads as one in the log rather than carrying an empty segment.
-          echo "dist-path=${MOD_ID}/${DIST%/}/${VERSION_FILE}" >> "$GITHUB_OUTPUT"
-
       # Written at the workspace root, which is where the release asset is
       # uploaded from. That copy is what makes the template's masterVersionFile
       # URL (releases/latest/download/<mod-id>.version) resolve: an update
@@ -292,13 +275,18 @@ jobs:
       # than generated a second time because the two are the same file by
       # definition - generating twice states that only as long as both calls
       # keep being given the same inputs. It has to land before the zip step.
+      # This step runs from the workspace root, where the mod sits one level
+      # down, so the path into its dist folder is three derived values deep.
       - name: Copy the VersionChecker file into the dist payload
         env:
+          MOD_ID: ${{ needs.config.outputs.mod-id }}
+          DIST: ${{ needs.config.outputs.dist-dir }}
           VERSION_FILE: ${{ needs.config.outputs.version-file-name }}
-          DIST_PATH: ${{ steps.version-file.outputs.dist-path }}
         run: |
           set -euo pipefail
-          cp "${VERSION_FILE}" "${DIST_PATH}"
+          # dist-dir is emitted with a trailing slash, trimmed so the path
+          # reads as one in the log rather than carrying an empty segment.
+          cp "${VERSION_FILE}" "${MOD_ID}/${DIST%/}/${VERSION_FILE}"
 
       - name: Create release zip
         working-directory: ${{ needs.config.outputs.mod-id }}

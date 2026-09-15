@@ -192,3 +192,10 @@ so the format must be consistent across repositories:
 
 A missing section for the released version fails the release pipeline,
 so release notes are never silently dropped.
+
+A changelog that also carries a `## Index` of its versions must list the version being released in it.
+That index is a second place every version is written down and nothing reads it but a human,
+so a missed entry leaves a link resolving to nothing and only a reader clicking it finds out.
+The rule applies only where an index exists:
+a changelog that never adopted one is not failed for lacking it,
+and a gap left in some older entry does not stop today's release.

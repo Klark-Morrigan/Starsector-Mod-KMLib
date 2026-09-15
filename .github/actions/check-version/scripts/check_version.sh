@@ -1,29 +1,37 @@
 #!/usr/bin/env bash
-# Compares the version in mod_info.json to the latest git tag and writes
-# two outputs to $GITHUB_OUTPUT:
-#   version         - the value from mod_info.json
-#   version_updated - "true" if version differs from the latest tag,
-#                     "false" otherwise (including when no tags exist and
-#                     the version happens to equal the "none" sentinel -
-#                     an impossible case in practice)
+# Reports whether the version about to be released has already been tagged
+# in the caller's checkout, which is what decides whether the release
+# pipeline does any work.
 #
-# Runs against the caller's checkout: mod_info.json is read from the
-# current working directory, which GitHub sets to the caller's repo root
-# when this script is invoked from a composite action.
+# Reads from the environment (set by action.yml):
+#   VERSION  the version to look for
+#
+# Emits to $GITHUB_OUTPUT:
+#   version_updated  "true" when no tag names that version, "false" when one
+#                    already does
+#
+# The version is taken from the caller rather than read from mod_info.json
+# here. read-mod-info has already read that file for the rest of the
+# pipeline, and a second read of the same field is a second chance for the
+# two to disagree; it also leaves this script asking git one question and
+# touching no files at all.
+#
+# Requires a checkout carrying the repository's tags. The question is which
+# tags exist, not which one is nearest to HEAD, so a shallow checkout that
+# fetched none of them reports every version as unreleased - see the
+# fetch-depth the calling workflow sets.
+#
+# A thin script (rather than inline action steps) so bats can exercise it
+# in isolation - composite actions are not unit-testable directly.
 set -euo pipefail
 
-# Supplies MOD_INFO_FILE. Resolved from this script's own location, not from
-# $PWD: these scripts run against the caller's checkout, which is never where
-# they live.
-LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
-# shellcheck source-path=SCRIPTDIR
-# shellcheck source=../../_lib/mod_info.sh
-source "${LIB_DIR}/mod_info.sh"
+SCRIPT_NAME="check_version"
 
-VERSION=$(jq -r .version "${MOD_INFO_FILE}")
-LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+VERSION="${VERSION:?${SCRIPT_NAME}: VERSION is required}"
 
-if [[ "${VERSION}" == "${LATEST_TAG}" ]]; then
+# ^{} peels an annotated tag to the commit it points at, so both tag
+# flavours are treated alike; only whether the ref resolves matters here.
+if git rev-parse -q --verify "refs/tags/${VERSION}^{}" >/dev/null 2>&1; then
   version_updated="false"
 else
   version_updated="true"
@@ -31,7 +39,4 @@ fi
 
 # GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
 # shellcheck disable=SC2154
-{
-  echo "version=${VERSION}"
-  echo "version_updated=${version_updated}"
-} >> "${GITHUB_OUTPUT}"
+echo "version_updated=${version_updated}" >> "${GITHUB_OUTPUT}"

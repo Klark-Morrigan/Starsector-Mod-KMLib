@@ -6,10 +6,25 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [0.4.0](#040---2026-09-15)
 - [0.3.1](#031---2026-09-15)
 - [0.3.0](#030---2026-09-15)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [0.4.0] - 2026-09-15
+
+### Fixed
+
+- **Release pipeline** ran on pushes to master carrying no version bump, and didn't detect version numbers going down.
+
+### Added
+
+- **Release gate**: a `CHANGELOG.md` carrying an `## Index` must list the version being released, so an index link cannot resolve to nothing. Changelogs with no index are unaffected.
+
+### Public contracts changed (**breaking**)
+
+- `check-version` takes a required `version` input and no longer emits `version`. It asks git about the version it is given rather than reading `mod_info.json` itself, so the gate and the rest of the pipeline cannot rule on different strings. Callers of the reusable `mod-release.yml` need no change; a workflow calling the action directly must now pass `version`.
 
 ## [0.3.1] - 2026-09-15
 
@@ -17,7 +32,7 @@ The reusable release workflow extracts the section matching the released version
 
 - Reflection utils are lifted from **MagicLib** per **Numan**'s recommendation. Scoped to **coreui** package.
 - **MagicLib** dependency is removed.
-- The project is relicenced under under **LGPL-3.0-only** to comply with licencing of the copied code.
+- The project is relicenced under under **LGPL-3.0-only** to comply with licencing of donor code.
 
 ## [0.3.0] - 2026-09-15
 
