@@ -105,6 +105,7 @@ public final class MapIconReseater implements EveryFrameScript {
         // this script's to absorb.
         try {
             applyReseatAction();
+
         } catch (RuntimeException | LinkageError reseatFailure) {
             reportReseatFailureOnce(reseatFailure);
         }
@@ -112,6 +113,7 @@ public final class MapIconReseater implements EveryFrameScript {
     }
 
     private void applyReseatAction() {
+
         var action = reseatDecision.decideReseatAction(
             isMapShowing.getAsBoolean(),
             readIconLayering,
@@ -125,7 +127,9 @@ public final class MapIconReseater implements EveryFrameScript {
     }
 
     private void detachMapIcon() {
+
         var entity = findEntityToReseat.get();
+
         // The location is read before the removal and kept, because an entity taken out of one no
         // longer names it - and the put-back has to reach the same location this took it from
         // rather than wherever the caller's supplier would point afterwards.
@@ -145,12 +149,15 @@ public final class MapIconReseater implements EveryFrameScript {
     }
 
     private void attachMapIcon() {
+
         if (detachedMapIcon == null) {
             return;
         }
         detachedMapIcon.location().addEntity(detachedMapIcon.entity());
+
         LOG.debug("Map icon reseat: reattached " + describeEntity(detachedMapIcon.entity())
             + "; its icon re-enters at the tail on the next frame that draws a map");
+
         detachedMapIcon = null;
     }
 
@@ -187,6 +194,7 @@ public final class MapIconReseater implements EveryFrameScript {
     // only diagnose from the picture. WARN rather than DEBUG: unlike the moves above, this one
     // reports something that will not come right on its own.
     private void reportStandingDownOnce() {
+
         if (hasLoggedStandDown || !reseatDecision.hasStoodDown()) {
             return;
         }
