@@ -80,9 +80,18 @@ jobs:
     steps:
       # Default checkout pulls the CONSUMER repo (the one that triggered the
       # release), so mod_info.json and CHANGELOG.md below are the consumer's.
+      # Full history rather than checkout's default shallow depth of 1. The
+      # gate below decides whether a release is due by asking git which tags
+      # exist, and a shallow fetch brings down only tags pointing into the
+      # history it downloaded - so an already-released version looks untagged
+      # and every push to master reads as a version bump. fetch-tags is kept
+      # alongside because the tag refs are the thing the gate reads; asking
+      # for them explicitly costs nothing and does not depend on reading the
+      # depth rule to know they arrive.
       - name: Check out consumer repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
+          fetch-depth: 0
           fetch-tags: true
 
       # KMLib's composite actions live in this workflow's home repo, not in the
