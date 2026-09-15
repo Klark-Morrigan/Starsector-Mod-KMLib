@@ -57,8 +57,7 @@ final class ParameterCompatibility {
         int.class, Set.of(byte.class, short.class, char.class),
         long.class, Set.of(byte.class, short.class, char.class, int.class),
         float.class, Set.of(byte.class, short.class, char.class, int.class, long.class),
-        double.class, Set.of(byte.class, short.class, char.class, int.class, long.class,
-            float.class));
+        double.class, Set.of(byte.class, short.class, char.class, int.class, long.class, float.class));
 
     private ParameterCompatibility() {
     }
@@ -78,6 +77,7 @@ final class ParameterCompatibility {
         }
 
         for (var index = 0; index < parameterTypes.length; index++) {
+
             if (!isParameterCompatible(parameterTypes[index], argumentTypes.get(index))) {
                 return false;
             }
