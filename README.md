@@ -31,6 +31,7 @@ It runs nothing per frame of its own.
 - [UI Colour Palette](#ui-colour-palette)
 - [Highlighted Text](#highlighted-text)
 - [Intel Base Classes](#intel-base-classes)
+- [Licence](#licence)
 
 ## Requirements
 
@@ -1566,3 +1567,17 @@ and auto-removes from the `IntelManager` once `getExpiryDays()` elapses,
 defaulting to one Starsector month.
 Static `findActive(Class)` returns the first non-expired item of a given subclass,
 so synchronous callers share one definition of "still within the current window".
+
+## Licence
+
+KMLib is licensed under the
+[GNU Lesser General Public License version 3](LICENSE),
+with the GPL it incorporates by reference at [LICENSE.GPL](LICENSE.GPL).
+
+LGPL rather than a permissive licence for what this mod is:
+a library other mods depend on.
+Linking imposes nothing -
+a mod that declares KMLib as a dependency keeps whatever terms it likes,
+and conveys none of KMLib itself,
+so it inherits no obligations.
+What the licence does ask is that a *fork of KMLib* stays open under the same terms.
