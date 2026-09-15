@@ -52,9 +52,17 @@ runs:
   steps:
     - id: fill
       shell: bash
+      # Passed as environment variables rather than interpolated into the run
+      # body: every one of these is derived from a consumer repo's
+      # mod_info.json, and a value expanded into the command itself would be
+      # that repo's chance to run shell on the runner - which for this action
+      # is the mod's own self-hosted one.
+      env:
+        OUTPUT_PATH: ${{ inputs.output-path }}
+        ZIP_NAME: ${{ inputs.zip-name }}
+        MOD_ROOT: ${{ inputs.mod-root }}
       # GITHUB_ACTION_PATH points at this action's directory regardless of
       # the caller's working directory, so the script path is stable.
       run: |
         "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh" \
-          "${{ inputs.output-path }}" "${{ inputs.zip-name }}" \
-          "${{ inputs.mod-root }}"
+          "${OUTPUT_PATH}" "${ZIP_NAME}" "${MOD_ROOT}"

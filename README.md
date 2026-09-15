@@ -209,11 +209,12 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   dist dir,
   zip name and jar source from a caller's `mod_info.json`.
 - [`actions/check-version/`](.github/actions/check-version/) -
-  compares `mod_info.json`'s version to the latest git tag,
+  reports whether a git tag already names the version being released,
   gating the pipeline.
 - [`actions/validate-versioning/`](.github/actions/validate-versioning/) -
   enforces the versioning policy at release time:
   changelog section,
+  changelog index entry,
   `mod_info.json` version match,
   version shape,
   and the kmlib dependency's SemVer pin.
@@ -976,15 +977,22 @@ its `outputs:` block is the statement of that convention:
   The latter is emitted from the same constant the sibling checkout set is built from,
   so the release a pin is checked against is the repository the build compiles it against.
 
-**[check-version](.github/actions/check-version/action.yml)** compares `mod_info.json`'s
-`.version` to the latest git tag in the caller checkout
-and emits `version` plus `version-updated`,
+**[check-version](.github/actions/check-version/action.yml)** takes a `version`,
+looks for a git tag naming it in the caller checkout,
+and emits `version-updated`,
 which gates the release pipeline.
+The version comes from read-mod-info rather than a second read of `mod_info.json`,
+so the gate rules on the string the rest of the pipeline builds.
+It asks which tags exist rather than which one is nearest to `HEAD`,
+so the caller must check out with full history:
+a shallow checkout carries too few tags to tell a released version from an unreleased one,
+which is what once made every push to master build a release.
 
 **[validate-versioning](.github/actions/validate-versioning/action.yml)** takes a `version`
 and fails the release if the caller's `CHANGELOG.md` has no `## [<version>]` section,
 `mod_info.json` `.version` does not equal the input,
-or either that version or a declared `kmlib` pin is not well-formed `MAJOR.MINOR.PATCH`.
+either that version or a declared `kmlib` pin is not well-formed `MAJOR.MINOR.PATCH`,
+or a changelog carrying an `## Index` does not list the version being released.
 The shape is enforced here
 because every downstream consumer of a malformed version degrades in silence
 rather than erroring.

@@ -25,7 +25,13 @@ runs:
   steps:
     - id: validate
       shell: bash
+      # Passed as an environment variable rather than interpolated into the
+      # run body: this action runs against a consumer repo's mod_info.json,
+      # and a value expanded into the command itself would be that repo's
+      # chance to run shell on the runner.
+      env:
+        VERSION: ${{ inputs.version }}
       # GITHUB_ACTION_PATH points at this action's directory regardless
       # of the caller's working directory, so the script path is stable.
       run: |
-        "$GITHUB_ACTION_PATH/scripts/validate_versioning.sh" "${{ inputs.version }}"
+        "$GITHUB_ACTION_PATH/scripts/validate_versioning.sh" "${VERSION}"
