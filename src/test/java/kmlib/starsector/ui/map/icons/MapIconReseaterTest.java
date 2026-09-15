@@ -147,6 +147,22 @@ class MapIconReseaterTest {
         }
 
         @Test
+        void keepsAdvancingAfterAReadIntoTheGameFailsToLink() {
+            // The reads behind this reach into the game's own widgets by name, so a build carrying
+            // different signatures fails at the call and arrives as an Error rather than an
+            // exception. It is the campaign thread's frame either way: unguarded, one mismatched
+            // widget takes the game down instead of one reseat.
+            var reseater = new MapIconReseater(() -> {
+                throw new NoSuchMethodError("the widget no longer carries this signature");
+            }, () -> null, ICON_BURIED);
+
+            var advanceOverAnUnlinkableRead = (Runnable) () -> reseater.advance(ONE_FRAME);
+
+            assertThatCode(advanceOverAnUnlinkableRead::run)
+                .doesNotThrowAnyException();
+        }
+
+        @Test
         void keepsAdvancingAfterASupplierFaults() {
             // A caller's supplier reaching a live sector can throw on a frame where the game is
             // between states. The script advances on the campaign thread, so a fault escaping here

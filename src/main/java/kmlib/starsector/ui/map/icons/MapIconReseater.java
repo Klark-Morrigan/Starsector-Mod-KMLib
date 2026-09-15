@@ -95,14 +95,17 @@ public final class MapIconReseater implements EveryFrameScript {
         // Guarded so an uncaught fault - a location that refuses the entity, a supplier that throws
         // - is recorded rather than thrown into the campaign's frame, and does not stop the script
         // from trying again on the next map open.
+        //
+        // Linkage failures are caught beside the runtime ones because the reads behind this reach
+        // into the game's own widgets by name: a build whose widgets no longer carry what this was
+        // compiled against fails at the call rather than at load, and arrives as an Error that a
+        // guard written for exceptions lets straight through into the campaign's frame. Deliberately
+        // not Throwable - an assertion or a JVM-level error says nothing about this reach and is not
+        // this script's to absorb.
         try {
             applyReseatAction();
-        } catch (RuntimeException exception) {
-            if (!hasLoggedReseatError) {
-                hasLoggedReseatError = true;
-                LOG.error("Could not reseat a map icon; its layering is left as the widget seeded "
-                    + "it this session.", exception);
-            }
+        } catch (RuntimeException | LinkageError reseatFailure) {
+            reportReseatFailureOnce(reseatFailure);
         }
     }
 
@@ -161,6 +164,20 @@ public final class MapIconReseater implements EveryFrameScript {
             + " past the map's nebulae after " + MapIconReseatDecision.MAX_ATTEMPTS
             + " attempts that did not clear them. Its layering is left as the widget seeded it "
             + "for the rest of this session.");
+    }
+
+    // One line for a fault that repeats every frame. What it costs is stated rather than the fault
+    // itself, the cause being carried along for whoever reads further.
+    private void reportReseatFailureOnce(Throwable reseatFailure) {
+
+        if (hasLoggedReseatError) {
+            return;
+        }
+        hasLoggedReseatError = true;
+        LOG.error(
+            "Could not reseat a map icon; "
+                + "its layering is left as the widget seeded it this session.",
+            reseatFailure);
     }
 
     // Names what a reader can match against the icon-order trace, which reports the plugin class
