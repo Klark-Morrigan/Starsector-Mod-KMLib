@@ -47,8 +47,6 @@ Hard dependencies:
   The library needs a switch of its own because log4j scopes a level to a package subtree:
   a mod's verbosity governs that mod's lines and cannot reach `kmlib` beneath them,
   and a mod that set `kmlib` would be setting it for every other mod in the game.
-- **MagicLib** -
-  provides code reflection utilities.
 
 Soft dependencies - compiled against,
 absent from `mod_info.json`,
@@ -917,6 +915,20 @@ over `Throwable`,
 the reach declaring nothing -
 where a consumer of the cast seams inherits one.
 
+Reaching by name means reflection,
+and the game's mod classloader refuses `java.lang.reflect` to mod code
+alongside `java.io`, `javax.script` and `java.util.prefs` -
+a sandbox over what a downloaded jar can reach on a player's machine.
+[`ReflectionBypass`](src/main/java/kmlib/starsector/ui/coreui/ReflectionBypass.java)
+routes around it,
+by asking the bootstrap loader for the reflection types and driving them through method handles,
+which is what every library reaching the game's UI by name does.
+Worth knowing if you depend on KMLib:
+that route restores the whole capability, not a slice of it.
+It is package-private and hands out answers rather than reflection objects,
+so nothing above `starsector/ui/coreui/` can reach it,
+and KMLib uses it for nothing but reading and calling the game's own live UI objects.
+
 ## Reusable CI / release actions
 
 KMLib hosts six composite actions and the release workflow other KM mods consume,
@@ -1591,3 +1603,7 @@ a mod that declares KMLib as a dependency keeps whatever terms it likes,
 and conveys none of KMLib itself,
 so it inherits no obligations.
 What the licence does ask is that a *fork of KMLib* stays open under the same terms.
+
+Part of [`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) derives from
+third-party LGPL code and carries its author's copyright alongside;
+see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

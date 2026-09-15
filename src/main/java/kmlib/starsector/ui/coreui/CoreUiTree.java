@@ -3,8 +3,6 @@ package kmlib.starsector.ui.coreui;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 
-import org.magiclib.ReflectionUtils;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,14 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * is up, one component's children once there, and the question of whether a shape carries a given
  * hop at all.
  *
- * <p>None of it is published API. The core's own accessors are reached by name through MagicLib's
- * {@link ReflectionUtils}, the ecosystem's proven bypass of the game's script-classloader
- * reflection ban - it drives {@code java.lang.reflect} through method handles, so no reflect type
- * is named in mod code. Names rather than casts because the tab classes carry illegal member names
- * an obfuscated build leaves unwritable in Java source. This package is the only place in the
- * library that names that dependency - here for the hops taken by name, and in
- * {@link CoreUiMethods} for the members that have to be recognised by their shape - so a breaking
- * change in it is answered in one place rather than at each probe.
+ * <p>None of it is published API. The core's own accessors are reached by name through
+ * {@link ReflectedMembers}, over the {@link ReflectionBypass} that routes around the game's
+ * mod-classloader reflection ban. Names
+ * rather than casts because the tab classes carry illegal member names an obfuscated build leaves
+ * unwritable in Java source. This package is the only place in the library that reflects at all -
+ * here for the hops taken by name, and in {@link CoreUiMethods} for the members that have to be
+ * recognised by their shape - so what the ban exists to contain stays contained to it.
  *
  * <p>Names no tab and no screen. Every hop it takes is one the core UI offers whatever tab is up,
  * which is why it sits in a package of its own rather than beside any one screen's probes: a probe
@@ -52,19 +49,19 @@ public final class CoreUiTree {
     private static final String GET_FADER_METHOD = "getFader";
     private static final String IS_FADED_OUT_METHOD = "isFadedOut";
 
-    // ReflectionUtils.invoke resolves a method matching the argument types it is handed - none, for
-    // the reads this class takes itself. Shared rather than left to the varargs call so a tree walk
-    // does not allocate a fresh empty array at each hop; the reach allocates per invoke regardless,
-    // so this trims that cost rather than avoiding it.
+    // A hop is resolved against the argument types it is handed - none, for the reads this class
+    // takes itself. Shared rather than left to the varargs call so a tree walk does not allocate a
+    // fresh empty array at each hop; the reach allocates per invoke regardless, so this trims that
+    // cost rather than avoiding it.
     private static final Object[] NO_ARGS = new Object[0];
 
     // Which shapes carry which names, so a walk pays the by-name resolution once per question
-    // instead of once per node on every frame. Held here rather than left to whatever the reach
-    // caches internally, so the cost of a walk is this library's own property and not a
-    // dependency's - and held once here rather than per caller, since every walk asks about the
-    // same handful of names over the same tree. Whether a class carries a name is fixed for the
-    // run, so the answer belongs to the shape rather than to the moment, and the map is bounded by
-    // the classes met times the few names this library asks about.
+    // instead of once per node on every frame. Held beside the walk that asks rather than inside
+    // the reach, since the presence question is answered without building a match at all and so has
+    // nothing there to be memoised against - and held once here rather than per caller, since every
+    // walk asks about the same handful of names over the same tree. Whether a class carries a name
+    // is fixed for the run, so the answer belongs to the shape rather than to the moment, and the
+    // map is bounded by the classes met times the few names this library asks about.
     private static final Map<MethodNameQuery, Boolean> SHAPES_CARRYING_NAME = new ConcurrentHashMap<>();
 
     private CoreUiTree() {
@@ -112,9 +109,7 @@ public final class CoreUiTree {
 
         return SHAPES_CARRYING_NAME.computeIfAbsent(
             new MethodNameQuery(instance.getClass(), methodName),
-            query -> !ReflectionUtils
-                .getMethodsMatching(instance, query.methodName())
-                .isEmpty());
+            query -> ReflectedMembers.hasMethodNamed(query.shape(), query.methodName()));
     }
 
     /**
@@ -189,9 +184,10 @@ public final class CoreUiTree {
      *
      * <p>Every failure - no method of that name and shape, more than one, or the call itself
      * throwing - comes back out, leaving the caller to decide what a failed hop means. It arrives
-     * undeclared and not necessarily as a {@link RuntimeException}: the bypass is Kotlin, which
-     * lets the checked exception wrapping the target's own throw escape unannounced. A caller
-     * guarding this has to catch {@link Throwable}, the way the reads in this class do.
+     * undeclared and not necessarily as a {@link RuntimeException}: the target's own throw comes
+     * back wrapped in a checked exception, and the bypass rethrows what it caught as it was thrown
+     * rather than replacing it. A caller guarding this has to catch {@link Throwable}, the way the
+     * reads in this class do.
      *
      * @param instance   the object to call on
      * @param methodName the method to resolve
@@ -200,10 +196,7 @@ public final class CoreUiTree {
      */
     public static Object invokeWithArgs(Object instance, String methodName, Object... arguments) {
 
-        // The target stays declared as Object deliberately: a Class-typed argument in that position
-        // selects the overload that invokes a static method on that class rather than one on the
-        // object, and the two differ only in the static type at the call site.
-        return ReflectionUtils.invoke(instance, methodName, arguments);
+        return ReflectedMembers.invokeByName(instance, methodName, arguments);
     }
 
     /**
