@@ -127,9 +127,8 @@ final class ResolvedBodyCellTest {
                 Arrays.asList((String) null, null),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE)
-            .reportsHoverTo(hoverReport)
-            .asScrolling();
+            .reportsHoverTo(hoverReport);
 
-        return new Control(spec, ROW, List.of(LEFT_SEGMENT, RIGHT_SEGMENT));
+        return new Control(spec, ROW, List.of(LEFT_SEGMENT, RIGHT_SEGMENT), true);
     }
 }

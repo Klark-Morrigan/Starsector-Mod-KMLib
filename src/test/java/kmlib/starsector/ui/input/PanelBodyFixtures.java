@@ -279,13 +279,13 @@ final class PanelBodyFixtures {
     static Control buildScrollingListAtRow(ControlAction action) {
 
         var spec = VerticalTableSpecs.buildIconList(
-                List.of("Opt"),
-                Arrays.asList((String) null),
-                ControlSpec.NO_SELECTION,
-                action)
-            .asScrolling();
+            List.of("Opt"),
+            Arrays.asList((String) null),
+            ControlSpec.NO_SELECTION,
+            action);
 
-        return new Control(spec, ROW, List.of(ROW));
+        // Laid inside a scrolling section, which is what the viewport-limited hit-test reads.
+        return new Control(spec, ROW, List.of(ROW), true);
     }
 
     /**

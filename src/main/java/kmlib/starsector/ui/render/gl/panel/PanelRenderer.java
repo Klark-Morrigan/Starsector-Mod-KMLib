@@ -3,7 +3,6 @@ package kmlib.starsector.ui.render.gl.panel;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiScissor;
@@ -99,7 +98,7 @@ public final class PanelRenderer {
             // strip position and its press from another.
             var interactions = bodyInteractions.resolveControlInteractionSourcesAt(controlIndex);
 
-            if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()) {
+            if (control.isScrolled()) {
 
                 // The scroll clip replaces any outer clip (a raw GL scissor is absolute), so it is
                 // intersected with the box first: when a collapsing tab panel narrows the box, the list

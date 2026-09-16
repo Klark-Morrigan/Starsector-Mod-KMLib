@@ -22,6 +22,7 @@ see [pairs that look like duplicates](#pairs-that-look-like-duplicates).
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [A strip is measured in two faces](#a-strip-is-measured-in-two-faces)
+- [What a body may state](#what-a-body-may-state)
 - [Two radio alignments, two variants](#two-radio-alignments-two-variants)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
 - [A panel of one's own over a core screen](#a-panel-of-ones-own-over-a-core-screen)
@@ -438,6 +439,45 @@ taking a `TextFace` and a `StarsectorFont`:
 two members of one type would swap silently in a positional hand-off,
 which is the very fault the pair exists to remove.
 The canonical constructor stays open for a caller supplying its own metrics.
+
+## What a body may state
+
+A body is a list of [`ControlSpec`](controls/ControlSpec.java)s and nothing else,
+so the arrangements a host may ask for are exactly the variants of that sealed set.
+Three of them are arrangement rather than widget:
+
+- **A row of its own.**
+  The default: every control in the list stacks top to bottom,
+  one control row tall unless its own kind is taller.
+- **[`SideBySide`](controls/ControlSpec.java)**
+  puts two runs on one row,
+  the left column stacked from the row's top-left and the right one past its width plus the column gap.
+- **[`ScrollingSection`](controls/ControlSpec.java)**
+  marks the one run that scrolls.
+  Everything outside it pins -
+  the controls above it from the body top,
+  the controls below it flush to the bottom -
+  and the section takes the room left between,
+  scrolling its run within that viewport when the run is taller.
+
+What a host does **not** state is spacing,
+alignment,
+the inset off the body edge,
+the gutter a scrollbar stands in,
+or the band the body sits in.
+Those are the layout's,
+which is what makes two mods' bodies read as one UI rather than as two looks.
+
+Both groups are flattened at placement:
+the renderer and the input listener only ever see ordinary controls,
+never a container.
+A scrolled control carries that fact on its laid-out [`Control`](controls/Control.java) rather than on its spec,
+since by then the section it came from is gone -
+and both the clip and the viewport-limited hit-test read that one value.
+
+At most one section per strip.
+Two would each need the leftover height the other is claiming,
+so the capped layout takes the first one it finds.
 
 ## Two radio alignments, two variants
 

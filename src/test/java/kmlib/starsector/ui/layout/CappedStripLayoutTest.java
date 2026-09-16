@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
@@ -63,7 +64,7 @@ final class CappedStripLayoutTest {
     private static List<ControlSpec> buildHeaderFlexFooterStrip() {
         return List.of(
             LabelledControlSpecs.buildCheckbox("H", false, ControlAction.NONE),
-            buildScrollingList(FLEX_OPTION_COUNT),
+            buildScrollingSection(FLEX_OPTION_COUNT),
             LabelledControlSpecs.buildCheckbox("F", false, ControlAction.NONE));
     }
 
@@ -74,7 +75,12 @@ final class CappedStripLayoutTest {
             LabelledControlSpecs.buildCheckbox("B", false, ControlAction.NONE));
     }
 
-    private static ControlSpec buildScrollingList(int optionCount) {
+    private static ControlSpec buildScrollingSection(int optionCount) {
+        return new ControlSpec.ScrollingSection(List.of(buildIconList(optionCount)));
+    }
+
+    // The list itself, for a case that puts it in a section beside something else.
+    private static ControlSpec buildIconList(int optionCount) {
 
         var labels = new ArrayList<String>();
         var icons = new ArrayList<String>();
@@ -85,11 +91,10 @@ final class CappedStripLayoutTest {
             icons.add(null);
         }
         return VerticalTableSpecs.buildIconList(
-                labels,
-                icons,
-                ControlSpec.NO_SELECTION,
-                ControlAction.NONE)
-            .asScrolling();
+            labels,
+            icons,
+            ControlSpec.NO_SELECTION,
+            ControlAction.NONE);
     }
 
     @Nested
@@ -356,7 +361,7 @@ final class CappedStripLayoutTest {
             var right = LabelledControlSpecs.buildCheckbox("RR", false, ControlAction.NONE);
             var strip = measure(List.of(
                 new ControlSpec.SideBySide(List.of(left), List.of(right)),
-                buildScrollingList(FLEX_OPTION_COUNT)));
+                buildScrollingSection(FLEX_OPTION_COUNT)));
 
             var capped = layoutControlsIn(buildBodyFor(strip, 0f), strip, 0f);
 
@@ -375,6 +380,62 @@ final class CappedStripLayoutTest {
         }
 
         @Test
+        void layoutCappedControlsScrollsEveryControlInTheSectionTogether() {
+            // The run is what a section buys over a flag on one control: a heading and the list under it
+            // travel as a block, so both are laid inside the viewport and both are marked scrolled - the
+            // one value the clipping renderer and the viewport-limited hit-test read.
+            var heading = LabelledControlSpecs.buildLabel("Blocs");
+            var strip = measure(List.of(
+                LabelledControlSpecs.buildCheckbox("H", false, ControlAction.NONE),
+                new ControlSpec.ScrollingSection(List.of(
+                    heading,
+                    buildIconList(FLEX_OPTION_COUNT)))));
+
+            var capped = layoutControlsIn(buildBodyFor(strip, 0f), strip, 0f);
+
+            assertThat(capped.controls())
+                .hasSize(3);
+            assertThat(capped.controls().get(0).isScrolled())
+                .as("the pinned header is not scrolled")
+                .isFalse();
+            assertThat(capped.controls().get(1).spec())
+                .isEqualTo(heading);
+            assertThat(capped.controls())
+                .filteredOn(Control::isScrolled)
+                .hasSize(2);
+
+            // Stacked inside the section in the order stated, the list hanging under the heading.
+            assertThat(capped.controls().get(2).bounds().y())
+                .isLessThan(capped.controls().get(1).bounds().y());
+        }
+
+        @Test
+        void layoutCappedControlsShiftsTheWholeSectionByTheScrollOffset() {
+            // Every control in the run moves by the same offset, so a heading scrolls away with the rows
+            // it heads rather than staying put while they slide under it.
+            var strip = measure(List.of(
+                LabelledControlSpecs.buildCheckbox("H", false, ControlAction.NONE),
+                new ControlSpec.ScrollingSection(List.of(
+                    LabelledControlSpecs.buildLabel("Blocs"),
+                    buildIconList(FLEX_OPTION_COUNT)))));
+
+            // Framed 40px under its natural height, so the section overruns its viewport and has room
+            // to scroll; at natural height the offset would clamp to nothing and prove neither control
+            // moved because none could.
+            var body = buildBodyFor(strip, 40f);
+            var unscrolled = layoutControlsIn(body, strip, 0f);
+            var scrolled = layoutControlsIn(body, strip, 12f);
+            var offset = scrolled.scrollOffset();
+
+            assertThat(offset)
+                .isGreaterThan(0f);
+            assertThat(scrolled.controls().get(1).bounds().y() - unscrolled.controls().get(1).bounds().y())
+                .isCloseTo(offset, within(TOLERANCE));
+            assertThat(scrolled.controls().get(2).bounds().y() - unscrolled.controls().get(2).bounds().y())
+                .isCloseTo(offset, within(TOLERANCE));
+        }
+
+        @Test
         void layoutCappedControlsFillsTheFlexListToTheBodyContentWidth() {
             // A header wider than the list makes the body wider than the list's own rows. The flex list,
             // as the strip's main region, spreads to the body's content width rather than leaving a strip
@@ -384,7 +445,7 @@ final class CappedStripLayoutTest {
                 false,
                 ControlAction.NONE);
 
-            var strip = measure(List.of(wideHeader, buildScrollingList(FLEX_OPTION_COUNT)));
+            var strip = measure(List.of(wideHeader, buildScrollingSection(FLEX_OPTION_COUNT)));
             var body = buildBodyFor(strip, 0f);
             var capped = layoutControlsIn(body, strip, 0f);
 
@@ -408,7 +469,7 @@ final class CappedStripLayoutTest {
             // not the padded content column, so the capped path spans dividers as the plain stack does.
             var strip = measure(List.of(
                 new ControlSpec.Divider(),
-                buildScrollingList(FLEX_OPTION_COUNT)));
+                buildScrollingSection(FLEX_OPTION_COUNT)));
 
             var body = buildBodyFor(strip, 0f);
             var divider = layoutControlsIn(body, strip, 0f).controls().get(0).bounds();
@@ -424,7 +485,7 @@ final class CappedStripLayoutTest {
             // The footer run is placed through the same path as the header, so a rule pinned beneath the
             // list spans the framed body exactly as one above it does.
             var strip = measure(List.of(
-                buildScrollingList(FLEX_OPTION_COUNT),
+                buildScrollingSection(FLEX_OPTION_COUNT),
                 new ControlSpec.Divider()));
 
             var body = buildBodyFor(strip, 0f);

@@ -204,6 +204,16 @@ public final class ControlStripLayout {
                     pair,
                     rows.get(index),
                     measurers));
+            } else if (spec instanceof ControlSpec.ScrollingSection section) {
+                // Placed by this layout rather than the capped one, so nothing clips it and nothing
+                // scrolls: the run stands where the section stands, and its controls are pinned like any
+                // other. Marking them scrolled here would have them clipped to a viewport no uncapped
+                // strip ever computes.
+                controls.addAll(layoutColumn(
+                    section.controls(),
+                    rows.get(index).x(),
+                    rows.get(index).y() + rows.get(index).height(),
+                    measurers));
             } else {
                 controls.add(toControl(
                     spec,
@@ -290,6 +300,52 @@ public final class ControlStripLayout {
                 : row);
         }
         return List.copyOf(spanned);
+    }
+
+    /**
+     * Lays a scrolling section's run as a column inside {@code bounds}, every control marked as scrolled
+     * so the renderer clips it and the hit-test rejects a point outside the section's viewport. The
+     * capped layout alone calls it: only that layout knows the room left once the pinned runs are
+     * placed, and only it computes the viewport the marking refers to.
+     *
+     * @param specs     the section's controls, top to bottom
+     * @param bounds    where the run is laid - its full natural height, already shifted by the scroll
+     * @param measurers measure each label's rendered width, for snapping a row's segments
+     * @return the laid-out controls, each marked as scrolled
+     */
+    static List<Control> layoutScrolledColumn(
+            List<ControlSpec> specs,
+            Rectangle bounds,
+            StripTextMeasurers measurers) {
+
+        var rowHeights = new ArrayList<Float>(specs.size());
+        var rowWidths = new ArrayList<Float>(specs.size());
+        for (var spec : specs) {
+            rowHeights.add(measureRowHeight(spec));
+
+            // Every row takes the section's width rather than its own measured one: the section is the
+            // strip's main region and flexes horizontally into the width left over, so a list narrower
+            // than the widest pinned row spreads to the frame instead of leaving dead space between it
+            // and the scrollbar.
+            rowWidths.add(bounds.width());
+        }
+        var rows = RowStack.layoutRows(
+            bounds.x(),
+            bounds.y() + bounds.height(),
+            ROW_GAP,
+            rowHeights,
+            rowWidths);
+
+        var laid = toControls(specs, rows, measurers);
+        var scrolled = new ArrayList<Control>(laid.size());
+        for (var control : laid) {
+            scrolled.add(new Control(
+                control.spec(),
+                control.bounds(),
+                control.segments(),
+                true));
+        }
+        return List.copyOf(scrolled);
     }
 
     // Lays a side-by-side group's two columns into the group's row and returns their controls: the left
@@ -401,6 +457,11 @@ public final class ControlStripLayout {
             // column is as wide as the label that has to fit in it.
             return measureSegmentedListColumnWidth(stackedRadio.labels(), bodyMeasurer);
         }
+        if (spec instanceof ControlSpec.ScrollingSection section) {
+            // The run inside it, measured as the column it is laid out as - the section adds no chrome
+            // and so costs nothing of its own.
+            return measureColumnWidth(section.controls(), measurers);
+        }
         if (spec instanceof ControlSpec.VerticalTable table) {
             return measureVerticalTableRowWidth(table, bodyMeasurer);
         }
@@ -485,6 +546,11 @@ public final class ControlStripLayout {
         if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
             // One control row per option, the height a stacked cell is drawn and hit at.
             return stackedRadio.labels().size() * CONTROL_ROW_HEIGHT;
+        }
+        if (spec instanceof ControlSpec.ScrollingSection section) {
+            // Its natural height - what the run would stand at unscrolled. The capped layout takes this
+            // as what the section wants and hands it whatever is left, the difference being the scroll.
+            return measureColumnHeight(section.controls());
         }
         if (spec instanceof ControlSpec.Tabs) {
             return TabsControlLayout.TAB_HEIGHT;

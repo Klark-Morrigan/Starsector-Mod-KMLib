@@ -114,9 +114,12 @@ public final class ListPickerControl {
 
         // The item list is the block's one scrolling cluster: when the picker plus the controls
         // around it would run their box past its bottom margin, the list gives up the difference and
-        // scrolls while everything around it stays pinned. asScrolling marks the list; the capped
-        // layout, renderer, and input listener all read that one flag.
-        controls.add(
+        // scrolls while everything around it stays pinned. The section is what says so - the capped
+        // layout, the renderer and the input listener all read that one group.
+        //
+        // A section holding the list alone rather than the rows above it: the sort row and the filter
+        // stay readable while the list runs under them, which is the point of pinning them.
+        controls.add(new ControlSpec.ScrollingSection(List.of(
             ControlSpec.VerticalTable
                 .createColumnTable(
                     buildItemRows(rankedItems, activePicks.sort().mode()),
@@ -130,8 +133,7 @@ public final class ListPickerControl {
                 // either way.
                 .reportsHoverTo(hoveredCell ->
                     reportHoveredItem(pickerStore, rankedItems, hoveredCell))
-                .spreadsAcross(activePicks.columns().columnCount())
-                .asScrolling());
+                .spreadsAcross(activePicks.columns().columnCount()))));
 
         return List.copyOf(controls);
     }

@@ -90,8 +90,7 @@ final class ControlSpecTest {
                     ControlAction.NONE,
                     ControlHoverReport.NONE,
                     ReselectBehaviour.DESELECT,
-                    0,
-                    false))
+                    0))
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -106,8 +105,7 @@ final class ControlSpecTest {
                     ControlAction.NONE,
                     ControlHoverReport.NONE,
                     ReselectBehaviour.DESELECT,
-                    ControlSpec.SINGLE_COLUMN,
-                    false))
+                    ControlSpec.SINGLE_COLUMN))
                 .isInstanceOf(NullPointerException.class);
         }
 
@@ -123,8 +121,7 @@ final class ControlSpecTest {
                     ControlAction.NONE,
                     null,
                     ReselectBehaviour.DESELECT,
-                    ControlSpec.SINGLE_COLUMN,
-                    false))
+                    ControlSpec.SINGLE_COLUMN))
                 .isInstanceOf(NullPointerException.class);
         }
 
@@ -142,8 +139,7 @@ final class ControlSpecTest {
                 ControlAction.NONE,
                 ControlHoverReport.NONE,
                 ReselectBehaviour.DESELECT,
-                ControlSpec.SINGLE_COLUMN,
-                false);
+                ControlSpec.SINGLE_COLUMN);
 
             callerRows.set(0, VerticalTableSpecs.buildRow("Mutated"));
 
@@ -395,8 +391,6 @@ final class ControlSpecTest {
                 .isEqualTo(ReselectBehaviour.INERT);
             assertThat(picker.columnCount())
                 .isEqualTo(1);
-            assertThat(picker.scrolls())
-                .isFalse();
             assertThat(picker.hoverReport())
                 .isEqualTo(ControlHoverReport.NONE);
         }
@@ -547,7 +541,7 @@ final class ControlSpecTest {
 
         @Test
         void reportsHoverToSurvivesTheRefinementsLayeredAfterIt() {
-            // The four refinements share one rebuild rather than each restating every component, which is
+            // The three refinements share one rebuild rather than each restating every component, which is
             // the fault this pins: a rebuild that dropped the channel would leave a list reporting nothing
             // for no reason its host could see.
             var picker = VerticalTableSpecs.buildIconList(
@@ -557,15 +551,12 @@ final class ControlSpecTest {
                     ControlAction.NONE)
                 .reportsHoverTo(hoveredCell -> {
                 })
-                .spreadsAcross(2)
-                .asScrolling();
+                .spreadsAcross(2);
 
             assertThat(picker.hoverReport())
                 .isNotEqualTo(ControlHoverReport.NONE);
             assertThat(picker.columnCount())
                 .isEqualTo(2);
-            assertThat(picker.scrolls())
-                .isTrue();
         }
 
         @Test
@@ -607,48 +598,42 @@ final class ControlSpecTest {
     }
 
     @Nested
-    class AsScrolling {
+    class ScrollingSectionConstruction {
 
         @Test
-        void asScrollingMarksTheTableAsTheScrollingRegion() {
-            // A picker opts its list into scrolling after building it through the ordinary factory, so
-            // the copy carries the flag while everything else the layout reads stays as it was.
-            var picker = VerticalTableSpecs.buildIconList(
-                List.of("Hegemony", "Tri-Tachyon"),
-                List.of("crest_heg", "crest_tt"),
-                List.of("7", "3"),
-                1,
-                ControlAction.NONE,
-                2);
+        void constructorCopiesTheRunDefensively() {
+            // The canonical constructor is public on a record, so a host can reach it directly; the copy
+            // has to live there for a caller's later edit not to reach the spec.
+            var sourceControls = new ArrayList<ControlSpec>(List.of(
+                VerticalTableSpecs.buildIconList(
+                    List.of("Hegemony"),
+                    List.of("crest_heg"),
+                    0,
+                    ControlAction.NONE)));
 
-            var scrolling = picker.asScrolling();
+            var section = new ControlSpec.ScrollingSection(sourceControls);
+            sourceControls.add(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE));
 
-            assertThat(scrolling.scrolls())
-                .isTrue();
-            assertThat(scrolling.labels())
-                .containsExactly("Hegemony", "Tri-Tachyon");
-            assertThat(scrolling.rowGeometry())
-                .isEqualTo(RowGeometry.COLUMNS);
-            assertThat(scrolling.selectedIndex())
-                .isEqualTo(1);
-            assertThat(scrolling.columnCount())
-                .isEqualTo(2);
+            assertThat(section.controls())
+                .hasSize(1);
         }
 
         @Test
-        void asScrollingLeavesTheOriginalUnmarked() {
-            // The copy is a fresh spec, so the source the host still holds is untouched - only the one it
-            // opts in scrolls.
-            var picker = VerticalTableSpecs.buildIconList(
-                List.of("Hegemony"),
-                List.of("crest_heg"),
-                0,
-                ControlAction.NONE);
+        void sectionCarriesItsRunAndNoLabelsOfItsOwn() {
+            // The group is chrome-free: its children carry the labels, so a strip measuring the section
+            // against a label of its own would charge a width nothing draws.
+            var section = new ControlSpec.ScrollingSection(List.of(
+                LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE),
+                VerticalTableSpecs.buildIconList(
+                    List.of("Hegemony"),
+                    List.of("crest_heg"),
+                    0,
+                    ControlAction.NONE)));
 
-            picker.asScrolling();
-
-            assertThat(picker.scrolls())
-                .isFalse();
+            assertThat(section.controls())
+                .hasSize(2);
+            assertThat(section.labels())
+                .isEmpty();
         }
     }
 

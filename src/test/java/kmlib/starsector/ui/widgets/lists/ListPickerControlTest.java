@@ -205,11 +205,6 @@ final class ListPickerControlTest {
             assertThat(picker.reselect())
                 .isEqualTo(ReselectBehaviour.DESELECT);
 
-            // The list is the block's scrolling cluster, so a long list scrolls within the capped
-            // body while the controls above and below it stay pinned.
-            assertThat(picker.scrolls())
-                .isTrue();
-
             // Each row carries its own name and its own crest, so a crestless item leads with the
             // empty slot rather than dropping out of a parallel column. Alpha-sorted, so Drift
             // leads.
@@ -595,10 +590,11 @@ final class ListPickerControlTest {
         return new ListSort<>(mode, mode.defaultDirection(), SORT_MODES);
     }
 
-    // The picker list is always the block's last row, so a test reads it from the tail. Read as the
-    // vertical table it is, so a test reads its rows, its scroll flag, and its re-pick behaviour.
+    // The picker list is always the block's last row, and that row is the scrolling section it sits
+    // in - so a test reaches through the section and reads the vertical table it holds.
     private static ControlSpec.VerticalTable buildPickerFor(List<ControlSpec> controls) {
-        return (ControlSpec.VerticalTable) controls.get(controls.size() - 1);
+        var section = (ControlSpec.ScrollingSection) controls.get(controls.size() - 1);
+        return (ControlSpec.VerticalTable) section.controls().get(0);
     }
 
     // What each row leads with, top to bottom - an item's crest, or the empty slot for an item with

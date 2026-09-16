@@ -513,9 +513,9 @@ public sealed interface ControlSpec {
      *
      * <p>{@code rowGeometry} states whether the rows lay out as a table of columns or as uniform cells;
      * {@code reselect} refines what a click on the lit option does; {@code columnCount} spreads the rows
-     * across columns (filling each top to bottom before the next); {@code scrolls} marks this as the
-     * capped strip's one flex region - the single source the capped layout, the clipping renderer, and
-     * the scrolling input listener all read so the three agree which control scrolls.
+     * across columns (filling each top to bottom before the next). What scrolls is stated a level up, by
+     * the {@link ScrollingSection} a host puts a run inside, so a long list and the heading above it
+     * travel together rather than the list alone being scrollable.
      *
      * @param labelledRows  the option rows, top to bottom, in segment order
      * @param rowGeometry   how each row lays its content out - a table of columns, or uniform cells
@@ -526,7 +526,6 @@ public sealed interface ControlSpec {
      * @param reselect      what a click on the lit option does (deselect, re-fire, or inert)
      * @param columnCount   how many columns to spread the options across ({@link #SINGLE_COLUMN} for
      *                      one column)
-     * @param scrolls       whether this control is the capped strip's scrolling flex region
      */
     record VerticalTable(
             List<LabelledRow> labelledRows,
@@ -535,15 +534,13 @@ public sealed interface ControlSpec {
             ControlAction action,
             ControlHoverReport hoverReport,
             ReselectBehaviour reselect,
-            int columnCount,
-            boolean scrolls) implements Interactive {
+            int columnCount) implements Interactive {
 
         // What a table holds before a host refines it: every option inert on a re-pick (the standard
-        // always-one-lit list), stacked in a single column, pinned rather than scrolling, and reporting
-        // nothing back as the pointer crosses its rows. Each is a refinement below, so a host states only
-        // the ones its list actually wants.
+        // always-one-lit list), stacked in a single column, and reporting nothing back as the pointer
+        // crosses its rows. Each is a refinement below, so a host states only the ones its list actually
+        // wants.
         private static final ReselectBehaviour DEFAULT_RESELECT = ReselectBehaviour.INERT;
-        private static final boolean NOT_SCROLLING = false;
 
         /**
          * Copies the rows defensively and rejects a missing geometry, a missing hover report, or a column
@@ -589,8 +586,7 @@ public sealed interface ControlSpec {
                 action,
                 ControlHoverReport.NONE,
                 DEFAULT_RESELECT,
-                SINGLE_COLUMN,
-                NOT_SCROLLING);
+                SINGLE_COLUMN);
         }
 
         /**
@@ -616,8 +612,7 @@ public sealed interface ControlSpec {
                 action,
                 ControlHoverReport.NONE,
                 DEFAULT_RESELECT,
-                SINGLE_COLUMN,
-                NOT_SCROLLING);
+                SINGLE_COLUMN);
         }
 
         // Each row's label as the one line it reads as, so a strip that snaps a control to its text
@@ -645,7 +640,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table handling a re-pick that way
          */
         public VerticalTable handlesReselect(ReselectBehaviour reselect) {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
         /**
@@ -660,7 +655,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table reporting its hovered row there
          */
         public VerticalTable reportsHoverTo(ControlHoverReport hoverReport) {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
         /**
@@ -672,31 +667,18 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table folded across that many columns
          */
         public VerticalTable spreadsAcross(int columnCount) {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
-        }
-
-        /**
-         * Returns a copy of this table marked as the capped strip's scrolling flex region, so a host
-         * builds its list through the ordinary factory and then opts it into scrolling without a
-         * scroll-specific factory. Only a stacked list scrolls, so this method exists on this variant
-         * alone - no other control can be marked scrolling.
-         *
-         * @return an otherwise-identical table with {@link #scrolls()} set
-         */
-        public VerticalTable asScrolling() {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, true);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
         // Rebuilds the table around how it is laid out and driven, carrying what it holds - its rows,
-        // their geometry, the lit row, and the click action - over untouched. The four refinements
-        // share it rather than each restating all eight components, one of which would eventually be
+        // their geometry, the lit row, and the click action - over untouched. The three refinements
+        // share it rather than each restating all seven components, one of which would eventually be
         // restated wrongly: the lit row and the column count are both counts, so a rebuild that crossed
         // them would compile clean and light the wrong row.
         private VerticalTable rebuildAsLaidOut(
                 ControlHoverReport hoverReport,
                 ReselectBehaviour reselect,
-                int columnCount,
-                boolean scrolls) {
+                int columnCount) {
 
             return new VerticalTable(
                 labelledRows,
@@ -705,8 +687,7 @@ public sealed interface ControlSpec {
                 action,
                 hoverReport,
                 reselect,
-                columnCount,
-                scrolls);
+                columnCount);
         }
     }
 
@@ -775,6 +756,38 @@ public sealed interface ControlSpec {
         public SideBySide {
             leftColumn = List.copyOf(leftColumn);
             rightColumn = List.copyOf(rightColumn);
+        }
+
+        @Override
+        public List<String> labels() {
+            return List.of();
+        }
+    }
+
+    /**
+     * The one run of a strip that scrolls: its controls keep their natural height and slide within
+     * whatever room is left once everything outside the section is pinned, so a long list stays reachable
+     * inside a bounded box while the controls around it never move. A strip with no section is never
+     * capped - it stands at its natural height.
+     *
+     * <p>A group rather than a flag on whichever control happens to be long, because what a body wants to
+     * scroll is a run: a heading, the list under it and the row beside that travel together, and a flag
+     * on one member could only ever scroll that member. At most one section per strip - two would each
+     * need the leftover height the other is claiming, so the capped layout takes the first and a body
+     * stating two has asked for a layout nothing can satisfy.
+     *
+     * <p>It draws no chrome of its own and is flattened to its children's laid-out controls exactly as
+     * {@link SideBySide} is, so the renderer and the input listener only ever see ordinary controls -
+     * each marked as scrolled, which is what the clip and the viewport-limited hit-test read. Moving a
+     * run into a section therefore changes where it may go and nothing about how it reads.
+     *
+     * @param controls the controls inside the scrolling run, top to bottom
+     */
+    record ScrollingSection(List<ControlSpec> controls) implements ControlSpec {
+
+        /** Copies the run defensively, so a later edit to a caller's list cannot mutate the spec. */
+        public ScrollingSection {
+            controls = List.copyOf(controls);
         }
 
         @Override

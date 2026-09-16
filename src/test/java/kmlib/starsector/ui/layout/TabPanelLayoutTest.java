@@ -154,12 +154,11 @@ final class TabPanelLayoutTest {
     // to fit - a bar's room is held whether or not the list is currently long enough to need one.
     private static final List<ControlSpec> SCROLLING_BODY = List.of(
         LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE),
-        VerticalTableSpecs.buildIconList(
-                List.of("Alpha", "Beta", "Gamma"),
-                Arrays.asList(null, null, null),
-                ControlSpec.NO_SELECTION,
-                ControlAction.NONE)
-            .asScrolling());
+        new ControlSpec.ScrollingSection(List.of(VerticalTableSpecs.buildIconList(
+            List.of("Alpha", "Beta", "Gamma"),
+            Arrays.asList(null, null, null),
+            ControlSpec.NO_SELECTION,
+            ControlAction.NONE))));
 
     @Nested
     class ComputePlacement {

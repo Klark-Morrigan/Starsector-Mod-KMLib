@@ -85,15 +85,15 @@ final class ControlHitResolver {
     }
 
     /**
-     * Resolves which cell of a control in a scrollable strip a point lands on: a control marked {@link
-     * ControlSpec.VerticalTable#scrolls()} counts only inside {@code flexViewport}, and otherwise resolves
-     * as {@link #resolveHitCell(Control, float, float)}. The scrolling list clips because a row scrolled up
-     * under a pinned header (or down under a footer) is drawn away, so its segment - still laid out at its
-     * scrolled position - must not stay hittable through the control that hides it. Every non-scrolling
-     * control ignores the viewport, so the clip bites only the one flex list.
+     * Resolves which cell of a control in a scrollable strip a point lands on: a control laid inside the
+     * strip's scrolling section ({@link Control#isScrolled()}) counts only inside {@code flexViewport},
+     * and otherwise resolves as {@link #resolveHitCell(Control, float, float)}. A scrolled control clips
+     * because a row scrolled up under a pinned header (or down under a footer) is drawn away, so its
+     * segment - still laid out at its scrolled position - must not stay hittable through the control that
+     * hides it. Every pinned control ignores the viewport, so the clip bites only the scrolled run.
      *
      * @param control      the laid-out control to hit-test
-     * @param flexViewport the scrolling control's viewport; a scrolling control only counts inside it
+     * @param flexViewport the scrolling section's viewport; a scrolled control only counts inside it
      * @param pointX       the point's x, in UI coordinates
      * @param pointY       the point's y, in UI coordinates
      * @return the cell under the point, or {@code null} when it lands on none
@@ -104,9 +104,7 @@ final class ControlHitResolver {
             float pointX,
             float pointY) {
 
-        if (control.spec() instanceof ControlSpec.VerticalTable table
-                && table.scrolls()
-                && !flexViewport.containsPoint(pointX, pointY)) {
+        if (control.isScrolled() && !flexViewport.containsPoint(pointX, pointY)) {
             return NO_CELL_RESOLVED;
         }
         return resolveHitCell(control, pointX, pointY);
