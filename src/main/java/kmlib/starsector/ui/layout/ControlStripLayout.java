@@ -237,6 +237,13 @@ public final class ControlStripLayout {
                 radio,
                 row,
                 measurers.bodyFaceMeasurer());
+        } else if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
+            // The same geometric split a single-column table takes: cells of equal height down the row,
+            // so the stacked radio and the stacked table cannot drift apart on where a cell begins.
+            segments = RadioRow.splitIntoGrid(
+                row,
+                stackedRadio.labels().size(),
+                ControlSpec.SINGLE_COLUMN);
         } else if (spec instanceof ControlSpec.VerticalTable table) {
             segments = RadioRow.splitIntoGrid(
                 row,
@@ -389,6 +396,11 @@ public final class ControlStripLayout {
                 radioSegmentSpec(radio.segmentSizing()),
                 bodyMeasurer);
         }
+        if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
+            // One uniform cell wide, sized to the widest option: stacked cells are one column, so the
+            // column is as wide as the label that has to fit in it.
+            return measureSegmentedListColumnWidth(stackedRadio.labels(), bodyMeasurer);
+        }
         if (spec instanceof ControlSpec.VerticalTable table) {
             return measureVerticalTableRowWidth(table, bodyMeasurer);
         }
@@ -453,7 +465,7 @@ public final class ControlStripLayout {
 
         var columnWidth = switch (table.rowGeometry()) {
             case COLUMNS -> measureColumnTableRowWidth(table, bodyMeasurer);
-            case UNIFORM_SEGMENTS -> measureSegmentedListColumnWidth(table, bodyMeasurer);
+            case UNIFORM_SEGMENTS -> measureSegmentedListColumnWidth(table.labels(), bodyMeasurer);
         };
         return table.columnCount() * columnWidth;
     }
@@ -469,6 +481,10 @@ public final class ControlStripLayout {
                 table.labelledRows().size(),
                 table.columnCount());
             return rowCount * CONTROL_ROW_HEIGHT;
+        }
+        if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
+            // One control row per option, the height a stacked cell is drawn and hit at.
+            return stackedRadio.labels().size() * CONTROL_ROW_HEIGHT;
         }
         if (spec instanceof ControlSpec.Tabs) {
             return TabsControlLayout.TAB_HEIGHT;
@@ -544,11 +560,11 @@ public final class ControlStripLayout {
     // a list's columns are uniform by construction, so this reads UNIFORM. An option-less list has no
     // widths, so it falls back to the bare segment padding.
     private static float measureSegmentedListColumnWidth(
-            ControlSpec.VerticalTable table,
+            List<String> labels,
             LineWidthMeasurer bodyMeasurer) {
 
         var widths = HorizontalSegments.computeSegmentWidths(
-            table.labels(),
+            labels,
             radioSegmentSpec(SegmentSizing.UNIFORM),
             bodyMeasurer);
 

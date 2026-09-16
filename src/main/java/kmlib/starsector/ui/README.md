@@ -22,6 +22,7 @@ see [pairs that look like duplicates](#pairs-that-look-like-duplicates).
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [A strip is measured in two faces](#a-strip-is-measured-in-two-faces)
+- [Two radio alignments, two variants](#two-radio-alignments-two-variants)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
 - [A panel of one's own over a core screen](#a-panel-of-ones-own-over-a-core-screen)
 - [The list picker holds no store](#the-list-picker-holds-no-store)
@@ -437,6 +438,37 @@ taking a `TextFace` and a `StarsectorFont`:
 two members of one type would swap silently in a positional hand-off,
 which is the very fault the pair exists to remove.
 The canonical constructor stays open for a caller supplying its own metrics.
+
+## Two radio alignments, two variants
+
+An option set states which way its cells run by which variant it is:
+[`ControlSpec.HorizontalRadio`](controls/ControlSpec.java) lays them across one row,
+[`ControlSpec.VerticalRadio`](controls/ControlSpec.java) stacks them into a column.
+Both sit under `ControlSpec.Radio`,
+which is what a reader acting on any radio names -
+the hit-test that splits one into cells,
+and the activation that reads its re-pick rule.
+
+Two variants rather than one record carrying a direction,
+on the rule the sealed hierarchy already follows:
+the state each draws differs.
+A row's cells size to their labels and may carry a caption past the last one;
+stacked cells are one column wide,
+so neither a sizing rule nor a caption exists on them to be set wrongly.
+
+Which one a host reaches for is a question about reading rather than about taste.
+A row snapped into a body letters each option in its share of the body's width,
+so two or three short options read cleanly and five do not.
+A stacked column gives every option the full width and costs a control row of height each,
+which is what a view selector wants and what a Short/Full pair does not.
+
+Distinct again from [`ControlSpec.VerticalTable`](controls/ControlSpec.java),
+which stacks rows holding their own parts -
+a crest, a name, a trailing value.
+The stacked radio is the plain one:
+a label per cell.
+Both split into cells through `RadioRow.splitIntoGrid` and frame through `RadioRowRenderer.renderVerticalGrid`,
+so the two stacked shapes cannot drift apart on where a cell begins.
 
 ## Two hosts, one map widget
 

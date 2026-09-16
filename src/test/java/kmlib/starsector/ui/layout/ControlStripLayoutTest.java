@@ -262,7 +262,37 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsAVerticalRadioOneRowTallPerOption() {
+        void measureStripStandsAStackedRadioOneRowTallPerOption() {
+
+            var radio = ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances", "Claims"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
+            var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurersFake);
+
+            assertThat(measurement.rowHeights().get(0))
+                .isCloseTo(3 * ControlStripLayout.CONTROL_ROW_HEIGHT, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripSizesAStackedRadioToOneWidestOptionCell() {
+            // Stacked cells are one column, so the column is the widest option ("Alliances", 9 chars)
+            // plus the segment padding - not the sum a row of the same options would need.
+            var radio = ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE);
+
+            var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(radio), measurersFake);
+            var expected = 9 * WIDTH_PER_CHAR + ControlStripLayout.RADIO_SEGMENT_PADDING;
+
+            assertThat(measurement.rowWidths().get(0))
+                .isCloseTo(expected, within(TOLERANCE));
+        }
+
+        @Test
+        void measureStripStandsASegmentedListOneRowTallPerOption() {
 
             var radio = VerticalTableSpecs.buildSegmentedList(
                 List.of("Factions", "Alliances"),
@@ -645,6 +675,38 @@ final class ControlStripLayoutTest {
                 .isCloseTo(shortSegment.width(), within(TOLERANCE));
             assertThat(fullSegment.x())
                 .isCloseTo(shortSegment.x() + shortSegment.width(), within(TOLERANCE));
+        }
+
+        @Test
+        void layoutControlsSplitsAStackedRadioIntoAbuttingStackedCells() {
+
+            var specs = List.<ControlSpec>of(ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances", "Claims"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE));
+
+            var measurement = ControlStripLayout.measureStrip(specs, measurersFake);
+            var radio = ControlStripLayout.layoutControls(
+                    buildFrameBody(measurement),
+                    specs,
+                    measurement.rowHeights(),
+                    measurement.rowWidths(),
+                    measurersFake)
+                .get(0);
+
+            assertThat(radio.segments()).hasSize(3);
+
+            var topCell = radio.segments().get(0);
+            var middleCell = radio.segments().get(1);
+
+            // Cells of equal height running down the row, each the full width of the column - the rects
+            // the renderer frames and the hit-test resolves against.
+            assertThat(middleCell.height())
+                .isCloseTo(topCell.height(), within(TOLERANCE));
+            assertThat(middleCell.y() + middleCell.height())
+                .isCloseTo(topCell.y(), within(TOLERANCE));
+            assertThat(middleCell.width())
+                .isCloseTo(radio.bounds().width(), within(TOLERANCE));
         }
 
         @Test

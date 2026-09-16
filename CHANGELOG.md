@@ -6,11 +6,19 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [Unreleased](#unreleased)
 - [0.4.0](#040---2026-09-15)
 - [0.3.1](#031---2026-09-15)
 - [0.3.0](#030---2026-09-15)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [Unreleased]
+
+### Added
+
+- **`ControlSpec.VerticalRadio`**: a column of option cells stacked top to bottom, one lit - the shape an option set of more than two or three reads as, where the same options laid across a row letter too narrow to tell apart. Carries no segment sizing and no trailing caption, both being row-only.
+- **`ControlSpec.Radio`**: the sealed interface `HorizontalRadio` and `VerticalRadio` sit under, carrying the re-pick rule both answer. A reader acting on any radio names it rather than each alignment. `HorizontalRadio` is otherwise unchanged and every existing call site compiles as it stands.
 
 ## [0.4.0] - 2026-09-15
 

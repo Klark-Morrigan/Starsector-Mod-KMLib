@@ -183,10 +183,10 @@ final class ControlHitResolver {
      * set would be hit as a row of segments and pressed as a whole row, or the other way about.
      *
      * @param control the interactive spec
-     * @return whether its cells are segments laid side by side
+     * @return whether its cells are separately hit segments rather than one whole-row target
      */
     static boolean isSegmentedSpec(ControlSpec.Interactive control) {
-        return control instanceof ControlSpec.HorizontalRadio
+        return control instanceof ControlSpec.Radio
             || control instanceof ControlSpec.VerticalTable
             || control instanceof ControlSpec.Tabs;
     }

@@ -843,6 +843,100 @@ final class ControlSpecTest {
     }
 
     @Nested
+    class VerticalRadioConstruction {
+
+        @Test
+        void constructorCopiesTheLabelListDefensively() {
+            // The canonical constructor is public on a record, so the copy has to live there rather than
+            // in the factory for a caller's later edit not to reach the spec.
+            var sourceLabels = new ArrayList<>(List.of("Factions", "Alliances"));
+            var radio = new ControlSpec.VerticalRadio(
+                sourceLabels,
+                0,
+                ControlAction.NONE,
+                ReselectBehaviour.INERT);
+
+            sourceLabels.add("Mutated");
+
+            assertThat(radio.labels())
+                .containsExactly("Factions", "Alliances");
+        }
+    }
+
+    @Nested
+    class VerticalRadioOf {
+
+        @Test
+        void ofIsAnInertStackCarryingItsOptionsInOrder() {
+            // The plain stacked column a host reaches for by default: always one lit, so a re-pick of the
+            // lit cell does nothing.
+            var radio = ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances", "Claims"),
+                1,
+                ControlAction.NONE);
+
+            assertThat(radio.reselect())
+                .isEqualTo(ReselectBehaviour.INERT);
+            assertThat(radio.labels())
+                .containsExactly("Factions", "Alliances", "Claims");
+            assertThat(radio.selectedIndex())
+                .isEqualTo(1);
+        }
+
+        @Test
+        void ofCarriesTheClickActionByOptionIndex() {
+
+            var firedCell = new int[] {-99};
+            var radio = ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances", "Claims"),
+                0,
+                cell -> firedCell[0] = cell);
+
+            radio.action().activateCell(2);
+
+            assertThat(firedCell[0])
+                .isEqualTo(2);
+        }
+    }
+
+    @Nested
+    class VerticalRadioHandlesReselect {
+
+        @Test
+        void handlesReselectSetsOnlyTheReselectBehaviour() {
+
+            var radio = ControlSpec.VerticalRadio.of(List.of("Factions", "Alliances"), 0, ControlAction.NONE)
+                .handlesReselect(ReselectBehaviour.DESELECT);
+
+            assertThat(radio.reselect())
+                .isEqualTo(ReselectBehaviour.DESELECT);
+            assertThat(radio.labels())
+                .containsExactly("Factions", "Alliances");
+            assertThat(radio.selectedIndex())
+                .isZero();
+        }
+    }
+
+    @Nested
+    class RadioReselect {
+
+        @Test
+        void reselectIsReadableOffEitherAlignmentThroughTheRadioType() {
+            // The re-pick rule belongs to the control rather than to how its cells are arranged, so a
+            // reader that acts on any radio - the activation path - asks the interface and never branches.
+            List<ControlSpec.Radio> radios = List.of(
+                ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+                    .handlesReselect(ReselectBehaviour.DESELECT),
+                ControlSpec.VerticalRadio.of(List.of("Factions", "Alliances"), 0, ControlAction.NONE)
+                    .handlesReselect(ReselectBehaviour.DESELECT));
+
+            assertThat(radios)
+                .extracting(ControlSpec.Radio::reselect)
+                .containsExactly(ReselectBehaviour.DESELECT, ReselectBehaviour.DESELECT);
+        }
+    }
+
+    @Nested
     class HorizontalRadioHasTrailingCaption {
 
         @Test
