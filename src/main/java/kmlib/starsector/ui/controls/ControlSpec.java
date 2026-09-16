@@ -293,6 +293,27 @@ public sealed interface ControlSpec {
     }
 
     /**
+     * A set of mutually exclusive option cells, exactly one lit - laid across a row or stacked into a
+     * column. A reader that acts on any radio names this rather than the two variants: the hit-test that
+     * splits one into cells and the activation that reads its re-pick rule both do, so neither branches on
+     * how the cells are arranged.
+     *
+     * <p>Two variants rather than one record carrying a direction, on the same rule the hierarchy above
+     * follows: the state each draws differs. Cells laid across a row size to their labels and may carry a
+     * caption past the last one; stacked cells are one column wide, so neither component exists to be set
+     * wrongly on them.
+     */
+    sealed interface Radio extends Interactive permits HorizontalRadio, VerticalRadio {
+        /**
+         * What a re-pick of the lit cell does - inert for a set that always holds one once picked,
+         * deselect for a clearable one.
+         *
+         * @return the re-pick behaviour
+         */
+        ReselectBehaviour reselect();
+    }
+
+    /**
      * A row of mutually exclusive option segments laid side by side. Its {@link SegmentSizing} picks how
      * the segments size: {@link SegmentSizing#UNIFORM} gives every segment the widest label's width (even
      * cells, the default an option pair reads as), {@link SegmentSizing#SNAPPED} gives each its own
@@ -316,7 +337,7 @@ public sealed interface ControlSpec {
             ControlAction action,
             String trailingLabel,
             SegmentSizing segmentSizing,
-            ReselectBehaviour reselect) implements Interactive {
+            ReselectBehaviour reselect) implements Radio {
 
         /** Copies the label list defensively, so a later edit to a caller's list cannot mutate the spec. */
         public HorizontalRadio {
@@ -416,6 +437,70 @@ public sealed interface ControlSpec {
     }
 
     /**
+     * A column of mutually exclusive option cells stacked top to bottom, exactly one lit. The shape a set
+     * of more than two or three options reads as: the same options laid across one row letter too narrow
+     * to tell apart once the row is snapped to a body's width.
+     *
+     * <p>Distinct from {@link VerticalTable}, which stacks rows holding their own parts - a crest, a
+     * label, a trailing value. This is the plain stack: one label per cell and nothing else, which is
+     * what an option list that happens to be long wants.
+     *
+     * @param labels        the option labels, top to bottom, in cell order
+     * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+     * @param action        what a click on an option does, keyed by the option index
+     * @param reselect      what a re-pick of the lit cell does (inert for a set that always holds one,
+     *                      deselect for a clearable one)
+     */
+    record VerticalRadio(
+            List<String> labels,
+            int selectedIndex,
+            ControlAction action,
+            ReselectBehaviour reselect) implements Radio {
+
+        /** Copies the label list defensively, so a later edit to a caller's list cannot mutate the spec. */
+        public VerticalRadio {
+            labels = List.copyOf(labels);
+        }
+
+        /**
+         * Builds the plain stacked option column a host reaches for by default: a re-pick of the lit cell
+         * inert, so the column holds one option once one is picked.
+         *
+         * @param labels        the option labels, top to bottom, in cell order
+         * @param selectedIndex the lit option's index, or {@link #NO_SELECTION} when nothing is picked
+         * @param action        what a click on an option does, keyed by the option index
+         * @return the plain stacked radio spec
+         */
+        public static VerticalRadio of(
+                List<String> labels,
+                int selectedIndex,
+                ControlAction action) {
+
+            return new VerticalRadio(
+                labels,
+                selectedIndex,
+                action,
+                ReselectBehaviour.INERT);
+        }
+
+        /**
+         * Returns a copy of this column handling a re-pick of its lit cell the given way - {@link
+         * ReselectBehaviour#DESELECT} for a clearable selector, where a re-click of the active option
+         * clears the column rather than leaving it lit.
+         *
+         * @param reselect what a re-pick of the lit cell does
+         * @return an otherwise-identical column handling a re-pick that way
+         */
+        public VerticalRadio handlesReselect(ReselectBehaviour reselect) {
+            return new VerticalRadio(
+                labels,
+                selectedIndex,
+                action,
+                reselect);
+        }
+    }
+
+    /**
      * A vertical stack of option rows, exactly one lit, each row a {@link LabelledRow} - what it leads
      * with, what its label says, and what it trails with. It is the general stacked selector: a
      * label-only list, an icon picker whose rows show a crest and a ranking value, and a direction list
@@ -428,9 +513,9 @@ public sealed interface ControlSpec {
      *
      * <p>{@code rowGeometry} states whether the rows lay out as a table of columns or as uniform cells;
      * {@code reselect} refines what a click on the lit option does; {@code columnCount} spreads the rows
-     * across columns (filling each top to bottom before the next); {@code scrolls} marks this as the
-     * capped strip's one flex region - the single source the capped layout, the clipping renderer, and
-     * the scrolling input listener all read so the three agree which control scrolls.
+     * across columns (filling each top to bottom before the next). What scrolls is stated a level up, by
+     * the {@link ScrollingSection} a host puts a run inside, so a long list and the heading above it
+     * travel together rather than the list alone being scrollable.
      *
      * @param labelledRows  the option rows, top to bottom, in segment order
      * @param rowGeometry   how each row lays its content out - a table of columns, or uniform cells
@@ -441,7 +526,6 @@ public sealed interface ControlSpec {
      * @param reselect      what a click on the lit option does (deselect, re-fire, or inert)
      * @param columnCount   how many columns to spread the options across ({@link #SINGLE_COLUMN} for
      *                      one column)
-     * @param scrolls       whether this control is the capped strip's scrolling flex region
      */
     record VerticalTable(
             List<LabelledRow> labelledRows,
@@ -450,15 +534,13 @@ public sealed interface ControlSpec {
             ControlAction action,
             ControlHoverReport hoverReport,
             ReselectBehaviour reselect,
-            int columnCount,
-            boolean scrolls) implements Interactive {
+            int columnCount) implements Interactive {
 
         // What a table holds before a host refines it: every option inert on a re-pick (the standard
-        // always-one-lit list), stacked in a single column, pinned rather than scrolling, and reporting
-        // nothing back as the pointer crosses its rows. Each is a refinement below, so a host states only
-        // the ones its list actually wants.
+        // always-one-lit list), stacked in a single column, and reporting nothing back as the pointer
+        // crosses its rows. Each is a refinement below, so a host states only the ones its list actually
+        // wants.
         private static final ReselectBehaviour DEFAULT_RESELECT = ReselectBehaviour.INERT;
-        private static final boolean NOT_SCROLLING = false;
 
         /**
          * Copies the rows defensively and rejects a missing geometry, a missing hover report, or a column
@@ -504,8 +586,7 @@ public sealed interface ControlSpec {
                 action,
                 ControlHoverReport.NONE,
                 DEFAULT_RESELECT,
-                SINGLE_COLUMN,
-                NOT_SCROLLING);
+                SINGLE_COLUMN);
         }
 
         /**
@@ -531,8 +612,7 @@ public sealed interface ControlSpec {
                 action,
                 ControlHoverReport.NONE,
                 DEFAULT_RESELECT,
-                SINGLE_COLUMN,
-                NOT_SCROLLING);
+                SINGLE_COLUMN);
         }
 
         // Each row's label as the one line it reads as, so a strip that snaps a control to its text
@@ -560,7 +640,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table handling a re-pick that way
          */
         public VerticalTable handlesReselect(ReselectBehaviour reselect) {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
         /**
@@ -575,7 +655,7 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table reporting its hovered row there
          */
         public VerticalTable reportsHoverTo(ControlHoverReport hoverReport) {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
         /**
@@ -587,31 +667,18 @@ public sealed interface ControlSpec {
          * @return an otherwise-identical table folded across that many columns
          */
         public VerticalTable spreadsAcross(int columnCount) {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, scrolls);
-        }
-
-        /**
-         * Returns a copy of this table marked as the capped strip's scrolling flex region, so a host
-         * builds its list through the ordinary factory and then opts it into scrolling without a
-         * scroll-specific factory. Only a stacked list scrolls, so this method exists on this variant
-         * alone - no other control can be marked scrolling.
-         *
-         * @return an otherwise-identical table with {@link #scrolls()} set
-         */
-        public VerticalTable asScrolling() {
-            return rebuildAsLaidOut(hoverReport, reselect, columnCount, true);
+            return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
         // Rebuilds the table around how it is laid out and driven, carrying what it holds - its rows,
-        // their geometry, the lit row, and the click action - over untouched. The four refinements
-        // share it rather than each restating all eight components, one of which would eventually be
+        // their geometry, the lit row, and the click action - over untouched. The three refinements
+        // share it rather than each restating all seven components, one of which would eventually be
         // restated wrongly: the lit row and the column count are both counts, so a rebuild that crossed
         // them would compile clean and light the wrong row.
         private VerticalTable rebuildAsLaidOut(
                 ControlHoverReport hoverReport,
                 ReselectBehaviour reselect,
-                int columnCount,
-                boolean scrolls) {
+                int columnCount) {
 
             return new VerticalTable(
                 labelledRows,
@@ -620,8 +687,7 @@ public sealed interface ControlSpec {
                 action,
                 hoverReport,
                 reselect,
-                columnCount,
-                scrolls);
+                columnCount);
         }
     }
 
@@ -690,6 +756,38 @@ public sealed interface ControlSpec {
         public SideBySide {
             leftColumn = List.copyOf(leftColumn);
             rightColumn = List.copyOf(rightColumn);
+        }
+
+        @Override
+        public List<String> labels() {
+            return List.of();
+        }
+    }
+
+    /**
+     * The one run of a strip that scrolls: its controls keep their natural height and slide within
+     * whatever room is left once everything outside the section is pinned, so a long list stays reachable
+     * inside a bounded box while the controls around it never move. A strip with no section is never
+     * capped - it stands at its natural height.
+     *
+     * <p>A group rather than a flag on whichever control happens to be long, because what a body wants to
+     * scroll is a run: a heading, the list under it and the row beside that travel together, and a flag
+     * on one member could only ever scroll that member. At most one section per strip - two would each
+     * need the leftover height the other is claiming, so the capped layout takes the first and a body
+     * stating two has asked for a layout nothing can satisfy.
+     *
+     * <p>It draws no chrome of its own and is flattened to its children's laid-out controls exactly as
+     * {@link SideBySide} is, so the renderer and the input listener only ever see ordinary controls -
+     * each marked as scrolled, which is what the clip and the viewport-limited hit-test read. Moving a
+     * run into a section therefore changes where it may go and nothing about how it reads.
+     *
+     * @param controls the controls inside the scrolling run, top to bottom
+     */
+    record ScrollingSection(List<ControlSpec> controls) implements ControlSpec {
+
+        /** Copies the run defensively, so a later edit to a caller's list cannot mutate the spec. */
+        public ScrollingSection {
+            controls = List.copyOf(controls);
         }
 
         @Override

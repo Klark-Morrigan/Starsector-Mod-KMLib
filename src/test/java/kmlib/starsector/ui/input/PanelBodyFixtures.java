@@ -279,13 +279,13 @@ final class PanelBodyFixtures {
     static Control buildScrollingListAtRow(ControlAction action) {
 
         var spec = VerticalTableSpecs.buildIconList(
-                List.of("Opt"),
-                Arrays.asList((String) null),
-                ControlSpec.NO_SELECTION,
-                action)
-            .asScrolling();
+            List.of("Opt"),
+            Arrays.asList((String) null),
+            ControlSpec.NO_SELECTION,
+            action);
 
-        return new Control(spec, ROW, List.of(ROW));
+        // Laid inside a scrolling section, which is what the viewport-limited hit-test reads.
+        return new Control(spec, ROW, List.of(ROW), true);
     }
 
     /**
@@ -340,6 +340,29 @@ final class PanelBodyFixtures {
 
     // The row split into two equal boxes, which is how both segmented fixtures lay their cells - a radio's
     // pair and a tabs row's pair being the same geometry under different specs.
+    /**
+     * A two-cell stacked radio occupying {@link #ROW}, its cells the row's top and bottom halves, so a
+     * point in a cell's box hits that cell. The stacked counterpart of {@link
+     * #buildTwoSegmentHorizontalRadioAtRow}, for the cases about which way a radio's cells run.
+     *
+     * @param spec the stacked radio to lay out
+     * @return the laid-out stacked radio
+     */
+    static Control buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio spec) {
+        return new Control(spec, ROW, buildTwoStackedHalvesOfRow());
+    }
+
+    // The row's two stacked halves, top cell first - UI y grows up, so the first cell hangs from the top
+    // edge exactly as the grid splitter lays one.
+    private static List<Rectangle> buildTwoStackedHalvesOfRow() {
+
+        var half = ROW.height() / 2f;
+        var topHalf = new Rectangle(ROW.x(), ROW.y() + half, ROW.width(), half);
+        var bottomHalf = new Rectangle(ROW.x(), ROW.y(), ROW.width(), half);
+
+        return List.of(topHalf, bottomHalf);
+    }
+
     private static List<Rectangle> buildTwoHalvesOfRow() {
 
         var leftHalf = new Rectangle(ROW.x(), ROW.y(), ROW.width() / 2f, ROW.height());

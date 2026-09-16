@@ -136,7 +136,7 @@ public final class ControlRenderer {
         } else if (spec instanceof ControlSpec.Toggle) {
             drawToggle(control, paint);
 
-        } else if (spec instanceof ControlSpec.HorizontalRadio
+        } else if (spec instanceof ControlSpec.Radio
                 || spec instanceof ControlSpec.VerticalTable) {
             drawRadio(control, paint);
 
@@ -226,10 +226,10 @@ public final class ControlRenderer {
 
     // A radio group: the segments framed and the active one washed, then its labels. A table lays each
     // row in columns - what it leads with, its name past that, its trailing slot flush right; a
-    // uniform-cell list and a horizontal radio centre each name in its segment, the radio appending its
-    // trailing caption. A vertical stack re-derives its grid from the footprint; a horizontal radio draws
-    // its chrome over the laid segments, the same rects the labels below centre in, so the wash and
-    // dividers cannot part from the labels whether even or snapped.
+    // uniform-cell list, a stacked radio and a horizontal radio centre each name in its segment, the
+    // horizontal one appending its trailing caption. Anything stacked re-derives its grid from the
+    // footprint; a horizontal radio draws its chrome over the laid segments, the same rects the labels
+    // below centre in, so the wash and dividers cannot part from the labels whether even or snapped.
     private static void drawRadio(Control control, ControlPaint paint) {
 
         var spec = control.spec();
@@ -254,6 +254,17 @@ public final class ControlRenderer {
                 labels.size(),
                 selectedIndex,
                 table.columnCount(),
+                colours,
+                paint.cellPaints(),
+                paint.chromeOpacity());
+        } else if (spec instanceof ControlSpec.VerticalRadio) {
+            // A stacked radio is that same grid at one column, so the cell frames and the rules parting
+            // them are drawn by the one renderer rather than by a second stacking rule beside it.
+            RadioRowRenderer.renderVerticalGrid(
+                bounds,
+                labels.size(),
+                selectedIndex,
+                ControlSpec.SINGLE_COLUMN,
                 colours,
                 paint.cellPaints(),
                 paint.chromeOpacity());

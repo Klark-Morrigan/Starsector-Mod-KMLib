@@ -22,6 +22,8 @@ see [pairs that look like duplicates](#pairs-that-look-like-duplicates).
 - [Ports across the boundary](#ports-across-the-boundary)
 - [Two span measurers](#two-span-measurers)
 - [A strip is measured in two faces](#a-strip-is-measured-in-two-faces)
+- [What a body may state](#what-a-body-may-state)
+- [Two radio alignments, two variants](#two-radio-alignments-two-variants)
 - [Two hosts, one map widget](#two-hosts-one-map-widget)
 - [A panel of one's own over a core screen](#a-panel-of-ones-own-over-a-core-screen)
 - [The list picker holds no store](#the-list-picker-holds-no-store)
@@ -437,6 +439,76 @@ taking a `TextFace` and a `StarsectorFont`:
 two members of one type would swap silently in a positional hand-off,
 which is the very fault the pair exists to remove.
 The canonical constructor stays open for a caller supplying its own metrics.
+
+## What a body may state
+
+A body is a list of [`ControlSpec`](controls/ControlSpec.java)s and nothing else,
+so the arrangements a host may ask for are exactly the variants of that sealed set.
+Three of them are arrangement rather than widget:
+
+- **A row of its own.**
+  The default: every control in the list stacks top to bottom,
+  one control row tall unless its own kind is taller.
+- **[`SideBySide`](controls/ControlSpec.java)**
+  puts two runs on one row,
+  the left column stacked from the row's top-left and the right one past its width plus the column gap.
+- **[`ScrollingSection`](controls/ControlSpec.java)**
+  marks the one run that scrolls.
+  Everything outside it pins -
+  the controls above it from the body top,
+  the controls below it flush to the bottom -
+  and the section takes the room left between,
+  scrolling its run within that viewport when the run is taller.
+
+What a host does **not** state is spacing,
+alignment,
+the inset off the body edge,
+the gutter a scrollbar stands in,
+or the band the body sits in.
+Those are the layout's,
+which is what makes two mods' bodies read as one UI rather than as two looks.
+
+Both groups are flattened at placement:
+the renderer and the input listener only ever see ordinary controls,
+never a container.
+A scrolled control carries that fact on its laid-out [`Control`](controls/Control.java) rather than on its spec,
+since by then the section it came from is gone -
+and both the clip and the viewport-limited hit-test read that one value.
+
+At most one section per strip.
+Two would each need the leftover height the other is claiming,
+so the capped layout takes the first one it finds.
+
+## Two radio alignments, two variants
+
+An option set states which way its cells run by which variant it is:
+[`ControlSpec.HorizontalRadio`](controls/ControlSpec.java) lays them across one row,
+[`ControlSpec.VerticalRadio`](controls/ControlSpec.java) stacks them into a column.
+Both sit under `ControlSpec.Radio`,
+which is what a reader acting on any radio names -
+the hit-test that splits one into cells,
+and the activation that reads its re-pick rule.
+
+Two variants rather than one record carrying a direction,
+on the rule the sealed hierarchy already follows:
+the state each draws differs.
+A row's cells size to their labels and may carry a caption past the last one;
+stacked cells are one column wide,
+so neither a sizing rule nor a caption exists on them to be set wrongly.
+
+Which one a host reaches for is a question about reading rather than about taste.
+A row snapped into a body letters each option in its share of the body's width,
+so two or three short options read cleanly and five do not.
+A stacked column gives every option the full width and costs a control row of height each,
+which is what a view selector wants and what a Short/Full pair does not.
+
+Distinct again from [`ControlSpec.VerticalTable`](controls/ControlSpec.java),
+which stacks rows holding their own parts -
+a crest, a name, a trailing value.
+The stacked radio is the plain one:
+a label per cell.
+Both split into cells through `RadioRow.splitIntoGrid` and frame through `RadioRowRenderer.renderVerticalGrid`,
+so the two stacked shapes cannot drift apart on where a cell begins.
 
 ## Two hosts, one map widget
 

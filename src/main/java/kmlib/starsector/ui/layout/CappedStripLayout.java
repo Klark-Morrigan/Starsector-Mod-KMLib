@@ -12,10 +12,10 @@ import java.util.List;
 
 /**
  * Caps a {@link ControlStripLayout} strip to a maximum body height by letting ONE control - the strip's
- * scrolling flex region, the control whose {@link ControlSpec.VerticalTable#scrolls()} is set - give up its
- * height and scroll its own rows. The controls before the flex region pin from the body top exactly as an
- * uncapped strip places them; the controls after it pin to the body bottom; the flex region takes the room
- * left between and, when its natural rows overrun that room, scrolls within it. So a long list stays
+ * scrolling flex region, the {@link ControlSpec.ScrollingSection} a host put a run inside - give up its
+ * height and scroll that run. The controls before the section pin from the body top exactly as an
+ * uncapped strip places them; the controls after it pin to the body bottom; the section takes the room
+ * left between and, when its run overruns that room, scrolls within it. So a long list stays
  * reachable inside a bounded box while the header and footer controls around it never move.
  *
  * <p>As the strip's main region, the flex region also fills the body's content width rather than its own
@@ -109,16 +109,16 @@ public final class CappedStripLayout {
     }
 
     /**
-     * The index of the strip's scrolling flex control - the one control whose {@link
-     * ControlSpec#scrolls()} is set - or {@link #NO_FLEX_REGION} when none scrolls. At most one control
-     * scrolls, so the first match is the flex region; a strip with none is never capped.
+     * The index of the strip's {@link ControlSpec.ScrollingSection}, or {@link #NO_FLEX_REGION} when the
+     * strip has none. At most one section scrolls - two would each need the leftover height the other is
+     * claiming - so the first is taken as the flex region; a strip with none is never capped.
      *
      * @param specs the strip's controls, top to bottom
      * @return the scrolling control's index, or {@link #NO_FLEX_REGION}
      */
     static int findScrollingIndex(List<ControlSpec> specs) {
         for (var index = 0; index < specs.size(); index++) {
-            if (specs.get(index) instanceof ControlSpec.VerticalTable table && table.scrolls()) {
+            if (specs.get(index) instanceof ControlSpec.ScrollingSection) {
                 return index;
             }
         }
@@ -189,8 +189,7 @@ public final class CappedStripLayout {
             var pinned = ControlStripLayout.layoutControls(
                 body,
                 specs,
-                strip.rowHeights(),
-                strip.rowWidths(),
+                strip.measurement(),
                 measurers);
 
             return new CappedStripPlacement(pinned, NO_VIEWPORT, 0f, 0f);
@@ -225,11 +224,14 @@ public final class CappedStripLayout {
         var flexBounds = new Rectangle(originX, flexContentTopY - flexNatural, flexWidth, flexNatural);
         var flexViewport = new Rectangle(originX, flexViewportBottomY, flexWidth, flexViewportHeight);
 
-        // Assemble in strip order: the pinned header, the scrolled flex list, then the pinned footer -
-        // each run turned into controls through the shared zip so segments split identically everywhere.
+        // Assemble in strip order: the pinned header, the scrolled run, then the pinned footer - each
+        // turned into controls through the shared zip so segments split identically everywhere. The
+        // section itself never reaches the renderer or the input listener; what does is the run inside it,
+        // laid at its scrolled position and marked so both clip against the viewport below.
+        var section = (ControlSpec.ScrollingSection) specs.get(flexIndex);
         var controls = new ArrayList<Control>(specs.size());
         controls.addAll(ControlStripLayout.toControls(header.specs(), headerRows, measurers));
-        controls.add(ControlStripLayout.toControl(specs.get(flexIndex), flexBounds, measurers));
+        controls.addAll(ControlStripLayout.layoutScrolledColumn(section.controls(), flexBounds, measurers));
         controls.addAll(ControlStripLayout.toControls(footer.specs(), footerRows, measurers));
 
         return new CappedStripPlacement(

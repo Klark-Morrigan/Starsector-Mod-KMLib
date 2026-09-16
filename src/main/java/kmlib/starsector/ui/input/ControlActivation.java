@@ -59,13 +59,15 @@ final class ControlActivation {
     }
 
     // The reselect the control carries, or INERT for a variant that has none. A vertical table and a
-    // horizontal radio each name what a re-pick of their lit segment does; a tabs row is always inert on
-    // its lit tab, so it is read as INERT here rather than carrying its own field.
+    // radio each name what a re-pick of their lit segment does; a tabs row is always inert on its lit
+    // tab, so it is read as INERT here rather than carrying its own field. Read off the radio interface
+    // rather than off each alignment, so a stacked radio answers a re-pick exactly as a laid-across one
+    // does - the behaviour is the control's, not its arrangement's.
     private static ReselectBehaviour reselectBehaviourOf(ControlSpec.Interactive control) {
         if (control instanceof ControlSpec.VerticalTable table) {
             return table.reselect();
         }
-        if (control instanceof ControlSpec.HorizontalRadio radio) {
+        if (control instanceof ControlSpec.Radio radio) {
             return radio.reselect();
         }
         return ReselectBehaviour.INERT;

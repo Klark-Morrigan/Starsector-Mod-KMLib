@@ -235,9 +235,9 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementStandsAVerticalRadioOneRowTallPerOption() {
+        void computePlacementStandsASegmentedListOneRowTallPerOption() {
 
-            var radio = place(buildVerticalRadioBody()).bodyControls().get(0);
+            var radio = place(buildSegmentedListBody()).bodyControls().get(0);
 
             // One option-row of height per segment, so a two-option radio is twice a control row. The
             // exact row width is the control strip's concern, pinned in ControlStripLayoutTest.
@@ -246,9 +246,9 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementStacksAVerticalRadiosSegmentsTopToBottomInOneColumn() {
+        void computePlacementStacksASegmentedListsSegmentsTopToBottomInOneColumn() {
 
-            var radio = place(buildVerticalRadioBody()).bodyControls().get(0);
+            var radio = place(buildSegmentedListBody()).bodyControls().get(0);
 
             assertThat(radio.segments())
                 .hasSize(2);
@@ -423,9 +423,9 @@ final class PanelLayoutTest {
         }
     }
 
-    // A two-option vertical selector radio, on its own so the stacked geometry is checked without the
+    // A two-option segmented list, on its own so the stacked geometry is checked without the
     // other controls' rows in the way. "Alliances" (9 chars) is the wider option.
-    private static List<ControlSpec> buildVerticalRadioBody() {
+    private static List<ControlSpec> buildSegmentedListBody() {
         return List.of(VerticalTableSpecs.buildSegmentedList(
             List.of("Factions", "Alliances"),
             ControlSpec.NO_SELECTION,
@@ -447,8 +447,8 @@ final class PanelLayoutTest {
             labels.add("Opt" + index);
             icons.add(null);
         }
-        var list = VerticalTableSpecs.buildIconList(labels, icons, ControlSpec.NO_SELECTION,
-            ControlAction.NONE).asScrolling();
+        var list = new ControlSpec.ScrollingSection(List.of(VerticalTableSpecs.buildIconList(
+            labels, icons, ControlSpec.NO_SELECTION, ControlAction.NONE)));
 
         return List.of(
             LabelledControlSpecs.buildCheckbox("Header", false, ControlAction.NONE),

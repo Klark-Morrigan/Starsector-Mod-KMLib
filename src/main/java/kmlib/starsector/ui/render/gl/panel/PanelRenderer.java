@@ -3,7 +3,6 @@ package kmlib.starsector.ui.render.gl.panel;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiScissor;
@@ -25,10 +24,10 @@ import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
  *
  * <p>Brackets the draw in one {@link GlStateGuard#bracket} state save - the map chrome and tooltips draw
  * after a UI-overlay pass, so any enable / colour / blend state the panel touches must be restored - and
- * the whole draw shares that one save. The scrolling control (the one marked {@link
- * kmlib.starsector.ui.controls.ControlSpec.VerticalTable#scrolls()}) draws clipped to its viewport, so
- * its rows that scroll past the top slide out under a pinned control rather than overpainting it. GL
- * passthrough run only in-engine like the other draw helpers.
+ * the whole draw shares that one save. A control the layout marked scrolled ({@link
+ * kmlib.starsector.ui.controls.Control#isScrolled()}) draws clipped to its viewport, so the rows that
+ * scroll past the top slide out under a pinned control rather than overpainting it. GL passthrough run
+ * only in-engine like the other draw helpers.
  */
 public final class PanelRenderer {
     private PanelRenderer() {
@@ -99,7 +98,7 @@ public final class PanelRenderer {
             // strip position and its press from another.
             var interactions = bodyInteractions.resolveControlInteractionSourcesAt(controlIndex);
 
-            if (control.spec() instanceof ControlSpec.VerticalTable table && table.scrolls()) {
+            if (control.isScrolled()) {
 
                 // The scroll clip replaces any outer clip (a raw GL scissor is absolute), so it is
                 // intersected with the box first: when a collapsing tab panel narrows the box, the list

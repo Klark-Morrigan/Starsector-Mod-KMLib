@@ -6,11 +6,26 @@ The reusable release workflow extracts the section matching the released version
 
 ## Index
 
+- [Unreleased](#unreleased)
 - [0.4.0](#040---2026-09-15)
 - [0.3.1](#031---2026-09-15)
 - [0.3.0](#030---2026-09-15)
 - [0.2.0](#020---2026-09-14)
 - [0.1.0](#010---2026-09-14)
+
+## [Unreleased]
+
+### Added
+
+- **`ControlSpec.VerticalRadio`**: a column of option cells stacked top to bottom, one lit - the shape an option set of more than two or three reads as, where the same options laid across a row letter too narrow to tell apart. Carries no segment sizing and no trailing caption, both being row-only.
+- **`ControlSpec.Radio`**: the sealed interface `HorizontalRadio` and `VerticalRadio` sit under, carrying the re-pick rule both answer. A reader acting on any radio names it rather than each alignment. `HorizontalRadio` is otherwise unchanged and every existing call site compiles as it stands.
+- **`ControlSpec.ScrollingSection`**: the run of a body that scrolls, holding any controls rather than being a property of one. A heading, the list under it and the row beside it now travel together inside the viewport the capped layout leaves them, where only a single list could scroll before.
+- **`Control.isScrolled()`**: whether a laid-out control was placed inside that section - the one value the clipping renderer and the viewport-limited hit-test both read. A `Control` built without it is pinned, so existing three-argument construction is unchanged.
+
+### Public contracts changed (**breaking**)
+
+- `ControlSpec.VerticalTable` loses its `scrolls` component and its `asScrolling()` refinement; what scrolls is stated by the `ScrollingSection` a host puts a run inside. A host that marked its list now wraps it: `new ControlSpec.ScrollingSection(List.of(list))`. The table's canonical constructor takes seven arguments where it took eight.
+- `ControlStripLayout.layoutControls()` takes the `StripMeasurement` the rows were measured as, in place of its `rowHeights` and `rowWidths` lists. They are one reading of one strip, and parted they could arrive from different readings - two lists of different lengths, or the heights of a strip the widths were never measured from - neither of which the placement could notice.
 
 ## [0.4.0] - 2026-09-15
 
@@ -25,7 +40,7 @@ The reusable release workflow extracts the section matching the released version
 ### Public contracts changed (**breaking**)
 
 - `check-version` takes a required `version` input and no longer emits `version`. It asks git about the version it is given rather than reading `mod_info.json` itself, so the gate and the rest of the pipeline cannot rule on different strings. Callers of the reusable `mod-release.yml` need no change; a workflow calling the action directly must now pass `version`.
-- `Hatching.computeHatchRun` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
+- `Hatching.computeHatchRun()` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
 
 ## [0.3.1] - 2026-09-15
 
@@ -39,7 +54,7 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
+- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - Reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
 - **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature in now handled and logged, resulting in terrain reseating standing down for the rest of the section.
 - **Altered map render state**. Failed terrain reseating now restores reseated terrain placement before standing down.
 - **Duplicate map entity**. A location that refuses to give an entity up no longer leaves the reseat owing a put-back for an entity that never left, which added a second copy of it on the next advance.

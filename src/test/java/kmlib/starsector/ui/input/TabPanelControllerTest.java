@@ -2323,10 +2323,9 @@ final class TabPanelControllerTest {
                 Arrays.asList(new String[SCROLLING_ROW_COUNT]),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE)
-            .reportsHoverTo(hoverReport)
-            .asScrolling();
+            .reportsHoverTo(hoverReport);
 
-        return new Control(spec, BODY_BOX, rows);
+        return new Control(spec, BODY_BOX, rows, true);
     }
 
     // The same panel folded away to the rail a fully docked one leaves: the box narrowed to a border's
