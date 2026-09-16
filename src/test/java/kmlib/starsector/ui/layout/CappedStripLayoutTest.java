@@ -110,6 +110,28 @@ final class CappedStripLayoutTest {
         }
 
         @Test
+        void findScrollingIndexTakesTheFirstOfTwoSections() {
+            // Two sections would each need the leftover height the other is claiming, so the first is the
+            // flex region and the second lays out as an ordinary pinned run. Stated by the doc and pinned
+            // here, since nothing stops a host writing two.
+            var strip = List.of(
+                buildScrollingSection(FLEX_OPTION_COUNT),
+                buildScrollingSection(FLEX_OPTION_COUNT));
+
+            assertThat(CappedStripLayout.findScrollingIndex(strip))
+                .isZero();
+        }
+
+        @Test
+        void findScrollingIndexFindsASectionThatIsTheWholeStrip() {
+            // A body that is nothing but its scrolling run: no header to hang the viewport below and no
+            // footer to stop it above, which is the case the viewport edges fall back to the insets for.
+            assertThat(CappedStripLayout.findScrollingIndex(
+                    List.of(buildScrollingSection(FLEX_OPTION_COUNT))))
+                .isZero();
+        }
+
+        @Test
         void findScrollingIndexReturnsNoFlexRegionWhenNoneScroll() {
 
             assertThat(CappedStripLayout.findScrollingIndex(buildPinnedOnlyStrip()))
@@ -221,8 +243,7 @@ final class CappedStripLayoutTest {
             var plain = ControlStripLayout.layoutControls(
                 body,
                 strip.specs(),
-                strip.rowHeights(),
-                strip.rowWidths(),
+                strip.measurement(),
                 measurersFake);
 
             // A strip with no flex region pins whole, so the capped placement is the plain stack with no
@@ -377,6 +398,24 @@ final class CappedStripLayoutTest {
                 .isGreaterThan(capped.controls().get(0).bounds().x());
             assertThat(capped.controls().get(2).spec())
                 .isInstanceOf(ControlSpec.VerticalTable.class);
+        }
+
+        @Test
+        void layoutCappedControlsPlacesAnEmptySectionWithoutPlacingAnything() {
+            // A host may state a section whose run is empty for a frame - a picker whose items have not
+            // arrived yet. It contributes no controls and leaves the pinned rows where they were, rather
+            // than dividing by a zero row count on the way.
+            var header = LabelledControlSpecs.buildCheckbox("H", false, ControlAction.NONE);
+            var strip = measure(List.of(header, new ControlSpec.ScrollingSection(List.of())));
+
+            var capped = layoutControlsIn(buildBodyFor(strip, 0f), strip, 0f);
+
+            assertThat(capped.controls())
+                .hasSize(1);
+            assertThat(capped.controls().get(0).spec())
+                .isEqualTo(header);
+            assertThat(capped.scrollOverflow())
+                .isZero();
         }
 
         @Test

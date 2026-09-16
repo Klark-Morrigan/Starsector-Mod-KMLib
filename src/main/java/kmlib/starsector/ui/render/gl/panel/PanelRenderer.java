@@ -24,10 +24,10 @@ import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
  *
  * <p>Brackets the draw in one {@link GlStateGuard#bracket} state save - the map chrome and tooltips draw
  * after a UI-overlay pass, so any enable / colour / blend state the panel touches must be restored - and
- * the whole draw shares that one save. The scrolling control (the one marked {@link
- * kmlib.starsector.ui.controls.ControlSpec.VerticalTable#scrolls()}) draws clipped to its viewport, so
- * its rows that scroll past the top slide out under a pinned control rather than overpainting it. GL
- * passthrough run only in-engine like the other draw helpers.
+ * the whole draw shares that one save. A control the layout marked scrolled ({@link
+ * kmlib.starsector.ui.controls.Control#isScrolled()}) draws clipped to its viewport, so the rows that
+ * scroll past the top slide out under a pinned control rather than overpainting it. GL passthrough run
+ * only in-engine like the other draw helpers.
  */
 public final class PanelRenderer {
     private PanelRenderer() {

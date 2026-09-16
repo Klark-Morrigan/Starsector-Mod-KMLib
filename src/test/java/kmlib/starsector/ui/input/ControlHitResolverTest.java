@@ -19,6 +19,7 @@ import static kmlib.starsector.ui.input.PanelBodyFixtures.buildCheckboxControl;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildDividerControl;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildDockedRailBox;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildScrollingListAtRow;
+import static kmlib.starsector.ui.input.PanelBodyFixtures.buildTwoCellVerticalRadioAtRow;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildTwoSegmentHorizontalRadioAtRow;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildTwoTabRowAtRow;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildViewportAboveRow;
@@ -297,6 +298,53 @@ final class ControlHitResolverTest {
             assertThat(resolvedCell)
                 .as("the lit tab is under the pointer like any other")
                 .isZero();
+        }
+    }
+
+    @Nested
+    class ResolveHitCellOnAStackedRadio {
+
+        @Test
+        void resolveHitCellReportsTheCellThePointIsInFromTheTopDown() {
+            // The cells run down rather than across, so which cell a point is in is decided by its y. Both
+            // halves are asked, since a resolver still splitting by width would answer cell 0 for each.
+            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances"),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE));
+
+            var inTopCell = ControlHitResolver.resolveHitCell(
+                radio,
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + 3f * ROW.height() / 4f);
+
+            var inBottomCell = ControlHitResolver.resolveHitCell(
+                radio,
+                ROW.x() + ROW.width() / 2f,
+                ROW.y() + ROW.height() / 4f);
+
+            assertThat(inTopCell)
+                .isZero();
+            assertThat(inBottomCell)
+                .isEqualTo(1);
+        }
+
+        @Test
+        void resolveHitCellReportsNoCellForAPointBesideTheColumn() {
+            // A stacked radio is one column wide, so a point past its right edge is off the control
+            // however far down the column it sits.
+            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances"),
+                0,
+                ControlAction.NONE));
+
+            var resolvedCell = ControlHitResolver.resolveHitCell(
+                radio,
+                ROW.x() + ROW.width() + 1f,
+                ROW.y() + ROW.height() / 4f);
+
+            assertThat(resolvedCell)
+                .isNull();
         }
     }
 

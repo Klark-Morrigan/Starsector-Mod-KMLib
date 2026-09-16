@@ -25,6 +25,7 @@ The reusable release workflow extracts the section matching the released version
 ### Public contracts changed (**breaking**)
 
 - `ControlSpec.VerticalTable` loses its `scrolls` component and its `asScrolling()` refinement; what scrolls is stated by the `ScrollingSection` a host puts a run inside. A host that marked its list now wraps it: `new ControlSpec.ScrollingSection(List.of(list))`. The table's canonical constructor takes seven arguments where it took eight.
+- `ControlStripLayout.layoutControls()` takes the `StripMeasurement` the rows were measured as, in place of its `rowHeights` and `rowWidths` lists. They are one reading of one strip, and parted they could arrive from different readings - two lists of different lengths, or the heights of a strip the widths were never measured from - neither of which the placement could notice.
 
 ## [0.4.0] - 2026-09-15
 
@@ -39,7 +40,7 @@ The reusable release workflow extracts the section matching the released version
 ### Public contracts changed (**breaking**)
 
 - `check-version` takes a required `version` input and no longer emits `version`. It asks git about the version it is given rather than reading `mod_info.json` itself, so the gate and the rest of the pipeline cannot rule on different strings. Callers of the reusable `mod-release.yml` need no change; a workflow calling the action directly must now pass `version`.
-- `Hatching.computeHatchRun` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
+- `Hatching.computeHatchRun()` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
 
 ## [0.3.1] - 2026-09-15
 

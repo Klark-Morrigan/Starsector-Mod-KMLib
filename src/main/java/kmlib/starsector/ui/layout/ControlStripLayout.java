@@ -16,6 +16,7 @@ import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -77,8 +78,9 @@ public final class ControlStripLayout {
      * body is as wide as the widest row (a trailing label counts, so a host's backdrop covers it)
      * plus the inset, and as tall as the stacked rows plus their gaps and the inset. Empty controls
      * measure to a zero footprint with no rows, so a host reserves nothing for a bodyless strip. A
-     * vertical radio stands one option-row taller per segment, so row heights vary and the body sums
-     * them rather than assuming one height per control. A side-by-side group's one row is as wide as its
+     * stacked control - a vertical table, a stacked radio, a scrolling section - stands one row taller
+     * per thing it stacks, so row heights vary and the body sums them rather than assuming one height
+     * per control. A side-by-side group's one row is as wide as its
      * two columns plus their gap and as tall as its taller column, and is later flattened into its
      * children's controls at placement.
      *
@@ -126,18 +128,21 @@ public final class ControlStripLayout {
      * rectangle the host framed must carry the same top-left the measurement assumed, so the controls
      * land where the strip was sized for.
      *
-     * @param body       the framed body rectangle, sized from {@link #measureStrip}
-     * @param specs      the controls to place, top to bottom (must match the measured specs)
-     * @param rowHeights the measured row heights, from {@link StripMeasurement#rowHeights()}
-     * @param rowWidths  the measured row widths, from {@link StripMeasurement#rowWidths()}
-     * @param measurers  measure each label's rendered width, for snapping a tabs row's per-tab segments
+     * <p>The row dimensions travel as the {@link StripMeasurement} they were taken as rather than as two
+     * loose lists: they are one reading of one strip, and parted they can be handed over from different
+     * readings - two lists of different lengths, or the heights of a strip the widths were not measured
+     * from, neither of which the placement could notice.
+     *
+     * @param body        the framed body rectangle, sized from {@link #measureStrip}
+     * @param specs       the controls to place, top to bottom (must match the measured specs)
+     * @param measurement the strip's measurement, from {@link #measureStrip}
+     * @param measurers   measure each label's rendered width, for snapping a tabs row's per-tab segments
      * @return the laid-out controls, top to bottom; empty when {@code specs} is empty
      */
     public static List<Control> layoutControls(
             Rectangle body,
             List<ControlSpec> specs,
-            List<Float> rowHeights,
-            List<Float> rowWidths,
+            StripMeasurement measurement,
             StripTextMeasurers measurers) {
 
         if (specs.isEmpty()) {
@@ -148,8 +153,8 @@ public final class ControlStripLayout {
             body.x() + BODY_PADDING,
             bodyTopY - BODY_PADDING,
             ROW_GAP,
-            rowHeights,
-            rowWidths);
+            measurement.rowHeights(),
+            measurement.rowWidths());
 
         return toControls(
             specs,
@@ -318,25 +323,16 @@ public final class ControlStripLayout {
             Rectangle bounds,
             StripTextMeasurers measurers) {
 
-        var rowHeights = new ArrayList<Float>(specs.size());
-        var rowWidths = new ArrayList<Float>(specs.size());
-        for (var spec : specs) {
-            rowHeights.add(measureRowHeight(spec));
-
-            // Every row takes the section's width rather than its own measured one: the section is the
-            // strip's main region and flexes horizontally into the width left over, so a list narrower
-            // than the widest pinned row spreads to the frame instead of leaving dead space between it
-            // and the scrollbar.
-            rowWidths.add(bounds.width());
-        }
-        var rows = RowStack.layoutRows(
+        // Every row takes the section's width rather than its own measured one: the section is the
+        // strip's main region and flexes horizontally into the width left over, so a list narrower than
+        // the widest pinned row spreads to the frame instead of leaving dead space beside the scrollbar.
+        var laid = stackColumn(
+            specs,
             bounds.x(),
             bounds.y() + bounds.height(),
-            ROW_GAP,
-            rowHeights,
-            rowWidths);
+            Collections.nCopies(specs.size(), bounds.width()),
+            measurers);
 
-        var laid = toControls(specs, rows, measurers);
         var scrolled = new ArrayList<Control>(laid.size());
         for (var control : laid) {
             scrolled.add(new Control(
@@ -391,18 +387,30 @@ public final class ControlStripLayout {
             float columnTopY,
             StripTextMeasurers measurers) {
 
-        var rowHeights = new ArrayList<Float>(specs.size());
         var rowWidths = new ArrayList<Float>(specs.size());
         for (var spec : specs) {
-            rowHeights.add(measureRowHeight(spec));
             rowWidths.add(measureRowWidth(spec, measurers));
         }
-        var rows = RowStack.layoutRows(
-            columnX,
-            columnTopY,
-            ROW_GAP,
-            rowHeights,
-            rowWidths);
+        return stackColumn(specs, columnX, columnTopY, rowWidths, measurers);
+    }
+
+    // Stacks a run top to bottom from (columnX, columnTopY) at the given row widths, each row as tall as
+    // its own kind measures, and zips the rows with their specs through the shared split. The one place
+    // the stack-then-zip sequence lives: a column snapped to its own rows and a section flexed to its
+    // viewport differ in the widths they hand in and in nothing else, and a second copy of the sequence
+    // would be a second place for the heights or the zip to drift.
+    private static List<Control> stackColumn(
+            List<ControlSpec> specs,
+            float columnX,
+            float columnTopY,
+            List<Float> rowWidths,
+            StripTextMeasurers measurers) {
+
+        var rowHeights = new ArrayList<Float>(specs.size());
+        for (var spec : specs) {
+            rowHeights.add(measureRowHeight(spec));
+        }
+        var rows = RowStack.layoutRows(columnX, columnTopY, ROW_GAP, rowHeights, rowWidths);
 
         return toControls(specs, rows, measurers);
     }
@@ -516,7 +524,7 @@ public final class ControlStripLayout {
         return measureStackedHeight(rowHeights);
     }
 
-    // The width a vertical radio table needs: its column count wide. Each column sizes to the same
+    // The width a vertical table needs: its column count wide. Each column sizes to the same
     // width - the width its widest row needs under the geometry the table lays its rows out in - and the
     // columns sit side by side, so a two-column table needs twice one column's width. One column is the
     // plain single-column stack.

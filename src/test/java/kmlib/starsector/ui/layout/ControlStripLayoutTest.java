@@ -21,6 +21,7 @@ import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,6 +57,51 @@ final class ControlStripLayoutTest {
     private final StripTextMeasurers partedFacesMeasurersFake = new StripTextMeasurers(
         new LineWidthMeasurerFake(TAB_WIDTH_PER_CHAR),
         new LineWidthMeasurerFake(WIDTH_PER_CHAR));
+
+    // Every leaf variant of the sealed spec set, as the layout suite accounts for it. A variant added to
+    // ControlSpec without a line here fails the roster case below - which is the only thing that fails,
+    // since a variant missing from one of the layout's three dispatches measures as an ordinary row
+    // rather than as nothing.
+    private static final List<String> ACCOUNTED_FOR_VARIANTS = List.of(
+        "Checkbox",
+        "Divider",
+        "HorizontalRadio",
+        "Label",
+        "ScrollingSection",
+        "SideBySide",
+        "Tabs",
+        "Toggle",
+        "VerticalRadio",
+        "VerticalTable");
+
+    @Nested
+    class VariantRoster {
+
+        @Test
+        void everyVariantOfTheSpecSetIsAccountedForByThisSuite() {
+            // The layout answers each variant in three parallel dispatches - row width, row height and
+            // placement - and a variant absent from one of them falls to the default row rather than
+            // failing anything, so no case below would notice. This roster is what notices: it reads the
+            // sealed set itself, so a variant added upstream arrives here as a name nobody has cased.
+            assertThat(readLeafVariantNames(ControlSpec.class))
+                .containsExactlyInAnyOrderElementsOf(ACCOUNTED_FOR_VARIANTS);
+        }
+    }
+
+    // The concrete variants under a sealed type, flattening the sealed interfaces between (Interactive,
+    // Radio) rather than counting them: they are groupings a reader names, not controls a host builds.
+    private static List<String> readLeafVariantNames(Class<?> sealedType) {
+
+        var names = new ArrayList<String>();
+        for (var permitted : sealedType.getPermittedSubclasses()) {
+            if (permitted.isInterface()) {
+                names.addAll(readLeafVariantNames(permitted));
+            } else {
+                names.add(permitted.getSimpleName());
+            }
+        }
+        return names;
+    }
 
     @Nested
     class MeasureStrip {
@@ -633,8 +679,7 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(
                 buildFrameBody(measurement),
                 specs,
-                measurement.rowHeights(),
-                measurement.rowWidths(),
+                measurement,
                 measurersFake);
 
             var row = controls.get(0).bounds();
@@ -661,8 +706,7 @@ final class ControlStripLayoutTest {
             var radio = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -689,8 +733,7 @@ final class ControlStripLayoutTest {
             var radio = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -724,8 +767,7 @@ final class ControlStripLayoutTest {
             var radio = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -761,8 +803,7 @@ final class ControlStripLayoutTest {
             var picker = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -797,8 +838,7 @@ final class ControlStripLayoutTest {
             var picker = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -829,8 +869,7 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(
                 buildFrameBody(measurement),
                 specs,
-                measurement.rowHeights(),
-                measurement.rowWidths(),
+                measurement,
                 measurersFake);
 
             assertThat(controls.get(0).segments())
@@ -845,8 +884,7 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(
                 buildFrameBody(measurement),
                 specs,
-                measurement.rowHeights(),
-                measurement.rowWidths(),
+                measurement,
                 measurersFake);
 
             assertThat(controls.get(0).segments())
@@ -865,8 +903,7 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(
                 buildFrameBody(measurement),
                 specs,
-                measurement.rowHeights(),
-                measurement.rowWidths(),
+                measurement,
                 measurersFake);
 
             assertThat(controls.get(0).segments())
@@ -887,8 +924,7 @@ final class ControlStripLayoutTest {
             var divider = ControlStripLayout.layoutControls(
                     body,
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -906,8 +942,7 @@ final class ControlStripLayoutTest {
             assertThat(ControlStripLayout.layoutControls(
                     body,
                     List.of(),
-                    List.of(),
-                    List.of(),
+                    StripMeasurement.EMPTY,
                     measurersFake))
                 .isEmpty();
         }
@@ -924,8 +959,7 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(
                 buildFrameBody(measurement),
                 specs,
-                measurement.rowHeights(),
-                measurement.rowWidths(),
+                measurement,
                 measurersFake);
 
             assertThat(controls).hasSize(2);
@@ -969,8 +1003,7 @@ final class ControlStripLayoutTest {
             var controls = ControlStripLayout.layoutControls(
                 buildFrameBody(measurement),
                 specs,
-                measurement.rowHeights(),
-                measurement.rowWidths(),
+                measurement,
                 measurersFake);
 
             // The left column's two children come first (top then bottom), then the right column's one.
@@ -1005,8 +1038,7 @@ final class ControlStripLayoutTest {
             var tabs = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 
@@ -1041,8 +1073,7 @@ final class ControlStripLayoutTest {
             var bodyTabs = ControlStripLayout.layoutControls(
                     buildFrameBody(measurement),
                     specs,
-                    measurement.rowHeights(),
-                    measurement.rowWidths(),
+                    measurement,
                     measurersFake)
                 .get(0);
 

@@ -189,8 +189,7 @@ public final class CappedStripLayout {
             var pinned = ControlStripLayout.layoutControls(
                 body,
                 specs,
-                strip.rowHeights(),
-                strip.rowWidths(),
+                strip.measurement(),
                 measurers);
 
             return new CappedStripPlacement(pinned, NO_VIEWPORT, 0f, 0f);

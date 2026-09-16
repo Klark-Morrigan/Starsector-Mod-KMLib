@@ -11,6 +11,7 @@ import java.util.List;
 
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildCaptionControl;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildCheckboxControl;
+import static kmlib.starsector.ui.input.PanelBodyFixtures.buildTwoCellVerticalRadioAtRow;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildTwoSegmentHorizontalRadioAtRow;
 import static kmlib.starsector.ui.input.PanelBodyFixtures.buildTwoTabRowAtRow;
 
@@ -26,6 +27,46 @@ import static org.assertj.core.api.Assertions.assertThat;
  * apart or a hover reading the press's answer would leave the lit control dark.
  */
 final class ControlActivationTest {
+
+    @Nested
+    class ActivateCellIfActionableOnAStackedRadio {
+
+        @Test
+        void activateCellIfActionableReadsTheRePickRuleThroughTheRadioTypeNotTheAlignment() {
+            // The re-pick rule belongs to the control rather than to how its cells are arranged: a stacked
+            // DESELECT radio swallows nothing and re-fires its lit cell exactly as a laid-across one does.
+            // A narrowing back to one alignment would leave a stacked radio inert on its lit cell.
+            var firedCell = new int[] {-1};
+            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio
+                .of(List.of("Factions", "Alliances"), 0, cell -> firedCell[0] = cell)
+                .handlesReselect(ReselectBehaviour.DESELECT));
+
+            var activatedCell = ControlActivation.activateCellIfActionable(radio, 0);
+
+            assertThat(activatedCell)
+                .isZero();
+            assertThat(firedCell[0])
+                .isZero();
+        }
+
+        @Test
+        void activateCellIfActionableSwallowsARePickOfAnInertStackedRadiosLitCell() {
+            // The other half of the same rule: an INERT stack holds its lit cell, so a re-pick of it acts
+            // on nothing rather than re-firing.
+            var firedCell = new int[] {-1};
+            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio.of(
+                List.of("Factions", "Alliances"),
+                1,
+                cell -> firedCell[0] = cell));
+
+            var activatedCell = ControlActivation.activateCellIfActionable(radio, 1);
+
+            assertThat(activatedCell)
+                .isNull();
+            assertThat(firedCell[0])
+                .isEqualTo(-1);
+        }
+    }
 
     @Nested
     class ActivateCellIfActionable {
