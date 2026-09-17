@@ -672,6 +672,8 @@ No Starsector API on the signature.
   defensive wrapper around settings.json localisation lookups
   (loud REDACTED on missing or malformed entries),
   plus the number-to-copy shaping that fills their numeric slots.
+  Also KMLib's own category and string IDs,
+  which bind that wrapper to the wording KMLib itself ships.
 - [`starsector/systems/`](src/main/java/kmlib/starsector/systems/) -
   star system queries at two altitudes,
   the sector's whole set and one system a caller holds.

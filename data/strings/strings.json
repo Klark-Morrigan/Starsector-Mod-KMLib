@@ -1,5 +1,11 @@
 {
-	"kmlib":{
-		"jump_point_label":"Jump-point"
-	}
+  "kmlib": {
+    "compatibility_notice_title": "%s version mismatch",
+    "compatibility_notice_built_against": "KMLib was built against %s %s, and this install has %s.",
+    "compatibility_notice_built_against_unreadable": "KMLib was built against %s %s, and this install's version could not be read. It is either newer and carries breaking changes, or too old for this build.",
+    "compatibility_notice_consequence": "%s Everything else, including your save, is unaffected. See starsector.log for which part is mismatched.",
+    "compatibility_notice_version_unknown": "(version unknown)",
+
+    "jump_point_label": "Jump-point"
+  }
 }
