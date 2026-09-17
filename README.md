@@ -60,7 +60,7 @@ so an install without any of them is ordinary
   - KMLib registers its own commands,
     listed under [Console commands](#console-commands);
   - KMLib publishes whether the console is up and taking text entry,
-    which anything drawing over the screen should stand down for.  
+    which anything drawing over the screen should stand down for.
 - **Nexerelin**
   - KMLib's colony related console commands account for Nexerelin implementation.
 - **Random Assortment of Things** (RAT)
@@ -636,7 +636,12 @@ No Starsector API on the signature.
   and the registers whatever hand-over and submarket rule this install supplies
   are offered their work through.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) -
-  typed sector-memory accessors (flag, string).
+  typed sector-memory accessors (flag, string),
+  each also in an *addressed* form that holds one value per point on an axis the consumer declares
+  (`MemoryKeyAddress`) rather than once per save -
+  the holder states its base key and names the address it means,
+  and the key is composed in one place,
+  so no holder can spell the segments differently or drop one and quietly share a slot.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) -
   sector script registration,
   one shape per lifetime:
@@ -1346,6 +1351,14 @@ A LunaLib settings store of the same shape sits beside it,
 counting saves as well as holding values,
 since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
+[`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
+holds the save a stored value lands in and two stand-in addresses to hold it apart under,
+and
+[`starsector/ui/widgets/lists/`](src/testFixtures/java/kmlib/testfixtures/starsector/ui/widgets/lists/)
+holds a picker row and a sort vocabulary declared outside the list package -
+the stand-in for whatever a consuming mod ranks and spotlights -
+beside the reader that reaches into a built picker block for the control a case is about,
+so the block's fixed order is known in one place rather than copied into every suite that tests a list.
 [`starsector/systems/`](src/testFixtures/java/kmlib/testfixtures/starsector/systems/)
 poses star systems the way the sector holds them -
 an ID,

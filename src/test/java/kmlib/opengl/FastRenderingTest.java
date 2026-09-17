@@ -64,6 +64,15 @@ class FastRenderingTest {
         }
 
         @Test
+        void reportsTrueWhenTheNameIsTheFacadeBridge() {
+            // The layout from v0.8.9 onwards, which is the second unannounced move. The commands
+            // package still holds the implementations, but GL references now rewrite to a facade
+            // beside it, so this is the name a current install actually reports.
+            assertThat(FastRendering.isBridgeClassName("com.genir.renderer.bridge.opengl.GL11"))
+                .isTrue();
+        }
+
+        @Test
         void reportsTrueWhenTheNameIsTheEarlierBridgeLayout() {
             // The layout up to v0.7.3, still in the field on installs that have not updated.
             assertThat(FastRendering.isBridgeClassName("com.genir.renderer.bridge.GL11")).isTrue();

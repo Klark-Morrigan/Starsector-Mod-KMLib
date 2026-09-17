@@ -1,6 +1,8 @@
-package kmlib.starsector.ui.widgets.lists;
+package kmlib.testfixtures.starsector.ui.widgets.lists;
 
 import kmlib.starsector.ui.text.TextSpan;
+import kmlib.starsector.ui.widgets.lists.ListSortMode;
+import kmlib.starsector.ui.widgets.lists.SortDirection;
 
 import java.awt.Color;
 import java.util.Comparator;
@@ -21,7 +23,7 @@ import java.util.List;
  * <p>Each label is a plain literal, which is what the seam asks for: a consumer resolves its own
  * strings and hands drawn text over, so a fixture has nothing to resolve against.
  */
-enum AnomalySortMode implements ListSortMode<Anomaly> {
+public enum AnomalySortMode implements ListSortMode<Anomaly> {
     ALPHA(
         "alpha",
         "Alpha",
@@ -77,12 +79,13 @@ enum AnomalySortMode implements ListSortMode<Anomaly> {
     };
 
     /** What parts {@link #SPREAD}'s two ends, named so a suite spells the drawn value once. */
-    static final String RANGE_SEPARATOR = "-";
+    public static final String RANGE_SEPARATOR = "-";
 
-    // The shades SPREAD's two ends draw in - two arbitrary, distinguishable literals, since what a
-    // suite reads off them is only that the mode's own colours reached the slot rather than the row's.
-    static final Color HIGH_END_COLOUR = Color.BLUE;
-    static final Color LOW_END_COLOUR = Color.RED;
+    /** The shade {@link #SPREAD}'s high end draws in - arbitrary, and only ever read as "not the row's". */
+    public static final Color HIGH_END_COLOUR = Color.BLUE;
+
+    /** The shade {@link #SPREAD}'s low end draws in, distinguishable from {@link #HIGH_END_COLOUR}. */
+    public static final Color LOW_END_COLOUR = Color.RED;
 
     private final String persistenceKey;
     private final String labelText;

@@ -10,6 +10,11 @@
 *.sh    text eol=lf
 gradlew text eol=lf
 
+# Git hooks carry no extension, so *.sh above does not reach them. bash
+# refuses to run a script whose shebang line ends in CR, which would break
+# every commit in a Windows checkout with autocrlf on.
+.githooks/* text eol=lf
+
 # yamllint's new-lines rule reports CRLF as an error. A Linux CI runner
 # checks these out as LF whatever the repository holds, so without a pin
 # the rule passes in CI and fails on a Windows working copy - the same

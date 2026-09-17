@@ -1,28 +1,30 @@
 # Title
 
-Bridge GL11 has no buffer-taking `glGetFloat`: reading `GL_MODELVIEW_MATRIX` / `GL_PROJECTION_MATRIX` throws `NoSuchMethodError` mid-render
+Bridge GL11 cannot serve a buffer-taking `glGetFloat`: reading `GL_MODELVIEW_MATRIX` / `GL_PROJECTION_MATRIX` throws `UnsupportedOperationException` mid-render
 
 # Body
 
 ## Summary
 
-`com.genir.renderer.bridge.commands.GL11` implements no `glGetFloat(int, FloatBuffer)` overload. Since the agent rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that compiled fine against real LWJGL binds to the bridge at runtime and dies with a `NoSuchMethodError` the first time it reads a matrix back - from inside its render pass, so it takes the screen down with it rather than failing at load.
+No bridge class implements `glGetFloat(int, FloatBuffer)`. Since the agent rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that compiled fine against real LWJGL binds to the bridge at runtime and dies the first time it reads a matrix back - from inside its render pass, so it takes the screen down with it rather than failing at load.
 
-Verified against **v0.8.8** (`fr.jar`, SHA-256 `a3c5bbaf60a2399aea1968fab7855f062386f7d1158d168225bdedf336065bd6`, 669864 bytes) on Starsector 0.98a-RC8.
+Verified against **v0.8.9** (`fr.jar`, SHA-256 `e669b6dd6b9c1fc4e34b44b40e9e03c19374d8dc46e7820b9e3a4813cbc3208f`, 716583 bytes) on Starsector 0.98a-RC8.
 
-It was first written against v0.7.2 and re-read on every release since. One `glGet*` entry point has been added in that whole span - `glGetTexParameteri`, in v0.8.7 - and it is telling: it closed exactly this class of bug (a `NoSuchMethodError` from a read the bridge did not implement) for a different pname family, by delegating through `exec.get`. So the gap reported here is a known shape with a known remedy; the matrix reads are simply the ones still missing.
+v0.8.9 changed how this surfaces, without changing the gap. `com.genir.renderer.bridge.opengl.GL11` is the new rewrite target and declares LWJGL's whole `glGet*` surface, `glGetFloat(int, FloatBuffer)` included, forwarding the implemented entry points to `com.genir.renderer.bridge.commands.GL11` and throwing `UnsupportedOperationException` for the rest. So the call that used to fail to link now links and throws when called. That is a better failure - it names the method rather than the descriptor, and it cannot be mistaken for a classpath problem - but the matrix still cannot be read, and the pattern below still has no supported form.
 
-Everything around that surface has meanwhile turned over repeatedly - v0.7.4 moved the bridge from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command interfaces to `com.genir.renderer.bridge.interfaces`; v0.8.0 replaced the system classloader with a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`, `com.genir.renderer.agent`); v0.8.3 added a compressed-texture path inside `glGetTexImage`; v0.8.4 repacked `VertexInterceptor`'s vertex arrays and moved program tracking from `AttribTracker` to a `ShaderTracker`; v0.8.5rc1 moved that tracking back to `AttribTracker`, reworked context creation, and moved texture loading off the startup path; v0.8.6 rewrote `TextureTracker` to record each texture's bound target; and v0.8.7rc1 re-laid-out the frame's packed command arguments. None of that touches which matrix a caller can read back.
+This was first written against v0.7.2 and re-read on every release since. One `glGet*` entry point has been added in that whole span - `glGetTexParameteri`, in v0.8.7 - and it is telling: it closed exactly this class of bug for a different pname family, by delegating through `exec.get`. So the gap reported here is a known shape with a known remedy; the matrix reads are simply the ones still missing.
+
+Everything around that surface has meanwhile turned over repeatedly - v0.7.4 moved the bridge from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands` and the command interfaces to `com.genir.renderer.bridge.interfaces`; v0.8.0 replaced the system classloader with a Java agent, moving the rewriting itself into a second jar (`fr.agent.jar`, `com.genir.renderer.agent`); v0.8.3 added a compressed-texture path inside `glGetTexImage`; v0.8.4 repacked `VertexInterceptor`'s vertex arrays and moved program tracking from `AttribTracker` to a `ShaderTracker`; v0.8.5rc1 moved that tracking back to `AttribTracker`, reworked context creation, and moved texture loading off the startup path; v0.8.6 rewrote `TextureTracker` to record each texture's bound target; v0.8.7rc1 re-laid-out the frame's packed command arguments; and v0.8.9 added the facade package, merged the agent's transformation tables into one `Transformations` class, moved the compressed-texture read into a `TextureReadManager`, and reworked `Context` and `Executor`. None of that touches which matrix a caller can read back.
 
 ## Details
 
-The bridge's entire `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`, `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, `glGetTexParameteri`, and two `glGetTexImage` overloads (`GL11.java`, the `glGet*` block; in the shipped v0.8.8 jar it decompiles to L1230-L1484). `glGetFloat` exists only in its scalar form, which cannot take a matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked state without a stall is already there, and it keeps being reached for. `glIsTexture` took it in v0.8.4 and `glGetTexLevelParameteri`'s three size pnames in v0.8.5rc1: both now answer from a caller-side `TextureTracker` and demote the real GL call to a deferred assertion, turning reads that used to stall into ones that cannot. The modelview is the same shape of problem with no such treatment.
+The bridge's entire implemented `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`, `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, `glGetTexParameteri`, and two `glGetTexImage` overloads (`commands/GL11.java`, the `glGet*` block; in the shipped v0.8.9 jar it decompiles to L1228-L1480). Everything else on `opengl/GL11` throws. `glGetFloat` is implemented only in its scalar form, which cannot take a matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked state without a stall is already there, and it keeps being reached for. `glIsTexture` took it in v0.8.4 and `glGetTexLevelParameteri`'s three size pnames in v0.8.5rc1: both now answer from a caller-side `TextureTracker` and demote the real GL call to a deferred assertion, turning reads that used to stall into ones that cannot. v0.8.9 applied the same reasoning again in `stall/BufferManager`, serving a mapped buffer range from a CPU-side scratch buffer rather than a synchronous readback. The modelview is the same shape of problem with no such treatment.
 
 The affected pattern is the standard one for turning a cursor into world coordinates:
 
 ```java
 FloatBuffer modelview = BufferUtils.createFloatBuffer(16);
-GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelview);   // NoSuchMethodError under Fast Rendering
+GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelview);   // UnsupportedOperationException under Fast Rendering
 GLU.gluUnProject(mouseX, mouseY, 0f, modelview, projection, viewport, out);
 ```
 
@@ -30,9 +32,9 @@ Any mod that unprojects the cursor over the campaign map hits this. (`org.lwjgl.
 
 ## Why a pass-through overload would not fix it
 
-Adding `glGetFloat(int, FloatBuffer)` that just delegates to `org.lwjgl.opengl.GL11` would stop the crash and replace it with something worse.
+Making the declared `glGetFloat(int, FloatBuffer)` delegate to `org.lwjgl.opengl.GL11` instead of throwing would stop the crash and replace it with something worse.
 
-While `cpuMode` is set, `TransformManager` deliberately keeps GL's modelview at identity and multiplies each vertex by the CPU matrix instead (`TransformManager.setCPUMode` and `getCPUModelView`; `VertexInterceptor.glVertex3f`). `shouldDelegate()` means modelview calls are not forwarded to real GL at all in that mode. So a delegating read hands back identity while the real transform sits in a Java object, and the caller gets sixteen plausible floats that are silently wrong - a mod resolves the wrong point on the map with nothing thrown. The current `NoSuchMethodError` is at least loud.
+While `cpuMode` is set, `TransformManager` deliberately keeps GL's modelview at identity and multiplies each vertex by the CPU matrix instead (`TransformManager.setCPUMode` and `getCPUModelView`; `VertexInterceptor.glVertex3f`). `shouldDelegate()` means modelview calls are not forwarded to real GL at all in that mode. So a delegating read hands back identity while the real transform sits in a Java object, and the caller gets sixteen plausible floats that are silently wrong - a mod resolves the wrong point on the map with nothing thrown. The current `UnsupportedOperationException` is at least loud, and the facade's throw-by-default is the right posture for exactly this reason: a declared-but-unserved read should refuse rather than guess.
 
 ## Why reading `getCPUModelView()` on the caller thread also does not fix it
 

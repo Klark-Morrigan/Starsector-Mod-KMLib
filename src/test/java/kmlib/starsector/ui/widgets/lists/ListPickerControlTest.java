@@ -9,6 +9,8 @@ import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
+import kmlib.testfixtures.starsector.ui.widgets.lists.Anomaly;
+import kmlib.testfixtures.starsector.ui.widgets.lists.AnomalySortMode;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,11 @@ import org.mockito.Mockito;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+
+import static kmlib.testfixtures.starsector.ui.widgets.lists.ListPickerBlockReads.readColumnsSelector;
+import static kmlib.testfixtures.starsector.ui.widgets.lists.ListPickerBlockReads.readItemList;
+import static kmlib.testfixtures.starsector.ui.widgets.lists.ListPickerBlockReads.readSortRow;
+import static kmlib.testfixtures.starsector.ui.widgets.lists.ListPickerBlockReads.readSortSelector;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,7 +73,6 @@ final class ListPickerControlTest {
     // then the list.
     private static final int DIVIDER = 0;
     private static final int COLUMNS_SELECTOR = 1;
-    private static final int SORT_ROW = 2;
 
     // The engine tones the picker's rows carry, stood in for so the rows can be built without the live
     // palette in reach. Two distinguishable stand-ins, since what the tone cases assert is which of the
@@ -149,7 +155,7 @@ final class ListPickerControlTest {
             // The sort selector holds the row's left half (a vertical, re-firing radio lit on the
             // active mode's row) and whatever the caller handed over fills the right, so the metric
             // reads side by side with the caller's own knobs above the list.
-            var pair = sortRowOf(build(ANOMALIES, null, AnomalySortMode.SEVERITY));
+            var pair = readSortRow(build(ANOMALIES, null, AnomalySortMode.SEVERITY));
             var sortSelector = (ControlSpec.VerticalTable) pair
                 .leftColumn()
                 .get(0);
@@ -173,7 +179,7 @@ final class ListPickerControlTest {
         void buildPickerDrawsTheSortSelectorAloneWhenNothingIsPairedWithIt() {
             // A caller with nothing to pair passes no trailing controls, which leaves the sort
             // selector alone on its row rather than forcing a stand-in widget into the right half.
-            var pair = sortRowOf(buildPicker(
+            var pair = readSortRow(buildPicker(
                 ANOMALIES,
                 null,
                 sortOf(AnomalySortMode.ALPHA),
@@ -188,10 +194,18 @@ final class ListPickerControlTest {
 
         @Test
         void buildPickerIsAFixedFourRowBlock() {
-            // The rule, the columns selector, the paired sort row, and the list: four rows, fixed
-            // regardless of whether anything is spotlighted.
+            // The rule, the columns selector, the paired sort row, and the scrolling section the
+            // list sits in: four rows in that order, fixed regardless of whether anything is
+            // spotlighted. Asserted by type rather than by count alone, because the order is what
+            // every suite reaching into a built block reads through ListPickerBlockReads - so a row
+            // inserted or moved fails here, where it names what changed, rather than in a consumer's
+            // suite as a cast against a control it never asked for.
             assertThat(build(ANOMALIES, null, AnomalySortMode.ALPHA))
-                .hasSize(4);
+                .hasExactlyElementsOfTypes(
+                    ControlSpec.Divider.class,
+                    ControlSpec.HorizontalRadio.class,
+                    ControlSpec.SideBySide.class,
+                    ControlSpec.ScrollingSection.class);
             assertThat(build(ANOMALIES, "storm_1", AnomalySortMode.ALPHA))
                 .hasSize(4);
         }
@@ -199,7 +213,7 @@ final class ListPickerControlTest {
         @Test
         void buildPickerBuildsAVerticalDeselectableIconListOfTheItems() {
 
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             // A vertical table by type; re-picking the lit row clears the spotlight (DESELECT).
             assertThat(picker.reselect())
@@ -222,7 +236,7 @@ final class ListPickerControlTest {
             // A third item that trails on severity but leads on radius, so a radius sort visibly
             // reorders the list rather than just relabelling it.
             var squall = new Anomaly("squall_1", "Squall", "crest_squall", 1, 12);
-            var picker = buildPickerFor(build(
+            var picker = readItemList(build(
                 List.of(STORM, DRIFT, squall),
                 null,
                 AnomalySortMode.RADIUS));
@@ -237,7 +251,7 @@ final class ListPickerControlTest {
         void buildPickerRanksTheListInTheGivenDirection() {
             // The direction flows through to the ordering: radius ascending reverses the default
             // descending list. The trailing values still read the radius, only their order flips.
-            var picker = buildPickerFor(buildPicker(
+            var picker = readItemList(buildPicker(
                 ANOMALIES,
                 null,
                 new ListSort<>(AnomalySortMode.RADIUS, SortDirection.ASCENDING, SORT_MODES),
@@ -255,7 +269,7 @@ final class ListPickerControlTest {
             // A mode that answers no runs leaves every row's value column unfilled, so the list reads
             // as a plain one rather than a ranked table - and the absence is the empty slot rather
             // than a blank run, so nothing downstream has to read an empty string as "nothing here".
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             assertThat(readTrailingRowSlots(picker))
                 .containsExactly(RowSlot.EMPTY, RowSlot.EMPTY);
@@ -267,7 +281,7 @@ final class ListPickerControlTest {
             // text. A consumer assembling a value from parts cannot tell that case from declaring no
             // value at all, so both reach the row as the one empty slot rather than as two spellings
             // of the same absence.
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.SEVERITY));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.SEVERITY));
 
             assertThat(readTrailingRowSlots(picker))
                 .containsExactly(RowSlot.EMPTY, RowSlot.EMPTY);
@@ -278,7 +292,7 @@ final class ListPickerControlTest {
             // A mode whose value is picked out in shades of its own reaches the row as several runs,
             // each keeping the colour the mode gave it, while the run it left to the row takes the
             // row's tone - so one value can mix the two.
-            var picker = buildPickerFor(build(List.of(STORM), null, AnomalySortMode.SPREAD));
+            var picker = readItemList(build(List.of(STORM), null, AnomalySortMode.SPREAD));
 
             assertThat(picker.labelledRows().get(0).trailingRowSlot())
                 .isEqualTo(new RowSlot.TextRuns(List.of(
@@ -294,7 +308,7 @@ final class ListPickerControlTest {
             // Each run's own spacing survives the re-colour, so a range that read as one word still
             // does once greyed rather than falling apart into word-spaced numbers.
             var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 4, 6, true);
-            var picker = buildPickerFor(build(List.of(lapsed), null, AnomalySortMode.SPREAD));
+            var picker = readItemList(build(List.of(lapsed), null, AnomalySortMode.SPREAD));
 
             assertThat(picker.labelledRows().get(0).trailingRowSlot())
                 .isEqualTo(new RowSlot.TextRuns(List.of(
@@ -310,7 +324,7 @@ final class ListPickerControlTest {
             // in, so nothing is tinted on speculation.
             // Ranked by the one fixture mode that writes a number onto its rows, so the trailing
             // value carries a tone to read rather than the blank the other modes leave.
-            var picker = buildPickerFor(build(List.of(STORM), null, AnomalySortMode.RADIUS));
+            var picker = readItemList(build(List.of(STORM), null, AnomalySortMode.RADIUS));
             var row = picker.labelledRows().get(0);
 
             assertThat(row.labelRuns())
@@ -329,7 +343,7 @@ final class ListPickerControlTest {
             // as a state. The tint is a separate shade from the words' tone on purpose; see the
             // constant.
             var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 0, 0, true);
-            var picker = buildPickerFor(build(List.of(lapsed), null, AnomalySortMode.RADIUS));
+            var picker = readItemList(build(List.of(lapsed), null, AnomalySortMode.RADIUS));
             var row = picker.labelledRows().get(0);
 
             assertThat(row.labelRuns())
@@ -345,7 +359,7 @@ final class ListPickerControlTest {
             // The state is per row rather than per list, so a receded row and a full-strength one sit
             // in the same list without either taking the other's tone.
             var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 0, 0, true);
-            var picker = buildPickerFor(build(
+            var picker = readItemList(build(
                 List.of(STORM, lapsed),
                 null,
                 AnomalySortMode.RADIUS));
@@ -363,7 +377,7 @@ final class ListPickerControlTest {
             // An item whose name did not resolve draws as an unlabelled row, not a null the width
             // measurer would choke on.
             var nameless = new Anomaly("ghost_1", null, null, 4, 4);
-            var picker = buildPickerFor(build(List.of(nameless), null, AnomalySortMode.SEVERITY));
+            var picker = readItemList(build(List.of(nameless), null, AnomalySortMode.SEVERITY));
 
             assertThat(picker.labels())
                 .containsExactly("");
@@ -373,7 +387,7 @@ final class ListPickerControlTest {
         void buildPickerLightsTheSpotlightedItemsRow() {
             // The lit row is resolved by the selected ID, not by the label the row draws, so an ID
             // that matches no label still lights its own item's row wherever the ranking put it.
-            var picker = buildPickerFor(build(ANOMALIES, "storm_1", AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, "storm_1", AnomalySortMode.ALPHA));
 
             // Alpha-sorted, Storm is the second row.
             assertThat(picker.selectedIndex())
@@ -384,7 +398,7 @@ final class ListPickerControlTest {
         void buildPickerLightsNoRowWhenTheSelectedItemIsNotInTheList() {
             // A stale selected ID (the caller's heal has not run, or the item lapsed mid-session)
             // lights nothing, so the list still shows every real option to pick from.
-            var picker = buildPickerFor(build(ANOMALIES, "vanished", AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, "vanished", AnomalySortMode.ALPHA));
 
             assertThat(picker.selectedIndex())
                 .isEqualTo(ControlSpec.NO_SELECTION);
@@ -395,14 +409,14 @@ final class ListPickerControlTest {
             // The chosen column count reaches the list widget's geometry: a two-column choice builds
             // a two-column list, a single-column choice a one-column list, so the layout wraps the
             // rows exactly as the selector says.
-            var oneColumn = buildPickerFor(buildPicker(
+            var oneColumn = readItemList(buildPicker(
                 ANOMALIES,
                 null,
                 sortOf(AnomalySortMode.ALPHA),
                 ListColumns.ONE,
                 TRAILING));
 
-            var twoColumn = buildPickerFor(buildPicker(
+            var twoColumn = readItemList(buildPicker(
                 ANOMALIES,
                 null,
                 sortOf(AnomalySortMode.ALPHA),
@@ -420,9 +434,8 @@ final class ListPickerControlTest {
             // The columns selector reports its pick rather than storing one, and the picker passes
             // that report straight through - a wiring that silently came undone would leave the
             // segment lighting up and the caller never told.
-            var columnsSelector = (ControlSpec.HorizontalRadio)
-                build(ANOMALIES, null, AnomalySortMode.ALPHA)
-                    .get(COLUMNS_SELECTOR);
+            var columnsSelector =
+                readColumnsSelector(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             columnsSelector.action().activateCell(
                 List.of(ListColumns.values()).indexOf(ListColumns.TWO));
@@ -435,10 +448,7 @@ final class ListPickerControlTest {
         void buildPickerReportsASortRowPickToTheStore() {
             // The same pass-through for the other selector: a click on an unlit mode's row reports
             // that mode in its own default direction.
-            var sortSelector = (ControlSpec.VerticalTable) sortRowOf(
-                    build(ANOMALIES, null, AnomalySortMode.ALPHA))
-                .leftColumn()
-                .get(0);
+            var sortSelector = readSortSelector(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             sortSelector.action().activateCell(MODES.indexOf(AnomalySortMode.SEVERITY));
 
@@ -456,7 +466,7 @@ final class ListPickerControlTest {
         @Test
         void clickingAnUnlitOptionReportsThatItem() {
 
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             picker.action().activateCell(0);
 
@@ -471,7 +481,7 @@ final class ListPickerControlTest {
         void clickingTheLitOptionReportsAClear() {
             // The list is deselectable, so a press on the spotlighted row reaches the action with its
             // own index; re-picking it stops the spotlight rather than re-selecting it.
-            var picker = buildPickerFor(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
 
             picker.action().activateCell(0);
 
@@ -484,7 +494,7 @@ final class ListPickerControlTest {
         @Test
         void clickingAnotherOptionWhileSpotlightingReportsTheNewItem() {
 
-            var picker = buildPickerFor(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
 
             picker.action().activateCell(1);
 
@@ -496,7 +506,7 @@ final class ListPickerControlTest {
         void clickingOutsideTheListReportsNothing() {
             // A stray hit - an index past the rows, or a negative one - neither spotlights nor
             // clears, so a click that lands outside the options leaves the caller's state as it was.
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             picker.action().activateCell(ANOMALIES.size());
             picker.action().activateCell(-1);
@@ -517,7 +527,7 @@ final class ListPickerControlTest {
             // over, so what a hover previews is what a click on that row would spotlight. Sorted by
             // radius, the third item leads and the caller's own first item falls behind it.
             var squall = new Anomaly("squall_1", "Squall", "crest_squall", 1, 12);
-            var picker = buildPickerFor(build(
+            var picker = readItemList(build(
                 List.of(STORM, DRIFT, squall),
                 null,
                 AnomalySortMode.RADIUS));
@@ -541,7 +551,7 @@ final class ListPickerControlTest {
         void hoveringTheSpotlightedRowReportsItLikeAnyOther() {
             // A hover reads the row under the pointer and nothing about what is lit, so the
             // spotlighted row reports its own item rather than the clear a click on it reports.
-            var picker = buildPickerFor(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, "drift_1", AnomalySortMode.ALPHA));
 
             picker.hoverReport().reportHoveredCell(0);
 
@@ -556,7 +566,7 @@ final class ListPickerControlTest {
             // The leave is the one thing a stream of readings never says out loud, so it reaches the
             // store as a report of its own: a host previewing the hovered item stops previewing one
             // rather than holding the last row the pointer crossed.
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             picker.hoverReport().reportHoveredCell(0);
             picker.hoverReport().reportHoveredCell(ControlHoverReport.NO_CELL_HOVERED);
@@ -573,7 +583,7 @@ final class ListPickerControlTest {
             // leave rather than being dropped, which is where the hover parts from the click beside
             // it: a stray click leaves the spotlight standing, while a hover on nothing is itself the
             // answer that no item is under the pointer.
-            var picker = buildPickerFor(build(ANOMALIES, null, AnomalySortMode.ALPHA));
+            var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
             picker.hoverReport().reportHoveredCell(ANOMALIES.size());
             picker.hoverReport().reportHoveredCell(-1);
@@ -590,13 +600,6 @@ final class ListPickerControlTest {
         return new ListSort<>(mode, mode.defaultDirection(), SORT_MODES);
     }
 
-    // The picker list is always the block's last row, and that row is the scrolling section it sits
-    // in - so a test reaches through the section and reads the vertical table it holds.
-    private static ControlSpec.VerticalTable buildPickerFor(List<ControlSpec> controls) {
-        var section = (ControlSpec.ScrollingSection) controls.get(controls.size() - 1);
-        return (ControlSpec.VerticalTable) section.controls().get(0);
-    }
-
     // What each row leads with, top to bottom - an item's crest, or the empty slot for an item with
     // none.
     private static List<RowSlot> readLeadingRowSlots(ControlSpec.VerticalTable picker) {
@@ -610,12 +613,6 @@ final class ListPickerControlTest {
         return picker.labelledRows().stream()
             .map(LabelledRow::trailingRowSlot)
             .toList();
-    }
-
-    // The paired sort row, read as the side-by-side group it is so a test reads its left column (the
-    // sort selector) and its right column (the caller's trailing controls) separately.
-    private static ControlSpec.SideBySide sortRowOf(List<ControlSpec> controls) {
-        return (ControlSpec.SideBySide) controls.get(SORT_ROW);
     }
 
     // The trailing slot a row carrying this value holds, in the tone the picker resolves - what an

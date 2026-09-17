@@ -20,10 +20,12 @@ public final class FastRendering {
 
     // The package every Fast Rendering bridge class sits under, whatever the release calls the rest
     // of the name. Matching the prefix rather than a whole class name is deliberate: the bridge has
-    // been relocated within this package before (v0.7.4 moved GL11 from
-    // com.genir.renderer.bridge to com.genir.renderer.bridge.commands), and a full-name comparison
-    // answers "stock" for any release whose layout it does not know. That is the one wrong answer
-    // with teeth - it routes callers into GL reads the bridge cannot serve, which fail mid-render.
+    // moved within this package twice, neither time announced (v0.7.4 moved GL11 from
+    // com.genir.renderer.bridge to com.genir.renderer.bridge.commands, and v0.8.9 left the
+    // implementations there but pointed the rewrite at a com.genir.renderer.bridge.opengl facade).
+    // A full-name comparison answers "stock" for any release whose layout it does not know. That is
+    // the one wrong answer with teeth - it routes callers into GL reads the bridge cannot serve,
+    // which fail mid-render.
     private static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
 
     private static final int MATRIX_FLOAT_COUNT = 16;

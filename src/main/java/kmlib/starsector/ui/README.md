@@ -783,6 +783,20 @@ exactly as where it keeps a pick is.
 A mod's own thin binder is what ties the two ends to its sector-memory keys or settings fields,
 and that binder is the only place those keys appear.
 
+`ActivePicks` and `ListPickerStore` are deliberately the same three answers read and written,
+which is what lets one binder be thin enough to be worth writing.
+A consuming mod supplies rows of its own type,
+a vocabulary of its own,
+and one address;
+everything between - which row is lit,
+which metric ranks the list,
+how many columns it wraps across,
+and which row the pointer is on - travels through those two.
+The column pick is the one of the three that is a layout preference rather than a statement about the list,
+so it is typically kept per panel rather than per list,
+and a binder that reads it at one address and writes it at another is the one way the set comes apart:
+the read and the write are of the same value and belong at the same address.
+
 Labels follow the same rule for the same reason.
 A string ID only means something against the category that registered it,
 and [`StarsectorStrings`](../strings/StarsectorStrings.java)
