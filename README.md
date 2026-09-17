@@ -60,7 +60,7 @@ so an install without any of them is ordinary
   - KMLib registers its own commands,
     listed under [Console commands](#console-commands);
   - KMLib publishes whether the console is up and taking text entry,
-    which anything drawing over the screen should stand down for.  
+    which anything drawing over the screen should stand down for.
 - **Nexerelin**
   - KMLib's colony related console commands account for Nexerelin implementation.
 - **Random Assortment of Things** (RAT)
