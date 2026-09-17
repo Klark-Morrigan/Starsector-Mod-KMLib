@@ -13,22 +13,25 @@ final class FastRenderingBinding {
 
     private static final String BOUND_VERSION = "{{boundVersion}}";
 
-    /** Stamped in place of a version by a build that compiled against the bridge stubs. */
-    static final String UNKNOWN_VERSION = "{{unknownVersion}}";
+    // What a build stamps where it read no version: one compiled against the bridge stubs, or
+    // against a jar too old to carry a version class. A word rather than an empty string so the
+    // generated file, and a decompiled jar, say what happened. It never reaches a sentence: the
+    // reader below answers it as no version.
+    private static final String UNKNOWN_VERSION = "{{unknownVersion}}";
 
     private FastRenderingBinding() {
     }
 
     /**
-     * Reports the release this jar's bridge adapter was type-checked against.
+     * Reports the release this jar's bridge adapter was type-checked against, or {@code null} where
+     * the build read none.
      *
-     * <p>A method rather than a bare constant so the value is read from the jar that shipped it:
-     * a constant would be inlined into every caller, including the tests that check what the
-     * build stamped.
+     * <p>A method rather than the constant because the sentinel is a fact about the stamp, not a
+     * version; answering {@code null} for it is what keeps that word out of every reader.
      *
-     * @return genir's own version string, or {@link #UNKNOWN_VERSION}
+     * @return genir's own version string, or {@code null}
      */
     static String readBoundVersion() {
-        return BOUND_VERSION;
+        return UNKNOWN_VERSION.equals(BOUND_VERSION) ? null : BOUND_VERSION;
     }
 }

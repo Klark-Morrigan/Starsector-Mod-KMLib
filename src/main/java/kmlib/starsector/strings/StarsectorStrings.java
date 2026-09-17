@@ -106,5 +106,4 @@ public final class StarsectorStrings {
     interface StringSource {
         String get(String category, String key);
     }
-
 }
