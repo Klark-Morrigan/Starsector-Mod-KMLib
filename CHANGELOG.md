@@ -24,6 +24,7 @@ The reusable release workflow extracts the section matching the released version
 - **`MemoryKeyAddress`, `AddressedMemoryFlag`, `AddressedMemoryString`**: a stored value held once per point on an axis the consumer declares rather than once per save. The holder states its base key and names the address each read and write means; the key is composed in one place, so no holder can spell the segments differently or drop one and quietly share a slot with another.
 - **`KmlibStringKeys.get()` and `format()`**: lookups bound to KMLib's own category, so a call site names a key alone rather than repeating the category beside it.
 - **`CompatibilityFailure`**: one binding to third-party code that has stopped holding, in the shape the modal shown to the player and the line written to the log are both composed from - the third party, the version KMLib was compiled against beside the version installed now, the detail that broke, and the sentence naming what the session loses. Naming both versions is what turns "version mismatch" into something a player can act on, and it settles which direction the mismatch runs in without a report having to classify it; an unread version renders as an explicit unknown rather than as `null`.
+- **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
 
 ### Test fixtures
 

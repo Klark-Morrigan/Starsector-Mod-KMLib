@@ -52,6 +52,25 @@ public final class KmlibStrings {
     }
 
     /**
+     * {@code value} itself where it {@link #hasText has text}, else an {@link IllegalArgumentException}
+     * carrying {@code message}.
+     *
+     * <p>The blank-rejecting counterpart of {@link java.util.Objects#requireNonNull}, for a value
+     * type whose components are sentences or names: an empty one passes a null check and renders as
+     * a hole in the text, which is the failure the check was there to stop.
+     *
+     * @param value   the string a caller requires text in
+     * @param message what a blank costs, for the exception
+     * @return {@code value}, so the check reads inline in a constructor
+     */
+    public static String requireText(String value, String message) {
+        if (!hasText(value)) {
+            throw new IllegalArgumentException(message);
+        }
+        return value;
+    }
+
+    /**
      * The whitespace-parted words of {@code text}, in the order they are
      * written and with empties dropped, so leading, trailing or doubled
      * spacing changes nothing about the answer.

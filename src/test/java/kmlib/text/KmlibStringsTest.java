@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class KmlibStringsTest {
 
@@ -43,6 +44,25 @@ class KmlibStringsTest {
             // wrapper, so surrounding whitespace stays in the input.
             assertThat(KmlibStrings.hasText("  word  "))
                 .isTrue();
+        }
+    }
+
+    @Nested
+    class RequireText {
+
+        @Test
+        void requireTextReturnsTheValueItWasGiven() {
+            assertThat(KmlibStrings.requireText("Fast Rendering", "unused"))
+                .isEqualTo("Fast Rendering");
+        }
+
+        @Test
+        void requireTextRejectsABlankWithTheGivenMessage() {
+            // Blank rather than null: the case a null check lets through, and the reason the helper
+            // exists beside Objects.requireNonNull.
+            assertThatThrownBy(() -> KmlibStrings.requireText("   ", "A name with no text in it"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A name with no text in it");
         }
     }
 
