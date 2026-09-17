@@ -1,0 +1,158 @@
+// Stamps the Fast Rendering release the bridge adapter was type-checked against
+// into a generated Java constant, so a mismatch reported at runtime can name
+// both halves of the disagreement rather than only the half it can still see.
+//
+// Runtime reads the version that is installed NOW, reflectively, off
+// com.genir.renderer.Version. The version the adapter was COMPILED against
+// exists only while the build holds the jar it compiled from, so it has to be
+// carried forward deliberately or the report degrades to "something moved",
+// which a player cannot act on. Naming both also removes any need to classify a
+// break as too-new or too-old: the two numbers say which it is.
+//
+// Generated as a Java source rather than as a jar resource or a manifest
+// attribute, because a constant links. The value is read on a failure path whose
+// whole job is to still work once a third-party binding has stopped working, and
+// a resource lookup there is one more thing that can come back with nothing.
+//
+// Applied rather than inlined into select-fast-rendering-binding.gradle, and
+// self-contained, so it can be applied into a throwaway project and driven
+// directly. That is the only way the stub leg's stamp is checkable on a machine
+// whose own install is patched - which every development machine here is.
+//
+// Input, read from the applying project:
+//   ext.boundFastRenderingJarFile - the jar the adapter compiles against, or
+//   null/unset when it compiles against the bridge stubs.
+//
+// Published back to it:
+//   ext.unknownFastRenderingVersion - the sentinel below.
+//   ext.boundFastRenderingVersion   - what this build stamped.
+
+// Refused in the terms of what this script needs, rather than left to surface as
+// a missing-property failure from inside sourceSets - where the reader is
+// looking at a generated version, not at plugins.
+if (!project.pluginManager.hasPlugin('java')) {
+    throw new GradleException('stampFastRenderingVersion needs the java plugin: it adds a '
+        + "generated source directory to the main source set's Java sources.")
+}
+
+// What gets stamped when there is no jar to read - the stub leg, and any jar too
+// old to carry the version class (absent before v0.8.2). A named sentinel rather
+// than an empty string because the value is rendered into a player-facing
+// sentence: a blank in the middle of one reads as a bug in KMLib, where a word
+// reads as the fact it is.
+ext.unknownFastRenderingVersion = 'unknown'
+
+// Loaded under a bootstrap-parented loader so the class cannot resolve against
+// the build's own classpath, and closed immediately; the method returns a
+// constant and touches nothing else, so nothing stays loaded. Any failure - an
+// older jar without the class, a renamed method - reports no version. Which Fast
+// Rendering was bound is a thing to report, never a reason to fail a build that
+// would otherwise compile.
+//
+// The failure is still logged, at warning level, because it is the only trace
+// of WHY a patched install stamped the sentinel: a jar that is present but
+// unreadable is the case someone will be asked to diagnose, and 'unknown' on
+// its own sends them to check whether fr.jar exists, which it does.
+def readFastRenderingVersion = { File jar ->
+    if (jar == null || !jar.exists()) {
+        return null
+    }
+    try {
+        def loader = new URLClassLoader([jar.toURI().toURL()] as URL[], (ClassLoader) null)
+        try {
+            return loader.loadClass('com.genir.renderer.Version')
+                .getMethod('getVersion')
+                .invoke(null)
+        } finally {
+            loader.close()
+        }
+    } catch (Exception readFailure) {
+        logger.warn("Could not read com.genir.renderer.Version.getVersion() from ${jar}: "
+            + "${readFailure.class.simpleName}: ${readFailure.message}")
+        return null
+    }
+}
+
+// Read at configuration time, once. The jar is the build's own input and does
+// not change while it runs, and reading it here is what lets the value be
+// declared as a task input below - which is what keeps the stamp out of date
+// exactly when the bound jar changes underneath it.
+def boundJarFile = (File) project.findProperty('boundFastRenderingJarFile')
+def boundVersion = (readFastRenderingVersion(boundJarFile) ?: unknownFastRenderingVersion).toString()
+
+ext.boundFastRenderingVersion = boundVersion
+
+// The class is package-private and sits beside FastRendering, which is where
+// everything KM code has to know about that renderer already lives. Nothing
+// outside kmlib.opengl has a use for a build stamp, so nothing outside it can
+// reach one.
+def generatedSourcePackage = 'kmlib/opengl'
+def generatedSourceClassName = 'FastRenderingBinding'
+def generatedSourceDirectory = layout.buildDirectory.dir('generated/sources/fastrenderingversion/java')
+
+// A version genir chose, embedded in a Java string literal. Escaped rather than
+// trusted: a quote or a backslash in it would otherwise produce a source file
+// that does not compile, and the failure would name the generated file rather
+// than the jar that supplied the text.
+def escapedBoundVersion = boundVersion.replace('\\', '\\\\').replace('"', '\\"')
+
+def stampFastRenderingVersion = tasks.register('stampFastRenderingVersion') {
+
+    group = 'build'
+
+    description = ('Generates the constant naming which Fast Rendering release the bridge '
+        + 'adapter was type-checked against.')
+
+    // The version rather than the jar: a rebuild against a jar with the same
+    // version stamps the same file, and re-running the compiler over an
+    // identical source is work nobody asked for.
+    inputs.property('boundFastRenderingVersion', boundVersion)
+    outputs.dir(generatedSourceDirectory)
+
+    doLast {
+
+        def packageDirectory = new File(generatedSourceDirectory.get().asFile, generatedSourcePackage)
+        packageDirectory.mkdirs()
+
+        new File(packageDirectory, "${generatedSourceClassName}.java").text = """\
+// Generated by gradle/tasks/generate/stamp-fast-rendering-version.gradle. Do not edit: it is
+// rewritten from the jar the adapter was type-checked against.
+package kmlib.opengl;
+
+/**
+ * Which Fast Rendering release KMLib's bridge adapter was compiled against.
+ *
+ * <p>Runtime can read only the version installed now, so the version compiled against has to be
+ * carried forward from the build or a mismatch report can name just one side of it.
+ */
+final class ${generatedSourceClassName} {
+
+    private static final String BOUND_VERSION = "${escapedBoundVersion}";
+
+    /** Stamped in place of a version by a build that compiled against the bridge stubs. */
+    static final String UNKNOWN_VERSION = "${unknownFastRenderingVersion}";
+
+    private ${generatedSourceClassName}() {
+    }
+
+    /**
+     * Reports the release this jar's bridge adapter was type-checked against.
+     *
+     * <p>A method rather than a bare constant so the value is read from the jar that shipped it:
+     * a constant would be inlined into every caller, including the tests that check what the
+     * build stamped.
+     *
+     * @return genir's own version string, or {@link #UNKNOWN_VERSION}
+     */
+    static String readBoundVersion() {
+        return BOUND_VERSION;
+    }
+}
+"""
+    }
+}
+
+// The task provider rather than the directory, so everything that reads the main
+// source set - the compiler, checkstyle, the formatter - waits for the file
+// instead of each having to be wired to it by name.
+sourceSets.main.java.srcDir(stampFastRenderingVersion)
