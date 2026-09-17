@@ -636,7 +636,12 @@ No Starsector API on the signature.
   and the registers whatever hand-over and submarket rule this install supplies
   are offered their work through.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) -
-  typed sector-memory accessors (flag, string).
+  typed sector-memory accessors (flag, string),
+  each also in an *addressed* form that holds one value per point on an axis the consumer declares
+  (`MemoryKeyAddress`) rather than once per save -
+  the holder states its base key and names the address it means,
+  and the key is composed in one place,
+  so no holder can spell the segments differently or drop one and quietly share a slot.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) -
   sector script registration,
   one shape per lifetime:
