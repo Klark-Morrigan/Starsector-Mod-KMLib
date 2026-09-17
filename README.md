@@ -496,6 +496,11 @@ No Starsector API on the signature.
   beside the detail that broke and the sentence naming what the session loses.
   One value the player's modal and the log line are both composed from,
   so the wording can be asserted without the machinery that carries it.
+  Plus the session's record of those failures:
+  each subject latched on its first from whichever thread it broke on,
+  held until a reporter on a frame that can show a dialog takes them,
+  and never unlatched by the taking -
+  so a binding that fails on every frame is reported on one.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
