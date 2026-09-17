@@ -40,7 +40,7 @@ final class StampFastRenderingVersionIntegrationTests {
     private static Path writeStampingProject(Path workspace, String boundJarExpression)
             throws IOException {
 
-        var projectDirectory = Files.createDirectories(workspace.resolve("consumer"));
+        var projectDirectory = Files.createDirectories(workspace.resolve("kmlib"));
 
         Files.writeString(
             projectDirectory.resolve("settings.gradle"),
@@ -68,8 +68,16 @@ final class StampFastRenderingVersionIntegrationTests {
             .getOutput();
     }
 
-    private static String readGeneratedSource(Path projectDirectory) throws IOException {
-        return Files.readString(projectDirectory.resolve(GENERATED_SOURCE_PATH));
+    /**
+     * The sentinel, and specifically not an empty string: the generated file would compile either
+     * way, so this is the only thing standing between the generator and a blank in a player-facing
+     * sentence.
+     */
+    private static void assertStampsTheSentinel(Path projectDirectory) throws IOException {
+
+        assertThat(Files.readString(projectDirectory.resolve(GENERATED_SOURCE_PATH)))
+            .contains("BOUND_VERSION = \"unknown\"")
+            .doesNotContain("BOUND_VERSION = \"\"");
     }
 
     @Nested
@@ -88,9 +96,7 @@ final class StampFastRenderingVersionIntegrationTests {
             assertThat(runStamp(projectDirectory))
                 .doesNotContain("Could not read");
 
-            assertThat(readGeneratedSource(projectDirectory))
-                .contains("BOUND_VERSION = \"unknown\"")
-                .doesNotContain("BOUND_VERSION = \"\"");
+            assertStampsTheSentinel(projectDirectory);
         }
 
         /**
@@ -117,9 +123,7 @@ final class StampFastRenderingVersionIntegrationTests {
                 .contains(versionlessJar.getFileName().toString())
                 .contains("ClassNotFoundException");
 
-            assertThat(readGeneratedSource(projectDirectory))
-                .contains("BOUND_VERSION = \"unknown\"")
-                .doesNotContain("BOUND_VERSION = \"\"");
+            assertStampsTheSentinel(projectDirectory);
         }
     }
 }
