@@ -184,6 +184,8 @@ so the format must be consistent across repositories:
 ## [1.0.0] - 2026-05-18
 ### Added
 - ...
+### Test fixtures
+- ...
 ### Changed
 - ...
 ### Fixed
@@ -192,6 +194,22 @@ so the format must be consistent across repositories:
 
 A missing section for the released version fails the release pipeline,
 so release notes are never silently dropped.
+
+**Test fixtures take a section of their own,
+apart from `Added`.** They ship in the main jar and are public API by the table above,
+so a new one is still MINOR -
+but what a reader does about one differs.
+A production addition is something a consumer's shipped code may now call;
+a fixture is something a consumer's *test* code may now stand on,
+and often something it may now delete a copy of.
+Mixed into one list the two have to be told apart entry by entry,
+and this section becomes a GitHub release body,
+where nobody is reading closely enough to do that.
+
+The same reasoning is why `Public contracts changed` and `Dependency changes` are sections
+rather than entries under `Changed`:
+the split is by what the reader has to go and do,
+not by what kind of edit was made.
 
 A changelog that also carries a `## Index` of its versions must list the version being released in it.
 That index is a second place every version is written down and nothing reads it but a human,
