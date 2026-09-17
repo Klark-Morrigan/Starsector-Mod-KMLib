@@ -60,18 +60,13 @@ if (isFastRenderingRequired && !isFastRenderingInstalled) {
             + "verify KMLib's bridge adapter against the real jar.")
 }
 
-// Which Fast Rendering the adapter is type-checked against, read out of the jar
-// itself: fr.jar carries com.genir.renderer.Version.getVersion(). The jar is the
-// only source that exists everywhere the build does - a patched install is
-// patched in place, so there is no mod folder to read a mod_info.json from, and
-// CI has only the transported core jars.
-//
-// Read by the applied script rather than here, because the same value has two
-// jobs: the lifecycle line below, and a constant in the jar that lets a runtime
-// mismatch report name what this build bound. Two readers of one jar could
-// report different versions of it, which is the one thing such a report must not
-// do. The stub leg passes no jar at all, so the vanilla binding stamps the
-// unknown sentinel rather than a version sitting unused on the machine.
+// Which Fast Rendering the adapter is type-checked against has two jobs: the
+// lifecycle line below, and a constant in the jar that lets a runtime mismatch
+// report name what this build bound. The applied script reads it once for both,
+// since two readers of one jar could report different versions of it - the one
+// thing such a report must not do. The stub leg passes no jar at all, so the
+// vanilla binding stamps the unknown sentinel rather than a version sitting
+// unused on the machine.
 ext.boundFastRenderingJarFile = isFastRenderingInstalled ? fastRenderingJarFile : null
 apply from: new File(buildscript.sourceFile.parentFile,
     'tasks/generate/stamp-fast-rendering-version.gradle')

@@ -1195,7 +1195,7 @@ and the bridge ships in `starsector-core/fr.jar`,
 which only an install patched by it has.
 Requiring that jar would make KMLib buildable only on a patched machine,
 so the build binds it when the install has one
-and falls back to compile-only mirrors of the three members it reads
+and falls back to compile-only mirrors of the six members it reads
 ([src/bridgestubs/java](src/bridgestubs/java)) when it does not.
 Every build logs which of the two it used.
 
