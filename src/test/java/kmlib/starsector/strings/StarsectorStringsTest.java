@@ -5,21 +5,24 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class StarsectorStringsTest {
+final class StarsectorStringsTest {
 
     private static final String CATEGORY = "test_category";
     private static final String KEY = "test_key";
 
     @Nested
     class Get {
+
         @Test
         void returnsConfiguredStringFromSource() {
+
             var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> "Configured");
 
-            assertThat(value).isEqualTo("Configured");
+            assertThat(value)
+                .isEqualTo("Configured");
         }
 
         @Test
@@ -38,31 +41,37 @@ class StarsectorStringsTest {
                     return "ok";
                 });
 
-            assertThat(seen).containsExactly(CATEGORY, KEY);
+            assertThat(seen)
+                .containsExactly(CATEGORY, KEY);
         }
 
         @Test
         void redactsWhenSourceReturnsNull() {
+
             var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> null);
 
-            assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
+            assertThat(value)
+                .isEqualTo(StarsectorStrings.REDACTED);
         }
 
         @Test
         void redactsWhenSourceReturnsBlankValue() {
+
             var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
                 (category, key) -> "  ");
 
-            assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
+            assertThat(value)
+                .isEqualTo(StarsectorStrings.REDACTED);
         }
 
         @Test
         void redactsWhenSourceThrows() {
+
             var value = StarsectorStrings.get(
                 CATEGORY,
                 KEY,
@@ -70,14 +79,17 @@ class StarsectorStringsTest {
                     throw new IllegalStateException("missing settings");
                 });
 
-            assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
+            assertThat(value)
+                .isEqualTo(StarsectorStrings.REDACTED);
         }
     }
 
     @Nested
     class Format {
+
         @Test
         void formatsConfiguredStringUsingRootLocale() {
+
             var value = StarsectorStrings.format(
                 CATEGORY,
                 KEY,
@@ -85,11 +97,13 @@ class StarsectorStringsTest {
                 3,
                 2);
 
-            assertThat(value).isEqualTo("3 configured 2");
+            assertThat(value)
+                .isEqualTo("3 configured 2");
         }
 
         @Test
         void redactsWhenConfiguredFormatIsInvalid() {
+
             var value = StarsectorStrings.format(
                 CATEGORY,
                 KEY,
@@ -97,7 +111,8 @@ class StarsectorStringsTest {
                 3,
                 2);
 
-            assertThat(value).isEqualTo(StarsectorStrings.REDACTED);
+            assertThat(value)
+                .isEqualTo(StarsectorStrings.REDACTED);
         }
     }
 }
