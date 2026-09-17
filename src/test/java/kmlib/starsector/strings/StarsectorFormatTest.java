@@ -16,6 +16,7 @@ class StarsectorFormatTest {
 
     @Nested
     class FormatPercent {
+
         @Test
         void formatPercentRendersWholePercentWithSign() {
             // Default-shape value from a one-significant-figure setting.
@@ -44,6 +45,7 @@ class StarsectorFormatTest {
 
         @Test
         void formatPercentRendersZeroAsZero() {
+
             assertThat(StarsectorFormat.formatPercent(0f))
                 .isEqualTo("0%");
         }

@@ -672,6 +672,8 @@ No Starsector API on the signature.
   defensive wrapper around settings.json localisation lookups
   (loud REDACTED on missing or malformed entries),
   plus the number-to-copy shaping that fills their numeric slots.
+  Also KMLib's own category and string IDs,
+  which bind that wrapper to the wording KMLib itself ships.
 - [`starsector/systems/`](src/main/java/kmlib/starsector/systems/) -
   star system queries at two altitudes,
   the sector's whole set and one system a caller holds.
@@ -1351,6 +1353,11 @@ A LunaLib settings store of the same shape sits beside it,
 counting saves as well as holding values,
 since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
+[`starsector/strings/`](src/testFixtures/java/kmlib/testfixtures/starsector/strings/)
+reads a mod's shipped `data/strings/strings.json` beside the string IDs its holder class names,
+for the guard that pins each against the other -
+written once because the walk is the part that can be subtly wrong,
+and a regex quietly matching fewer entries would leave the guard passing over less than it claims.
 [`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
 holds the save a stored value lands in and two stand-in addresses to hold it apart under,
 and

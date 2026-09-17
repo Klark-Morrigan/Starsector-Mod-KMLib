@@ -3,7 +3,6 @@ package kmlib.starsector.entities;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import kmlib.starsector.strings.KmlibStringKeys;
-import kmlib.starsector.strings.StarsectorStrings;
 import kmlib.text.KmlibNumbers;
 import kmlib.text.KmlibStrings;
 
@@ -52,9 +51,7 @@ public final class EntityNameGenerator {
      * @return the campaign-map display name
      */
     public static String generateJumpPointName(SectorEntityToken focus, float orbitRadius) {
-        var jumpPointWord = StarsectorStrings.get(
-            KmlibStringKeys.CATEGORY,
-            KmlibStringKeys.JUMP_POINT_LABEL);
+        var jumpPointWord = KmlibStringKeys.get(KmlibStringKeys.JUMP_POINT_LABEL);
         return resolveFocusLabel(focus)
             + " "
             + jumpPointWord
