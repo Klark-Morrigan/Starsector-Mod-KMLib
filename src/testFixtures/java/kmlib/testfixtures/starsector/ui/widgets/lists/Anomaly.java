@@ -1,12 +1,14 @@
-package kmlib.starsector.ui.widgets.lists;
+package kmlib.testfixtures.starsector.ui.widgets.lists;
+
+import kmlib.starsector.ui.widgets.lists.SelectableListItem;
 
 /**
  * Test fixture: one row of a picker list, standing in for whatever a consuming mod ranks and
  * spotlights in its own sidebar. It implements {@link SelectableListItem} through its own
- * components - the seam a consumer is expected to declare its item type against - and nothing else
- * this package declares, so the sort model is still exercised over a type it has no way to open and
- * the picker draws a caller's own type without anything being mapped into a library value. Carries
- * two numerics beside the name so {@link AnomalySortMode} has distinct keys to rank and flip on.
+ * components - the seam a consumer is expected to declare its item type against - and nothing the
+ * list package declares, so the sort model is exercised over a type it has no way to open and the
+ * picker draws a caller's own type without anything being mapped into a library value. Carries two
+ * numerics beside the name so {@link AnomalySortMode} has distinct keys to rank and flip on.
  *
  * <p>It decides for itself whether a row reads back, off a value of its own rather than off either
  * ranked numeric - a consumer's dim rule is its own business, and running the picker's tone split
@@ -21,7 +23,7 @@ package kmlib.starsector.ui.widgets.lists;
  * @param isDimmed        whether this row reads back, stated outright so a suite picks the state it
  *                        is asserting on rather than deriving it
  */
-record Anomaly(
+public record Anomaly(
     String itemId,
     String displayName,
     String crestSpritePath,
@@ -39,7 +41,13 @@ record Anomaly(
      * @param severity        one numeric a fixture mode ranks on
      * @param radius          the other
      */
-    Anomaly(String itemId, String displayName, String crestSpritePath, int severity, int radius) {
+    public Anomaly(
+            String itemId,
+            String displayName,
+            String crestSpritePath,
+            int severity,
+            int radius) {
+
         this(itemId, displayName, crestSpritePath, severity, radius, false);
     }
 
@@ -52,7 +60,7 @@ record Anomaly(
      * @param severity    one numeric a fixture mode ranks on
      * @param radius      the other
      */
-    Anomaly(String displayName, int severity, int radius) {
+    public Anomaly(String displayName, int severity, int radius) {
         this(displayName, displayName, null, severity, radius);
     }
 }

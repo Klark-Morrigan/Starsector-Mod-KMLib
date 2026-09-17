@@ -1,5 +1,8 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.testfixtures.starsector.ui.widgets.lists.Anomaly;
+import kmlib.testfixtures.starsector.ui.widgets.lists.AnomalySortMode;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

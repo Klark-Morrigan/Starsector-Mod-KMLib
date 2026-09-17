@@ -8,6 +8,8 @@ import kmlib.starsector.ui.controls.RowGeometry;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
+import kmlib.testfixtures.starsector.ui.widgets.lists.Anomaly;
+import kmlib.testfixtures.starsector.ui.widgets.lists.AnomalySortMode;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
