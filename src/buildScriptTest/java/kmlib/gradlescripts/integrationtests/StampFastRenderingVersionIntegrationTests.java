@@ -1,7 +1,6 @@
 package kmlib.gradlescripts.integrationtests;
 
 import org.gradle.testkit.runner.GradleRunner;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -20,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The stamp reads the bound jar, so the leg it takes is decided by the install the build runs
  * against - and those installs are Fast-Rendering-patched, which is the point of them. Applying the
  * script into a throwaway project is what lets the stub leg be posed on purpose rather than waited
- * for. What it has to get right is narrow and easy to lose: the stamped value is rendered into a
- * player-facing sentence, so an empty string there would read as a bug in KMLib on a path that runs
- * only once something else is already broken.
+ * for. What it has to get right is narrow and easy to lose: the sentinel is what the generated
+ * class answers as no version, so a build that stamped an empty string in its place would ship a
+ * version that says nothing.
  */
 final class StampFastRenderingVersionIntegrationTests {
 
@@ -70,8 +69,7 @@ final class StampFastRenderingVersionIntegrationTests {
 
     /**
      * The sentinel, and specifically not an empty string: the generated file would compile either
-     * way, so this is the only thing standing between the generator and a blank in a player-facing
-     * sentence.
+     * way, and only the sentinel is answered as no version.
      */
     private static void assertStampsTheSentinel(Path projectDirectory) throws IOException {
 
@@ -81,13 +79,11 @@ final class StampFastRenderingVersionIntegrationTests {
     }
 
     @Nested
-    @DisplayName("no Fast Rendering version can be read")
     final class StampUnknown {
 
         /** The stub leg: no jar was bound, so there is no version to have read. */
         @Test
-        void stampFastRenderingVersion_StampsTheSentinel_WhenNoJarIsBound(
-                @TempDir Path workspace) throws IOException {
+        void stampsTheSentinelWhenNoJarIsBound(@TempDir Path workspace) throws IOException {
 
             Path projectDirectory = writeStampingProject(workspace, "null");
 
@@ -108,7 +104,7 @@ final class StampFastRenderingVersionIntegrationTests {
          * the jar exists.
          */
         @Test
-        void stampFastRenderingVersion_StampsTheSentinelAndWarns_WhenTheBoundJarCarriesNoVersionClass(
+        void stampsTheSentinelAndWarnsWhenTheBoundJarCarriesNoVersionClass(
                 @TempDir Path workspace) throws IOException {
 
             var versionlessJar = workspace.resolve("fr.jar");

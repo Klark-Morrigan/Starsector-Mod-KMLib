@@ -2,7 +2,6 @@ package kmlib.gradlescripts.integrationtests;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -65,12 +64,10 @@ final class StarsectorInstallLocatorIntegrationTests {
     }
 
     @Nested
-    @DisplayName("install root resolution")
     final class ResolveInstallRoot {
 
         @Test
-        void starsectorInstallLocator_ResolvesRoot_FromProjectProperty(@TempDir Path workspace)
-                throws IOException {
+        void resolvesTheRootFromTheProjectProperty(@TempDir Path workspace) throws IOException {
 
             var projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             var installRoot = Files.createDirectories(workspace.resolve("install"));
@@ -84,8 +81,7 @@ final class StarsectorInstallLocatorIntegrationTests {
         }
 
         @Test
-        void starsectorInstallLocator_ComposesCoreJarPath_UnderStarsectorCore(
-                @TempDir Path workspace) throws IOException {
+        void composesTheCoreJarPathUnderStarsectorCore(@TempDir Path workspace) throws IOException {
 
             var projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             var installRoot = Files.createDirectories(workspace.resolve("install"));
@@ -99,8 +95,7 @@ final class StarsectorInstallLocatorIntegrationTests {
         }
 
         @Test
-        void starsectorInstallLocator_ComposesModJarPath_UnderNamedModFolder(
-                @TempDir Path workspace) throws IOException {
+        void composesTheModJarPathUnderTheNamedModFolder(@TempDir Path workspace) throws IOException {
 
             var projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             var installRoot = Files.createDirectories(workspace.resolve("install"));
@@ -119,7 +114,6 @@ final class StarsectorInstallLocatorIntegrationTests {
     }
 
     @Nested
-    @DisplayName("mod jar scan")
     final class FindModJars {
 
         /** Creates an empty file at the given path, which is all the scan's isFile() test reads. */
@@ -130,8 +124,7 @@ final class StarsectorInstallLocatorIntegrationTests {
         }
 
         @Test
-        void starsectorInstallLocator_FindsModJar_InAnyModFolder(@TempDir Path workspace)
-                throws IOException {
+        void findsAModJarInAnyModFolder(@TempDir Path workspace) throws IOException {
 
             var projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             var installRoot = workspace.resolve("install");
@@ -147,8 +140,7 @@ final class StarsectorInstallLocatorIntegrationTests {
         }
 
         @Test
-        void starsectorInstallLocator_FindsNoModJar_WhenNoModShipsIt(@TempDir Path workspace)
-                throws IOException {
+        void findsNoModJarWhenNoModShipsIt(@TempDir Path workspace) throws IOException {
 
             var projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             var installRoot = workspace.resolve("install");
@@ -168,8 +160,7 @@ final class StarsectorInstallLocatorIntegrationTests {
          * quietly widen the search.
          */
         @Test
-        void starsectorInstallLocator_FindsNoModJar_WhenNestedDeeperThanOneFolder(
-                @TempDir Path workspace) throws IOException {
+        void findsNoModJarWhenNestedDeeperThanOneFolder(@TempDir Path workspace) throws IOException {
 
             var projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             var installRoot = workspace.resolve("install");
@@ -184,8 +175,7 @@ final class StarsectorInstallLocatorIntegrationTests {
         }
 
         @Test
-        void starsectorInstallLocator_FindsNoModJar_WhenInstallHasNoModsFolder(
-                @TempDir Path workspace) throws IOException {
+        void findsNoModJarWhenTheInstallHasNoModsFolder(@TempDir Path workspace) throws IOException {
 
             Path projectDirectory = Files.createDirectories(workspace.resolve("probe"));
             Path installRoot = Files.createDirectories(workspace.resolve("install"));

@@ -6,22 +6,35 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins that the build actually stamped something into this jar.
+ * Pins what the build stamped into this jar as it reaches a reader: a version, or no version at
+ * all, and never the sentinel or a blank.
  *
  * <p>The value is generated, so nothing in the source tree would fail if the generator stopped
- * producing one - the class would simply carry an empty string, and the mismatch report that reads
- * it would name the third party and then trail off mid-sentence on a path that runs only once
- * something is already broken. This is the assertion that holds on either binding: the patched leg
- * stamps genir's own version, the stub leg stamps the sentinel, and both are text.
+ * producing one - the class would simply carry an empty string, which reads as a version that is
+ * present and says nothing. These hold on either binding: the patched leg stamps genir's own
+ * version, the stub leg stamps the sentinel the reader answers as {@code null}.
  */
-class FastRenderingBindingTest {
+final class FastRenderingBindingTest {
 
     @Nested
     class ReadBoundVersion {
 
         @Test
-        void reportsTextWhicheverBindingTheBuildTook() {
-            assertThat(FastRenderingBinding.readBoundVersion()).isNotBlank();
+        void answersAVersionOrNullWhicheverBindingTheBuildTook() {
+
+            assertThat(FastRenderingBinding.readBoundVersion())
+                .satisfiesAnyOf(
+                    version -> assertThat(version).isNull(),
+                    version -> assertThat(version).isNotBlank());
+        }
+
+        @Test
+        void neverAnswersTheSentinelItself() {
+
+            // The stub leg is where this bites: the word stamped in place of a version must come
+            // out as no version, or a subject would print it as one.
+            assertThat(FastRenderingBinding.readBoundVersion())
+                .isNotEqualTo("unknown");
         }
     }
 }
