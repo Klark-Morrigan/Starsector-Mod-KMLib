@@ -490,6 +490,14 @@ No Starsector API on the signature.
   counted where the sector is actually walked,
   so a caller states how much it touched without having written a profiling line,
   and a second traversal shows on the row that made it.
+- [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/) -
+  what a binding to third-party code that has stopped holding is reported as:
+  the third party and both of its versions -
+  the one KMLib was compiled against and the one installed now -
+  beside the detail that broke and the sentence naming what the session loses.
+  One value the player's modal and the log line are both composed from,
+  so the wording can be asserted without the machinery that carries it,
+  and so a report can never say that something broke without saying whose.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
