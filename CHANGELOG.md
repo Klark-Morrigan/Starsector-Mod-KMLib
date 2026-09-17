@@ -24,6 +24,7 @@ The reusable release workflow extracts the section matching the released version
 - **`MemoryKeyAddress`, `AddressedMemoryFlag`, `AddressedMemoryString`**: a stored value held once per point on an axis the consumer declares rather than once per save. The holder states its base key and names the address each read and write means; the key is composed in one place, so no holder can spell the segments differently or drop one and quietly share a slot with another.
 - **Test fixtures for the list widgets**: `Anomaly` and `AnomalySortMode`, a picker row and a sort vocabulary declared outside the list package, and `ListPickerBlockReads`, which reaches into a built picker block for the columns selector, the sort row, the sort selector or the item list. The block's order lives there rather than in each suite that tests a list, so a row inserted into it breaks one file.
 - **`MemoryKeyAddresses`**: two stand-in addresses, for suites storing a value at one point on an axis without being about what the axis is.
+- **`KmlibStringKeys.get()` and `format()`**: lookups bound to KMLib's own category, so a call site names a key alone rather than repeating the category beside it.
 - **`ShippedStrings`**: reads a mod's shipped `data/strings/strings.json` and the string IDs its holder class names, for the guard that holds those two together. The walk lives here rather than in each mod's suite, where a regex that stopped matching some entries would leave both directions passing over less of the file than they claim.
 
 ### Public contracts changed (**breaking**)

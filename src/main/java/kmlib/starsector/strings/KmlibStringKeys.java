@@ -8,18 +8,9 @@ package kmlib.starsector.strings;
  *
  * <p>{@link StarsectorStrings} is intentionally mod-agnostic and takes
  * {@code (category, key)} on every call; this holder is the KMLib-specific other
- * half it documents. The keys live in exactly one place and never reappear as
- * loose literals that can drift from the JSON.
- *
- * <p>The lookup and fallback behaviour stay in {@link StarsectorStrings}; this
- * class is a category-bound shortcut, not a parallel implementation.
- *
- * <p>What ships here is only wording KMLib itself owns. The compatibility notice
- * is the case worth stating: KMLib supplies the frame a failed third-party
- * binding is reported in, and the reporting client supplies the one sentence
- * naming what that costs, out of its own strings file. Keeping that sentence out
- * of this holder is what makes the channel reusable rather than fitted to its
- * first client.
+ * half it documents - a category-bound shortcut, not a parallel implementation.
+ * The keys live in exactly one place and never reappear as loose literals that
+ * can drift from the JSON.
  */
 public final class KmlibStringKeys {
 
@@ -66,16 +57,16 @@ public final class KmlibStringKeys {
      * What the player loses and what they do not. One slot: the sentence naming
      * the lost feature.
      *
-     * <p>That sentence is the caller's to supply, from its own strings, and is
-     * the only part of the notice that is. KMLib holds the frame a mismatch is
-     * reported in; what a mismatch costs is knowledge of the feature that broke,
-     * which lives with whoever built it. A loss sentence written here would name
-     * a consumer's feature and would have to be rewritten for the second client
-     * of the channel.
+     * <p>That sentence is the caller's to supply, out of its own strings, and is
+     * the only part of the notice that is: what a mismatch costs is knowledge of
+     * the feature that broke, which lives with whoever built it. Written here it
+     * would name a consumer's feature and would have to be rewritten for the
+     * second client of the channel.
      *
-     * <p>The reassurance is the point of the paragraph. A modal about a version
-     * mismatch reads as "your save is in danger" unless it says otherwise, and
-     * the degraded state costs a feature for the session and nothing else.
+     * <p>The reassurance around it is the point of the paragraph. A modal about a
+     * version mismatch reads as "your save is in danger" unless it says
+     * otherwise, and the degraded state costs a feature for the session and
+     * nothing else.
      */
     public static final String COMPATIBILITY_NOTICE_CONSEQUENCE = "compatibility_notice_consequence";
 
