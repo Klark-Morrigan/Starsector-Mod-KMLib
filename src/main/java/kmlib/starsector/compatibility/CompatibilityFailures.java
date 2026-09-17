@@ -22,17 +22,10 @@ import java.util.function.Supplier;
  * frame, the same warn-once shape rendering code already holds, and it holds for the session rather
  * than until the next take: the second frame's failure is the first one again, not news.
  *
- * <p>The failure is described through a supplier rather than passed built because describing one
- * costs something - a reflective walk over the members a binding mirrors, a version read off the
- * third party - and that cost is only worth paying on the record that is kept. The latch is taken
- * before the supplier runs, so a supplier that throws is invoked once for the session too: its
- * failure reaches the caller and its subject records nothing, which is a lost report rather than a
- * repeated one.
- *
  * <p>Safe from any thread, because the writers are not on one. A deferred renderer runs a binding's
  * command on its own render thread while the game thread resolves and calls the same binding, and
  * the two can fail on the same subject in the same frame; one of them wins the latch, the other's
- * supplier never runs.
+ * description is never built.
  */
 public final class CompatibilityFailures {
 
@@ -65,7 +58,12 @@ public final class CompatibilityFailures {
      * @param subjectKey      the identity a subject is latched under, spelled once by whoever
      *                        binds to it; a key rather than a {@link CompatibilitySubject} because
      *                        the subject carries versions the description is what reads
-     * @param describeFailure builds the failure, invoked only on the record that is kept
+     * @param describeFailure builds the failure, invoked only on the record that is kept - which
+     *                        is what makes a description that costs something, a reflective probe
+     *                        or a version read, affordable on a per-frame path. The latch is taken
+     *                        first, so one that throws is invoked once for the session too: the
+     *                        throw reaches the caller and the subject records nothing, a lost
+     *                        report rather than a repeated one
      */
     public void recordOnce(String subjectKey, Supplier<CompatibilityFailure> describeFailure) {
 

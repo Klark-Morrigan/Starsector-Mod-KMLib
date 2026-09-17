@@ -72,7 +72,7 @@ public final class KmlibStringKeys {
 
     /**
      * Stands in for a version slot nothing could fill, so a report never prints
-     * {@code null} or a raw build sentinel at a player. Reads as a parenthetical
+     * {@code null} at a player. Reads as a parenthetical
      * after the subject's name, which keeps the surrounding sentence grammatical
      * whichever slot is missing.
      */

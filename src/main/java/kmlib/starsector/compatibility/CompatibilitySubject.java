@@ -13,8 +13,8 @@ import kmlib.text.KmlibStrings;
  * {@link kmlib.starsector.strings.KmlibStringKeys}.
  *
  * <p>Either version may be absent. Both are read from the third party rather than from a
- * convention, so neither is guaranteed, and a blank reads as absent so a build's sentinel or an
- * empty self-report never reaches a sentence as-is.
+ * convention, so neither is guaranteed, and a blank reads as absent so an empty self-report never
+ * reaches a sentence as-is.
  *
  * @param name                the third party as a player would name it
  * @param builtAgainstVersion the release KMLib was compiled against, blank or {@code null} where

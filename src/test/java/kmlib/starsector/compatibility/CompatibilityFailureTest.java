@@ -73,8 +73,8 @@ final class CompatibilityFailureTest {
         @Test
         void standsTheUnknownWordingInForAnAbsentBuiltAgainstVersion() {
 
-            // What a build that compiled against the bridge stubs stamps, reaching the player as a
-            // version slot nothing can fill.
+            // A blank is absent too, so a version that arrives as an empty string reaches the
+            // player as the unknown wording rather than as a hole in the sentence.
             var failure = createFailure("", "v0.9.1");
 
             assertThat(failure.describeForPlayer())

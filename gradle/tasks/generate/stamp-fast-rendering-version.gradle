@@ -5,9 +5,7 @@
 // Runtime reads the version that is installed NOW, reflectively, off
 // com.genir.renderer.Version. The version the adapter was COMPILED against
 // exists only while the build holds the jar it compiled from, so it has to be
-// carried forward deliberately or the report degrades to "something moved",
-// which a player cannot act on. Naming both also removes any need to classify a
-// break as too-new or too-old: the two numbers say which it is.
+// carried forward deliberately or the report degrades to "something moved".
 //
 // Generated as a Java source rather than as a jar resource or a manifest
 // attribute, because a constant links. The value is read on a failure path whose
@@ -37,9 +35,9 @@ if (!project.pluginManager.hasPlugin('java')) {
 
 // What gets stamped when there is no jar to read - the stub leg, and any jar too
 // old to carry the version class (absent before v0.8.2). A named sentinel rather
-// than an empty string because the value is rendered into a player-facing
-// sentence: a blank in the middle of one reads as a bug in KMLib, where a word
-// reads as the fact it is.
+// than an empty string so the generated file, and a decompiled jar, say what
+// happened. The generated class answers it as no version, so the word itself
+// never reaches a sentence.
 ext.unknownFastRenderingVersion = 'unknown'
 
 // Read out of the jar itself, off com.genir.renderer.Version.getVersion(). The
