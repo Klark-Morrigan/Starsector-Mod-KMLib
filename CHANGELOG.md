@@ -22,6 +22,7 @@ The reusable release workflow extracts the section matching the released version
 - **`ControlSpec.ScrollingSection`**: the run of a body that scrolls, holding any controls rather than being a property of one. A heading, the list under it and the row beside it now travel together inside the viewport the capped layout leaves them, where only a single list could scroll before.
 - **`Control.isScrolled()`**: whether a laid-out control was placed inside that section - the one value the clipping renderer and the viewport-limited hit-test both read. A `Control` built without it is pinned, so existing three-argument construction is unchanged.
 - **Test fixtures for the list widgets**: `Anomaly` and `AnomalySortMode`, a picker row and a sort vocabulary declared outside the list package, and `ListPickerBlockReads`, which reaches into a built picker block for the columns selector, the sort row, the sort selector or the item list. The block's order lives there rather than in each suite that tests a list, so a row inserted into it breaks one file.
+- **`MemoryKeyAddresses`**: two stand-in addresses, for suites storing a value at one point on an axis without being about what the axis is.
 
 ### Public contracts changed (**breaking**)
 

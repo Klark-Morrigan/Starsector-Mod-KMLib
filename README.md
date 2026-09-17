@@ -1346,6 +1346,9 @@ A LunaLib settings store of the same shape sits beside it,
 counting saves as well as holding values,
 since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
+[`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
+holds the save a stored value lands in and two stand-in addresses to hold it apart under,
+and
 [`starsector/ui/widgets/lists/`](src/testFixtures/java/kmlib/testfixtures/starsector/ui/widgets/lists/)
 holds a picker row and a sort vocabulary declared outside the list package -
 the stand-in for whatever a consuming mod ranks and spotlights -
