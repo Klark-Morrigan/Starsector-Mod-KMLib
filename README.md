@@ -158,6 +158,10 @@ Build:
   See [Rendering environment](#rendering-environment).
 - [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle) -
   warns when a mod compiles against one KMLib and asks players for another.
+- [`gradle/tasks/generate/stamp-fast-rendering-version.gradle`](gradle/tasks/generate/stamp-fast-rendering-version.gradle) -
+  KMLib's own,
+  applied by the binding selection above:
+  generates the constant naming which Fast Rendering release the bridge adapter was type-checked against.
 - [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle) -
   registers `writeVersionFile` for a mod that commits a template.
 - [`.gitattributes`](.gitattributes) -
@@ -1191,9 +1195,19 @@ and the bridge ships in `starsector-core/fr.jar`,
 which only an install patched by it has.
 Requiring that jar would make KMLib buildable only on a patched machine,
 so the build binds it when the install has one
-and falls back to compile-only mirrors of the three members it reads
+and falls back to compile-only mirrors of the six members it reads
 ([src/bridgestubs/java](src/bridgestubs/java)) when it does not.
 Every build logs which of the two it used.
+
+Whichever it bound is also stamped into the jar,
+as a generated constant read out of `fr.jar`'s own `com.genir.renderer.Version`
+([gradle/tasks/generate/stamp-fast-rendering-version.gradle](gradle/tasks/generate/stamp-fast-rendering-version.gradle)).
+Runtime can read only the version that is installed now,
+so naming the version compiled against is what lets a mismatch be reported as two numbers
+rather than as "something moved".
+The vanilla binding stamps `unknown`,
+which is the honest answer for a build that compiled against the stubs,
+and no jar is ever a reason to fail a build that would otherwise compile.
 
 The stubs are never in `KMLib.jar` and never loaded -
 they exist only so javac has a signature to resolve.

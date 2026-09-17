@@ -60,35 +60,16 @@ if (isFastRenderingRequired && !isFastRenderingInstalled) {
             + "verify KMLib's bridge adapter against the real jar.")
 }
 
-// Which Fast Rendering the adapter is type-checked against, read out of the jar
-// itself: fr.jar carries com.genir.renderer.Version.getVersion(). The jar is the
-// only source that exists everywhere the build does - a patched install is
-// patched in place, so there is no mod folder to read a mod_info.json from, and
-// CI has only the transported core jars.
-//
-// Loaded under a bootstrap-parented loader so the class cannot resolve against
-// the build's own classpath, and closed immediately; the method returns a
-// constant and touches nothing else, so nothing stays loaded. Any failure - an
-// older jar without the class, a renamed method - reports 'unknown version'.
-// Which Fast Rendering was bound is a thing to report, never a reason to fail a
-// build that would otherwise compile.
-def readFastRenderingVersion = { File jar ->
-    if (!jar.exists()) {
-        return null
-    }
-    try {
-        def loader = new URLClassLoader([jar.toURI().toURL()] as URL[], (ClassLoader) null)
-        try {
-            return loader.loadClass('com.genir.renderer.Version')
-                .getMethod('getVersion')
-                .invoke(null)
-        } finally {
-            loader.close()
-        }
-    } catch (Exception ignored) {
-        return null
-    }
-}
+// Which Fast Rendering the adapter is type-checked against has two jobs: the
+// lifecycle line below, and a constant in the jar that lets a runtime mismatch
+// report name what this build bound. The applied script reads it once for both,
+// since two readers of one jar could report different versions of it - the one
+// thing such a report must not do. The stub leg passes no jar at all, so the
+// vanilla binding stamps the unknown sentinel rather than a version sitting
+// unused on the machine.
+ext.boundFastRenderingJarFile = isFastRenderingInstalled ? fastRenderingJarFile : null
+apply from: new File(buildscript.sourceFile.parentFile,
+    'tasks/generate/stamp-fast-rendering-version.gradle')
 
 sourceSets {
     bridgeStubs {
@@ -127,8 +108,16 @@ def hasBridgeStubSources = !sourceSets.bridgeStubs.java.files.isEmpty()
 // toolchain line (Common-Java's java-conventions.gradle) still prints for both,
 // since Gradle and the JVM are the same question either way.
 if (isFastRenderingInstalled) {
-    def fastRenderingVersion = readFastRenderingVersion(fastRenderingJarFile) ?: 'unknown version'
-    logger.lifecycle("Fast Rendering: ${fastRenderingVersion} (bound from ${fastRenderingJarFile})")
+
+    // The stamped sentinel is a bare word, which is what a player-facing
+    // sentence wants and not what a build line does: 'Fast Rendering: unknown'
+    // reads as a truncated message rather than as a jar whose version could not
+    // be read.
+    def reportedVersion = boundFastRenderingVersion == unknownFastRenderingVersion
+        ? 'unknown version'
+        : boundFastRenderingVersion
+
+    logger.lifecycle("Fast Rendering: ${reportedVersion} (bound from ${fastRenderingJarFile})")
 }
 
 tasks.named('compileJava') {
