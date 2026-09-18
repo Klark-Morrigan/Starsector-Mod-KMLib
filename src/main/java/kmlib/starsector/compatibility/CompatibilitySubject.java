@@ -45,7 +45,7 @@ public record CompatibilitySubject(
      */
     public String describeBuiltAgainstVersion(String unknownWording) {
 
-        return KmlibStrings.hasText(builtAgainstVersion) ? builtAgainstVersion : unknownWording;
+        return describeVersion(builtAgainstVersion, unknownWording);
     }
 
     /**
@@ -56,7 +56,7 @@ public record CompatibilitySubject(
      */
     public String describeInstalledVersion(String unknownWording) {
 
-        return KmlibStrings.hasText(installedVersion) ? installedVersion : unknownWording;
+        return describeVersion(installedVersion, unknownWording);
     }
 
     /**
@@ -68,5 +68,11 @@ public record CompatibilitySubject(
     public boolean hasInstalledVersion() {
 
         return KmlibStrings.hasText(installedVersion);
+    }
+
+    // Blank and null are one case: a slot nothing filled, whichever side it is on.
+    private static String describeVersion(String version, String unknownWording) {
+
+        return KmlibStrings.hasText(version) ? version : unknownWording;
     }
 }
