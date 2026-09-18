@@ -157,6 +157,7 @@ final class KMLib_ModPluginTest {
             KMLib_ModPlugin.installCompatibilityNotice(sectorMock);
             CompatibilityFailures.SESSION_RECORD.recordOnce(
                 SUBJECT_KEY,
+                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
                 CompatibilityFailureFixture::createFailure);
             transientScripts.get(0).advance(ONE_FRAME);
 

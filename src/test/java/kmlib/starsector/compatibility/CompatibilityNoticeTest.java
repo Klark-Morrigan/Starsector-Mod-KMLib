@@ -14,6 +14,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import static kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture.createFailure;
+import static kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture.createFailureLosing;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,6 +47,10 @@ final class CompatibilityNoticeTest {
     private static final String FAST_RENDERING = CompatibilityFailureFixture.FAST_RENDERING_SUBJECT_KEY;
 
     private static final String NEXERELIN = CompatibilityFailureFixture.NEXERELIN_SUBJECT_KEY;
+
+    // One consumer throughout: what this suite is about is when a failure reaches a dialog, which
+    // is the same question whichever mod recorded it.
+    private static final CompatibilityConsumer MAP_OVERLAY = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
 
     private static final float ONE_FRAME = 0.016f;
 
@@ -83,8 +90,8 @@ final class CompatibilityNoticeTest {
         @Test
         void showsTheRecordedFailureAsTheModalItComposes() {
 
-            var failure = CompatibilityFailureFixture.createFailure();
-            failures.recordOnce(FAST_RENDERING, () -> failure);
+            var failure = createFailure();
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> failure);
 
             notice.advance(ONE_FRAME);
 
@@ -95,7 +102,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsAFailureOnceHoweverManyFramesFollow() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
 
             notice.advance(ONE_FRAME);
             notice.advance(ONE_FRAME);
@@ -128,7 +135,7 @@ final class CompatibilityNoticeTest {
         @Test
         void holdsTheFailureWhileADialogIsUp() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
             when(campaignUiMock.isShowingDialog())
                 .thenReturn(true);
 
@@ -141,7 +148,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsTheHeldFailureOnTheFrameTheDialogIsDown() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
             when(campaignUiMock.isShowingDialog())
                 .thenReturn(true, false);
 
@@ -155,7 +162,7 @@ final class CompatibilityNoticeTest {
         @Test
         void holdsTheFailureWhileTheSectorHasNoCampaignUi() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
             when(sectorMock.getCampaignUI())
                 .thenReturn(null, campaignUiMock);
 
@@ -170,7 +177,7 @@ final class CompatibilityNoticeTest {
         void showsNothingAndThrowsNothingWhereThereIsNoSector() {
 
             var noticeWithoutSector = new CompatibilityNotice(null, failures);
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
 
             assertThatCode(() -> noticeWithoutSector.advance(ONE_FRAME))
                 .doesNotThrowAnyException();
@@ -183,10 +190,10 @@ final class CompatibilityNoticeTest {
 
             // The game drops a message dialog asked for behind another, so the second of two taken
             // together is shown on the next frame that can show it, not stacked on the first.
-            var firstFailure = CompatibilityFailureFixture.createFailureLosing("first");
-            var secondFailure = CompatibilityFailureFixture.createFailureLosing("second");
-            failures.recordOnce(FAST_RENDERING, () -> firstFailure);
-            failures.recordOnce(NEXERELIN, () -> secondFailure);
+            var firstFailure = createFailureLosing("first");
+            var secondFailure = createFailureLosing("second");
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> firstFailure);
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> secondFailure);
 
             notice.advance(ONE_FRAME);
             verify(campaignUiMock, times(1))
@@ -203,7 +210,7 @@ final class CompatibilityNoticeTest {
         @Test
         void takesTheFailureOffTheRecordOnceShown() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
 
             notice.advance(ONE_FRAME);
 
@@ -215,7 +222,7 @@ final class CompatibilityNoticeTest {
         void logsTheFailuresLogLineWhenItShowsIt() {
 
             var failure = CompatibilityFailureFixture.createFailure();
-            failures.recordOnce(FAST_RENDERING, () -> failure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> failure);
 
             var appenderFake = LogAppenderFake.captureLogOf(
                 CompatibilityNotice.class,
@@ -229,7 +236,7 @@ final class CompatibilityNoticeTest {
         void logsTheFailuresLogLineWhereTheDialogCallThrows() {
 
             var failure = CompatibilityFailureFixture.createFailure();
-            failures.recordOnce(FAST_RENDERING, () -> failure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> failure);
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -245,7 +252,7 @@ final class CompatibilityNoticeTest {
         @Test
         void survivesADialogCallThatThrowsAndDoesNotRetryIt() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -261,8 +268,8 @@ final class CompatibilityNoticeTest {
         @Test
         void logsADialogFaultOnceHoweverManyFailuresItStrikes() {
 
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureLosing("first"));
-            failures.recordOnce(NEXERELIN, () -> CompatibilityFailureFixture.createFailureLosing("second"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing("first"));
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureLosing("second"));
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -300,7 +307,7 @@ final class CompatibilityNoticeTest {
         @Test
         void isFalseForTheWholeSession() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
             notice.advance(ONE_FRAME);
 
             assertThat(notice.isDone())

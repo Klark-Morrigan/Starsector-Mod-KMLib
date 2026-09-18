@@ -12,19 +12,25 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
 /**
- * The compatibility failures recorded this session: each subject latched on its first, held until
+ * The compatibility failures recorded this session: each binding latched on its first, held until
  * a reporter takes them.
  *
  * <p>A binding breaks where it is used, which is a render pass or a load step - neither a place a
  * player can be told from - and it breaks on every frame that reaches it afterwards. So a record is
- * not a report: it is kept here, once per subject, for something running on a frame that can show a
- * dialog to take and show. Once per subject is what stops a per-frame failure filing a report per
+ * not a report: it is kept here, once per binding, for something running on a frame that can show a
+ * dialog to take and show. Once per binding is what stops a per-frame failure filing a report per
  * frame, the same warn-once shape rendering code already holds, and it holds for the session rather
  * than until the next take: the second frame's failure is the first one again, not news.
  *
+ * <p>A binding is a third party and the mod that took it, not the third party alone. One broken
+ * third party costs every mod bound to it something of its own, said in its own words, so a latch
+ * on the third party alone would keep whichever mod recorded first and drop the rest - leaving
+ * those players told what another mod lost, or told nothing. Latched on the pair, each mod's report
+ * is shown, and a mod whose binding fails at link time and again at call time still reports once.
+ *
  * <p>Safe from any thread, because the writers are not on one. A deferred renderer runs a binding's
  * command on its own render thread while the game thread resolves and calls the same binding, and
- * the two can fail on the same subject in the same frame; one of them wins the latch, the other's
+ * the two can fail on the same binding in the same frame; one of them wins the latch, the other's
  * description is never built.
  */
 public final class CompatibilityFailures {
@@ -39,13 +45,13 @@ public final class CompatibilityFailures {
      */
     public static final CompatibilityFailures SESSION_RECORD = new CompatibilityFailures();
 
-    // Which subjects have been recorded this session - the latch. Membership is what a record is
+    // Which bindings have been recorded this session - the latch. Membership is what a record is
     // decided on, and the set's add answers whether it was the first atomically, so two threads
-    // recording one subject at once cannot both pass.
-    private final Set<String> recordedSubjectKeys = ConcurrentHashMap.newKeySet();
+    // recording one binding at once cannot both pass.
+    private final Set<LatchedBinding> latchedBindings = ConcurrentHashMap.newKeySet();
 
     // The failures no reporter has taken yet, in the order they were recorded. Separate from the
-    // latch because taking empties this and leaves that: a subject stays recorded for the session
+    // latch because taking empties this and leaves that: a binding stays recorded for the session
     // however many times its failure has been reported.
     private final Queue<CompatibilityFailure> unreportedFailures = new ConcurrentLinkedQueue<>();
 
@@ -62,44 +68,52 @@ public final class CompatibilityFailures {
     }
 
     /**
-     * Records the failure of a subject, the first time that subject is recorded this session, and
-     * ignores every record of it afterwards.
+     * Records the failure of a binding - a third party and the mod that took it - the first time
+     * that pair is recorded this session, and ignores every record of it afterwards.
      *
-     * @param subjectKey      the identity a subject is latched under, spelled once by whoever
+     * @param subjectKey      the identity a third party is latched under, spelled once by whoever
      *                        binds to it; a key rather than a {@link CompatibilitySubject} because
      *                        the subject carries versions the description is what reads
+     * @param consumer        the mod that took the binding, whose key completes the latch and whose
+     *                        sentence the description puts in the failure's lost-feature slot
      * @param describeFailure builds the failure, invoked only on the record that is kept - which
      *                        is what makes a description that costs something, a reflective probe
      *                        or a version read, affordable on a per-frame path. The latch is taken
      *                        first, so one that throws is invoked once for the session too: the
-     *                        throw reaches the caller and the subject records nothing, a lost
+     *                        throw reaches the caller and the binding records nothing, a lost
      *                        report rather than a repeated one
      */
-    public void recordOnce(String subjectKey, Supplier<CompatibilityFailure> describeFailure) {
+    public void recordOnce(
+            String subjectKey,
+            CompatibilityConsumer consumer,
+            Supplier<CompatibilityFailure> describeFailure) {
 
         KmlibStrings.requireText(
             subjectKey,
             "A record latched under no key could not be told from any other subject's.");
         Objects.requireNonNull(
+            consumer,
+            "A record with no consumer could not say whose feature the failure costs.");
+        Objects.requireNonNull(
             describeFailure,
-            "A record with nothing to describe the failure would latch a subject and report nothing.");
+            "A record with nothing to describe the failure would latch a binding and report nothing.");
 
-        // The add is the whole decision: false means another record of this subject - on this
+        // The add is the whole decision: false means another record of this binding - on this
         // thread or another - already passed, and there is nothing further to do or to build.
-        if (!recordedSubjectKeys.add(subjectKey)) {
+        if (!latchedBindings.add(new LatchedBinding(subjectKey, consumer.consumerKey()))) {
             return;
         }
 
         unreportedFailures.add(Objects.requireNonNull(
             describeFailure.get(),
-            "A description that answers nothing leaves a recorded subject with nothing to report."));
+            "A description that answers nothing leaves a recorded binding with nothing to report."));
     }
 
     /**
      * Takes every failure recorded since the last take, leaving none behind.
      *
-     * <p>The subjects taken stay recorded: a take is a hand-over to whoever reports, not a reset of
-     * the latch, so a subject that fails again after its report is not reported again.
+     * <p>The bindings taken stay latched: a take is a hand-over to whoever reports, not a reset of
+     * the latch, so a binding that fails again after its report is not reported again.
      *
      * <p>Allocates on every call, an empty one included, which is why a per-frame caller reads
      * {@link #hasUnreported()} first and takes only when it answers yes.
@@ -118,5 +132,11 @@ public final class CompatibilityFailures {
         }
 
         return List.copyOf(takenFailures);
+    }
+
+    // What a record is latched under: which third party stopped holding, and for which mod. A pair
+    // of components rather than the two keys joined into one string, so no separator can be spelled
+    // inside a key and collide with a binding nobody recorded.
+    private record LatchedBinding(String subjectKey, String consumerKey) {
     }
 }

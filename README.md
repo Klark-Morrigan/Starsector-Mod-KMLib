@@ -496,7 +496,7 @@ No Starsector API on the signature.
 - [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/) -
   what a binding to third-party code that has stopped holding is reported as,
   and how that report reaches the player:
-  recorded once per subject where the binding broke,
+  recorded where the binding broke, once per third party and mod bound to it,
   shown as the game's own message dialog from a frame that can open one.
   [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
@@ -1378,6 +1378,7 @@ since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
 [`starsector/compatibility/`](src/testFixtures/java/kmlib/testfixtures/starsector/compatibility/)
 holds one representative compatibility failure with a builder per slot a case varies,
+two consumers that lose different things,
 and the notice's templates as stand-ins that expose their slots,
 so what a failure composes reads as which value landed where without the shipped wording being known.
 [`starsector/strings/`](src/testFixtures/java/kmlib/testfixtures/starsector/strings/)
