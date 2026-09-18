@@ -2,7 +2,7 @@ package kmlib.testfixtures.starsector.ui.map.controls;
 
 /**
  * What the game's filter buttons report a click to: one interface with a single two-argument
- * callback, which the row itself implements and every button on it is bound to. Shipped from KMLib
+ * callback, which the row itself implements and every button on it is bound to. Published as a fixture variant
  * so both KMLib's and consuming mods' tests stand a row on the same shape.
  *
  * <p>An interface rather than a class because that is the half of the shape that matters. A control

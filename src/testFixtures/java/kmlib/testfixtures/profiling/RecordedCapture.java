@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
  * What a profiler recorded while some work ran through the process-wide holder, and the rows
  * found in it by name.
  *
- * <p>Shipped from KMLib so every KM mod pins what its passes record through one double, in the way
+ * <p>Published as a fixture variant so every KM mod pins what its passes record through one double, in the way
  * {@code LogAppenderFake} serves the game-log seam. The holder is process-wide and a binding left
  * behind follows the next case into a capture it never asked for, so binding, running and
  * restoring the silent default belong to {@link #recordWhile} rather than to each caller.

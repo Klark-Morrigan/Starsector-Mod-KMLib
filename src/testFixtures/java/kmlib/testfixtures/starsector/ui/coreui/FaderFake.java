@@ -3,7 +3,7 @@ package kmlib.testfixtures.starsector.ui.coreui;
 /**
  * A component's fade state, answering the two contracts a by-name reach takes off it: {@code
  * isFadedOut}, for whether the component is still on screen at all, and {@code getBrightness}, for how
- * far through its own fade it stands. Shipped from KMLib so both KMLib's and consuming mods' tests can
+ * far through its own fade it stands. Published as a fixture variant so both KMLib's and consuming mods' tests can
  * stand up a widget the game has taken down, or one still on its way.
  *
  * <p>The two resting states pair the answers the way a real fader does - gone reads as no brightness,

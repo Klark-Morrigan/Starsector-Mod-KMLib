@@ -13,7 +13,7 @@ import java.util.List;
  * of letting it reach a file, so what a caller logged - and how often, and at
  * what level - can be read back rather than taken on trust.
  *
- * <p>Shipped from KMLib so every KM mod drives the game-log seam through one
+ * <p>Published as a fixture variant so every KM mod drives the game-log seam through one
  * shared double, in the same way {@code CommandOutputFake} serves the console
  * one. Logging is a static sink no mock can instrument, so a recording appender
  * attached for the length of one call is what stands in for it.

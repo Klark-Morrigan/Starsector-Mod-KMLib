@@ -616,10 +616,9 @@ and a screen the player opened from the campaign has none;
 standing one up to obtain the route would close the screen the panel was wanted on.
 `CampaignUIAPI` offers only the text prompts.
 
-[`CoreUiOverlayPanels`](coreui/CoreUiOverlayPanels.java) is what is left:
-the core UI is a panel like any other,
-so a component added to it is drawn
-and hit-tested by the game beside the screen's own widgets rather than composited after them.
+[`CoreUiOverlayPanels`](coreui/CoreUiOverlayPanels.java) is what is left,
+the core UI being a panel like any other -
+its own documentation states what that buys and what it deliberately does not.
 Reached through the published panel interface rather than by name,
 so a build that renames the obfuscated class leaves it working
 and one that stops answering the interface leaves it refusing.

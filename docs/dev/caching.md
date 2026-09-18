@@ -4,10 +4,18 @@ Every cache KMLib holds and what keeps it honest:
 what each one keys on,
 how long it lives,
 and what invalidates it.
-KMLib caches only two kinds of thing -
-the results of loading a font asset,
-and pure derivations over immutable inputs -
-because everything else it exposes is a read of live campaign state that the game may change between two frames.
+KMLib holds two kinds of thing,
+and the difference between them is how long they live.
+Three caches keep the results of loading a font asset and pure derivations over immutable inputs,
+and hold them for the process,
+which is safe because nothing about them derives from the campaign.
+Two memos hold answers about live campaign state,
+and hold them for exactly one pass,
+which is safe because they are discarded before the game can move underneath them.
+
+Nothing here holds a live campaign read for longer than the pass that took it.
+That is the whole rule,
+and everything below is what it costs to keep.
 
 Consumer repositories (KMU, KMO, ...) should link here rather than restate any of it.
 KMU's own caches,
@@ -21,6 +29,7 @@ are documented in [KMU's caching notes](https://github.com/Klark-Morrigan/Starse
   - [Font faces](#font-faces)
   - [Glyph runs](#glyph-runs)
   - [Label line wraps](#label-line-wraps)
+- [Pass-scoped memos](#pass-scoped-memos)
 - [Invalidation primitives](#invalidation-primitives)
 - [What is deliberately not cached](#what-is-deliberately-not-cached)
 - [Rules](#rules)
@@ -129,10 +138,42 @@ so it dies with the pass that made it.
 Nothing static,
 nothing to invalidate.
 
+## Pass-scoped memos
+
+Two memos under [`starsector/systems/`](../../src/main/java/kmlib/starsector/systems/)
+do hold answers derived from the live sector.
+They are not exceptions to the rule above,
+because neither outlives the pass that built it.
+
+| Memo | Keyed on | Lives for | Miss costs |
+| --- | --- | --- | --- |
+| [`SystemKeyedMemo`](../../src/main/java/kmlib/starsector/systems/SystemKeyedMemo.java) | a whole `SystemKey` | one pass | whatever the caller's resolver costs |
+| [`SectorPassIndex`](../../src/main/java/kmlib/starsector/systems/SectorPassIndex.java) | the system, within one index | one pass | a sector traversal, or a colony walk of one system |
+
+The reason they are safe is the reason they are useful.
+A render pass asks the same question of one system several times over -
+who holds it,
+how many colonies to draw,
+what to name in a hover -
+and answering each ask with its own walk is what makes a rebuild cost several traversals per system.
+Answering once per pass is correct because a pass is a single frame's reading:
+the sector cannot move inside it.
+
+`SectorPassIndex` enforces that rather than asking for it.
+A reader handed a `SectorAPI` can always walk a system again;
+a reader handed the index cannot,
+so "one walk per system per pass" holds by what a reader can reach.
+
+Neither needs invalidating,
+and neither may be held across passes.
+A memo that outlived its pass would keep answering off a sector that has since moved on,
+which is the failure the process-lifetime caches above are structurally incapable of.
+
 ## Invalidation primitives
 
-KMLib holds no cache that needs invalidating,
-but it owns the primitive consumers invalidate *with*:
+No cache or memo here needs invalidating -
+the caches cannot go stale and the memos do not live long enough to -
+but the library owns the primitive consumers invalidate *with*:
 [`Fingerprints.compute(IntSupplier...)`](../../src/main/java/kmlib/math/hashing/Fingerprints.java)
 folds N monotonic revision counters into one order-sensitive int.
 A consumer keeps the fingerprint its cached state was built against
@@ -183,8 +224,10 @@ see KMU's refresh signals for what that looks like in practice.
 
 ## Rules
 
-- Cache a load or a pure derivation.
-  Do not cache a live campaign read.
+- Cache a load or a pure derivation for the process.
+  Memoise a live campaign read for one pass at most,
+  and discard the memo with the pass.
+  Never hold a campaign read past the pass that took it.
 - A process-lifetime cache needs a key space that is bounded by the code,
   not by the data.
   If a caller can produce unbounded distinct keys,

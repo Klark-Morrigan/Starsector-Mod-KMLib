@@ -3,7 +3,7 @@ package kmlib.testfixtures.starsector.ui.coreui;
 /**
  * A modal dialog raised over the core UI, answering the two contracts that identify one: the
  * backdrop-dim accessor a modal alone carries, and the {@code getFader} state saying whether it is
- * still on screen. Shipped from KMLib so both KMLib's and consuming mods' tests stand a dialog over
+ * still on screen. Published as a fixture variant so both KMLib's and consuming mods' tests stand a dialog over
  * the same shape of tree the live reads walk.
  *
  * <p>Carries a dim amount because a modal does, not because anything reads it - what identifies one

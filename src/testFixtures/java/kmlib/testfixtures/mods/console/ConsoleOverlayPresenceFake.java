@@ -17,9 +17,9 @@ import kmlib.mods.console.ConsoleOverlayPresence;
  * at all - the thing that keeps an install without Console Commands from resolving a class it
  * does not have.
  *
- * <p>Ships with the rest of {@code kmlib.testfixtures} because the callers that stand down for a
- * console are spread across the series: the answer decides whether they draw and route at all,
- * and that is the behaviour their own tests pin.
+ * <p>Published as a fixture variant with the rest of {@code kmlib.testfixtures} because the callers
+ * that stand down for a console are spread across the series: the answer decides whether they draw
+ * and route at all, and that is the behaviour their own tests pin.
  */
 public final class ConsoleOverlayPresenceFake implements ConsoleOverlayPresence {
 

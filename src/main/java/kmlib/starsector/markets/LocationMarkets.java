@@ -85,7 +85,7 @@ public final class LocationMarkets {
      * from. A combined answer would have every such caller re-deriving that split against the
      * economy's list, which is a second implementation of the very comparison made here.
      *
-     * <p>Sameness is the market object itself first and {@link Markets#isSamePlaceAndOwner}
+     * <p>Sameness is the market object itself first and {@link MarketColocation#isSamePlaceAndOwner}
      * after, taken against the economy's markets and against the ones already found, so a mod
      * hanging its own market beside vanilla's on one station yields nothing here rather than a
      * duplicate of the colony the economy already lists.

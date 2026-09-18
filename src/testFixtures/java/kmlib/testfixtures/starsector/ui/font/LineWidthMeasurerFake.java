@@ -4,7 +4,7 @@ import kmlib.starsector.ui.font.LineWidthMeasurer;
 
 /**
  * A {@link LineWidthMeasurer} that reports a width proportional to the character count, so
- * text-snapped layout can be exercised without a loaded bitmap font. Shipped from KMLib so both
+ * text-snapped layout can be exercised without a loaded bitmap font. Published as a fixture variant so both
  * KMLib's and consuming mods' layout tests drive the measurement seam through one shared double
  * with predictable, hand-checkable widths.
  *

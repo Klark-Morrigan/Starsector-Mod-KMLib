@@ -21,8 +21,8 @@ import java.util.List;
  * SegmentSizing#SNAPPED} gives each segment its own label plus the padding floored at a minimum, and
  * {@link SegmentSizing#FIXED} gives every segment one stated width and measures nothing (the vanilla tab
  * strip). Measuring and placing both read the same per-segment widths, so a measured row is exactly as
- * wide as the laid-out segments and the two cannot drift - the consistency the tab strip and the radio
- * previously each maintained on their own.
+ * wide as the laid-out segments and the two cannot drift - a consistency every host of a segmented row
+ * would otherwise have to hold on its own.
  *
  * <p>Segments abut by default and part by the spec's neighbour gap. A gap is stepped over between two
  * boxes rather than taken out of either, so it belongs to no segment and a point inside it falls in

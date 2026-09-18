@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * One toggle on the game's map filter row: a checked state, the listener its clicks are reported to,
- * and the box the row laid it out at. Shipped from KMLib so both KMLib's and consuming mods' tests
+ * and the box the row laid it out at. Published as a fixture variant so both KMLib's and consuming mods' tests
  * build the same shape of row.
  *
  * <p>A {@link ButtonAPI}, because the game's own filter buttons are: their checked state and the key

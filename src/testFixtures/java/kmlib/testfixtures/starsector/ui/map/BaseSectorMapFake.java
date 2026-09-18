@@ -7,7 +7,7 @@ import com.fs.starfarer.api.ui.SectorMapAPI;
 
 /**
  * The half of a sector map that no fixture stands for: the two entity lookups the published
- * interface requires and nothing driven against a map takes. Shipped from KMLib so both KMLib's and
+ * interface requires and nothing driven against a map takes. Published as a fixture variant so both KMLib's and
  * consuming mods' tests build maps that answer the same way.
  *
  * <p>They raise rather than answering null, so a subject that strayed into one fails here instead of

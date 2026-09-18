@@ -1707,8 +1707,8 @@ final class TabPanelControllerTest {
         @Test
         void interfaceSoundsTakeThePressRoleFromTheLookRatherThanNamingOne() {
             // The point of the whole seam: which sound a press makes is the panel's look talking, so a look
-            // naming something else must be what sounds. A scheme agreeing with the old hardcoded role
-            // would pass whether or not it was ever read.
+            // naming something else must be what sounds. A scheme naming the role a caller would have
+            // reached for anyway would pass whether or not it was ever read.
             var controller = buildControllerSounding(SWAPPED_SOUNDS);
 
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);

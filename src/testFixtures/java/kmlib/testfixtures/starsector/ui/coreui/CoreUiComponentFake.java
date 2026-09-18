@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * A component that answers the core UI's {@code getChildrenCopy} contract, so a by-name walk over
- * the live widget tree can be driven without a running game. Shipped from KMLib so both KMLib's and
+ * the live widget tree can be driven without a running game. Published as a fixture variant so both KMLib's and
  * consuming mods' tests build the same shape of tree.
  *
  * <p>Models only the parent side of that contract. A component exposing no such method is what the

@@ -8,7 +8,7 @@ import kmlib.starsector.ui.intel.MapVisorState;
 
 /**
  * An {@link IntelScreenView} whose reads are set directly, so code that gates on the intel screen
- * can be exercised without a running game. Shipped from KMLib so both KMLib's and consuming mods'
+ * can be exercised without a running game. Published as a fixture variant so both KMLib's and consuming mods'
  * tests drive the intel-screen seam through one shared double.
  *
  * <p>A {@code null} visor rectangle stands for "no lit visor to draw over" - the intel tab is not

@@ -11,7 +11,7 @@ import java.awt.Color;
  * <p>Apart from {@link VanillaTabPaint} rather than shared with it, because a button and a tab are lit
  * from different sources: a tab's light is a whitened form of its own label colour and so travels with
  * its paint, where a button's is plain light and belongs to the pointer rather than to the button - see
- * {@link VanillaButtonFills#POINTED_LIGHT}. That is why nothing here names a glow: a button's settled
+ * {@link VanillaButtonFills#POINTED_GLOW}. That is why nothing here names a glow: a button's settled
  * shades take none.
  *
  * <p>Substrate-independent, like the rest of this package: colour values with nothing GL about them.

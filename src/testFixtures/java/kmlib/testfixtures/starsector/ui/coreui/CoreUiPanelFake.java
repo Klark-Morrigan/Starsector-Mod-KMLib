@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * A panel that takes children, standing in for the core UI wherever a rule adds a panel of its own to
- * the live tree rather than reading it. Shipped from KMLib so both KMLib's and consuming mods' tests
+ * the live tree rather than reading it. Published as a fixture variant so both KMLib's and consuming mods' tests
  * describe "somewhere to attach to" as one class.
  *
  * <p>Records what was added, what was removed and what was raised, because those are what such a rule

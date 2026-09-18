@@ -178,7 +178,7 @@ final class TabPanelCollapseTest {
             var stretched = new TabPanelCollapse();
             stretched.toggleCollapse();
             // The eased fraction depends only on the elapsed-to-duration ratio, so a mid-range duration
-            // advanced a quarter of its length sits exactly where the old fixed-constant pace did.
+            // advanced a quarter of its length sits exactly where the default duration does.
             stretched.advanceByElapsedTime(2f / 4f, 2f);
             var atDefault = new TabPanelCollapse();
             atDefault.toggleCollapse();

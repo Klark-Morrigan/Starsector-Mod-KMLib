@@ -81,6 +81,9 @@ What the game reads:
   and the plugin class the launcher loads.
 - [`data/config/LunaSettings.csv`](data/config/LunaSettings.csv) -
   LunaLib settings declarations.
+- [`data/config/LunaSettingsConfig.json`](data/config/LunaSettingsConfig.json) -
+  what LunaLib titles the settings tab and which icon it stands beside it,
+  keyed by mod ID.
 - [`data/config/version/version_files.csv`](data/config/version/version_files.csv) -
   names the `.version` file VersionChecker reads.
 - [`data/console/commands.csv`](data/console/commands.csv) -
@@ -88,6 +91,9 @@ What the game reads:
   and the per-command help the console prints.
 - [`data/strings/strings.json`](data/strings/strings.json) -
   localisation lookups.
+- [`graphics/icons/kmlib_icon.png`](graphics/icons/kmlib_icon.png) -
+  the icon the LunaLib config above names.
+  Its `.psd` source sits beside it in the repo and is not read by anything.
 - `kmlib.version.template` -
   the VersionChecker template,
   filled into `kmlib.version` by a release and by `gradlew jar`.
@@ -1480,14 +1486,18 @@ are behind a port with one implementation per environment.
 
 ## Caching
 
-KMLib holds three caches,
-all of them in front of font work:
+KMLib holds three caches in front of font work:
 the loaded faces,
 the glyph runs minted from them,
 and the balanced line wraps a label fitter searches through.
 All three are safe to hold indefinitely because none of them derives from the campaign -
-a cached value here cannot disagree with the sector,
-which is why nothing in this library carries an invalidation signal.
+a cached value here cannot disagree with the sector.
+
+Beside them sit two memos over readings of the live sector,
+each held for exactly one pass and discarded with it,
+so neither can be read against a sector that has moved.
+Nothing in this library carries an invalidation signal,
+because nothing in it lives long enough to need one.
 
 [docs/dev/caching.md](docs/dev/caching.md) records what each one keys on,
 how long it lives,

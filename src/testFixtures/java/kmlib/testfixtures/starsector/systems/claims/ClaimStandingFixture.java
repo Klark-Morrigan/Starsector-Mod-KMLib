@@ -11,7 +11,7 @@ import java.util.OptionalInt;
 
 /**
  * Builds the standings a claim contest is posed with, for tests about what a contest means
- * rather than about the arithmetic behind it. Shipped from KMLib so both KMLib's and consuming
+ * rather than about the arithmetic behind it. Published as a fixture variant so both KMLib's and consuming
  * mods' tests state a standing the same way.
  *
  * <p>A standing is a market breakdown plus the faction it belongs to, so a test that cares only

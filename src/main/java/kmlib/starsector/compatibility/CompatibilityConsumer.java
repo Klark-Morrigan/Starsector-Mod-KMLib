@@ -7,11 +7,8 @@ import kmlib.text.KmlibStrings;
  * identity its records latch under, and the sentence naming what it loses when that binding stops
  * holding.
  *
- * <p>The sentence is the taking mod's rather than the library's. What a failed binding costs is
- * knowledge of the feature built over it: the library knows the third party, the two versions, the
- * member that moved and what was thrown, and nothing about what was drawn over the reading it can
- * no longer serve. Two mods over one binding lose two different things, and each says so in its own
- * words, out of its own strings.
+ * <p>The sentence is the taking mod's rather than the library's, for the reason this package's
+ * README sets out.
  *
  * <p>Both travel as one value because a binding site takes them from its caller together and for
  * one purpose, and because two loose strings in a row are two a caller can transpose with nothing
