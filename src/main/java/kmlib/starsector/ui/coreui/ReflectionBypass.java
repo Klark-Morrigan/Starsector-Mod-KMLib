@@ -108,12 +108,7 @@ final class ReflectionBypass {
      */
     static Object construct(Object constructor, Object... arguments) {
 
-        try {
-            return NEW_INSTANCE.invoke(constructor, arguments);
-
-        } catch (Throwable thrown) {
-            throw throwUnchecked(thrown);
-        }
+        return callThroughHandle(() -> NEW_INSTANCE.invoke(constructor, arguments));
     }
 
     /**
@@ -126,12 +121,7 @@ final class ReflectionBypass {
      */
     static Object invokeMethod(Object method, Object instance, Object... arguments) {
 
-        try {
-            return INVOKE_METHOD.invoke(method, instance, arguments);
-
-        } catch (Throwable thrown) {
-            throw throwUnchecked(thrown);
-        }
+        return callThroughHandle(() -> INVOKE_METHOD.invoke(method, instance, arguments));
     }
 
     /**
@@ -141,12 +131,7 @@ final class ReflectionBypass {
      */
     static void makeConstructorAccessible(Object constructor) {
 
-        try {
-            SET_CONSTRUCTOR_ACCESSIBLE.invoke(constructor, true);
-
-        } catch (Throwable cannotOpenMember) {
-            throw throwUnchecked(cannotOpenMember);
-        }
+        callThroughHandle(() -> SET_CONSTRUCTOR_ACCESSIBLE.invoke(constructor, true));
     }
 
     /**
@@ -157,12 +142,7 @@ final class ReflectionBypass {
      */
     static void makeFieldAccessible(Object field) {
 
-        try {
-            SET_FIELD_ACCESSIBLE.invoke(field, true);
-
-        } catch (Throwable cannotOpenMember) {
-            throw throwUnchecked(cannotOpenMember);
-        }
+        callThroughHandle(() -> SET_FIELD_ACCESSIBLE.invoke(field, true));
     }
 
     /**
@@ -172,12 +152,7 @@ final class ReflectionBypass {
      */
     static void makeMethodAccessible(Object method) {
 
-        try {
-            SET_METHOD_ACCESSIBLE.invoke(method, true);
-
-        } catch (Throwable cannotOpenMember) {
-            throw throwUnchecked(cannotOpenMember);
-        }
+        callThroughHandle(() -> SET_METHOD_ACCESSIBLE.invoke(method, true));
     }
 
     /**
@@ -186,12 +161,8 @@ final class ReflectionBypass {
      */
     static Class<?>[] readConstructorParameterTypes(Object constructor) {
 
-        try {
-            return (Class<?>[]) GET_CONSTRUCTOR_PARAMETER_TYPES.invoke(constructor);
-
-        } catch (Throwable cannotReadMember) {
-            throw throwUnchecked(cannotReadMember);
-        }
+        return (Class<?>[]) callThroughHandle(
+            () -> GET_CONSTRUCTOR_PARAMETER_TYPES.invoke(constructor));
     }
 
     /**
@@ -200,12 +171,7 @@ final class ReflectionBypass {
      */
     static String readFieldName(Object field) {
 
-        try {
-            return (String) GET_FIELD_NAME.invoke(field);
-
-        } catch (Throwable cannotReadMember) {
-            throw throwUnchecked(cannotReadMember);
-        }
+        return (String) callThroughHandle(() -> GET_FIELD_NAME.invoke(field));
     }
 
     /**
@@ -214,12 +180,7 @@ final class ReflectionBypass {
      */
     static Class<?> readFieldType(Object field) {
 
-        try {
-            return (Class<?>) GET_FIELD_TYPE.invoke(field);
-
-        } catch (Throwable cannotReadMember) {
-            throw throwUnchecked(cannotReadMember);
-        }
+        return (Class<?>) callThroughHandle(() -> GET_FIELD_TYPE.invoke(field));
     }
 
     /**
@@ -229,12 +190,7 @@ final class ReflectionBypass {
      */
     static Object readFieldValue(Object field, Object instance) {
 
-        try {
-            return GET_FIELD_VALUE.invoke(field, instance);
-
-        } catch (Throwable thrown) {
-            throw throwUnchecked(thrown);
-        }
+        return callThroughHandle(() -> GET_FIELD_VALUE.invoke(field, instance));
     }
 
     /**
@@ -243,12 +199,7 @@ final class ReflectionBypass {
      */
     static String readMethodName(Object method) {
 
-        try {
-            return (String) GET_METHOD_NAME.invoke(method);
-
-        } catch (Throwable cannotReadMember) {
-            throw throwUnchecked(cannotReadMember);
-        }
+        return (String) callThroughHandle(() -> GET_METHOD_NAME.invoke(method));
     }
 
     /**
@@ -258,12 +209,7 @@ final class ReflectionBypass {
      */
     static Class<?>[] readMethodParameterTypes(Object method) {
 
-        try {
-            return (Class<?>[]) GET_METHOD_PARAMETER_TYPES.invoke(method);
-
-        } catch (Throwable cannotReadMember) {
-            throw throwUnchecked(cannotReadMember);
-        }
+        return (Class<?>[]) callThroughHandle(() -> GET_METHOD_PARAMETER_TYPES.invoke(method));
     }
 
     /**
@@ -272,12 +218,7 @@ final class ReflectionBypass {
      */
     static Class<?> readMethodReturnType(Object method) {
 
-        try {
-            return (Class<?>) GET_METHOD_RETURN_TYPE.invoke(method);
-
-        } catch (Throwable cannotReadMember) {
-            throw throwUnchecked(cannotReadMember);
-        }
+        return (Class<?>) callThroughHandle(() -> GET_METHOD_RETURN_TYPE.invoke(method));
     }
 
     /**
@@ -289,8 +230,25 @@ final class ReflectionBypass {
      */
     static void writeFieldValue(Object field, Object instance, Object value) {
 
+        callThroughHandle(() -> SET_FIELD_VALUE.invoke(field, instance, value));
+    }
+
+    // The one guard every operation above runs under, so what a failure becomes is settled once
+    // rather than thirteen times.
+    //
+    // The handle call stays inside the caller's lambda rather than being passed here as a handle
+    // and an argument array. MethodHandle.invoke is signature-polymorphic: it compiles to a call
+    // site carrying the exact descriptor written at the point of the call, which is what keeps a
+    // read of a field as cheap as the field read it stands for. Taking the handle here instead
+    // would leave only invokeWithArguments, which boxes its arguments and resolves the shape at
+    // run time - a per-call cost on paths a render pass takes.
+    //
+    // A void-returning handle adapts to this Object-returning shape by answering null, so the
+    // three operations that write rather than read need no separate route.
+    private static Object callThroughHandle(HandleCall call) {
+
         try {
-            SET_FIELD_VALUE.invoke(field, instance, value);
+            return call.makeCall();
 
         } catch (Throwable thrown) {
             throw throwUnchecked(thrown);
@@ -342,5 +300,12 @@ final class ReflectionBypass {
             throw new IllegalStateException("The runtime's " + reflectionClass.getName()
                 + " does not offer " + memberName + " as this expects it.", cannotReachMember);
         }
+    }
+
+    /** One call onto a reflection member's handle, made where its descriptor is written. */
+    @FunctionalInterface
+    private interface HandleCall {
+
+        Object makeCall() throws Throwable;
     }
 }
