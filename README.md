@@ -501,6 +501,12 @@ No Starsector API on the signature.
   held until a reporter on a frame that can show a dialog takes them,
   and never unlatched by the taking -
   so a binding that fails on every frame is reported on one.
+  And that reporter:
+  a transient per-frame script that drains the record
+  and shows each failure as the game's own message dialog,
+  one per frame,
+  waiting where the campaign UI is not up yet or another dialog is -
+  behind which the game would drop the notice unshown.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
