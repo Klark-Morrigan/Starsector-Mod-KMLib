@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.opengl.GlMatrix;
 import kmlib.opengl.GlRuns;
 import kmlib.opengl.GlViewport;
 import kmlib.starsector.ui.screen.VanillaScreen;
@@ -46,7 +47,6 @@ public record CampaignMapTransform(
         int[] viewport,
         float factor) {
 
-    private static final int MATRIX_FLOAT_COUNT = 16;
     private static final int VIEWPORT_INT_COUNT = 4;
 
     // The matrix that transforms nothing, held to recognise a modelview that describes no pass.
@@ -86,15 +86,15 @@ public record CampaignMapTransform(
     public CampaignMapTransform {
         // A wrong-sized matrix or viewport would otherwise be read out of bounds deep inside
         // gluUnProject, so the shape is rejected at the boundary where the size is still named.
-        if (modelviewMatrix.length != MATRIX_FLOAT_COUNT) {
+        if (modelviewMatrix.length != GlMatrix.FLOAT_COUNT) {
             throw new IllegalArgumentException("Modelview matrix must be "
-                + MATRIX_FLOAT_COUNT
+                + GlMatrix.FLOAT_COUNT
                 + " floats, got "
                 + modelviewMatrix.length);
         }
-        if (projectionMatrix.length != MATRIX_FLOAT_COUNT) {
+        if (projectionMatrix.length != GlMatrix.FLOAT_COUNT) {
             throw new IllegalArgumentException("Projection matrix must be "
-                + MATRIX_FLOAT_COUNT
+                + GlMatrix.FLOAT_COUNT
                 + " floats, got "
                 + projectionMatrix.length);
         }
@@ -229,7 +229,7 @@ public record CampaignMapTransform(
     static float[] buildUiOrthoProjectionMatrix(float screenWidth, float screenHeight) {
 
         var depthSpan = UI_ORTHO_NEAR_PLANE - UI_ORTHO_FAR_PLANE;
-        var matrix = new float[MATRIX_FLOAT_COUNT];
+        var matrix = new float[GlMatrix.FLOAT_COUNT];
         matrix[SCALE_X_SLOT] = 2f / screenWidth;
         matrix[SCALE_Y_SLOT] = 2f / screenHeight;
         matrix[SCALE_Z_SLOT] = 2f / depthSpan;

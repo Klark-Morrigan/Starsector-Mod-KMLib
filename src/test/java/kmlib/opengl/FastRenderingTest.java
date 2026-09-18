@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * map overlay simply resolves the wrong point - and it cannot be caught in-engine except by
  * noticing that a hover is subtly wrong.
  */
-class FastRenderingTest {
+final class FastRenderingTest {
 
     // A translation, which is the whole shape of the campaign map's own modelview and the case the
     // two layouts disagree about most legibly: transposed, these land at indices 3/7/11 instead of

@@ -11,10 +11,11 @@ import java.nio.FloatBuffer;
  * the matrix it draws with. It replaces the game's GL calls with a batching renderer, which changes
  * what some GL calls mean, so code that reads GL state back has to account for it.
  *
- * <p>Both facts live here so exactly one file has to be checked against
- * {@code docs/dev/rendering-environment.md}, which records them and their citations. Neither names
- * a Fast Rendering type: this class is about the renderer, not bound to it, so it stays loadable
- * and verifiable on a stock install.
+ * <p>Both facts live here so one file has to be checked against
+ * {@code docs/dev/rendering-environment.md}, which records them and their citations; the six bridge
+ * members that page lists are checked against {@link FastRenderingBridgeDiagnostic} beside it.
+ * Neither names a Fast Rendering type: this class is about the renderer, not bound to it, so it
+ * stays loadable and verifiable on a stock install.
  */
 public final class FastRendering {
 
@@ -26,9 +27,10 @@ public final class FastRendering {
     // A full-name comparison answers "stock" for any release whose layout it does not know. That is
     // the one wrong answer with teeth - it routes callers into GL reads the bridge cannot serve,
     // which fail mid-render.
-    private static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
-
-    private static final int MATRIX_FLOAT_COUNT = 16;
+    //
+    // Shared with the diagnostic beside this class, which spells the bridge's class names out from
+    // it: one place states where the bridge lives.
+    static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
 
     private FastRendering() {
     }
@@ -62,15 +64,15 @@ public final class FastRendering {
      * what makes the result a value.
      *
      * @param matrix a matrix in Fast Rendering's row-major field layout
-     * @return {@value #MATRIX_FLOAT_COUNT} floats, column-major, owned by the caller
+     * @return {@value GlMatrix#FLOAT_COUNT} floats, column-major, owned by the caller
      */
     public static float[] copyAsColumnMajorFloats(Matrix4f matrix) {
         // Matrix4f only writes into a FloatBuffer, so the transpose lands in one and is then copied
         // into a plain array the caller owns outright.
-        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(MATRIX_FLOAT_COUNT);
+        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(GlMatrix.FLOAT_COUNT);
         matrix.storeTranspose(matrixBuffer);
         matrixBuffer.flip();
-        var columnMajorFloats = new float[MATRIX_FLOAT_COUNT];
+        var columnMajorFloats = new float[GlMatrix.FLOAT_COUNT];
         matrixBuffer.get(columnMajorFloats);
         return columnMajorFloats;
     }

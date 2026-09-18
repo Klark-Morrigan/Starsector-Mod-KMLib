@@ -17,7 +17,8 @@ package com.genir.renderer.bridge.context;
  * <p>The build binds the real {@code fr.jar} instead of these whenever the install has one, so an
  * ordinary build on a patched machine type-checks against genir's actual bytes and any drift in
  * these signatures surfaces as a compile error - see {@code build.gradle}. Mirror only what KMLib
- * reads: every member added here is one more thing that can silently diverge.
+ * reads: every member added here is one more thing that can silently diverge, and one more that
+ * {@code kmlib.opengl.FastRenderingBridgeDiagnostic} has to probe by the same signature.
  *
  * <p>{@code docs/dev/rendering-environment.md} records the real shape and its citations.
  */

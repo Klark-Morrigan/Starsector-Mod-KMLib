@@ -82,7 +82,8 @@ final class CompatibilityFailureTest {
             assertThat(failure.describeForLog())
                 .isEqualTo("Fast Rendering compatibility failure."
                     + " KMLib was built against v0.8.8, and this install reports v0.9.1."
-                    + " Broken: GLCommand is absent");
+                    + " Broken: GLCommand.run"
+                    + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)");
         }
 
         @Test
@@ -94,7 +95,8 @@ final class CompatibilityFailureTest {
                 .isEqualTo("Fast Rendering compatibility failure."
                     + " KMLib was built against an unknown version,"
                     + " and this install reports an unknown version."
-                    + " Broken: GLCommand is absent");
+                    + " Broken: GLCommand.run"
+                    + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)");
         }
     }
 }

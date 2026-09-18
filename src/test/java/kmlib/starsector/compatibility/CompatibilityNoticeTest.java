@@ -41,9 +41,9 @@ import static org.mockito.Mockito.when;
  */
 final class CompatibilityNoticeTest {
 
-    private static final String FAST_RENDERING = "fast-rendering";
+    private static final String FAST_RENDERING = CompatibilityFailureFixture.FAST_RENDERING_SUBJECT_KEY;
 
-    private static final String NEXERELIN = "nexerelin";
+    private static final String NEXERELIN = CompatibilityFailureFixture.NEXERELIN_SUBJECT_KEY;
 
     private static final float ONE_FRAME = 0.016f;
 
@@ -116,6 +116,7 @@ final class CompatibilityNoticeTest {
 
         @Test
         void readsNothingOfTheCampaignUiWhereNothingWasRecorded() {
+
             // The healthy path is the one every frame of every session takes, and it must cost one
             // check on the record rather than a walk to the campaign UI.
             notice.advance(ONE_FRAME);
@@ -179,6 +180,7 @@ final class CompatibilityNoticeTest {
 
         @Test
         void showsTwoFailuresOnTwoFramesRatherThanOne() {
+
             // The game drops a message dialog asked for behind another, so the second of two taken
             // together is shown on the next frame that can show it, not stacked on the first.
             var firstFailure = CompatibilityFailureFixture.createFailureLosing("first");

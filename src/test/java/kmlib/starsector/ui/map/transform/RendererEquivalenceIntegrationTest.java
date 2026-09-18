@@ -69,6 +69,7 @@ class RendererEquivalenceIntegrationTest {
     // reads as m<row><col>, so its MatrixStack.glTranslatef puts the translation in m03/m13 - the
     // transpose of the layout above, and the reason the two bindings cannot share a copy step.
     private static Matrix4f buildMatrixAsFastRenderingHoldsIt() {
+
         var matrix = new Matrix4f();
         matrix.setIdentity();
         matrix.m03 = PAN_X;
@@ -79,6 +80,7 @@ class RendererEquivalenceIntegrationTest {
     // Drives a reading all the way to a world point, the way a map overlay does, so the two
     // renderers are compared on the answer rather than on an intermediate.
     private static org.lwjgl.util.vector.Vector2f resolveWorldPointFrom(float[] modelviewMatrix) {
+
         var transform = new CampaignMapTransform(modelviewMatrix, PROJECTION, VIEWPORT, MAP_ZOOM);
         return transform.unprojectToWorld(CURSOR_PIXEL_X, CURSOR_PIXEL_Y);
     }
@@ -88,13 +90,15 @@ class RendererEquivalenceIntegrationTest {
 
         @Test
         void resolvesTheSameWorldPointUnderEitherRenderer() {
-            var stockGlPoint = resolveWorldPointFrom(buildMatrixAsStockGlReportsIt());
 
+            var stockGlPoint = resolveWorldPointFrom(buildMatrixAsStockGlReportsIt());
             var fastRenderingPoint = resolveWorldPointFrom(
                 FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
 
-            assertThat(fastRenderingPoint.x).isCloseTo(stockGlPoint.x, TOLERANCE);
-            assertThat(fastRenderingPoint.y).isCloseTo(stockGlPoint.y, TOLERANCE);
+            assertThat(fastRenderingPoint.x)
+                .isCloseTo(stockGlPoint.x, TOLERANCE);
+            assertThat(fastRenderingPoint.y)
+                .isCloseTo(stockGlPoint.y, TOLERANCE);
         }
 
         @Test
@@ -123,6 +127,7 @@ class RendererEquivalenceIntegrationTest {
             // converging, which is the part that is theirs rather than the renderers'.
             ModelviewMatrixReader stockGlReaderFake =
                 new ModelviewMatrixReaderFake(buildMatrixAsStockGlReportsIt());
+
             ModelviewMatrixReader fastRenderingReaderFake = new ModelviewMatrixReaderFake(
                 FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
 

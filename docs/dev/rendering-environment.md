@@ -263,6 +263,13 @@ the six members KMLib mirrors are -
 `Executor.execute(GLCommand)`,
 `GLCommand.run` and `TransformManager.getCPUModelView` -
 and the real-jar build leg is what checks them.
+At runtime `FastRenderingBridgeDiagnostic` probes the same six by name and exact signature,
+through method handles rather than `java.lang.reflect`,
+once a binding has already failed:
+a `LinkageError` names the first member the JVM tripped on,
+where the probe names every one that moved,
+beside the version the installed jar reports.
+It never runs on the healthy path.
 
 ## How to re-verify
 

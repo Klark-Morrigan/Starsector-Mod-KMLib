@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.opengl.GlMatrix;
+
 /**
  * Source port for the modelview matrix a render pass is drawing under. Where that matrix lives is
  * a property of the renderer, not of the drawing code: the stock renderer keeps it in GL, while a
@@ -10,12 +12,14 @@ package kmlib.starsector.ui.map.transform;
  *
  * <p>{@link GlModelviewMatrixReader} is the binding for the stock renderer and
  * {@link FastRenderingModelviewMatrixReader} the one for Fast Rendering.
+ * {@link UnavailableModelviewMatrixReader} is the binding for a renderer whose matrix cannot be
+ * reached at all, so a caller is handed a reader that reports nothing rather than no reader.
  * {@link ModelviewMatrixReaders#selectForActiveRenderer} picks between them.
  */
 public interface ModelviewMatrixReader {
 
     /** The float count of a 4x4 matrix, the shape every reading of this port reports. */
-    int MATRIX_FLOAT_COUNT = 16;
+    int MATRIX_FLOAT_COUNT = GlMatrix.FLOAT_COUNT;
 
     /**
      * @return the current modelview as {@value #MATRIX_FLOAT_COUNT} floats in column-major order,
