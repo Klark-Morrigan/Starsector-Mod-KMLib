@@ -111,6 +111,7 @@ class MapCursorTest {
 
         @AfterEach
         void tearDown() {
+            
             mouseMock.close();
             glMock.close();
             globalMock.close();

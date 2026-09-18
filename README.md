@@ -312,6 +312,7 @@ No Starsector API on the signature.
   how a pass blends and how a texture is sampled,
   polygon tessellation,
   viewport and scissor reads,
+  the shape a GL matrix takes,
   and what KM code must know about Fast Rendering.
   See [Rendering environment](#rendering-environment).
 - [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) -
@@ -818,7 +819,8 @@ How the tiers meet is in
   and the traces that describe them.
 - [`starsector/ui/map/transform/`](src/main/java/kmlib/starsector/ui/map/transform/) -
   screen and world transform for the campaign map,
-  and the modelview matrix readers behind it for both the GL and Fast Rendering paths.
+  and the modelview matrix readers behind it for the GL and Fast Rendering paths,
+  plus the one that reports no matrix where neither can be reached.
 - [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) -
   the GL paint layer,
   and the drawing surface itself:

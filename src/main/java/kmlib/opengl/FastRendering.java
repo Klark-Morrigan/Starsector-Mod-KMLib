@@ -28,8 +28,6 @@ public final class FastRendering {
     // which fail mid-render.
     private static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
 
-    private static final int MATRIX_FLOAT_COUNT = 16;
-
     private FastRendering() {
     }
 
@@ -62,15 +60,15 @@ public final class FastRendering {
      * what makes the result a value.
      *
      * @param matrix a matrix in Fast Rendering's row-major field layout
-     * @return {@value #MATRIX_FLOAT_COUNT} floats, column-major, owned by the caller
+     * @return {@value GlMatrix#FLOAT_COUNT} floats, column-major, owned by the caller
      */
     public static float[] copyAsColumnMajorFloats(Matrix4f matrix) {
         // Matrix4f only writes into a FloatBuffer, so the transpose lands in one and is then copied
         // into a plain array the caller owns outright.
-        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(MATRIX_FLOAT_COUNT);
+        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(GlMatrix.FLOAT_COUNT);
         matrix.storeTranspose(matrixBuffer);
         matrixBuffer.flip();
-        var columnMajorFloats = new float[MATRIX_FLOAT_COUNT];
+        var columnMajorFloats = new float[GlMatrix.FLOAT_COUNT];
         matrixBuffer.get(columnMajorFloats);
         return columnMajorFloats;
     }
