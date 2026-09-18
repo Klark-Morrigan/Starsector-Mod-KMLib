@@ -80,7 +80,9 @@ public final class CompatibilityFailures {
         KmlibStrings.requireText(
             subjectKey,
             "A record latched under no key could not be told from any other subject's.");
-        Objects.requireNonNull(describeFailure, "describeFailure");
+        Objects.requireNonNull(
+            describeFailure,
+            "A record with nothing to describe the failure would latch a subject and report nothing.");
 
         // The add is the whole decision: false means another record of this subject - on this
         // thread or another - already passed, and there is nothing further to do or to build.
