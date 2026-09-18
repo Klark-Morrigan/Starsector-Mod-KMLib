@@ -127,7 +127,7 @@ class RendererEquivalenceIntegrationTest {
             // converging, which is the part that is theirs rather than the renderers'.
             ModelviewMatrixReader stockGlReaderFake =
                 new ModelviewMatrixReaderFake(buildMatrixAsStockGlReportsIt());
-                
+
             ModelviewMatrixReader fastRenderingReaderFake = new ModelviewMatrixReaderFake(
                 FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
 

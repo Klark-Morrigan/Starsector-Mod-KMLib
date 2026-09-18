@@ -66,7 +66,7 @@ class MapCursorReadTest {
 
     @BeforeEach
     void setUp() {
-        
+
         glMock = mockStatic(GL11.class);
     }
 

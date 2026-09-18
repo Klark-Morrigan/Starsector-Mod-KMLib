@@ -74,7 +74,7 @@ class CampaignMapTransformTest {
     }
 
     private static float[] buildScaleMatrix(float scale) {
-        
+
         var matrix = IDENTITY_MATRIX.clone();
         matrix[0] = scale;
         matrix[5] = scale;
@@ -91,7 +91,7 @@ class CampaignMapTransformTest {
 
         @Test
         void producesTheOrthoTheCampaignUiSetsUp() {
-            
+
             var projection = buildProjection();
 
             // glOrtho's published result for (0, 1600, 0, 1000, -6000, 6000): the diagonal
