@@ -89,7 +89,7 @@ public final class VertexWelder {
 
         canonicalPoints
             .add(new double[] {x, y});
-            
+
         pointsByCell
             .computeIfAbsent(packCell(cellX, cellY), cell -> new ArrayList<>())
             .add(newId);

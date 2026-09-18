@@ -89,7 +89,7 @@ final class SegmentTest {
 
         @Test
         void theStartIsTheStartAsAPoint() {
-            
+
             assertThat(EASTWARD.readStart())
                 .containsExactly(0, 0);
         }
