@@ -5,6 +5,10 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.mods.nexerelin.NexerelinIntegration;
+import kmlib.mods.rat.RandomAssortmentOfThingsIntegration;
+import kmlib.opengl.FastRendering;
+import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
@@ -25,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,6 +55,30 @@ final class KMLib_ModPluginTest {
     // Latched on the process's record for the rest of the run, so it is a key no binding records
     // under and no other case reads.
     private static final String SUBJECT_KEY = "kmlib-mod-plugin-subject";
+
+    @Nested
+    class OnApplicationLoad {
+
+        @Test
+        void standsUpEveryStepALaunchIsMadeOf() {
+            // The list is the whole subject: a step nobody named is one that silently never runs,
+            // and nothing else says so - the setting still reads, the integration still compiles.
+            // Held over every step at once, so a step dropped from the wiring fails here rather
+            // than in play.
+            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
+                    var fastRenderingMock = mockStatic(FastRendering.class);
+                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
+                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
+
+                new KMLib_ModPlugin().onApplicationLoad();
+
+                lunaSettingsMock.verify(KmlibLunaSettings::installBindings);
+                fastRenderingMock.verify(FastRendering::isFastRenderingActive);
+                nexerelinMock.verify(NexerelinIntegration::installRoutines);
+                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+            }
+        }
+    }
 
     @Nested
     class OnGameLoad {
