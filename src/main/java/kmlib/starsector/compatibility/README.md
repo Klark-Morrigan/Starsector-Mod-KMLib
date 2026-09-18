@@ -12,6 +12,7 @@ what it holds is the channel a binding reports through.
 ## Index
 
 - [Record, then report](#record-then-report)
+- [One record per process](#one-record-per-process)
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
 - [Threads](#threads)
@@ -59,6 +60,22 @@ sequenceDiagram
   N->>N: log describeForLog()
   N->>UI: showMessageDialog(describeForPlayer())
 ```
+
+## One record per process
+
+`CompatibilityFailures.SESSION_RECORD` is the record every binding records into
+and the one the notice drains.
+It is one per process rather than per sector,
+because what it holds is a fact about the jars loaded into the process:
+a binding is resolved once and held for as long as the game runs,
+and its first record can come from a load step before any sector exists.
+A sector loaded later finds what was recorded before it waiting.
+
+The notice is installed on every game load,
+by the library's own plugin,
+as a transient script on the loaded sector.
+Per load because a transient script does not survive one,
+and on the sector because the dialog it opens is on that sector's campaign UI.
 
 ## What a failure says
 
@@ -108,6 +125,7 @@ The notice runs on the campaign thread alone.
   Detecting that a binding no longer holds is the binder's job,
   and which member broke is what it records.
 - The transient install.
-  [`starsector/scripts/`](../scripts/) is what registers the notice on a sector.
+  [`starsector/scripts/`](../scripts/) is what registers the notice on a sector,
+  and [`KMLib_ModPlugin`](../../KMLib_ModPlugin.java) is what asks it to on each load.
 - The wording.
   [`starsector/strings/`](../strings/) holds the category and the string IDs the modal is drawn from.

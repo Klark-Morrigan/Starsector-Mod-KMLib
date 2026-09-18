@@ -2,24 +2,30 @@ package kmlib;
 
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.mods.nexerelin.NexerelinIntegration;
 import kmlib.mods.rat.RandomAssortmentOfThingsIntegration;
 import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.CompatibilityNotice;
+import kmlib.starsector.scripts.SectorScripts;
 
 import org.apache.log4j.Logger;
 
 /**
- * KMLib's entry point, which exists for one reason: applying the library's own log verbosity from
- * its own setting.
+ * KMLib's entry point, for the little the library has to do on its own behalf rather than on a
+ * consuming mod's: applying its own log verbosity from its own setting, and telling the player when
+ * a binding it holds to third-party code has stopped holding.
  *
- * <p>Everything else here is called into by whichever mod wants it, so the library had no load-time
- * work and no plugin until this. Its logging is the exception - a level has to be applied to the
- * {@code kmlib} logger subtree before anything under it logs, and no consuming mod can do that
- * without retuning the library for every other mod in the same game.
+ * <p>Everything else here is called into by whichever mod wants it. Those two are the exceptions
+ * because no consuming mod can do either for it: a level has to be applied to the {@code kmlib}
+ * logger subtree before anything under it logs, and a mod applying one would retune the library for
+ * every other mod in the same game; and a binding the library holds is the library's to report, not
+ * something one mod among several should be answering for.
  *
- * <p>A failed binding is logged rather than thrown: the library's verbosity falling back to log4j's
+ * <p>A failed step is logged rather than thrown: the library's verbosity falling back to log4j's
  * default is a diagnostic inconvenience, and taking down every mod that depends on KMLib over it
  * would be wildly out of proportion.
  */
@@ -33,6 +39,27 @@ public class KMLib_ModPlugin extends BaseModPlugin {
         installLunaLibSettingsBindings();
         logActiveRenderer();
         installOptionalModIntegrations();
+    }
+
+    @Override
+    public void onGameLoad(boolean newGame) {
+
+        super.onGameLoad(newGame);
+        installCompatibilityNotice(Global.getSector());
+    }
+
+    // Puts the reporter on the loaded sector, so what the record holds reaches the player. Per load
+    // rather than once at application load: the notice is transient - it opens a dialog on a
+    // campaign UI, which is the loaded sector's - and a transient script does not survive a load.
+    // The record it drains is the process's, so a failure recorded before this sector existed is
+    // waiting for the first notice that runs.
+    static void installCompatibilityNotice(SectorAPI sector) {
+
+        installGuarded(
+            "compatibility notice",
+            () -> SectorScripts.installTransientScript(
+                sector,
+                () -> new CompatibilityNotice(sector, CompatibilityFailures.SESSION_RECORD)));
     }
 
     private static void installLunaLibSettingsBindings() {
@@ -60,12 +87,12 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
     }
 
-    // One guarded step per integration, so a mod whose registration throws costs only its own
-    // adapters rather than every adapter that had not been reached yet.
+    // One guarded step per thing installed, so a step that throws costs only what it was installing
+    // rather than every step that had not been reached yet.
     //
-    // A failure leaves the library running its own sequences rather than a mod's, which is the
-    // behaviour of an install without that mod - a worse colony than the player expected, and a
-    // far better outcome than taking down every mod that depends on KMLib.
+    // For an integration, a failure leaves the library running its own sequences rather than a
+    // mod's, which is the behaviour of an install without that mod - a worse colony than the player
+    // expected, and a far better outcome than taking down every mod that depends on KMLib.
     private static void installGuarded(String integrationDescription, Runnable installation) {
 
         try {

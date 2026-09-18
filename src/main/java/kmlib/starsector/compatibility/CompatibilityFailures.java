@@ -29,6 +29,17 @@ import java.util.function.Supplier;
  */
 public final class CompatibilityFailures {
 
+    /**
+     * The record every binding in this process records into, and the one the session's notice
+     * drains.
+     *
+     * <p>One per process rather than per sector, because what it records is a fact about the jars
+     * loaded into this process: a binding is resolved once and held for as long as the game runs,
+     * and its first record can come from a load step before any sector exists. A sector loaded
+     * later finds what was recorded before it waiting.
+     */
+    public static final CompatibilityFailures SESSION_RECORD = new CompatibilityFailures();
+
     // Which subjects have been recorded this session - the latch. Membership is what a record is
     // decided on, and the set's add answers whether it was the first atomically, so two threads
     // recording one subject at once cannot both pass.
