@@ -41,9 +41,9 @@ import static org.mockito.Mockito.when;
  */
 final class CompatibilityNoticeTest {
 
-    private static final String FAST_RENDERING = "fast-rendering";
+    private static final String FAST_RENDERING = CompatibilityFailureFixture.FAST_RENDERING_SUBJECT_KEY;
 
-    private static final String NEXERELIN = "nexerelin";
+    private static final String NEXERELIN = CompatibilityFailureFixture.NEXERELIN_SUBJECT_KEY;
 
     private static final float ONE_FRAME = 0.016f;
 

@@ -18,6 +18,12 @@ public final class CompatibilityFailureFixture {
     /** The third party every failure here is about. */
     public static final String SUBJECT_NAME = "Fast Rendering";
 
+    /** The key a suite latches that third party under on a record. */
+    public static final String FAST_RENDERING_SUBJECT_KEY = "fast-rendering";
+
+    /** A second subject's key, for a case about two subjects recorded apart. */
+    public static final String NEXERELIN_SUBJECT_KEY = "nexerelin";
+
     /** The sentence naming what the session loses, in the wording a consumer would supply. */
     public static final String LOST_FEATURE = "Sector map overlays will not respond to the cursor this session.";
 

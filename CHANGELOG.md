@@ -34,7 +34,7 @@ The reusable release workflow extracts the section matching the released version
 
 - **List widget fixtures**: `Anomaly` and `AnomalySortMode`, a picker row and a sort vocabulary declared outside the list package, and `ListPickerBlockReads`, which reaches into a built picker block for the columns selector, the sort row, the sort selector or the item list. The block's order lives there rather than in each suite that tests a list, so a row inserted into it breaks one file.
 - **`MemoryKeyAddresses`**: two stand-in addresses, for suites storing a value at one point on an axis without being about what the axis is.
-- **`CompatibilityFailureFixture`** and **`CompatibilitySlotTemplates`**: one representative compatibility failure with a builder per slot a case varies, and the notice's templates as stand-ins that expose their slots, so a suite about the record, the notice or the wording names the one slot it is about.
+- **`CompatibilityFailureFixture`** and **`CompatibilitySlotTemplates`**: one representative compatibility failure with a builder per slot a case varies, plus the two subject keys a suite records under, and the notice's templates as stand-ins that expose their slots, so a suite about the record, the notice or the wording names the one slot it is about.
 - **`ShippedStrings`**: reads a mod's shipped `data/strings/strings.json` and the string IDs its holder class names, for the guard that holds those two together. The walk lives here rather than in each mod's suite, where a regex that stopped matching some entries would leave both directions passing over less of the file than they claim.
 
 ### Public contracts changed (**breaking**)
