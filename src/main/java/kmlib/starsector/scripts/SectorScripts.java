@@ -24,16 +24,14 @@ import java.util.function.Supplier;
  * what leaves {@link #removeTransientScripts} needed only where a feature can be switched off
  * mid-session: across a load there is nothing left to remove.
  *
- * <p>The class cleared is the built script's own rather than one the caller names beside it. A
+ * <p>The class cleared is the built script's own rather than one the caller names beside it - a
  * caller that could name it could name a different one, and what that buys is a pass silently
- * doubling while a sibling disappears. It is why the transient shape differs from
+ * doubling while a sibling disappears - which is why the transient shape differs from
  * {@link kmlib.starsector.listeners.SectorListeners}, where the two are separate calls on the
  * engine's manager. The engine clears by exact class - {@code getClass() != clazz}, no subtype - so
- * two scripts that must be installed and taken back independently have to be two classes.
- *
- * <p>By class, which makes the transient pair the wrong tool for a script whose class a sibling
- * mod may also be running over the same sector - {@link InstalledTransientScript} is that case,
- * and states the difference.
+ * two scripts that must be installed and taken back independently have to be two classes, and a
+ * script whose class a sibling mod may also be running over the same sector is the wrong fit for
+ * the pair at all: {@link InstalledTransientScript} is that case, and states the difference.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state.
  */
