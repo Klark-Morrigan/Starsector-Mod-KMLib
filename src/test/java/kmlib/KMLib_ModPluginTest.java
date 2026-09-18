@@ -35,14 +35,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the wiring the entry point owns for the compatibility notice: that a game load puts one on
- * the loaded sector, that it is transient and exactly one, and that it drains the process's record
- * rather than one of its own.
+ * Pins the composition the entry point names: which steps a launch is made of, and the wiring it
+ * owns for the compatibility notice - that a game load puts one on the loaded sector, that it is
+ * transient and exactly one, and that it drains the session's record rather than one of its own.
  *
- * <p>What the notice does on a frame is pinned beside the notice, and what a transient install
- * clears and adds is pinned beside {@code SectorScripts}. Neither is re-asserted here: a sector
- * that keeps its transient scripts the way the engine does is stood up so the outcome can be read
- * off it, and the cases are about which script landed there and which record it reads.
+ * <p>What each launch step does is pinned beside that step, what the notice does on a frame beside
+ * the notice, and what a transient install clears and adds beside {@code SectorScripts}. None is
+ * re-asserted here: the launch list is held over every step stood in for at once, and the notice
+ * cases read the outcome off a sector that keeps its transient scripts the way the engine does.
  *
  * <p>The record case is the one nothing else would catch. A notice built on a fresh record would
  * install, run every frame and show nothing for the session, and the record the bindings write into
@@ -52,7 +52,7 @@ final class KMLib_ModPluginTest {
 
     private static final float ONE_FRAME = 0.016f;
 
-    // Latched on the process's record for the rest of the run, so it is a key no binding records
+    // Latched on the session's record for the rest of the run, so it is a key no binding records
     // under and no other case reads.
     private static final String SUBJECT_KEY = "kmlib-mod-plugin-subject";
 
@@ -147,7 +147,7 @@ final class KMLib_ModPluginTest {
         }
 
         @Test
-        void drainsTheProcessesRecordRatherThanOneOfItsOwn() {
+        void drainsTheSessionRecordRatherThanOneOfItsOwn() {
 
             var campaignUiMock = mock(CampaignUIAPI.class);
             when(sectorMock.getCampaignUI())

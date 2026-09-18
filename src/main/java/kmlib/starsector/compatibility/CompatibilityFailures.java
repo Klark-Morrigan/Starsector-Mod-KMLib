@@ -30,11 +30,10 @@ import java.util.function.Supplier;
 public final class CompatibilityFailures {
 
     /**
-     * The record every binding in this process records into, and the one the session's notice
-     * drains.
+     * The session's record: the one every binding records into, and the one the notice drains.
      *
-     * <p>One per process rather than per sector, because what it records is a fact about the jars
-     * loaded into this process: a binding is resolved once and held for as long as the game runs,
+     * <p>One per session rather than per sector, because what it records is a fact about the jars
+     * loaded into the process: a binding is resolved once and held for as long as the game runs,
      * and its first record can come from a load step before any sector exists. A sector loaded
      * later finds what was recorded before it waiting.
      */

@@ -12,7 +12,7 @@ what it holds is the channel a binding reports through.
 ## Index
 
 - [Record, then report](#record-then-report)
-- [One record per process](#one-record-per-process)
+- [One record per session](#one-record-per-session)
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
 - [Threads](#threads)
@@ -61,11 +61,11 @@ sequenceDiagram
   N->>UI: showMessageDialog(describeForPlayer())
 ```
 
-## One record per process
+## One record per session
 
 `CompatibilityFailures.SESSION_RECORD` is the record every binding records into
 and the one the notice drains.
-It is one per process rather than per sector,
+It is one per session rather than per sector,
 because what it holds is a fact about the jars loaded into the process:
 a binding is resolved once and held for as long as the game runs,
 and its first record can come from a load step before any sector exists.

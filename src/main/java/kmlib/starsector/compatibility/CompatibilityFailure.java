@@ -9,8 +9,8 @@ import java.util.Objects;
  * One binding to third-party code that stopped holding, in the shape the sentence shown to the
  * player and the line written to the log are both composed from.
  *
- * <p>Kept apart from the registry that stores it so the wording can be asserted without one, and so
- * the registry itself carries no formatting. What the two sentences say and why is documented on
+ * <p>Kept apart from the registry that stores it so the wording can be read without one, and so the
+ * registry itself carries no formatting. What the two sentences say and why is documented on
  * the strings that render them, in {@link KmlibStringKeys}; this record only fills their slots.
  *
  * @param subject      the third party and the two versions the mismatch is stated as

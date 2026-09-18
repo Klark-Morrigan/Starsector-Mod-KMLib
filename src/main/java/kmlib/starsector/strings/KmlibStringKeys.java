@@ -72,9 +72,9 @@ public final class KmlibStringKeys {
 
     /**
      * Stands in for a version slot nothing could fill, so a report never prints
-     * {@code null} at a player. Reads as a parenthetical
-     * after the subject's name, which keeps the surrounding sentence grammatical
-     * whichever slot is missing.
+     * {@code null} at a player. Reads as a parenthetical after the subject's
+     * name, which keeps the surrounding sentence grammatical whichever slot is
+     * missing.
      */
     public static final String COMPATIBILITY_NOTICE_VERSION_UNKNOWN = "compatibility_notice_version_unknown";
 
@@ -84,15 +84,24 @@ public final class KmlibStringKeys {
     private KmlibStringKeys() {
     }
 
-    /** Looks up {@code key} under KMLib's category. See
-     *  {@link StarsectorStrings#get(String, String)} for fallback semantics. */
+    /**
+     * Looks up {@code key} under KMLib's category.
+     *
+     * @param key the string ID inside the category
+     * @return the string, with the fallback {@link StarsectorStrings#get(String, String)} applies
+     */
     public static String get(String key) {
         return StarsectorStrings.get(CATEGORY, key);
     }
 
-    /** Formats {@code key}'s template against {@code args}. See
-     *  {@link StarsectorStrings#format(String, String, Object...)} for fallback
-     *  semantics. */
+    /**
+     * Formats {@code key}'s template against {@code args}.
+     *
+     * @param key  the string ID inside the category
+     * @param args the values for the template's slots, in order
+     * @return the filled template, with the fallback
+     *         {@link StarsectorStrings#format(String, String, Object...)} applies
+     */
     public static String format(String key, Object... args) {
         return StarsectorStrings.format(CATEGORY, key, args);
     }
