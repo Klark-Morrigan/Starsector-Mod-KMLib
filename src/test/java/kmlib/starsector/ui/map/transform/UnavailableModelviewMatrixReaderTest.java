@@ -18,14 +18,7 @@ final class UnavailableModelviewMatrixReaderTest {
     class ReadModelviewMatrix {
 
         @Test
-        void reportsNoReading() {
-
-            assertThat(UnavailableModelviewMatrixReader.INSTANCE.readModelviewMatrix())
-                .isNull();
-        }
-
-        @Test
-        void reportsNoReadingOnEveryRepeatedRead() {
+        void reportsNoReadingOnTheFirstAndEveryRepeatedRead() {
 
             for (var read = 0; read < REPEATED_READ_COUNT; read++) {
                 assertThat(UnavailableModelviewMatrixReader.INSTANCE.readModelviewMatrix())
