@@ -313,7 +313,9 @@ No Starsector API on the signature.
   polygon tessellation,
   viewport and scissor reads,
   the shape a GL matrix takes,
-  and what KM code must know about Fast Rendering.
+  what KM code must know about Fast Rendering,
+  and - once a binding to its bridge has failed -
+  which of the mirrored members no longer holds and which release the install reports.
   See [Rendering environment](#rendering-environment).
 - [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) -
   hatch fills across a polygon,

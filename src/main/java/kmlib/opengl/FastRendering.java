@@ -26,7 +26,10 @@ public final class FastRendering {
     // A full-name comparison answers "stock" for any release whose layout it does not know. That is
     // the one wrong answer with teeth - it routes callers into GL reads the bridge cannot serve,
     // which fail mid-render.
-    private static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
+    //
+    // Shared with the diagnostic beside this class, which spells the bridge's class names out from
+    // it: one place states where the bridge lives.
+    static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
 
     private FastRendering() {
     }
