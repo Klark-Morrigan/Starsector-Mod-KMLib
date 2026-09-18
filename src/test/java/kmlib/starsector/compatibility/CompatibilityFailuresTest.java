@@ -1,5 +1,7 @@
 package kmlib.starsector.compatibility;
 
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +36,7 @@ final class CompatibilityFailuresTest {
         @Test
         void isTrueOnceAFailureWasRecorded() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("GLCommand is absent"));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
 
             assertThat(failures.hasUnreported())
                 .isTrue();
@@ -43,7 +45,7 @@ final class CompatibilityFailuresTest {
         @Test
         void isFalseAgainOnceTheFailureWasTaken() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("GLCommand is absent"));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             failures.takeUnreported();
 
             assertThat(failures.hasUnreported())
@@ -57,8 +59,8 @@ final class CompatibilityFailuresTest {
         @Test
         void keepsTheFirstFailureForASubjectAndIgnoresTheSecond() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("first"));
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("second"));
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
 
             assertThat(failures.takeUnreported())
                 .extracting(CompatibilityFailure::brokenDetail)
@@ -80,8 +82,8 @@ final class CompatibilityFailuresTest {
         @Test
         void recordsASecondSubjectIndependently() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("first"));
-            failures.recordOnce(NEXERELIN, () -> createFailure("second"));
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
+            failures.recordOnce(NEXERELIN, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
 
             assertThat(failures.takeUnreported())
                 .extracting(CompatibilityFailure::brokenDetail)
@@ -93,9 +95,9 @@ final class CompatibilityFailuresTest {
 
             // Once per session, not once per take: the frame after a report fails the same way, and
             // that is the failure already reported rather than a new one.
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("first"));
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
             failures.takeUnreported();
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("second"));
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
 
             assertThat(failures.hasUnreported())
                 .isFalse();
@@ -158,8 +160,8 @@ final class CompatibilityFailuresTest {
         @Test
         void answersTheRecordedFailuresInRecordOrder() {
 
-            failures.recordOnce(NEXERELIN, () -> createFailure("first"));
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("second"));
+            failures.recordOnce(NEXERELIN, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
 
             assertThat(failures.takeUnreported())
                 .extracting(CompatibilityFailure::brokenDetail)
@@ -169,7 +171,7 @@ final class CompatibilityFailuresTest {
         @Test
         void leavesNothingBehindOnceTaken() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure("first"));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             failures.takeUnreported();
 
             assertThat(failures.takeUnreported())
@@ -193,23 +195,12 @@ final class CompatibilityFailuresTest {
     private static CompatibilityFailure countAndCreateFailure(AtomicInteger describeCount) {
 
         describeCount.incrementAndGet();
-        return createFailure("described");
+        return CompatibilityFailureFixture.createFailure();
     }
 
     private static CompatibilityFailure countAndThrow(AtomicInteger describeCount) {
 
         describeCount.incrementAndGet();
         throw new IllegalStateException("A describer that could not describe");
-    }
-
-    // The broken detail is what tells one recorded failure from another; everything else is one
-    // representative subject with neither version read.
-    private static CompatibilityFailure createFailure(String brokenDetail) {
-
-        return new CompatibilityFailure(
-            new CompatibilitySubject("Fast Rendering", null, null),
-            "Overlays will not respond to the cursor this session.",
-            brokenDetail,
-            null);
     }
 }

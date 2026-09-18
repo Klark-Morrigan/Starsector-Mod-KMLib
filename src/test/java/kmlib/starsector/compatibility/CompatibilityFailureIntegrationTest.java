@@ -1,5 +1,6 @@
 package kmlib.starsector.compatibility;
 
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
 
@@ -18,10 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * pass every case written against a copy of it and reach a player with the versions swapped.
  */
 final class CompatibilityFailureIntegrationTest {
-
-    private static final String LOST_FEATURE = "Sector map overlays will not respond to the cursor this session.";
-
-    private static final String BROKEN_DETAIL = "GLCommand is absent";
 
     @BeforeEach
     void installShippedStrings() {
@@ -43,12 +40,12 @@ final class CompatibilityFailureIntegrationTest {
         @Test
         void readsAsTheModalWhereBothVersionsWereRead() {
 
-            var failure = createFailure("v0.8.8", "v0.9.1");
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForPlayer())
                 .isEqualTo("Fast Rendering version mismatch"
                     + "\n\nKMLib was built against Fast Rendering v0.8.8, and this install has v0.9.1."
-                    + "\n\n" + LOST_FEATURE
+                    + "\n\n" + CompatibilityFailureFixture.LOST_FEATURE
                     + " Everything else, including your save, is unaffected."
                     + " See starsector.log for which part is mismatched.");
         }
@@ -56,26 +53,16 @@ final class CompatibilityFailureIntegrationTest {
         @Test
         void readsAsTheModalWhereNeitherVersionWasRead() {
 
-            var failure = createFailure(null, null);
+            var failure = CompatibilityFailureFixture.createFailure();
 
             assertThat(failure.describeForPlayer())
                 .isEqualTo("Fast Rendering version mismatch"
                     + "\n\nKMLib was built against Fast Rendering (version unknown),"
                     + " and this install's version could not be read."
                     + " It is either newer and carries breaking changes, or too old for this build."
-                    + "\n\n" + LOST_FEATURE
+                    + "\n\n" + CompatibilityFailureFixture.LOST_FEATURE
                     + " Everything else, including your save, is unaffected."
                     + " See starsector.log for which part is mismatched.");
         }
-    }
-
-    // The versions are what the cases vary; everything else names one representative failure.
-    private static CompatibilityFailure createFailure(String builtAgainstVersion, String installedVersion) {
-
-        return new CompatibilityFailure(
-            new CompatibilitySubject("Fast Rendering", builtAgainstVersion, installedVersion),
-            LOST_FEATURE,
-            BROKEN_DETAIL,
-            null);
     }
 }

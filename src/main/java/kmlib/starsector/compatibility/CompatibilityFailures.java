@@ -89,6 +89,9 @@ public final class CompatibilityFailures {
      * <p>The subjects taken stay recorded: a take is a hand-over to whoever reports, not a reset of
      * the latch, so a subject that fails again after its report is not reported again.
      *
+     * <p>Allocates on every call, an empty one included, which is why a per-frame caller reads
+     * {@link #hasUnreported()} first and takes only when it answers yes.
+     *
      * @return the untaken failures in the order they were recorded; empty where there are none
      */
     public List<CompatibilityFailure> takeUnreported() {

@@ -3,6 +3,9 @@ package kmlib.starsector.compatibility;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.logging.LogAppenderFake;
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
+import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
@@ -10,8 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -30,17 +31,19 @@ import static org.mockito.Mockito.when;
  *
  * <p>The frames it must hold off on are the cases worth the most, because the game's message dialog
  * is dropped silently when asked for behind another: a notice that asked anyway would look right
- * here and reach no player. So a dialog up, a campaign UI not yet there and a sector not there at
- * all are each a case of their own, and each is followed by the frame that can show - so the hold
- * is a wait rather than a loss.
+ * here and reach no player. A dialog up and a campaign UI not yet there are each followed by the
+ * frame that can show, so the hold is a wait rather than a loss; a sector not there at all is fixed
+ * at construction, and holds for the session.
+ *
+ * <p>The log line is pinned apart from the dialog, because it is the line a report is written from
+ * and the dialog call is a binding to code outside the library: the line has to be there whatever
+ * that call did.
  */
 final class CompatibilityNoticeTest {
 
     private static final String FAST_RENDERING = "fast-rendering";
 
     private static final String NEXERELIN = "nexerelin";
-
-    private static final String LOST_FEATURE = "Overlays will not respond to the cursor this session.";
 
     private static final float ONE_FRAME = 0.016f;
 
@@ -53,15 +56,7 @@ final class CompatibilityNoticeTest {
     @BeforeEach
     void setUp() {
 
-        // Templates that expose their slots rather than the shipped wording, so what each failure
-        // composes carries its own broken detail and two shown are told apart by it.
-        var templatesByKey = Map.of(
-            "compatibility_notice_title", "title[%s]",
-            "compatibility_notice_built_against", "built[%s|%s|%s]",
-            "compatibility_notice_built_against_unreadable", "unreadable[%s|%s]",
-            "compatibility_notice_consequence", "consequence[%s]",
-            "compatibility_notice_version_unknown", "?");
-        StarsectorSettingsFake.installSettings((category, key) -> templatesByKey.get(key));
+        CompatibilitySlotTemplates.installSlotTemplates();
 
         campaignUiMock = mock(CampaignUIAPI.class);
         sectorMock = mock(SectorAPI.class);
@@ -88,7 +83,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsTheRecordedFailureAsTheModalItComposes() {
 
-            var failure = createFailure(LOST_FEATURE);
+            var failure = CompatibilityFailureFixture.createFailure();
             failures.recordOnce(FAST_RENDERING, () -> failure);
 
             notice.advance(ONE_FRAME);
@@ -100,7 +95,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsAFailureOnceHoweverManyFramesFollow() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
 
             notice.advance(ONE_FRAME);
             notice.advance(ONE_FRAME);
@@ -132,7 +127,7 @@ final class CompatibilityNoticeTest {
         @Test
         void holdsTheFailureWhileADialogIsUp() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             when(campaignUiMock.isShowingDialog())
                 .thenReturn(true);
 
@@ -145,7 +140,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsTheHeldFailureOnTheFrameTheDialogIsDown() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             when(campaignUiMock.isShowingDialog())
                 .thenReturn(true, false);
 
@@ -159,7 +154,7 @@ final class CompatibilityNoticeTest {
         @Test
         void holdsTheFailureWhileTheSectorHasNoCampaignUi() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             when(sectorMock.getCampaignUI())
                 .thenReturn(null, campaignUiMock);
 
@@ -174,7 +169,7 @@ final class CompatibilityNoticeTest {
         void showsNothingAndThrowsNothingWhereThereIsNoSector() {
 
             var noticeWithoutSector = new CompatibilityNotice(null, failures);
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
 
             assertThatCode(() -> noticeWithoutSector.advance(ONE_FRAME))
                 .doesNotThrowAnyException();
@@ -186,8 +181,8 @@ final class CompatibilityNoticeTest {
         void showsTwoFailuresOnTwoFramesRatherThanOne() {
             // The game drops a message dialog asked for behind another, so the second of two taken
             // together is shown on the next frame that can show it, not stacked on the first.
-            var firstFailure = createFailure("first");
-            var secondFailure = createFailure("second");
+            var firstFailure = CompatibilityFailureFixture.createFailureLosing("first");
+            var secondFailure = CompatibilityFailureFixture.createFailureLosing("second");
             failures.recordOnce(FAST_RENDERING, () -> firstFailure);
             failures.recordOnce(NEXERELIN, () -> secondFailure);
 
@@ -206,7 +201,7 @@ final class CompatibilityNoticeTest {
         @Test
         void takesTheFailureOffTheRecordOnceShown() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
 
             notice.advance(ONE_FRAME);
 
@@ -215,9 +210,40 @@ final class CompatibilityNoticeTest {
         }
 
         @Test
+        void logsTheFailuresLogLineWhenItShowsIt() {
+
+            var failure = CompatibilityFailureFixture.createFailure();
+            failures.recordOnce(FAST_RENDERING, () -> failure);
+
+            var appenderFake = LogAppenderFake.captureLogOf(
+                CompatibilityNotice.class,
+                () -> notice.advance(ONE_FRAME));
+
+            assertThat(appenderFake.getMessages())
+                .containsExactly(failure.describeForLog());
+        }
+
+        @Test
+        void logsTheFailuresLogLineWhereTheDialogCallThrows() {
+
+            var failure = CompatibilityFailureFixture.createFailure();
+            failures.recordOnce(FAST_RENDERING, () -> failure);
+            doThrow(new IllegalStateException("no screen panel"))
+                .when(campaignUiMock)
+                .showMessageDialog(anyString());
+
+            var appenderFake = LogAppenderFake.captureLogOf(
+                CompatibilityNotice.class,
+                () -> notice.advance(ONE_FRAME));
+
+            assertThat(appenderFake.getMessages())
+                .startsWith(failure.describeForLog());
+        }
+
+        @Test
         void survivesADialogCallThatThrowsAndDoesNotRetryIt() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -228,6 +254,30 @@ final class CompatibilityNoticeTest {
 
             verify(campaignUiMock, times(1))
                 .showMessageDialog(anyString());
+        }
+
+        @Test
+        void logsADialogFaultOnceHoweverManyFailuresItStrikes() {
+
+            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureLosing("first"));
+            failures.recordOnce(NEXERELIN, () -> CompatibilityFailureFixture.createFailureLosing("second"));
+            doThrow(new IllegalStateException("no screen panel"))
+                .when(campaignUiMock)
+                .showMessageDialog(anyString());
+
+            var appenderFake = LogAppenderFake.captureLogOf(
+                CompatibilityNotice.class,
+                () -> {
+                    notice.advance(ONE_FRAME);
+                    notice.advance(ONE_FRAME);
+                });
+
+            // Two failure lines and one fault line: the fault is a standing state of the dialog
+            // call, not news on every failure it strikes.
+            assertThat(appenderFake.getMessages())
+                .hasSize(3)
+                .filteredOn(message -> message.startsWith("Could not show a compatibility notice"))
+                .hasSize(1);
         }
     }
 
@@ -248,22 +298,11 @@ final class CompatibilityNoticeTest {
         @Test
         void isFalseForTheWholeSession() {
 
-            failures.recordOnce(FAST_RENDERING, () -> createFailure(LOST_FEATURE));
+            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
             notice.advance(ONE_FRAME);
 
             assertThat(notice.isDone())
                 .isFalse();
         }
-    }
-
-    // The lost feature is what tells one recorded failure from another in the modal it composes;
-    // everything else is one representative subject with neither version read.
-    private static CompatibilityFailure createFailure(String lostFeature) {
-
-        return new CompatibilityFailure(
-            new CompatibilitySubject("Fast Rendering", null, null),
-            lostFeature,
-            "GLCommand is absent",
-            null);
     }
 }

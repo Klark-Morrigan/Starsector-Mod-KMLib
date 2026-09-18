@@ -8,8 +8,8 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Objects;
+import java.util.Queue;
 
 /**
  * Tells the player, once per failed subject, that a binding to third-party code has stopped holding
@@ -36,8 +36,7 @@ import java.util.Objects;
  * map open is found under a pause, and the dialog it waits behind holds one.
  *
  * <p>Never throws. It runs every frame on the campaign's own thread, and a dialog call that faults
- * must not take the frame with it: the failure was logged before the call, so what is lost is the
- * modal alone, and that loss is recorded once.
+ * must not take the frame with it.
  */
 public final class CompatibilityNotice implements EveryFrameScript {
 
@@ -48,7 +47,7 @@ public final class CompatibilityNotice implements EveryFrameScript {
 
     // Taken from the registry but not yet shown: one is shown per frame, so a take of several holds
     // the rest here. Touched on the campaign thread alone, which is the one every advance runs on.
-    private final Deque<CompatibilityFailure> failuresAwaitingDialog = new ArrayDeque<>();
+    private final Queue<CompatibilityFailure> failuresAwaitingDialog = new ArrayDeque<>();
 
     // One-shot guard on the dialog call faulting: a fault that repeats would otherwise be logged on
     // every failure shown after it.
@@ -112,11 +111,11 @@ public final class CompatibilityNotice implements EveryFrameScript {
     }
 
     // Logged first and shown second, so the line a report is written from exists whatever the
-    // dialog call does. The failure leaves the queue before either, which is what keeps a faulting
-    // dialog from being retried on it every frame.
+    // dialog call does: a faulting call loses the modal alone. The failure leaves the queue before
+    // either, which is what keeps a faulting dialog from being retried on it every frame.
     private void showNextFailure(CampaignUIAPI campaignUi) {
 
-        var failure = failuresAwaitingDialog.removeFirst();
+        var failure = failuresAwaitingDialog.remove();
 
         LOG.error(failure.describeForLog(), failure.cause());
 

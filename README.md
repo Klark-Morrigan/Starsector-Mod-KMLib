@@ -491,22 +491,11 @@ No Starsector API on the signature.
   so a caller states how much it touched without having written a profiling line,
   and a second traversal shows on the row that made it.
 - [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/) -
-  what a binding to third-party code that has stopped holding is reported as:
-  the subject - the third party with the version KMLib was compiled against and the one installed now -
-  beside the detail that broke and the sentence naming what the session loses.
-  One value the player's modal and the log line are both composed from,
-  so the wording can be asserted without the machinery that carries it.
-  Plus the session's record of those failures:
-  each subject latched on its first from whichever thread it broke on,
-  held until a reporter on a frame that can show a dialog takes them,
-  and never unlatched by the taking -
-  so a binding that fails on every frame is reported on one.
-  And that reporter:
-  a transient per-frame script that drains the record
-  and shows each failure as the game's own message dialog,
-  one per frame,
-  waiting where the campaign UI is not up yet or another dialog is -
-  behind which the game would drop the notice unshown.
+  what a binding to third-party code that has stopped holding is reported as,
+  and how that report reaches the player:
+  recorded once per subject where the binding broke,
+  shown as the game's own message dialog from a frame that can open one.
+  [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
@@ -1383,6 +1372,10 @@ A LunaLib settings store of the same shape sits beside it,
 counting saves as well as holding values,
 since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
+[`starsector/compatibility/`](src/testFixtures/java/kmlib/testfixtures/starsector/compatibility/)
+holds one representative compatibility failure with a builder per slot a case varies,
+and the notice's templates as stand-ins that expose their slots,
+so what a failure composes reads as which value landed where without the shipped wording being known.
 [`starsector/strings/`](src/testFixtures/java/kmlib/testfixtures/starsector/strings/)
 reads a mod's shipped `data/strings/strings.json` beside the string IDs its holder class names,
 for the guard that pins each against the other -
