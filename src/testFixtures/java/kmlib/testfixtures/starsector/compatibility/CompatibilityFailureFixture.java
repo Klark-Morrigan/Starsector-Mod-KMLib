@@ -27,8 +27,9 @@ public final class CompatibilityFailureFixture {
     /** The sentence naming what the session loses, in the wording a consumer would supply. */
     public static final String LOST_FEATURE = "Sector map overlays will not respond to the cursor this session.";
 
-    /** The member that stopped holding, as the log names it. */
-    public static final String BROKEN_DETAIL = "GLCommand is absent";
+    /** The member that stopped holding, in the phrase the bridge diagnostic names one with. */
+    public static final String BROKEN_DETAIL =
+        "GLCommand.run (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)";
 
     private CompatibilityFailureFixture() {
         // fixture of static builders, no instances.

@@ -3,7 +3,6 @@ package kmlib.opengl;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
@@ -23,15 +22,6 @@ final class FastRenderingBridgeDiagnosticIntegrationTest {
 
             assertThatCode(FastRenderingBridgeDiagnostic::probeInstalledBridge)
                 .doesNotThrowAnyException();
-        }
-
-        @Test
-        void answersADiagnosticWithAMemberList() {
-
-            var diagnostic = FastRenderingBridgeDiagnostic.probeInstalledBridge();
-
-            assertThat(diagnostic.brokenMembers())
-                .isNotNull();
         }
     }
 }

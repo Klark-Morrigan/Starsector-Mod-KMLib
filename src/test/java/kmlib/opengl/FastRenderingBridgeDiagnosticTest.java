@@ -20,7 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 final class FastRenderingBridgeDiagnosticTest {
 
-    private static final String RESIGNATURED_MEMBER = "ContextManager.getThreadContext";
+    // The one member whose owner nothing else references, so swapping its class touches it alone.
+    private static final String CONTEXT_MANAGER_ACCESSOR = "ContextManager.getThreadContext";
+
+    // Probes with every name answered by its matching shape, except the context manager, which
+    // answers with the class given.
+    private static FastRenderingBridgeDiagnostic probeWithContextManager(Class<?> contextManagerShape) {
+
+        var shapesByName = MirroredBridgeShapes.mapMatchingShapesByName();
+        shapesByName.put(MirroredBridgeShapes.CONTEXT_MANAGER_NAME, contextManagerShape);
+        return FastRenderingBridgeDiagnostic.probeBridge(MirroredBridgeShapes.lookupAmong(shapesByName));
+    }
 
     @Nested
     class ProbeBridge {
@@ -87,31 +97,19 @@ final class FastRenderingBridgeDiagnosticTest {
         @Test
         void reportsOnlyTheMemberWhoseSignatureChanged() {
 
-            var shapesByName = MirroredBridgeShapes.mapMatchingShapesByName();
-            shapesByName.put(
-                MirroredBridgeShapes.CONTEXT_MANAGER_NAME,
-                MirroredBridgeShapes.ContextManagerResignaturedShape.class);
-
-            var diagnostic = FastRenderingBridgeDiagnostic.probeBridge(
-                MirroredBridgeShapes.lookupAmong(shapesByName));
+            var diagnostic = probeWithContextManager(MirroredBridgeShapes.ContextManagerResignaturedShape.class);
 
             // The same name with a different return type is not the member the adapter binds to,
             // and the five around it still hold.
             assertThat(diagnostic.brokenMembers())
                 .extracting(BrokenMember::member)
-                .containsExactly(RESIGNATURED_MEMBER);
+                .containsExactly(CONTEXT_MANAGER_ACCESSOR);
         }
 
         @Test
         void namesTheLookupFailureAsTheReasonWhereASignatureChanged() {
 
-            var shapesByName = MirroredBridgeShapes.mapMatchingShapesByName();
-            shapesByName.put(
-                MirroredBridgeShapes.CONTEXT_MANAGER_NAME,
-                MirroredBridgeShapes.ContextManagerResignaturedShape.class);
-
-            var diagnostic = FastRenderingBridgeDiagnostic.probeBridge(
-                MirroredBridgeShapes.lookupAmong(shapesByName));
+            var diagnostic = probeWithContextManager(MirroredBridgeShapes.ContextManagerResignaturedShape.class);
 
             assertThat(diagnostic.brokenMembers())
                 .extracting(BrokenMember::reason)
@@ -123,17 +121,11 @@ final class FastRenderingBridgeDiagnosticTest {
         @Test
         void reportsOnlyTheMemberWhoseClassLoadsWithoutIt() {
 
-            var shapesByName = MirroredBridgeShapes.mapMatchingShapesByName();
-            shapesByName.put(
-                MirroredBridgeShapes.CONTEXT_MANAGER_NAME,
-                MirroredBridgeShapes.ContextManagerWithoutAccessorShape.class);
-
-            var diagnostic = FastRenderingBridgeDiagnostic.probeBridge(
-                MirroredBridgeShapes.lookupAmong(shapesByName));
+            var diagnostic = probeWithContextManager(MirroredBridgeShapes.ContextManagerWithoutAccessorShape.class);
 
             assertThat(diagnostic.brokenMembers())
                 .extracting(BrokenMember::member)
-                .containsExactly(RESIGNATURED_MEMBER);
+                .containsExactly(CONTEXT_MANAGER_ACCESSOR);
         }
 
         @Test

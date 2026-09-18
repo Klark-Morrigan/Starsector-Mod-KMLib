@@ -27,8 +27,7 @@ import java.util.Objects;
  * <p>Looked up through method handles rather than {@code java.lang.reflect}, which the game's script
  * classloader refuses to mod code; {@code java.lang.invoke} it does not. A handle lookup checks the
  * name and the whole signature in one step, so a member that was re-signatured reads the same as one
- * that was removed. That is the honest reading either way: the direct binding fails identically for
- * both, and "missing or re-signatured" is what the report says.
+ * that was removed - as it does to the direct binding, which fails identically for both.
  *
  * <p>The installed version is read apart from the members, off
  * {@code com.genir.renderer.Version.getVersion()} - present from v0.8.2, and genir's own private
@@ -55,7 +54,7 @@ public record FastRenderingBridgeDiagnostic(
     private static final String CONTEXT_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "Context";
     private static final String CONTEXT_MANAGER_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "ContextManager";
     private static final String EXECUTOR_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "Executor";
-    
+
     private static final String GL_COMMAND_CLASS_NAME =
         FastRendering.BRIDGE_PACKAGE_PREFIX + "bridge.interfaces.GLCommand";
 
@@ -162,13 +161,13 @@ public record FastRenderingBridgeDiagnostic(
 
         var brokenMembers = new ArrayList<BrokenMember>();
 
+        // Every way a lookup fails is one finding: the class is gone, or its own dependency is (a
+        // LinkageError out of loading it), or the member is not there with this signature, or a
+        // loader refused the name. Which one is kept as the reason.
         for (var member : MIRRORED_MEMBERS) {
             try {
                 member.probe().findMember(classes);
 
-            // Every way a lookup fails is one finding: the class is gone, or its own dependency is
-            // (a LinkageError out of loading it), or the member is not there with this signature,
-            // or a loader refused the name. Which one is kept as the reason.
             } catch (ReflectiveOperationException | LinkageError | RuntimeException memberFailure) {
                 brokenMembers.add(new BrokenMember(member.name(), describeFailure(memberFailure)));
             }
