@@ -36,7 +36,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     @Override
     public void onApplicationLoad() {
 
-        installLunaLibSettingsBindings();
+        installGuarded("LunaLib settings bindings", KmlibLunaSettings::installBindings);
         logActiveRenderer();
         installOptionalModIntegrations();
     }
@@ -62,16 +62,6 @@ public class KMLib_ModPlugin extends BaseModPlugin {
                 () -> new CompatibilityNotice(sector, CompatibilityFailures.SESSION_RECORD)));
     }
 
-    private static void installLunaLibSettingsBindings() {
-
-        try {
-            KmlibLunaSettings.installBindings();
-
-        } catch (RuntimeException exception) {
-            LOG.error("Failed to install KMLib LunaLib settings bindings", exception);
-        }
-    }
-
     // Puts the adapters for whichever optional mods this install has in front of the operations
     // that may defer to them. It happens here because which mods are present is a fact about the
     // install, and an operation asking that question for itself would be naming a mod it has no
@@ -93,13 +83,13 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // For an integration, a failure leaves the library running its own sequences rather than a
     // mod's, which is the behaviour of an install without that mod - a worse colony than the player
     // expected, and a far better outcome than taking down every mod that depends on KMLib.
-    private static void installGuarded(String integrationDescription, Runnable installation) {
+    private static void installGuarded(String stepDescription, Runnable installation) {
 
         try {
             installation.run();
 
         } catch (RuntimeException exception) {
-            LOG.error("Failed to install KMLib " + integrationDescription, exception);
+            LOG.error("Failed to install KMLib " + stepDescription, exception);
         }
     }
 
