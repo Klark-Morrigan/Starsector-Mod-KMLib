@@ -35,10 +35,6 @@ import java.util.Map;
  * re-ordering into rings.
  */
 public final class EdgeRings {
-    // Packs two signed 32-bit grid-cell indices into one 64-bit key: the x index in
-    // the high half, the y index masked into the low half.
-    private static final int CELL_KEY_X_SHIFT = 32;
-    private static final long CELL_KEY_LOW_MASK = 0xffffffffL;
 
     private EdgeRings() {
     }
@@ -213,8 +209,7 @@ public final class EdgeRings {
             List<Integer> indexRing) {
         var corners = new ArrayList<double[]>(indexRing.size());
         for (var index : indexRing) {
-            var segment = segments.get(index);
-            corners.add(new double[] {segment.startX(), segment.startY()});
+            corners.add(segments.get(index).readStart());
         }
         return corners;
     }
@@ -236,55 +231,4 @@ public final class EdgeRings {
         return -1;
     }
 
-    // Assigns each distinct corner a small integer ID, treating two points within a
-    // tolerance as the same corner. Points are bucketed by a grid cell of the
-    // tolerance's size so a lookup scans only the query point's cell and its eight
-    // neighbours (a straddling point still finds its match), never the whole set.
-    private static final class VertexWelder {
-        private final double tolerance;
-        private final double toleranceSquared;
-        private final List<double[]> canonicalPoints = new ArrayList<>();
-        private final Map<Long, List<Integer>> pointsByCell = new HashMap<>();
-
-        private VertexWelder(double tolerance) {
-            this.tolerance = tolerance;
-            this.toleranceSquared = tolerance * tolerance;
-        }
-
-        // The ID of the canonical corner within tolerance of (x, y), registering a
-        // new one when none exists yet.
-        private int weld(double x, double y) {
-            var cellX = (long) Math.floor(x / tolerance);
-            var cellY = (long) Math.floor(y / tolerance);
-            for (var dx = -1; dx <= 1; dx++) {
-                for (var dy = -1; dy <= 1; dy++) {
-                    var bucket = pointsByCell.get(packCell(cellX + dx, cellY + dy));
-                    if (bucket == null) {
-                        continue;
-                    }
-                    for (var id : bucket) {
-                        var point = canonicalPoints.get(id);
-                        var offsetX = point[0] - x;
-                        var offsetY = point[1] - y;
-                        if (offsetX * offsetX + offsetY * offsetY <= toleranceSquared) {
-                            return id;
-                        }
-                    }
-                }
-            }
-            var newId = canonicalPoints.size();
-            canonicalPoints.add(new double[] {x, y});
-            pointsByCell
-                .computeIfAbsent(packCell(cellX, cellY), cell -> new ArrayList<>())
-                .add(newId);
-            return newId;
-        }
-
-        // Packs a grid cell's signed 32-bit coordinates into one long key. Cell
-        // indices stay well within 32 bits for any real map coordinate at a
-        // sub-unit tolerance, so the two halves never collide.
-        private static long packCell(long cellX, long cellY) {
-            return (cellX & CELL_KEY_LOW_MASK) << CELL_KEY_X_SHIFT | cellY & CELL_KEY_LOW_MASK;
-        }
-    }
 }
