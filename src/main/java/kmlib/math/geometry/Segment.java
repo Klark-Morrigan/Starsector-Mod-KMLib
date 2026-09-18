@@ -60,4 +60,26 @@ public record Segment(
             new double[] {endX - halfX, endY - halfY},
             new double[] {startX - halfX, startY - halfY});
     }
+
+    /**
+     * The end as a point.
+     *
+     * <p>The record holds its ends as four doubles so geometry reads by role, while the point
+     * arithmetic beside it takes {@code {x, y}} arrays. These two readers are the one crossing
+     * between the two, so no caller spells the array out for itself.
+     *
+     * @return {@code {endX, endY}}, freshly allocated so a caller may keep it
+     */
+    public double[] readEnd() {
+        return new double[] {endX, endY};
+    }
+
+    /**
+     * The start as a point.
+     *
+     * @return {@code {startX, startY}}, freshly allocated so a caller may keep it
+     */
+    public double[] readStart() {
+        return new double[] {startX, startY};
+    }
 }

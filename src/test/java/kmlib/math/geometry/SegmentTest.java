@@ -72,4 +72,34 @@ final class SegmentTest {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class ReadEnd {
+
+        @Test
+        void theEndIsTheEndAsAPoint() {
+
+            assertThat(EASTWARD.readEnd())
+                .containsExactly(10, 0);
+        }
+    }
+
+    @Nested
+    class ReadStart {
+
+        @Test
+        void theStartIsTheStartAsAPoint() {
+            
+            assertThat(EASTWARD.readStart())
+                .containsExactly(0, 0);
+        }
+
+        @Test
+        void eachReadIsItsOwnArray() {
+            // A welder keeps the array it is handed as the corner itself, so two readers
+            // sharing one array would have every corner move with the last edge welded.
+            assertThat(EASTWARD.readStart())
+                .isNotSameAs(EASTWARD.readStart());
+        }
+    }
 }
