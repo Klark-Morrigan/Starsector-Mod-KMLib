@@ -62,7 +62,7 @@ a bake that runs a loop appears with its total span and no breakdown.
 `FINE` adds one line under such a row,
 saying what one turn cost in each of the steps the section declared:
 
-```
+```plaintext
   iterations=1954  plan=8.7us/ea  trace=10.9us/ea  carve=6.3us/ea  stroke=4.9us/ea  slowest=12.445ms
 ```
 

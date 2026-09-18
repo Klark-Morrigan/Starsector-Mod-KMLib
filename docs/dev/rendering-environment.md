@@ -182,7 +182,7 @@ which ships `fast-rendering-<version>.zip`.
 To identify an arbitrary install,
 hash its jar and compare:
 
-```
+```bash
 sha256sum "<starsector>/starsector-core/fr.jar"
 ```
 
@@ -970,7 +970,7 @@ the bridge is not the only place to look,
 and a decompile of the game's own jar is not necessarily what is executing.
 List the current set with:
 
-```
+```plaintext
 Glob "**/com/fs/**/*.java" in <starsector>/.sources-cache/starsector-core/fr
 ```
 
