@@ -56,7 +56,7 @@ public record MapCursorRead(
      * belongs to a pass, and the pass that read has ended by the time anything reports on it.
      *
      * <p>Under Fast Rendering the clip is left unread and the line says so, which is why the
-     * renderer is the one thing a description branches on. That mod's bridge shadows the scissor
+     * renderer is the one thing a description branches on. That renderer's bridge shadows the scissor
      * <em>enable</em> flag on the caller's side but not the box, so asking for the box stalls the
      * render pipeline - and it counts stalls, taking the game down once a caller stalls on half of
      * any sixty frames. A hover prints on consecutive frames, so the read that is merely slow under
