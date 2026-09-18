@@ -94,6 +94,10 @@ so a consumer can tell a real border from a seam between two pieces of the same 
   chains loose edges back into rings,
   welding shared vertices,
   so a set of adjacent pieces yields the outline around them with the seams dropped.
+- **`VertexWelder`** -
+  which reports of a corner are one corner,
+  by a tolerance,
+  so edges computed apart can be compared as exact IDs rather than by distance at every hop.
 - **`Disks`** -
   clips a convex polygon against a `Disk`,
   in both senses from one walk:

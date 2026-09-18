@@ -17,7 +17,7 @@
 `MAJOR.MINOR.PATCH`,
 digits only.
 
-```
+```plaintext
 0.1.0
 ```
 

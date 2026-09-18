@@ -490,6 +490,12 @@ No Starsector API on the signature.
   counted where the sector is actually walked,
   so a caller states how much it touched without having written a profiling line,
   and a second traversal shows on the row that made it.
+- [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/) -
+  what a binding to third-party code that has stopped holding is reported as,
+  and how that report reaches the player:
+  recorded once per subject where the binding broke,
+  shown as the game's own message dialog from a frame that can open one.
+  [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
@@ -673,7 +679,7 @@ No Starsector API on the signature.
   and the source a piece of game data was read from,
   named for a player and carrying the mod ID where the manager accounts for one.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) -
-  defensive wrapper around settings.json localisation lookups
+  defensive wrapper around strings.json localisation lookups
   (loud REDACTED on missing or malformed entries),
   plus the number-to-copy shaping that fills their numeric slots.
   Also KMLib's own category and string IDs,
@@ -1203,10 +1209,9 @@ Whichever it bound is also stamped into the jar,
 as a generated constant read out of `fr.jar`'s own `com.genir.renderer.Version`
 ([gradle/tasks/generate/stamp-fast-rendering-version.gradle](gradle/tasks/generate/stamp-fast-rendering-version.gradle)).
 Runtime can read only the version that is installed now,
-so naming the version compiled against is what lets a mismatch be reported as two numbers
-rather than as "something moved".
+so the stamp is what lets a mismatch be reported as two versions rather than one.
 The vanilla binding stamps `unknown`,
-which is the honest answer for a build that compiled against the stubs,
+which the generated class answers as no version at all,
 and no jar is ever a reason to fail a build that would otherwise compile.
 
 The stubs are never in `KMLib.jar` and never loaded -
@@ -1367,6 +1372,10 @@ A LunaLib settings store of the same shape sits beside it,
 counting saves as well as holding values,
 since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
+[`starsector/compatibility/`](src/testFixtures/java/kmlib/testfixtures/starsector/compatibility/)
+holds one representative compatibility failure with a builder per slot a case varies,
+and the notice's templates as stand-ins that expose their slots,
+so what a failure composes reads as which value landed where without the shipped wording being known.
 [`starsector/strings/`](src/testFixtures/java/kmlib/testfixtures/starsector/strings/)
 reads a mod's shipped `data/strings/strings.json` beside the string IDs its holder class names,
 for the guard that pins each against the other -

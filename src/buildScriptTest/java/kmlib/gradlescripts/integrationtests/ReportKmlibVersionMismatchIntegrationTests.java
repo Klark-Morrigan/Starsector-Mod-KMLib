@@ -1,7 +1,6 @@
 package kmlib.gradlescripts.integrationtests;
 
 import org.gradle.testkit.runner.GradleRunner;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -79,11 +78,10 @@ final class ReportKmlibVersionMismatchIntegrationTests {
     }
 
     @Nested
-    @DisplayName("declared version matches the checkout")
     final class ReportNothing {
 
         @Test
-        void reportKmlibVersionMismatch_ReportsNothing_WhenDeclaredVersionMatches(
+        void reportsNothingWhenTheDeclaredVersionMatches(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory =
@@ -98,7 +96,7 @@ final class ReportKmlibVersionMismatchIntegrationTests {
          * written both ways, and a report that called them different would fire on every build.
          */
         @Test
-        void reportKmlibVersionMismatch_ReportsNothing_WhenDeclaredVersionOmitsPatchSegment(
+        void reportsNothingWhenTheDeclaredVersionOmitsThePatchSegment(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory =
@@ -110,7 +108,7 @@ final class ReportKmlibVersionMismatchIntegrationTests {
 
         /** KMLib's own build declares no KMLib dependency, so there is no pair to compare. */
         @Test
-        void reportKmlibVersionMismatch_ReportsNothing_WhenNoKmlibDependencyIsDeclared(
+        void reportsNothingWhenNoKmlibDependencyIsDeclared(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory =
@@ -122,11 +120,10 @@ final class ReportKmlibVersionMismatchIntegrationTests {
     }
 
     @Nested
-    @DisplayName("declared version differs from the checkout")
     final class ReportMismatch {
 
         @Test
-        void reportKmlibVersionMismatch_ReportsBlockedMod_WhenMinorSegmentDiffers(
+        void reportsABlockedModWhenTheMinorSegmentDiffers(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory =
@@ -138,7 +135,7 @@ final class ReportKmlibVersionMismatchIntegrationTests {
         }
 
         @Test
-        void reportKmlibVersionMismatch_ReportsVersionWarning_WhenOnlyPatchSegmentDiffers(
+        void reportsAVersionWarningWhenOnlyThePatchSegmentDiffers(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory =
@@ -155,7 +152,7 @@ final class ReportKmlibVersionMismatchIntegrationTests {
          * takes the build with it.
          */
         @Test
-        void reportKmlibVersionMismatch_ReportsVersionWarning_WhenPatchSegmentCarriesLetter(
+        void reportsAVersionWarningWhenThePatchSegmentCarriesALetter(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory =
@@ -171,7 +168,7 @@ final class ReportKmlibVersionMismatchIntegrationTests {
          * only place a player's too-old KMLib could still be caught.
          */
         @Test
-        void reportKmlibVersionMismatch_ReportsUncheckedDependency_WhenDeclaredWithoutVersion(
+        void reportsAnUncheckedDependencyWhenDeclaredWithoutAVersion(
                 @TempDir Path workspace) throws IOException {
 
             Path projectDirectory = writeConsumerProject(workspace, "{\"id\":\"kmlib\"}", "0.1.0");
