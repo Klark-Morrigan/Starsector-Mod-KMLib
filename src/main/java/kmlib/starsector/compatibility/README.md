@@ -30,7 +30,9 @@ So a record and a report are two steps.
 [`CompatibilityFailures`](CompatibilityFailures.java) is the record:
 `recordOnce` latches a binding on its first record for the session and ignores every record afterwards,
 `hasUnreported` is the empty check a per-frame caller gates on,
-and `takeUnreported` hands over what was recorded without unlatching.
+and `takeNextUnreported` hands the oldest one over without unlatching.
+One at a time, because a reporter can only show one at a time -
+handing over the lot would leave it holding a second queue of what it could not yet show.
 Once per binding is what stops one that fails on every frame filing a report per frame;
 never unlatched is what stops the frame after a report filing it again.
 The failure is built through a supplier invoked only on the record that is kept,
@@ -57,7 +59,7 @@ sequenceDiagram
   B->>Reg: recordOnce(subject, consumer, describe)
   Reg-->>B: ignored
   N->>Reg: hasUnreported()
-  N->>Reg: takeUnreported()
+  N->>Reg: takeNextUnreported()
   N->>N: log describeForLog()
   N->>UI: showMessageDialog(describeForPlayer())
 ```

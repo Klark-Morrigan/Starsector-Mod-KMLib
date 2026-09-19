@@ -2,8 +2,6 @@ package kmlib.starsector.compatibility;
 
 import kmlib.text.KmlibStrings;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -98,28 +96,21 @@ public final class CompatibilityFailures {
     }
 
     /**
-     * Takes every failure recorded since the last take, leaving none behind.
+     * Takes the oldest failure not yet reported, leaving the rest where they are.
      *
-     * <p>The bindings taken stay latched: a take is a hand-over to whoever reports, not a reset of
+     * <p>One at a time because a reporter can only show one at a time: the game drops a message
+     * dialog asked for behind another, so a reporter that took them all would be holding a second
+     * queue of what it could not yet show. Taken in record order, so the first binding to break is
+     * the first a player is told about.
+     *
+     * <p>The binding taken stays latched: a take is a hand-over to whoever reports, not a reset of
      * the latch, so a binding that fails again after its report is not reported again.
      *
-     * <p>Allocates on every call, an empty one included, which is why a per-frame caller reads
-     * {@link #hasUnreported()} first and takes only when it answers yes.
-     *
-     * @return the untaken failures in the order they were recorded; empty where there are none
+     * @return the oldest untaken failure, or {@code null} where none is waiting
      */
-    public List<CompatibilityFailure> takeUnreported() {
+    public CompatibilityFailure takeNextUnreported() {
 
-        var takenFailures = new ArrayList<CompatibilityFailure>();
-
-        // Polled one at a time rather than copied and cleared as two steps, so a failure recorded
-        // between the two on another thread is never dropped: whatever lands after the last poll
-        // waits for the next take.
-        for (var failure = unreportedFailures.poll(); failure != null; failure = unreportedFailures.poll()) {
-            takenFailures.add(failure);
-        }
-
-        return List.copyOf(takenFailures);
+        return unreportedFailures.poll();
     }
 
     // What a record is latched under: which third party stopped holding, and for which mod. A pair

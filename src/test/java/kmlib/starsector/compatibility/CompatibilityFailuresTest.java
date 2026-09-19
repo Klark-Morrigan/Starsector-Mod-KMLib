@@ -58,7 +58,7 @@ final class CompatibilityFailuresTest {
         void isFalseAgainOnceTheFailureWasTaken() {
 
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
-            failures.takeUnreported();
+            failures.takeNextUnreported();
 
             assertThat(failures.hasUnreported())
                 .isFalse();
@@ -74,9 +74,10 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::brokenDetail)
-                .containsExactly("first");
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("first");
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
 
         @Test
@@ -100,11 +101,10 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing(MAP_OVERLAY.lostFeature()));
             failures.recordOnce(FAST_RENDERING, COLONY_PANEL, () -> createFailureLosing(COLONY_PANEL.lostFeature()));
 
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::lostFeature)
-                .containsExactly(
-                    CompatibilityFailureFixture.LOST_FEATURE,
-                    CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
+            assertThat(failures.takeNextUnreported().lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
+            assertThat(failures.takeNextUnreported().lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
         }
 
         @Test
@@ -113,9 +113,10 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::brokenDetail)
-                .containsExactly("first", "second");
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("first");
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("second");
         }
 
         @Test
@@ -124,7 +125,7 @@ final class CompatibilityFailuresTest {
             // Once per session, not once per take: the frame after a report fails the same way, and
             // that is the failure already reported rather than a new one.
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
-            failures.takeUnreported();
+            failures.takeNextUnreported();
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
             assertThat(failures.hasUnreported())
@@ -173,40 +174,53 @@ final class CompatibilityFailuresTest {
 
             assertThat(describeCount)
                 .hasValue(1);
-            assertThat(failures.takeUnreported())
-                .hasSize(1);
+            assertThat(failures.takeNextUnreported())
+                .isNotNull();
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
     }
 
     @Nested
-    class TakeUnreported {
+    class TakeNextUnreported {
 
         @Test
         void answersNothingWhereNothingWasRecorded() {
 
-            assertThat(failures.takeUnreported())
-                .isEmpty();
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
 
         @Test
-        void answersTheRecordedFailuresInRecordOrder() {
+        void answersTheOldestRecordFirst() {
+            // Record order, so the first binding to break is the first a player is told about.
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
+
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("first");
+        }
+
+        @Test
+        void leavesTheRestWhereTheyAre() {
 
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::brokenDetail)
-                .containsExactly("first", "second");
+            failures.takeNextUnreported();
+
+            assertThat(failures.hasUnreported())
+                .isTrue();
         }
 
         @Test
-        void leavesNothingBehindOnceTaken() {
+        void answersNothingOnceTheLastWasTaken() {
 
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
-            failures.takeUnreported();
+            failures.takeNextUnreported();
 
-            assertThat(failures.takeUnreported())
-                .isEmpty();
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
     }
 
