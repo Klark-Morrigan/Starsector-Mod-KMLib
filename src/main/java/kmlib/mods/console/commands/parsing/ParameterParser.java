@@ -45,9 +45,9 @@ final class ParameterParser {
                 // A bare token toggles a flag if it names one; any other bare
                 // token is a positional value, filled later against the open slots.
                 var parameter = findByName(parameters, token);
-                
+
                 if (parameter != null && parameter.isFlag()) {
-                    
+
                     supplied.put(parameter, Boolean.TRUE);
 
                 } else {
@@ -112,7 +112,7 @@ final class ParameterParser {
         for (var parameter : parameters) {
 
             if (parameter.isRequired() && !supplied.containsKey(parameter)) {
-                
+
                 return failSyntax(
                     output,
                     "Missing required parameter '" + parameter.getName() + "'.");
@@ -144,7 +144,7 @@ final class ParameterParser {
             String raw,
             Map<Parameter<?>, Object> supplied,
             CommandOutput output) {
-                
+
         try {
             supplied.put(parameter, parameter.parseValue(raw));
             return true;
@@ -189,7 +189,7 @@ final class ParameterParser {
                 description.append(", ");
             }
             description.append(parameter.getName());
-            
+
             if (!parameter.isFlag()) {
                 description.append('=').append(parameter.getValueHint());
             }
