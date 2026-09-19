@@ -80,7 +80,7 @@ final class ControlRendererVariantCoverageTest {
     private static final PanelAlpha FULLY_PRESENT = new PanelAlpha(1f, 1f);
 
     private final StripTextMeasurers measurersFake = new StripTextMeasurers(
-        
+
         new LineWidthMeasurerFake(TAB_WIDTH_PER_CHAR),
         new LineWidthMeasurerFake(WIDTH_PER_CHAR));
 
