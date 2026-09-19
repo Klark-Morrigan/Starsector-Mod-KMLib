@@ -32,73 +32,108 @@ final class ParameterParser {
     }
 
     static ParsedParameters parse(ParameterSpec spec, String[] tokens, CommandOutput output) {
+
         var parameters = spec.getParameters();
         var supplied = new HashMap<Parameter<?>, Object>();
         var positionals = new ArrayList<String>();
+
         for (var token : tokens) {
+
             var separator = token.indexOf('=');
+
             if (separator < 0) {
                 // A bare token toggles a flag if it names one; any other bare
                 // token is a positional value, filled later against the open slots.
                 var parameter = findByName(parameters, token);
+                
                 if (parameter != null && parameter.isFlag()) {
+                    
                     supplied.put(parameter, Boolean.TRUE);
+
                 } else {
                     positionals.add(token);
                 }
                 continue;
             }
+
             var name = token.substring(0, separator);
             var parameter = findByName(parameters, name);
+
             if (parameter == null) {
-                output.showMessage("Unknown parameter '"
-                    + name
-                    + "'. Use "
-                    + describeAcceptedParameters(parameters)
-                    + '.');
-                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+                return failSyntax(
+                    output,
+                    "Unknown parameter '"
+                        + name
+                        + "'. Use "
+                        + describeAcceptedParameters(parameters)
+                        + '.');
             }
             if (parameter.isFlag()) {
                 // Naming a flag with a value is a distinct mistake from naming
                 // something unknown, so it gets its own correction.
-                output.showMessage("'"
-                    + name
-                    + "' is a flag; give it on its own,"
-                    + " without '='.");
-                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+                return failSyntax(
+                    output,
+                    "'"
+                        + name
+                        + "' is a flag; give it on its own,"
+                        + " without '='.");
             }
             if (!storeValue(parameter, token.substring(separator + 1), supplied, output)) {
-                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+                return failSyntax();
             }
         }
 
         // Fill the still-open positional slots, in declared order, from the bare
         // tokens; a name-only or already-named parameter is not a slot.
         var openSlots = new ArrayList<Parameter<?>>();
+
         for (var parameter : parameters) {
+
             if (parameter.isPositional() && !supplied.containsKey(parameter)) {
                 openSlots.add(parameter);
             }
         }
         if (positionals.size() > openSlots.size()) {
+
             var usage = spec.getUsage();
-            output.showMessage("Too many arguments." + (usage == null ? "" : " " + usage));
-            return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+            return failSyntax(
+                output,
+                "Too many arguments." + (usage == null ? "" : " " + usage));
         }
         for (var index = 0; index < positionals.size(); index++) {
+
             var isStored = storeValue(openSlots.get(index), positionals.get(index), supplied, output);
+
             if (!isStored) {
-                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+                return failSyntax();
             }
         }
 
         for (var parameter : parameters) {
+
             if (parameter.isRequired() && !supplied.containsKey(parameter)) {
-                output.showMessage("Missing required parameter '" + parameter.getName() + "'.");
-                return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+                
+                return failSyntax(
+                    output,
+                    "Missing required parameter '" + parameter.getName() + "'.");
             }
         }
         return ParsedParameters.createValid(supplied);
+    }
+
+    // Stops the parse on a malformed argument, for a value that has already printed its own
+    // correction. Every way of being malformed ends the same way, so the ending is written once
+    // rather than at each of the places that can reach it.
+    private static ParsedParameters failSyntax() {
+
+        return ParsedParameters.createInvalid(CommandResult.BAD_SYNTAX);
+    }
+
+    // The same stop, preceded by the one correction naming what was wrong with the argument.
+    private static ParsedParameters failSyntax(CommandOutput output, String message) {
+
+        output.showMessage(message);
+        return failSyntax();
     }
 
     // Parses raw for parameter and records it, or prints why it was rejected and
@@ -109,10 +144,13 @@ final class ParameterParser {
             String raw,
             Map<Parameter<?>, Object> supplied,
             CommandOutput output) {
+                
         try {
             supplied.put(parameter, parameter.parseValue(raw));
             return true;
+
         } catch (ValueParseException malformed) {
+
             output.showMessage("Invalid "
                 + parameter.getName()
                 + " '"
@@ -120,6 +158,7 @@ final class ParameterParser {
                 + "'. Expected "
                 + malformed.getMessage()
                 + '.');
+
             return false;
         }
     }
@@ -127,7 +166,9 @@ final class ParameterParser {
     // The parameter named by key, case-insensitively, or null when none matches;
     // the caller classifies the match (flag vs value) by its kind.
     private static Parameter<?> findByName(List<Parameter<?>> parameters, String key) {
+
         for (var parameter : parameters) {
+
             if (parameter.getName().equalsIgnoreCase(key)) {
                 return parameter;
             }
@@ -139,12 +180,16 @@ final class ParameterParser {
     // bare keywords - for telling the player which names exist when they used one
     // that does not.
     private static String describeAcceptedParameters(List<Parameter<?>> parameters) {
+
         var description = new StringBuilder();
+
         for (var parameter : parameters) {
+
             if (description.length() > 0) {
                 description.append(", ");
             }
             description.append(parameter.getName());
+            
             if (!parameter.isFlag()) {
                 description.append('=').append(parameter.getValueHint());
             }
