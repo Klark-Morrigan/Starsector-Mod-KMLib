@@ -179,7 +179,7 @@ public final class StarsectorSettingsFake {
             if ("createCustom".equals(method.getName())) {
                 return customPanel(answers.uiElementSource());
             }
-            return defaultValue(method.getReturnType());
+            return resolveDefaultValue(method.getReturnType());
         });
     }
 
@@ -192,7 +192,7 @@ public final class StarsectorSettingsFake {
             if ("createUIElement".equals(method.getName())) {
                 return uiElementSource.createElement();
             }
-            return defaultValue(method.getReturnType());
+            return resolveDefaultValue(method.getReturnType());
         });
     }
 
@@ -204,7 +204,7 @@ public final class StarsectorSettingsFake {
             if ("isModEnabled".equals(method.getName()) && args != null && args.length == 1) {
                 return enabledMods.isEnabled((String) args[0]);
             }
-            return defaultValue(method.getReturnType());
+            return resolveDefaultValue(method.getReturnType());
         });
     }
 
@@ -226,7 +226,7 @@ public final class StarsectorSettingsFake {
     // A primitive's own zero, read off a one-element array of that type rather than named eight
     // times over. A reference answers null, and so does void: void is a primitive with no array to
     // make, and a call returning void discards whatever comes back anyway.
-    private static Object defaultValue(Class<?> returnType) {
+    private static Object resolveDefaultValue(Class<?> returnType) {
         if (!returnType.isPrimitive() || void.class.equals(returnType)) {
             return null;
         }
