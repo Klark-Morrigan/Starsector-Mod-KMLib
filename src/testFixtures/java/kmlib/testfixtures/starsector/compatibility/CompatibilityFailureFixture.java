@@ -82,7 +82,7 @@ public final class CompatibilityFailureFixture {
     public static CompatibilityFailure createFailureBrokenAt(String brokenDetail) {
 
         return new CompatibilityFailure(
-            new CompatibilitySubject(SUBJECT_NAME, null, null),
+            createUnversionedSubject(),
             LOST_FEATURE,
             brokenDetail,
             null);
@@ -95,9 +95,17 @@ public final class CompatibilityFailureFixture {
     public static CompatibilityFailure createFailureLosing(String lostFeature) {
 
         return new CompatibilityFailure(
-            new CompatibilitySubject(SUBJECT_NAME, null, null),
+            createUnversionedSubject(),
             lostFeature,
             BROKEN_DETAIL,
             null);
+    }
+
+    // The subject every builder that varies something other than a version shares: the third party
+    // named, with neither version read. Stated once so a builder added beside them cannot spell a
+    // different subject and have its case quietly be about two things.
+    private static CompatibilitySubject createUnversionedSubject() {
+
+        return new CompatibilitySubject(SUBJECT_NAME, null, null);
     }
 }
