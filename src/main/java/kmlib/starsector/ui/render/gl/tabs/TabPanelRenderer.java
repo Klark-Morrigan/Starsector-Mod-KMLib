@@ -67,10 +67,10 @@ public final class TabPanelRenderer {
      * stroke, so a panel flush against another's edge can drop the border there; the header, the notch,
      * and the collapse clip are unaffected.
      *
-     * @param placement       the laid-out tab panel to draw
-     * @param style           how the panel looks (fill, frame colour, accents, body font, and the tab
-     *                        style for the header)
-     * @param border          the outer border width and which edges to stroke; a zero width draws no border
+     * @param placement    the laid-out tab panel to draw
+     * @param style        how the panel looks (fill, frame colour, accents, body font, and the tab
+     *                     style for the header)
+     * @param border       the outer border width and which edges to stroke; a zero width draws no border
      * @param interactions what the pointer is doing to the panel - what each header tab is showing, and how
      *                     far each body cell has lit and how far through a press it stands - resolved by
      *                     whoever owns the panel's live state

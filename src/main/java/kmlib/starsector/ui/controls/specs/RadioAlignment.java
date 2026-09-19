@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.controls;
+package kmlib.starsector.ui.controls.specs;
 
 /**
  * Which way a {@link RadioRow}'s segments flow. Horizontal lays them left to right - the default a
@@ -8,6 +8,7 @@ package kmlib.starsector.ui.controls;
  * agnostic to it, since it runs over the already-split segment rectangles.
  */
 public enum RadioAlignment {
+
     /** Segments run left to right, split by width; dividers are vertical rules between columns. */
     HORIZONTAL,
 

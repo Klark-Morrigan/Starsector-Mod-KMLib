@@ -2,8 +2,18 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.CheckboxSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.LabelSpec;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.SideBySideSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
+import kmlib.starsector.ui.controls.specs.ToggleSpec;
+import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.text.LabelRun;
@@ -28,7 +38,7 @@ import java.util.List;
  * any frame while the frame math stays with the host.
  *
  * <p>Every control sizes to a body-font label inside a fixed-height row, save one: a {@link
- * ControlSpec.Tabs} row snaps to a larger face and stands a tab band tall, so how a tabs row measures
+ * TabsSpec} row snaps to a larger face and stands a tab band tall, so how a tabs row measures
  * and splits is {@link TabsControlLayout}'s, and this stacks the result like any other row.
  *
  * <p>UI coordinates throughout (origin bottom-left, y grows up); text snapping runs through the
@@ -153,8 +163,7 @@ public final class ControlStripLayout {
             body.x() + BODY_PADDING,
             bodyTopY - BODY_PADDING,
             ROW_GAP,
-            measurement.rowHeights(),
-            measurement.rowWidths());
+            measurement.rowDimensions());
 
         return toControls(
             specs,
@@ -204,12 +213,12 @@ public final class ControlStripLayout {
             // A side-by-side group is not one control but two columns of them: it expands into its
             // children's laid-out controls here, so downstream sees only ordinary controls with absolute
             // bounds. Every other kind is its own single control.
-            if (spec instanceof ControlSpec.SideBySide pair) {
+            if (spec instanceof SideBySideSpec pair) {
                 controls.addAll(expandSideBySide(
                     pair,
                     rows.get(index),
                     measurers));
-            } else if (spec instanceof ControlSpec.ScrollingSection section) {
+            } else if (spec instanceof ScrollingSectionSpec section) {
                 // Placed by this layout rather than the capped one, so nothing clips it and nothing
                 // scrolls: the run stands where the section stands, and its controls are pinned like any
                 // other. Marking them scrolled here would have them clipped to a viewport no uncapped
@@ -247,24 +256,24 @@ public final class ControlStripLayout {
         // row's tabs in the tab face. Every other kind is a single-hit row with no segments.
         List<Rectangle> segments;
 
-        if (spec instanceof ControlSpec.HorizontalRadio radio) {
+        if (spec instanceof HorizontalRadioSpec radio) {
             segments = splitHorizontalRadioIntoSegments(
                 radio,
                 row,
                 measurers.bodyFaceMeasurer());
-        } else if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
+        } else if (spec instanceof VerticalRadioSpec stackedRadio) {
             // The same geometric split a single-column table takes: cells of equal height down the row,
             // so the stacked radio and the stacked table cannot drift apart on where a cell begins.
             segments = RadioRow.splitIntoGrid(
                 row,
                 stackedRadio.labels().size(),
                 ControlSpec.SINGLE_COLUMN);
-        } else if (spec instanceof ControlSpec.VerticalTable table) {
+        } else if (spec instanceof VerticalTableSpec table) {
             segments = RadioRow.splitIntoGrid(
                 row,
                 table.labelledRows().size(),
                 table.columnCount());
-        } else if (spec instanceof ControlSpec.Tabs tabs) {
+        } else if (spec instanceof TabsSpec tabs) {
             segments = TabsControlLayout.splitIntoSegments(
                 tabs,
                 row,
@@ -296,7 +305,7 @@ public final class ControlStripLayout {
         var spanned = new ArrayList<Rectangle>(rows.size());
         for (var index = 0; index < rows.size(); index++) {
             var row = rows.get(index);
-            spanned.add(specs.get(index) instanceof ControlSpec.Divider
+            spanned.add(specs.get(index) instanceof DividerSpec
                 ? new Rectangle(
                     body.x(),
                     row.y(),
@@ -350,7 +359,7 @@ public final class ControlStripLayout {
     // group has no chrome of its own, so it contributes only its children (with absolute bounds), which
     // is why the caller flattens it into the strip rather than keeping it as one control.
     private static List<Control> expandSideBySide(
-            ControlSpec.SideBySide pair,
+            SideBySideSpec pair,
             Rectangle row,
             StripTextMeasurers measurers) {
 
@@ -410,7 +419,11 @@ public final class ControlStripLayout {
         for (var spec : specs) {
             rowHeights.add(measureRowHeight(spec));
         }
-        var rows = RowStack.layoutRows(columnX, columnTopY, ROW_GAP, rowHeights, rowWidths);
+        var rows = RowStack.layoutRows(
+            columnX,
+            columnTopY,
+            ROW_GAP,
+            new RowDimensions(rowHeights, rowWidths));
 
         return toControls(specs, rows, measurers);
     }
@@ -419,7 +432,7 @@ public final class ControlStripLayout {
     // and laid from the row's left edge. The same split the renderer draws against, so the drawn cells
     // are the clickable ones. A vertical table splits geometrically into its column grid instead.
     private static List<Rectangle> splitHorizontalRadioIntoSegments(
-            ControlSpec.HorizontalRadio radio,
+            HorizontalRadioSpec radio,
             Rectangle row,
             LineWidthMeasurer bodyMeasurer) {
 
@@ -443,42 +456,42 @@ public final class ControlStripLayout {
     private static float measureRowWidth(ControlSpec spec, StripTextMeasurers measurers) {
         var bodyMeasurer = measurers.bodyFaceMeasurer();
 
-        if (spec instanceof ControlSpec.Checkbox checkbox) {
+        if (spec instanceof CheckboxSpec checkbox) {
             return Checkbox.measureRowWidth(
                 CONTROL_ROW_HEIGHT,
                 measureLabelWidth(checkbox.labelRuns(), bodyMeasurer));
         }
-        if (spec instanceof ControlSpec.Toggle toggle) {
+        if (spec instanceof ToggleSpec toggle) {
             return measureLabelWidth(toggle.labelRuns(), bodyMeasurer) + TOGGLE_TEXT_PADDING;
         }
-        if (spec instanceof ControlSpec.Label label) {
+        if (spec instanceof LabelSpec label) {
             return measureLabelWidth(label.labelRuns(), bodyMeasurer);
         }
-        if (spec instanceof ControlSpec.HorizontalRadio radio) {
+        if (spec instanceof HorizontalRadioSpec radio) {
             return HorizontalSegments.measureRowWidth(
                 radio.labels(),
                 radioSegmentSpec(radio.segmentSizing()),
                 bodyMeasurer);
         }
-        if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
+        if (spec instanceof VerticalRadioSpec stackedRadio) {
             // One uniform cell wide, sized to the widest option: stacked cells are one column, so the
             // column is as wide as the label that has to fit in it.
             return measureSegmentedListColumnWidth(stackedRadio.labels(), bodyMeasurer);
         }
-        if (spec instanceof ControlSpec.ScrollingSection section) {
+        if (spec instanceof ScrollingSectionSpec section) {
             // The run inside it, measured as the column it is laid out as - the section adds no chrome
             // and so costs nothing of its own.
             return measureColumnWidth(section.controls(), measurers);
         }
-        if (spec instanceof ControlSpec.VerticalTable table) {
+        if (spec instanceof VerticalTableSpec table) {
             return measureVerticalTableRowWidth(table, bodyMeasurer);
         }
-        if (spec instanceof ControlSpec.Tabs tabs) {
+        if (spec instanceof TabsSpec tabs) {
             // The one row lettered in the tab face rather than the body one, so it is charged the
             // letters it will actually be drawn in.
             return TabsControlLayout.measureRowWidth(tabs, measurers.tabFaceMeasurer());
         }
-        if (spec instanceof ControlSpec.SideBySide pair) {
+        if (spec instanceof SideBySideSpec pair) {
             // The two columns side by side: the left column, the gap parting them, then the right.
             return measureColumnWidth(pair.leftColumn(), measurers)
                 + COLUMN_GAP
@@ -529,7 +542,7 @@ public final class ControlStripLayout {
     // columns sit side by side, so a two-column table needs twice one column's width. One column is the
     // plain single-column stack.
     private static float measureVerticalTableRowWidth(
-            ControlSpec.VerticalTable table,
+            VerticalTableSpec table,
             LineWidthMeasurer bodyMeasurer) {
 
         var columnWidth = switch (table.rowGeometry()) {
@@ -545,25 +558,25 @@ public final class ControlStripLayout {
     // many rows as its tallest column - the grid's row count - rather than one per option. A tabs row
     // stands one tab-height tall (taller than a body row), drawn in the larger tab face.
     private static float measureRowHeight(ControlSpec spec) {
-        if (spec instanceof ControlSpec.VerticalTable table) {
+        if (spec instanceof VerticalTableSpec table) {
             var rowCount = RadioRow.computeRowsPerColumn(
                 table.labelledRows().size(),
                 table.columnCount());
             return rowCount * CONTROL_ROW_HEIGHT;
         }
-        if (spec instanceof ControlSpec.VerticalRadio stackedRadio) {
+        if (spec instanceof VerticalRadioSpec stackedRadio) {
             // One control row per option, the height a stacked cell is drawn and hit at.
             return stackedRadio.labels().size() * CONTROL_ROW_HEIGHT;
         }
-        if (spec instanceof ControlSpec.ScrollingSection section) {
+        if (spec instanceof ScrollingSectionSpec section) {
             // Its natural height - what the run would stand at unscrolled. The capped layout takes this
             // as what the section wants and hands it whatever is left, the difference being the scroll.
             return measureColumnHeight(section.controls());
         }
-        if (spec instanceof ControlSpec.Tabs) {
+        if (spec instanceof TabsSpec) {
             return TabsControlLayout.TAB_HEIGHT;
         }
-        if (spec instanceof ControlSpec.SideBySide pair) {
+        if (spec instanceof SideBySideSpec pair) {
             // The group stands as tall as its taller column, so the shorter column top-aligns and
             // leaves the space below it empty rather than stretching the group.
             return Math.max(
@@ -580,7 +593,7 @@ public final class ControlStripLayout {
     // tall, the height a slot sizes itself against, so every stacked row shows an equal leading square
     // and the column is wide enough that the longest name still clears its right-aligned value.
     private static float measureColumnTableRowWidth(
-            ControlSpec.VerticalTable table,
+            VerticalTableSpec table,
             LineWidthMeasurer bodyMeasurer) {
 
         var spanMeasurer = bindBodySpanMeasurer(bodyMeasurer);
@@ -662,7 +675,7 @@ public final class ControlStripLayout {
     // Extra footprint a trailing label adds past the control's own row, or none when it is blank. Only a
     // horizontal radio carries a trailing caption; every other control reserves nothing here.
     private static float measureTrailingWidth(ControlSpec spec, LineWidthMeasurer bodyMeasurer) {
-        if (!(spec instanceof ControlSpec.HorizontalRadio radio) || !radio.hasTrailingCaption()) {
+        if (!(spec instanceof HorizontalRadioSpec radio) || !radio.hasTrailingCaption()) {
             return 0f;
         }
         return TRAILING_LABEL_GAP + measureWidth(bodyMeasurer, radio.trailingLabel());
@@ -694,5 +707,17 @@ public final class ControlStripLayout {
          */
         public static final StripMeasurement EMPTY =
             new StripMeasurement(0f, 0f, List.of(), List.of());
+
+        /**
+         * This measurement's rows as the one value a stacker takes, so the heights and the widths
+         * are never handed over apart. Stated here rather than at each placement, which is what
+         * keeps the reversal between this record's component order and the stacker's to one place.
+         *
+         * @return the heights and widths of the measured rows, top to bottom
+         */
+        public RowDimensions rowDimensions() {
+
+            return new RowDimensions(rowHeights, rowWidths);
+        }
     }
 }

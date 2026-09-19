@@ -222,8 +222,10 @@ final class ExtensionPointTest {
             // stands an install with nothing here and one whose implementation declined look
             // identical.
             assertThat(extensionPoint.settleWorkOutcome(DECLINED_WORK))
-                .isInstanceOfSatisfying(DeclinedWork.class, declinedWork ->
-                    assertThat(declinedWork.reason()).contains(EXTENSION_NAME));
+                .isInstanceOfSatisfying(
+                    DeclinedWork.class,
+                    declinedWork -> assertThat(declinedWork.reason())
+                        .contains(EXTENSION_NAME));
         }
 
         @Test
@@ -234,8 +236,10 @@ final class ExtensionPointTest {
             installPermittingFallback(IMPLEMENTATION_NAME, IMPLEMENTATION);
 
             assertThat(extensionPoint.settleWorkOutcome(null))
-                .isInstanceOfSatisfying(DeclinedWork.class, declinedWork ->
-                    assertThat(declinedWork.reason()).isNotBlank());
+                .isInstanceOfSatisfying(
+                    DeclinedWork.class,
+                    declinedWork -> assertThat(declinedWork.reason())
+                        .isNotBlank());
         }
 
         @Test

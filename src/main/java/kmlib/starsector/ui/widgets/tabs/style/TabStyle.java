@@ -21,30 +21,30 @@ import kmlib.starsector.ui.font.TextFace;
  * any border a host strokes around the panel that carries it. A bordered box grows outward around its
  * content, so a framed panel stands its border taller than the band height given here.
  *
- * @param chrome           which surface the row's paint is laid onto - the map's seamless strip or the
- *                         intel screen's raised buttons; read only at paint time, every other field
- *                         meaning the same thing under either
- * @param headerBandHeight how tall the band carrying a panel's tabs stands; a non-positive value
- *                         collapses the band to nothing rather than inverting it, leaving the panel its
- *                         body alone
- * @param tabBox           the box each tab stands in within that band - a stated width, height and
- *                         neighbour channel, or {@link TabBox#SNAPPED} for tabs sized to their own
- *                         labels and abutting. It sits beside the band height because the two answer
- *                         together: the band is the room the row is given, this is what the row does
- *                         with it
- * @param palette          the strip's chrome accent, per-state resting looks, and interaction lifts
- * @param hotkey           how a tab presents the key it is bound to - the key's colour and whether it
- *                         is underlined
- * @param face             the font and size the tab labels are measured and drawn in
- * @param textHalo         whether the labels stand inside a ring of themselves, and how wide it is; it
- *                         sits beside the face because the two answer together - a small bitmap face
- *                         wants the ring a smooth one drawn at size reads muddier for - and it costs no
- *                         width, so nothing the layout measures moves with it
+ * @param chrome             which surface the row's paint is laid onto - the map's seamless strip or the
+ *                           intel screen's raised buttons; read only at paint time, every other field
+ *                           meaning the same thing under either
+ * @param headerBandHeight   how tall the band carrying a panel's tabs stands; a non-positive value
+ *                           collapses the band to nothing rather than inverting it, leaving the panel its
+ *                           body alone
+ * @param tabBox             the box each tab stands in within that band - a stated width, height and
+ *                           neighbour channel, or {@link TabBox#SNAPPED} for tabs sized to their own
+ *                           labels and abutting. It sits beside the band height because the two answer
+ *                           together: the band is the room the row is given, this is what the row does
+ *                           with it
+ * @param palette            the strip's chrome accent, per-state resting looks, and interaction lifts
+ * @param hotkey             how a tab presents the key it is bound to - the key's colour and whether it
+ *                           is underlined
+ * @param face               the font and size the tab labels are measured and drawn in
+ * @param textHalo           whether the labels stand inside a ring of themselves, and how wide it is; it
+ *                           sits beside the face because the two answer together - a small bitmap face
+ *                           wants the ring a smooth one drawn at size reads muddier for - and it costs no
+ *                           width, so nothing the layout measures moves with it
  * @param pixelFaceSharpness how hard a hard-edged face reads, 0 fully interpolated and 1 fully unfiltered
- *                         (see {@link kmlib.starsector.ui.render.gl.GlyphAtlasFilter}); unread by a face
- *                         that carries its own antialiasing. Per style rather than one setting for the
- *                         screen, because the right amount is whatever matches the chrome this row stands
- *                         beside, and two rows on one screen stand beside different chrome
+ *                           (see {@link kmlib.starsector.ui.render.gl.GlyphAtlasFilter}); unread by a face
+ *                           that carries its own antialiasing. Per style rather than one setting for the
+ *                           screen, because the right amount is whatever matches the chrome this row stands
+ *                           beside, and two rows on one screen stand beside different chrome
  */
 public record TabStyle(
     TabChrome chrome,

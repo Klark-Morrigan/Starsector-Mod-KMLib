@@ -28,7 +28,7 @@ final class LabelledPolygonTest {
         void createRegularPolygonHasOneEdgePerSideAllSeedLabelled() {
 
             var polygon = LabelledPolygon.createRegularPolygon(
-                new Disk(new double[] {0, 0},100, 4),
+                new Disk(new double[] {0, 0}, 100, 4),
                 SEED_LABEL);
 
             assertThat(polygon.isEmpty())
@@ -60,7 +60,7 @@ final class LabelledPolygonTest {
 
                     assertThat(Math.sqrt(dx * dx + dy * dy))
                         .isCloseTo(200, within(1e-9));
-            });
+                });
         }
     }
 

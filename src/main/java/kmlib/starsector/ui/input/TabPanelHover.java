@@ -16,16 +16,16 @@ package kmlib.starsector.ui.input;
  * panel moves under a still cursor: a scroll, a fold, or a relayout otherwise leaves a part answering for
  * a pointer no longer over it.
  *
- * @param tabIndex       the header tab the pointer is on, in row order, or null when it is on none -
- *                       which is also what a panel not presenting its tabs reports, whatever is laid
- *                       out under the cursor
+ * @param tabIndex            the header tab the pointer is on, in row order, or null when it is on none -
+ *                            which is also what a panel not presenting its tabs reports, whatever is laid
+ *                            out under the cursor
  * @param isBandButtonHovered whether the pointer is on the panel's own band button - false as well for a
  *                            panel flying none, and for one not presenting its band, the button being wiped
  *                            by the fold with the tabs it stands beside
- * @param bodyCell       the body cell the pointer is on and what kind of thing it is, or null when it is
- *                       on none - which is also what a point outside the box the body is drawn inside
- *                       reports, whatever is laid out under the cursor
- * @param isNotchHovered whether the pointer is on the collapse handle
+ * @param bodyCell            the body cell the pointer is on and what kind of thing it is, or null when it is
+ *                            on none - which is also what a point outside the box the body is drawn inside
+ *                            reports, whatever is laid out under the cursor
+ * @param isNotchHovered      whether the pointer is on the collapse handle
  */
 public record TabPanelHover(
     Integer tabIndex,

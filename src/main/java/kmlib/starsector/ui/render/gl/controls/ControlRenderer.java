@@ -4,8 +4,18 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.RowGeometry;
+import kmlib.starsector.ui.controls.specs.CheckboxSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.InteractiveSpec;
+import kmlib.starsector.ui.controls.specs.LabelSpec;
+import kmlib.starsector.ui.controls.specs.RadioSpec;
+import kmlib.starsector.ui.controls.specs.RowGeometry;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
+import kmlib.starsector.ui.controls.specs.ToggleSpec;
+import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.layout.TabsControlLayout;
 import kmlib.starsector.ui.render.gl.TriangleRenderer;
@@ -130,23 +140,23 @@ public final class ControlRenderer {
 
         var spec = control.spec();
 
-        if (spec instanceof ControlSpec.Checkbox) {
+        if (spec instanceof CheckboxSpec) {
             drawCheckbox(control, paint);
 
-        } else if (spec instanceof ControlSpec.Toggle) {
+        } else if (spec instanceof ToggleSpec) {
             drawToggle(control, paint);
 
-        } else if (spec instanceof ControlSpec.Radio
-                || spec instanceof ControlSpec.VerticalTable) {
+        } else if (spec instanceof RadioSpec
+                || spec instanceof VerticalTableSpec) {
             drawRadio(control, paint);
 
-        } else if (spec instanceof ControlSpec.Label) {
+        } else if (spec instanceof LabelSpec) {
             drawLabelRow(control, paint);
 
-        } else if (spec instanceof ControlSpec.Divider) {
+        } else if (spec instanceof DividerSpec) {
             drawDivider(control, paint);
 
-        } else if (spec instanceof ControlSpec.Tabs) {
+        } else if (spec instanceof TabsSpec) {
             drawTabs(control, paint, tabInteractions);
         }
     }
@@ -165,7 +175,7 @@ public final class ControlRenderer {
             ControlPaint paint,
             TabInteractionSources tabInteractions) {
 
-        var spec = (ControlSpec.Tabs) control.spec();
+        var spec = (TabsSpec) control.spec();
         var contents = TabsControlLayout.buildTabContents(spec);
         var tabs = VanillaTabStrip.zipTabs(contents, control.segments());
 
@@ -207,7 +217,7 @@ public final class ControlRenderer {
     // for it.
     private static void drawCheckbox(Control control, ControlPaint paint) {
         var style = paint.style();
-        var spec = (ControlSpec.Checkbox) control.spec();
+        var spec = (CheckboxSpec) control.spec();
         var bounds = control.bounds();
 
         CheckboxRenderer.render(
@@ -234,7 +244,7 @@ public final class ControlRenderer {
 
         var spec = control.spec();
 
-        if (spec instanceof ControlSpec.VerticalTable table
+        if (spec instanceof VerticalTableSpec table
                 && table.rowGeometry() == RowGeometry.COLUMNS) {
 
             drawColumnTable(control, table, paint);
@@ -244,11 +254,11 @@ public final class ControlRenderer {
         var bounds = control.bounds();
         var labels = spec.labels();
         var segments = control.segments();
-        var selectedIndex = ((ControlSpec.Interactive) spec).selectedIndex();
+        var selectedIndex = ((InteractiveSpec) spec).selectedIndex();
 
         // Frame and wash both stroke the accent, the plain radio's single chrome tone.
         var colours = new RadioColours(accent, accent);
-        if (spec instanceof ControlSpec.VerticalTable table) {
+        if (spec instanceof VerticalTableSpec table) {
             RadioRowRenderer.renderVerticalGrid(
                 bounds,
                 labels.size(),
@@ -257,7 +267,7 @@ public final class ControlRenderer {
                 colours,
                 paint.cellPaints(),
                 paint.chromeOpacity());
-        } else if (spec instanceof ControlSpec.VerticalRadio) {
+        } else if (spec instanceof VerticalRadioSpec) {
             // A stacked radio is that same grid at one column, so the cell frames and the rules parting
             // them are drawn by the one renderer rather than by a second stacking rule beside it.
             RadioRowRenderer.renderVerticalGrid(
@@ -286,7 +296,7 @@ public final class ControlRenderer {
                 segment.computeCenterY(),
                 LazyFont.TextAnchor.CENTER);
         }
-        if (spec instanceof ControlSpec.HorizontalRadio radio && radio.hasTrailingCaption()) {
+        if (spec instanceof HorizontalRadioSpec radio && radio.hasTrailingCaption()) {
 
             var trailingX = bounds.x()
                 + bounds.width()
@@ -307,7 +317,7 @@ public final class ControlRenderer {
     // nothing reads as a plain name and a row trailing with nothing shows only its name.
     private static void drawColumnTable(
             Control control,
-            ControlSpec.VerticalTable spec,
+            VerticalTableSpec spec,
             ControlPaint paint) {
 
         var accent = paint.style().accentColours().base();
@@ -456,7 +466,7 @@ public final class ControlRenderer {
     private static void drawToggle(Control control, ControlPaint paint) {
 
         var accent = paint.style().accentColours().base();
-        var spec = (ControlSpec.Toggle) control.spec();
+        var spec = (ToggleSpec) control.spec();
         var bounds = control.bounds();
 
         ToggleButton.render(
@@ -488,7 +498,7 @@ public final class ControlRenderer {
     // widget chrome - it heads the controls below it and is never clicked.
     private static void drawLabelRow(Control control, ControlPaint paint) {
 
-        var spec = (ControlSpec.Label) control.spec();
+        var spec = (LabelSpec) control.spec();
         var bounds = control.bounds();
 
         ControlLabelRenderer.drawBodyLabelRuns(

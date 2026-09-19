@@ -8,10 +8,9 @@ import java.util.function.LongSupplier;
 /**
  * Where a repeating animation stands in its cycle at the moment it is asked, phased off real time.
  *
- * <p>Real time rather than simulation time, because the two disagree exactly where an ambient animation has
- * to carry on regardless. A paused simulation stops advancing at all, and a compressed one advances many
- * seconds per frame, so an animation phased off it would freeze in the first case and strobe in the second -
- * neither of which is anything the player did to the thing being animated.
+ * <p>Real time rather than simulation time, measured from the moment the clock was made and off a monotonic
+ * source. Why an ambient animation cannot be phased off a simulation that pauses and compresses, and why
+ * only differences are ever read, are in this package's README.
  *
  * <p>Read rather than stepped. A phase is a function of the instant it is asked at, not an integration of the
  * frames since it started, so there is no per-frame call to place and none to forget: two consumers drawing
@@ -20,12 +19,8 @@ import java.util.function.LongSupplier;
  * back to a cycle that kept turning, which is what makes the animation ambient rather than a thing that
  * starts when it is looked at.
  *
- * <p>Elapsed time is measured from the moment the clock was made and off a monotonic source, so only
- * differences are ever read and a wall clock stepping backwards cannot send a phase back around.
- *
  * <p>Arithmetic over time and nothing else - no colour, no shape, no element - so whatever holds one decides
- * for itself what a phase drives. Holds nothing worth persisting: a fresh clock starts its cycles over, which
- * is invisible in animation that repeats anyway.
+ * for itself what a phase drives. Holds nothing worth persisting.
  */
 public final class PulsePhaseClock {
 

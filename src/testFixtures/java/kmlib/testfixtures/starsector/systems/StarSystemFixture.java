@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
  *
  * <p>Stated once here because a system is the subject of nearly every suite over the sector, and
  * each had otherwise written the same two stubs for itself - so worlds differed in how a system was
- * put together rather than in what the case was about. Shipped from KMLib so a consuming mod's
+ * put together rather than in what the case was about. Published as a fixture variant so a consuming mod's
  * suites pose one the same way.
  *
  * <p>Identity and placement are separate calls, which is what keeps either from carrying the

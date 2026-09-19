@@ -130,7 +130,7 @@ The release pipeline checks this before it builds anything,
 in the same cheap gate that enforces the rules above,
 via [check-dependency-release](../../.github/actions/check-dependency-release/action.yml).
 
-This makes the two releases sequential where they used to be independent:
+The two releases are therefore sequential:
 bumping a consumer's `kmlib` pin fails that consumer's release
 until the matching KMLib release exists.
 Release KMLib first,

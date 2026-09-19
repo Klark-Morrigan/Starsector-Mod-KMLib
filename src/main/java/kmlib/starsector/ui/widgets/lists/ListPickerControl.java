@@ -1,9 +1,13 @@
 package kmlib.starsector.ui.widgets.lists;
 
 import kmlib.starsector.ui.colour.StarsectorUiColour;
-import kmlib.starsector.ui.controls.ControlHoverReport;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
+import kmlib.starsector.ui.controls.specs.SideBySideSpec;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
@@ -93,7 +97,7 @@ public final class ListPickerControl {
 
         // A rule heads the block, parting whatever sits above from the picker below - the section
         // break a caption would otherwise mark, now carrying no text.
-        controls.add(new ControlSpec.Divider());
+        controls.add(new DividerSpec());
 
         // The columns selector rides directly under the rule, so the column count is chosen for the
         // block as a whole; the list below then wraps its rows across that many columns.
@@ -106,7 +110,7 @@ public final class ListPickerControl {
         // picking the metric the list ranks by. Pairing them keeps the picker compact; what sits
         // beside the sort is the caller's decision, so this composes the row and the caller fills
         // its right half.
-        controls.add(new ControlSpec.SideBySide(
+        controls.add(new SideBySideSpec(
             List.of(SortSelectorControl.buildSelector(
                 activePicks.sort(),
                 pickerStore::storeSortPick)),
@@ -119,8 +123,8 @@ public final class ListPickerControl {
         //
         // A section holding the list alone rather than the rows above it: the sort row and the filter
         // stay readable while the list runs under them, which is the point of pinning them.
-        controls.add(new ControlSpec.ScrollingSection(List.of(
-            ControlSpec.VerticalTable
+        controls.add(new ScrollingSectionSpec(List.of(
+            VerticalTableSpec
                 .createColumnTable(
                     buildItemRows(rankedItems, activePicks.sort().mode()),
                     selectedIndex,

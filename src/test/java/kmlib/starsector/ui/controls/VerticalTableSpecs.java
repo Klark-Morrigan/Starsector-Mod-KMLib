@@ -1,5 +1,9 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
@@ -10,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Test-only builders for the {@link ControlSpec.VerticalTable} shapes the tests exercise, and for the
+ * Test-only builders for the {@link VerticalTableSpec} shapes the tests exercise, and for the
  * rows behind them. A test states a stack of rows as the columns it is checking - the labels, the crests,
  * the values - and these zip those into the rows a host writes one at a time, so a fixture stays a few
  * short lists while the spec under test still holds whole rows.
@@ -38,7 +42,7 @@ public final class VerticalTableSpecs {
      * @param action        what a click on a row does, keyed by the row index
      * @return the single-column icon-list spec
      */
-    public static ControlSpec.VerticalTable buildIconList(
+    public static VerticalTableSpec buildIconList(
             List<String> labels,
             List<String> iconPaths,
             int selectedIndex,
@@ -64,7 +68,7 @@ public final class VerticalTableSpecs {
      * @param action         what a click on a row does, keyed by the row index
      * @return the single-column icon-table spec
      */
-    public static ControlSpec.VerticalTable buildIconList(
+    public static VerticalTableSpec buildIconList(
             List<String> labels,
             List<String> iconPaths,
             List<String> trailingLabels,
@@ -92,7 +96,7 @@ public final class VerticalTableSpecs {
      * @param columnCount    how many columns to fold the rows across
      * @return the folded icon-table spec
      */
-    public static ControlSpec.VerticalTable buildIconList(
+    public static VerticalTableSpec buildIconList(
             List<String> labels,
             List<String> iconPaths,
             List<String> trailingLabels,
@@ -100,7 +104,7 @@ public final class VerticalTableSpecs {
             ControlAction action,
             int columnCount) {
 
-        return ControlSpec.VerticalTable
+        return VerticalTableSpec
             .createColumnTable(
                 buildRows(labels, iconPaths, trailingLabels),
                 selectedIndex,
@@ -120,7 +124,7 @@ public final class VerticalTableSpecs {
      * @param reselect            what a click on the lit row does
      * @return the direction-table spec
      */
-    public static ControlSpec.VerticalTable buildDirectionTable(
+    public static VerticalTableSpec buildDirectionTable(
             List<String> labels,
             List<TriangleDirection> triangleDirections,
             int selectedIndex,
@@ -132,7 +136,7 @@ public final class VerticalTableSpecs {
             labelledRows.add(buildRow(labels.get(index))
                 .trailsWith(new RowSlot.Triangle(triangleDirections.get(index))));
         }
-        return ControlSpec.VerticalTable
+        return VerticalTableSpec
             .createColumnTable(labelledRows, selectedIndex, action)
             .handlesReselect(reselect);
     }
@@ -147,13 +151,13 @@ public final class VerticalTableSpecs {
      * @param reselect      what a click on the lit row does
      * @return the label-only uniform-cell list spec
      */
-    public static ControlSpec.VerticalTable buildSegmentedList(
+    public static VerticalTableSpec buildSegmentedList(
             List<String> labels,
             int selectedIndex,
             ControlAction action,
             ReselectBehaviour reselect) {
 
-        return ControlSpec.VerticalTable
+        return VerticalTableSpec
             .createSegmentedList(buildRows(labels), selectedIndex, action)
             .handlesReselect(reselect);
     }

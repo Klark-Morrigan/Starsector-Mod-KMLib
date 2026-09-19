@@ -2,9 +2,10 @@ package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -261,7 +262,7 @@ final class TabPanelPlacementTest {
             placement.tabsHeader(),
             new BandButtonPlacement(
                 new Control(
-                    new ControlSpec.Tabs(
+                    new TabsSpec(
                         List.of("Edit"),
                         List.of(),
                         ControlSpec.NO_SELECTION,
@@ -321,7 +322,7 @@ final class TabPanelPlacementTest {
 
     private static Control buildHeaderControl() {
         return new Control(
-            new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE),
+            new TabsSpec(List.of("A"), List.of(), 0, ControlAction.NONE),
             HEADER_BAND,
             List.of(HEADER_BAND));
     }

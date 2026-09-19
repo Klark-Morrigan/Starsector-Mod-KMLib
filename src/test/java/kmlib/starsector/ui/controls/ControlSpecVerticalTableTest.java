@@ -1,5 +1,11 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.RowGeometry;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.RowSlot;
 
@@ -27,7 +33,7 @@ final class ControlSpecVerticalTableTest {
         void constructorRejectsAColumnCountBelowOne() {
             // A column count is how many columns the rows fold across; a count below one cannot lay
             // out any column, so it fails at construction rather than dividing by a zero column count.
-            assertThatThrownBy(() -> new ControlSpec.VerticalTable(
+            assertThatThrownBy(() -> new VerticalTableSpec(
                     VerticalTableSpecs.buildRows(List.of("A")),
                     RowGeometry.COLUMNS,
                     ControlSpec.NO_SELECTION,
@@ -42,7 +48,7 @@ final class ControlSpecVerticalTableTest {
         void constructorRejectsAMissingRowGeometry() {
             // How the rows lay out is stated rather than inferred, so a table built without that answer
             // fails where its builder is still on the stack rather than at the first measurement.
-            assertThatThrownBy(() -> new ControlSpec.VerticalTable(
+            assertThatThrownBy(() -> new VerticalTableSpec(
                     VerticalTableSpecs.buildRows(List.of("A")),
                     null,
                     ControlSpec.NO_SELECTION,
@@ -58,7 +64,7 @@ final class ControlSpecVerticalTableTest {
             // A list reporting nowhere states that with NONE rather than with a null, which would pass
             // every layout and every draw and then throw from inside the first frame that put the pointer
             // on a row - nowhere near the host that built the list.
-            assertThatThrownBy(() -> new ControlSpec.VerticalTable(
+            assertThatThrownBy(() -> new VerticalTableSpec(
                     VerticalTableSpecs.buildRows(List.of("A")),
                     RowGeometry.COLUMNS,
                     ControlSpec.NO_SELECTION,
@@ -76,7 +82,7 @@ final class ControlSpecVerticalTableTest {
             var callerRows = new ArrayList<>(VerticalTableSpecs.buildRows(
                 List.of("Factions", "Alliances")));
 
-            var table = new ControlSpec.VerticalTable(
+            var table = new VerticalTableSpec(
                 callerRows,
                 RowGeometry.COLUMNS,
                 0,
@@ -99,7 +105,7 @@ final class ControlSpecVerticalTableTest {
         void createColumnTableLaysItsRowsInColumns() {
             // The geometry is what the table states about itself, so a picker's rows lay out as a table
             // whatever their slots hold - a stack whose rows all lead with nothing is a table still.
-            var picker = ControlSpec.VerticalTable.createColumnTable(
+            var picker = VerticalTableSpec.createColumnTable(
                 VerticalTableSpecs.buildRows(List.of("Hegemony", "Tri-Tachyon")),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE);
@@ -112,7 +118,7 @@ final class ControlSpecVerticalTableTest {
         void createColumnTableStandsInOneInertUnscrolledColumnUntilRefined() {
             // What a table holds before a host refines it: every row inert on a re-pick, one column, and
             // pinned - so a host states only the refinements its own list wants.
-            var picker = ControlSpec.VerticalTable.createColumnTable(
+            var picker = VerticalTableSpec.createColumnTable(
                 VerticalTableSpecs.buildRows(List.of("Hegemony", "Tri-Tachyon")),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE);
@@ -129,7 +135,7 @@ final class ControlSpecVerticalTableTest {
         void createColumnTableCarriesItsRowsWhateverTheirSlotsHold() {
             // A row states what it leads and trails with itself, so a crested, valued row and a bare one
             // stack in one list rather than in a list per column that must stay index-aligned.
-            var picker = ControlSpec.VerticalTable.createColumnTable(
+            var picker = VerticalTableSpec.createColumnTable(
                 VerticalTableSpecs.buildRows(
                     List.of("Hegemony", "Free Traders"),
                     Arrays.asList("crest_heg", null),
@@ -186,7 +192,7 @@ final class ControlSpecVerticalTableTest {
         void createSegmentedListLaysItsRowsAsUniformCells() {
             // The other geometry a stack can read as: equal cells with each name centred, rather than a
             // table of columns - stated by which factory a host reaches for.
-            var list = ControlSpec.VerticalTable.createSegmentedList(
+            var list = VerticalTableSpec.createSegmentedList(
                 VerticalTableSpecs.buildRows(List.of("Factions", "Alliances")),
                 0,
                 ControlAction.NONE);
@@ -204,7 +210,7 @@ final class ControlSpecVerticalTableTest {
             // A row's label may be authored in several runs so part of it draws in its own colour; a
             // strip that snaps a control to its text charges the whole line, so the runs read as one -
             // parted by the run vocabulary's own space rather than by one written into a phrase.
-            var table = ControlSpec.VerticalTable.createColumnTable(
+            var table = VerticalTableSpec.createColumnTable(
                 List.of(VerticalTableSpecs.buildRow("Hegemony")
                     .continuesWith(new TextSpan("(7)", VerticalTableSpecs.ROW_TEXT_COLOUR))),
                 0,
@@ -222,7 +228,7 @@ final class ControlSpecVerticalTableTest {
         void handlesReselectCarriesTheChosenBehaviourAndLeavesTheRestAsItWas() {
             // A spotlight list clears on a re-pick of its lit row; the refinement changes that alone, so
             // everything the layout reads stays as the factory built it.
-            var picker = ControlSpec.VerticalTable
+            var picker = VerticalTableSpec
                 .createColumnTable(
                     VerticalTableSpecs.buildRows(List.of("Hegemony", "Tri-Tachyon")),
                     1,
@@ -249,7 +255,7 @@ final class ControlSpecVerticalTableTest {
             // the copy carries it while everything the layout and the press path read stays as it was.
             var reportedCells = new ArrayList<Integer>();
 
-            var picker = ControlSpec.VerticalTable
+            var picker = VerticalTableSpec
                 .createColumnTable(
                     VerticalTableSpecs.buildRows(List.of("Hegemony", "Tri-Tachyon")),
                     1,
@@ -313,7 +319,7 @@ final class ControlSpecVerticalTableTest {
         @Test
         void spreadsAcrossFoldsTheRowsAcrossThatManyColumns() {
             // The count rides on the spec so the layout and the renderer fold the rows the same way.
-            var picker = ControlSpec.VerticalTable
+            var picker = VerticalTableSpec
                 .createColumnTable(
                     VerticalTableSpecs.buildRows(List.of("Hegemony", "Tri-Tachyon")),
                     0,

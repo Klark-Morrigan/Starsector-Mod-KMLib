@@ -1,5 +1,9 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.CheckboxSpec;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.LabelSpec;
+import kmlib.starsector.ui.controls.specs.ToggleSpec;
 import kmlib.starsector.ui.text.TextSpan;
 
 import java.awt.Color;
@@ -29,12 +33,12 @@ public final class LabelledControlSpecs {
      * @param action what a click on the row does
      * @return the checkbox spec
      */
-    public static ControlSpec.Checkbox buildCheckbox(
+    public static CheckboxSpec buildCheckbox(
             String label,
             boolean isOn,
             ControlAction action) {
 
-        return ControlSpec.Checkbox.lit(buildLabelSpan(label), isOn, action);
+        return CheckboxSpec.lit(buildLabelSpan(label), isOn, action);
     }
 
     /**
@@ -43,8 +47,8 @@ public final class LabelledControlSpecs {
      * @param label the caption text
      * @return the caption spec
      */
-    public static ControlSpec.Label buildLabel(String label) {
-        return ControlSpec.Label.createLabel(buildLabelSpan(label));
+    public static LabelSpec buildLabel(String label) {
+        return LabelSpec.createLabel(buildLabelSpan(label));
     }
 
     /**
@@ -65,11 +69,11 @@ public final class LabelledControlSpecs {
      * @param action what a click on the button does
      * @return the toggle spec
      */
-    public static ControlSpec.Toggle buildToggle(
+    public static ToggleSpec buildToggle(
             String label,
             boolean isOn,
             ControlAction action) {
 
-        return ControlSpec.Toggle.lit(buildLabelSpan(label), isOn, action);
+        return ToggleSpec.lit(buildLabelSpan(label), isOn, action);
     }
 }

@@ -1,6 +1,8 @@
 package kmlib.starsector.ui.controls;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
 
 import java.util.List;
 
@@ -11,7 +13,7 @@ import java.util.List;
  * listener hit-tests the same rectangles, so the control the player sees is the one the click
  * resolves to.
  *
- * <p>{@code isScrolled} marks a control laid inside a {@link ControlSpec.ScrollingSection}: it is
+ * <p>{@code isScrolled} marks a control laid inside a {@link ScrollingSectionSpec}: it is
  * placed at its scrolled position, so it may sit outside the viewport the section was given, and both
  * the renderer that clips it and the hit-test that rejects points outside that viewport read this one
  * value. Carried by the laid-out control rather than derived from the spec, because the section is

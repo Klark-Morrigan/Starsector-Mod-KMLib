@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.input;
 
-import kmlib.starsector.ui.controls.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 
 /**

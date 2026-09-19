@@ -2,10 +2,14 @@ package kmlib.starsector.ui.input;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
+import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 
@@ -265,7 +269,7 @@ final class PanelBodyFixtures {
      * @return the laid-out divider
      */
     static Control buildDividerControl() {
-        return new Control(new ControlSpec.Divider(), ROW, List.of());
+        return new Control(new DividerSpec(), ROW, List.of());
     }
 
     /**
@@ -297,7 +301,7 @@ final class PanelBodyFixtures {
      * @param spec the radio spec to lay out
      * @return the laid-out radio
      */
-    static Control buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio spec) {
+    static Control buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec spec) {
         return new Control(spec, ROW, buildTwoHalvesOfRow());
     }
 
@@ -312,7 +316,7 @@ final class PanelBodyFixtures {
      */
     static Control buildTwoTabRowAtRow(int selectedIndex, ControlAction action) {
 
-        var spec = new ControlSpec.Tabs(
+        var spec = new TabsSpec(
             List.of("Political Map", "Alliances"),
             List.of(),
             selectedIndex,
@@ -348,7 +352,7 @@ final class PanelBodyFixtures {
      * @param spec the stacked radio to lay out
      * @return the laid-out stacked radio
      */
-    static Control buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio spec) {
+    static Control buildTwoCellVerticalRadioAtRow(VerticalRadioSpec spec) {
         return new Control(spec, ROW, buildTwoStackedHalvesOfRow());
     }
 

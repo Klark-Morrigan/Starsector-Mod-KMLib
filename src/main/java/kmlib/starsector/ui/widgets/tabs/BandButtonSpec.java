@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.widgets.tabs;
 
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
@@ -19,7 +20,7 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * as the one thing it shows. Only the band height is not its own: the button stands in the panel's band,
  * so the layout lays it at the band the panel was given and whatever height this style names is not read.
  *
- * <p>A one-cell {@link ControlSpec.Tabs} rather than a control kind of its own, so it is measured, split,
+ * <p>A one-cell {@link TabsSpec} rather than a control kind of its own, so it is measured, split,
  * drawn and hit through the very geometry a tab is - the button differs from its neighbours in what it
  * shows and what it does, not in how it is laid. It must state {@link ControlSpec#NO_SELECTION}: a tabs
  * control's lit cell is inert, so a button that was ever the lit one would stop answering presses.
@@ -39,7 +40,7 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  *              label instead
  */
 public record BandButtonSpec(
-    ControlSpec.Tabs spec,
+    TabsSpec spec,
     TabStyle style,
     ImageSpan icon) {
 }

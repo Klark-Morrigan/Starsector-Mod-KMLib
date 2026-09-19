@@ -13,12 +13,12 @@ import kmlib.starsector.ui.controls.BodyInteractionSources;
  * a shade its palette names and a body cell washes in the look's own, and only the pace is shared. What is
  * one value here is the reading, not the treatment.
  *
- * @param headerTabs    how far each header tab has travelled onto the hovered shade, and what lift it carries
+ * @param headerTabs      how far each header tab has travelled onto the hovered shade, and what lift it carries
  * @param bandButtonHover how far the panel's own band button has travelled onto that same shade - one
  *                        fraction rather than a channel pair, the button being a single cell that answers
  *                        the pointer and nothing else
- * @param bodyControls  how far onto its hovered look, and how far through its press lift, each cell of each
- *                      body control stands
+ * @param bodyControls    how far onto its hovered look, and how far through its press lift, each cell of each
+ *                        body control stands
  */
 public record TabPanelInteractionSources(
     TabInteractionSources headerTabs,

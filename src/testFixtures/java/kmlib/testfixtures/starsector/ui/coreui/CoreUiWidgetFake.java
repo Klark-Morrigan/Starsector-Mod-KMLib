@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * A component that is both a placed, drawn widget and a parent in the core UI's tree, so a walk that
  * measures what a widget occupies and then descends into it can be driven without a running game.
- * Shipped from KMLib so both KMLib's and consuming mods' tests build the same shape of tree.
+ * Published as a fixture variant so both KMLib's and consuming mods' tests build the same shape of tree.
  *
  * <p>{@link CoreUiComponentFake} stands for a parent that is nothing else; this is the case a rule
  * about layout needs, where the same object has to answer for its own box and for what it holds.

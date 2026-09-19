@@ -8,18 +8,30 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture.createFailure;
+import static kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture.createFailureBrokenAt;
+import static kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture.createFailureLosing;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
- * Covers the two rules the registry holds - one record per subject for the session, and a take that
+ * Covers the two rules the registry holds - one record per binding for the session, and a take that
  * hands over without unlatching - and that the first rule survives two threads recording at once.
+ *
+ * <p>A binding is a third party and the mod that took it, so the cases worth the most are the two
+ * that pull those apart: two mods over one third party each record, and one mod recording the same
+ * third party twice records once. A latch on the third party alone passes every other case here.
  */
 final class CompatibilityFailuresTest {
 
     private static final String FAST_RENDERING = CompatibilityFailureFixture.FAST_RENDERING_SUBJECT_KEY;
 
     private static final String NEXERELIN = CompatibilityFailureFixture.NEXERELIN_SUBJECT_KEY;
+
+    private static final CompatibilityConsumer MAP_OVERLAY = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
+
+    private static final CompatibilityConsumer COLONY_PANEL = CompatibilityFailureFixture.COLONY_PANEL_CONSUMER;
 
     private final CompatibilityFailures failures = new CompatibilityFailures();
 
@@ -36,7 +48,7 @@ final class CompatibilityFailuresTest {
         @Test
         void isTrueOnceAFailureWasRecorded() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
 
             assertThat(failures.hasUnreported())
                 .isTrue();
@@ -45,8 +57,8 @@ final class CompatibilityFailuresTest {
         @Test
         void isFalseAgainOnceTheFailureWasTaken() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
-            failures.takeUnreported();
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.takeNextUnreported();
 
             assertThat(failures.hasUnreported())
                 .isFalse();
@@ -57,14 +69,15 @@ final class CompatibilityFailuresTest {
     class RecordOnce {
 
         @Test
-        void keepsTheFirstFailureForASubjectAndIgnoresTheSecond() {
+        void keepsTheFirstFailureForABindingAndIgnoresTheSecond() {
 
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::brokenDetail)
-                .containsExactly("first");
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("first");
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
 
         @Test
@@ -72,32 +85,48 @@ final class CompatibilityFailuresTest {
 
             var describeCount = new AtomicInteger();
 
-            failures.recordOnce(FAST_RENDERING, () -> countAndCreateFailure(describeCount));
-            failures.recordOnce(FAST_RENDERING, () -> countAndCreateFailure(describeCount));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> countAndCreateFailure(describeCount));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> countAndCreateFailure(describeCount));
 
             assertThat(describeCount)
                 .hasValue(1);
         }
 
         @Test
-        void recordsASecondSubjectIndependently() {
+        void recordsASecondConsumerOfOneSubjectIndependently() {
 
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
-            failures.recordOnce(NEXERELIN, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
+            // What one broken third party costs is a different thing to each mod bound to it, said
+            // in that mod's own words - so a latch keeping only the first would leave the second
+            // mod's players told what another mod lost.
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing(MAP_OVERLAY.lostFeature()));
+            failures.recordOnce(FAST_RENDERING, COLONY_PANEL, () -> createFailureLosing(COLONY_PANEL.lostFeature()));
 
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::brokenDetail)
-                .containsExactly("first", "second");
+            assertThat(failures.takeNextUnreported().lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
+            assertThat(failures.takeNextUnreported().lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
         }
 
         @Test
-        void keepsTheSubjectLatchedAfterItsFailureWasTaken() {
+        void recordsASecondSubjectIndependently() {
+
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
+
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("first");
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("second");
+        }
+
+        @Test
+        void keepsTheBindingLatchedAfterItsFailureWasTaken() {
 
             // Once per session, not once per take: the frame after a report fails the same way, and
             // that is the failure already reported rather than a new one.
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
-            failures.takeUnreported();
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
+            failures.takeNextUnreported();
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
             assertThat(failures.hasUnreported())
                 .isFalse();
@@ -109,11 +138,14 @@ final class CompatibilityFailuresTest {
             var describeCount = new AtomicInteger();
 
             assertThatIllegalStateException()
-                .isThrownBy(() -> failures.recordOnce(FAST_RENDERING, () -> countAndThrow(describeCount)));
-            failures.recordOnce(FAST_RENDERING, () -> countAndThrow(describeCount));
+                .isThrownBy(() -> failures.recordOnce(
+                    FAST_RENDERING,
+                    MAP_OVERLAY,
+                    () -> countAndThrow(describeCount)));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> countAndThrow(describeCount));
 
             // The latch was taken before the describer ran, so the second record is the ignored
-            // path and the subject reports nothing rather than throwing on every frame.
+            // path and the binding reports nothing rather than throwing on every frame.
             assertThat(describeCount)
                 .hasValue(1);
             assertThat(failures.hasUnreported())
@@ -121,13 +153,13 @@ final class CompatibilityFailuresTest {
         }
 
         @Test
-        void storesOneFailureWhereTwoThreadsRecordTheSameSubjectAtOnce() throws InterruptedException {
+        void storesOneFailureWhereTwoThreadsRecordTheSameBindingAtOnce() throws InterruptedException {
 
             var describeCount = new AtomicInteger();
             var startGate = new CountDownLatch(1);
             Runnable recordFromThread = () -> {
                 awaitStart(startGate);
-                failures.recordOnce(FAST_RENDERING, () -> countAndCreateFailure(describeCount));
+                failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> countAndCreateFailure(describeCount));
             };
             var renderThread = new Thread(recordFromThread);
             var gameThread = new Thread(recordFromThread);
@@ -142,40 +174,53 @@ final class CompatibilityFailuresTest {
 
             assertThat(describeCount)
                 .hasValue(1);
-            assertThat(failures.takeUnreported())
-                .hasSize(1);
+            assertThat(failures.takeNextUnreported())
+                .isNotNull();
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
     }
 
     @Nested
-    class TakeUnreported {
+    class TakeNextUnreported {
 
         @Test
         void answersNothingWhereNothingWasRecorded() {
 
-            assertThat(failures.takeUnreported())
-                .isEmpty();
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
 
         @Test
-        void answersTheRecordedFailuresInRecordOrder() {
+        void answersTheOldestRecordFirst() {
+            // Record order, so the first binding to break is the first a player is told about.
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            failures.recordOnce(NEXERELIN, () -> CompatibilityFailureFixture.createFailureBrokenAt("first"));
-            failures.recordOnce(FAST_RENDERING, () -> CompatibilityFailureFixture.createFailureBrokenAt("second"));
-
-            assertThat(failures.takeUnreported())
-                .extracting(CompatibilityFailure::brokenDetail)
-                .containsExactly("first", "second");
+            assertThat(failures.takeNextUnreported().brokenDetail())
+                .isEqualTo("first");
         }
 
         @Test
-        void leavesNothingBehindOnceTaken() {
+        void leavesTheRestWhereTheyAre() {
 
-            failures.recordOnce(FAST_RENDERING, CompatibilityFailureFixture::createFailure);
-            failures.takeUnreported();
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeUnreported())
-                .isEmpty();
+            failures.takeNextUnreported();
+
+            assertThat(failures.hasUnreported())
+                .isTrue();
+        }
+
+        @Test
+        void answersNothingOnceTheLastWasTaken() {
+
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.takeNextUnreported();
+
+            assertThat(failures.takeNextUnreported())
+                .isNull();
         }
     }
 
@@ -195,7 +240,7 @@ final class CompatibilityFailuresTest {
     private static CompatibilityFailure countAndCreateFailure(AtomicInteger describeCount) {
 
         describeCount.incrementAndGet();
-        return CompatibilityFailureFixture.createFailure();
+        return createFailure();
     }
 
     private static CompatibilityFailure countAndThrow(AtomicInteger describeCount) {

@@ -1,5 +1,18 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.CheckboxSpec;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.InteractiveSpec;
+import kmlib.starsector.ui.controls.specs.LabelSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
+import kmlib.starsector.ui.controls.specs.ToggleSpec;
 import kmlib.starsector.ui.text.TextSpan;
 
 import org.junit.jupiter.api.Nested;
@@ -16,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Pins the sealed variants hosts build controls through: a checkbox and a toggle lit at cell 0 when on
  * and off otherwise carrying their click action, a caption label and a divider rule that are drawn but
- * never clicked (and so are not {@link ControlSpec.Interactive}), the horizontal radios, the vertical
+ * never clicked (and so are not {@link InteractiveSpec}), the horizontal radios, the vertical
  * radio table, and the tabs row. These fix the "a single cell is lit or nothing", "a label / divider has
  * no cell and no action" conventions in one place so no host re-derives them. The variants make the
  * illegal shapes unrepresentable - a checkbox has no leading column to mis-set, and a table's rows hold
@@ -32,21 +45,21 @@ final class ControlSpecTest {
         void checkboxAndRadiosAndTabsAreInteractive() {
             // The clickable, stateful controls implement Interactive, so the input listener acts on them.
             assertThat(LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE))
-                .isInstanceOf(ControlSpec.Interactive.class);
+                .isInstanceOf(InteractiveSpec.class);
             assertThat(LabelledControlSpecs.buildToggle("Muted", true, ControlAction.NONE))
-                .isInstanceOf(ControlSpec.Interactive.class);
-            assertThat(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE))
-                .isInstanceOf(ControlSpec.Interactive.class);
+                .isInstanceOf(InteractiveSpec.class);
+            assertThat(HorizontalRadioSpec.of(List.of("A"), 0, ControlAction.NONE))
+                .isInstanceOf(InteractiveSpec.class);
 
             assertThat(VerticalTableSpecs.buildSegmentedList(
                     List.of("A"),
                     0,
                     ControlAction.NONE,
                     ReselectBehaviour.INERT))
-                .isInstanceOf(ControlSpec.Interactive.class);
+                .isInstanceOf(InteractiveSpec.class);
 
-            assertThat(new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE))
-                .isInstanceOf(ControlSpec.Interactive.class);
+            assertThat(new TabsSpec(List.of("A"), List.of(), 0, ControlAction.NONE))
+                .isInstanceOf(InteractiveSpec.class);
         }
 
         @Test
@@ -58,9 +71,9 @@ final class ControlSpecTest {
                 .isEqualTo(ControlHoverReport.NONE);
             assertThat(LabelledControlSpecs.buildToggle("Muted", true, ControlAction.NONE).hoverReport())
                 .isEqualTo(ControlHoverReport.NONE);
-            assertThat(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE).hoverReport())
+            assertThat(HorizontalRadioSpec.of(List.of("A"), 0, ControlAction.NONE).hoverReport())
                 .isEqualTo(ControlHoverReport.NONE);
-            assertThat(new ControlSpec.Tabs(List.of("A"), List.of(), 0, ControlAction.NONE).hoverReport())
+            assertThat(new TabsSpec(List.of("A"), List.of(), 0, ControlAction.NONE).hoverReport())
                 .isEqualTo(ControlHoverReport.NONE);
         }
 
@@ -69,9 +82,9 @@ final class ControlSpecTest {
             // A caption and a rule are drawn but never clicked, so they are chrome, not Interactive - the
             // one property the input listener reads to skip them.
             assertThat(LabelledControlSpecs.buildLabel("Names"))
-                .isNotInstanceOf(ControlSpec.Interactive.class);
-            assertThat(new ControlSpec.Divider())
-                .isNotInstanceOf(ControlSpec.Interactive.class);
+                .isNotInstanceOf(InteractiveSpec.class);
+            assertThat(new DividerSpec())
+                .isNotInstanceOf(InteractiveSpec.class);
         }
     }
 
@@ -107,7 +120,7 @@ final class ControlSpecTest {
             // The row's single cell (0) is the hit target, so a click fires the action for cell 0 -
             // pinned by capturing which cell the action was invoked with.
             var firedCell = new int[] {-99};
-            var checkbox = ControlSpec.Checkbox.lit(
+            var checkbox = CheckboxSpec.lit(
                 LabelledControlSpecs.buildLabelSpan("Muted"),
                 false,
                 cell -> firedCell[0] = cell);
@@ -122,7 +135,7 @@ final class ControlSpecTest {
         void litCarriesTheLabelAsOneRunInItsOwnColour() {
             // A control that reads in one colour is the single run its factory builds - the bargain that
             // keeps a plain label a plain call while the model still holds runs.
-            var checkbox = ControlSpec.Checkbox.lit(
+            var checkbox = CheckboxSpec.lit(
                 new TextSpan("Muted", Color.CYAN),
                 true,
                 ControlAction.NONE);
@@ -139,7 +152,7 @@ final class ControlSpecTest {
         void constructorRejectsALabelWithNoRuns() {
             // A control with nothing to say is not a control; the floor is held where the caller that
             // built it is still on the stack rather than at the first measurement of an empty label.
-            assertThatThrownBy(() -> new ControlSpec.Checkbox(
+            assertThatThrownBy(() -> new CheckboxSpec(
                     List.of(),
                     ControlSpec.NO_SELECTION,
                     ControlAction.NONE))
@@ -208,7 +221,7 @@ final class ControlSpecTest {
 
         @Test
         void constructorRejectsALabelWithNoRuns() {
-            assertThatThrownBy(() -> new ControlSpec.Toggle(
+            assertThatThrownBy(() -> new ToggleSpec(
                     List.of(),
                     ControlSpec.NO_SELECTION,
                     ControlAction.NONE))
@@ -241,7 +254,7 @@ final class ControlSpecTest {
         @Test
         void createLabelIsATextOnlyRowCarryingItsRunAsItsLabel() {
 
-            var label = ControlSpec.Label.createLabel(
+            var label = LabelSpec.createLabel(
                 new TextSpan("Non-allied factions are", Color.CYAN));
 
             assertThat(label.labelRuns())
@@ -256,7 +269,7 @@ final class ControlSpecTest {
 
         @Test
         void constructorRejectsALabelWithNoRuns() {
-            assertThatThrownBy(() -> new ControlSpec.Label(List.of()))
+            assertThatThrownBy(() -> new LabelSpec(List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -284,7 +297,7 @@ final class ControlSpecTest {
         @Test
         void dividerIsARuleWithNoLabel() {
             // A divider is drawn but never clicked and carries no text, so it holds no label.
-            assertThat(new ControlSpec.Divider().labels())
+            assertThat(new DividerSpec().labels())
                 .isEmpty();
         }
     }
@@ -303,8 +316,8 @@ final class ControlSpecTest {
                     0,
                     ControlAction.NONE)));
 
-            var section = new ControlSpec.ScrollingSection(sourceControls);
-            sourceControls.add(ControlSpec.HorizontalRadio.of(List.of("A"), 0, ControlAction.NONE));
+            var section = new ScrollingSectionSpec(sourceControls);
+            sourceControls.add(HorizontalRadioSpec.of(List.of("A"), 0, ControlAction.NONE));
 
             assertThat(section.controls())
                 .hasSize(1);
@@ -314,7 +327,7 @@ final class ControlSpecTest {
         void sectionCarriesItsRunAndNoLabelsOfItsOwn() {
             // The group is chrome-free: its children carry the labels, so a strip measuring the section
             // against a label of its own would charge a width nothing draws.
-            var section = new ControlSpec.ScrollingSection(List.of(
+            var section = new ScrollingSectionSpec(List.of(
                 LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE),
                 VerticalTableSpecs.buildIconList(
                     List.of("Hegemony"),
@@ -335,7 +348,7 @@ final class ControlSpecTest {
         @Test
         void tabsCarriesLabelsAndShortcuts() {
 
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 List.of("N", "P"),
                 1,
@@ -353,7 +366,7 @@ final class ControlSpecTest {
         void tabsKeepsNullShortcutEntriesForHintlessTabs() {
             // A tab with no bound shortcut rides as a null entry, so the list stays aligned to the labels
             // index for index; the copy must preserve the null rather than reject it.
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 Arrays.asList("N", null),
                 0,
@@ -367,7 +380,7 @@ final class ControlSpecTest {
         void tabsCarriesTheClickActionByTabIndex() {
 
             var firedTab = new int[] {-99};
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 List.of("N", "P"),
                 0,
@@ -384,7 +397,7 @@ final class ControlSpecTest {
             // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a later
             // mutation of the caller's list cannot rewrite the drawn hints.
             var callerShortcuts = new ArrayList<String>(List.of("N", "P"));
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 callerShortcuts,
                 0,
@@ -403,7 +416,7 @@ final class ControlSpecTest {
         @Test
         void shortcutAtIsTheTabsHintWhenItHasOne() {
 
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 List.of("N", "P"),
                 0,
@@ -416,7 +429,7 @@ final class ControlSpecTest {
         @Test
         void shortcutAtIsEmptyForANullEntry() {
             // A null entry is a real "no hint", so it reads as an empty string rather than throwing.
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 Arrays.asList("N", null),
                 0,
@@ -429,7 +442,7 @@ final class ControlSpecTest {
         @Test
         void shortcutAtIsEmptyForAnIndexPastTheShortcutList() {
             // A shorter (or empty) shortcut list leaves the trailing tabs hint-less rather than throwing.
-            var tabs = new ControlSpec.Tabs(
+            var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 List.of("N"),
                 0,
@@ -447,7 +460,7 @@ final class ControlSpecTest {
         void sizesSegmentsSetsOnlyTheSegmentSizing() {
             // A snapped row's cells each take their own label's width rather than sharing the widest
             // option's, so a ragged row does not waste space as even cells.
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .sizesSegments(SegmentSizing.SNAPPED);
 
             assertThat(radio.segmentSizing())
@@ -469,7 +482,7 @@ final class ControlSpecTest {
         @Test
         void handlesReselectSetsOnlyTheReselectBehaviour() {
             // A horizontal on/off selector: re-picking the lit segment fires the action to turn it off.
-            var radio = ControlSpec.HorizontalRadio.of(
+            var radio = HorizontalRadioSpec.of(
                     List.of("Factions", "Alliances"),
                     ControlSpec.NO_SELECTION,
                     ControlAction.NONE)

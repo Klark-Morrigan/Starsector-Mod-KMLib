@@ -2,7 +2,7 @@ package kmlib.testfixtures.starsector.ui.coreui;
 
 /**
  * An interaction dialog that stands up its own core UI, answering the {@code getCoreUI} contract a
- * by-name reach takes to get at it. Shipped from KMLib so both KMLib's and consuming mods' tests
+ * by-name reach takes to get at it. Published as a fixture variant so both KMLib's and consuming mods' tests
  * drive the dialog-hosted core the same way.
  *
  * <p>Models only the hosting side of that contract. A dialog exposing no such method is what the

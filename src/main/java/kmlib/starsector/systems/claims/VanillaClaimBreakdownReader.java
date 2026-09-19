@@ -136,7 +136,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
      *
      * @param knownColonyReader what this reader asks which of the colonies it meets the player may
      *                          be told about, carried onto each market's breakdown; null names none
-     * @param sectorIndex     the pass's colony index, discarded with the pass that opened it;
+     * @param sectorIndex       the pass's colony index, discarded with the pass that opened it;
      *                          null reads each system afresh, as the no-index reader does
      */
     public VanillaClaimBreakdownReader(

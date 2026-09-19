@@ -24,10 +24,10 @@ import java.util.Objects;
  * runs on the failure path alone - the healthy path pays nothing for it - which is what makes a
  * lookup per member affordable.
  *
- * <p>Looked up through method handles rather than {@code java.lang.reflect}, which the game's script
- * classloader refuses to mod code; {@code java.lang.invoke} it does not. A handle lookup checks the
- * name and the whole signature in one step, so a member that was re-signatured reads the same as one
- * that was removed - as it does to the direct binding, which fails identically for both.
+ * <p>Looked up through method handles, which check the name and the whole signature in one step, so
+ * a member that was re-signatured reads the same as one that was removed - as it does to the direct
+ * binding, which fails identically for both. Why handles rather than {@code java.lang.reflect} is a
+ * property of the game's classloader, recorded in {@code docs/dev/rendering-environment.md}.
  *
  * <p>The installed version is read apart from the members, off
  * {@code com.genir.renderer.Version.getVersion()} - present from v0.8.2, and genir's own private

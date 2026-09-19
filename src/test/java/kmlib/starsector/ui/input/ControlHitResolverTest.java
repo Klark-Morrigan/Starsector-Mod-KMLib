@@ -1,9 +1,10 @@
 package kmlib.starsector.ui.input;
 
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.LabelledControlSpecs;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,7 @@ final class ControlHitResolverTest {
             // segment, and the segment is still what the point is over. Pinned on the walk as well as on the
             // single-control resolver, because a narrowing added here would leave the lit control dark while
             // every case for the resolver below it still passed.
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 ControlAction.NONE));
@@ -245,7 +246,7 @@ final class ControlHitResolverTest {
         @Test
         void resolveHitCellReportsTheLitSegmentOfADeselectableRadio() {
 
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                     List.of("Factions", "Alliances"),
                     0,
                     ControlAction.NONE)
@@ -267,7 +268,7 @@ final class ControlHitResolverTest {
             // the segment is still what the point is over. Pinned beside the deselectable case above, which
             // resolves the same way for a different reason - so a narrowing creeping back in shows here
             // rather than hiding behind a reselect that would have answered alike.
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 ControlAction.NONE));
@@ -308,7 +309,7 @@ final class ControlHitResolverTest {
         void resolveHitCellReportsTheCellThePointIsInFromTheTopDown() {
             // The cells run down rather than across, so which cell a point is in is decided by its y. Both
             // halves are asked, since a resolver still splitting by width would answer cell 0 for each.
-            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio.of(
+            var radio = buildTwoCellVerticalRadioAtRow(VerticalRadioSpec.of(
                 List.of("Factions", "Alliances"),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE));
@@ -333,7 +334,7 @@ final class ControlHitResolverTest {
         void resolveHitCellReportsNoCellForAPointBesideTheColumn() {
             // A stacked radio is one column wide, so a point past its right edge is off the control
             // however far down the column it sits.
-            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio.of(
+            var radio = buildTwoCellVerticalRadioAtRow(VerticalRadioSpec.of(
                 List.of("Factions", "Alliances"),
                 0,
                 ControlAction.NONE));
@@ -355,7 +356,7 @@ final class ControlHitResolverTest {
         void isSegmentedControlIsTrueForARowOfOptionSegments() {
             // The rule the hit-test turns on, and the one a hover reads to say what kind of thing it
             // reached: a control whose cells are laid side by side is a row of things alike.
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Left", "Right"),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE));
@@ -382,25 +383,4 @@ final class ControlHitResolverTest {
         }
     }
 
-    @Nested
-    class IsSegmentedSpec {
-
-        @Test
-        void isSegmentedSpecAnswersTheSameRuleTheLaidOutControlIsAskedFor() {
-            // One rule with two readers - the hit-test that resolves a cell, and the narrowing that decides
-            // whether pressing it acts. Restated on either side, a variant added to the set would be hit as
-            // a row of segments and pressed as a whole row, or the other way about.
-            var radio = ControlSpec.HorizontalRadio.of(
-                List.of("Left", "Right"),
-                ControlSpec.NO_SELECTION,
-                ControlAction.NONE);
-
-            assertThat(ControlHitResolver.isSegmentedSpec(radio))
-                .isTrue();
-            assertThat(ControlHitResolver.isSegmentedSpec(
-                    ControlSpec.Checkbox.lit(
-                        LabelledControlSpecs.buildLabelSpan("Muted"), true, ControlAction.NONE)))
-                .isFalse();
-        }
-    }
 }

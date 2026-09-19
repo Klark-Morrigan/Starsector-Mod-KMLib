@@ -12,7 +12,7 @@ import java.util.List;
  * One laid-out tab panel: a headerless {@link PanelPlacement} for the {@code body} with a {@code
  * tabsHeader} control standing on top of the body's box. All geometry is in UI coordinates, so
  * the same placement a renderer draws is the one a consumer hit-tests, with no conversion. The {@code
- * tabsHeader} is an ordinary laid-out {@link kmlib.starsector.ui.controls.ControlSpec.Tabs} control (its
+ * tabsHeader} is an ordinary laid-out {@link kmlib.starsector.ui.controls.TabsSpec} control (its
  * segments split per tab), so it measures, draws, and hit-tests through the generic control path like any
  * body control - the panel owns only where the header sits.
  *

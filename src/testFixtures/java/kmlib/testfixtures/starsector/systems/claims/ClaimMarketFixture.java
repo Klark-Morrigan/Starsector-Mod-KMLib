@@ -9,7 +9,7 @@ import java.util.OptionalInt;
 
 /**
  * Builds one market's place in a claim contest a fact at a time, for the tests that pose colonies
- * rather than whole standings. Shipped from KMLib so both KMLib's and consuming mods' tests state a
+ * rather than whole standings. Published as a fixture variant so both KMLib's and consuming mods' tests state a
  * market the same way.
  *
  * <p>Named facts rather than the record's own eight-argument constructor, which is what every suite

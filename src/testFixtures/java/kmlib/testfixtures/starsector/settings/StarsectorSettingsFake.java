@@ -7,6 +7,7 @@ import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import java.awt.Color;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
@@ -178,7 +179,7 @@ public final class StarsectorSettingsFake {
             if ("createCustom".equals(method.getName())) {
                 return customPanel(answers.uiElementSource());
             }
-            return defaultValue(method.getReturnType());
+            return resolveDefaultValue(method.getReturnType());
         });
     }
 
@@ -191,7 +192,7 @@ public final class StarsectorSettingsFake {
             if ("createUIElement".equals(method.getName())) {
                 return uiElementSource.createElement();
             }
-            return defaultValue(method.getReturnType());
+            return resolveDefaultValue(method.getReturnType());
         });
     }
 
@@ -203,7 +204,7 @@ public final class StarsectorSettingsFake {
             if ("isModEnabled".equals(method.getName()) && args != null && args.length == 1) {
                 return enabledMods.isEnabled((String) args[0]);
             }
-            return defaultValue(method.getReturnType());
+            return resolveDefaultValue(method.getReturnType());
         });
     }
 
@@ -222,35 +223,14 @@ public final class StarsectorSettingsFake {
             : named;
     }
 
-    private static Object defaultValue(Class<?> returnType) {
-        if (!returnType.isPrimitive()) {
+    // A primitive's own zero, read off a one-element array of that type rather than named eight
+    // times over. A reference answers null, and so does void: void is a primitive with no array to
+    // make, and a call returning void discards whatever comes back anyway.
+    private static Object resolveDefaultValue(Class<?> returnType) {
+        if (!returnType.isPrimitive() || void.class.equals(returnType)) {
             return null;
         }
-        if (boolean.class.equals(returnType)) {
-            return false;
-        }
-        if (char.class.equals(returnType)) {
-            return '\0';
-        }
-        if (byte.class.equals(returnType)) {
-            return (byte) 0;
-        }
-        if (short.class.equals(returnType)) {
-            return (short) 0;
-        }
-        if (int.class.equals(returnType)) {
-            return 0;
-        }
-        if (long.class.equals(returnType)) {
-            return 0L;
-        }
-        if (float.class.equals(returnType)) {
-            return 0f;
-        }
-        if (double.class.equals(returnType)) {
-            return 0d;
-        }
-        return null;
+        return Array.get(Array.newInstance(returnType, 1), 0);
     }
 
     private static <T> T proxy(Class<T> type, InvocationHandler handler) {

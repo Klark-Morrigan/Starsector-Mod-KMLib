@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * The row of toggles the game furnishes a map screen from, in the shape a control appended to it has
  * to be matched against and measured off: a panel holding its buttons, a private factory that makes
- * one, and a private appender that puts one at the end of the row. Shipped from KMLib so both
+ * one, and a private appender that puts one at the end of the row. Published as a fixture variant so both
  * KMLib's and consuming mods' tests build the same shape of row.
  *
  * <p>Both helpers carry the same meaningless name here because both carry the same meaningless name

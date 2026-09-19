@@ -2,7 +2,8 @@ package kmlib.starsector.ui.input;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.InteractiveSpec;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RadioRow;
 
@@ -134,12 +135,12 @@ final class ControlHitResolver {
         // A caption row and a divider are drawn but not clickable - they are not Interactive - so a press
         // over either hits nothing and falls through to let the loop try the controls below, never
         // consuming a click as if it acted. The divider matters here because it spans the whole body width.
-        if (!(control.spec() instanceof ControlSpec.Interactive interactive)) {
+        if (!(control.spec() instanceof InteractiveSpec interactive)) {
             return NO_CELL_RESOLVED;
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
         // or a tabs row's per-tab boxes.
-        if (isSegmentedSpec(interactive)) {
+        if (interactive.isSegmented()) {
 
             var segmentIndex = RadioRow.findSegmentIndexAt(control.segments(), pointX, pointY);
 
@@ -168,24 +169,7 @@ final class ControlHitResolver {
      * @return whether its cells are segments laid side by side
      */
     static boolean isSegmentedControl(Control control) {
-        return control.spec() instanceof ControlSpec.Interactive interactive
-            && isSegmentedSpec(interactive);
-    }
-
-    /**
-     * The same rule asked of a spec rather than of a laid-out control, for a reader that has narrowed to one
-     * already - the press path, which reaches an {@link ControlSpec.Interactive} on its way to the action.
-     *
-     * <p>Which variants are segmented is one rule with two readers, the hit-test that resolves a cell and
-     * the narrowing that decides whether pressing it acts. Restated on either side, a variant added to the
-     * set would be hit as a row of segments and pressed as a whole row, or the other way about.
-     *
-     * @param control the interactive spec
-     * @return whether its cells are separately hit segments rather than one whole-row target
-     */
-    static boolean isSegmentedSpec(ControlSpec.Interactive control) {
-        return control instanceof ControlSpec.Radio
-            || control instanceof ControlSpec.VerticalTable
-            || control instanceof ControlSpec.Tabs;
+        return control.spec() instanceof InteractiveSpec interactive
+            && interactive.isSegmented();
     }
 }

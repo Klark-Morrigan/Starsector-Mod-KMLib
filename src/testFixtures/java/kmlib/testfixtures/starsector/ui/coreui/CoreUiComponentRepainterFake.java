@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * A {@link CoreUiComponentRepainter} that records what it was asked to repaint instead of drawing,
  * so the decisions around a repaint - whether one happens at all, which component, and what region
- * it is confined to - can be exercised without a GL context. Shipped from KMLib so both KMLib's and
+ * it is confined to - can be exercised without a GL context. Published as a fixture variant so both KMLib's and
  * consuming mods' tests drive the repaint seam through one shared double.
  *
  * <p>Optionally throws instead of recording, which is the live binding's own failure mode: the

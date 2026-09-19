@@ -68,7 +68,7 @@ public final class SectorListenerFixtures {
     private static <T> T proxy(Class<T> type, InvocationHandler handler) {
         return (T) Proxy.newProxyInstance(
             type.getClassLoader(),
-            new Class<?>[]{type},
+            new Class<?>[] {type},
             handler);
     }
 }

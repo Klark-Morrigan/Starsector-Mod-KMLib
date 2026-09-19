@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.controls;
+package kmlib.starsector.ui.controls.specs;
 
 /**
  * What activating a body control does - the behaviour the host that supplied the control attaches to
@@ -13,6 +13,7 @@ package kmlib.starsector.ui.controls;
  */
 @FunctionalInterface
 public interface ControlAction {
+
     /** An action that does nothing, for a control that is only laid out or drawn, never clicked. */
     ControlAction NONE = cellIndex -> {
     };

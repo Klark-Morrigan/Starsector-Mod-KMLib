@@ -1,8 +1,6 @@
 package kmlib.math.geometry;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -112,7 +110,7 @@ public final class RingPath {
             double miterSpikeLimit,
             double[] topAnchor) {
 
-        var counterClockwise = orientCounterClockwise(ring);
+        var counterClockwise = RingPathStart.orientCounterClockwise(ring);
 
         var inset = PolygonOffsets.removeReversedLoops(
             PolygonOffsets.insetPolygonByMiter(
@@ -127,7 +125,7 @@ public final class RingPath {
             return nothingLeftToTrace();
         }
 
-        var traced = rotateToTopCentre(reverseRing(cleaned), topAnchor);
+        var traced = RingPathStart.rotateToTopCentre(RingPathStart.reverseRing(cleaned), topAnchor);
         var arcLengths = measureArcLengths(traced);
 
         // Measured on the traced ring rather than during the offset, so an overrun stretch
@@ -137,8 +135,8 @@ public final class RingPath {
         return new RingPath(
             traced,
             arcLengths,
-            mergeOverlappingArcs(
-                collectOverrunArcs(counterClockwise, traced, arcLengths, insetDistance)));
+            RingPathArcs.mergeOverlappingArcs(
+                RingPathArcs.collectOverrunArcs(counterClockwise, traced, arcLengths, insetDistance)));
     }
 
     /**
@@ -250,11 +248,13 @@ public final class RingPath {
         if (isEmpty()) {
             return new ArrayList<>();
         }
-        var covered = collectCoveredArcs(keepOutRings);
+        var covered = RingPathArcs.collectCoveredArcs(points, arcLengthAtPoint, keepOutRings);
 
         covered.addAll(overrunArcs);
 
-        return invertToClearArcs(mergeOverlappingArcs(covered));
+        return RingPathArcs.invertToClearArcs(
+            RingPathArcs.mergeOverlappingArcs(covered),
+            getPerimeter());
     }
 
     /**
@@ -492,290 +492,6 @@ public final class RingPath {
             : latestStart;
     }
 
-    // Where the keep-out shapes lie over the path, as intervals in its own arc lengths - one
-    // per stretch of one edge one shape covers, in no order and free to overlap each other.
-    //
-    // Each edge is crossed against each shape rather than the whole ring being clipped by it,
-    // because the crossing already answers which parts of the line through an edge lie inside
-    // the shape; cutting that answer back to the edge's own length is what turns it into a
-    // stretch of path, and offsetting it by where the edge starts states it in arc lengths.
-    private List<double[]> collectCoveredArcs(List<List<double[]>> keepOutRings) {
-
-        var covered = new ArrayList<double[]>();
-        var nearbyRings = selectRingsOverlappingBounds(
-            keepOutRings,
-            Bounds.computeEnclosingBounds(points));
-
-        for (var edge = 0; edge < points.size(); edge++) {
-
-            var from = points.get(edge);
-            var to = points.get((edge + 1) % points.size());
-            var line = new DirectedLine(from[0], from[1], to[0] - from[0], to[1] - from[1]);
-            var edgeLength = arcLengthAtPoint[edge + 1] - arcLengthAtPoint[edge];
-
-            for (var ring : nearbyRings) {
-                for (var span : PolygonRegions.findLineInteriorSpans(List.of(ring), line)) {
-                    appendCoveredArc(covered, arcLengthAtPoint[edge], edgeLength, span);
-                }
-            }
-        }
-        return covered;
-    }
-
-    // The stretches between the covered ones: from the start of the path to the first, between
-    // each consecutive pair, and from the last to the perimeter.
-    private List<RingStretch> invertToClearArcs(List<double[]> coveredArcs) {
-
-        var clear = new ArrayList<RingStretch>(coveredArcs.size() + 1);
-        var cursor = 0.0;
-
-        for (var arc : coveredArcs) {
-            appendClearArc(clear, cursor, arc[0]);
-            cursor = arc[1];
-        }
-        appendClearArc(clear, cursor, getPerimeter());
-
-        return clear;
-    }
-
-    // One shape's cover of one edge, cut back to that edge and stated in arc lengths. The span
-    // measures along the whole infinite line the edge lies on, so the part of it beyond either
-    // end of the edge covers no point of the path and is dropped.
-    private static void appendCoveredArc(
-            List<double[]> covered,
-            double arcLengthAtEdgeStart,
-            double edgeLength,
-            double[] span) {
-
-        var start = Math.max(span[0], 0.0);
-        var end = Math.min(span[1], edgeLength);
-
-        if (end - start > Limits.MIN_EDGE_LENGTH) {
-            covered.add(new double[] {
-                arcLengthAtEdgeStart + start,
-                arcLengthAtEdgeStart + end});
-        }
-    }
-
-    // A clear stretch, unless it is too short to lay anything along - which is what a shape
-    // ending exactly where the next begins, or covering the path from its very start, leaves.
-    private static void appendClearArc(List<RingStretch> clear, double start, double end) {
-
-        if (end - start > Limits.MIN_EDGE_LENGTH) {
-            clear.add(new RingStretch(start, end));
-        }
-    }
-
-    // The covered intervals sorted and fused into disjoint ones, so that what lies between them
-    // is exactly what is clear. Both a shape covering several edges in a row and two shapes
-    // overlapping each other arrive as separate intervals describing one covered stretch, and
-    // intervals merely touching are fused too - a path pinched between two of them has no
-    // stretch left there to lay anything along.
-    private static List<double[]> mergeOverlappingArcs(List<double[]> coveredArcs) {
-
-        coveredArcs.sort(Comparator.comparingDouble(arc -> arc[0]));
-
-        var merged = new ArrayList<double[]>(coveredArcs.size());
-
-        for (var arc : coveredArcs) {
-
-            var last = merged.isEmpty() ? null : merged.get(merged.size() - 1);
-
-            if (last != null && arc[0] <= last[1] + Limits.MIN_EDGE_LENGTH) {
-                last[1] = Math.max(last[1], arc[1]);
-            } else {
-                merged.add(new double[] {arc[0], arc[1]});
-            }
-        }
-        return merged;
-    }
-
-    // The shapes near enough to the path to be worth crossing its every edge against, by a
-    // plain bounds overlap. A shape costs one crossing per edge of the path, so a caller
-    // handing over every keep-out on a whole map would otherwise pay for the ones lying
-    // somewhere else entirely - which, for a path around one small shape, is most of them.
-    private static List<List<double[]>> selectRingsOverlappingBounds(
-            List<List<double[]>> rings,
-            Bounds pathBounds) {
-
-        var overlapping = new ArrayList<List<double[]>>(rings.size());
-
-        for (var ring : rings) {
-            if (!ring.isEmpty()
-                    && pathBounds.overlaps(Bounds.computeEnclosingBounds(ring))) {
-                overlapping.add(ring);
-            }
-        }
-        return overlapping;
-    }
-
-    // Where the offset failed to move the ring the distance it was asked to, as intervals in
-    // the traced path's own arc lengths - one per corner standing nearer the ring than the
-    // inset it was built from, in no order and free to overlap each other.
-    //
-    // The failure has to be measured, because an offset that overruns the shape does not
-    // always announce itself. A shape narrower than twice the inset has its two sides cross
-    // over, and while that shows up as a self-intersection where it happens locally - which
-    // the fold splice takes out - a shape overrun on every side at once simply turns inside
-    // out: a square inset past half its width comes back as a smaller square, correctly
-    // wound, self-intersecting nowhere, made of every edge running backwards. Nothing about
-    // its shape is wrong; what is wrong is that its corners sit nearer the original ring than
-    // the inset they were built from, and only measuring says so.
-    //
-    // Carved rather than answered as a verdict on the whole ring, because a ring pinched in
-    // one place is the ordinary case and its wide part is perfectly good to lay a layout on.
-    // The verdict survives as what the carve leaves: a ring overrun everywhere fails at every
-    // corner, so every stretch is carved and nothing is left.
-    //
-    // The slack is the shared minimum edge length: the offset arithmetic is exact bar
-    // rounding, so a corner is either at its distance to within a whisker or nowhere near.
-    private static List<double[]> collectOverrunArcs(
-            List<double[]> ring,
-            List<double[]> traced,
-            double[] arcLengthAtPoint,
-            double insetDistance) {
-
-        var overrun = new ArrayList<double[]>();
-        var count = traced.size();
-
-        for (var corner = 0; corner < count; corner++) {
-
-            if (PolygonRegions.computeDistanceToBoundary(ring, traced.get(corner))
-                    >= insetDistance - Limits.MIN_EDGE_LENGTH) {
-
-                continue;
-            }
-
-            // From the corner before the failing one to the corner after it. Clearance is
-            // sampled at corners, and a mid-edge point can stand nearer the ring than either
-            // end of its edge - a spur poking at the middle of a long edge does exactly that
-            // - so the carve is deliberately wider than the sample it is drawn from.
-            appendOverrunArc(
-                overrun,
-                corner == 0
-                    ? arcLengthAtPoint[count - 1] - arcLengthAtPoint[count]
-                    : arcLengthAtPoint[corner - 1],
-                arcLengthAtPoint[corner + 1],
-                arcLengthAtPoint[count]);
-        }
-        return overrun;
-    }
-
-    // One failing corner's carve, stated within [0, perimeter]. The carve around the path's
-    // first corner reaches back past the start, and the intervals a clear-arc search inverts
-    // do not wrap, so such a carve is split at the start into the two pieces it is.
-    private static void appendOverrunArc(
-            List<double[]> overrun,
-            double startArcLength,
-            double endArcLength,
-            double perimeter) {
-
-        if (startArcLength < 0) {
-            overrun.add(new double[] {startArcLength + perimeter, perimeter});
-            overrun.add(new double[] {0, endArcLength});
-            return;
-        }
-        overrun.add(new double[] {startArcLength, endArcLength});
-    }
-
-    // The ring re-listed to begin at its top centre, in the same order it arrived in: the
-    // start point first, then every corner from the far end of the edge it split, round to
-    // that edge's near end.
-    private static List<double[]> rotateToTopCentre(List<double[]> ring, double[] topAnchor) {
-
-        var start = findTopCentre(ring, topAnchor);
-        var count = ring.size();
-        var rotated = new ArrayList<double[]>(count + 1);
-
-        rotated.add(start.point());
-
-        for (var step = 1; step <= count; step++) {
-            rotated.add(ring.get((start.edgeIndex() + step) % count));
-        }
-
-        // The walk ends back at the corner the start's edge leaves, and the start itself
-        // may sit exactly on a corner at either end of that edge. Both leave a zero-length
-        // edge the dedup takes out - one of them, never both, since that would need the
-        // edge's two ends to coincide, which a deduplicated ring has none of. So the
-        // rotation hands back at least as many corners as it was given, and a ring that
-        // enclosed area still does.
-        return Rings.removeConsecutiveDuplicates(rotated);
-    }
-
-    // Where the vertical line through the anchor last crosses the ring on the way up - the
-    // ring's top at the anchor's x, and the edge that crossing splits.
-    //
-    // Taking the highest crossing rather than the first one above the anchor keeps the
-    // answer defined wherever the anchor sits: a ring is not always convex and an anchor
-    // is not always within the shape traced from it (an inset ring can pull away past it),
-    // so "the first crossing going up" has cases with no answer where "the topmost
-    // crossing" has one. Where the anchor does sit inside a convex ring the two agree.
-    private static TopCentre findTopCentre(List<double[]> ring, double[] topAnchor) {
-
-        TopCentre highest = null;
-        var count = ring.size();
-
-        for (var i = 0; i < count; i++) {
-
-            var from = ring.get(i);
-            var to = ring.get((i + 1) % count);
-
-            // Half-open side test: an edge crosses the line when its ends sit on opposite
-            // sides of it, a corner exactly on the line counting to one fixed side. So a
-            // corner the line passes through is a crossing of one of its two edges rather
-            // than of both or of neither.
-            if ((from[0] <= topAnchor[0]) == (to[0] <= topAnchor[0])) {
-                continue;
-            }
-
-            var alongEdge = (topAnchor[0] - from[0]) / (to[0] - from[0]);
-            var crossing = new double[] {
-                topAnchor[0],
-                from[1] + alongEdge * (to[1] - from[1])};
-
-            if (highest == null || crossing[1] > highest.point()[1]) {
-                highest = new TopCentre(crossing, i);
-            }
-        }
-
-        // The line misses the ring entirely when the anchor sits beyond it to the left or
-        // right, which an anchor away from the shape's own centre can. The ring's own
-        // topmost corner is the nearest thing to a top centre then, and it keeps every
-        // ring starting somewhere at its top rather than dropping the path over an anchor
-        // that only says where to look.
-        return highest == null ? findTopCorner(ring) : highest;
-    }
-
-    // The ring's highest corner, as a start splitting the edge that leaves it - so the
-    // rotation begins at that corner and carries on forward from there.
-    private static TopCentre findTopCorner(List<double[]> ring) {
-
-        var top = 0;
-
-        for (var i = 1; i < ring.size(); i++) {
-            if (ring.get(i)[1] > ring.get(top)[1]) {
-                top = i;
-            }
-        }
-        return new TopCentre(ring.get(top), top);
-    }
-
-    // The ring wound counter-clockwise, reversed only when it arrived the other way.
-    private static List<double[]> orientCounterClockwise(List<double[]> ring) {
-        return PolygonRegions.computeSignedArea(ring) < 0 ? reverseRing(ring) : ring;
-    }
-
-    // The same ring traced the other way round, as a fresh list - the corners are shared,
-    // since nothing here moves one.
-    private static List<double[]> reverseRing(List<double[]> ring) {
-
-        var reversed = new ArrayList<>(ring);
-
-        Collections.reverse(reversed);
-
-        return reversed;
-    }
-
     // How far each corner sits from the start, plus the perimeter one past the last - the
     // running total that turns a distance along the path into a corner and a fraction of
     // the edge leaving it.
@@ -830,10 +546,4 @@ public final class RingPath {
         }
     }
 
-    // Where a path starts, as the point itself plus the edge of the ring it splits - the
-    // pair a rotation needs, since the point alone does not say which corner comes next.
-    private record TopCentre(
-        double[] point,
-        int edgeIndex) {
-    }
 }

@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.widgets.segments;
 
-import kmlib.starsector.ui.controls.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
 
 /**
  * How to size and space a row of segments: the inputs the width rule reads, bundled because they always

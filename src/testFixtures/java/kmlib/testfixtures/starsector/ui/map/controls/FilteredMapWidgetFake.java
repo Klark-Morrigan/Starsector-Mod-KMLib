@@ -4,7 +4,7 @@ import kmlib.testfixtures.starsector.ui.map.BaseSectorMapFake;
 
 /**
  * A sector map that offers its filter row the way the game's own does, which is the one hop a
- * control appended to that row is reached through. Shipped from KMLib so both KMLib's and consuming
+ * control appended to that row is reached through. Published as a fixture variant so both KMLib's and consuming
  * mods' tests reach a row the same way.
  *
  * <p>Beside the fixtures that stand for a map a walk merely has to find, because this models a

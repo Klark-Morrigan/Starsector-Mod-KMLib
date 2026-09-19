@@ -82,8 +82,8 @@ public final class VanillaButtonLabel {
      * something, write into it, and change nothing anyone can see. Matching on the words turns that
      * silent wrong answer into no answer, which is one that gets logged.
      *
-     * @param button       the widget to look under, which is the game's own rather than anything
-     *                     drawn by the caller
+     * @param button        the widget to look under, which is the game's own rather than anything
+     *                      drawn by the caller
      * @param expectedWords what the button was built reading, which is how its own label is told
      *                      from every other label beneath it
      * @return its words as something that can be read and written, or null where they cannot be

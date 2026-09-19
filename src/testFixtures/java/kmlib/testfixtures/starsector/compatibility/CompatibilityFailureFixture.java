@@ -1,5 +1,6 @@
 package kmlib.testfixtures.starsector.compatibility;
 
+import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilitySubject;
 
@@ -30,6 +31,21 @@ public final class CompatibilityFailureFixture {
     /** The member that stopped holding, in the phrase the bridge diagnostic names one with. */
     public static final String BROKEN_DETAIL =
         "GLCommand.run (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)";
+
+    /** What a second mod over the same binding loses, which is nothing the first one does. */
+    public static final String COLONY_PANEL_LOST_FEATURE =
+        "Colony panel rows will not show their upkeep this session.";
+
+    /** A mod over the binding, as the key its records latch under and the sentence it loses. */
+    public static final CompatibilityConsumer MAP_OVERLAY_CONSUMER =
+        new CompatibilityConsumer("map-overlay", LOST_FEATURE);
+
+    /**
+     * A second mod over the same binding, losing something of its own - so a case about two
+     * consumers being told apart cannot pass on one sentence standing for both.
+     */
+    public static final CompatibilityConsumer COLONY_PANEL_CONSUMER =
+        new CompatibilityConsumer("colony-panel", COLONY_PANEL_LOST_FEATURE);
 
     private CompatibilityFailureFixture() {
         // fixture of static builders, no instances.
@@ -66,7 +82,7 @@ public final class CompatibilityFailureFixture {
     public static CompatibilityFailure createFailureBrokenAt(String brokenDetail) {
 
         return new CompatibilityFailure(
-            new CompatibilitySubject(SUBJECT_NAME, null, null),
+            createUnversionedSubject(),
             LOST_FEATURE,
             brokenDetail,
             null);
@@ -79,9 +95,17 @@ public final class CompatibilityFailureFixture {
     public static CompatibilityFailure createFailureLosing(String lostFeature) {
 
         return new CompatibilityFailure(
-            new CompatibilitySubject(SUBJECT_NAME, null, null),
+            createUnversionedSubject(),
             lostFeature,
             BROKEN_DETAIL,
             null);
+    }
+
+    // The subject every builder that varies something other than a version shares: the third party
+    // named, with neither version read. Stated once so a builder added beside them cannot spell a
+    // different subject and have its case quietly be about two things.
+    private static CompatibilitySubject createUnversionedSubject() {
+
+        return new CompatibilitySubject(SUBJECT_NAME, null, null);
     }
 }

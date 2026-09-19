@@ -3,7 +3,8 @@ package kmlib.starsector.ui.layout;
 import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.PanelChrome;
@@ -46,7 +47,7 @@ import java.util.List;
  * one piece.
  *
  * <p>The header is laid through {@link TabsControlLayout#layoutHeaderControl}, so a header tab measures,
- * draws, and hit-tests through the same tabs-row geometry a body {@link ControlSpec.Tabs} control uses. UI
+ * draws, and hit-tests through the same tabs-row geometry a body {@link TabsSpec} control uses. UI
  * coordinates throughout (origin bottom-left, y grows up); text snapping runs through the injected
  * {@link StripTextMeasurers} - the header row and a body tabs row read its tab-face measurement, every
  * other body control its body-face one - so the layout is a pure computation. The panel hangs from the

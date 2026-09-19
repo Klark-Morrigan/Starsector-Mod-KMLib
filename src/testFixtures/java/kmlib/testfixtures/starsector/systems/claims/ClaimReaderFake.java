@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * A {@link ClaimReader} that reports claims from an in-memory table keyed by system ID, so claim
  * logic can be exercised against a known set of claimants without the vanilla {@code Misc} static
- * or a running game. Shipped from KMLib so both KMLib's and consuming mods' tests drive the claim
+ * or a running game. Published as a fixture variant so both KMLib's and consuming mods' tests drive the claim
  * seam through one shared double.
  *
  * <p>An unmapped system - or a null system, or one with a null ID - reports as unclaimed, matching

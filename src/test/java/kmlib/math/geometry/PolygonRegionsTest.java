@@ -408,7 +408,7 @@ final class PolygonRegionsTest {
             var spans = PolygonRegions.findLineInteriorSpans(
                 List.of(
                     buildSquare(20), hole),
-                    new DirectedLine(10, 10, 1, 0));
+                new DirectedLine(10, 10, 1, 0));
 
             assertThat(spans)
                 .hasSize(2);

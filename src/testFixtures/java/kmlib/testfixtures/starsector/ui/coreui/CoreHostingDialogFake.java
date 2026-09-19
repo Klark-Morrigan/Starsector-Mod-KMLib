@@ -7,7 +7,7 @@ import java.lang.reflect.Proxy;
 /**
  * An interaction dialog that also stands up a core UI of its own - the game's one dialog class that
  * does both, in the shape a by-name reach meets it in: handed over as the published dialog type,
- * and answering {@code getCoreUI} from behind it. Shipped from KMLib so both KMLib's and consuming
+ * and answering {@code getCoreUI} from behind it. Published as a fixture variant so both KMLib's and consuming
  * mods' tests can drive a screen opened from a dialog.
  *
  * <p>A proxy rather than a fixture class, because nothing else can be both halves at once here: the

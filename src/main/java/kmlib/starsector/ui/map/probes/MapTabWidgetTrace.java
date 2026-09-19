@@ -244,9 +244,13 @@ public final class MapTabWidgetTrace {
 
         return surfaceArea == null
             ? "none"
-            : "[" + Rectangles.describe(surfaceArea.box())
-                + " chrome=" + ProbeDescriptions.describeUpToCap(
-                    surfaceArea.chromeBoxes(), Rectangles::describe) + "]";
+            : "["
+                + Rectangles.describe(surfaceArea.box())
+                + " chrome="
+                + ProbeDescriptions.describeUpToCap(
+                    surfaceArea.chromeBoxes(),
+                    Rectangles::describe)
+                + "]";
     }
 
     // Warns on this library's own logger rather than the caller's, since a reach that broke is the

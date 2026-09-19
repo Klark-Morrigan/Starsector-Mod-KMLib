@@ -62,8 +62,8 @@ public final class MarketPlacementFixture {
 
     /**
      * A market on a body of its own under a named owner - the pair
-     * {@link kmlib.starsector.markets.Markets#isSamePlaceAndOwner} keys on, so two of them can be posed as one place or
-     * as two.
+     * {@link kmlib.starsector.markets.MarketColocation#isSamePlaceAndOwner} keys on,
+     * so two of them can be posed as one place or as two.
      */
     public static MarketAPI buildOwnedMarketOnBody(String bodyId, String factionId) {
 

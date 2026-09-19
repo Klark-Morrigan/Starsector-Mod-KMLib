@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * The drawable words a widget holds: what they say, and which runs of them are lit and in what
- * colour. Shipped from KMLib so both KMLib's and consuming mods' tests read a widget's words the
+ * colour. Published as a fixture variant so both KMLib's and consuming mods' tests read a widget's words the
  * same way.
  *
  * <p>A {@link LabelAPI}, because that is how the engine hands a widget's words to anything outside

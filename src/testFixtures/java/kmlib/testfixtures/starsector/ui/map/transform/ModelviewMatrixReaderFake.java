@@ -4,7 +4,7 @@ import kmlib.starsector.ui.map.transform.ModelviewMatrixReader;
 
 /**
  * A {@link ModelviewMatrixReader} that reports a matrix handed to it, so transform maths can be
- * exercised against a known modelview without a GL context. Shipped from KMLib so both KMLib's and
+ * exercised against a known modelview without a GL context. Published as a fixture variant so both KMLib's and
  * consuming mods' tests drive the matrix seam through one shared double.
  *
  * <p>A {@code null} matrix stands for the reading a binding cannot serve, which is a state the

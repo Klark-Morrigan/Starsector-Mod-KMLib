@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets.lists;
 
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,7 @@ final class ColumnsSelectorControlTest {
 
     // Builds the selector on the shared caption, collecting whatever a click reports, so each call
     // site reads as the active choice it exercises alone.
-    private ControlSpec.HorizontalRadio buildSelector(ListColumns activeColumns) {
+    private HorizontalRadioSpec buildSelector(ListColumns activeColumns) {
         return ColumnsSelectorControl.buildSelector(
             activeColumns,
             CAPTION,

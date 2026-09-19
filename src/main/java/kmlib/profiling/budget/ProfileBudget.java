@@ -10,20 +10,11 @@ import java.util.function.ToLongFunction;
  * What one call of a section is allowed: how much of a counter it may reach, how
  * long it may run, or both.
  *
- * <p>A table of durations tells a reader what happened and leaves them to decide
- * what of it was wrong. A budget states the answer in advance, so a capture
- * produces findings rather than numbers - "your layer's build walked the sector
- * three times" instead of a row somebody has to know is one walk too many.
- *
  * <p>Checked as a call closes, against that call alone. A row's totals are not
  * what a bound is about: a rebuild that walks the sector once per call is
- * correct however many rebuilds a session ran.
- *
- * <p>A counter's bound is a fixed number because it states a rule about how the
- * work is done - one walk per rebuild is true of the algorithm, not of the
- * machine. A duration's bound is read when the call closes, because what a frame
- * can afford is a knob, and a bound fixed when a constant was first touched
- * would ignore every later move of it.
+ * correct however many rebuilds a session ran. What each bound is worth stating
+ * in advance, and why one is fixed while the other is read late, are in this
+ * package's README.
  *
  * <p>Its own package because a bound is a rule rather than a name: the sections
  * and counters a caller spells are vocabulary, while what may be done with them

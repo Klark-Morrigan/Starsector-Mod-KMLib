@@ -12,7 +12,7 @@ import kmlib.profiling.snapshot.ProfileNode;
  * expected amount wants the second reading: a walk that stopped happening then fails as the number
  * it is, rather than as a null dereference several frames from the claim.
  *
- * <p>Shipped from KMLib so the mods reading their own passes through {@link RecordedCapture} state
+ * <p>Published as a fixture variant so the mods reading their own passes through {@link RecordedCapture} state
  * that once. Every suite that wrote this for itself wrote the same four lines.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state.

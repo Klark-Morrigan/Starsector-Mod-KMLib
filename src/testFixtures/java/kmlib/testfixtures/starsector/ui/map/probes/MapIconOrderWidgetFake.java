@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * A component answering the map widget's {@code getIcons} contract, so a rule about the order the
- * map draws its icons in can be driven without a running game. Shipped from KMLib so both KMLib's
+ * map draws its icons in can be driven without a running game. Published as a fixture variant so both KMLib's
  * and consuming mods' tests build the same shape of widget.
  *
  * <p>Insertion-ordered, because the order is the whole subject: the live widget keeps one icon per

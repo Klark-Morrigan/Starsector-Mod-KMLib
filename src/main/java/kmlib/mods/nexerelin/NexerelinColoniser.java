@@ -60,9 +60,9 @@ public final class NexerelinColoniser {
      * routine needs a planet and a faction it can resolve. Every decline leaves the market
      * untouched, so the caller is free to found the colony itself.
      *
-     * @param sector    the sector holding the faction the colony is founded under
-     * @param market    the survey data to found on; the mod's routine renames a body still carrying
-     *                  the name its star system gave it, so the colony may not keep its old name
+     * @param sector     the sector holding the faction the colony is founded under
+     * @param market     the survey data to found on; the mod's routine renames a body still carrying
+     *                   the name its star system gave it, so the colony may not keep its old name
      * @param factionId  the owner the colony is founded under, {@link Factions#PLAYER} for the
      *                   player
      * @param colonySize the size the colony is founded at, which the caller states rather than

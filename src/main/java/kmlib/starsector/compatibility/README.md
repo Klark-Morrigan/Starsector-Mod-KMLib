@@ -12,6 +12,7 @@ what it holds is the channel a binding reports through.
 ## Index
 
 - [Record, then report](#record-then-report)
+- [A binding is a third party and a consumer](#a-binding-is-a-third-party-and-a-consumer)
 - [One record per session](#one-record-per-session)
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
@@ -27,10 +28,12 @@ and at load there may be no campaign UI to open one on.
 So a record and a report are two steps.
 
 [`CompatibilityFailures`](CompatibilityFailures.java) is the record:
-`recordOnce` latches a subject on its first record for the session and ignores every record afterwards,
+`recordOnce` latches a binding on its first record for the session and ignores every record afterwards,
 `hasUnreported` is the empty check a per-frame caller gates on,
-and `takeUnreported` hands over what was recorded without unlatching.
-Once per subject is what stops a binding that fails on every frame filing a report per frame;
+and `takeNextUnreported` hands the oldest one over without unlatching.
+One at a time, because a reporter can only show one at a time -
+handing over the lot would leave it holding a second queue of what it could not yet show.
+Once per binding is what stops one that fails on every frame filing a report per frame;
 never unlatched is what stops the frame after a report filing it again.
 The failure is built through a supplier invoked only on the record that is kept,
 so a description that costs something - a reflective probe, a version read -
@@ -51,15 +54,39 @@ sequenceDiagram
   participant Reg as CompatibilityFailures
   participant N as CompatibilityNotice
   participant UI as CampaignUIAPI
-  B->>Reg: recordOnce(subject, describe)
+  B->>Reg: recordOnce(subject, consumer, describe)
   Reg->>Reg: latch; build the failure once
-  B->>Reg: recordOnce(subject, describe)
+  B->>Reg: recordOnce(subject, consumer, describe)
   Reg-->>B: ignored
   N->>Reg: hasUnreported()
-  N->>Reg: takeUnreported()
+  N->>Reg: takeNextUnreported()
   N->>N: log describeForLog()
   N->>UI: showMessageDialog(describeForPlayer())
 ```
+
+## A binding is a third party and a consumer
+
+What is latched is the pair,
+not the third party alone.
+[`CompatibilityConsumer`](CompatibilityConsumer.java) is the mod that took the binding:
+the key its records latch under,
+and the sentence naming what it loses.
+
+One broken third party costs every mod bound to it something of its own.
+A latch on the third party alone would keep whichever mod recorded first
+and drop the rest,
+so those players would be told what another mod lost, or told nothing -
+and which mod reported would come down to which happened to bind first.
+Latched on the pair, each mod's report is shown,
+and a mod whose binding fails at link time and again at call time still reports once.
+
+The sentence is the consumer's for the same reason it holds the key.
+What a failed binding costs is knowledge of the feature built over it:
+the library knows the third party, both versions, the member that moved and what was thrown,
+and nothing about what was drawn over the reading it can no longer serve.
+So the consumer writes that sentence,
+out of its own strings,
+and the library puts it in the failure's lost-feature slot.
 
 ## One record per session
 

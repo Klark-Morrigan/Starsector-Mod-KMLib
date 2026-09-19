@@ -361,8 +361,8 @@ final class SpawnEntityCommandTest {
             assertThat(result)
                 .isEqualTo(CommandResult.SUCCESS);
 
-            // speed and jitter combine: the explicit speed is the base, widened by
-            // the named jitter (this pair was previously rejected).
+            // speed and jitter combine rather than excluding one another: the explicit
+            // speed is the base, widened by the named jitter.
             entityOrbitsMock
                 .verify(() -> EntityOrbits.deriveBaseSpeedDegPerDay(anyFloat()), never());
             entityOrbitsMock

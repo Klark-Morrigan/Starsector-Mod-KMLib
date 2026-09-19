@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.input;
 
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 
 import org.junit.jupiter.api.Nested;

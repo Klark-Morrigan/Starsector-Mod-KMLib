@@ -7,9 +7,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 
 import org.apache.log4j.Logger;
 
-import java.util.ArrayDeque;
 import java.util.Objects;
-import java.util.Queue;
 
 /**
  * Tells the player, once per failed subject, that a binding to third-party code has stopped holding
@@ -45,10 +43,6 @@ public final class CompatibilityNotice implements EveryFrameScript {
     private final CompatibilityFailures failures;
     private final SectorAPI sector;
 
-    // Taken from the registry but not yet shown: one is shown per frame, so a take of several holds
-    // the rest here. Touched on the campaign thread alone, which is the one every advance runs on.
-    private final Queue<CompatibilityFailure> failuresAwaitingDialog = new ArrayDeque<>();
-
     // One-shot guard on the dialog call faulting: a fault that repeats would otherwise be logged on
     // every failure shown after it.
     private boolean hasLoggedDialogError;
@@ -79,12 +73,8 @@ public final class CompatibilityNotice implements EveryFrameScript {
     @Override
     public void advance(float amount) {
 
-        // The healthy path is one empty check and a return: the registry's read is the cheap one,
-        // and the queue here fills only from it.
-        if (failures.hasUnreported()) {
-            failuresAwaitingDialog.addAll(failures.takeUnreported());
-        }
-        if (failuresAwaitingDialog.isEmpty()) {
+        // The healthy path is one empty check and a return, which is the registry's cheap read.
+        if (!failures.hasUnreported()) {
             return;
         }
 
@@ -92,7 +82,9 @@ public final class CompatibilityNotice implements EveryFrameScript {
         if (campaignUi == null) {
             return;
         }
-        showNextFailure(campaignUi);
+        // Taken only once a frame can show it, so a failure is never held outside the record: a
+        // frame that cannot open a dialog leaves it where it was for the next one that can.
+        showFailure(campaignUi, failures.takeNextUnreported());
     }
 
     // The campaign UI where a dialog can be opened this frame, or null where it cannot: no sector,
@@ -111,11 +103,9 @@ public final class CompatibilityNotice implements EveryFrameScript {
     }
 
     // Logged first and shown second, so the line a report is written from exists whatever the
-    // dialog call does: a faulting call loses the modal alone. The failure leaves the queue before
-    // either, which is what keeps a faulting dialog from being retried on it every frame.
-    private void showNextFailure(CampaignUIAPI campaignUi) {
-
-        var failure = failuresAwaitingDialog.remove();
+    // dialog call does: a faulting call loses the modal alone. The failure has already left the
+    // record, which is what keeps a faulting dialog from being retried on it every frame.
+    private void showFailure(CampaignUIAPI campaignUi, CompatibilityFailure failure) {
 
         LOG.error(failure.describeForLog(), failure.cause());
 

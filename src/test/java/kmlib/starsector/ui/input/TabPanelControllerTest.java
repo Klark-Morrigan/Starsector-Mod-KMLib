@@ -3,11 +3,13 @@ package kmlib.starsector.ui.input;
 import kmlib.animation.TraverseDurations;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlHoverReport;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.PointerArrivalVolumes;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
@@ -137,7 +139,7 @@ final class TabPanelControllerTest {
     // The header spec every placement carries unless its case needs an action recorded or another tab lit.
     // A header is an ordinary laid-out tabs control, so the resolver reads the row's selection off a spec
     // like this one rather than off the placement - which is why none of these placements can go without.
-    private static final ControlSpec.Tabs TABS_SHOWING_FIRST_TAB =
+    private static final TabsSpec TABS_SHOWING_FIRST_TAB =
         buildTabsSpecShowing(FIRST_TAB_INDEX, ControlAction.NONE);
 
     // What a host answering a hover is told as the pointer leaves, named so a case reads as a leave rather
@@ -1707,8 +1709,8 @@ final class TabPanelControllerTest {
         @Test
         void interfaceSoundsTakeThePressRoleFromTheLookRatherThanNamingOne() {
             // The point of the whole seam: which sound a press makes is the panel's look talking, so a look
-            // naming something else must be what sounds. A scheme agreeing with the old hardcoded role
-            // would pass whether or not it was ever read.
+            // naming something else must be what sounds. A scheme naming the role a caller would have
+            // reached for anyway would pass whether or not it was ever read.
             var controller = buildControllerSounding(SWAPPED_SOUNDS);
 
             controller.startHotkeyBlinkAt(FIRST_TAB_INDEX);
@@ -2258,8 +2260,8 @@ final class TabPanelControllerTest {
     // The header's own spec: a two-tab row showing one of them and firing the given action. Every placement
     // here carries one, a header being an ordinary laid-out tabs control - so the hit-test reads the row's
     // selection and its action off the same spec the layout would have put there.
-    private static ControlSpec.Tabs buildTabsSpecShowing(int selectedIndex, ControlAction onTabFired) {
-        return new ControlSpec.Tabs(List.of("First", "Second"), List.of(), selectedIndex, onTabFired);
+    private static TabsSpec buildTabsSpecShowing(int selectedIndex, ControlAction onTabFired) {
+        return new TabsSpec(List.of("First", "Second"), List.of(), selectedIndex, onTabFired);
     }
 
     // The same panel with a row of segments beneath its tabs in place of the whole-row control every other
@@ -2375,7 +2377,7 @@ final class TabPanelControllerTest {
     // action is the parameter because every one of those cases is about what a press reaches: the row's
     // action is recorded separately, so a case can say the button fired and the tabs did not.
     private static TabPanelPlacement buildPlacementWithBandButton(
-            ControlSpec.Tabs tabsSpec,
+            TabsSpec tabsSpec,
             ControlAction buttonAction) {
 
         return new TabPanelPlacement(
@@ -2395,8 +2397,8 @@ final class TabPanelControllerTest {
 
     // The button's spec: one unlit cell, which is what makes every press on it fire - a lit cell of a tabs
     // control is inert, and a button that was ever the lit one would stop answering.
-    private static ControlSpec.Tabs buildBandButtonSpec(ControlAction action) {
-        return new ControlSpec.Tabs(
+    private static TabsSpec buildBandButtonSpec(ControlAction action) {
+        return new TabsSpec(
             List.of("Edit"),
             List.of(),
             ControlSpec.NO_SELECTION,
@@ -2434,7 +2436,7 @@ final class TabPanelControllerTest {
             BODY_BOX.height());
 
         return new Control(
-            ControlSpec.HorizontalRadio.of(
+            HorizontalRadioSpec.of(
                 List.of("Left", "Right"),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE),

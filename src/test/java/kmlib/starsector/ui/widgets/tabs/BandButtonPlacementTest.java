@@ -2,8 +2,9 @@ package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.tabs.style.TabHover;
 import kmlib.starsector.ui.widgets.tabs.style.TabLook;
@@ -145,7 +146,7 @@ final class BandButtonPlacementTest {
     private static BandButtonPlacement buildPlacement(TabPalette palette, ImageSpan icon) {
         return new BandButtonPlacement(
             new Control(
-                new ControlSpec.Tabs(
+                new TabsSpec(
                     List.of(""),
                     List.of(),
                     ControlSpec.NO_SELECTION,

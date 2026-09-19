@@ -2,8 +2,8 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A {@link ControlSpec.Tabs} row seen as the vanilla tab strip it is drawn as: how wide the row comes
+ * A {@link TabsSpec} row seen as the vanilla tab strip it is drawn as: how wide the row comes
  * out, which rectangle each tab is hit in, and where the row hangs when a panel flies it as a header.
  * It stands on its own because a tabs row is the one control whose dimensions come from somewhere else
  * entirely - every other control sizes to a body-font label inside a fixed-height row, while a tab is
@@ -23,7 +23,7 @@ import java.util.List;
  * whatever stacks a strip of controls stacks this row like any other and asks here how big it is.
  *
  * <p>All of it routes through {@link VanillaTabStrip}, so the tabs a KM panel lays out are laid out by
- * the same geometry as the ones it draws. What this adds is the reading of a {@link ControlSpec.Tabs}:
+ * the same geometry as the ones it draws. What this adds is the reading of a {@link TabsSpec}:
  * the strip geometry knows about tab contents and widths, not about the control that carries them, and
  * that gap is this class's whole contribution.
  *
@@ -66,7 +66,7 @@ public final class TabsControlLayout {
      * @param tabs the tabs control, its labels and per-tab shortcuts in row order
      * @return one {@link VanillaTabContent} per tab, in row order
      */
-    public static List<VanillaTabContent> buildTabContents(ControlSpec.Tabs tabs) {
+    public static List<VanillaTabContent> buildTabContents(TabsSpec tabs) {
         var contents = new ArrayList<VanillaTabContent>(tabs.labels().size());
         for (var index = 0; index < tabs.labels().size(); index++) {
             contents.add(new VanillaTabContent(
@@ -95,7 +95,7 @@ public final class TabsControlLayout {
      * @return the laid-out tabs control, its bounds the header band and its segments split per tab
      */
     public static Control layoutHeaderControl(
-            ControlSpec.Tabs tabs,
+            TabsSpec tabs,
             float originX,
             float topY,
             TabStyle tabStyle,
@@ -135,7 +135,7 @@ public final class TabsControlLayout {
      * @param measurer measures each tab label's rendered width for snapping
      * @return the row width the tabs occupy side by side
      */
-    static float measureRowWidth(ControlSpec.Tabs tabs, LineWidthMeasurer measurer) {
+    static float measureRowWidth(TabsSpec tabs, LineWidthMeasurer measurer) {
         return measureRowWidth(tabs, measurer, buildSegmentSpec(TAB_FONT_SIZE, TabBox.SNAPPED));
     }
 
@@ -155,7 +155,7 @@ public final class TabsControlLayout {
      * @return one hit rectangle per tab, left to right
      */
     static List<Rectangle> splitIntoSegments(
-            ControlSpec.Tabs tabs,
+            TabsSpec tabs,
             Rectangle row,
             LineWidthMeasurer measurer) {
         return splitIntoSegments(
@@ -185,7 +185,7 @@ public final class TabsControlLayout {
     // header takes its host's face and box while a body row takes the baseline and snaps; both go through
     // this one call, so a header and a body row cannot come to size a tab differently.
     private static float measureRowWidth(
-            ControlSpec.Tabs tabs,
+            TabsSpec tabs,
             LineWidthMeasurer measurer,
             SegmentSpec sizing) {
 
@@ -202,7 +202,7 @@ public final class TabsControlLayout {
     // band's top at the box's own height, so a box shorter than its band leaves the remainder below it -
     // the pixel the engine's own map row keeps for the line its tabs stand on.
     private static List<Rectangle> splitIntoSegments(
-            ControlSpec.Tabs tabs,
+            TabsSpec tabs,
             Rectangle row,
             LineWidthMeasurer measurer,
             SegmentSpec sizing,

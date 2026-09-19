@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.render.gl.panel;
 
+import kmlib.math.geometry.Points;
 import kmlib.math.geometry.Rectangle;
 import kmlib.math.ranges.Ranges;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
@@ -204,7 +205,7 @@ public final class NotchRenderer {
 
         var deltaX = x2 - x1;
         var deltaY = y2 - y1;
-        var length = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        var length = (float) Points.computeVectorLength(deltaX, deltaY);
         if (length <= 0f) {
             return;
         }

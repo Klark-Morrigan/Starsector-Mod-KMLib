@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * A {@link ClaimBreakdownReader} that reports breakdowns from an in-memory table keyed by
  * system ID, so claim-explaining logic can be exercised against a known contest without the
- * vanilla statics or a running game. Shipped from KMLib so both KMLib's and consuming mods'
+ * vanilla statics or a running game. Published as a fixture variant so both KMLib's and consuming mods'
  * tests drive the seam through one shared double.
  *
  * <p>An unmapped system - or a null system, or one with a null ID - reports

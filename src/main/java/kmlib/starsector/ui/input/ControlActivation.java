@@ -1,8 +1,8 @@
 package kmlib.starsector.ui.input;
 
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.InteractiveSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
 
 /**
  * Whether a press on an already-resolved cell reaches the control's action, and the firing of it - the
@@ -38,7 +38,7 @@ final class ControlActivation {
         }
         // Only an Interactive spec ever resolves to a cell, so this cannot fail once one came back; it is
         // how the action is reached without a cast.
-        if (!(control.spec() instanceof ControlSpec.Interactive interactive)
+        if (!(control.spec() instanceof InteractiveSpec interactive)
                 || !isActionableCell(interactive, resolvedCell)) {
             return ControlHitResolver.NO_CELL_RESOLVED;
         }
@@ -50,26 +50,11 @@ final class ControlActivation {
     // narrows: its lit segment is inert unless the reselect it carries fires on a re-pick, which is the
     // standard radio rule and what makes re-clicking a vanilla tab strip's active tab do nothing. A
     // single-cell checkbox or toggle has no lit segment to re-pick, so every hit on it acts.
-    private static boolean isActionableCell(ControlSpec.Interactive control, int resolvedCell) {
-        if (!ControlHitResolver.isSegmentedSpec(control)) {
+    private static boolean isActionableCell(InteractiveSpec control, int resolvedCell) {
+        if (!control.isSegmented()) {
             return true;
         }
-        return reselectBehaviourOf(control).firesOnReselect()
+        return control.reselectBehaviour().firesOnReselect()
             || resolvedCell != control.selectedIndex();
-    }
-
-    // The reselect the control carries, or INERT for a variant that has none. A vertical table and a
-    // radio each name what a re-pick of their lit segment does; a tabs row is always inert on its lit
-    // tab, so it is read as INERT here rather than carrying its own field. Read off the radio interface
-    // rather than off each alignment, so a stacked radio answers a re-pick exactly as a laid-across one
-    // does - the behaviour is the control's, not its arrangement's.
-    private static ReselectBehaviour reselectBehaviourOf(ControlSpec.Interactive control) {
-        if (control instanceof ControlSpec.VerticalTable table) {
-            return table.reselect();
-        }
-        if (control instanceof ControlSpec.Radio radio) {
-            return radio.reselect();
-        }
-        return ReselectBehaviour.INERT;
     }
 }

@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

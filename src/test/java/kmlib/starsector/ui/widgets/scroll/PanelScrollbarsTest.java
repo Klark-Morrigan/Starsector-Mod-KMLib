@@ -23,8 +23,8 @@ final class PanelScrollbarsTest {
 
     private static final float TOLERANCE = 0.01f;
 
-    // A bar four times the default, far enough from it that a track still sized by the old constant reads
-    // as a plain failure rather than as rounding.
+    // A bar four times the default, far enough from it that a track sized by anything but the stated
+    // thickness reads as a plain failure rather than as rounding.
     private static final ScrollbarThickness THICK_BAR = new ScrollbarThickness(12f);
 
     // A 200-wide body (right edge 300) over a viewport covering a narrower 120-wide list column (right edge

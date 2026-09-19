@@ -2,9 +2,9 @@ package kmlib.starsector.ui.widgets.lists;
 
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
-import kmlib.starsector.ui.controls.RowGeometry;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.RowGeometry;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
@@ -191,7 +191,7 @@ final class SortSelectorControlTest {
     // Builds the selector over the fixture vocabulary from a mode and direction the tests spell out
     // as a pair, collecting whatever a click reports, so each call site reads as the
     // mode-and-direction it exercises rather than a record construction and two shared arguments.
-    private ControlSpec.VerticalTable buildSelector(
+    private VerticalTableSpec buildSelector(
             AnomalySortMode mode,
             SortDirection direction) {
 
@@ -202,7 +202,7 @@ final class SortSelectorControlTest {
 
     // What the row at this index trails with - the slot a test reads to learn which direction that
     // mode previews.
-    private static RowSlot readTrailingRowSlotAt(ControlSpec.VerticalTable selector, int rowIndex) {
+    private static RowSlot readTrailingRowSlotAt(VerticalTableSpec selector, int rowIndex) {
         return selector.labelledRows().get(rowIndex).trailingRowSlot();
     }
 }

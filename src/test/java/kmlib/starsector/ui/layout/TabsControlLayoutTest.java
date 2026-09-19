@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.layout;
 
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
@@ -50,7 +50,7 @@ final class TabsControlLayoutTest {
         VANILLA_TAB_HEIGHT,
         VANILLA_TAB_GAP);
 
-    private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
+    private static final TabsSpec TABS = new TabsSpec(
         List.of("No Layer", "Political Map"),
         List.of("N", "P"),
         0,
@@ -94,7 +94,7 @@ final class TabsControlLayoutTest {
         void buildTabContentsLeavesATabHintlessWhenTheShortcutListRunsShort() {
             // The shortcut list runs parallel to the labels rather than being required to match it, so a
             // strip written without hints - or with hints for its first tabs only - still builds.
-            var contents = TabsControlLayout.buildTabContents(new ControlSpec.Tabs(
+            var contents = TabsControlLayout.buildTabContents(new TabsSpec(
                 List.of("No Layer", "Political Map"),
                 List.of("N"),
                 0,

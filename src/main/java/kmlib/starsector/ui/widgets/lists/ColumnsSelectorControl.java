@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.widgets.lists;
 
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +42,7 @@ public final class ColumnsSelectorControl {
      * @param onColumnsPicked told the count a click lands on, for the caller to persist
      * @return the horizontal, two-segment columns-selector radio
      */
-    public static ControlSpec.HorizontalRadio buildSelector(
+    public static HorizontalRadioSpec buildSelector(
             ListColumns activeColumns,
             String captionText,
             Consumer<ListColumns> onColumnsPicked) {
@@ -51,7 +51,7 @@ public final class ColumnsSelectorControl {
         for (var choice : CHOICES) {
             labels.add(choice.resolveLabelText());
         }
-        return ControlSpec.HorizontalRadio
+        return HorizontalRadioSpec
             .of(
                 labels,
                 CHOICES.indexOf(activeColumns),
