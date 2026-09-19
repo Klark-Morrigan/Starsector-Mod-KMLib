@@ -1,5 +1,13 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.RadioSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +32,7 @@ final class ControlSpecRadioTest {
             // The canonical constructor is public on a record, so a host can reach it directly; the copy
             // has to live there rather than in the factory for a caller's later edit not to reach the spec.
             var sourceLabels = new ArrayList<>(List.of("Short", "Full"));
-            var radio = new ControlSpec.HorizontalRadio(
+            var radio = new HorizontalRadioSpec(
                 sourceLabels,
                 0,
                 ControlAction.NONE,
@@ -46,7 +54,7 @@ final class ControlSpecRadioTest {
         void ofIsAUniformInertRadioCarryingNoCaption() {
             // The plain option row a host reaches for by default: cells all the widest label's width, no
             // trailing caption, and always one lit (a re-pick of the lit segment does nothing).
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE);
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE);
 
             assertThat(radio.segmentSizing())
                 .isEqualTo(SegmentSizing.UNIFORM);
@@ -66,7 +74,7 @@ final class ControlSpecRadioTest {
         void ofCarriesTheClickActionByOptionIndex() {
 
             var firedCell = new int[] {-99};
-            var radio = ControlSpec.HorizontalRadio.of(
+            var radio = HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 cell -> firedCell[0] = cell);
@@ -81,7 +89,7 @@ final class ControlSpecRadioTest {
         void ofComposesWithEveryRefinementAtOnce() {
             // The three refinements are independent axes, so a host reaches combinations no single factory
             // names - here a captioned, snapped, clearable row all at once.
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .showsCaption("Names")
                 .sizesSegments(SegmentSizing.SNAPPED)
                 .handlesReselect(ReselectBehaviour.DESELECT);
@@ -103,7 +111,7 @@ final class ControlSpecRadioTest {
             // The canonical constructor is public on a record, so the copy has to live there rather than
             // in the factory for a caller's later edit not to reach the spec.
             var sourceLabels = new ArrayList<>(List.of("Factions", "Alliances"));
-            var radio = new ControlSpec.VerticalRadio(
+            var radio = new VerticalRadioSpec(
                 sourceLabels,
                 0,
                 ControlAction.NONE,
@@ -123,7 +131,7 @@ final class ControlSpecRadioTest {
         void ofIsAnInertStackCarryingItsOptionsInOrder() {
             // The plain stacked column a host reaches for by default: always one lit, so a re-pick of the
             // lit cell does nothing.
-            var radio = ControlSpec.VerticalRadio.of(
+            var radio = VerticalRadioSpec.of(
                 List.of("Factions", "Alliances", "Claims"),
                 1,
                 ControlAction.NONE);
@@ -140,7 +148,7 @@ final class ControlSpecRadioTest {
         void ofCarriesTheClickActionByOptionIndex() {
 
             var firedCell = new int[] {-99};
-            var radio = ControlSpec.VerticalRadio.of(
+            var radio = VerticalRadioSpec.of(
                 List.of("Factions", "Alliances", "Claims"),
                 0,
                 cell -> firedCell[0] = cell);
@@ -158,7 +166,7 @@ final class ControlSpecRadioTest {
         @Test
         void handlesReselectSetsOnlyTheReselectBehaviour() {
 
-            var radio = ControlSpec.VerticalRadio.of(List.of("Factions", "Alliances"), 0, ControlAction.NONE)
+            var radio = VerticalRadioSpec.of(List.of("Factions", "Alliances"), 0, ControlAction.NONE)
                 .handlesReselect(ReselectBehaviour.DESELECT);
 
             assertThat(radio.reselect())
@@ -177,14 +185,14 @@ final class ControlSpecRadioTest {
         void reselectIsReadableOffEitherAlignmentThroughTheRadioType() {
             // The re-pick rule belongs to the control rather than to how its cells are arranged, so a
             // reader that acts on any radio - the activation path - asks the interface and never branches.
-            List<ControlSpec.Radio> radios = List.of(
-                ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+            List<RadioSpec> radios = List.of(
+                HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                     .handlesReselect(ReselectBehaviour.DESELECT),
-                ControlSpec.VerticalRadio.of(List.of("Factions", "Alliances"), 0, ControlAction.NONE)
+                VerticalRadioSpec.of(List.of("Factions", "Alliances"), 0, ControlAction.NONE)
                     .handlesReselect(ReselectBehaviour.DESELECT));
 
             assertThat(radios)
-                .extracting(ControlSpec.Radio::reselect)
+                .extracting(RadioSpec::reselect)
                 .containsExactly(ReselectBehaviour.DESELECT, ReselectBehaviour.DESELECT);
         }
     }
@@ -195,7 +203,7 @@ final class ControlSpecRadioTest {
         @Test
         void hasTrailingCaptionIsFalseOnAPlainRow() {
 
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE);
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE);
 
             assertThat(radio.hasTrailingCaption())
                 .isFalse();
@@ -204,7 +212,7 @@ final class ControlSpecRadioTest {
         @Test
         void hasTrailingCaptionIsTrueOnACaptionedRow() {
 
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .showsCaption("Names");
 
             assertThat(radio.hasTrailingCaption())
@@ -215,7 +223,7 @@ final class ControlSpecRadioTest {
         void hasTrailingCaptionIsFalseOnAWhitespaceOnlyCaption() {
             // A host that assembles a caption from parts and comes up with only spacing gets the
             // uncaptioned row, so the layout reserves no footprint the renderer then draws nothing in.
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .showsCaption("   ");
 
             assertThat(radio.hasTrailingCaption())
@@ -229,7 +237,7 @@ final class ControlSpecRadioTest {
         @Test
         void showsCaptionSetsOnlyTheTrailingLabel() {
 
-            var radio = ControlSpec.HorizontalRadio.of(List.of("Short", "Full"), 0, ControlAction.NONE)
+            var radio = HorizontalRadioSpec.of(List.of("Short", "Full"), 0, ControlAction.NONE)
                 .showsCaption("Names");
 
             assertThat(radio.trailingLabel())

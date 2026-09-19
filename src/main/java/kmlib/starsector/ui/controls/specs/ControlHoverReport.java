@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.controls;
+package kmlib.starsector.ui.controls.specs;
 
 /**
  * Where a control tells the host that built it which of its cells the pointer is on - the hover's

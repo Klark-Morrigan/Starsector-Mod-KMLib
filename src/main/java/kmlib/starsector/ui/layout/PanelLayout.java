@@ -2,7 +2,7 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.BoxEdge;
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;

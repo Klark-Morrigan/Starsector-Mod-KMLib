@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets.segments;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.controls.SegmentSizing;
+import kmlib.starsector.ui.controls.specs.SegmentSizing;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 
 import java.util.ArrayList;

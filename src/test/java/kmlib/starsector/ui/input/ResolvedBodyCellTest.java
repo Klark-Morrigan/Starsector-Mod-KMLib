@@ -2,11 +2,12 @@ package kmlib.starsector.ui.input;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlHoverReport;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 
 import org.junit.jupiter.api.Nested;
@@ -106,7 +107,7 @@ final class ResolvedBodyCellTest {
 
     private static Control buildHorizontalRadioControl() {
         return new Control(
-            ControlSpec.HorizontalRadio.of(
+            HorizontalRadioSpec.of(
                 List.of("Left", "Right"),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE),

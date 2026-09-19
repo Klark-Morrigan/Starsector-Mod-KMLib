@@ -1,11 +1,13 @@
 package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
 import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
@@ -65,7 +67,7 @@ final class PanelLayoutTest {
     // alone, so each control's lit state is left unset here.
     private static final List<ControlSpec> BODY = List.of(
         LabelledControlSpecs.buildCheckbox("Uninhabited systems", false, ControlAction.NONE),
-        ControlSpec.HorizontalRadio.of(
+        HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 ControlSpec.NO_SELECTION,
                 ControlAction.NONE)
@@ -114,7 +116,7 @@ final class PanelLayoutTest {
             var controls = place(BODY).bodyControls();
 
             assertThat(controls).extracting(control -> control.spec().getClass().getSimpleName())
-                .containsExactly("Checkbox", "HorizontalRadio", "Toggle");
+                .containsExactly("CheckboxSpec", "HorizontalRadioSpec", "ToggleSpec");
 
             var rowsLeft = CONTENT_X + ControlStripLayout.BODY_PADDING;
             var checkbox = controls.get(0).bounds();
@@ -447,7 +449,7 @@ final class PanelLayoutTest {
             labels.add("Opt" + index);
             icons.add(null);
         }
-        var list = new ControlSpec.ScrollingSection(List.of(VerticalTableSpecs.buildIconList(
+        var list = new ScrollingSectionSpec(List.of(VerticalTableSpecs.buildIconList(
             labels, icons, ControlSpec.NO_SELECTION, ControlAction.NONE)));
 
         return List.of(

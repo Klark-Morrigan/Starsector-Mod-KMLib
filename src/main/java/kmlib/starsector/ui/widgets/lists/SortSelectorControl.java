@@ -1,8 +1,8 @@
 package kmlib.starsector.ui.widgets.lists;
 
 import kmlib.starsector.ui.colour.StarsectorUiColour;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
@@ -54,7 +54,7 @@ public final class SortSelectorControl {
      * @param onSortPicked told the sort a click lands on, for the caller to persist
      * @return the vertical, re-firing sort-selector radio table
      */
-    public static <T> ControlSpec.VerticalTable buildSelector(
+    public static <T> VerticalTableSpec buildSelector(
             ListSort<T> activeSort,
             Consumer<ListSort<T>> onSortPicked) {
 
@@ -73,7 +73,7 @@ public final class SortSelectorControl {
                 .createRow(new TextSpan(mode.resolveLabelText(), labelColour))
                 .trailsWith(new RowSlot.Triangle(resolveTriangleDirection(rowDirection))));
         }
-        return ControlSpec.VerticalTable
+        return VerticalTableSpec
             .createColumnTable(
                 labelledRows,
                 modes.indexOf(activeSort.mode()),

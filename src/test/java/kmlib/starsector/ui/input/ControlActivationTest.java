@@ -1,8 +1,10 @@
 package kmlib.starsector.ui.input;
 
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,7 @@ final class ControlActivationTest {
             // DESELECT radio swallows nothing and re-fires its lit cell exactly as a laid-across one does.
             // A narrowing back to one alignment would leave a stacked radio inert on its lit cell.
             var firedCell = new int[] {-1};
-            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio
+            var radio = buildTwoCellVerticalRadioAtRow(VerticalRadioSpec
                 .of(List.of("Factions", "Alliances"), 0, cell -> firedCell[0] = cell)
                 .handlesReselect(ReselectBehaviour.DESELECT));
 
@@ -54,7 +56,7 @@ final class ControlActivationTest {
             // The other half of the same rule: an INERT stack holds its lit cell, so a re-pick of it acts
             // on nothing rather than re-firing.
             var firedCell = new int[] {-1};
-            var radio = buildTwoCellVerticalRadioAtRow(ControlSpec.VerticalRadio.of(
+            var radio = buildTwoCellVerticalRadioAtRow(VerticalRadioSpec.of(
                 List.of("Factions", "Alliances"),
                 1,
                 cell -> firedCell[0] = cell));
@@ -104,7 +106,7 @@ final class ControlActivationTest {
             // The standard radio rule, and what makes re-clicking a vanilla tab strip's active tab do
             // nothing: a plain option pair is always one lit, so its lit segment reaches no action.
             var fired = new boolean[1];
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 cell -> fired[0] = true));
@@ -121,7 +123,7 @@ final class ControlActivationTest {
             // The opposite reselect, and why the narrowing reads the control rather than assuming: a
             // deselectable row wants the re-pick so its host can turn the control off.
             var firedCell = new int[] {-1};
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                     List.of("Factions", "Alliances"),
                     0,
                     cell -> firedCell[0] = cell)
@@ -138,7 +140,7 @@ final class ControlActivationTest {
             // The ordinary pick. Pinned beside the inert case above so the narrowing cannot be read as "a
             // segmented control never acts" - only its own lit segment is the one in question.
             var firedCell = new int[] {-1};
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 cell -> firedCell[0] = cell));

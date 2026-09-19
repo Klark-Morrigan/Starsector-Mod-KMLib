@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl.controls;
 
 import kmlib.starsector.ui.controls.ControlPressSource;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.style.ControlPressLight;
 

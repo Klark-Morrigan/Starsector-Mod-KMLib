@@ -2,7 +2,8 @@ package kmlib.starsector.ui.input;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.InteractiveSpec;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RadioRow;
 
@@ -134,7 +135,7 @@ final class ControlHitResolver {
         // A caption row and a divider are drawn but not clickable - they are not Interactive - so a press
         // over either hits nothing and falls through to let the loop try the controls below, never
         // consuming a click as if it acted. The divider matters here because it spans the whole body width.
-        if (!(control.spec() instanceof ControlSpec.Interactive interactive)) {
+        if (!(control.spec() instanceof InteractiveSpec interactive)) {
             return NO_CELL_RESOLVED;
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
@@ -168,7 +169,7 @@ final class ControlHitResolver {
      * @return whether its cells are segments laid side by side
      */
     static boolean isSegmentedControl(Control control) {
-        return control.spec() instanceof ControlSpec.Interactive interactive
+        return control.spec() instanceof InteractiveSpec interactive
             && interactive.isSegmented();
     }
 }

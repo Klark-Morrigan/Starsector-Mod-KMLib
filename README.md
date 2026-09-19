@@ -745,9 +745,14 @@ How the tiers meet is in
   with the accent triple a look is built from.
   See [UI Colour Palette](#ui-colour-palette).
 - [`starsector/ui/controls/`](src/main/java/kmlib/starsector/ui/controls/) -
-  declarative control specs and their actions:
-  what a control is,
-  not how it paints.
+  one laid-out control, and the seams a paint pass reads the pointer through.
+- [`starsector/ui/controls/specs/`](src/main/java/kmlib/starsector/ui/controls/specs/) -
+  the vocabulary a host declares a control in:
+  the sealed spec set, one file per variant,
+  with the action a click fires and the enums the variants carry.
+  What a control is, not how it paints.
+  Its own package because a sealed type and its variants must share one,
+  and because nothing here depends on the laid-out control above.
 - [`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) -
   name-based reach into the game's concrete UI classes.
   See [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).

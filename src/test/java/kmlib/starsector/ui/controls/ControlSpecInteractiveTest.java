@@ -1,5 +1,13 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.CheckboxSpec;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
+import kmlib.starsector.ui.controls.specs.ToggleSpec;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -85,34 +93,34 @@ class ControlSpecInteractiveTest {
         }
     }
 
-    private static ControlSpec.Checkbox buildCheckbox() {
+    private static CheckboxSpec buildCheckbox() {
 
-        return ControlSpec.Checkbox.lit(
+        return CheckboxSpec.lit(
             LabelledControlSpecs.buildLabelSpan("Muted"),
             true,
             ControlAction.NONE);
     }
 
-    private static ControlSpec.HorizontalRadio buildRadio() {
+    private static HorizontalRadioSpec buildRadio() {
 
-        return ControlSpec.HorizontalRadio.of(
+        return HorizontalRadioSpec.of(
             List.of("Left", "Right"),
             ControlSpec.NO_SELECTION,
             ControlAction.NONE);
     }
 
-    private static ControlSpec.Tabs buildTabs() {
+    private static TabsSpec buildTabs() {
 
-        return new ControlSpec.Tabs(
+        return new TabsSpec(
             List.of("Systems", "Fleets"),
             List.of("", ""),
             0,
             ControlAction.NONE);
     }
 
-    private static ControlSpec.Toggle buildToggle() {
+    private static ToggleSpec buildToggle() {
 
-        return ControlSpec.Toggle.lit(
+        return ToggleSpec.lit(
             LabelledControlSpecs.buildLabelSpan("Borders"),
             true,
             ControlAction.NONE);

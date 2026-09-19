@@ -2,7 +2,8 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
 import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
@@ -12,7 +13,7 @@ import java.util.List;
 
 /**
  * Caps a {@link ControlStripLayout} strip to a maximum body height by letting ONE control - the strip's
- * scrolling flex region, the {@link ControlSpec.ScrollingSection} a host put a run inside - give up its
+ * scrolling flex region, the {@link ScrollingSectionSpec} a host put a run inside - give up its
  * height and scroll that run. The controls before the section pin from the body top exactly as an
  * uncapped strip places them; the controls after it pin to the body bottom; the section takes the room
  * left between and, when its run overruns that room, scrolls within it. So a long list stays
@@ -109,7 +110,7 @@ public final class CappedStripLayout {
     }
 
     /**
-     * The index of the strip's {@link ControlSpec.ScrollingSection}, or {@link #NO_FLEX_REGION} when the
+     * The index of the strip's {@link ScrollingSectionSpec}, or {@link #NO_FLEX_REGION} when the
      * strip has none. At most one section scrolls - two would each need the leftover height the other is
      * claiming - so the first is taken as the flex region; a strip with none is never capped.
      *
@@ -118,7 +119,7 @@ public final class CappedStripLayout {
      */
     static int findScrollingIndex(List<ControlSpec> specs) {
         for (var index = 0; index < specs.size(); index++) {
-            if (specs.get(index) instanceof ControlSpec.ScrollingSection) {
+            if (specs.get(index) instanceof ScrollingSectionSpec) {
                 return index;
             }
         }
@@ -228,7 +229,7 @@ public final class CappedStripLayout {
         // turned into controls through the shared zip so segments split identically everywhere. The
         // section itself never reaches the renderer or the input listener; what does is the run inside it,
         // laid at its scrolled position and marked so both clip against the viewport below.
-        var section = (ControlSpec.ScrollingSection) specs.get(flexIndex);
+        var section = (ScrollingSectionSpec) specs.get(flexIndex);
         var controls = new ArrayList<Control>(specs.size());
         controls.addAll(ControlStripLayout.toControls(header.specs(), headerRows, measurers));
         controls.addAll(ControlStripLayout.layoutScrolledColumn(section.controls(), flexBounds, measurers));

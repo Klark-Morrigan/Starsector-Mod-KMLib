@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.controls;
+package kmlib.starsector.ui.controls.specs;
 
 /**
  * What a click on a radio's already-lit segment does. A standard radio treats re-picking the lit
@@ -15,6 +15,7 @@ package kmlib.starsector.ui.controls;
  * re-runs it on the lit option) and for the reader; the widget layer treats the two the same.
  */
 public enum ReselectBehaviour {
+
     /** Re-picking the lit segment does nothing - the standard always-selected radio (an option pair). */
     INERT,
 

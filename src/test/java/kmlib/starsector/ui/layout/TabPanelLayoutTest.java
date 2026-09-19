@@ -1,10 +1,12 @@
 package kmlib.starsector.ui.layout;
 
 import kmlib.math.geometry.BoxEdge;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
 import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.VerticalTableSpecs;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.font.StripTextMeasurers;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.widgets.BoxBorder;
@@ -107,7 +109,7 @@ final class TabPanelLayoutTest {
         new LineWidthMeasurerFake(TAB_WIDTH_PER_CHAR),
         new LineWidthMeasurerFake(WIDTH_PER_CHAR));
 
-    private static final ControlSpec.Tabs TABS = new ControlSpec.Tabs(
+    private static final TabsSpec TABS = new TabsSpec(
         List.of("No Layer", "Political Map"),
         List.of(),
         0,
@@ -131,7 +133,7 @@ final class TabPanelLayoutTest {
     private static final ImageSpan BAND_BUTTON_ICON = new ImageSpan("graphics/icons/x.png", null);
 
     private static final BandButtonSpec BAND_BUTTON = new BandButtonSpec(
-        new ControlSpec.Tabs(
+        new TabsSpec(
             List.of(""),
             List.of(),
             ControlSpec.NO_SELECTION,
@@ -154,7 +156,7 @@ final class TabPanelLayoutTest {
     // to fit - a bar's room is held whether or not the list is currently long enough to need one.
     private static final List<ControlSpec> SCROLLING_BODY = List.of(
         LabelledControlSpecs.buildCheckbox("X", false, ControlAction.NONE),
-        new ControlSpec.ScrollingSection(List.of(VerticalTableSpecs.buildIconList(
+        new ScrollingSectionSpec(List.of(VerticalTableSpecs.buildIconList(
             List.of("Alpha", "Beta", "Gamma"),
             Arrays.asList(null, null, null),
             ControlSpec.NO_SELECTION,
@@ -169,7 +171,7 @@ final class TabPanelLayoutTest {
             var header = place(List.of()).tabsHeader();
 
             assertThat(header.spec())
-                .isInstanceOf(ControlSpec.Tabs.class);
+                .isInstanceOf(TabsSpec.class);
             assertThat(header.segments())
                 .hasSize(2);
 
@@ -407,7 +409,7 @@ final class TabPanelLayoutTest {
             var header = place(BODY).tabsHeader();
 
             assertThat(header.spec())
-                .isInstanceOf(ControlSpec.Tabs.class);
+                .isInstanceOf(TabsSpec.class);
             assertThat(header.spec().labels())
                 .containsExactly("No Layer", "Political Map");
         }

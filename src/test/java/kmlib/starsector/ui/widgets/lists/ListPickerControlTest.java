@@ -2,9 +2,15 @@ package kmlib.starsector.ui.widgets.lists;
 
 import com.fs.starfarer.api.util.Misc;
 
-import kmlib.starsector.ui.controls.ControlHoverReport;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ControlHoverReport;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.LabelSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
+import kmlib.starsector.ui.controls.specs.SideBySideSpec;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 import kmlib.starsector.ui.text.TextSpan;
 import kmlib.starsector.ui.widgets.LabelledRow;
 import kmlib.starsector.ui.widgets.RowSlot;
@@ -65,7 +71,7 @@ final class ListPickerControlTest {
     // whatever a consumer actually pairs there, since the picker only places what it is handed. Its
     // tone is arbitrary - nothing under test reads what colour a placed control draws in.
     private static final ControlSpec TRAILING_MARKER =
-        ControlSpec.Label.createLabel(new TextSpan("trailing", Color.WHITE));
+        LabelSpec.createLabel(new TextSpan("trailing", Color.WHITE));
 
     private static final List<ControlSpec> TRAILING = List.of(TRAILING_MARKER);
 
@@ -132,7 +138,7 @@ final class ListPickerControlTest {
                 .get(DIVIDER);
 
             assertThat(divider)
-                .isInstanceOf(ControlSpec.Divider.class);
+                .isInstanceOf(DividerSpec.class);
         }
 
         @Test
@@ -143,10 +149,10 @@ final class ListPickerControlTest {
                 .get(COLUMNS_SELECTOR);
 
             assertThat(columnsSelector)
-                .isInstanceOf(ControlSpec.HorizontalRadio.class);
+                .isInstanceOf(HorizontalRadioSpec.class);
             assertThat(columnsSelector.labels())
                 .hasSize(2);
-            assertThat(((ControlSpec.HorizontalRadio) columnsSelector).trailingLabel())
+            assertThat(((HorizontalRadioSpec) columnsSelector).trailingLabel())
                 .isEqualTo(CAPTION);
         }
 
@@ -156,7 +162,7 @@ final class ListPickerControlTest {
             // active mode's row) and whatever the caller handed over fills the right, so the metric
             // reads side by side with the caller's own knobs above the list.
             var pair = readSortRow(build(ANOMALIES, null, AnomalySortMode.SEVERITY));
-            var sortSelector = (ControlSpec.VerticalTable) pair
+            var sortSelector = (VerticalTableSpec) pair
                 .leftColumn()
                 .get(0);
 
@@ -202,10 +208,10 @@ final class ListPickerControlTest {
             // suite as a cast against a control it never asked for.
             assertThat(build(ANOMALIES, null, AnomalySortMode.ALPHA))
                 .hasExactlyElementsOfTypes(
-                    ControlSpec.Divider.class,
-                    ControlSpec.HorizontalRadio.class,
-                    ControlSpec.SideBySide.class,
-                    ControlSpec.ScrollingSection.class);
+                    DividerSpec.class,
+                    HorizontalRadioSpec.class,
+                    SideBySideSpec.class,
+                    ScrollingSectionSpec.class);
             assertThat(build(ANOMALIES, "storm_1", AnomalySortMode.ALPHA))
                 .hasSize(4);
         }
@@ -602,14 +608,14 @@ final class ListPickerControlTest {
 
     // What each row leads with, top to bottom - an item's crest, or the empty slot for an item with
     // none.
-    private static List<RowSlot> readLeadingRowSlots(ControlSpec.VerticalTable picker) {
+    private static List<RowSlot> readLeadingRowSlots(VerticalTableSpec picker) {
         return picker.labelledRows().stream()
             .map(LabelledRow::leadingRowSlot)
             .toList();
     }
 
     // What each row trails with, top to bottom - the sort metric's value for that item.
-    private static List<RowSlot> readTrailingRowSlots(ControlSpec.VerticalTable picker) {
+    private static List<RowSlot> readTrailingRowSlots(VerticalTableSpec picker) {
         return picker.labelledRows().stream()
             .map(LabelledRow::trailingRowSlot)
             .toList();

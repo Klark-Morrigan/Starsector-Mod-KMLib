@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.widgets.tabs;
 
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
 
 /**
@@ -26,6 +26,6 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  */
 public record HeaderBandSpec(
     TabStyle style,
-    ControlSpec.Tabs tabs,
+    TabsSpec tabs,
     BandButtonSpec bandButton) {
 }

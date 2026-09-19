@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+
 /**
  * Where a control's paint pass gets each of its cells' press progress from: asked per cell, one fraction
  * per answer saying how far through its press lift that cell currently stands. The seam exists so a

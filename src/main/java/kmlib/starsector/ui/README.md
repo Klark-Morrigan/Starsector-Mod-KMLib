@@ -273,7 +273,7 @@ and that is content the caller has to give up.
 | --- | --- | --- | --- |
 | a run of text and its colour | [`TextSpan`](text/TextSpan.java) | [`Highlight`](highlight/Highlight.java) | [`LabelRenderer`](render/gl/LabelRenderer.java) |
 | where text sits at its draw point | [`TextAlignment`](text/TextAlignment.java) | `api.ui.Alignment` | `LazyFont.TextAnchor` |
-| a line with parts in other colours, a small image among its words, or a name withheld from it | a label's runs ([`LabelRun`](text/LabelRun.java), composed by [`LabelRuns`](text/LabelRuns.java), drawn through [`LabelRunPainter`](text/LabelRunPainter.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/tooltip/TooltipRow.java), or a labelled [`ControlSpec`](controls/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) |
+| a line with parts in other colours, a small image among its words, or a name withheld from it | a label's runs ([`LabelRun`](text/LabelRun.java), composed by [`LabelRuns`](text/LabelRuns.java), drawn through [`LabelRunPainter`](text/LabelRunPainter.java)), on [`LabelledRow`](widgets/LabelledRow.java), [`TooltipRow`](widgets/tooltip/TooltipRow.java), or a labelled [`ControlSpec`](controls/specs/ControlSpec.java) control | [`HighlightedParagraph`](highlight/HighlightedParagraph.java) | [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) |
 | a hover tooltip | [`CursorTooltip`](widgets/tooltip/CursorTooltip.java) | [`Tooltips`](tooltip/Tooltips.java) | [`CursorTooltipRenderer`](render/gl/tooltip/CursorTooltipRenderer.java) |
 | the width of a run | [`TextSpanMeasurer`](font/TextSpanMeasurer.java) | - | [`LazyFontSpanMeasurer`](font/LazyFontSpanMeasurer.java) |
 
@@ -418,7 +418,7 @@ so a port in `font` naming `TextSpan` would close that into a cycle.
 ## A strip is measured in two faces
 
 A control strip is not lettered in one atlas.
-A [`ControlSpec.Tabs`](controls/ControlSpec.java)
+A [`TabsSpec`](controls/specs/ControlSpec.java)
 row -
 as a panel's header band or as a body row -
 reads in the tab face its [`TabStyle`](widgets/tabs/style/TabStyle.java) states;
@@ -442,17 +442,17 @@ The canonical constructor stays open for a caller supplying its own metrics.
 
 ## What a body may state
 
-A body is a list of [`ControlSpec`](controls/ControlSpec.java)s and nothing else,
+A body is a list of [`ControlSpec`](controls/specs/ControlSpec.java)s and nothing else,
 so the arrangements a host may ask for are exactly the variants of that sealed set.
 Three of them are arrangement rather than widget:
 
 - **A row of its own.**
   The default: every control in the list stacks top to bottom,
   one control row tall unless its own kind is taller.
-- **[`SideBySide`](controls/ControlSpec.java)**
+- **[`SideBySide`](controls/specs/ControlSpec.java)**
   puts two runs on one row,
   the left column stacked from the row's top-left and the right one past its width plus the column gap.
-- **[`ScrollingSection`](controls/ControlSpec.java)**
+- **[`ScrollingSection`](controls/specs/ControlSpec.java)**
   marks the one run that scrolls.
   Everything outside it pins -
   the controls above it from the body top,
@@ -482,9 +482,9 @@ so the capped layout takes the first one it finds.
 ## Two radio alignments, two variants
 
 An option set states which way its cells run by which variant it is:
-[`ControlSpec.HorizontalRadio`](controls/ControlSpec.java) lays them across one row,
-[`ControlSpec.VerticalRadio`](controls/ControlSpec.java) stacks them into a column.
-Both sit under `ControlSpec.Radio`,
+[`HorizontalRadioSpec`](controls/specs/ControlSpec.java) lays them across one row,
+[`VerticalRadioSpec`](controls/specs/ControlSpec.java) stacks them into a column.
+Both sit under `RadioSpec`,
 which is what a reader acting on any radio names -
 the hit-test that splits one into cells,
 and the activation that reads its re-pick rule.
@@ -502,7 +502,7 @@ so two or three short options read cleanly and five do not.
 A stacked column gives every option the full width and costs a control row of height each,
 which is what a view selector wants and what a Short/Full pair does not.
 
-Distinct again from [`ControlSpec.VerticalTable`](controls/ControlSpec.java),
+Distinct again from [`VerticalTableSpec`](controls/specs/ControlSpec.java),
 which stacks rows holding their own parts -
 a crest, a name, a trailing value.
 The stacked radio is the plain one:
@@ -811,7 +811,7 @@ and a digit standing for a count is not prose.
 | Package | Tier | Holds |
 | --- | --- | --- |
 | [`text`](text/) | neutral | `TextStyle`, `TextAlignment`, `StyledSpanMeasurer`, the sealed [`LabelRun`](text/LabelRun.java) set a label is made of (`TextSpan`, `ImageSpan`, [`RedactedSpan`](text/RedactedSpan.java) - a name carried as the lengths of its words and drawn as one block each), [`LabelRuns`](text/LabelRuns.java) - how those runs compose into one line, read by every surface that lays one - and [`LabelRunPainter`](text/LabelRunPainter.java), the one method per kind a surface draws them through, so a kind added to the seal stops every such surface compiling rather than silently leaving a gap on the line |
-| [`controls`](controls/) | neutral | the sealed `ControlSpec` set and its enums; a control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model. Beside them the seams a paint pass reads what the pointer is doing through: [per cell](controls/ControlHoverSource.java) for one control, and [per strip position](controls/BodyHoverSource.java) for a body of them - two steps rather than one call taking a position and a cell together, so the two ints a slot is made of are never both loose in one call - each with a [press channel](controls/ControlPressSource.java) of its own beside the hover, carried [as a pair](controls/ControlInteractionSources.java) so a layer between the panel's live state and its chrome threads one value rather than one per channel. Running the other way, out of the panel rather than into its paint, is the [hover report](controls/ControlHoverReport.java): where a control tells its host which of its cells the pointer is on, the hover's counterpart to the [click action](controls/ControlAction.java) - which cell, where the paint channels carry how far. Defaulted on `Interactive` rather than carried by every variant, a report being worth wiring where a control's cells stand for things the host holds: a stacked list's rows do, a checkbox's single cell does not |
+| [`controls`](controls/), [`controls/specs`](controls/specs/) | neutral | the vocabulary a host declares a control in, and what the framework makes of it. [`controls/specs`](controls/specs/) holds the sealed [`ControlSpec`](controls/specs/ControlSpec.java) set one file per variant, the action a click fires, and the enums the variants carry; [`controls`](controls/) holds the laid-out control and the seams a paint pass reads the pointer through. Its own package for two reasons - a sealed type and its permitted variants must share one, and nothing here depends on the laid-out control beside it, so the dependency runs one way. What a control answers about *itself* stays on the type rather than being worked out about it from outside - whether its cells are hit separately, and what a re-pick of a lit one does - each being one rule with two readers, which restated on either side would have a control hit as a row of segments and pressed as a whole row. A control's own label is runs like any other label, and a stacked table's rows are `widgets`' own [`LabelledRow`](widgets/LabelledRow.java), so a strip and a tooltip are laid out against one row model. Beside them the seams a paint pass reads what the pointer is doing through: [per cell](controls/ControlHoverSource.java) for one control, and [per strip position](controls/BodyHoverSource.java) for a body of them - two steps rather than one call taking a position and a cell together, so the two ints a slot is made of are never both loose in one call - each with a [press channel](controls/ControlPressSource.java) of its own beside the hover, carried [as a pair](controls/ControlInteractionSources.java) so a layer between the panel's live state and its chrome threads one value rather than one per channel. Running the other way, out of the panel rather than into its paint, is the [hover report](controls/specs/ControlHoverReport.java): where a control tells its host which of its cells the pointer is on, the hover's counterpart to the [click action](controls/specs/ControlAction.java) - which cell, where the paint channels carry how far. Defaulted on `Interactive` rather than carried by every variant, a report being worth wiring where a control's cells stand for things the host holds: a stacked list's rows do, a checkbox's single cell does not |
 | [`widgets`](widgets/) | neutral | the shared `LabelledRow` core, its `RowSlot` flanks, and the row and box content and geometry built on them ([`tooltip`](widgets/tooltip/), [`tabs`](widgets/tabs/), [`scroll`](widgets/scroll/), [`segments`](widgets/segments/), [`lists`](widgets/lists/)). What a panel spends on chrome rather than on content travels as one [`PanelChrome`](widgets/PanelChrome.java) - the [`BoxBorder`](widgets/BoxBorder.java) around the footprint and the [`ScrollbarThickness`](widgets/scroll/ScrollbarThickness.java) its body keeps a gutter clear for - because both are room a layout reserves before it places a control, and a panel is never laid out knowing one without the other. Sizes only: what that chrome looks like is the host's, handed to the paint pass instead |
 | [`widgets/tabs`](widgets/tabs/) | neutral | a tab row's geometry ([`VanillaTabStrip`](widgets/tabs/VanillaTabStrip.java) lays it, [`RaisedButtonTabStrip`](widgets/tabs/RaisedButtonTabStrip.java) stands a button inside each laid tab), the seams a paint pass reads its per-tab [look](widgets/tabs/TabLookSource.java) and [lift](widgets/tabs/TabWashSource.java) through, the tabs' own text, and the tab panel's transient state. What the pointer is doing to a whole panel travels as [one value](widgets/tabs/TabPanelInteractionSources.java) - the header's channels, the band button's lone hover fraction, and the body's - because all of them are resolved off one read of the cursor against the one placement being drawn, and a consumer taking them one at a time could pair a fresh reading with a stale one. What a panel's band is travels as [one value](widgets/tabs/HeaderBandSpec.java) - the row's look, its tabs, and the panel's own button after them - because a layout can use none of the three alone, and three loose arguments in a row are three a caller can reorder into a row that still compiles. That [band button](widgets/tabs/BandButtonSpec.java) is the panel's own chrome rather than any tab's: laid through the same one-cell tabs geometry a tab uses, carrying the look it was laid at - usually the row's own with the box changed, since a tab row states a box wide enough for its longest label while the button is as wide as the one thing it shows - and optionally an [`ImageSpan`](text/ImageSpan.java) drawn into that box in place of a word, for a control whose mark says what a label would only repeat - the mark filling that box is what answers the pointer, [washed](widgets/tabs/BandButtonPlacement.java) by the shade the button's own word would read in at whatever point its fade stands, since the chrome that would otherwise show the pointer is covered by the very image drawn over it. Its band height is the panel's, that being the room it stands in rather than anything about the button. It sits outside the tabs control so the row's indexing - the selection, the lit tab, any bound keys - is left exactly as it was |
 | [`widgets/tabs/style`](widgets/tabs/style/) | neutral | how a tab row looks, as one injected [`TabStyle`](widgets/tabs/style/TabStyle.java): its [chrome](widgets/tabs/style/TabChrome.java), the [box](widgets/tabs/style/TabBox.java) each tab stands in - a stated width, height and neighbour channel, or `SNAPPED` for tabs sized to their own labels, which is what decides whether a label is measured at all - the [palette](widgets/tabs/style/TabPalette.java) of per-state [looks](widgets/tabs/style/TabLook.java) and [lifts](widgets/tabs/style/TabWash.java) over the backing the row stands on - the surface every fill is composited onto, and the one a parted row paints into the channels between its tabs - its [hotkey convention](widgets/tabs/style/HotkeyStyle.java), and the face it is lettered in - which the layout sizes its tabs at, so a row is measured in what it will be drawn in - with the [ring](widgets/tabs/style/TextHalo.java) that face wants around it, copies of the text laid on all four sides that cost no width and so move no tab. Split out from the geometry beside it because a look is what a host varies. One palette type, one factory per chrome, and a fill rule behind each - a tab's shades computed from the engine's tab colours ([`VanillaTabFills`](widgets/tabs/style/VanillaTabFills.java)), a button's from the accent it is built with ([`VanillaButtonFills`](widgets/tabs/style/VanillaButtonFills.java)) - because the engine's own two controls brighten by different rules and neither is the other with a knob |

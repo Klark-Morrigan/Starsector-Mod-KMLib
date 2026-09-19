@@ -1,6 +1,10 @@
 package kmlib.testfixtures.starsector.ui.widgets.lists;
 
-import kmlib.starsector.ui.controls.ControlSpec;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
+import kmlib.starsector.ui.controls.specs.SideBySideSpec;
+import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
 
 import java.util.List;
 
@@ -32,8 +36,8 @@ public final class ListPickerBlockReads {
      * @param blockControls the picker block, top to bottom
      * @return the columns selector, the block's second control
      */
-    public static ControlSpec.HorizontalRadio readColumnsSelector(List<ControlSpec> blockControls) {
-        return (ControlSpec.HorizontalRadio) blockControls.get(COLUMNS_SELECTOR_INDEX);
+    public static HorizontalRadioSpec readColumnsSelector(List<ControlSpec> blockControls) {
+        return (HorizontalRadioSpec) blockControls.get(COLUMNS_SELECTOR_INDEX);
     }
 
     /**
@@ -44,9 +48,9 @@ public final class ListPickerBlockReads {
      * @param blockControls the picker block, top to bottom
      * @return the ranked item list
      */
-    public static ControlSpec.VerticalTable readItemList(List<ControlSpec> blockControls) {
-        var section = (ControlSpec.ScrollingSection) blockControls.get(blockControls.size() - 1);
-        return (ControlSpec.VerticalTable) section.controls().get(0);
+    public static VerticalTableSpec readItemList(List<ControlSpec> blockControls) {
+        var section = (ScrollingSectionSpec) blockControls.get(blockControls.size() - 1);
+        return (VerticalTableSpec) section.controls().get(0);
     }
 
     /**
@@ -56,16 +60,16 @@ public final class ListPickerBlockReads {
      * @param blockControls the picker block, top to bottom
      * @return the row the sort selector shares with the caller's trailing controls
      */
-    public static ControlSpec.SideBySide readSortRow(List<ControlSpec> blockControls) {
-        return (ControlSpec.SideBySide) blockControls.get(SORT_ROW_INDEX);
+    public static SideBySideSpec readSortRow(List<ControlSpec> blockControls) {
+        return (SideBySideSpec) blockControls.get(SORT_ROW_INDEX);
     }
 
     /**
      * @param blockControls the picker block, top to bottom
      * @return the sort selector, which fills the left half of the sort row
      */
-    public static ControlSpec.VerticalTable readSortSelector(List<ControlSpec> blockControls) {
-        return (ControlSpec.VerticalTable) readSortRow(blockControls)
+    public static VerticalTableSpec readSortSelector(List<ControlSpec> blockControls) {
+        return (VerticalTableSpec) readSortRow(blockControls)
             .leftColumn()
             .get(0);
     }

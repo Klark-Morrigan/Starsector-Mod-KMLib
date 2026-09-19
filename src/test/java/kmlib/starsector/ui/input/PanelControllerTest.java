@@ -2,9 +2,11 @@ package kmlib.starsector.ui.input;
 
 import kmlib.animation.TraverseDurations;
 import kmlib.starsector.ui.controls.Control;
-import kmlib.starsector.ui.controls.ControlAction;
-import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.ReselectBehaviour;
+import kmlib.starsector.ui.controls.specs.ControlAction;
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+import kmlib.starsector.ui.controls.specs.DividerSpec;
+import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
+import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
 import kmlib.starsector.ui.sound.PointerArrivalTarget;
 import kmlib.starsector.ui.sound.StarsectorUiSound;
 import kmlib.starsector.ui.sound.UiSoundCue;
@@ -278,7 +280,7 @@ final class PanelControllerTest {
 
             // A DESELECT horizontal radio wants the re-pick to reach the action so the host turns the
             // control off, so a press on the left, lit segment fires it by its index (not swallowed).
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                     List.of("Factions", "Alliances"),
                     0,
                     cell -> firedCell[0] = cell)
@@ -304,7 +306,7 @@ final class PanelControllerTest {
 
             // A plain option pair is always one lit (INERT reselect), so a press on the lit segment
             // reaches no action - the standard radio behaviour a deselectable row opts out of.
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 cell -> fired[0] = true));
@@ -341,7 +343,7 @@ final class PanelControllerTest {
             // screen, so it is the one press the player has only the sound to go by for - and hanging the
             // sound on the firing would make it the panel's only silent press.
             var fired = new boolean[1];
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 cell -> fired[0] = true));
@@ -365,7 +367,7 @@ final class PanelControllerTest {
             // worth pinning because it spans the whole body width, so it is what a press between two
             // controls actually lands on.
             controller.pressBodyControlAtPoint(
-                buildBodyPlacement(new Control(new ControlSpec.Divider(), ROW, List.of())),
+                buildBodyPlacement(new Control(new DividerSpec(), ROW, List.of())),
                 ROW.x() + ROW.width() / 2f,
                 ROW.y() + ROW.height() / 2f);
 
@@ -428,7 +430,7 @@ final class PanelControllerTest {
             // The other half of the slot. A press on the right segment lifts that segment alone, so a lift
             // keyed by the control rather than by the cell would light a whole row the player pressed one
             // end of - which is the same fault the other way about.
-            var radio = buildTwoSegmentHorizontalRadioAtRow(ControlSpec.HorizontalRadio.of(
+            var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                 List.of("Short", "Full"),
                 0,
                 ControlAction.NONE));

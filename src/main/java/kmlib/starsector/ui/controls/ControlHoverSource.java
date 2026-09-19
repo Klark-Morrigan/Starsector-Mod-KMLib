@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.controls;
 
+import kmlib.starsector.ui.controls.specs.ControlSpec;
+
 /**
  * Where a control's paint pass gets each of its cells' hover progress from: asked per cell, one fraction
  * per answer saying how far that cell has travelled onto its hovered look. The seam exists so a renderer

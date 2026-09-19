@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.controls;
+package kmlib.starsector.ui.controls.specs;
 
 /**
  * How a stacked list lays each of its rows out - as a table of columns, or as one uniform cell per row.

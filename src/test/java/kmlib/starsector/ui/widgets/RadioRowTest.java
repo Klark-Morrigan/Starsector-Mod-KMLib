@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.controls.RadioAlignment;
+import kmlib.starsector.ui.controls.specs.RadioAlignment;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
