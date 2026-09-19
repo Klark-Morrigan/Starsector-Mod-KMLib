@@ -47,9 +47,4 @@ public record TabsSpec(
     public boolean isSegmented() {
         return true;
     }
-
-    @Override
-    public ReselectBehaviour reselectBehaviour() {
-        return ReselectBehaviour.INERT;
-    }
 }

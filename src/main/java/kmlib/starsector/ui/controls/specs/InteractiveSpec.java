@@ -34,6 +34,11 @@ public sealed interface InteractiveSpec
      * whether pressing one acts. Stated on either side, a variant would be hit as a row of
      * segments and pressed as a whole row, or the other way about.
      *
+     * <p>Carried by every variant rather than defaulted, unlike the two answers below it. A variant
+     * that inherited the wrong answer here would not be cautious, it would be wrong: a whole-row
+     * target resolves every press to the first cell, so a segmented control that forgot to say so
+     * fires its first option whichever one was pressed.
+     *
      * @return whether the cells are separate hit targets
      */
     boolean isSegmented();
@@ -41,9 +46,15 @@ public sealed interface InteractiveSpec
     /**
      * What a re-pick of the already-lit cell does.
      *
+     * <p>Defaulted, because inheriting it costs nothing that matters: a control that meant to clear
+     * on a re-pick and never said so simply does not clear, which is the conservative half of the
+     * choice rather than a wrong reading of the press. A set carrying its own rule answers with it.
+     *
      * @return the re-pick behaviour, {@link ReselectBehaviour#INERT} for a control holding none
      */
-    ReselectBehaviour reselectBehaviour();
+    default ReselectBehaviour reselectBehaviour() {
+        return ReselectBehaviour.INERT;
+    }
 
     /**
      * Whether the control is lit - any cell selected. A single-cell checkbox or toggle reads on

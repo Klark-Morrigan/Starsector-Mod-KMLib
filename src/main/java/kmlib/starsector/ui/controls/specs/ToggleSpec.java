@@ -71,9 +71,4 @@ public record ToggleSpec(
     public boolean isSegmented() {
         return false;
     }
-
-    @Override
-    public ReselectBehaviour reselectBehaviour() {
-        return ReselectBehaviour.INERT;
-    }
 }
