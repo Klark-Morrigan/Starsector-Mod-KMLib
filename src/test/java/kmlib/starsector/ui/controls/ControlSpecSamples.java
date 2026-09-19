@@ -28,8 +28,10 @@ import java.util.Map;
  * against the variants read off the sealed type itself, so a variant with no sample fails before any
  * rule is asked about it. The catalogue is then a list nobody can quietly fall off.
  *
- * <p>Each sample is the plainest shape of its variant. A group holds two children rather than one,
- * that being what makes "expands into more than one control" observable at all.
+ * <p>Each sample is the plainest shape of its variant that the rules can still see. A group holds two
+ * controls in every run it carries rather than one: one apiece would expand into more than one control
+ * and would also stand exactly one row tall, so a group whose height was never worked out would be
+ * indistinguishable from one that was.
  *
  * <p>Final class with a private constructor: catalogue of static builders, no instances.
  */
@@ -73,33 +75,53 @@ public final class ControlSpecSamples {
 
         var samples = new LinkedHashMap<Class<? extends ControlSpec>, ControlSpec>();
 
-        addSample(samples, LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE));
-        addSample(samples, LabelledControlSpecs.buildToggle("Borders", true, ControlAction.NONE));
-        addSample(samples, LabelledControlSpecs.buildLabel("Names"));
-        addSample(samples, new DividerSpec());
-        addSample(samples, HorizontalRadioSpec.of(
-            List.of(FIRST_OPTION, SECOND_OPTION),
-            ControlSpec.NO_SELECTION,
-            ControlAction.NONE));
-        addSample(samples, VerticalRadioSpec.of(
-            List.of(FIRST_OPTION, SECOND_OPTION),
-            ControlSpec.NO_SELECTION,
-            ControlAction.NONE));
-        addSample(samples, VerticalTableSpecs.buildSegmentedList(
-            List.of(FIRST_OPTION, SECOND_OPTION),
-            ControlSpec.NO_SELECTION,
-            ControlAction.NONE,
-            ReselectBehaviour.INERT));
-        addSample(samples, new TabsSpec(
-            List.of("Systems", "Fleets"),
-            List.of("", ""),
-            0,
-            ControlAction.NONE));
-        addSample(samples, new SideBySideSpec(
-            List.of(buildChild("Left")),
-            List.of(buildChild("Right"))));
-        addSample(samples, new ScrollingSectionSpec(
-            List.of(buildChild("First"), buildChild("Second"))));
+        addSample(
+            samples,
+            LabelledControlSpecs.buildCheckbox("Muted", true, ControlAction.NONE));
+        addSample(
+            samples,
+            LabelledControlSpecs.buildToggle("Borders", true, ControlAction.NONE));
+        addSample(
+            samples,
+            LabelledControlSpecs.buildLabel("Names"));
+        addSample(
+            samples,
+            new DividerSpec());
+        addSample(
+            samples,
+            HorizontalRadioSpec.of(
+                List.of(FIRST_OPTION, SECOND_OPTION),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE));
+        addSample(
+            samples,
+            VerticalRadioSpec.of(
+                List.of(FIRST_OPTION, SECOND_OPTION),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE));
+        addSample(
+            samples,
+            VerticalTableSpecs.buildSegmentedList(
+                List.of(FIRST_OPTION, SECOND_OPTION),
+                ControlSpec.NO_SELECTION,
+                ControlAction.NONE,
+                ReselectBehaviour.INERT));
+        addSample(
+            samples,
+            new TabsSpec(
+                List.of("Systems", "Fleets"),
+                List.of("", ""),
+                0,
+                ControlAction.NONE));
+        addSample(
+            samples,
+            new SideBySideSpec(
+                List.of(buildChild("Left"), buildChild("Lower left")),
+                List.of(buildChild("Right"), buildChild("Lower right"))));
+        addSample(
+            samples,
+            new ScrollingSectionSpec(
+                List.of(buildChild("First"), buildChild("Second"))));
 
         return samples;
     }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Holds the rules that must be true of every variant of the spec set, rather than of the handful a
@@ -29,14 +30,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  * case for the new variant, because they are stated over the catalogue rather than over a list of
  * names.
  *
- * <p>Row height is deliberately absent. One row is the right answer for most variants and the wrong
- * one for those that stack their options, and nothing a spec says today tells the two apart, so no
- * rule here could be stated without guessing which a new variant is.
+ * <p>Row height is read through the geometry it drives rather than asked of the spec, nothing a spec
+ * says telling a one-row variant from one that stacks its options. A control the height chain does not
+ * recognise is measured one row tall and then split within that row, so its cells come out a fraction
+ * of a row each; a group it does not recognise is placed one row tall while the controls it holds
+ * stack on past that row. Both of those are shapes the placed geometry shows, and both are stated
+ * below.
+ *
+ * <p>What stays uncovered is a variant that neither splits into cells nor holds other controls and
+ * still wants more than one row - a wrapped label would be the first of them. Nothing separates it
+ * from a one-row control, so covering it means the spec stating its own height, which is worth adding
+ * when such a variant exists and not before.
  */
 final class ControlStripLayoutVariantCoverageTest {
 
     private static final float WIDTH_PER_CHAR = 7f;
     private static final float TAB_WIDTH_PER_CHAR = 9f;
+
+    // A cell stands a control row tall, not a particular bit pattern: the heights are divisions of a
+    // measured row, and the rule is about a cell being the size it is drawn and aimed at.
+    private static final float CELL_HEIGHT_TOLERANCE = 0.01f;
 
     // A row wide and tall enough for any sample to split within, the split being what is under test
     // rather than the room it is given.
@@ -135,6 +148,54 @@ final class ControlStripLayoutVariantCoverageTest {
                 }
             });
         }
+
+        @Test
+        void standsEveryStackedCellAControlRowTall() {
+            // Half of what the height chain is for. The split divides whatever row it is handed, so a
+            // stacking variant measured as one row still produces all its cells - each a fraction of a
+            // row, too short to letter and too short to aim at - rather than failing anything.
+            samples.forEach((variant, spec) -> {
+                for (var control : layOutAlone(spec)) {
+                    if (!stacksItsCells(control)) {
+                        continue;
+                    }
+                    for (var cell : control.segments()) {
+                        assertThat(cell.height())
+                            .as("%s stands its stacked cells a row tall", variant.getSimpleName())
+                            .isCloseTo(ControlStripLayout.CONTROL_ROW_HEIGHT, within(CELL_HEIGHT_TOLERANCE));
+                    }
+                }
+            });
+        }
+
+        @Test
+        void placesEveryControlWithinTheBodyTheStripSizedForIt() {
+            // The other half. A group measured as one row is placed as one row, while the controls it
+            // holds are stacked from that row's top through their own heights and run on past the body
+            // the measurement sized - off the frame the host drew, where nothing clips or reports them.
+            samples.forEach((variant, spec) -> {
+                var body = frameBodyFor(spec);
+
+                for (var control : layOutAlone(spec)) {
+                    assertThat(liesWithin(control.bounds(), body))
+                        .as(
+                            "%s places its %s within the body",
+                            variant.getSimpleName(),
+                            control.spec().getClass().getSimpleName())
+                        .isTrue();
+                }
+            });
+        }
+    }
+
+    // Whether one rectangle sits wholly inside another, edges included: a control placed exactly on the
+    // body's inset edge is framed, where one past it is not.
+    private static boolean liesWithin(Rectangle inner, Rectangle outer) {
+
+        return inner.x() >= outer.x()
+            && inner.y() >= outer.y()
+            && inner.x() + inner.width() <= outer.x() + outer.width()
+            && inner.y() + inner.height() <= outer.y() + outer.height();
     }
 
     private static boolean saysItsCellsAreHitApart(ControlSpec spec) {
@@ -142,14 +203,37 @@ final class ControlStripLayoutVariantCoverageTest {
         return spec instanceof InteractiveSpec interactive && interactive.isSegmented();
     }
 
+    // Whether a control's cells run down its row rather than across it, read off where the layout put
+    // them rather than from which variant it is, so a stacking control added to the set is recognised
+    // as one without this being told its name. Cells hanging at one height are a row; cells at
+    // differing heights are a stack.
+    private static boolean stacksItsCells(Control control) {
+
+        return control.segments().stream()
+            .map(Rectangle::y)
+            .distinct()
+            .count() > 1;
+    }
+
+    // The body a strip holding this one control frames for itself, which is the frame the host would
+    // draw around it. The SSOT for that rectangle here, so a rule asking whether a control was placed
+    // inside the body cannot be asking about a differently-sized one than the layout was handed.
+    private Rectangle frameBodyFor(ControlSpec spec) {
+
+        var measurement = ControlStripLayout.measureStrip(List.of(spec), measurersFake);
+
+        return new Rectangle(0f, 0f, measurement.bodyWidth(), measurement.bodyHeight());
+    }
+
     // Measures and places one control by itself, which is the shape every rule here asks about: what
     // the layout makes of this variant, with no neighbour to borrow a width or a position from.
     private List<Control> layOutAlone(ControlSpec spec) {
 
-        var measurement = ControlStripLayout.measureStrip(List.of(spec), measurersFake);
-        var body = new Rectangle(0f, 0f, measurement.bodyWidth(), measurement.bodyHeight());
-
-        return ControlStripLayout.layoutControls(body, List.of(spec), measurement, measurersFake);
+        return ControlStripLayout.layoutControls(
+            frameBodyFor(spec),
+            List.of(spec),
+            ControlStripLayout.measureStrip(List.of(spec), measurersFake),
+            measurersFake);
     }
 
     private float measureRowWidthOf(ControlSpec spec) {
