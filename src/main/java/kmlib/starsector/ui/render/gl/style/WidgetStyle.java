@@ -33,19 +33,19 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * is the one field here no painter reads, sound being a look with no pixels; it travels with the look so
  * a host has one place to state its presentation rather than one for the seen half and one for the heard.
  *
- * @param boxColours       the backdrop and frame shades the box itself is drawn in
- * @param accentColours    the accent steps every control on the panel recedes, washes, labels, and ticks
- *                         with
- * @param controlHoverWash the wash a body control's cell takes under the pointer - the lift, not its
- *                         pace, which every element of the panel shares
+ * @param boxColours        the backdrop and frame shades the box itself is drawn in
+ * @param accentColours     the accent steps every control on the panel recedes, washes, labels, and ticks
+ *                          with
+ * @param controlHoverWash  the wash a body control's cell takes under the pointer - the lift, not its
+ *                          pace, which every element of the panel shares
  * @param controlPressLight the light a body control's cell takes for a press, laid over that wash rather
- *                         than blended into it, a press always landing on a cell already fully washed
- * @param bodyFont         the atlas the body-control labels draw in
- * @param tabStyle         the tab look a tabs control draws in; only its colours and face are read here,
- *                         its band height being the layout's side of the same value
- * @param notchColours     the chevron shades a collapse handle draws in, read only when one is drawn
- * @param soundScheme      which interface sound each moment a control on this panel answers makes and how
- *                         loudly, read by whatever detects those moments rather than by a painter
+ *                          than blended into it, a press always landing on a cell already fully washed
+ * @param bodyFont          the atlas the body-control labels draw in
+ * @param tabStyle          the tab look a tabs control draws in; only its colours and face are read here,
+ *                          its band height being the layout's side of the same value
+ * @param notchColours      the chevron shades a collapse handle draws in, read only when one is drawn
+ * @param soundScheme       which interface sound each moment a control on this panel answers makes and how
+ *                          loudly, read by whatever detects those moments rather than by a painter
  */
 public record WidgetStyle(
     BoxColours boxColours,

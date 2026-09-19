@@ -32,8 +32,10 @@ final class NexerelinDeclineAssertions {
     static void assertDeclined(WorkOutcome outcome) {
 
         assertThat(outcome)
-            .isInstanceOfSatisfying(DeclinedWork.class, declinedWork ->
-                assertThat(declinedWork.reason()).isNotBlank());
+            .isInstanceOfSatisfying(
+                DeclinedWork.class,
+                declinedWork -> assertThat(declinedWork.reason())
+                    .isNotBlank());
     }
 
     /**
@@ -48,7 +50,9 @@ final class NexerelinDeclineAssertions {
     static void assertDeclinedBecauseOf(WorkOutcome outcome, String expectedReason) {
 
         assertThat(outcome)
-            .isInstanceOfSatisfying(DeclinedWork.class, declinedWork ->
-                assertThat(declinedWork.reason()).contains(expectedReason));
+            .isInstanceOfSatisfying(
+                DeclinedWork.class,
+                declinedWork -> assertThat(declinedWork.reason())
+                    .contains(expectedReason));
     }
 }

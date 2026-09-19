@@ -49,8 +49,8 @@ final class ReflectedMembers {
     // search alike.
     private static final Class<?> HIERARCHY_ROOT = Object.class;
 
-    private static final Map<MemberSearch<ConstructorQuery>, List<ReflectedConstructor>>
-        CONSTRUCTORS_BY_SEARCH = new ConcurrentHashMap<>();
+    private static final Map<MemberSearch<ConstructorQuery>, List<ReflectedConstructor>> CONSTRUCTORS_BY_SEARCH =
+        new ConcurrentHashMap<>();
 
     private static final Map<MemberSearch<FieldQuery>, List<ReflectedField>> FIELDS_BY_SEARCH =
         new ConcurrentHashMap<>();
@@ -96,8 +96,8 @@ final class ReflectedMembers {
      * @return every constructor that fits, in declaration order
      */
     static List<ReflectedConstructor> findConstructorsMatching(
-        Class<?> shape,
-        ConstructorQuery query) {
+            Class<?> shape,
+            ConstructorQuery query) {
 
         return CONSTRUCTORS_BY_SEARCH.computeIfAbsent(
             new MemberSearch<>(shape, query),
@@ -146,9 +146,9 @@ final class ReflectedMembers {
      * @return every field that fits, in declaration order
      */
     static List<ReflectedField> findFieldsHoldingMethodMatching(
-        Class<?> shape,
-        FieldQuery fieldQuery,
-        MethodQuery methodQuery) {
+            Class<?> shape,
+            FieldQuery fieldQuery,
+            MethodQuery methodQuery) {
 
         return findFieldsMatching(shape, fieldQuery).stream()
             .filter(field -> !findMethodsMatching(field.getType(), methodQuery).isEmpty())
@@ -290,9 +290,9 @@ final class ReflectedMembers {
     }
 
     private static ReflectedMethod resolveMethodFor(
-        Class<?> shape,
-        String methodName,
-        Object[] arguments) {
+            Class<?> shape,
+            String methodName,
+            Object[] arguments) {
 
         var argumentTypes = ParameterCompatibility.readArgumentTypes(arguments);
         var matches = findMethodsMatching(shape, MethodQuery.named(methodName)
@@ -329,9 +329,9 @@ final class ReflectedMembers {
     // admit, hand each back wrapped. Shared rather than written per member kind, the three differing
     // only in which members they walk and what they wrap them as.
     private static <M> List<M> selectMatching(
-        Iterable<Object> members,
-        Predicate<Object> isMatching,
-        Function<Object, M> wrapMember) {
+            Iterable<Object> members,
+            Predicate<Object> isMatching,
+            Function<Object, M> wrapMember) {
 
         var matches = new ArrayList<M>();
 
@@ -356,7 +356,7 @@ final class ReflectedMembers {
     private static boolean isFieldMatching(Object field, FieldQuery query) {
 
         if (query.name() != null
-            && !query.name().equals(ReflectionBypass.readFieldName(field))) {
+                && !query.name().equals(ReflectionBypass.readFieldName(field))) {
             return false;
         }
 
@@ -371,7 +371,7 @@ final class ReflectedMembers {
         }
 
         if (query.accepting() != null
-            && !ParameterCompatibility.isParameterCompatible(fieldType, query.accepting())) {
+                && !ParameterCompatibility.isParameterCompatible(fieldType, query.accepting())) {
             return false;
         }
 
@@ -398,14 +398,14 @@ final class ReflectedMembers {
     private static boolean isMethodMatching(Object method, MethodQuery query) {
 
         if (query.name() != null
-            && !query.name().equals(ReflectionBypass.readMethodName(method))) {
+                && !query.name().equals(ReflectionBypass.readMethodName(method))) {
             return false;
         }
 
         // Assignable rather than equal, so a caller naming a supertype of what it actually wants
         // still reaches the member - the same leniency the parameter side is matched with.
         if (query.returnType() != null
-            && !query.returnType().isAssignableFrom(ReflectionBypass.readMethodReturnType(method))) {
+                && !query.returnType().isAssignableFrom(ReflectionBypass.readMethodReturnType(method))) {
             return false;
         }
 
@@ -420,9 +420,9 @@ final class ReflectedMembers {
     }
 
     private static boolean isParameterListMatching(
-        Class<?>[] parameterTypes,
-        Integer requiredCount,
-        List<Class<?>> requiredTypes) {
+            Class<?>[] parameterTypes,
+            Integer requiredCount,
+            List<Class<?>> requiredTypes) {
 
         if (requiredCount != null && requiredCount != parameterTypes.length) {
             return false;
@@ -440,8 +440,8 @@ final class ReflectedMembers {
         var reachableFields = new LinkedHashSet<>();
 
         for (var currentShape = shape;
-             currentShape != null && !HIERARCHY_ROOT.equals(currentShape);
-             currentShape = currentShape.getSuperclass()) {
+                currentShape != null && !HIERARCHY_ROOT.equals(currentShape);
+                currentShape = currentShape.getSuperclass()) {
 
             Object[] declaredFields = currentShape.getDeclaredFields();
             Collections.addAll(reachableFields, declaredFields);
@@ -474,8 +474,8 @@ final class ReflectedMembers {
 
         if (searchSuperclasses) {
             for (var currentShape = shape.getSuperclass();
-                 currentShape != null && !HIERARCHY_ROOT.equals(currentShape);
-                 currentShape = currentShape.getSuperclass()) {
+                    currentShape != null && !HIERARCHY_ROOT.equals(currentShape);
+                    currentShape = currentShape.getSuperclass()) {
 
                 Object[] inheritedMethods = currentShape.getDeclaredMethods();
                 Collections.addAll(reachableMethods, inheritedMethods);

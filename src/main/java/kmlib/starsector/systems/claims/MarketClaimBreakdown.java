@@ -20,7 +20,7 @@ import java.util.OptionalInt;
  * <p>Plain values with no Starsector types, so a whole contest is built and read on hand-made
  * inputs.
  *
- * @param marketNameplate     how the colony is identified to a reader - its name and the glyph the
+ * @param marketNameplate    how the colony is identified to a reader - its name and the glyph the
  *                           sector map marks it with. Recorded on the walk that met the colony
  *                           rather than looked up again by whatever draws the name, so the pair
  *                           shown can only ever belong to the colony whose score is stated beside

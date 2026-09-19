@@ -283,10 +283,10 @@ final class ReflectionBypass {
     // call would name the type in this class's own constant pool - which is the one thing the mod
     // classloader does get asked about.
     private static MethodHandle findHandle(
-        Class<?> reflectionClass,
-        String memberName,
-        Class<?> returnType,
-        Class<?>... parameterTypes) {
+            Class<?> reflectionClass,
+            String memberName,
+            Class<?> returnType,
+            Class<?>... parameterTypes) {
 
         try {
             return MethodHandles
