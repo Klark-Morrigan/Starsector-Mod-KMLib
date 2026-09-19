@@ -277,7 +277,7 @@ public final class CappedStripLayout {
 
         return ControlStripLayout.spanDividerRowsToBody(
             run.specs(),
-            RowStack.layoutRows(originX, topY, ControlStripLayout.ROW_GAP, run.rowHeights(), run.rowWidths()),
+            RowStack.layoutRows(originX, topY, ControlStripLayout.ROW_GAP, run.rowDimensions()),
             body);
     }
 
@@ -399,6 +399,11 @@ public final class CappedStripLayout {
         /** @return whether the run holds no controls, so nothing is pinned on that side of the list */
         boolean isEmpty() {
             return specs.isEmpty();
+        }
+
+        /** @return this run's rows as the one value a stacker takes, heights and widths together */
+        RowDimensions rowDimensions() {
+            return new RowDimensions(rowHeights, rowWidths);
         }
     }
 

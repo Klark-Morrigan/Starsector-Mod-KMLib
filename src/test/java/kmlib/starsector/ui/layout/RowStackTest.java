@@ -23,12 +23,22 @@ class RowStackTest {
     private static final float ROW_GAP = 4f;
     private static final List<Float> ROW_WIDTHS = List.of(100f, 60f, 80f);
 
+    private static final RowDimensions UNIFORM_ROWS =
+        RowDimensions.createUniform(ROW_HEIGHT, ROW_WIDTHS);
+
     @Nested
     class LayoutRows {
 
+        // A short row then a tall one: the second stands 40 tall where the first is 20, so the tall
+        // row's top drops by the first height plus the gap (200 - 20 - 4 = 176) and its bottom by a
+        // further 40 (to 136). A uniform run could not size the two rows differently.
+        private final RowDimensions unevenRows =
+            new RowDimensions(List.of(20f, 40f), List.of(100f, 60f));
+
         @Test
         void hangsTheFirstRowFromTheTopEdge() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_HEIGHT, ROW_GAP, ROW_WIDTHS);
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, UNIFORM_ROWS);
 
             var first = rows.get(0);
             assertThat(first.y() + first.height()).isEqualTo(TOP_Y);
@@ -37,7 +47,8 @@ class RowStackTest {
 
         @Test
         void dropsEachLaterRowByOneHeightPlusOneGap() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_HEIGHT, ROW_GAP, ROW_WIDTHS);
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, UNIFORM_ROWS);
 
             for (var index = 1; index < rows.size(); index++) {
                 var previous = rows.get(index - 1);
@@ -48,45 +59,40 @@ class RowStackTest {
 
         @Test
         void leftAlignsEveryRowAtTheOrigin() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_HEIGHT, ROW_GAP, ROW_WIDTHS);
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, UNIFORM_ROWS);
 
             assertThat(rows).extracting(Rectangle::x).containsOnly(ORIGIN_X);
         }
 
         @Test
         void snapsEachRowToItsOwnWidth() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_HEIGHT, ROW_GAP, ROW_WIDTHS);
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, UNIFORM_ROWS);
 
             assertThat(rows).extracting(Rectangle::width).containsExactly(100f, 60f, 80f);
         }
 
         @Test
-        void returnsNoRowsForNoWidths() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_HEIGHT, ROW_GAP, List.of());
+        void returnsNoRowsForAnEmptyRun() {
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, RowDimensions.EMPTY);
 
             assertThat(rows).isEmpty();
         }
-    }
-
-    @Nested
-    class LayoutRowsWithPerRowHeights {
-
-        // A short row then a tall one: the second stands 40 tall where the first is 20, so the tall
-        // row's top drops by the first height plus the gap (200 - 20 - 4 = 176) and its bottom by a
-        // further 40 (to 136). A uniform stack could not size the two rows differently.
-        private static final List<Float> ROW_HEIGHTS = List.of(20f, 40f);
-        private static final List<Float> WIDTHS = List.of(100f, 60f);
 
         @Test
-        void givesEachRowItsOwnHeight() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, ROW_HEIGHTS, WIDTHS);
+        void givesEachRowItsOwnHeightWhenTheRunIsUneven() {
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, unevenRows);
 
             assertThat(rows).extracting(Rectangle::height).containsExactly(20f, 40f);
         }
 
         @Test
-        void dropsEachLaterRowByThePreviousRowsHeightPlusOneGap() {
-            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, ROW_HEIGHTS, WIDTHS);
+        void dropsEachLaterRowByThePreviousRowsHeightWhenTheRunIsUneven() {
+
+            var rows = RowStack.layoutRows(ORIGIN_X, TOP_Y, ROW_GAP, unevenRows);
 
             var first = rows.get(0);
             var second = rows.get(1);

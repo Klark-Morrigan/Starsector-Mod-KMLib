@@ -42,6 +42,8 @@ A binding to Fast Rendering's bridge that stops holding now costs the map's curs
 #### Control rows
 
 - **`ControlSpec.Interactive.isSegmented()`** and **`reselectBehaviour()`**: what a control answers about itself, replacing two chains of type tests that each worked it out from outside. Whether a control's cells are hit separately and what a re-pick of a lit cell does are each one rule with two readers, the hit-test that resolves a cell and the narrowing that decides whether pressing it acts; stated on either side, a control would be hit as a row of segments and pressed as a whole row, or the other way about. Every interactive variant now answers both, so neither can be forgotten for one.
+- **`RowDimensions`**: each row's height beside its width, as one value. Handed over as two lists they could arrive from different readings, two lists of different lengths or the heights of a run the widths were never measured from, and a stacker had no way to notice. Held together they are checked against each other where they are stated.
+  - **`ControlStripLayout.StripMeasurement.rowDimensions()`** answers a measurement's rows in that shape.
 
 ### Test fixtures
 
@@ -53,6 +55,7 @@ A binding to Fast Rendering's bridge that stops holding now costs the map's curs
 ### Public contracts changed (**breaking**)
 
 - `ControlSpec.VerticalTable` loses its `scrolls` component and its `asScrolling()` refinement; what scrolls is stated by the `ScrollingSection` a host puts a run inside. A host that marked its list now wraps it: `new ControlSpec.ScrollingSection(List.of(list))`. The table's canonical constructor takes seven arguments where it took eight.
+- `RowStack.layoutRows()` takes a `RowDimensions` in place of the per-row heights and widths as two adjacent lists, and the uniform-height overload is gone. The two overloads took five arguments each and both opened with three floats, where the third was a row height in one and the gap in the other, so a call site read the same whichever was meant. A run whose rows share a height is now `RowDimensions.createUniform(rowHeight, rowWidths)`.
 - `ControlStripLayout.layoutControls()` takes the `StripMeasurement` the rows were measured as, in place of its `rowHeights` and `rowWidths` lists. They are one reading of one strip, and parted they could arrive from different readings - two lists of different lengths, or the heights of a strip the widths were never measured from - neither of which the placement could notice.
 
 ## [0.4.0] - 2026-09-15

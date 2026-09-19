@@ -153,8 +153,7 @@ public final class ControlStripLayout {
             body.x() + BODY_PADDING,
             bodyTopY - BODY_PADDING,
             ROW_GAP,
-            measurement.rowHeights(),
-            measurement.rowWidths());
+            measurement.rowDimensions());
 
         return toControls(
             specs,
@@ -410,7 +409,11 @@ public final class ControlStripLayout {
         for (var spec : specs) {
             rowHeights.add(measureRowHeight(spec));
         }
-        var rows = RowStack.layoutRows(columnX, columnTopY, ROW_GAP, rowHeights, rowWidths);
+        var rows = RowStack.layoutRows(
+            columnX,
+            columnTopY,
+            ROW_GAP,
+            new RowDimensions(rowHeights, rowWidths));
 
         return toControls(specs, rows, measurers);
     }
@@ -694,5 +697,17 @@ public final class ControlStripLayout {
          */
         public static final StripMeasurement EMPTY =
             new StripMeasurement(0f, 0f, List.of(), List.of());
+
+        /**
+         * This measurement's rows as the one value a stacker takes, so the heights and the widths
+         * are never handed over apart. Stated here rather than at each placement, which is what
+         * keeps the reversal between this record's component order and the stacker's to one place.
+         *
+         * @return the heights and widths of the measured rows, top to bottom
+         */
+        public RowDimensions rowDimensions() {
+
+            return new RowDimensions(rowHeights, rowWidths);
+        }
     }
 }
