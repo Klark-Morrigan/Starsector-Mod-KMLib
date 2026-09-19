@@ -585,6 +585,12 @@ None of this is published API.
 It is mod internals,
 and a genir refactor can break any of it,
 so code reading it should fail safe rather than assume.
+KMLib takes the binding under guard for that reason:
+a `LinkageError` raised as the bridge-bound reader initialises
+costs the reading rather than the render pass it was taken in
+(`ModelviewMatrixReaders.selectForActiveRenderer`),
+degrading onto a reader that reports no matrix at all
+and recording the failure so the player is told once, naming the renderer rather than the mod reading it.
 
 ### It defers every GL call to a render thread
 
