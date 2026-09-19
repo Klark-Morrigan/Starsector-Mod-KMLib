@@ -2,7 +2,6 @@ package kmlib.starsector.ui.input;
 
 import kmlib.starsector.ui.controls.ControlAction;
 import kmlib.starsector.ui.controls.ControlSpec;
-import kmlib.starsector.ui.controls.LabelledControlSpecs;
 import kmlib.starsector.ui.controls.ReselectBehaviour;
 
 import org.junit.jupiter.api.Nested;
@@ -382,25 +381,4 @@ final class ControlHitResolverTest {
         }
     }
 
-    @Nested
-    class IsSegmentedSpec {
-
-        @Test
-        void isSegmentedSpecAnswersTheSameRuleTheLaidOutControlIsAskedFor() {
-            // One rule with two readers - the hit-test that resolves a cell, and the narrowing that decides
-            // whether pressing it acts. Restated on either side, a variant added to the set would be hit as
-            // a row of segments and pressed as a whole row, or the other way about.
-            var radio = ControlSpec.HorizontalRadio.of(
-                List.of("Left", "Right"),
-                ControlSpec.NO_SELECTION,
-                ControlAction.NONE);
-
-            assertThat(ControlHitResolver.isSegmentedSpec(radio))
-                .isTrue();
-            assertThat(ControlHitResolver.isSegmentedSpec(
-                    ControlSpec.Checkbox.lit(
-                        LabelledControlSpecs.buildLabelSpan("Muted"), true, ControlAction.NONE)))
-                .isFalse();
-        }
-    }
 }

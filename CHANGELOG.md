@@ -39,6 +39,10 @@ A binding to Fast Rendering's bridge that stops holding now costs the map's curs
 - **`UnavailableModelviewMatrixReader`**: the third `ModelviewMatrixReader`, whose every read is no reading. Not a new caller contract: `CampaignMapTransform` already parks on an absent reading.
 - **`FastRenderingBridgeDiagnostic`**: once a bridge binding has failed, which of the six mirrored members no longer hold and why, beside the version the installed jar reports and the one the build was type-checked against. Never runs on the healthy path.
 
+#### Control rows
+
+- **`ControlSpec.Interactive.isSegmented()`** and **`reselectBehaviour()`**: what a control answers about itself, replacing two chains of type tests that each worked it out from outside. Whether a control's cells are hit separately and what a re-pick of a lit cell does are each one rule with two readers, the hit-test that resolves a cell and the narrowing that decides whether pressing it acts; stated on either side, a control would be hit as a row of segments and pressed as a whole row, or the other way about. Every interactive variant now answers both, so neither can be forgotten for one.
+
 ### Test fixtures
 
 - **List widget fixtures**: `Anomaly` and `AnomalySortMode`, a picker row and a sort vocabulary declared outside the list package, and `ListPickerBlockReads`, which reaches into a built picker block for the columns selector, the sort row, the sort selector or the item list. The block's order lives there rather than in each suite that tests a list, so a row inserted into it breaks one file.

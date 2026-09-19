@@ -139,7 +139,7 @@ final class ControlHitResolver {
         }
         // A radio or a tabs row hits by segment over the segments the layout laid - a radio's equal cells
         // or a tabs row's per-tab boxes.
-        if (isSegmentedSpec(interactive)) {
+        if (interactive.isSegmented()) {
 
             var segmentIndex = RadioRow.findSegmentIndexAt(control.segments(), pointX, pointY);
 
@@ -169,23 +169,6 @@ final class ControlHitResolver {
      */
     static boolean isSegmentedControl(Control control) {
         return control.spec() instanceof ControlSpec.Interactive interactive
-            && isSegmentedSpec(interactive);
-    }
-
-    /**
-     * The same rule asked of a spec rather than of a laid-out control, for a reader that has narrowed to one
-     * already - the press path, which reaches an {@link ControlSpec.Interactive} on its way to the action.
-     *
-     * <p>Which variants are segmented is one rule with two readers, the hit-test that resolves a cell and
-     * the narrowing that decides whether pressing it acts. Restated on either side, a variant added to the
-     * set would be hit as a row of segments and pressed as a whole row, or the other way about.
-     *
-     * @param control the interactive spec
-     * @return whether its cells are separately hit segments rather than one whole-row target
-     */
-    static boolean isSegmentedSpec(ControlSpec.Interactive control) {
-        return control instanceof ControlSpec.Radio
-            || control instanceof ControlSpec.VerticalTable
-            || control instanceof ControlSpec.Tabs;
+            && interactive.isSegmented();
     }
 }

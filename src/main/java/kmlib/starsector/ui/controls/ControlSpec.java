@@ -82,6 +82,25 @@ public sealed interface ControlSpec {
         ControlAction action();
 
         /**
+         * Whether the control's cells are separately hit targets rather than the whole row being one.
+         *
+         * <p>Answered by the control rather than worked out about it from outside, because it is one
+         * rule with two readers: the hit-test that resolves a cell, and the narrowing that decides
+         * whether pressing one acts. Stated on either side, a variant would be hit as a row of
+         * segments and pressed as a whole row, or the other way about.
+         *
+         * @return whether the cells are separate hit targets
+         */
+        boolean isSegmented();
+
+        /**
+         * What a re-pick of the already-lit cell does.
+         *
+         * @return the re-pick behaviour, {@link ReselectBehaviour#INERT} for a control holding none
+         */
+        ReselectBehaviour reselectBehaviour();
+
+        /**
          * Whether the control is lit - any cell selected. A single-cell checkbox or toggle reads on
          * from this; a radio uses it to tell a lit list from a fully-cleared one.
          *
@@ -169,6 +188,16 @@ public sealed interface ControlSpec {
         public List<String> labels() {
             return List.of(LabelRuns.resolveLineText(labelRuns));
         }
+
+        @Override
+        public boolean isSegmented() {
+            return false;
+        }
+
+        @Override
+        public ReselectBehaviour reselectBehaviour() {
+            return ReselectBehaviour.INERT;
+        }
     }
 
     /**
@@ -228,6 +257,16 @@ public sealed interface ControlSpec {
         @Override
         public List<String> labels() {
             return List.of(LabelRuns.resolveLineText(labelRuns));
+        }
+
+        @Override
+        public boolean isSegmented() {
+            return false;
+        }
+
+        @Override
+        public ReselectBehaviour reselectBehaviour() {
+            return ReselectBehaviour.INERT;
         }
     }
 
@@ -311,6 +350,27 @@ public sealed interface ControlSpec {
          * @return the re-pick behaviour
          */
         ReselectBehaviour reselect();
+
+        /**
+         * A radio's cells are separately hit, whichever way the set is arranged.
+         *
+         * @return {@code true}
+         */
+        @Override
+        default boolean isSegmented() {
+            return true;
+        }
+
+        /**
+         * Read off this interface rather than off each alignment, so a stacked set answers a re-pick
+         * exactly as a laid-across one does - the behaviour is the control's, not its arrangement's.
+         *
+         * @return the re-pick behaviour the set carries
+         */
+        @Override
+        default ReselectBehaviour reselectBehaviour() {
+            return reselect();
+        }
     }
 
     /**
@@ -670,6 +730,16 @@ public sealed interface ControlSpec {
             return rebuildAsLaidOut(hoverReport, reselect, columnCount);
         }
 
+        @Override
+        public boolean isSegmented() {
+            return true;
+        }
+
+        @Override
+        public ReselectBehaviour reselectBehaviour() {
+            return reselect();
+        }
+
         // Rebuilds the table around how it is laid out and driven, carrying what it holds - its rows,
         // their geometry, the lit row, and the click action - over untouched. The three refinements
         // share it rather than each restating all seven components, one of which would eventually be
@@ -728,6 +798,16 @@ public sealed interface ControlSpec {
                 return "";
             }
             return shortcuts.get(index);
+        }
+
+        @Override
+        public boolean isSegmented() {
+            return true;
+        }
+
+        @Override
+        public ReselectBehaviour reselectBehaviour() {
+            return ReselectBehaviour.INERT;
         }
     }
 
