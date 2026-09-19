@@ -12,9 +12,9 @@ apply plugin: 'java-test-fixtures'
 
 group = 'kmlib'
 
-// On-demand Java formatting (`gradlew spotlessApply`). The wiring and the
-// rationale live in the shared script; the only thing KMLib decides here is
-// that bridgeStubs is exempt, for the same reason
+// On-demand source cleanup (`gradlew formatJava`). Mechanical fixes only - it
+// never re-lays code. The wiring and the rationale live in the shared script; the
+// only thing KMLib decides here is that bridgeStubs is exempt, for the same reason
 // checkstyleBridgeStubs is disabled below - the stubs mirror a third party's
 // shape, which is not ours to restyle.
 ext.formatterExcludedSourceSets = ['bridgeStubs']
