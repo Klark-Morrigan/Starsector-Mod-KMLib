@@ -52,7 +52,7 @@ public final class LocationMarkets {
      * @return the location's markets in economy order; never null
      */
     public static List<MarketAPI> readMarkets(SectorAPI sector, LocationAPI location) {
-        if (sector == null || location == null || sector.getEconomy() == null) {
+        if (!hasReadableEconomy(sector, location)) {
             return List.of();
         }
         var markets = sector.getEconomy().getMarkets(location);
@@ -100,7 +100,7 @@ public final class LocationMarkets {
             SectorAPI sector,
             LocationAPI location) {
 
-        if (sector == null || location == null || sector.getEconomy() == null) {
+        if (!hasReadableEconomy(sector, location)) {
             return List.of();
         }
         // Seeded with the economy's own markets so one scan answers both halves of sameness - a
@@ -199,6 +199,14 @@ public final class LocationMarkets {
             return null;
         }
         return new RankedMarket(market, body, StarsectorPoints.computeDistanceBetween(body, from));
+    }
+
+    // Whether there is an economy to read this location's markets out of. Both reads answer an empty
+    // list without one, and for one reason: with no economy to compare against there is no telling a
+    // listed market from an unlisted one, so neither read has an answer rather than a shorter one.
+    private static boolean hasReadableEconomy(SectorAPI sector, LocationAPI location) {
+
+        return sector != null && location != null && sector.getEconomy() != null;
     }
 
     // Whether one of the markets already found stands for the same colony under the same owner,
