@@ -21,7 +21,7 @@ import java.util.Objects;
  * <p>So the read is deferred instead. Each call enqueues a fire-and-forget command - which does not
  * stall - that copies the matrix on the render thread at this pass's own position in the stream,
  * where it is the map widget's transform and stable, and stores it in
- * {@link FastRenderingModelviewCopy}. The call returns the copy a prior frame's command produced.
+ * {@link FastRenderingBridgeReading}. The call returns the copy a prior frame's command produced.
  * The result is a frame or two old (the render thread runs a frame behind, and a given frame's copy
  * is only guaranteed complete a frame later), which is invisible for a still map - the cursor moves
  * but the transform does not - and trails by a frame or two of pan velocity while panning.
@@ -46,20 +46,20 @@ import java.util.Objects;
  */
 public final class FastRenderingModelviewMatrixReader implements ModelviewMatrixReader {
 
-    // The copy this reader publishes across the render/game thread boundary, and the latch that
-    // says the bridge stopped holding. Its own value because a throw on the render thread can only
-    // be contained inside the command, which is the one place this class has nothing else to do -
-    // and because both sides of the binding then latch and record through one thing.
-    private final FastRenderingModelviewCopy modelviewCopy;
+    // What the bridge last answered and whether it still answers, shared with the command that
+    // fills it on the render thread. Its own value because a throw on that thread can only be
+    // contained inside the command, which is the one place this class has nothing else to do - and
+    // because both sides of the binding then latch and record through one thing.
+    private final FastRenderingBridgeReading bridgeReading;
 
     // What hands the copy command to the renderer, as the only route from here into the bridge.
     private final BridgeCopyQueue copyQueue;
 
-    FastRenderingModelviewMatrixReader(FastRenderingModelviewCopy modelviewCopy, BridgeCopyQueue copyQueue) {
+    FastRenderingModelviewMatrixReader(FastRenderingBridgeReading bridgeReading, BridgeCopyQueue copyQueue) {
 
-        this.modelviewCopy = Objects.requireNonNull(
-            modelviewCopy,
-            "A reader with no copy would have nowhere to read a deferred matrix back from.");
+        this.bridgeReading = Objects.requireNonNull(
+            bridgeReading,
+            "A reader with no reading would have nowhere to take a deferred matrix back from.");
         this.copyQueue = Objects.requireNonNull(
             copyQueue,
             "A reader with no queue could not reach the render thread the matrix is copied on.");
@@ -70,7 +70,7 @@ public final class FastRenderingModelviewMatrixReader implements ModelviewMatrix
         // Checked before anything reaches the bridge: once the binding has failed on either thread,
         // it is gone for the session, and asking again would only queue another frame's worth of
         // the same failure.
-        if (modelviewCopy.isBridgeUnavailable()) {
+        if (bridgeReading.isBridgeUnavailable()) {
             return null;
         }
         try {
@@ -86,11 +86,11 @@ public final class FastRenderingModelviewMatrixReader implements ModelviewMatrix
             // frame later, and not covered by the guard around the binding itself: a release that
             // declares an entry point and refuses it links cleanly and throws only here. Losing the
             // reading costs a hover highlight; letting it out of a render pass costs the game.
-            modelviewCopy.degradeOnBridgeFailure(enqueueFailure);
+            bridgeReading.degradeOnBridgeFailure(enqueueFailure);
             return null;
         }
         // Return the previous frame's copy: the command just enqueued has not run yet.
-        return modelviewCopy.reportLatestCopy();
+        return bridgeReading.reportLatestCopy();
     }
 
     /**

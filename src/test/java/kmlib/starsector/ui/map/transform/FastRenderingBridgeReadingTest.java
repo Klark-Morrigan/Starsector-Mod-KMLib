@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.map.transform;
 
 import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.testfixtures.opengl.RendererModelviewMatrices;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
 import org.junit.jupiter.api.Nested;
@@ -8,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.lwjgl.util.vector.Matrix4f;
 
 import java.util.function.Supplier;
+
+import static kmlib.testfixtures.opengl.RendererModelviewMatrices.createMapPassAsFastRenderingHoldsIt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -22,18 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
  * reading is taken through a value here rather than off a context: a live renderer cannot be asked
  * to fail on demand, and a context cannot be built outside the game at all.
  */
-final class FastRenderingModelviewCopyTest {
-
-    // A map pass's transform as Fast Rendering holds it: a Matrix4f whose fields it reads as
-    // m<row><col>, so the pan sits in m03/m13 and a copy that did not transpose would report it in
-    // the slots a projection's perspective terms belong in. Not round and not equal on the two
-    // axes, so a transpose or an axis swap cannot pass by landing on a matching value.
-    private static final float PAN_X = 137.01f;
-    private static final float PAN_Y = 41.01f;
-
-    // Where a column-major copy puts that pan, which is where a caller reads it from.
-    private static final int COLUMN_MAJOR_PAN_X_SLOT = 12;
-    private static final int COLUMN_MAJOR_PAN_Y_SLOT = 13;
+final class FastRenderingBridgeReadingTest {
 
     // The two shapes a bridge that stopped holding fails in where it is called: a member that moved
     // since this jar was compiled, and an entry point the installed release declares but refuses.
@@ -51,7 +43,7 @@ final class FastRenderingModelviewCopyTest {
     // A record of its own rather than the session's, so a case reads only what it recorded itself.
     private final CompatibilityFailures failures = new CompatibilityFailures();
 
-    private final FastRenderingModelviewCopy modelviewCopy = new FastRenderingModelviewCopy(
+    private final FastRenderingBridgeReading bridgeReading = new FastRenderingBridgeReading(
         CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
         failures);
 
@@ -64,14 +56,14 @@ final class FastRenderingModelviewCopyTest {
             // A copy that cannot say whose feature it serves could record a failure against nobody,
             // which is the one job it has once the binding breaks.
             assertThatNullPointerException()
-                .isThrownBy(() -> new FastRenderingModelviewCopy(null, failures));
+                .isThrownBy(() -> new FastRenderingBridgeReading(null, failures));
         }
 
         @Test
         void refusesACopyWithNowhereToRecord() {
 
             assertThatNullPointerException()
-                .isThrownBy(() -> new FastRenderingModelviewCopy(
+                .isThrownBy(() -> new FastRenderingBridgeReading(
                     CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
                     null));
         }
@@ -83,14 +75,14 @@ final class FastRenderingModelviewCopyTest {
         @Test
         void publishesTheReadingColumnMajorForTheNextReadToReport() {
 
-            modelviewCopy.copyModelviewForNextRead(() -> createPannedMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createMapPassAsFastRenderingHoldsIt());
 
-            assertThat(modelviewCopy.reportLatestCopy())
+            assertThat(bridgeReading.reportLatestCopy())
                 .isNotNull();
-            assertThat(modelviewCopy.reportLatestCopy()[COLUMN_MAJOR_PAN_X_SLOT])
-                .isEqualTo(PAN_X);
-            assertThat(modelviewCopy.reportLatestCopy()[COLUMN_MAJOR_PAN_Y_SLOT])
-                .isEqualTo(PAN_Y);
+            assertThat(bridgeReading.reportLatestCopy()[RendererModelviewMatrices.COLUMN_MAJOR_PAN_X_SLOT])
+                .isEqualTo(RendererModelviewMatrices.MAP_PASS_PAN_X);
+            assertThat(bridgeReading.reportLatestCopy()[RendererModelviewMatrices.COLUMN_MAJOR_PAN_Y_SLOT])
+                .isEqualTo(RendererModelviewMatrices.MAP_PASS_PAN_Y);
             assertThat(failures.hasUnreported())
                 .isFalse();
         }
@@ -101,26 +93,26 @@ final class FastRenderingModelviewCopyTest {
             // The renderer pushed that matrix to the GPU instead of tracking it. Identity is a
             // reading rather than a failure, and the transform above reads it as unusable on its
             // own terms - degrading here would report a broken binding over a working one.
-            modelviewCopy.copyModelviewForNextRead(() -> createIdentityMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createIdentityMatrix());
 
-            assertThat(modelviewCopy.reportLatestCopy())
+            assertThat(bridgeReading.reportLatestCopy())
                 .containsExactly(
                     1f, 0f, 0f, 0f,
                     0f, 1f, 0f, 0f,
                     0f, 0f, 1f, 0f,
                     0f, 0f, 0f, 1f);
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isFalse();
         }
 
         @Test
         void publishesNoReadingWhereTheRendererTrackedNoMatrix() {
 
-            modelviewCopy.copyModelviewForNextRead(NO_MATRIX_TRACKED);
+            bridgeReading.copyModelviewForNextRead(NO_MATRIX_TRACKED);
 
-            assertThat(modelviewCopy.reportLatestCopy())
+            assertThat(bridgeReading.reportLatestCopy())
                 .isNull();
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isFalse();
         }
 
@@ -129,21 +121,21 @@ final class FastRenderingModelviewCopyTest {
 
             // The whole point: the throw stops here. Anywhere else it lands on the game thread a
             // frame later, wrapped, with nothing of ours on the stack to catch it.
-            assertThatCode(() -> modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED))
+            assertThatCode(() -> bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED))
                 .doesNotThrowAnyException();
         }
 
         @Test
         void keepsAReadingWhoseMemberIsGoneOffTheRenderThread() {
 
-            assertThatCode(() -> modelviewCopy.copyModelviewForNextRead(BRIDGE_MEMBER_GONE))
+            assertThatCode(() -> bridgeReading.copyModelviewForNextRead(BRIDGE_MEMBER_GONE))
                 .doesNotThrowAnyException();
         }
 
         @Test
         void recordsWhatTheBridgeThrewAgainstTheConsumerThatTookIt() {
 
-            modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
+            bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
 
             var failure = failures.takeNextUnreported();
             assertThat(failure.subject().name())
@@ -157,8 +149,8 @@ final class FastRenderingModelviewCopyTest {
 
             // The copy runs per frame, so a failure that recorded per frame would file a report for
             // every frame the map stays open.
-            modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
-            modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
+            bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
+            bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
 
             failures.takeNextUnreported();
             assertThat(failures.takeNextUnreported())
@@ -171,11 +163,11 @@ final class FastRenderingModelviewCopyTest {
             // A command enqueued before the break still runs after it, and a reading it published
             // then would be a matrix from before the break standing where the degraded state says
             // there is none.
-            modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
+            bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
 
-            modelviewCopy.copyModelviewForNextRead(() -> createPannedMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createMapPassAsFastRenderingHoldsIt());
 
-            assertThat(modelviewCopy.reportLatestCopy())
+            assertThat(bridgeReading.reportLatestCopy())
                 .isNull();
         }
 
@@ -185,11 +177,11 @@ final class FastRenderingModelviewCopyTest {
             // The degraded state is no reading rather than the last one that worked: that matrix
             // describes a pass that ended frames ago, and a caller resolving a cursor against it
             // would resolve the wrong point rather than park.
-            modelviewCopy.copyModelviewForNextRead(() -> createPannedMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createMapPassAsFastRenderingHoldsIt());
 
-            modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
+            bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
 
-            assertThat(modelviewCopy.reportLatestCopy())
+            assertThat(bridgeReading.reportLatestCopy())
                 .isNull();
         }
     }
@@ -200,9 +192,9 @@ final class FastRenderingModelviewCopyTest {
         @Test
         void answersNoWhileTheCopyIsWorking() {
 
-            modelviewCopy.copyModelviewForNextRead(() -> createPannedMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createMapPassAsFastRenderingHoldsIt());
 
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isFalse();
         }
 
@@ -211,9 +203,9 @@ final class FastRenderingModelviewCopyTest {
 
             // What the read path gates on: from the next frame it stays off the bridge entirely
             // rather than enqueueing another command that will fail the same way.
-            modelviewCopy.copyModelviewForNextRead(BRIDGE_MEMBER_GONE);
+            bridgeReading.copyModelviewForNextRead(BRIDGE_MEMBER_GONE);
 
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isTrue();
         }
     }
@@ -226,7 +218,7 @@ final class FastRenderingModelviewCopyTest {
 
             // The map's first frame, and its first after a reopen: the command is enqueued but has
             // not run, so there is nothing to report yet.
-            assertThat(modelviewCopy.reportLatestCopy())
+            assertThat(bridgeReading.reportLatestCopy())
                 .isNull();
         }
     }
@@ -235,14 +227,6 @@ final class FastRenderingModelviewCopyTest {
 
         var matrix = new Matrix4f();
         matrix.setIdentity();
-        return matrix;
-    }
-
-    private static Matrix4f createPannedMatrix() {
-
-        var matrix = createIdentityMatrix();
-        matrix.m03 = PAN_X;
-        matrix.m13 = PAN_Y;
         return matrix;
     }
 }

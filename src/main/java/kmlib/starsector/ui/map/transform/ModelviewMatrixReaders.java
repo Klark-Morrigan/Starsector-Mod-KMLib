@@ -140,15 +140,15 @@ public final class ModelviewMatrixReaders {
     // The reader is built here rather than shared, because it records its own call-time failures
     // and can only do that against the consumer this selection was asked for.
     //
-    // The copy is what both halves of that reader share: the queue's command fills it on the render
-    // thread and the reader reads it back on the game thread, and either side finding the bridge
-    // broken latches the one they both gate on.
+    // The reading is what both halves of that reader share: the queue's command fills it on the
+    // render thread and the reader takes it back on the game thread, and either side finding the
+    // bridge broken latches the one they both gate on.
     private static ModelviewMatrixReader bindFastRenderingReader(
             CompatibilityConsumer consumer,
             CompatibilityFailures failureRecord) {
 
-        var modelviewCopy = new FastRenderingModelviewCopy(consumer, failureRecord);
-        return new FastRenderingModelviewMatrixReader(modelviewCopy, new FastRenderingCopyQueue(modelviewCopy));
+        var bridgeReading = new FastRenderingBridgeReading(consumer, failureRecord);
+        return new FastRenderingModelviewMatrixReader(bridgeReading, new FastRenderingCopyQueue(bridgeReading));
     }
 
     // Which binding the running renderer needs, and the guard the bridge one is taken under. The

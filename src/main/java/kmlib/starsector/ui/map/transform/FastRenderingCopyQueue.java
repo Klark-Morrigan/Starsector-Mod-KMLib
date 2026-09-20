@@ -8,7 +8,7 @@ import com.genir.renderer.bridge.context.ContextManager;
 import com.genir.renderer.bridge.interfaces.GLCommand;
 
 /**
- * Puts {@link FastRenderingModelviewCopy}'s copy command onto Fast Rendering's own render thread,
+ * Puts {@link FastRenderingBridgeReading}'s copy command onto Fast Rendering's own render thread,
  * the binding of {@link FastRenderingModelviewMatrixReader.BridgeCopyQueue} for that renderer.
  *
  * <p>The only class here that names a Fast Rendering type. Loading it on a stock install would
@@ -31,14 +31,14 @@ final class FastRenderingCopyQueue implements FastRenderingModelviewMatrixReader
     // answers the matrix over as a reading to be taken inside the copy's own guard.
     private final GLCommand copyModelviewCommand;
 
-    FastRenderingCopyQueue(FastRenderingModelviewCopy modelviewCopy) {
+    FastRenderingCopyQueue(FastRenderingBridgeReading bridgeReading) {
 
         Objects.requireNonNull(
-            modelviewCopy,
-            "A queue with no copy to fill would enqueue a command that publishes nothing.");
+            bridgeReading,
+            "A queue with no reading to fill would enqueue a command that publishes nothing.");
 
         copyModelviewCommand = (renderThreadContext, args, argsOffset) ->
-            modelviewCopy.copyModelviewForNextRead(
+            bridgeReading.copyModelviewForNextRead(
                 () -> renderThreadContext.transformManager.getCPUModelView());
     }
 

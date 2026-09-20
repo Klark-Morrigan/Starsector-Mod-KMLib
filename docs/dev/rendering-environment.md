@@ -729,7 +729,7 @@ not swallowed -
 so the copy command has to be total.
 KMLib's is total by construction rather than by being short enough to look safe:
 the command body is a thin adapter that hands the matrix read over to
-[`FastRenderingModelviewCopy`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingModelviewCopy.java),
+[`FastRenderingBridgeReading`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingBridgeReading.java),
 which takes the reading and copies it inside one catch.
 The reading is taken *inside* that catch rather than before it,
 `Context.transformManager` and `getCPUModelView` being as able to stop holding as the copy is.

@@ -50,12 +50,7 @@ public record CampaignMapTransform(
     private static final int VIEWPORT_INT_COUNT = 4;
 
     // The matrix that transforms nothing, held to recognise a modelview that describes no pass.
-    private static final float[] IDENTITY_MATRIX = {
-        1f, 0f, 0f, 0f,
-        0f, 1f, 0f, 0f,
-        0f, 0f, 1f, 0f,
-        0f, 0f, 0f, 1f,
-    };
+    private static final float[] IDENTITY_MATRIX = GlMatrix.createIdentity();
 
     // The depth range the campaign UI's ortho is set up with. Named for honesty about what the
     // synthesized matrix models rather than because the value matters: an axis-aligned ortho has

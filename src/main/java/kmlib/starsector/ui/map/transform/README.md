@@ -81,8 +81,11 @@ and the call returns the copy a prior frame's command left behind.
 The result is a frame or two old,
 which is invisible for a still map and trails by a frame or two of pan velocity while panning.
 
-[`FastRenderingModelviewCopy`](FastRenderingModelviewCopy.java) is that copy,
-held apart from the binding because the two answer to different threads and to different failures.
+[`FastRenderingBridgeReading`](FastRenderingBridgeReading.java) is where that copy lands,
+along with the latch saying whether the bridge still answers at all.
+Held apart from the binding because it is the one thing both threads share:
+the render thread fills it, the game thread takes it,
+and either finding the bridge broken has to stop the other from touching it.
 
 ## When the bridge stops holding
 

@@ -11,26 +11,29 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * The modelview {@link FastRenderingModelviewMatrixReader} copies off the render thread, and what
- * that reader reports once copying it stops working.
+ * What Fast Rendering's bridge last answered, and whether it still answers at all: the modelview
+ * copied off the render thread, the latch that says the binding stopped holding, and the one report
+ * filed when it does.
  *
- * <p>Apart from the reader because the two answer to different threads and to different failures.
- * The reader binds to Fast Rendering's bridge and is called from the game thread; the copy is taken
- * on the renderer's own thread, inside the command the reader enqueues, and is the one place a
- * throw from that side can be contained at all. A command that throws does not fail where it was
- * enqueued: the renderer captures it and re-throws it wrapped on the game thread at the next frame
- * swap, outside any KM stack frame, so a guard around the enqueue would never see it and the game
- * dies over a hover highlight. {@code docs/dev/rendering-environment.md} records that mechanism.
+ * <p>The three belong together because they are one question asked from two threads.
+ * {@link FastRenderingModelviewMatrixReader} asks it on the game thread, where the reading is wanted
+ * and where the enqueue can fail; the copy runs on the renderer's own thread, inside the command
+ * that reader enqueues, where the read can fail differently. Either side finding the bridge broken
+ * has to stop the other from touching it, so there is one latch and not two, and the side that
+ * latches first is the side that files the report.
  *
- * <p>So the copy is total by construction rather than by being short enough to look safe. Anything
- * the read or the copy throws costs the reading and is recorded once, against the consumer that
- * took the binding.
+ * <p>That the copy is taken here at all, rather than in the reader, is the render thread's doing. A
+ * command that throws does not fail where it was enqueued: the renderer captures it and re-throws it
+ * wrapped on the game thread at the next frame swap, outside any KM stack frame, so a guard around
+ * the enqueue would never see it and the game dies over a hover highlight. The only place it can be
+ * contained is inside the command body, so the copy is total by construction rather than by being
+ * short enough to look safe. {@code docs/dev/rendering-environment.md} records that mechanism.
  *
  * <p>Names no Fast Rendering type: what it takes is a reading, not a context. That is what lets the
  * failure path be stated against a read that throws, which is the one thing a live renderer will
  * not do on demand.
  */
-final class FastRenderingModelviewCopy {
+final class FastRenderingBridgeReading {
 
     // The latest modelview copied off the render thread, or null before the first copy has run and
     // once the binding has stopped holding. Written on the render thread, read on the game thread;
@@ -48,14 +51,14 @@ final class FastRenderingModelviewCopy {
     // reading it is what keeps the broken path off the bridge from the next frame on.
     private volatile boolean isBridgeUnavailable;
 
-    FastRenderingModelviewCopy(CompatibilityConsumer consumer, CompatibilityFailures failureRecord) {
+    FastRenderingBridgeReading(CompatibilityConsumer consumer, CompatibilityFailures failureRecord) {
 
         this.consumer = Objects.requireNonNull(
             consumer,
-            "A copy with no consumer could not say whose feature a failed binding costs.");
+            "A reading with no consumer could not say whose feature a failed binding costs.");
         this.failureRecord = Objects.requireNonNull(
             failureRecord,
-            "A copy with nowhere to record would degrade silently and tell no player why.");
+            "A reading with nowhere to record would degrade silently and tell no player why.");
     }
 
     /**
@@ -96,7 +99,8 @@ final class FastRenderingModelviewCopy {
     }
 
     /**
-     * @return {@code true} once a copy has failed, the answer the read path stays off the bridge on
+     * @return {@code true} once the bridge has failed on either thread, the answer both sides stay
+     *         off it on
      */
     boolean isBridgeUnavailable() {
 

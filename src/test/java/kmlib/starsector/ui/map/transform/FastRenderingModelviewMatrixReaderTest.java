@@ -29,7 +29,7 @@ final class FastRenderingModelviewMatrixReaderTest {
     // A record of its own rather than the session's, so a case reads only what it recorded itself.
     private final CompatibilityFailures failures = new CompatibilityFailures();
 
-    private final FastRenderingModelviewCopy modelviewCopy = new FastRenderingModelviewCopy(
+    private final FastRenderingBridgeReading bridgeReading = new FastRenderingBridgeReading(
         CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
         failures);
 
@@ -53,7 +53,7 @@ final class FastRenderingModelviewMatrixReaderTest {
             // A reader that could not reach the render thread would enqueue nothing and report the
             // absent copy of a binding that is in fact working.
             assertThatNullPointerException()
-                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(modelviewCopy, null));
+                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(bridgeReading, null));
         }
     }
 
@@ -65,11 +65,11 @@ final class FastRenderingModelviewMatrixReaderTest {
 
             // The command enqueued by this read runs a frame later, so what the read reports is the
             // copy an earlier one already published.
-            modelviewCopy.copyModelviewForNextRead(() -> createIdentityMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createIdentityMatrix());
             var reader = createReader(countAndEnqueue());
 
             assertThat(reader.readModelviewMatrix())
-                .isSameAs(modelviewCopy.reportLatestCopy());
+                .isSameAs(bridgeReading.reportLatestCopy());
             assertThat(enqueueCount)
                 .hasValue(1);
             assertThat(failures.hasUnreported())
@@ -81,12 +81,12 @@ final class FastRenderingModelviewMatrixReaderTest {
 
             // Absent rather than broken: the renderer answers no context before it is up and again
             // after it is torn down, which is a frame with no reading rather than a failed binding.
-            modelviewCopy.copyModelviewForNextRead(() -> createIdentityMatrix());
+            bridgeReading.copyModelviewForNextRead(() -> createIdentityMatrix());
             var reader = createReader(countAndReportNoContext());
 
             assertThat(reader.readModelviewMatrix())
                 .isNull();
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isFalse();
             assertThat(failures.hasUnreported())
                 .isFalse();
@@ -102,7 +102,7 @@ final class FastRenderingModelviewMatrixReaderTest {
 
             assertThatCode(reader::readModelviewMatrix)
                 .doesNotThrowAnyException();
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isTrue();
         }
 
@@ -115,7 +115,7 @@ final class FastRenderingModelviewMatrixReaderTest {
 
             assertThatCode(reader::readModelviewMatrix)
                 .doesNotThrowAnyException();
-            assertThat(modelviewCopy.isBridgeUnavailable())
+            assertThat(bridgeReading.isBridgeUnavailable())
                 .isTrue();
         }
 
@@ -154,7 +154,7 @@ final class FastRenderingModelviewMatrixReaderTest {
             // The other side of the same binding: a command that failed where the renderer ran it
             // latched the copy, and this thread is off the bridge from the next frame without
             // having met the failure itself.
-            modelviewCopy.copyModelviewForNextRead(() -> {
+            bridgeReading.copyModelviewForNextRead(() -> {
                 throw new UnsupportedOperationException("TransformManager.getCPUModelView()");
             });
             var reader = createReader(countAndEnqueue());
@@ -176,7 +176,7 @@ final class FastRenderingModelviewMatrixReaderTest {
     private FastRenderingModelviewMatrixReader createReader(
             FastRenderingModelviewMatrixReader.BridgeCopyQueue copyQueue) {
 
-        return new FastRenderingModelviewMatrixReader(modelviewCopy, copyQueue);
+        return new FastRenderingModelviewMatrixReader(bridgeReading, copyQueue);
     }
 
     // The queue the renderer would be if it were working, and the three ways it is not. Each counts
