@@ -220,33 +220,12 @@ public final class VoronoiCellBuilder {
             double maxCellRadius,
             int boundSegments) {
 
-        var site = sites.get(siteIndex);
-
-        // Seed the cell with a bounded polygon whose every edge is a frontier (BOUND_EDGE),
-        // then let each neighbour's bisector clip it, stamping the cut edge with that
-        // neighbour's index. What survives labels each edge with the site across it, or
-        // BOUND_EDGE where the seed was never cut.
-        //
-        // What the seed cannot get right is where a border gives way to the bound, since it
-        // falls short of the bound between its own vertices. {@link VoronoiCellCorners} lays those
-        // corners afterwards, and is where that is set out.
-        var cell = LabelledPolygon.createRegularPolygon(
-            new Disk(site, maxCellRadius, boundSegments),
-            BOUND_EDGE);
-
-        for (var other = 0; other < sites.size(); other++) {
-
-            if (other == siteIndex) {
-                continue;
-            }
-            cell = clipToBisector(cell, site, sites.get(other), other);
-
-            if (cell.isEmpty()) {
-                break;
-            }
-        }
+        // Two passes, and the second is not a tidy-up. The clip cannot get right where a
+        // border gives way to the bound, its seed falling short of the bound between that
+        // seed's own vertices; {@link VoronoiCellCorners} lays those corners, and is where
+        // that is set out.
         return VoronoiCellCorners.layCornersInto(
-            new LabelledCell(cell.getVertices(), cell.getEdgeLabels()),
+            clipAgainstNeighbours(siteIndex, sites, maxCellRadius, boundSegments),
             siteIndex,
             sites,
             maxCellRadius);
@@ -294,6 +273,42 @@ public final class VoronoiCellBuilder {
                 : new ArrayList<>());
         }
         return pieces;
+    }
+
+    // The first pass: the cell as half-planes alone leave it.
+    //
+    // Seeded with a bounded polygon whose every edge is a frontier (BOUND_EDGE), then clipped
+    // by each neighbour's bisector, which stamps the cut edge with that neighbour's index.
+    // What survives labels each edge with the site across it, or BOUND_EDGE where the seed was
+    // never cut.
+    //
+    // Named rather than inlined so that the two passes a cell is built by are two things a
+    // reader can see, and two things a measurement can tell apart - the second costs what it
+    // costs, and that is worth being able to ask.
+    static LabelledCell clipAgainstNeighbours(
+            int siteIndex,
+            List<double[]> sites,
+            double maxCellRadius,
+            int boundSegments) {
+
+        var site = sites.get(siteIndex);
+
+        var cell = LabelledPolygon.createRegularPolygon(
+            new Disk(site, maxCellRadius, boundSegments),
+            BOUND_EDGE);
+
+        for (var other = 0; other < sites.size(); other++) {
+
+            if (other == siteIndex) {
+                continue;
+            }
+            cell = clipToBisector(cell, site, sites.get(other), other);
+
+            if (cell.isEmpty()) {
+                break;
+            }
+        }
+        return new LabelledCell(cell.getVertices(), cell.getEdgeLabels());
     }
 
     // The part of {@code ring} nearer to site {@code siteIndex} than to any other:
