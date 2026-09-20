@@ -51,6 +51,23 @@ public record Disk(
     }
 
     /**
+     * How far the approximating polygon falls inside the disk at its worst - the gap between
+     * a chord and the middle of the arc it stands for.
+     *
+     * <p>The resolution everything drawn against this disk is really at, and so the figure
+     * that decides what can be told apart on it: two points closer than this are the same
+     * point as far as the approximation is concerned, and a feature narrower than it is not
+     * one. A consumer welding what two approximations report, or discarding what is too small
+     * to be real, is asking for this number - and it falls straight out of the radius and the
+     * segment count, so it should be read rather than restated.
+     *
+     * @return the widest distance from a chord of the approximation to the arc it spans
+     */
+    public double measureSagitta() {
+        return radius * (1 - Math.cos(Math.PI / segments));
+    }
+
+    /**
      * @return the centre's x coordinate
      */
     public double centreX() {

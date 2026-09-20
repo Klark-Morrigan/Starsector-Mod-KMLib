@@ -26,6 +26,10 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
 - **`GlMatrix.FLOAT_COUNT`**: the sixteen floats a GL matrix takes, stated once for every reader and writer that sizes a buffer or rejects a wrong-sized array by it. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` now reads off it.
 
+#### Geometry
+
+- **`Disk.measureSagitta()`**: how far the approximating polygon falls inside the disk at its worst. The resolution anything drawn against that disk is really at, and so the figure a consumer welds by or discards small features by. It falls out of the radius and the segment count, so it is read rather than restated - four restatements of it across the consumer mods had to move together and did not.
+
 #### Fast Rendering compatibility
 
 A binding to Fast Rendering's bridge that stops holding now costs the map's cursor reading for the session rather than the render pass, and the player is told once, in-game, naming Fast Rendering and both versions. The channel it reports through is generic: any binding to third-party code records into it. [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/README.md) sets out how.
