@@ -450,8 +450,7 @@ final class VoronoiCellBuilderTest {
         private static final int WARMUP_BUILDS = 10;
         private static final int TIMED_BUILDS = 30;
 
-        // How far a corner may sit from the bound and still be on it, and how far two
-        // readings of one clipped vertex may differ and still be the same vertex.
+        // How far two readings of one clipped vertex may differ and still be the same vertex.
         private static final double SAME_POINT = 1e-9;
 
         @Test
@@ -533,46 +532,35 @@ final class VoronoiCellBuilderTest {
         }
 
         @Test
-        void buildLabelledCellClipsAsTheBareBuildDoesAndReportsCost() {
+        void clippingWithLabelsMovesNoVertexAndReportsWhatLabelsCost() {
 
             var sites = buildRandomSites();
 
-            // Correctness gate: the clip walk must be the same walk, so every vertex
-            // the labels have nothing to say about must equal the bare double[]
-            // control exactly. Only then does the timing below compare like with like.
+            // Correctness gate: the clip walk must be the same walk, so every vertex must
+            // equal the bare double[] control's exactly. Only then does the timing below
+            // compare like with like.
             //
-            // The frontier corners are the exception, and they are excepted rather
-            // than loosened. There the labelled build places the corner on the true
-            // bound, which a label-free control cannot do because it does not know
-            // which corners those are - so the two differ on purpose, and what is
-            // checked is that the labelled one is the one standing on the bound.
+            // Against the CLIP PASS, not the finished cell. The second pass moves corners the
+            // seed got wrong and drops the false bound edge a seed leaves across a corner it
+            // cut, so a finished cell differs from any label-free control by design and in
+            // vertex count - which says nothing about whether carrying labels moved anything.
+            // Pitted against the pass that is its counterpart, the control answers the one
+            // question it is here for, and answers it strictly: no exceptions, no slack.
             for (var i = 0; i < sites.size(); i++) {
 
-                var labelled = VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
+                var clipped = VoronoiCellBuilder.clipAgainstNeighbours(
+                    i, sites, MAX_CELL_RADIUS, BOUND_SEGMENTS);
+
                 var bare = buildBareCell(i, sites);
 
-                assertThat(labelled.vertices())
+                assertThat(clipped.vertices())
+                    .as("cell %d", i)
                     .hasSameSizeAs(bare);
 
-                var labels = labelled.edgeNeighbourSiteIndices();
-                var count = bare.size();
+                for (var v = 0; v < bare.size(); v++) {
 
-                for (var v = 0; v < count; v++) {
-
-                    var arriving =
-                        labels[(v + count - 1) % count] == VoronoiCellBuilder.BOUND_EDGE;
-                    var leaving = labels[v] == VoronoiCellBuilder.BOUND_EDGE;
-
-                    if (arriving != leaving) {
-
-                        assertThat(Points.computeDistance(
-                            labelled.vertices().get(v), sites.get(i)))
-                            .as("frontier corner %d of cell %d", v, i)
-                            .isCloseTo(MAX_CELL_RADIUS, within(SAME_POINT));
-                        continue;
-                    }
-
-                    assertThat(labelled.vertices().get(v))
+                    assertThat(clipped.vertices().get(v))
+                        .as("vertex %d of cell %d", v, i)
                         .containsExactly(
                             bare.get(v), org.assertj.core.data.Offset.offset(SAME_POINT));
                 }
@@ -580,7 +568,8 @@ final class VoronoiCellBuilderTest {
 
             var labelledCost = measure(() -> {
                 for (var i = 0; i < sites.size(); i++) {
-                    VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
+                    VoronoiCellBuilder.clipAgainstNeighbours(
+                        i, sites, MAX_CELL_RADIUS, BOUND_SEGMENTS);
                 }
             });
 
@@ -711,7 +700,7 @@ final class VoronoiCellBuilderTest {
         private void computeReportCost(long[] labelled, long[] bare) {
 
             System.out.printf(
-                "%nVoronoiCellBuilder partition (%d sites):%n",
+                "%nVoronoiCellBuilder clip pass, labels against none (%d sites):%n",
                 SITE_COUNT);
 
             System.out.printf(
