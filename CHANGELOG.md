@@ -26,6 +26,13 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
 - **`GlMatrix.FLOAT_COUNT`**: the sixteen floats a GL matrix takes, stated once for every reader and writer that sizes a buffer or rejects a wrong-sized array by it. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` now reads off it.
 
+#### Factions
+
+- **`FactionAlliances`**: which factions stand together, as the alliance each allied faction belongs to, with `areFactionsAllied` over it and `buildFrom` to invert a list of records into it. Vanilla keeps no such arrangement, so this is the shape one arrives in whichever mod maintains it. It says who stands with whom and no more - what an alliance is worth is the consumer's, since keeping a secret, fighting a war and sharing a market read the same membership to different ends.
+- **`AllianceRecord`**: one alliance flattened to plain data - its stable ID, its display name, and its members ranked by descending market size. Every field is a snapshot taken at read time rather than a live handle back into whatever maintains the alliance.
+- **`AllianceSource`**: the port those records arrive through, so whatever folds or weighs them runs with no game around it. A port rather than a snapshot, alliances forming and dissolving in play.
+- **`NexerelinAllianceSource`**: Nexerelin's live alliances as those records, behind the presence gate. The only code naming `exerelin.*` for them sits in a class of its own that the gate defers, not even reached by a method signature, so an install without the mod never seeks a Nexerelin class - and a consumer folds records without learning which mod produced them.
+
 #### Geometry
 
 - **`VertexWelder`**: which reports of a corner are one corner, by a tolerance, so edges computed apart can be compared as exact IDs rather than by distance at every hop. Promoted out of `EdgeRings`, where it had been private, once a second caller needed the same thing. Bucketed by a grid one tolerance across, so a lookup scans nine squares rather than the whole set, and the first report of a corner is the one kept - averaging would move a corner after edges had already been welded to it.
