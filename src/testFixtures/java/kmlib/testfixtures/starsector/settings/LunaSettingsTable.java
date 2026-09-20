@@ -76,11 +76,6 @@ public final class LunaSettingsTable {
         this.settingsCsv = Objects.requireNonNull(settingsCsv, "settingsCsv");
     }
 
-    /** @return the file this reading answers out of, for a check naming it in a failure */
-    public Path settingsCsv() {
-        return settingsCsv;
-    }
-
     /**
      * The section captions whose two caption cells hold different text. A Header is drawn through
      * addSectionHeading(defaultValue), so the name column beside it is inert for this row type
