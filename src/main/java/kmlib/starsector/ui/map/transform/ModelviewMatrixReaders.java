@@ -17,7 +17,8 @@ import java.util.function.BooleanSupplier;
  * Picks the {@link ModelviewMatrixReader} binding the running renderer needs, so a caller that just
  * wants the map's transform does not have to know that the answer lives somewhere different under
  * Fast Rendering than it does under stock LWJGL. Concentrating the choice here is also what keeps
- * {@link FastRenderingModelviewMatrixReader} unreachable on an install that cannot load it.
+ * {@link FastRenderingCopyQueue}, the one class naming that renderer's types, unreachable on an
+ * install that cannot load it.
  *
  * <p>Fast Rendering's bridge is not published API and has been relocated between releases without
  * notice, so binding to it can fail at the moment the class initialises - a {@link LinkageError}
@@ -138,11 +139,16 @@ public final class ModelviewMatrixReaders {
     //
     // The reader is built here rather than shared, because it records its own call-time failures
     // and can only do that against the consumer this selection was asked for.
+    //
+    // The copy is what both halves of that reader share: the queue's command fills it on the render
+    // thread and the reader reads it back on the game thread, and either side finding the bridge
+    // broken latches the one they both gate on.
     private static ModelviewMatrixReader bindFastRenderingReader(
             CompatibilityConsumer consumer,
             CompatibilityFailures failureRecord) {
 
-        return new FastRenderingModelviewMatrixReader(consumer, failureRecord);
+        var modelviewCopy = new FastRenderingModelviewCopy(consumer, failureRecord);
+        return new FastRenderingModelviewMatrixReader(modelviewCopy, new FastRenderingCopyQueue(modelviewCopy));
     }
 
     // Which binding the running renderer needs, and the guard the bridge one is taken under. The

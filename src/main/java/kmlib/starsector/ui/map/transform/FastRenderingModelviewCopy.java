@@ -112,11 +112,23 @@ final class FastRenderingModelviewCopy {
         return latestCopy.get();
     }
 
-    // Latched before the record is filed, so the next frame is already off the bridge whatever the
-    // record does with what it was handed. The copy taken before the break is dropped rather than
-    // kept: it describes a pass that has been over for frames, and the degraded state is no reading
-    // at all rather than a stale one.
-    private void degradeOnBridgeFailure(Throwable copyFailure) {
+    /**
+     * Latches the binding unavailable and files one report for it, the answer both threads give a
+     * bridge that stopped holding.
+     *
+     * <p>Latched before the record is filed, so the next frame is already off the bridge whatever
+     * the record does with what it was handed. The copy taken before the break is dropped rather
+     * than kept: it describes a pass that has been over for frames, and the degraded state is no
+     * reading at all rather than a stale one.
+     *
+     * <p>Shared with {@link FastRenderingModelviewMatrixReader}, which meets the same binding
+     * failing on the game thread where the reading is asked for. Degrading there through this
+     * rather than through a second latch is what makes a binding that broke on either thread broken
+     * on both, and keeps one broken renderer to one report.
+     *
+     * @param copyFailure what the bridge threw, carried into the report as its cause
+     */
+    void degradeOnBridgeFailure(Throwable copyFailure) {
 
         isBridgeUnavailable = true;
         latestCopy.set(null);

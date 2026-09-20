@@ -1,11 +1,6 @@
 package kmlib.starsector.ui.map.transform;
 
-import kmlib.opengl.FastRendering;
-import kmlib.starsector.compatibility.CompatibilityConsumer;
-import kmlib.starsector.compatibility.CompatibilityFailures;
-
-import com.genir.renderer.bridge.context.ContextManager;
-import com.genir.renderer.bridge.interfaces.GLCommand;
+import java.util.Objects;
 
 /**
  * Reports the modelview Fast Rendering holds on the CPU, the binding of
@@ -32,10 +27,10 @@ import com.genir.renderer.bridge.interfaces.GLCommand;
  * but the transform does not - and trails by a frame or two of pan velocity while panning.
  * {@code docs/dev/rendering-environment.md} records the mechanism and its citations.
  *
- * <p>The only class here that names a Fast Rendering type. Loading it on a stock install would
- * throw, since the classes ship in {@code fr.jar} and only a patched install has one, so it must be
- * reached only through {@link FastRendering#isFastRenderingActive} - a reference the JVM resolves
- * lazily, so a branch never taken never loads this.
+ * <p>Enqueuing is what {@link BridgeCopyQueue} does, and every Fast Rendering type this reader
+ * depends on sits behind it, in {@link FastRenderingCopyQueue}. That is what makes the guards below
+ * assertable: a bridge cannot be asked to fail on demand, and on a stock install it cannot be loaded
+ * to be asked at all.
  *
  * <p>None of what it reads is published API, so it fails safe: any answer it cannot get is reported
  * as no reading at all rather than as a guess, which {@link CampaignMapTransform} turns into a
@@ -53,41 +48,72 @@ public final class FastRenderingModelviewMatrixReader implements ModelviewMatrix
 
     // The copy this reader publishes across the render/game thread boundary, and the latch that
     // says the bridge stopped holding. Its own value because a throw on the render thread can only
-    // be contained inside the command, which is the one place this class has nothing else to do.
+    // be contained inside the command, which is the one place this class has nothing else to do -
+    // and because both sides of the binding then latch and record through one thing.
     private final FastRenderingModelviewCopy modelviewCopy;
 
-    // The copy command, held once rather than rebuilt per frame, so the per-frame path enqueues
-    // without allocating. A thin adapter: it reads nothing itself, handing the bridge member that
-    // answers the matrix over as a reading to be taken inside the copy's own guard.
-    private final GLCommand copyModelviewCommand;
+    // What hands the copy command to the renderer, as the only route from here into the bridge.
+    private final BridgeCopyQueue copyQueue;
 
-    FastRenderingModelviewMatrixReader(CompatibilityConsumer consumer, CompatibilityFailures failureRecord) {
+    FastRenderingModelviewMatrixReader(FastRenderingModelviewCopy modelviewCopy, BridgeCopyQueue copyQueue) {
 
-        modelviewCopy = new FastRenderingModelviewCopy(consumer, failureRecord);
-        copyModelviewCommand = (renderThreadContext, args, argsOffset) ->
-            modelviewCopy.copyModelviewForNextRead(
-                () -> renderThreadContext.transformManager.getCPUModelView());
+        this.modelviewCopy = Objects.requireNonNull(
+            modelviewCopy,
+            "A reader with no copy would have nowhere to read a deferred matrix back from.");
+        this.copyQueue = Objects.requireNonNull(
+            copyQueue,
+            "A reader with no queue could not reach the render thread the matrix is copied on.");
     }
 
     @Override
     public float[] readModelviewMatrix() {
-        // Checked before anything reaches the bridge: once a command has failed on the render
-        // thread, the binding is gone for the session, and asking again would only queue another
-        // frame's worth of the same failure.
+        // Checked before anything reaches the bridge: once the binding has failed on either thread,
+        // it is gone for the session, and asking again would only queue another frame's worth of
+        // the same failure.
         if (modelviewCopy.isBridgeUnavailable()) {
             return null;
         }
-        // A thread the bridge never registered a context for has no matrix to report - not an
-        // error, just not an answer, so it reads as an absent one.
-        var context = ContextManager.getThreadContext();
-        if (context == null) {
+        try {
+            // Nothing to report for a frame the renderer had no context for. Not a failure, so it
+            // does not degrade the binding: the context is absent before the renderer is up and
+            // again after it is torn down, and both are frames the map simply does not hover on.
+            if (!copyQueue.enqueueModelviewCopy()) {
+                return null;
+            }
+        } catch (LinkageError | RuntimeException enqueueFailure) {
+            // The bridge failing on the game thread, where the reading is asked for. Distinct from
+            // the copy's own guard, which covers the same binding failing on the render thread a
+            // frame later, and not covered by the guard around the binding itself: a release that
+            // declares an entry point and refuses it links cleanly and throws only here. Losing the
+            // reading costs a hover highlight; letting it out of a render pass costs the game.
+            modelviewCopy.degradeOnBridgeFailure(enqueueFailure);
             return null;
         }
-        // Enqueue the copy rather than waiting for it: a synchronous read stalls the deferred
-        // pipeline every frame, which genir's stall detector turns into a fatal error after enough
-        // frames.
-        context.exec.execute(copyModelviewCommand);
         // Return the previous frame's copy: the command just enqueued has not run yet.
         return modelviewCopy.reportLatestCopy();
+    }
+
+    /**
+     * What carries a modelview copy to the renderer's own thread, as the seam the bridge's
+     * game-thread failures are staged through.
+     *
+     * <p>Answers whether the copy was enqueued rather than handing back the renderer's context, so
+     * that no Fast Rendering type appears in a signature the reader names - which is what keeps the
+     * reader loadable, and its guards drivable, where the bridge is not.
+     */
+    @FunctionalInterface
+    interface BridgeCopyQueue {
+
+        /**
+         * @return {@code true} where the copy was enqueued, {@code false} where the calling thread
+         *         has no render context to enqueue onto - an absent answer for this frame rather
+         *         than a binding that stopped holding
+         * @throws LinkageError      where a bridge member named by the binding is gone or
+         *                           re-signatured
+         * @throws RuntimeException  where the installed release declares the entry point and
+         *                           refuses the call, which is how a bridge gap surfaces from
+         *                           {@code v0.8.9}
+         */
+        boolean enqueueModelviewCopy();
     }
 }
