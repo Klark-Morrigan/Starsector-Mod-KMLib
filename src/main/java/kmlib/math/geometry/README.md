@@ -323,7 +323,7 @@ and such a corner is put back rather than lost.
 So a caller trading smoothness for vertices keeps every place a neighbour can be reached,
 and a pass reading cells at one count and at another sees the same corners at both.
 
-What that band's width comes to is `Disk.measureSagitta()`,
+What that band's width comes to is `Disk.measureSagitta(radius, segments)`,
 which is also the resolution anything measured on these cells is really at.
 
 ## One home for the degenerate thresholds

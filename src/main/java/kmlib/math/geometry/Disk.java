@@ -61,9 +61,15 @@ public record Disk(
      * to be real, is asking for this number - and it falls straight out of the radius and the
      * segment count, so it should be read rather than restated.
      *
+     * <p>Taken as a radius and a count rather than as a disk, because where the disk is
+     * centred has nothing to do with it - and every caller that has the two has them as knobs
+     * rather than as a disk it could ask.
+     *
+     * @param radius   distance from the centre to the approximating polygon's vertices
+     * @param segments sides of that polygon
      * @return the widest distance from a chord of the approximation to the arc it spans
      */
-    public double measureSagitta() {
+    public static double measureSagitta(double radius, int segments) {
         return radius * (1 - Math.cos(Math.PI / segments));
     }
 

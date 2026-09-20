@@ -75,14 +75,14 @@ final class DiskTest {
         void theGapIsTheRadiusLessItsCosineOverHalfAStep() {
             // Four sides: each chord spans a quarter turn, so its middle falls short of the
             // arc by the radius less its cosine over an eighth of a turn.
-            assertThat(new Disk(new double[] {0, 0}, RADIUS, 4).measureSagitta())
+            assertThat(Disk.measureSagitta(RADIUS, 4))
                 .isCloseTo(29.289321881345245, within(SAME_LENGTH));
         }
 
         @Test
         void moreSidesLeaveASmallerGap() {
 
-            assertThat(new Disk(new double[] {0, 0}, RADIUS, 6).measureSagitta())
+            assertThat(Disk.measureSagitta(RADIUS, 6))
                 .isCloseTo(13.397459621556138, within(SAME_LENGTH));
         }
 
@@ -91,7 +91,7 @@ final class DiskTest {
             // A share of the radius rather than a length of its own, which is why a consumer
             // welding by it has to read it off the disk it is welding rather than carry a
             // number that was right at some other reach.
-            assertThat(new Disk(new double[] {0, 0}, 2 * RADIUS, 4).measureSagitta())
+            assertThat(Disk.measureSagitta(2 * RADIUS, 4))
                 .isCloseTo(58.57864376269049, within(SAME_LENGTH));
         }
     }
