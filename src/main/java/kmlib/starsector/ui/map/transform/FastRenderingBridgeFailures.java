@@ -9,8 +9,9 @@ import kmlib.starsector.compatibility.CompatibilitySubject;
 
 /**
  * How a Fast Rendering binding that stopped holding is described and recorded, for the two places
- * here that take one: {@link ModelviewMatrixReaders}, where the binding is resolved, and
- * {@link FastRenderingModelviewCopy}, where it is called a frame at a time.
+ * here that file one: {@link ModelviewMatrixReaders}, where the binding is resolved, and
+ * {@link FastRenderingModelviewCopy}, which stands for both sides of calling it - its own command on
+ * the render thread, and {@link FastRenderingModelviewMatrixReader}'s enqueue on the game thread.
  *
  * <p>Shared rather than spelled at each of them because the two fill the same slots from the same
  * sources, and a report a player reads once must not say two different things about one renderer
