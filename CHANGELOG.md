@@ -25,6 +25,7 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStringKeys.get()` and `format()`**: lookups bound to KMLib's own category, so a call site names a key alone rather than repeating the category beside it.
 - **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
 - **`GlMatrix.FLOAT_COUNT`**: the sixteen floats a GL matrix takes, stated once for every reader and writer that sizes a buffer or rejects a wrong-sized array by it. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` now reads off it.
+- **`Colonies.selectColonies(test)` and `Colonies.hasAnyColony(test)`**: the two walks over a colony set, stated on the set rather than hand-rolled beside it. The selection keeps the set's own order, which a consumer mirroring vanilla's tie rules settles a contest by; the emptiness read stops at the first colony that passes, being asked of every place in the sector on a scan and per frame while a map is drawn. An absent test passes nothing, which withholds rather than reporting a colony nobody asked to be shown.
 
 #### Factions
 

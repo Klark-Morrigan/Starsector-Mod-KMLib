@@ -57,4 +57,80 @@ final class ColoniesTest {
                 .isInstanceOf(UnsupportedOperationException.class);
         }
     }
+
+    @Nested
+    class SelectColonies {
+
+        @Test
+        void keepsTheSetsOwnOrderRatherThanGroupingThePassingColonies() {
+            // A caller mirroring vanilla's tie rules settles a contest on whichever colony the set
+            // reaches first, so a selection that regrouped them would resolve a different winner.
+            var first = buildListedColony();
+            var skipped = buildListedColony();
+            var last = buildListedColony();
+
+            var set = new Colonies(List.of(first, skipped, last));
+
+            assertThat(set.selectColonies(colony -> colony != skipped))
+                .containsExactly(first, last);
+        }
+
+        @Test
+        void yieldsNothingWhereNoColonyPasses() {
+            assertThat(new Colonies(List.of(buildListedColony())).selectColonies(colony -> false))
+                .isEmpty();
+        }
+
+        @Test
+        void yieldsNothingForAnUnstatedTest() {
+            // An absent test is no grounds for reporting anybody, which is the direction that
+            // withholds rather than the one that invents a colony nobody asked to be shown.
+            assertThat(new Colonies(List.of(buildListedColony())).selectColonies(null))
+                .isEmpty();
+        }
+
+        @Test
+        void rejectsAnAttemptToChangeTheSelection() {
+
+            var selected = new Colonies(List.of(buildListedColony()))
+                .selectColonies(colony -> true);
+
+            assertThatThrownBy(selected::clear)
+                .isInstanceOf(UnsupportedOperationException.class);
+        }
+    }
+
+    @Nested
+    class HasAnyColony {
+
+        @Test
+        void agreesWithTheSelectionItAsksTheEmptinessOf() {
+            // The claim the short-circuiting read rests on: not materialising the list must not
+            // change the answer, whichever way the test falls.
+            var set = new Colonies(List.of(buildListedColony()));
+
+            assertThat(set.hasAnyColony(colony -> true))
+                .isTrue();
+            assertThat(set.hasAnyColony(colony -> false))
+                .isFalse();
+        }
+
+        @Test
+        void answersFalseForAPlaceWithNobodyInIt() {
+            assertThat(Colonies.NONE.hasAnyColony(colony -> true))
+                .isFalse();
+        }
+
+        @Test
+        void answersFalseForAnUnstatedTest() {
+            assertThat(new Colonies(List.of(buildListedColony())).hasAnyColony(null))
+                .isFalse();
+        }
+    }
+
+    // A colony the economy lists, which is what a case poses where nothing about the colony itself
+    // is the subject - every case here is about the walk rather than about what it walks.
+    private static Colony buildListedColony() {
+        return new Colony(mock(MarketAPI.class), true);
+    }
 }

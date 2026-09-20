@@ -1,6 +1,8 @@
 package kmlib.starsector.markets.colonies;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * A set of owned colonies, selected by one rule, one entry per place and owner.
@@ -42,5 +44,56 @@ public record Colonies(List<Colony> colonies) {
      */
     public Colonies {
         colonies = colonies == null ? List.of() : List.copyOf(colonies);
+    }
+
+    /**
+     * Whether any colony here passes a test, stopped at the first that does.
+     *
+     * <p>Offered beside the selection rather than left to {@code selectColonies(...).isEmpty()},
+     * because "is anybody here" is asked of every place in the sector on a scan and per frame while
+     * a map is drawn, where the contents are never wanted - only whether there are any.
+     *
+     * @param isPassingColony the test to apply; null passes nothing, an unstated test being no
+     *                        grounds for answering that somebody is here
+     * @return true when at least one colony passes
+     */
+    public boolean hasAnyColony(Predicate<Colony> isPassingColony) {
+
+        if (isPassingColony == null) {
+            return false;
+        }
+        for (var colony : colonies) {
+
+            if (isPassingColony.test(colony)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The colonies here that pass a test, in the set's own order.
+     *
+     * <p>The order is the set's rather than the test's, a caller mirroring vanilla's tie rules
+     * reading it to settle a contest - so grouping the passing colonies any other way would resolve
+     * a different winner.
+     *
+     * @param isPassingColony the test to apply; null selects nothing, for the reason above
+     * @return the passing colonies; never null
+     */
+    public List<Colony> selectColonies(Predicate<Colony> isPassingColony) {
+
+        if (isPassingColony == null) {
+            return List.of();
+        }
+        var passingColonies = new ArrayList<Colony>();
+
+        for (var colony : colonies) {
+
+            if (isPassingColony.test(colony)) {
+                passingColonies.add(colony);
+            }
+        }
+        return List.copyOf(passingColonies);
     }
 }
