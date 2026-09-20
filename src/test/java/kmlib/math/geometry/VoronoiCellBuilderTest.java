@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pins the contract of {@link VoronoiCellBuilder#buildCells}:
@@ -284,6 +285,148 @@ final class VoronoiCellBuilderTest {
      * production path no longer has an unlabelled implementation to measure.
      */
     @Nested
+    class SharedFrontierCorners {
+
+        // Two sites inside two radii of each other, so each cell is part bisector and
+        // part bound, and the two corners where one gives way to the other are shared.
+        private static final List<double[]> NEIGHBOURS = List.of(
+            new double[] {0, 0},
+            new double[] {4000, 0});
+
+        // Deliberately coarse. The seed polygon's chord falls furthest from the bound
+        // at a low count, so a corner placed on the chord instead of the bound is
+        // wrong by the most here - and a count this low is what a caller passes to
+        // trade smoothness for vertices.
+        private static final int COARSE_SEGMENTS = 8;
+
+        // Fine enough that the band between the seed and the bound is too thin to swallow a
+        // corner, so this count stands for "however smoothly it could be drawn".
+        private static final int FINE_SEGMENTS = 256;
+
+        // How far a corner may sit from the bound and still be on it. The corner is
+        // computed from the radius rather than approached, so this is rounding.
+        private static final double SAME_POINT = 1e-9;
+
+        @Test
+        void twoNeighboursPutTheirSharedCornersInExactlyTheSamePlace() {
+            // Not "within a tolerance": both cells work the corner out from the two
+            // sites and the radius, never from their own seed polygon, so the two
+            // arrive at the same doubles. A consumer chaining one cell's frontier to
+            // the next can then weld at rounding instead of across a sagitta.
+            var first = VoronoiCellBuilder.buildLabelledCell(
+                0, NEIGHBOURS, MAX_CELL_RADIUS, COARSE_SEGMENTS);
+
+            var second = VoronoiCellBuilder.buildLabelledCell(
+                1, NEIGHBOURS, MAX_CELL_RADIUS, COARSE_SEGMENTS);
+
+            assertThat(collectFrontierCorners(first))
+                .containsExactlyInAnyOrderElementsOf(collectFrontierCorners(second));
+        }
+
+        @Test
+        void aSharedCornerStandsAtTheBoundRadiusFromBothSites() {
+            // What makes one point serve both cells: it is on the bisector, so it is
+            // the same distance from each site, and that distance is the bound. A
+            // corner left on the chord sits short of it.
+            var cell = VoronoiCellBuilder.buildLabelledCell(
+                0, NEIGHBOURS, MAX_CELL_RADIUS, COARSE_SEGMENTS);
+
+            var corners = collectFrontierCorners(cell);
+
+            assertThat(corners).hasSize(2);
+
+            for (var corner : corners) {
+
+                assertThat(Points.computeDistance(
+                    new double[] {corner.get(0), corner.get(1)}, NEIGHBOURS.get(0)))
+                    .isCloseTo(MAX_CELL_RADIUS, within(SAME_POINT));
+
+                assertThat(Points.computeDistance(
+                    new double[] {corner.get(0), corner.get(1)}, NEIGHBOURS.get(1)))
+                    .isCloseTo(MAX_CELL_RADIUS, within(SAME_POINT));
+            }
+        }
+
+        // Three sites on one circle, so the corner all three share stands at its centre -
+        // 4,800 from each, which is inside the 5,000 bound and OUTSIDE the seed drawn at a
+        // coarse count, whose flat sides come no nearer than 4,619 at their middles. Turned
+        // so that the direction from each site to that corner falls on a seed side rather
+        // than a seed vertex, which is where the gap between the two is widest.
+        private static final List<double[]> ROUND_A_SHARED_CORNER = List.of(
+            new double[] {-1836.88, 4434.62},
+            new double[] {-2922.05, -3808.10},
+            new double[] {4758.94, -626.53});
+
+        @Test
+        void aCornerTheSeedCutsAwayIsPutBack() {
+            // The corners a cell offers cannot depend on how smoothly its bound is drawn. The
+            // seed is inscribed in that bound, so at a coarse count its sides cut through the
+            // band where a shared corner can fall, and the corner is gone from the ring
+            // altogether - not merely moved, which is why placing corners is not enough on its
+            // own. Put back, the two cells meeting there meet at one point again instead of
+            // stopping short of each other with a gap between.
+            for (var cell = 0; cell < ROUND_A_SHARED_CORNER.size(); cell++) {
+
+                var coarse = collectFrontierCorners(VoronoiCellBuilder.buildLabelledCell(
+                    cell, ROUND_A_SHARED_CORNER, MAX_CELL_RADIUS, COARSE_SEGMENTS));
+
+                var fine = collectFrontierCorners(VoronoiCellBuilder.buildLabelledCell(
+                    cell, ROUND_A_SHARED_CORNER, MAX_CELL_RADIUS, FINE_SEGMENTS));
+
+                assertThat(coarse)
+                    .as("cell %d, drawn at %d segments against %d",
+                        cell, COARSE_SEGMENTS, FINE_SEGMENTS)
+                    .containsExactlyInAnyOrderElementsOf(fine);
+            }
+        }
+
+        @Test
+        void thoseCornersAreThereToBeLost() {
+            // Guards the fixture rather than the code: a layout offering no corners at all
+            // would pass the comparison above without exercising anything.
+            assertThat(collectFrontierCorners(VoronoiCellBuilder.buildLabelledCell(
+                    0, ROUND_A_SHARED_CORNER, MAX_CELL_RADIUS, COARSE_SEGMENTS)))
+                .isNotEmpty();
+        }
+
+        @Test
+        void aLoneCellIsUntouched() {
+            // Nothing cuts it, so it has no corner where a frontier starts or stops,
+            // and every vertex is a sample of the bound as the seed drew it.
+            var lone = VoronoiCellBuilder.buildLabelledCell(
+                0, List.of(new double[] {0, 0}), MAX_CELL_RADIUS, COARSE_SEGMENTS);
+
+            assertThat(lone.vertices()).hasSize(COARSE_SEGMENTS);
+
+            assertThat(collectFrontierCorners(lone)).isEmpty();
+        }
+
+        // The corners where the frontier gives way to a neighbour's border: exactly
+        // one of the two edges meeting there came from the bound.
+        private static List<List<Double>> collectFrontierCorners(
+                VoronoiCellBuilder.LabelledCell cell) {
+
+            var labels = cell.edgeNeighbourSiteIndices();
+            var count = cell.vertices().size();
+            var corners = new ArrayList<List<Double>>();
+
+            for (var index = 0; index < count; index++) {
+
+                var arriving = labels[(index + count - 1) % count] == VoronoiCellBuilder.BOUND_EDGE;
+                var leaving = labels[index] == VoronoiCellBuilder.BOUND_EDGE;
+
+                if (arriving != leaving) {
+                    // As boxed coordinates, so two corners compare by value and a
+                    // shared one has to be equal rather than merely close.
+                    corners.add(List.of(
+                        cell.vertices().get(index)[0], cell.vertices().get(index)[1]));
+                }
+            }
+            return corners;
+        }
+    }
+
+    @Nested
     class BuildLabelledCellPerformance {
 
         // A partition big enough that cells actually clip against neighbours, so
@@ -299,28 +442,53 @@ final class VoronoiCellBuilderTest {
         private static final int WARMUP_BUILDS = 10;
         private static final int TIMED_BUILDS = 30;
 
+        // How far a corner may sit from the bound and still be on it, and how far two
+        // readings of one clipped vertex may differ and still be the same vertex.
+        private static final double SAME_POINT = 1e-9;
+
         @Test
-        void buildLabelledCellMatchesBareDoubleArrayBuildAndReportsCost() {
+        void buildLabelledCellClipsAsTheBareBuildDoesAndReportsCost() {
 
             var sites = buildRandomSites();
 
-            // Correctness gate: labelling must not move a single vertex, so the
-            // labelled cell must equal the bare double[] control exactly. Only then
-            // does the timing below compare like with like.
+            // Correctness gate: the clip walk must be the same walk, so every vertex
+            // the labels have nothing to say about must equal the bare double[]
+            // control exactly. Only then does the timing below compare like with like.
+            //
+            // The frontier corners are the exception, and they are excepted rather
+            // than loosened. There the labelled build places the corner on the true
+            // bound, which a label-free control cannot do because it does not know
+            // which corners those are - so the two differ on purpose, and what is
+            // checked is that the labelled one is the one standing on the bound.
             for (var i = 0; i < sites.size(); i++) {
 
-                var labelled =
-                    VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS).vertices();
-
+                var labelled = VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
                 var bare = buildBareCell(i, sites);
 
-                assertThat(labelled)
+                assertThat(labelled.vertices())
                     .hasSameSizeAs(bare);
 
-                for (var v = 0; v < bare.size(); v++) {
+                var labels = labelled.edgeNeighbourSiteIndices();
+                var count = bare.size();
 
-                    assertThat(labelled.get(v))
-                        .containsExactly(bare.get(v), org.assertj.core.data.Offset.offset(1e-9));
+                for (var v = 0; v < count; v++) {
+
+                    var arriving =
+                        labels[(v + count - 1) % count] == VoronoiCellBuilder.BOUND_EDGE;
+                    var leaving = labels[v] == VoronoiCellBuilder.BOUND_EDGE;
+
+                    if (arriving != leaving) {
+
+                        assertThat(Points.computeDistance(
+                            labelled.vertices().get(v), sites.get(i)))
+                            .as("frontier corner %d of cell %d", v, i)
+                            .isCloseTo(MAX_CELL_RADIUS, within(SAME_POINT));
+                        continue;
+                    }
+
+                    assertThat(labelled.vertices().get(v))
+                        .containsExactly(
+                            bare.get(v), org.assertj.core.data.Offset.offset(SAME_POINT));
                 }
             }
 
@@ -554,8 +722,8 @@ final class VoronoiCellBuilderTest {
         @Test
         void noSitesYieldNoPieces() {
             assertThat(VoronoiCellBuilder.splitPolygonAmongSites(
-                    GeometryTestSupport.buildSquare(SPLIT_SQUARE_SIDE),
-                    List.of()))
+                GeometryTestSupport.buildSquare(SPLIT_SQUARE_SIDE),
+                List.of()))
                 .isEmpty();
         }
 

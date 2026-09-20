@@ -58,6 +58,14 @@ A binding to Fast Rendering's bridge that stops holding now costs the map's curs
 - **`CompatibilityFailureFixture`** and **`CompatibilitySlotTemplates`**: one representative compatibility failure with a builder per slot a case varies, plus the two subject keys and the two consumers a suite records under - each consumer losing something the other does not, so a case about two of them being told apart cannot pass on one sentence standing for both - and the notice's templates as stand-ins that expose their slots, so a suite about the record, the notice or the wording names the one slot it is about.
 - **`ShippedStrings`**: reads a mod's shipped `data/strings/strings.json` and the string IDs its holder class names, for the guard that holds those two together. The walk lives here rather than in each mod's suite, where a regex that stopped matching some entries would leave both directions passing over less of the file than they claim.
 
+### Changed
+
+- **`VoronoiCellBuilder` lays the corners its cells share.** Where a neighbour's border meets the radius bound, both cells now put that corner in the same place, worked out from the two sites and the reach rather than from either cell's own seed - so they agree exactly rather than to a tolerance. The seed is a polygon inscribed in the bound, and its flat sides used to move such a corner, or at a coarse segment count cut it away altogether; a consumer chaining adjacent cells' frontier edges into one outline found a gap at every one of those, wide enough at a low count to leak one enclosed region into the next. A corner that is cut away is now put back, by breaking the span it should have stood on and running the boundary through it.
+
+  The segment count therefore decides how smoothly an arc is drawn and nothing else. The corners a cell offers are the same at any count, which is what anything laid against a cell needs. Where three cells meet inside the bound their shared corner is one corner, not two with an empty span between them.
+
+  Cell geometry moves by up to a chord's sagitta at those corners - about eight units at the shipped reach and default count, and four times that at half the count. Consumers asserting cell vertices to tighter than that will need re-baselining.
+
 ### Public contracts changed (**breaking**)
 
 - `ModelviewMatrixReaders.selectForActiveRenderer()` takes the `CompatibilityConsumer` taking the reading; the no-argument form is gone. A caller now names the key its records latch under and the sentence naming what it loses, both read only where a binding fails. The sentence is the caller's because what a failed binding costs is knowledge of the feature built over the reading: the library knows the renderer, both versions and the member that moved, and nothing about what was drawn with it.
