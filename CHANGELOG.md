@@ -26,6 +26,12 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
 - **`GlMatrix.FLOAT_COUNT`**: the sixteen floats a GL matrix takes, stated once for every reader and writer that sizes a buffer or rejects a wrong-sized array by it. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` now reads off it.
 
+#### Geometry
+
+- **`VertexWelder`**: which reports of a corner are one corner, by a tolerance, so edges computed apart can be compared as exact IDs rather than by distance at every hop. Promoted out of `EdgeRings`, where it had been private, once a second caller needed the same thing. Bucketed by a grid one tolerance across, so a lookup scans nine squares rather than the whole set, and the first report of a corner is the one kept - averaging would move a corner after edges had already been welded to it.
+- **`Disk.measureSagitta(radius, segments)`**: how far the polygon approximating a disk falls inside it at its worst. The resolution anything drawn against that disk is really at, and so the figure a consumer welds by or discards small features by. It falls out of the radius and the segment count, so it is read rather than restated - four restatements of it across the consumer mods had to move together and did not. Static, taking the two: where the disk is centred has nothing to do with it, and every caller holding the two holds them as knobs rather than as a disk it could ask.
+- **`Segment.readStart()` and `readEnd()`**: a segment's ends as `{x, y}` points, the one crossing between a value that names its ends by role and the point arithmetic beside it that takes arrays. Each read is its own array, so a caller keeping one as a corner cannot have it move under them.
+
 #### Fast Rendering compatibility
 
 A binding to Fast Rendering's bridge that stops holding now costs the map's cursor reading for the session rather than the render pass, and the player is told once, in-game, naming Fast Rendering and both versions. The channel it reports through is generic: any binding to third-party code records into it. [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/README.md) sets out how.
@@ -53,6 +59,14 @@ A binding to Fast Rendering's bridge that stops holding now costs the map's curs
 - **`MemoryKeyAddresses`**: two stand-in addresses, for suites storing a value at one point on an axis without being about what the axis is.
 - **`CompatibilityFailureFixture`** and **`CompatibilitySlotTemplates`**: one representative compatibility failure with a builder per slot a case varies, plus the two subject keys and the two consumers a suite records under - each consumer losing something the other does not, so a case about two of them being told apart cannot pass on one sentence standing for both - and the notice's templates as stand-ins that expose their slots, so a suite about the record, the notice or the wording names the one slot it is about.
 - **`ShippedStrings`**: reads a mod's shipped `data/strings/strings.json` and the string IDs its holder class names, for the guard that holds those two together. The walk lives here rather than in each mod's suite, where a regex that stopped matching some entries would leave both directions passing over less of the file than they claim.
+
+### Changed
+
+- **`VoronoiCellBuilder` lays the corners its cells share.** Where a neighbour's border meets the radius bound, both cells now put that corner in the same place, worked out from the two sites and the reach rather than from either cell's own seed - so they agree exactly rather than to a tolerance. The seed is a polygon inscribed in the bound, and its flat sides used to move such a corner, or at a coarse segment count cut it away altogether; a consumer chaining adjacent cells' frontier edges into one outline found a gap at every one of those, wide enough at a low count to leak one enclosed region into the next. A corner that is cut away is now put back, by breaking the span it should have stood on and running the boundary through it.
+
+  The segment count therefore decides how smoothly an arc is drawn and nothing else. The corners a cell offers are the same at any count, which is what anything laid against a cell needs. Where three cells meet inside the bound their shared corner is one corner, not two with an empty span between them.
+
+  Cell geometry moves by up to a chord's sagitta at those corners - about eight units at the shipped reach and default count, and four times that at half the count. Consumers asserting cell vertices to tighter than that will need re-baselining.
 
 ### Public contracts changed (**breaking**)
 

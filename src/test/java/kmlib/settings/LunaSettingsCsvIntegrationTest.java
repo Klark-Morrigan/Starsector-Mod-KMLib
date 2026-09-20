@@ -1,16 +1,15 @@
 package kmlib.settings;
 
 import kmlib.logging.KmLogging;
+import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
+
+import static kmlib.testfixtures.starsector.settings.LunaSettingsTable.RADIO_FIELD_TYPE;
+import static kmlib.testfixtures.starsector.settings.LunaSettingsTable.SETTINGS_CSV;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,31 +24,29 @@ import static org.assertj.core.api.Assertions.assertThat;
  * for everyone who had chosen it - so the option list is held against the level names log4j will
  * actually parse.
  *
+ * <p>Read through {@link LunaSettingsTable}, which is the reading this library offers every mod on
+ * its conventions, rather than through a parser of this suite's own. The table is the file's shape
+ * as LunaLib defines it, so the library holding its one row to some other reading of it would be
+ * shipping a tool it did not use.
+ *
  * <p>Reads the real data file rather than a fixture: a fixture would agree with the code while the
  * shipped table did not, which is precisely the failure.
  */
 class LunaSettingsCsvIntegrationTest {
 
-    private static final Path SETTINGS_CSV = Path.of("data", "config", "LunaSettings.csv");
-
     private static final String LOG_LEVEL_FIELD = "kmlib_logLevel";
+
+    // What every one of this library's field IDs starts with. One row carries it today; the prefix
+    // is what keeps the reading exhaustive rather than aimed at that row.
+    private static final String FIELD_ID_PREFIX = "kmlib_";
 
     // Every level log4j can parse, in the order the dropdown offers them. Stated here rather than
     // derived, since the CSV's job is to offer exactly these and nothing else.
     private static final List<String> LOG_LEVEL_OPTIONS =
         List.of("OFF", "ERROR", "WARN", "INFO", "DEBUG", "ALL");
 
-    private static String readLogLevelRow() {
-        try {
-            return Files.readAllLines(SETTINGS_CSV, StandardCharsets.UTF_8).stream()
-                .filter(line -> line.startsWith(LOG_LEVEL_FIELD + ","))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(
-                    "No row in " + SETTINGS_CSV + " declares " + LOG_LEVEL_FIELD));
-        } catch (IOException failure) {
-            throw new UncheckedIOException(failure);
-        }
-    }
+    private static final LunaSettingsTable SETTINGS_TABLE =
+        new LunaSettingsTable(SETTINGS_CSV, FIELD_ID_PREFIX);
 
     @Nested
     class LogLevelRow {
@@ -58,7 +55,9 @@ class LunaSettingsCsvIntegrationTest {
         void shipsARowForTheFieldTheBindingReads() {
             // The binding asks LunaLib for this ID; a row under any other name is a setting the
             // player can change and the library will never read.
-            assertThat(readLogLevelRow()).startsWith(LOG_LEVEL_FIELD + ",");
+            assertThat(SETTINGS_TABLE.readDeclaredFieldIds())
+                .as("field ids declared in %s", SETTINGS_CSV)
+                .contains(LOG_LEVEL_FIELD);
         }
 
         @Test
@@ -66,16 +65,18 @@ class LunaSettingsCsvIntegrationTest {
             // The screen's default and the code's fallback are two different values that have to
             // agree, or a player who never opens the settings screen gets one level and a player
             // who opens it and changes nothing gets another.
-            assertThat(readLogLevelRow())
-                .contains(",Radio," + KmLogging.DEFAULT_LEVEL.toString() + ",");
+            assertThat(SETTINGS_TABLE.readDefaultValue(LOG_LEVEL_FIELD, RADIO_FIELD_TYPE))
+                .as("default of %s in %s", LOG_LEVEL_FIELD, SETTINGS_CSV)
+                .isEqualTo(KmLogging.DEFAULT_LEVEL.toString());
         }
 
         @Test
         void offersEveryLevelAndOnlyLevelsLog4jParses() {
             // An option log4j cannot parse resolves to the fallback, so the player picks a level and
             // silently gets a different one.
-            assertThat(readLogLevelRow())
-                .contains("\"" + String.join(", ", LOG_LEVEL_OPTIONS) + "\"");
+            assertThat(SETTINGS_TABLE.readOptions(LOG_LEVEL_FIELD))
+                .as("options of %s in %s", LOG_LEVEL_FIELD, SETTINGS_CSV)
+                .isEqualTo(LOG_LEVEL_OPTIONS);
         }
     }
 }

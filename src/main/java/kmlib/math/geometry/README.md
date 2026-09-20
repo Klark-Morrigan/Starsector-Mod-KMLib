@@ -19,6 +19,7 @@ not in this package.
 - [Giving a polyline girth](#giving-a-polyline-girth)
 - [Point, line and span arithmetic](#point-line-and-span-arithmetic)
 - [Partitioning](#partitioning)
+- [What a cell's neighbours agree on](#what-a-cells-neighbours-agree-on)
 - [One home for the degenerate thresholds](#one-home-for-the-degenerate-thresholds)
 - [Why a disk carries its own segment count](#why-a-disk-carries-its-own-segment-count)
 
@@ -307,6 +308,23 @@ and how far a point lies from the nearest place on one.
 every cell bounded to a maximum reach from its site.
 `buildLabelledCell` returns each edge tagged with the neighbouring site's index,
 or `BOUND_EDGE` where the cell met its radius bound instead of a neighbour.
+
+## What a cell's neighbours agree on
+
+Two cells that meet share the corner where their border gives way to the radius bound,
+and `VoronoiCellBuilder` places it from the two sites and the reach alone.
+Both cells therefore arrive at the same doubles rather than at two points a whisker apart,
+and a consumer chaining their frontier edges into one outline welds at rounding.
+
+The segment count decides how smoothly the arc BETWEEN two corners is drawn, and nothing else.
+It does not decide which corners a cell has:
+the seed the cell is carved from is inscribed in the bound, so at a coarse count its flat sides cut through the band a shared corner can fall in,
+and such a corner is put back rather than lost.
+So a caller trading smoothness for vertices keeps every place a neighbour can be reached,
+and a pass reading cells at one count and at another sees the same corners at both.
+
+What that band's width comes to is `Disk.measureSagitta(radius, segments)`,
+which is also the resolution anything measured on these cells is really at.
 
 ## One home for the degenerate thresholds
 

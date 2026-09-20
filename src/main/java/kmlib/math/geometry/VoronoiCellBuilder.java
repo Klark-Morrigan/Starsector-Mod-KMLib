@@ -33,11 +33,13 @@ public final class VoronoiCellBuilder {
     /**
      * Default sides of the regular polygon that approximates each cell's max-radius
      * bound, used by the builders that take no explicit count. High enough that the
-     * rounded frontier reads as a smooth curve rather than a visible polygon, and
-     * that two neighbouring cells' bound chords meet their shared bisector within a
-     * hair of the same point - so a consumer chaining adjacent cells' frontier edges
-     * into one outline finds them effectively coincident rather than separated by a
-     * visible chord-vs-arc gap.
+     * rounded frontier reads as a smooth curve rather than a visible polygon.
+     *
+     * <p>It decides smoothness and nothing else. Where a frontier starts and stops -
+     * the corner two neighbours share - is placed on the true bound rather than on
+     * this polygon, so adjacent cells meet exactly at any count, and a consumer
+     * chaining their frontier edges into one outline welds at rounding rather than at
+     * a chord-versus-arc gap that grows as the count falls.
      *
      * <p>Every segment is a vertex on each frontier cell, so a caller that needs to
      * trade a slightly faceted frontier for fewer vertices (a rendering cost) passes
@@ -220,10 +222,14 @@ public final class VoronoiCellBuilder {
 
         var site = sites.get(siteIndex);
 
-        // Seed the cell with a bounded polygon whose every edge is a frontier
-        // (BOUND_EDGE), then let each neighbour's bisector clip it, stamping the
-        // cut edge with that neighbour's index. What survives labels each edge
-        // with the site across it, or BOUND_EDGE where the seed was never cut.
+        // Seed the cell with a bounded polygon whose every edge is a frontier (BOUND_EDGE),
+        // then let each neighbour's bisector clip it, stamping the cut edge with that
+        // neighbour's index. What survives labels each edge with the site across it, or
+        // BOUND_EDGE where the seed was never cut.
+        //
+        // What the seed cannot get right is where a border gives way to the bound, since it
+        // falls short of the bound between its own vertices. {@link VoronoiCellCorners} lays those
+        // corners afterwards, and is where that is set out.
         var cell = LabelledPolygon.createRegularPolygon(
             new Disk(site, maxCellRadius, boundSegments),
             BOUND_EDGE);
@@ -239,7 +245,11 @@ public final class VoronoiCellBuilder {
                 break;
             }
         }
-        return new LabelledCell(cell.getVertices(), cell.getEdgeLabels());
+        return VoronoiCellCorners.layCornersInto(
+            new LabelledCell(cell.getVertices(), cell.getEdgeLabels()),
+            siteIndex,
+            sites,
+            maxCellRadius);
     }
 
     /**
