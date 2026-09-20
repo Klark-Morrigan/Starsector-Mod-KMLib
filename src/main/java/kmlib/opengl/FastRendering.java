@@ -19,6 +19,26 @@ import java.nio.FloatBuffer;
  */
 public final class FastRendering {
 
+    /**
+     * The identity a binding to this renderer that stopped holding is recorded under.
+     *
+     * <p>Published rather than spelled at each binding site because a compatibility record is
+     * latched per third party and consumer: two binders spelling it differently would turn one
+     * renderer into two subjects and put two modals in front of a player over one mismatch. Held
+     * beside the detection because whoever binds to this renderer already asks this class whether
+     * it is in force.
+     */
+    public static final String COMPATIBILITY_SUBJECT_KEY = "fast-rendering";
+
+    /**
+     * The renderer's name as a report shows it, beside the key its records latch under.
+     *
+     * <p>Never qualified as a mod: Fast Rendering is an install patch with no folder under
+     * {@code mods\} and no {@code mod_info.json}, so calling it one sends a player to a mod manager
+     * that does not list it.
+     */
+    public static final String COMPATIBILITY_SUBJECT_NAME = "Fast Rendering";
+
     // The package every Fast Rendering bridge class sits under, whatever the release calls the rest
     // of the name. Matching the prefix rather than a whole class name is deliberate: the bridge has
     // moved within this package twice, neither time announced (v0.7.4 moved GL11 from
