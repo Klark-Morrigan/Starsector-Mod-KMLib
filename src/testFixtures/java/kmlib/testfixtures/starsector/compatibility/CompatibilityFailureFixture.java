@@ -1,5 +1,6 @@
 package kmlib.testfixtures.starsector.compatibility;
 
+import kmlib.opengl.FastRenderingBridgeDiagnostic;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilitySubject;
@@ -28,9 +29,20 @@ public final class CompatibilityFailureFixture {
     /** The sentence naming what the session loses, in the wording a consumer would supply. */
     public static final String LOST_FEATURE = "Sector map overlays will not respond to the cursor this session.";
 
-    /** The member that stopped holding, in the phrase the bridge diagnostic names one with. */
-    public static final String BROKEN_DETAIL =
-        "GLCommand.run (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)";
+    /** The member that stopped holding, as a probe of the bridge reports one. */
+    public static final FastRenderingBridgeDiagnostic.BrokenMember BROKEN_MEMBER =
+        new FastRenderingBridgeDiagnostic.BrokenMember(
+            "GLCommand.run",
+            "ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand");
+
+    /**
+     * That member in the phrase a failure's detail slot takes.
+     *
+     * <p>Composed from the member above rather than spelled again, which is how the production
+     * path fills the slot: a suite handing in a phrase the diagnostic would never produce would be
+     * stating the wording rather than using it.
+     */
+    public static final String BROKEN_DETAIL = BROKEN_MEMBER.describe();
 
     /** What a second mod over the same binding loses, which is nothing the first one does. */
     public static final String COLONY_PANEL_LOST_FEATURE =

@@ -12,8 +12,9 @@ package kmlib.starsector.ui.map.transform;
  * a matrix that describes nothing: a wrong answer rather than no answer. The degraded state is "no
  * reading", never a guessed one.
  *
- * <p>A single {@link #INSTANCE}, matching the other two bindings: it holds no state, so one shared
- * value serves every caller.
+ * <p>A single {@link #INSTANCE}, as {@link GlModelviewMatrixReader} is: it holds no state, so one
+ * shared value serves every caller. Fast Rendering's binding is not one, holding a copy taken off
+ * the render thread and the consumer its failures are recorded against.
  */
 public enum UnavailableModelviewMatrixReader implements ModelviewMatrixReader {
     INSTANCE;

@@ -726,8 +726,18 @@ wrapped in a `RuntimeException`
 Since `swapFrames` runs every frame,
 "fire and forget" means the exception is deferred,
 not swallowed -
-so the copy command has to be total,
-and KMLib's holds no logic beyond the copy for that reason.
+so the copy command has to be total.
+KMLib's is total by construction rather than by being short enough to look safe:
+the command body is a thin adapter that hands the matrix read over to
+[`FastRenderingModelviewCopy`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingModelviewCopy.java),
+which takes the reading and copies it inside one catch.
+The reading is taken *inside* that catch rather than before it,
+`Context.transformManager` and `getCPUModelView` being as able to stop holding as the copy is.
+Anything caught there costs the reading alone:
+the binding latches unavailable for the session,
+every later read answers no matrix,
+and the mod that took the binding is told once,
+through the [compatibility channel](../../src/main/java/kmlib/starsector/compatibility/README.md).
 
 ### What the GL11 bridge can and cannot read back
 
