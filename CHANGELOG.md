@@ -25,6 +25,14 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStringKeys.get()` and `format()`**: lookups bound to KMLib's own category, so a call site names a key alone rather than repeating the category beside it.
 - **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
 - **`GlMatrix.FLOAT_COUNT`**: the sixteen floats a GL matrix takes, stated once for every reader and writer that sizes a buffer or rejects a wrong-sized array by it. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` now reads off it.
+- **`Colonies.selectColonies(test)` and `Colonies.hasAnyColony(test)`**: the two walks over a colony set, stated on the set rather than hand-rolled beside it. The selection keeps the set's own order, which a consumer mirroring vanilla's tie rules settles a contest by; the emptiness read stops at the first colony that passes, being asked of every place in the sector on a scan and per frame while a map is drawn. An absent test passes nothing, which withholds rather than reporting a colony nobody asked to be shown.
+
+#### Factions
+
+- **`FactionAlliances`**: which factions stand together, as the alliance each allied faction belongs to, with `areFactionsAllied` over it and `buildFrom` to invert a list of records into it. Vanilla keeps no such arrangement, so this is the shape one arrives in whichever mod maintains it. It says who stands with whom and no more - what an alliance is worth is the consumer's, since keeping a secret, fighting a war and sharing a market read the same membership to different ends.
+- **`AllianceRecord`**: one alliance flattened to plain data - its stable ID, its display name, and its members ranked by descending market size. Every field is a snapshot taken at read time rather than a live handle back into whatever maintains the alliance.
+- **`AllianceSource`**: the port those records arrive through, so whatever folds or weighs them runs with no game around it. A port rather than a snapshot, alliances forming and dissolving in play.
+- **`NexerelinAllianceSource`**: Nexerelin's live alliances as those records, behind the presence gate. The only code naming `exerelin.*` for them sits in a class of its own that the gate defers, not even reached by a method signature, so an install without the mod never seeks a Nexerelin class - and a consumer folds records without learning which mod produced them.
 
 #### Geometry
 
