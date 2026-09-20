@@ -36,12 +36,6 @@ import java.util.function.Supplier;
 public final class ModelviewMatrixReaders {
     private static final Logger LOG = Global.getLogger(ModelviewMatrixReaders.class);
 
-    // The third party a failed bridge binding is recorded against: the key the record latches
-    // under, and the name the player is shown. Spelled here because this is the only class that
-    // binds to that renderer through a branch of its own.
-    private static final String FAST_RENDERING_SUBJECT_KEY = "fast-rendering";
-    private static final String FAST_RENDERING_SUBJECT_NAME = "Fast Rendering";
-
     // The selection the game runs on, wired to the live renderer check, the real bridge binding and
     // the session's record. Held as a value so the same logic can be driven in a test against a
     // binding that fails - which no test JVM's renderer would otherwise reach at all.
@@ -96,6 +90,29 @@ public final class ModelviewMatrixReaders {
         return SESSION_SELECTION.selectReaderForActiveRenderer(consumer);
     }
 
+    // What the player and the log are told, as the slots of one failure: the renderer and the two
+    // versions the mismatch is stated between, every mirrored member the probe found broken rather
+    // than the single one the JVM gave up on, the consumer's own sentence, and the caught error as
+    // the cause a log line carries a trace from.
+    //
+    // Takes the probe's answer rather than probing itself, so what fills which slot is stated
+    // against a diagnostic a suite composes - the probe reads whichever jar the machine has, which
+    // is no basis for an expectation.
+    static CompatibilityFailure composeBridgeFailure(
+            CompatibilityConsumer consumer,
+            LinkageError bindingFailure,
+            FastRenderingBridgeDiagnostic diagnostic) {
+
+        return new CompatibilityFailure(
+            new CompatibilitySubject(
+                FastRendering.COMPATIBILITY_SUBJECT_NAME,
+                diagnostic.boundVersion(),
+                diagnostic.installedVersion()),
+            consumer.lostFeature(),
+            diagnostic.describeBrokenMembers(),
+            bindingFailure);
+    }
+
     // The selection itself, on an instance, so a suite can drive it with a binding that fails and a
     // record of its own. Synchronised for the same reason the static held: the first caller decides
     // for every later one, and map passes are not guaranteed to be the only thread asking.
@@ -127,28 +144,8 @@ public final class ModelviewMatrixReaders {
         return FastRenderingModelviewMatrixReader.INSTANCE;
     }
 
-    // What the player and the log are told, built only where a record is kept. The probe names
-    // every mirrored member that does not hold, rather than the single one the JVM gave up on, and
-    // reads both versions; the caught error rides along as the cause for the log's stack trace.
-    private static CompatibilityFailure describeBridgeFailure(
-            CompatibilityConsumer consumer,
-            LinkageError bindingFailure) {
-
-        var diagnostic = FastRenderingBridgeDiagnostic.probeInstalledBridge();
-
-        return new CompatibilityFailure(
-            new CompatibilitySubject(
-                FAST_RENDERING_SUBJECT_NAME,
-                diagnostic.boundVersion(),
-                diagnostic.installedVersion()),
-            consumer.lostFeature(),
-            diagnostic.describeBrokenMembers(),
-            bindingFailure);
-    }
-
-    // Naming the Fast Rendering binding only inside the taken branch is what keeps it off a stock
-    // install: the JVM resolves that reference when the branch runs, so a stock game never loads a
-    // class whose own dependencies it does not have.
+    // Which binding the running renderer needs, and the guard the bridge one is taken under. The
+    // stock branch cannot fail this way, so only the bridge branch is wrapped.
     private ModelviewMatrixReader resolveReaderForActiveRenderer(CompatibilityConsumer consumer) {
 
         if (!isFastRenderingActive.getAsBoolean()) {
@@ -161,10 +158,16 @@ public final class ModelviewMatrixReaders {
             // One catch for every way a binding stops holding at link time - a class that is gone,
             // a member that is gone, a signature that changed - because the JVM raises all three
             // the same way and the answer to each is the same: lose the reading, not the pass.
+            //
+            // The probe runs inside the description, so it is paid on the record that is kept and
+            // not on one the latch ignores.
             failureRecord.recordOnce(
-                FAST_RENDERING_SUBJECT_KEY,
+                FastRendering.COMPATIBILITY_SUBJECT_KEY,
                 consumer,
-                () -> describeBridgeFailure(consumer, bindingFailure));
+                () -> composeBridgeFailure(
+                    consumer,
+                    bindingFailure,
+                    FastRenderingBridgeDiagnostic.probeInstalledBridge()));
             return UnavailableModelviewMatrixReader.INSTANCE;
         }
     }

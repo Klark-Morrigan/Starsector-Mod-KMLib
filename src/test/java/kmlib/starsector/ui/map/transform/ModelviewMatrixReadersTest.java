@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.opengl.FastRendering;
+import kmlib.opengl.FastRenderingBridgeDiagnostic;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
@@ -8,6 +10,7 @@ import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -34,6 +37,26 @@ final class ModelviewMatrixReadersTest {
 
     private static final CompatibilityConsumer MAP_OVERLAY = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
 
+    // The two versions a mismatch is stated between, told apart so a case cannot pass on one
+    // standing in the other's slot.
+    private static final String BOUND_VERSION = "v0.8.8";
+
+    private static final String INSTALLED_VERSION = "v0.9.1";
+
+    // What a report puts where no version could be read. The wording is the report's, so a case
+    // about an absent version hands its own in rather than asserting somebody else's.
+    private static final String UNKNOWN_VERSION_WORDING = "(version unknown)";
+
+    // The member the probe found broken, in the phrase it names one with.
+    private static final FastRenderingBridgeDiagnostic.BrokenMember BROKEN_MEMBER =
+        new FastRenderingBridgeDiagnostic.BrokenMember(
+            "GLCommand.run",
+            "ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand");
+
+    // The error a failed link raises, as the cause a composed failure carries.
+    private static final LinkageError BRIDGE_CLASS_GONE_ERROR =
+        new NoClassDefFoundError("com/genir/renderer/bridge/interfaces/GLCommand");
+
     // A link failure of each kind the JVM raises separately: a class that is gone, and a member
     // that is gone or re-signatured. One catch is meant to cover both.
     private static final Supplier<ModelviewMatrixReader> BRIDGE_CLASS_GONE = () -> {
@@ -50,6 +73,74 @@ final class ModelviewMatrixReadersTest {
     // How many times the binding was taken, which is what says whether the choice was held: a
     // second selection that binds again would also probe and record again, on every frame.
     private final AtomicInteger bindCount = new AtomicInteger();
+
+    @Nested
+    class ComposeBridgeFailure {
+
+        @Test
+        void statesTheRendererBetweenTheVersionsTheProbeRead() {
+
+            var failure = ModelviewMatrixReaders.composeBridgeFailure(
+                MAP_OVERLAY,
+                BRIDGE_CLASS_GONE_ERROR,
+                createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
+
+            assertThat(failure.subject().name())
+                .isEqualTo(FastRendering.COMPATIBILITY_SUBJECT_NAME);
+            assertThat(failure.subject().builtAgainstVersion())
+                .isEqualTo(BOUND_VERSION);
+            assertThat(failure.subject().installedVersion())
+                .isEqualTo(INSTALLED_VERSION);
+        }
+
+        @Test
+        void carriesEveryBrokenMemberAndTheErrorIntoTheSlotsTheLogReads() {
+
+            var diagnostic = createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION);
+
+            var failure = ModelviewMatrixReaders.composeBridgeFailure(
+                MAP_OVERLAY,
+                BRIDGE_CLASS_GONE_ERROR,
+                diagnostic);
+
+            // The probe's whole phrase, not the one member the JVM tripped on: that is the point of
+            // probing at all, and the log line is what a report to the renderer's author is written
+            // from.
+            assertThat(failure.brokenDetail())
+                .isEqualTo(diagnostic.describeBrokenMembers());
+            assertThat(failure.cause())
+                .isSameAs(BRIDGE_CLASS_GONE_ERROR);
+        }
+
+        @Test
+        void losesWhatTheConsumerSaysItLoses() {
+
+            var failure = ModelviewMatrixReaders.composeBridgeFailure(
+                MAP_OVERLAY,
+                BRIDGE_CLASS_GONE_ERROR,
+                createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
+
+            assertThat(failure.lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
+        }
+
+        @Test
+        void statesAnUnreadVersionAsNoneRatherThanAsAReading() {
+
+            // Either version can be absent - a build against the stubs stamps none, and a jar older
+            // than the one that introduced the version class reports none - and the wording each
+            // slot is rendered with is the report's, not the subject's.
+            var failure = ModelviewMatrixReaders.composeBridgeFailure(
+                MAP_OVERLAY,
+                BRIDGE_CLASS_GONE_ERROR,
+                createDiagnosticBetweenVersions(null, null));
+
+            assertThat(failure.subject().hasInstalledVersion())
+                .isFalse();
+            assertThat(failure.subject().describeInstalledVersion(UNKNOWN_VERSION_WORDING))
+                .isEqualTo(UNKNOWN_VERSION_WORDING);
+        }
+    }
 
     @Nested
     class SelectReaderForActiveRenderer {
@@ -158,6 +249,15 @@ final class ModelviewMatrixReadersTest {
             assertThatNullPointerException()
                 .isThrownBy(() -> readers.selectReaderForActiveRenderer(null));
         }
+    }
+
+    // A probe's answer stated by the case rather than read off the machine: the live probe reports
+    // whichever jar this install has, which is no basis for an expectation about slots.
+    private static FastRenderingBridgeDiagnostic createDiagnosticBetweenVersions(
+            String boundVersion,
+            String installedVersion) {
+
+        return new FastRenderingBridgeDiagnostic(boundVersion, installedVersion, List.of(BROKEN_MEMBER));
     }
 
     private ModelviewMatrixReaders createReaders(
