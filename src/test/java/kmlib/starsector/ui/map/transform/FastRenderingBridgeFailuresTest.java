@@ -2,6 +2,7 @@ package kmlib.starsector.ui.map.transform;
 
 import kmlib.opengl.FastRendering;
 import kmlib.opengl.FastRenderingBridgeDiagnostic;
+import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
@@ -30,11 +31,10 @@ final class FastRenderingBridgeFailuresTest {
     // about an absent version hands its own in rather than asserting somebody else's.
     private static final String UNKNOWN_VERSION_WORDING = "(version unknown)";
 
-    // The member the probe found broken, in the phrase it names one with.
-    private static final FastRenderingBridgeDiagnostic.BrokenMember BROKEN_MEMBER =
-        new FastRenderingBridgeDiagnostic.BrokenMember(
-            "GLCommand.run",
-            "ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand");
+    // The two mods over one binding, each losing something the other does not.
+    private static final CompatibilityConsumer MAP_OVERLAY = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
+
+    private static final CompatibilityConsumer COLONY_PANEL = CompatibilityFailureFixture.COLONY_PANEL_CONSUMER;
 
     // The error a failed link raises, as the cause a composed failure carries.
     private static final LinkageError BRIDGE_CLASS_GONE_ERROR =
@@ -55,7 +55,7 @@ final class FastRenderingBridgeFailuresTest {
         void statesTheRendererBetweenTheVersionsTheProbeRead() {
 
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
@@ -73,7 +73,7 @@ final class FastRenderingBridgeFailuresTest {
             var diagnostic = createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION);
 
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CLASS_GONE_ERROR,
                 diagnostic);
 
@@ -92,7 +92,7 @@ final class FastRenderingBridgeFailuresTest {
             // The call-time surface: nothing failed to link, so the cause is an ordinary exception
             // rather than an error, and the same slot takes it.
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CALL_REFUSED,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
@@ -104,7 +104,7 @@ final class FastRenderingBridgeFailuresTest {
         void losesWhatTheConsumerSaysItLoses() {
 
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
@@ -119,7 +119,7 @@ final class FastRenderingBridgeFailuresTest {
             // older than the one that introduced the version class reports none - and the wording
             // each slot is rendered with is the report's, not the subject's.
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(null, null));
 
@@ -140,7 +140,7 @@ final class FastRenderingBridgeFailuresTest {
             // slots the recorder fills itself rather than anything it read off an install.
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CALL_REFUSED);
 
             var failure = failures.takeNextUnreported();
@@ -159,15 +159,15 @@ final class FastRenderingBridgeFailuresTest {
             // record from either is the one the latch drops.
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CALL_REFUSED);
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
-                CompatibilityFailureFixture.COLONY_PANEL_CONSUMER,
+                COLONY_PANEL,
                 BRIDGE_CALL_REFUSED);
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
-                CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                MAP_OVERLAY,
                 BRIDGE_CLASS_GONE_ERROR);
 
             assertThat(failures.takeNextUnreported().lostFeature())
@@ -185,6 +185,6 @@ final class FastRenderingBridgeFailuresTest {
             String boundVersion,
             String installedVersion) {
 
-        return new FastRenderingBridgeDiagnostic(boundVersion, installedVersion, List.of(BROKEN_MEMBER));
+        return new FastRenderingBridgeDiagnostic(boundVersion, installedVersion, List.of(CompatibilityFailureFixture.BROKEN_MEMBER));
     }
 }

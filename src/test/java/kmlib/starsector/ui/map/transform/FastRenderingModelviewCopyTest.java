@@ -166,6 +166,20 @@ final class FastRenderingModelviewCopyTest {
         }
 
         @Test
+        void publishesNothingOnceTheBindingHasDegraded() {
+
+            // A command enqueued before the break still runs after it, and a reading it published
+            // then would be a matrix from before the break standing where the degraded state says
+            // there is none.
+            modelviewCopy.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
+
+            modelviewCopy.copyModelviewForNextRead(() -> createPannedMatrix());
+
+            assertThat(modelviewCopy.reportLatestCopy())
+                .isNull();
+        }
+
+        @Test
         void dropsTheReadingTakenBeforeTheBindingBroke() {
 
             // The degraded state is no reading rather than the last one that worked: that matrix

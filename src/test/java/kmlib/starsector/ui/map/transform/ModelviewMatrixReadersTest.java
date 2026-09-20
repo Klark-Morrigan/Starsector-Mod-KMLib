@@ -32,7 +32,11 @@ final class ModelviewMatrixReadersTest {
 
     private static final BooleanSupplier STOCK_RENDERER = () -> false;
 
+    // Two mods over the one binding, each losing something the other does not, so a case about
+    // both being told cannot pass on one sentence standing for two.
     private static final CompatibilityConsumer MAP_OVERLAY = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
+
+    private static final CompatibilityConsumer COLONY_PANEL = CompatibilityFailureFixture.COLONY_PANEL_CONSUMER;
 
     // A link failure of each kind the JVM raises separately: a class that is gone, and a member
     // that is gone or re-signatured. One catch is meant to cover both.
@@ -140,6 +144,56 @@ final class ModelviewMatrixReadersTest {
         }
 
         @Test
+        void tellsEachConsumerOverOneBrokenBindingWhatItLoses() {
+
+            // One renderer stopped holding and two mods lost different things by it. A selection
+            // that held one binding for the session would answer the second mod with the first
+            // one's reader, and its player would be told what somebody else's mod lost, or nothing.
+            var readers = createReaders(BRIDGE_IN_FORCE, BRIDGE_CLASS_GONE);
+
+            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
+            readers.selectReaderForActiveRenderer(COLONY_PANEL);
+
+            assertThat(failures.takeNextUnreported().lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
+            assertThat(failures.takeNextUnreported().lostFeature())
+                .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
+        }
+
+        @Test
+        void bindsOncePerConsumerRatherThanOncePerCall() {
+
+            var readers = createReaders(
+                BRIDGE_IN_FORCE,
+                (consumer, failureRecord) -> countAndBind(new ModelviewMatrixReaderFake(null)));
+
+            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
+            readers.selectReaderForActiveRenderer(COLONY_PANEL);
+            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
+            readers.selectReaderForActiveRenderer(COLONY_PANEL);
+
+            assertThat(bindCount)
+                .hasValue(2);
+        }
+
+        @Test
+        void answersEachConsumerTheReaderBoundForIt() {
+
+            // A reader records against the consumer it was built for, so handing one mod's reader
+            // to another would file the second mod's call-time failures under the first's name.
+            var readers = createReaders(
+                BRIDGE_IN_FORCE,
+                (consumer, failureRecord) -> new ModelviewMatrixReaderFake(null));
+
+            var mapOverlayReader = readers.selectReaderForActiveRenderer(MAP_OVERLAY);
+
+            assertThat(readers.selectReaderForActiveRenderer(COLONY_PANEL))
+                .isNotSameAs(mapOverlayReader);
+            assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
+                .isSameAs(mapOverlayReader);
+        }
+
+        @Test
         void holdsTheBindingItTookRatherThanBindingAgain() {
 
             var boundReaderFake = new ModelviewMatrixReaderFake(null);
@@ -160,7 +214,9 @@ final class ModelviewMatrixReadersTest {
 
             // The selection a map pass asks for is asked for per frame, so a failed binding that
             // was not held would re-probe and re-record every frame the map is drawn.
-            var readers = createReaders(BRIDGE_IN_FORCE, (consumer, failureRecord) -> countAndFail());
+            var readers = createReaders(
+                BRIDGE_IN_FORCE,
+                (consumer, failureRecord) -> countAndFail(consumer));
 
             readers.selectReaderForActiveRenderer(MAP_OVERLAY);
             failures.takeNextUnreported();
@@ -199,9 +255,9 @@ final class ModelviewMatrixReadersTest {
         return boundReader;
     }
 
-    private ModelviewMatrixReader countAndFail() {
+    private ModelviewMatrixReader countAndFail(CompatibilityConsumer consumer) {
 
         bindCount.incrementAndGet();
-        throw new NoClassDefFoundError("com/genir/renderer/bridge/interfaces/GLCommand");
+        return BRIDGE_CLASS_GONE.bindReaderFor(consumer, failures);
     }
 }

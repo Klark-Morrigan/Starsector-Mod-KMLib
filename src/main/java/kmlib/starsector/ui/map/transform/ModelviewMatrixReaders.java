@@ -8,6 +8,8 @@ import kmlib.starsector.compatibility.CompatibilityFailures;
 
 import org.apache.log4j.Logger;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
@@ -53,10 +55,18 @@ public final class ModelviewMatrixReaders {
     // of its own instead of into the session's.
     private final CompatibilityFailures failureRecord;
 
-    // The chosen binding, held because the renderer cannot change while the game runs, so the
-    // choice is made once rather than re-derived on every frame that reads the map's transform.
-    // Holding it is also what stops a failed binding probing and recording on every frame.
-    private ModelviewMatrixReader activeReader;
+    // The binding each consumer was given, held because the renderer cannot change while the game
+    // runs, so a choice is made once rather than re-derived on every frame that reads the map's
+    // transform. Holding it is also what stops a failed binding probing and recording on every
+    // frame.
+    //
+    // Per consumer rather than one for all of them, because a reader carries the consumer its
+    // failures are recorded against: one held for the session would be the first caller's, so a
+    // second mod over the same broken binding would be told nothing, or told what the first one
+    // lost. Two mods reading the map therefore hold a reader each and, under the bridge, enqueue a
+    // copy each - one small command per frame per reader, which is the price of a report that
+    // names the right mod.
+    private final Map<String, ModelviewMatrixReader> readersByConsumerKey = new HashMap<>();
 
     ModelviewMatrixReaders(
             BooleanSupplier isFastRenderingActive,
@@ -75,8 +85,12 @@ public final class ModelviewMatrixReaders {
     }
 
     /**
-     * Resolves the binding for the renderer in force, choosing on first call and reporting the same
-     * one thereafter.
+     * Resolves the binding for the renderer in force, choosing on a consumer's first call and
+     * reporting that consumer the same one thereafter.
+     *
+     * <p>A consumer that has not asked before gets a binding of its own, so that a renderer which
+     * stopped holding is reported to each mod reading the map rather than only to whichever asked
+     * first.
      *
      * @param consumer the mod taking the reading, as the key a failed binding is recorded under and
      *                 the sentence naming what it loses where the binding does not hold. Read only
@@ -90,8 +104,8 @@ public final class ModelviewMatrixReaders {
     }
 
     // The selection itself, on an instance, so a suite can drive it with a binding that fails and a
-    // record of its own. Synchronised for the same reason the static held: the first caller decides
-    // for every later one, and map passes are not guaranteed to be the only thread asking.
+    // record of its own. Synchronised because a consumer's first call decides for its every later
+    // one, and map passes are not guaranteed to be the only thread asking.
     synchronized ModelviewMatrixReader selectReaderForActiveRenderer(CompatibilityConsumer consumer) {
 
         // Checked on every call rather than only where it is read: a consumer missing from a call
@@ -101,15 +115,21 @@ public final class ModelviewMatrixReaders {
             consumer,
             "A selection made for no consumer could not say whose feature a failed binding costs.");
 
-        if (activeReader == null) {
-            activeReader = resolveReaderForActiveRenderer(consumer);
-            // Logged once, at INFO: which renderer is underneath decides where a matrix is read
-            // from, so it is the first thing worth knowing about a hover that resolves the wrong
-            // cell - and it is not otherwise visible from a log.
-            LOG.info("Modelview matrix source resolved; reader="
-                + activeReader.getClass().getSimpleName());
+        var heldReader = readersByConsumerKey.get(consumer.consumerKey());
+        if (heldReader != null) {
+            return heldReader;
         }
-        return activeReader;
+        var resolvedReader = resolveReaderForActiveRenderer(consumer);
+        readersByConsumerKey.put(consumer.consumerKey(), resolvedReader);
+
+        // Logged once per consumer, at INFO: which renderer is underneath decides where a matrix is
+        // read from, so it is the first thing worth knowing about a hover that resolves the wrong
+        // cell - and it is not otherwise visible from a log. Named by consumer, because two mods
+        // resolving apart is what the line would otherwise read as one mod resolving twice.
+        LOG.info("Modelview matrix source resolved; consumer=" + consumer.consumerKey()
+            + "; reader=" + resolvedReader.getClass().getSimpleName());
+
+        return resolvedReader;
     }
 
     // The production binding, behind a method whose declared answer is the port rather than the

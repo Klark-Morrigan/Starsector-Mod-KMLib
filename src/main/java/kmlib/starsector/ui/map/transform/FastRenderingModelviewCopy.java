@@ -74,6 +74,12 @@ final class FastRenderingModelviewCopy {
      */
     void copyModelviewForNextRead(Supplier<Matrix4f> readModelview) {
 
+        // A command enqueued before the break is still replayed after it. Once the binding is gone
+        // it is gone for the session, so that straggler does no work: a copy published after the
+        // degrade would put a matrix from before the break back where a reading is reported from.
+        if (isBridgeUnavailable) {
+            return;
+        }
         try {
             var cpuModelView = readModelview.get();
             latestCopy.set(cpuModelView == null
