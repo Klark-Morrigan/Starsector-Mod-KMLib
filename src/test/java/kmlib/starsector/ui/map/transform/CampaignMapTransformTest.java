@@ -3,6 +3,7 @@ package kmlib.starsector.ui.map.transform;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 
+import kmlib.opengl.GlMatrix;
 import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 
 import org.assertj.core.data.Offset;
@@ -38,13 +39,10 @@ import static org.mockito.Mockito.when;
  */
 class CampaignMapTransformTest {
 
-    // Column-major GL matrices, the layout glGetFloat reports and gluUnProject expects.
-    private static final float[] IDENTITY_MATRIX = {
-        1f, 0f, 0f, 0f,
-        0f, 1f, 0f, 0f,
-        0f, 0f, 1f, 0f,
-        0f, 0f, 0f, 1f,
-    };
+    // Column-major GL matrices, the layout glGetFloat reports and gluUnProject expects. Identity
+    // is taken from the same place the production rule recognises it by, so the case that pins
+    // "identity means no map pass" cannot pass on two different spellings of identity.
+    private static final float[] IDENTITY_MATRIX = GlMatrix.createIdentity();
 
     // A 100x100 viewport at the window origin: a pixel maps linearly onto -1..1, so an expected
     // world point can be read off by eye (pixel 50 is the centre, pixel 100 the far edge).

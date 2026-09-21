@@ -44,6 +44,9 @@ public final class CompatibilityFailureFixture {
      */
     public static final String BROKEN_DETAIL = BROKEN_MEMBER.describe();
 
+    /** Which guard caught the binding, as the phrase the log's "failed while" row takes. */
+    public static final String FAILURE_SITE = "resolving the binding";
+
     /** What a second mod over the same binding loses, which is nothing the first one does. */
     public static final String COLONY_PANEL_LOST_FEATURE =
         "Colony panel rows will not show their upkeep this session.";
@@ -83,6 +86,7 @@ public final class CompatibilityFailureFixture {
         return new CompatibilityFailure(
             new CompatibilitySubject(SUBJECT_NAME, builtAgainstVersion, installedVersion),
             LOST_FEATURE,
+            FAILURE_SITE,
             BROKEN_DETAIL,
             null);
     }
@@ -96,7 +100,22 @@ public final class CompatibilityFailureFixture {
         return new CompatibilityFailure(
             createUnversionedSubject(),
             LOST_FEATURE,
+            FAILURE_SITE,
             brokenDetail,
+            null);
+    }
+
+    /**
+     * @param failureSite which guard caught the binding, as the log's "failed while" row states it
+     * @return the representative failure, told apart from another by where it was caught
+     */
+    public static CompatibilityFailure createFailureCaughtWhile(String failureSite) {
+
+        return new CompatibilityFailure(
+            createUnversionedSubject(),
+            LOST_FEATURE,
+            failureSite,
+            BROKEN_DETAIL,
             null);
     }
 
@@ -109,6 +128,7 @@ public final class CompatibilityFailureFixture {
         return new CompatibilityFailure(
             createUnversionedSubject(),
             lostFeature,
+            FAILURE_SITE,
             BROKEN_DETAIL,
             null);
     }

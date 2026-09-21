@@ -431,8 +431,16 @@ final class VoronoiCellBuilderTest {
 
         // A partition big enough that cells actually clip against neighbours, so
         // the harness exercises the clip loop rather than lone bounded discs.
+        //
+        // The spread is set against the reach rather than picked for size. Both passes cost
+        // what they cost per site near enough to matter - within one reach for the clip, two
+        // for the corners - so a layout packed tighter than a real sector reports a share of
+        // the build that holds nowhere the code actually runs. At a fifth of this spread every
+        // cell saw nearly all 150 sites as claimants and the corner pass read as half the
+        // build, against an eighth of it on a real sector. This spread puts a cell's claimants
+        // where a real sector's are, which the report prints so the two can be compared.
         private static final int SITE_COUNT = 150;
-        private static final double SITE_SPREAD = 20_000.0;
+        private static final double SITE_SPREAD = 85_000.0;
 
         // The bare control seed must match the production default seed vertex for
         // vertex, or the "labelling does not perturb geometry" gate compares
@@ -442,51 +450,117 @@ final class VoronoiCellBuilderTest {
         private static final int WARMUP_BUILDS = 10;
         private static final int TIMED_BUILDS = 30;
 
-        // How far a corner may sit from the bound and still be on it, and how far two
-        // readings of one clipped vertex may differ and still be the same vertex.
+        // How far two readings of one clipped vertex may differ and still be the same vertex.
         private static final double SAME_POINT = 1e-9;
 
         @Test
-        void buildLabelledCellClipsAsTheBareBuildDoesAndReportsCost() {
+        void reportsWhatEachOfTheTwoPassesCosts() {
+            // A cell is built in two passes, and the second is not free: it weighs a dozen or
+            // so candidate corners against the sites near enough to claim them, which is the
+            // same shape of work the clip does - a reading of the sites per cell where the
+            // clip is one. What a caller is buying for corners that survive any segment count
+            // is that second reading, and this says what it comes to.
+            var sites = buildRandomSites();
+
+            var clipCost = measure(() -> {
+                for (var i = 0; i < sites.size(); i++) {
+                    VoronoiCellBuilder.clipAgainstNeighbours(
+                        i, sites, MAX_CELL_RADIUS, BOUND_SEGMENTS);
+                }
+            });
+
+            var clipped = new ArrayList<VoronoiCellBuilder.LabelledCell>(sites.size());
+
+            for (var i = 0; i < sites.size(); i++) {
+                clipped.add(VoronoiCellBuilder.clipAgainstNeighbours(
+                    i, sites, MAX_CELL_RADIUS, BOUND_SEGMENTS));
+            }
+
+            var cornerCost = measure(() -> {
+                for (var i = 0; i < sites.size(); i++) {
+                    VoronoiCellCorners.layCornersInto(
+                        clipped.get(i), i, sites, MAX_CELL_RADIUS);
+                }
+            });
+
+            reportPassCost(sites, clipCost, cornerCost);
+
+            // Reported rather than asserted, as the partition cost beside it is. A timing
+            // pinned in a test says as much about the machine that ran it as about the code,
+            // and a build that fails because a runner was busy teaches nobody anything. What
+            // is asserted is that both passes ran at all.
+            assertThat(clipped).hasSize(SITE_COUNT);
+        }
+
+        private void reportPassCost(List<double[]> sites, long[] clip, long[] corners) {
+
+            System.out.printf(
+                "%nVoronoiCellBuilder passes (%d sites, %d bound segments, "
+                    + "%.1f claimants per cell):%n",
+                SITE_COUNT, BOUND_SEGMENTS, measureClaimantsPerCell(sites));
+
+            System.out.printf(
+                "  clip against neighbours: %,d ns/build (%,d ns/cell)  %s%n",
+                clip[0], clip[0] / SITE_COUNT, readAllocationText(clip[1]));
+
+            System.out.printf(
+                "  lay the bound corners:   %,d ns/build (%,d ns/cell)  %s%n",
+                corners[0], corners[0] / SITE_COUNT, readAllocationText(corners[1]));
+
+            System.out.printf(
+                "  corners as a share of both: %.1f%%%n",
+                100.0 * corners[0] / (clip[0] + corners[0]));
+        }
+
+        // How many sites the average cell has to weigh a candidate corner against, which is
+        // what the corner pass's cost is made of and the one number that says whether this
+        // layout resembles a sector or only looks like one. Two reaches, because that is the
+        // distance inside which another site can hold a corner of this cell.
+        private double measureClaimantsPerCell(List<double[]> sites) {
+
+            var claimants = 0L;
+
+            for (var site : sites) {
+                for (var other : sites) {
+
+                    if (other != site && computeDistance(site, other) <= 2 * MAX_CELL_RADIUS) {
+                        claimants++;
+                    }
+                }
+            }
+            return claimants / (double) sites.size();
+        }
+
+        @Test
+        void clippingWithLabelsMovesNoVertexAndReportsWhatLabelsCost() {
 
             var sites = buildRandomSites();
 
-            // Correctness gate: the clip walk must be the same walk, so every vertex
-            // the labels have nothing to say about must equal the bare double[]
-            // control exactly. Only then does the timing below compare like with like.
+            // Correctness gate: the clip walk must be the same walk, so every vertex must
+            // equal the bare double[] control's exactly. Only then does the timing below
+            // compare like with like.
             //
-            // The frontier corners are the exception, and they are excepted rather
-            // than loosened. There the labelled build places the corner on the true
-            // bound, which a label-free control cannot do because it does not know
-            // which corners those are - so the two differ on purpose, and what is
-            // checked is that the labelled one is the one standing on the bound.
+            // Against the CLIP PASS, not the finished cell. The second pass moves corners the
+            // seed got wrong and drops the false bound edge a seed leaves across a corner it
+            // cut, so a finished cell differs from any label-free control by design and in
+            // vertex count - which says nothing about whether carrying labels moved anything.
+            // Pitted against the pass that is its counterpart, the control answers the one
+            // question it is here for, and answers it strictly: no exceptions, no slack.
             for (var i = 0; i < sites.size(); i++) {
 
-                var labelled = VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
+                var clipped = VoronoiCellBuilder.clipAgainstNeighbours(
+                    i, sites, MAX_CELL_RADIUS, BOUND_SEGMENTS);
+
                 var bare = buildBareCell(i, sites);
 
-                assertThat(labelled.vertices())
+                assertThat(clipped.vertices())
+                    .as("cell %d", i)
                     .hasSameSizeAs(bare);
 
-                var labels = labelled.edgeNeighbourSiteIndices();
-                var count = bare.size();
+                for (var v = 0; v < bare.size(); v++) {
 
-                for (var v = 0; v < count; v++) {
-
-                    var arriving =
-                        labels[(v + count - 1) % count] == VoronoiCellBuilder.BOUND_EDGE;
-                    var leaving = labels[v] == VoronoiCellBuilder.BOUND_EDGE;
-
-                    if (arriving != leaving) {
-
-                        assertThat(Points.computeDistance(
-                            labelled.vertices().get(v), sites.get(i)))
-                            .as("frontier corner %d of cell %d", v, i)
-                            .isCloseTo(MAX_CELL_RADIUS, within(SAME_POINT));
-                        continue;
-                    }
-
-                    assertThat(labelled.vertices().get(v))
+                    assertThat(clipped.vertices().get(v))
+                        .as("vertex %d of cell %d", v, i)
                         .containsExactly(
                             bare.get(v), org.assertj.core.data.Offset.offset(SAME_POINT));
                 }
@@ -494,7 +568,8 @@ final class VoronoiCellBuilderTest {
 
             var labelledCost = measure(() -> {
                 for (var i = 0; i < sites.size(); i++) {
-                    VoronoiCellBuilder.buildLabelledCell(i, sites, MAX_CELL_RADIUS);
+                    VoronoiCellBuilder.clipAgainstNeighbours(
+                        i, sites, MAX_CELL_RADIUS, BOUND_SEGMENTS);
                 }
             });
 
@@ -625,7 +700,7 @@ final class VoronoiCellBuilderTest {
         private void computeReportCost(long[] labelled, long[] bare) {
 
             System.out.printf(
-                "%nVoronoiCellBuilder partition (%d sites):%n",
+                "%nVoronoiCellBuilder clip pass, labels against none (%d sites):%n",
                 SITE_COUNT);
 
             System.out.printf(

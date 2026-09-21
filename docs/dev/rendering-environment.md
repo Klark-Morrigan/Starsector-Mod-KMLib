@@ -729,7 +729,7 @@ not swallowed -
 so the copy command has to be total.
 KMLib's is total by construction rather than by being short enough to look safe:
 the command body is a thin adapter that hands the matrix read over to
-[`FastRenderingModelviewCopy`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingModelviewCopy.java),
+[`FastRenderingBridgeReading`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingBridgeReading.java),
 which takes the reading and copies it inside one catch.
 The reading is taken *inside* that catch rather than before it,
 `Context.transformManager` and `getCPUModelView` being as able to stop holding as the copy is.
@@ -738,6 +738,16 @@ the binding latches unavailable for the session,
 every later read answers no matrix,
 and the mod that took the binding is told once,
 through the [compatibility channel](../../src/main/java/kmlib/starsector/compatibility/README.md).
+
+The enqueue side is guarded separately, on the game thread,
+because `getThreadContext` and `execute` are bridge calls too
+and from `v0.8.9` a declared entry point can refuse the call rather than fail to link
+(see [It rewrites GL class references in every jar](#it-rewrites-gl-class-references-in-every-jar)).
+That guard and the command's own share the one latch,
+so a binding that broke on either thread is broken on both.
+[`FastRenderingModelviewMatrixReader`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingModelviewMatrixReader.java)
+holds it, and every bridge type it depends on sits behind a port -
+which is what makes a refusal assertable off a machine that has no `fr.jar` to refuse anything.
 
 ### What the GL11 bridge can and cannot read back
 

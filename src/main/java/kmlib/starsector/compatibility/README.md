@@ -115,13 +115,31 @@ and an absent one renders as an explicit unknown rather than as `null`.
 
 [`CompatibilityFailure`](CompatibilityFailure.java) is one binding that stopped holding:
 the subject, the sentence naming what the session loses,
-the member or detail that broke, and the cause where there was one.
-It composes two sentences.
-The player's modal is drawn from KMLib's own strings category,
-so the wording is editable without a rebuild;
-the log line is built from literals,
+where the binding was caught, the member or detail that broke,
+and the cause where there was one.
+
+It composes two readings of that, for two audiences.
+
+The player's is the modal,
+drawn from KMLib's own strings category so the wording is editable without a rebuild.
+It says which third party, which versions, and what stops working - and no mechanics.
+
+The log's is a block of labelled rows:
+both versions, which guard caught the binding, what no longer holds,
+and what the player was told, with the throwable handed to the logger beside it.
+A block rather than a line because those are separate readings
+and the one that matters varies by report -
+a mismatch is diagnosed off the site and the broken member,
+an "is this even mine" question off the versions -
+and because the values a reader compares across two logs have to line up under each other.
+Which guard caught it is the row that earns its place:
+a member that moved and an entry point declared and then refused
+both arrive as a broken binding,
+and where it was caught is the only reading that says which.
+Built from literals,
 so it reads the same whatever the install's localisation
 and holds on a path where the game's settings may not be up yet.
+
 The wording rationale lives with the strings,
 in [`KmlibStringKeys`](../strings/KmlibStringKeys.java).
 

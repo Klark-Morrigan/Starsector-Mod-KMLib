@@ -46,9 +46,14 @@ and their citations in [`docs/dev/rendering-environment.md`](../../../../../../.
 | [`UnavailableModelviewMatrixReader`](UnavailableModelviewMatrixReader.java) | nothing, on every read | a renderer whose matrix cannot be reached |
 
 [`ModelviewMatrixReaders`](ModelviewMatrixReaders.java) picks between them,
-which is also what keeps the bridge-bound reader unreachable on an install that cannot load it:
+which is also what keeps the bridge-bound class unreachable on an install that cannot load it:
 the reference is resolved inside a method body,
 so a branch never taken never loads the class.
+
+That class is [`FastRenderingCopyQueue`](FastRenderingCopyQueue.java), and it is the only one here naming a renderer type.
+The reader above it names none,
+which is what lets it be built and driven where no bridge exists -
+including through the failures a live renderer will not produce on request.
 
 The third is not a fallback onto the first.
 Under a renderer that tracks the modelview on the CPU,
@@ -76,23 +81,35 @@ and the call returns the copy a prior frame's command left behind.
 The result is a frame or two old,
 which is invisible for a still map and trails by a frame or two of pan velocity while panning.
 
-[`FastRenderingModelviewCopy`](FastRenderingModelviewCopy.java) is that copy,
-held apart from the binding because the two answer to different threads and to different failures.
+[`FastRenderingBridgeReading`](FastRenderingBridgeReading.java) is where that copy lands,
+along with the latch saying whether the bridge still answers at all.
+Held apart from the binding because it is the one thing both threads share:
+the render thread fills it, the game thread takes it,
+and either finding the bridge broken has to stop the other from touching it.
 
 ## When the bridge stops holding
 
 None of what the bridge binding reads is published API,
 and it has been relocated between releases without notice,
-so it can stop holding in two places that fail in two different ways.
+so it can stop holding in three places that fail in three different ways.
 
-**At link time**, when the reader's class initialises:
+**At link time**, when the binding's class initialises:
 a `LinkageError` naming a class or a member that moved,
 raised inside whichever render pass reached it first.
 `ModelviewMatrixReaders` takes the binding under one catch for all three shapes of that -
 a class that is gone, a member that is gone, a signature that changed -
 degrades onto the unavailable reader and records the failure.
 
-**At call time**, inside the enqueued command,
+**At call time on the game thread**, where the reading is asked for.
+A release can declare an entry point and refuse it:
+from `v0.8.9` the bridge's facade names LWJGL's whole surface
+and throws `UnsupportedOperationException` for the parts it does not implement,
+so that breakage links cleanly and walks straight past the guard above.
+`FastRenderingModelviewMatrixReader` therefore guards its own two calls into the bridge,
+the thread's context lookup and the enqueue,
+under one catch covering both shapes.
+
+**At call time on the render thread**, inside the enqueued command,
 which is the harder one and the reason the copy is its own class.
 A command that throws where the renderer runs it is not caught where it was enqueued:
 the renderer captures it and re-throws it wrapped on the game thread at the next frame swap,
@@ -103,11 +120,14 @@ so the copy is total by construction rather than by being short enough to look s
 and the matrix read is taken *inside* that guard rather than before it,
 the bridge member answering it being as able to stop holding as the copy is.
 
-Either way the answer is the same:
+Whichever of the three it is, the answer is the same:
 the reading latches unavailable for the session,
 no stale matrix is reported in its place,
 and one failure is recorded however many frames the map stays open.
-Both sides compose that report through [`FastRenderingBridgeFailures`](FastRenderingBridgeFailures.java),
+The two call-time sides share one latch, on the copy,
+so a binding that broke on either thread is broken on both
+and the other never reaches the bridge to find out for itself.
+All three compose their report through [`FastRenderingBridgeFailures`](FastRenderingBridgeFailures.java),
 so a player is told one thing about one renderer whichever side noticed.
 Where the report then goes is [`starsector/compatibility/`](../../../compatibility/README.md).
 

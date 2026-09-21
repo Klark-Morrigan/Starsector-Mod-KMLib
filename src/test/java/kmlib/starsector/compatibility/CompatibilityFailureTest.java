@@ -73,17 +73,25 @@ final class CompatibilityFailureTest {
     class DescribeForLog {
 
         @Test
-        void namesBothVersionsAndTheBrokenDetail() {
+        void laysOutEveryReadingAReportIsWrittenFromAsItsOwnRow() {
 
-            // No settings installed: the log line is written from literals, so it holds on a path
+            // The whole block, asserted as one value rather than row by row: what a reader of two
+            // logs compares is the shape as much as the values, so a row that moved, lost its
+            // label or lost its column is a change to be seen here.
+            //
+            // No settings installed: the block is written from literals, so it holds on a path
             // where the game's settings may not be up yet.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForLog())
                 .isEqualTo("Fast Rendering compatibility failure."
-                    + " KMLib was built against v0.8.8, and this install reports v0.9.1."
-                    + " Broken: GLCommand.run"
-                    + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)");
+                    + "\n    Built against: v0.8.8"
+                    + "\n    Installed:     v0.9.1"
+                    + "\n    Failed while:  resolving the binding"
+                    + "\n    Broken:        GLCommand.run"
+                    + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)"
+                    + "\n    Player told:   "
+                    + "Sector map overlays will not respond to the cursor this session.");
         }
 
         @Test
@@ -92,11 +100,21 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailure();
 
             assertThat(failure.describeForLog())
-                .isEqualTo("Fast Rendering compatibility failure."
-                    + " KMLib was built against an unknown version,"
-                    + " and this install reports an unknown version."
-                    + " Broken: GLCommand.run"
-                    + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)");
+                .contains("\n    Built against: an unknown version")
+                .contains("\n    Installed:     an unknown version");
+        }
+
+        @Test
+        void namesTheGuardThatCaughtTheBinding() {
+
+            // The one reading that tells a release which moved a member apart from one that
+            // declares it and refuses the call: both reach the log as a broken binding, and only
+            // the site says which guard met it.
+            var failure = CompatibilityFailureFixture.createFailureCaughtWhile(
+                "calling the bridge from the game thread");
+
+            assertThat(failure.describeForLog())
+                .contains("\n    Failed while:  calling the bridge from the game thread");
         }
     }
 }

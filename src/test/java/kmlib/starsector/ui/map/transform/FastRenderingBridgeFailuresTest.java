@@ -56,6 +56,7 @@ final class FastRenderingBridgeFailuresTest {
 
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
@@ -74,6 +75,7 @@ final class FastRenderingBridgeFailuresTest {
 
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
                 BRIDGE_CLASS_GONE_ERROR,
                 diagnostic);
 
@@ -93,6 +95,7 @@ final class FastRenderingBridgeFailuresTest {
             // rather than an error, and the same slot takes it.
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
                 BRIDGE_CALL_REFUSED,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
@@ -101,10 +104,27 @@ final class FastRenderingBridgeFailuresTest {
         }
 
         @Test
+        void namesWhichGuardCaughtTheBinding() {
+
+            // The slot that tells one release apart from another: a member that moved and an entry
+            // point declared and then refused both reach the log as a broken binding, and where the
+            // guard met it is the only reading that says which.
+            var failure = FastRenderingBridgeFailures.composeBridgeFailure(
+                MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RUNNING_ON_RENDER_THREAD,
+                BRIDGE_CALL_REFUSED,
+                createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
+
+            assertThat(failure.failureSite())
+                .isEqualTo(FastRenderingBridgeFailures.WHILE_RUNNING_ON_RENDER_THREAD);
+        }
+
+        @Test
         void losesWhatTheConsumerSaysItLoses() {
 
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
@@ -120,6 +140,7 @@ final class FastRenderingBridgeFailuresTest {
             // each slot is rendered with is the report's, not the subject's.
             var failure = FastRenderingBridgeFailures.composeBridgeFailure(
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(null, null));
 
@@ -141,6 +162,7 @@ final class FastRenderingBridgeFailuresTest {
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
                 BRIDGE_CALL_REFUSED);
 
             var failure = failures.takeNextUnreported();
@@ -160,14 +182,17 @@ final class FastRenderingBridgeFailuresTest {
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
                 BRIDGE_CALL_REFUSED);
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
                 COLONY_PANEL,
+                FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
                 BRIDGE_CALL_REFUSED);
             FastRenderingBridgeFailures.recordBridgeFailure(
                 failures,
                 MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
                 BRIDGE_CLASS_GONE_ERROR);
 
             assertThat(failures.takeNextUnreported().lostFeature())

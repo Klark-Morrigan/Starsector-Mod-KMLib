@@ -1,12 +1,16 @@
 package kmlib.starsector.ui.map.transform;
 
 import kmlib.opengl.FastRendering;
+import kmlib.testfixtures.opengl.RendererModelviewMatrices;
 import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 
 import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.lwjgl.util.vector.Matrix4f;
+import org.lwjgl.util.vector.Vector2f;
+
+import static kmlib.testfixtures.opengl.RendererModelviewMatrices.createMapPassAsFastRenderingHoldsIt;
+import static kmlib.testfixtures.opengl.RendererModelviewMatrices.createMapPassAsGlReportsIt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
@@ -33,11 +37,11 @@ import static org.assertj.core.api.Assertions.within;
 class RendererEquivalenceIntegrationTest {
 
     // The map's modelview, as docs/dev/rendering-environment.md records it: the campaign UI's base
-    // translate composed with the map widget's own centring translate. Deliberately not round
-    // numbers and not equal on the two axes, so a transpose or an axis swap cannot pass by
-    // landing on a value that happens to match.
-    private static final float PAN_X = 0.01f + 137f;
-    private static final float PAN_Y = 0.01f + 41f;
+    // translate composed with the map widget's own centring translate. Taken from the fixture in
+    // both layouts, so the two sides being compared here differ in layout alone and not in the pan
+    // each was written with.
+    private static final float PAN_X = RendererModelviewMatrices.MAP_PASS_PAN_X;
+    private static final float PAN_Y = RendererModelviewMatrices.MAP_PASS_PAN_Y;
 
     private static final int[] VIEWPORT = {0, 0, 1600, 1000};
     private static final float[] PROJECTION =
@@ -51,35 +55,9 @@ class RendererEquivalenceIntegrationTest {
 
     private static final Offset<Float> TOLERANCE = within(1e-4f);
 
-    // What glGetFloat(GL_MODELVIEW_MATRIX) reports for that pass on a stock install: column-major,
-    // so the translation is the last column and lands at the end of the array.
-    private static float[] buildMatrixAsStockGlReportsIt() {
-        var matrix = new float[] {
-            1f, 0f, 0f, 0f,
-            0f, 1f, 0f, 0f,
-            0f, 0f, 1f, 0f,
-            0f, 0f, 0f, 1f,
-        };
-        matrix[12] = PAN_X;
-        matrix[13] = PAN_Y;
-        return matrix;
-    }
-
-    // What Fast Rendering's TransformManager holds for the same pass: a Matrix4f whose fields it
-    // reads as m<row><col>, so its MatrixStack.glTranslatef puts the translation in m03/m13 - the
-    // transpose of the layout above, and the reason the two bindings cannot share a copy step.
-    private static Matrix4f buildMatrixAsFastRenderingHoldsIt() {
-
-        var matrix = new Matrix4f();
-        matrix.setIdentity();
-        matrix.m03 = PAN_X;
-        matrix.m13 = PAN_Y;
-        return matrix;
-    }
-
     // Drives a reading all the way to a world point, the way a map overlay does, so the two
     // renderers are compared on the answer rather than on an intermediate.
-    private static org.lwjgl.util.vector.Vector2f resolveWorldPointFrom(float[] modelviewMatrix) {
+    private static Vector2f resolveWorldPointFrom(float[] modelviewMatrix) {
 
         var transform = new CampaignMapTransform(modelviewMatrix, PROJECTION, VIEWPORT, MAP_ZOOM);
         return transform.unprojectToWorld(CURSOR_PIXEL_X, CURSOR_PIXEL_Y);
@@ -91,9 +69,9 @@ class RendererEquivalenceIntegrationTest {
         @Test
         void resolvesTheSameWorldPointUnderEitherRenderer() {
 
-            var stockGlPoint = resolveWorldPointFrom(buildMatrixAsStockGlReportsIt());
+            var stockGlPoint = resolveWorldPointFrom(createMapPassAsGlReportsIt());
             var fastRenderingPoint = resolveWorldPointFrom(
-                FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
+                FastRendering.copyAsColumnMajorFloats(createMapPassAsFastRenderingHoldsIt()));
 
             assertThat(fastRenderingPoint.x)
                 .isCloseTo(stockGlPoint.x, TOLERANCE);
@@ -106,7 +84,7 @@ class RendererEquivalenceIntegrationTest {
             // Guards the way the check above could pass on a lie: if both paths were broken into
             // reporting a pan-independent point, they would agree with each other perfectly. So
             // the agreed point also has to be the one the pan actually implies.
-            var stockGlPoint = resolveWorldPointFrom(buildMatrixAsStockGlReportsIt());
+            var stockGlPoint = resolveWorldPointFrom(createMapPassAsGlReportsIt());
 
             // gluUnProject inverts the pass, so the pan subtracts, and the factor divides out the
             // zoom the same way it does for a live overlay's geometry.
@@ -126,10 +104,10 @@ class RendererEquivalenceIntegrationTest {
             // by a reader over the reading it would return. What is under test is the layouts
             // converging, which is the part that is theirs rather than the renderers'.
             ModelviewMatrixReader stockGlReaderFake =
-                new ModelviewMatrixReaderFake(buildMatrixAsStockGlReportsIt());
+                new ModelviewMatrixReaderFake(createMapPassAsGlReportsIt());
 
             ModelviewMatrixReader fastRenderingReaderFake = new ModelviewMatrixReaderFake(
-                FastRendering.copyAsColumnMajorFloats(buildMatrixAsFastRenderingHoldsIt()));
+                FastRendering.copyAsColumnMajorFloats(createMapPassAsFastRenderingHoldsIt()));
 
             assertThat(fastRenderingReaderFake.readModelviewMatrix())
                 .containsExactly(stockGlReaderFake.readModelviewMatrix());
