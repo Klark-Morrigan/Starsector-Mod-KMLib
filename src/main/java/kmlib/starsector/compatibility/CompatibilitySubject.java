@@ -27,6 +27,12 @@ public record CompatibilitySubject(
     String builtAgainstVersion,
     String installedVersion) {
 
+    // The prefix a self-reported version carries and a report does not want. Third parties spell
+    // their own versions, and most spell them with it, so stripping it here is what keeps two
+    // subjects from being shown one with a v and one without in the same block. Dropped only where
+    // a digit follows, so a version that genuinely opens with a letter keeps it.
+    private static final char VERSION_PREFIX = 'v';
+
     public CompatibilitySubject {
 
         KmlibStrings.requireText(
@@ -73,6 +79,18 @@ public record CompatibilitySubject(
     // Blank and null are one case: a slot nothing filled, whichever side it is on.
     private static String describeVersion(String version, String unknownWording) {
 
-        return KmlibStrings.hasText(version) ? version : unknownWording;
+        return KmlibStrings.hasText(version) ? stripVersionPrefix(version.trim()) : unknownWording;
+    }
+
+    // The prefix off, where what follows it is a number. A version is shown beside a label that
+    // already says it is one, so the letter is noise - and the two versions in a report come from
+    // two places that need not agree about carrying it.
+    private static String stripVersionPrefix(String version) {
+
+        var opensWithPrefix = Character.toLowerCase(version.charAt(0)) == VERSION_PREFIX;
+
+        return opensWithPrefix && version.length() > 1 && Character.isDigit(version.charAt(1))
+            ? version.substring(1)
+            : version;
     }
 }

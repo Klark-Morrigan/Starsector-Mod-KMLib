@@ -1,6 +1,7 @@
 package kmlib.testfixtures.starsector.compatibility;
 
 import kmlib.opengl.FastRenderingBridgeDiagnostic;
+import kmlib.starsector.compatibility.CompatibilityBreakage;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilitySubject;
@@ -47,20 +48,29 @@ public final class CompatibilityFailureFixture {
     /** Which guard caught the binding, as the phrase the log's "failed while" row takes. */
     public static final String FAILURE_SITE = "resolving the binding";
 
+    /** What a failed binding does not cost, for the notice's optional row. */
+    public static final String UNAFFECTED_FEATURE = "On everything else, including your save.";
+
     /** What a second mod over the same binding loses, which is nothing the first one does. */
     public static final String COLONY_PANEL_LOST_FEATURE =
         "Colony panel rows will not show their upkeep this session.";
 
+    /** The mod the representative consumer belongs to, which leads the key its records latch under. */
+    public static final String MAP_OVERLAY_MOD_ID = "map-mod";
+
+    /** A second mod, so a case about two mods over one binding cannot pass on one ID standing for two. */
+    public static final String COLONY_PANEL_MOD_ID = "colony-mod";
+
     /** A mod over the binding, as the key its records latch under and the sentence it loses. */
     public static final CompatibilityConsumer MAP_OVERLAY_CONSUMER =
-        new CompatibilityConsumer("map-overlay", LOST_FEATURE);
+        new CompatibilityConsumer(MAP_OVERLAY_MOD_ID, "map-overlay", LOST_FEATURE, UNAFFECTED_FEATURE);
 
     /**
      * A second mod over the same binding, losing something of its own - so a case about two
      * consumers being told apart cannot pass on one sentence standing for both.
      */
     public static final CompatibilityConsumer COLONY_PANEL_CONSUMER =
-        new CompatibilityConsumer("colony-panel", COLONY_PANEL_LOST_FEATURE);
+        new CompatibilityConsumer(COLONY_PANEL_MOD_ID, "colony-panel", COLONY_PANEL_LOST_FEATURE);
 
     private CompatibilityFailureFixture() {
         // fixture of static builders, no instances.
@@ -85,9 +95,8 @@ public final class CompatibilityFailureFixture {
 
         return new CompatibilityFailure(
             new CompatibilitySubject(SUBJECT_NAME, builtAgainstVersion, installedVersion),
-            LOST_FEATURE,
-            FAILURE_SITE,
-            BROKEN_DETAIL,
+            MAP_OVERLAY_CONSUMER,
+            new CompatibilityBreakage(FAILURE_SITE, BROKEN_DETAIL),
             null);
     }
 
@@ -99,9 +108,8 @@ public final class CompatibilityFailureFixture {
 
         return new CompatibilityFailure(
             createUnversionedSubject(),
-            LOST_FEATURE,
-            FAILURE_SITE,
-            brokenDetail,
+            MAP_OVERLAY_CONSUMER,
+            new CompatibilityBreakage(FAILURE_SITE, brokenDetail),
             null);
     }
 
@@ -113,9 +121,8 @@ public final class CompatibilityFailureFixture {
 
         return new CompatibilityFailure(
             createUnversionedSubject(),
-            LOST_FEATURE,
-            failureSite,
-            BROKEN_DETAIL,
+            MAP_OVERLAY_CONSUMER,
+            new CompatibilityBreakage(failureSite, BROKEN_DETAIL),
             null);
     }
 
@@ -127,9 +134,8 @@ public final class CompatibilityFailureFixture {
 
         return new CompatibilityFailure(
             createUnversionedSubject(),
-            lostFeature,
-            FAILURE_SITE,
-            BROKEN_DETAIL,
+            new CompatibilityConsumer(MAP_OVERLAY_MOD_ID, "map-overlay", lostFeature),
+            new CompatibilityBreakage(FAILURE_SITE, BROKEN_DETAIL),
             null);
     }
 

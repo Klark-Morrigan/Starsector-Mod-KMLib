@@ -44,8 +44,8 @@ public record MarketTargetRequirement(
      * <p>The other side of the same axis, and the neutral faction is where the two meet: it is
      * how the game says nobody has settled here, so a bare world's placeholder, a decivilised
      * world and a derelict station are all things to found on rather than things to hand over.
-     * A read that asked only whether some faction held the market would offer a derelict hulk as
-     * a colony to give away, neutral being a faction like any other to that question.
+     * A read that asked only whether some faction held the market would offer a derelict as a
+     * colony to give away, neutral being a faction like any other to that question.
      *
      * <p>Registration with the economy is no part of the rule, vanilla building Galatia Academy
      * as a real colony it never lists.

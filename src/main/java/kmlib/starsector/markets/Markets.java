@@ -68,7 +68,7 @@ public final class Markets {
      *
      * <p>Reads the market's connected entities - the ownership link the game
      * maintains, so a station found here is this market's own rather than a rival's
-     * or an abandoned hulk sharing the orbit - and qualifies each on the two halves
+     * or an abandoned derelict sharing the orbit - and qualifies each on the two halves
      * vanilla's own station reads test: a {@code "station"}-tagged entity not opted
      * out via {@code NO_ORBITAL_STATION}, which additionally has a station fleet.
      * Keying on the tag and the fleet captures vanilla and modded stations alike,
@@ -151,7 +151,7 @@ public final class Markets {
     }
 
     /**
-     * Whether a market is an abandoned station - a derelict hulk with a storage locker
+     * Whether a market is an abandoned station - a derelict with a storage locker
      * bolted on, rather than a place anybody lives.
      *
      * <p>Reads the {@code abandoned_station} condition

@@ -109,7 +109,7 @@ final class ClaimContestFixture implements AutoCloseable {
             // Each market names the system back, as the listed ones do. A colony that could not
             // say where it stands reads as standing nowhere, and a rule asking whether anybody has
             // seen it answers that nobody could have been in a system it is not in - which shows
-            // as an unvisited hulk reporting itself known.
+            // as an unvisited derelict reporting itself known.
             when(market.getContainingLocation())
                 .thenReturn(systemMock);
 
@@ -242,8 +242,9 @@ final class ClaimContestFixture implements AutoCloseable {
             .thenReturn(FactionCustomFixture.buildPunitiveExpeditionCustom(isTerritorial));
 
         // Whether this is the neutral faction is answered off the faction, as the engine answers
-        // it: the colony kind read parts an unowned hulk from a station somebody keeps on exactly
-        // this question, so leaving it false would pose every derelict here as a manned outpost.
+        // it: the colony kind read parts an unowned derelict from a station somebody keeps on
+        // exactly this question, so leaving it false would pose every derelict here as a manned
+        // outpost.
         when(factionMock.isNeutralFaction())
             .thenReturn(Factions.NEUTRAL.equals(id));
 

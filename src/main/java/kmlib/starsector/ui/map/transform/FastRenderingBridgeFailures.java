@@ -2,6 +2,7 @@ package kmlib.starsector.ui.map.transform;
 
 import kmlib.opengl.FastRendering;
 import kmlib.opengl.FastRenderingBridgeDiagnostic;
+import kmlib.starsector.compatibility.CompatibilityBreakage;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilityFailures;
@@ -92,9 +93,8 @@ final class FastRenderingBridgeFailures {
                 FastRendering.COMPATIBILITY_SUBJECT_NAME,
                 diagnostic.boundVersion(),
                 diagnostic.installedVersion()),
-            consumer.lostFeature(),
-            failureSite,
-            diagnostic.describeBrokenMembers(),
+            consumer,
+            new CompatibilityBreakage(failureSite, diagnostic.describeBrokenMembers()),
             bindingFailure);
     }
 }

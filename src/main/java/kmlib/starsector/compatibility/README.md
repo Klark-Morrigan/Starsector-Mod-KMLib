@@ -69,8 +69,28 @@ sequenceDiagram
 What is latched is the pair,
 not the third party alone.
 [`CompatibilityConsumer`](CompatibilityConsumer.java) is the mod that took the binding:
-the key its records latch under,
-and the sentence naming what it loses.
+which mod it is, which of its features the binding serves,
+and the sentence naming what that feature loses.
+
+The key is composed from those first two rather than supplied whole.
+A key a caller spelled outright is a key two mods can spell the same,
+and a collision puts both behind one latch -
+so the second mod's player is told what the first one lost, or told nothing.
+Led by a mod's own ID that cannot happen between mods:
+the ID namespaces the key,
+and a mod naming another's ID would be claiming to be it.
+The feature half stays the caller's because it is the half nothing else knows:
+one mod can take two bindings to one third party and lose two different things by them,
+and those have to latch apart.
+
+The ID is not checked against the game where the value is built.
+That would put a mod-manager read on the healthy path,
+where this value is made and then never looked at again,
+and there is no honest answer for the moments before the game is up.
+The report resolves it instead,
+naming the mod beside its ID where the game holds a name for it
+and showing the ID alone where it does not -
+which is where an invented or misspelled one surfaces.
 
 One broken third party costs every mod bound to it something of its own.
 A latch on the third party alone would keep whichever mod recorded first
@@ -112,21 +132,49 @@ the release KMLib was compiled against and the one installed now.
 Either may be absent -
 both are read from the third party rather than from a convention -
 and an absent one renders as an explicit unknown rather than as `null`.
+A self-reported `v` prefix is stripped before either is shown:
+the label a version sits under already says it is one,
+and the two come from two places that need not agree about carrying it.
 
-[`CompatibilityFailure`](CompatibilityFailure.java) is one binding that stopped holding:
-the subject, the sentence naming what the session loses,
-where the binding was caught, the member or detail that broke,
+[`CompatibilityFailure`](CompatibilityFailure.java) is one binding that stopped holding,
+as four values of four different types:
+the [subject](CompatibilitySubject.java), the [consumer](CompatibilityConsumer.java) that took it,
+the [breakage](CompatibilityBreakage.java) - which guard caught it and what no longer holds -
 and the cause where there was one.
+Four types rather than a subject and a run of strings,
+because a run of same-typed components is a run a caller can transpose with nothing to catch it,
+and a report naming the broken member where the site belongs reads as plausibly as the right one.
 
 It composes two readings of that, for two audiences.
 
-The player's is the modal,
-drawn from KMLib's own strings category so the wording is editable without a rebuild.
-It says which third party, which versions, and what stops working - and no mechanics.
+The player's is the modal:
+the same block of labelled rows, in the player's half of the readings -
+which mod lost something, the two versions, what it costs and what it does not -
+under a heading naming the third party and pointing at the log.
+That pointer is generic, shown for every subject,
+and it is kept honest by the notice writing the log block before it asks for the dialog
+and whatever the dialog then does:
+a player sent to the log always finds something there.
+The last row is left out entirely where the consuming mod said nothing about what still works,
+a row claiming nothing being worse than no row.
+No mechanics rows.
+Which guard caught it and which member moved mean nothing to a player
+and everything to whoever fixes it,
+and that reader has the log.
+Every row is a whole template in KMLib's own strings category, label and padding together,
+so the wording is editable without a rebuild
+and a translation whose labels run longer keeps its own alignment
+rather than inheriting a column width measured in English.
+
+The heading names the third party alone.
+A heading carrying the consuming mod's name as well
+would put the player's eye on the mod that is working correctly;
+the mod belongs in a row of the body, which is where it is.
 
 The log's is a block of labelled rows:
 both versions, which guard caught the binding, what no longer holds,
-and what the player was told, with the throwable handed to the logger beside it.
+which consumer filed it and what that consumer lost,
+with the throwable handed to the logger beside it.
 A block rather than a line because those are separate readings
 and the one that matters varies by report -
 a mismatch is diagnosed off the site and the broken member,

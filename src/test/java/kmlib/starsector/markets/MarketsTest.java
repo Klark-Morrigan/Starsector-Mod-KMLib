@@ -225,7 +225,7 @@ final class MarketsTest {
         @Test
         void returnsFalseForADecivilisedWorld() {
             // The other unlisted neutral market a condition marks. Both are derelict in the
-            // plain sense, and only the condition read tells the ruins from the hulk.
+            // plain sense, and only the condition read tells the ruins from the derelict.
             assertThat(Markets.isAbandonedStation(MarketStateFixture.buildDecivilisedWorld()))
                 .isFalse();
         }
@@ -376,7 +376,7 @@ final class MarketsTest {
 
         @Test
         void returnsFalseForADerelictStationFlyingTheNeutralFlag() {
-            // The case the ownership read alone gets wrong: a hulk has a faction like any other
+            // The case the ownership read alone gets wrong: a derelict has a faction like any other
             // market, and it is neutral - which is the game saying nobody lives here.
             assertThat(Markets.isSettledColony(MarketStateFixture.buildAbandonedStation()))
                 .isFalse();

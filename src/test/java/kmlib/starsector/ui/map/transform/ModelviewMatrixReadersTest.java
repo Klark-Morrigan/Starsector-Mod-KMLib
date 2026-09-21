@@ -135,7 +135,7 @@ final class ModelviewMatrixReadersTest {
             // The sentence is the consumer's and the subject is the library's: the mod names what
             // stops working, and the library names whose code stopped holding.
             var failure = failures.takeNextUnreported();
-            assertThat(failure.lostFeature())
+            assertThat(failure.consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
             assertThat(failure.subject().name())
                 .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
@@ -143,7 +143,7 @@ final class ModelviewMatrixReadersTest {
             // Filed under this guard and not another's: three guards record through one recorder,
             // so a site left to a default would put every mismatch under whichever was written
             // first and the log would name the wrong one.
-            assertThat(failure.failureSite())
+            assertThat(failure.breakage().failureSite())
                 .isEqualTo(FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING);
             assertThat(failures.takeNextUnreported())
                 .isNull();
@@ -160,9 +160,9 @@ final class ModelviewMatrixReadersTest {
             readers.selectReaderForActiveRenderer(MAP_OVERLAY);
             readers.selectReaderForActiveRenderer(COLONY_PANEL);
 
-            assertThat(failures.takeNextUnreported().lostFeature())
+            assertThat(failures.takeNextUnreported().consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
-            assertThat(failures.takeNextUnreported().lostFeature())
+            assertThat(failures.takeNextUnreported().consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
         }
 

@@ -74,7 +74,7 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeNextUnreported().brokenDetail())
+            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
                 .isEqualTo("first");
             assertThat(failures.takeNextUnreported())
                 .isNull();
@@ -101,9 +101,9 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing(MAP_OVERLAY.lostFeature()));
             failures.recordOnce(FAST_RENDERING, COLONY_PANEL, () -> createFailureLosing(COLONY_PANEL.lostFeature()));
 
-            assertThat(failures.takeNextUnreported().lostFeature())
+            assertThat(failures.takeNextUnreported().consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
-            assertThat(failures.takeNextUnreported().lostFeature())
+            assertThat(failures.takeNextUnreported().consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
         }
 
@@ -113,9 +113,9 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeNextUnreported().brokenDetail())
+            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
                 .isEqualTo("first");
-            assertThat(failures.takeNextUnreported().brokenDetail())
+            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
                 .isEqualTo("second");
         }
 
@@ -197,7 +197,7 @@ final class CompatibilityFailuresTest {
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureBrokenAt("first"));
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeNextUnreported().brokenDetail())
+            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
                 .isEqualTo("first");
         }
 

@@ -53,7 +53,7 @@ final class MarketlessEntityTest {
         @Test
         void reportsTheFactionIdTheEntityCarries() {
             // Live and unconcealed. A reading that substituted a neutral owner for a distant
-            // player would leave a caller unable to tell a genuinely unowned hulk from a
+            // player would leave a caller unable to tell a genuinely unowned derelict from a
             // withheld one.
             var factionMock = mock(FactionAPI.class);
 

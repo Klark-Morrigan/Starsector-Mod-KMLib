@@ -20,9 +20,13 @@ public final class CompatibilitySlotTemplates {
 
     private static final Map<String, String> TEMPLATES_BY_KEY = Map.of(
         "compatibility_notice_title", "title[%s]",
-        "compatibility_notice_built_against", "built[%s|%s|%s]",
-        "compatibility_notice_built_against_unreadable", "unreadable[%s|%s]",
-        "compatibility_notice_consequence", "consequence[%s]",
+        "compatibility_notice_see_log", "seelog[]",
+        "compatibility_notice_row_mod", "mod[%s]",
+        "compatibility_notice_row_built_for", "built[%s]",
+        "compatibility_notice_row_installed", "installed[%s]",
+        "compatibility_notice_row_installed_unreadable", "unreadable[]",
+        "compatibility_notice_row_effect", "effect[%s]",
+        "compatibility_notice_row_no_effect", "noeffect[%s]",
         "compatibility_notice_version_unknown", "?");
 
     private CompatibilitySlotTemplates() {
