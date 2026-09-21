@@ -165,7 +165,11 @@ public final class ModelviewMatrixReaders {
             // One catch for every way a binding stops holding at link time - a class that is gone,
             // a member that is gone, a signature that changed - because the JVM raises all three
             // the same way and the answer to each is the same: lose the reading, not the pass.
-            FastRenderingBridgeFailures.recordBridgeFailure(failureRecord, consumer, bindingFailure);
+            FastRenderingBridgeFailures.recordBridgeFailure(
+                failureRecord,
+                consumer,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
+                bindingFailure);
             return UnavailableModelviewMatrixReader.INSTANCE;
         }
     }

@@ -94,7 +94,9 @@ final class FastRenderingBridgeReading {
             // jar was compiled, and an entry point the installed release declares but does not
             // implement. A fault in the JVM itself is not caught, being the one thing not worth
             // trading for a degraded overlay.
-            degradeOnBridgeFailure(copyFailure);
+            degradeOnBridgeFailure(
+                FastRenderingBridgeFailures.WHILE_RUNNING_ON_RENDER_THREAD,
+                copyFailure);
         }
     }
 
@@ -130,12 +132,19 @@ final class FastRenderingBridgeReading {
      * rather than through a second latch is what makes a binding that broke on either thread broken
      * on both, and keeps one broken renderer to one report.
      *
+     * @param failureSite which side met it, which the latch deliberately does not distinguish but
+     *                    the report does: the two fail on different threads for different reasons,
+     *                    and a log that named only the latch would describe neither
      * @param copyFailure what the bridge threw, carried into the report as its cause
      */
-    void degradeOnBridgeFailure(Throwable copyFailure) {
+    void degradeOnBridgeFailure(String failureSite, Throwable copyFailure) {
 
         isBridgeUnavailable = true;
         latestCopy.set(null);
-        FastRenderingBridgeFailures.recordBridgeFailure(failureRecord, consumer, copyFailure);
+        FastRenderingBridgeFailures.recordBridgeFailure(
+            failureRecord,
+            consumer,
+            failureSite,
+            copyFailure);
     }
 }

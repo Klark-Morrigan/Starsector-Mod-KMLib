@@ -133,6 +133,12 @@ final class FastRenderingModelviewMatrixReaderTest {
                 .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
             assertThat(failure.lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
+
+            // Filed as this thread's, not the renderer's: both degrade through the one latch, so
+            // the site is what keeps the log from reporting a game-thread refusal as a command
+            // that failed where the renderer ran it.
+            assertThat(failure.failureSite())
+                .isEqualTo(FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD);
         }
 
         @Test

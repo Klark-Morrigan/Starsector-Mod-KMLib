@@ -139,6 +139,12 @@ final class ModelviewMatrixReadersTest {
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
             assertThat(failure.subject().name())
                 .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
+
+            // Filed under this guard and not another's: three guards record through one recorder,
+            // so a site left to a default would put every mismatch under whichever was written
+            // first and the log would name the wrong one.
+            assertThat(failure.failureSite())
+                .isEqualTo(FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING);
             assertThat(failures.takeNextUnreported())
                 .isNull();
         }

@@ -142,6 +142,11 @@ final class FastRenderingBridgeReadingTest {
                 .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
             assertThat(failure.lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
+
+            // Filed as the renderer's thread, which is the finding: a command that failed where
+            // the renderer replays it is the one shape no guard at the call site could have caught.
+            assertThat(failure.failureSite())
+                .isEqualTo(FastRenderingBridgeFailures.WHILE_RUNNING_ON_RENDER_THREAD);
         }
 
         @Test

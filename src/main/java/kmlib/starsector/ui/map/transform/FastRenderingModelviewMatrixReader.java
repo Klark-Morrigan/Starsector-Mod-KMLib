@@ -86,7 +86,9 @@ public final class FastRenderingModelviewMatrixReader implements ModelviewMatrix
             // frame later, and not covered by the guard around the binding itself: a release that
             // declares an entry point and refuses it links cleanly and throws only here. Losing the
             // reading costs a hover highlight; letting it out of a render pass costs the game.
-            bridgeReading.degradeOnBridgeFailure(enqueueFailure);
+            bridgeReading.degradeOnBridgeFailure(
+                FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
+                enqueueFailure);
             return null;
         }
         // Return the previous frame's copy: the command just enqueued has not run yet.
