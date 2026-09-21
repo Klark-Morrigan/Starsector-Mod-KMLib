@@ -74,7 +74,13 @@ so a consumer can tell a real border from a seam between two pieces of the same 
   a half-plane inset of a convex ring (`insetConvexPolygon`),
   a selective inset that pulls only flagged edges (`insetSelectedEdges`),
   and a miter inset that keeps reflex corners a half-plane clip would shear off (`insetPolygonByMiter`).
-  `removeReversedLoops` splices out the folds a self-crossing inset leaves.
+  `removeReversedLoops` splices out the folds a self-crossing inset leaves,
+  and `hasInsetCollapsed` says whether an inset folded a ring over rather than offsetting it - the check to make while the raw ring is still at hand, a later resolve having nothing to compare against.
+- **`PolygonRegions`** -
+  interrogates a ring without reshaping it: its area and winding (`computeSignedArea`),
+  whether it crosses itself and how badly (`countSelfCrossings`),
+  whether a point falls inside it (`isPointInsideRing`),
+  and sorts a flat ring soup into the bodies and holes it bounds (`groupRingsIntoRegions`).
 - **`PolygonSmoothing`** -
   `removeSpikes` drops needles and cusps too thin to round,
   then `roundCorners` arcs or chamfers what remains.

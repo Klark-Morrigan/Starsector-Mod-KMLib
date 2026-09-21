@@ -9,7 +9,8 @@ import java.util.List;
  *
  * <p>Read-only counterpart to the offset and smoothing passes. {@link
  * #computeSignedArea} reports a ring's area and winding sign, the fold-guard a
- * caller keys on. {@link #isPointInsideRing} answers whether a single point falls
+ * caller keys on, and {@link #countSelfCrossings} says whether what came back is
+ * drawable at all. {@link #isPointInsideRing} answers whether a single point falls
  * within a ring. {@link #groupRingsIntoRegions} sorts a flat ring soup into the
  * {@link RingRegion}s it bounds, which is the form the two span passes below already
  * take their rings in. {@link #findLineInteriorSpans} and {@link
@@ -26,6 +27,59 @@ public final class PolygonRegions {
     private static final int BAND_RAIL_COUNT = 5;
 
     private PolygonRegions() {
+    }
+
+    /**
+     * How many times a closed ring crosses itself.
+     *
+     * <p>Whether a ring is drawable, as a number rather than a verdict. A ring that crosses
+     * itself fills to something other than its outline and strokes a line through its own
+     * interior, so this is what a caller checks after any pass that can fold a ring - chiefly
+     * the miter inset, which crosses wherever a shape pinches narrower than twice its offset.
+     * A count rather than a flag because it says how bad, which is what tells a fixture that
+     * got worse from one that was never clean.
+     *
+     * <p>Consecutive edges are not asked about: they share an endpoint by construction, and a
+     * ring's neighbours touching is not a fold. Two edges further apart that meet at a point
+     * do count - a ring pinched to touch itself is not simple, whether or not it passes
+     * through.
+     *
+     * <p>Every pair is compared, so this costs the square of the ring's length. It is a check
+     * on geometry rather than a step in producing it, which is where that is affordable: a
+     * test, a probe, or a diagnostic. Nothing drawing per frame should ask.
+     *
+     * @param ring closed polygon vertices as {x, y} pairs, without a repeated closing point
+     * @return how many pairs of non-adjacent edges cross; zero for a ring too short to
+     *         enclose area, and zero for a simple ring
+     */
+    public static int countSelfCrossings(List<double[]> ring) {
+
+        if (ring.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return 0;
+        }
+        var count = ring.size();
+        var crossings = 0;
+
+        for (var first = 0; first < count; first++) {
+            // From the edge after next: the next one shares this edge's far end.
+            for (var second = first + 2; second < count; second++) {
+
+                // The last edge shares the first edge's start, so that one pair is adjacent
+                // too - and it is the only pair the index walk cannot rule out by distance.
+                if (first == 0 && second == count - 1) {
+                    continue;
+                }
+                if (Segments.intersectSegments(
+                        ring.get(first),
+                        ring.get((first + 1) % count),
+                        ring.get(second),
+                        ring.get((second + 1) % count)) != null) {
+
+                    crossings++;
+                }
+            }
+        }
+        return crossings;
     }
 
     /**

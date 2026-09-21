@@ -22,6 +22,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * or collinear vertices) is zero - the sign and magnitude a consumer's fold-guard
  * relies on.
  *
+ * <p>And of {@link PolygonRegions#countSelfCrossings}: a simple ring crosses itself no times,
+ * a bow tie once, a zigzag whose closing edge cuts three others three times, a ring pinched to
+ * touch itself at a point counts even though nothing passes through, and a ring too short to
+ * enclose area crosses nothing.
+ *
  * <p>And of {@link PolygonRegions#isPointInsideRing}: a point within a convex ring is
  * inside and one beyond it outside regardless of winding, a concave ring's notch reads
  * as outside while its arms read as inside, and a ring too short to enclose area holds
@@ -50,6 +55,78 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * nothing.
  */
 final class PolygonRegionsTest {
+
+    @Nested
+    class CountSelfCrossings {
+
+        // A square's top two corners swapped, so the ring crosses itself once in the middle.
+        private static final List<double[]> BOW_TIE = List.of(
+            new double[] {0, 0},
+            new double[] {10, 0},
+            new double[] {0, 10},
+            new double[] {10, 10});
+
+        // A zigzag whose closing edge runs the whole way back across it, from the far corner to
+        // the first: that one edge cuts three of the earlier ones, so the ring crosses itself
+        // three times and every crossing is a different pair.
+        private static final List<double[]> CROSSED_THREE_TIMES = List.of(
+            new double[] {0, 0},
+            new double[] {10, 0},
+            new double[] {0, 10},
+            new double[] {10, 10},
+            new double[] {0, 20},
+            new double[] {10, 20});
+
+        // An hourglass pinched to a point rather than through it: the waist corner is visited
+        // twice, so two edges that are not neighbours meet there.
+        private static final List<double[]> PINCHED_AT_A_POINT = List.of(
+            new double[] {0, 0},
+            new double[] {10, 0},
+            new double[] {5, 5},
+            new double[] {10, 10},
+            new double[] {0, 10},
+            new double[] {5, 5});
+
+        @Test
+        void aSimpleRingCrossesItselfNoTimes() {
+
+            assertThat(PolygonRegions.countSelfCrossings(buildSquare(10)))
+                .isZero();
+        }
+
+        @Test
+        void aRingThatCrossesItselfOnceReportsOne() {
+
+            assertThat(PolygonRegions.countSelfCrossings(BOW_TIE))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void eachCrossingIsCountedSeparately() {
+            // The number says how bad, which is what tells a fixture that got worse from one
+            // that was never clean - so a count that stopped at the first crossing found, or
+            // counted one per folded edge rather than one per pair, would read the same here
+            // as a ring with a single nick in it.
+            assertThat(PolygonRegions.countSelfCrossings(CROSSED_THREE_TIMES))
+                .isEqualTo(3);
+        }
+
+        @Test
+        void twoEdgesMeetingAtAPointCountEvenWithoutPassingThrough() {
+            // A ring pinched to touch itself is not simple either, and a fill of it leaves the
+            // two halves reading as separate bodies.
+            assertThat(PolygonRegions.countSelfCrossings(PINCHED_AT_A_POINT))
+                .isPositive();
+        }
+
+        @Test
+        void aRingTooShortToEncloseAreaCrossesNothing() {
+
+            assertThat(PolygonRegions.countSelfCrossings(
+                List.of(new double[] {0, 0}, new double[] {10, 10})))
+                .isZero();
+        }
+    }
 
     @Nested
     class ComputeSignedArea {
