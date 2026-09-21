@@ -60,6 +60,23 @@ tasks.named('check') {
 enforcePackageVocabulary {
     // To curb usage of non-fitting words in relation to fills.
     forbidWords under: 'kmlib', words: ['ground']
+
+    // Two shapes of colony the tree kept inventing words for. *Hulk* is fluff on
+    // top of *derelict*, which already names the thing and is what every read
+    // here calls it. *Dead colony* and *dead world* are worse than fluff: the
+    // kind they stood for is still populated - survivors, bandits and looters -
+    // so the phrase asserts the opposite of what a consumer draws, and the word
+    // for it is *decivilised*. Plurals are separate entries because the gate
+    // parts words one at a time, so a phrase list closing the singular leaves
+    // the plural open.
+    //
+    // *Ruin* is deliberately absent: it is the vanilla planetary condition's own
+    // name, read here to tell a resettled world from a founding, so a ban would
+    // forbid naming the thing the code reads.
+    forbidWords under: 'kmlib',
+                words: ['hulk', 'hulks',
+                        'dead colony', 'dead colonies',
+                        'dead world', 'dead worlds']
 }
 
 enforceNoTestVocabulary {
