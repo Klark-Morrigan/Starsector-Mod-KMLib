@@ -190,8 +190,8 @@ final class CompatibilityNoticeTest {
 
             // The game drops a message dialog asked for behind another, so the second of two taken
             // together is shown on the next frame that can show it, not stacked on the first.
-            var firstFailure = createFailureLosing("first");
-            var secondFailure = createFailureLosing("second");
+            var firstFailure = createFailureLosing("The first feature stopped working.");
+            var secondFailure = createFailureLosing("The second feature stopped working.");
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> firstFailure);
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> secondFailure);
 
@@ -268,8 +268,8 @@ final class CompatibilityNoticeTest {
         @Test
         void logsADialogFaultOnceHoweverManyFailuresItStrikes() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing("first"));
-            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureLosing("second"));
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing("The first feature stopped working."));
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureLosing("The second feature stopped working."));
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());

@@ -37,14 +37,31 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void fillsBothVersionsWhereTheInstalledOneWasRead() {
+        void laysOutTheHeadingAndEveryRow() {
 
+            // The whole modal as one value: it is a block, so which rows there are and what order
+            // they come in is as much the subject as what lands in each.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForPlayer())
-                .isEqualTo("title[Fast Rendering]"
-                    + "\n\nbuilt[Fast Rendering|v0.8.8|v0.9.1]"
-                    + "\n\nconsequence[" + CompatibilityFailureFixture.LOST_FEATURE + "]");
+                .isEqualTo("title[Fast Rendering] seelog[]"
+                    + "\n\nmod[" + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID + "]"
+                    + "\nbuilt[0.8.8]"
+                    + "\ninstalled[0.9.1]"
+                    + "\neffect[" + CompatibilityFailureFixture.LOST_FEATURE + "]"
+                    + "\nnoeffect[" + CompatibilityFailureFixture.UNAFFECTED_FEATURE + "]");
+        }
+
+        @Test
+        void leavesOutTheNoEffectRowWhereTheConsumerSaidNothingAboutOne() {
+
+            // A row reading "No effect: -" claims less than no row at all and takes as much of the
+            // player's eye, so a consumer with nothing to add gets a block one row shorter.
+            var failure = CompatibilityFailureFixture.createFailureLosing(
+                CompatibilityFailureFixture.LOST_FEATURE);
+
+            assertThat(failure.describeForPlayer())
+                .doesNotContain("noeffect[");
         }
 
         @Test
@@ -53,7 +70,7 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
 
             assertThat(failure.describeForPlayer())
-                .contains("unreadable[Fast Rendering|v0.8.8]")
+                .contains("unreadable[]")
                 .doesNotContain("null");
         }
 
@@ -61,11 +78,24 @@ final class CompatibilityFailureTest {
         void standsTheUnknownWordingInForAnAbsentBuiltAgainstVersion() {
 
             // A blank is absent too, so a version that arrives as an empty string reaches the
-            // player as the unknown wording rather than as a hole in the sentence.
+            // player as the unknown wording rather than as a hole in the row.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("", "v0.9.1");
 
             assertThat(failure.describeForPlayer())
-                .contains("built[Fast Rendering|?|v0.9.1]");
+                .contains("built[?]");
+        }
+
+        @Test
+        void namesTheModByItsIdAloneWhereTheGameListsNoSuchMod() {
+
+            // The mod row is resolved against the game's mod manager at report time, and the fake
+            // settings a case runs under list no mods at all - which is also what an install sees
+            // for an ID naming nothing. The ID stands for itself rather than being dressed as a
+            // name, so a misspelled or invented one is visible in the report.
+            var failure = CompatibilityFailureFixture.createFailure();
+
+            assertThat(failure.describeForPlayer())
+                .contains("mod[" + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID + "]");
         }
     }
 
@@ -85,12 +115,15 @@ final class CompatibilityFailureTest {
 
             assertThat(failure.describeForLog())
                 .isEqualTo("Fast Rendering compatibility failure."
-                    + "\n    Built against: v0.8.8"
-                    + "\n    Installed:     v0.9.1"
+                    + "\n    Built against: 0.8.8"
+                    + "\n    Installed:     0.9.1"
                     + "\n    Failed while:  resolving the binding"
                     + "\n    Broken:        GLCommand.run"
                     + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)"
-                    + "\n    Player told:   "
+                    + "\n    Mod:           " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
+                    + "\n    Consumer:      " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
+                    + ":map-overlay"
+                    + "\n    Effect:        "
                     + "Sector map overlays will not respond to the cursor this session.");
         }
 

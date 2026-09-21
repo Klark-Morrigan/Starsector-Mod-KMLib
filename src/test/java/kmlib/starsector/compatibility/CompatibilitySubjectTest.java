@@ -16,12 +16,26 @@ final class CompatibilitySubjectTest {
     class DescribeBuiltAgainstVersion {
 
         @Test
-        void answersTheVersionWhereTheBuildReadOne() {
+        void answersTheVersionWithoutThePrefixTheSubjectSelfReportsItWith() {
 
+            // The label a version is shown under already says it is one, so the letter is noise -
+            // and the two versions in a report come from two places that need not agree about
+            // carrying it, which would show one with and one without.
             var subject = new CompatibilitySubject("Fast Rendering", "v0.8.8", null);
 
             assertThat(subject.describeBuiltAgainstVersion(UNKNOWN_WORDING))
-                .isEqualTo("v0.8.8");
+                .isEqualTo("0.8.8");
+        }
+
+        @Test
+        void keepsALeadingLetterThatOpensTheVersionItself() {
+
+            // Stripped only where a digit follows, so a version that genuinely begins with a letter
+            // is reported as its author spells it rather than beheaded.
+            var subject = new CompatibilitySubject("Fast Rendering", "vanguard-3", null);
+
+            assertThat(subject.describeBuiltAgainstVersion(UNKNOWN_WORDING))
+                .isEqualTo("vanguard-3");
         }
 
         @Test
@@ -45,7 +59,7 @@ final class CompatibilitySubjectTest {
             var subject = new CompatibilitySubject("Fast Rendering", null, "v0.9.1");
 
             assertThat(subject.describeInstalledVersion(UNKNOWN_WORDING))
-                .isEqualTo("v0.9.1");
+                .isEqualTo("0.9.1");
         }
 
         @Test

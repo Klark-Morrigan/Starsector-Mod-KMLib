@@ -82,7 +82,7 @@ final class FastRenderingBridgeFailuresTest {
             // The probe's whole phrase, not the one member the JVM tripped on: that is the point of
             // probing at all, and the log line is what a report to the renderer's author is written
             // from.
-            assertThat(failure.brokenDetail())
+            assertThat(failure.breakage().brokenDetail())
                 .isEqualTo(diagnostic.describeBrokenMembers());
             assertThat(failure.cause())
                 .isSameAs(BRIDGE_CLASS_GONE_ERROR);
@@ -115,7 +115,7 @@ final class FastRenderingBridgeFailuresTest {
                 BRIDGE_CALL_REFUSED,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
-            assertThat(failure.failureSite())
+            assertThat(failure.breakage().failureSite())
                 .isEqualTo(FastRenderingBridgeFailures.WHILE_RUNNING_ON_RENDER_THREAD);
         }
 
@@ -128,7 +128,7 @@ final class FastRenderingBridgeFailuresTest {
                 BRIDGE_CLASS_GONE_ERROR,
                 createDiagnosticBetweenVersions(BOUND_VERSION, INSTALLED_VERSION));
 
-            assertThat(failure.lostFeature())
+            assertThat(failure.consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
         }
 
@@ -168,7 +168,7 @@ final class FastRenderingBridgeFailuresTest {
             var failure = failures.takeNextUnreported();
             assertThat(failure.subject().name())
                 .isEqualTo(FastRendering.COMPATIBILITY_SUBJECT_NAME);
-            assertThat(failure.lostFeature())
+            assertThat(failure.consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
             assertThat(failure.cause())
                 .isSameAs(BRIDGE_CALL_REFUSED);
@@ -195,9 +195,9 @@ final class FastRenderingBridgeFailuresTest {
                 FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
                 BRIDGE_CLASS_GONE_ERROR);
 
-            assertThat(failures.takeNextUnreported().lostFeature())
+            assertThat(failures.takeNextUnreported().consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
-            assertThat(failures.takeNextUnreported().lostFeature())
+            assertThat(failures.takeNextUnreported().consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
             assertThat(failures.takeNextUnreported())
                 .isNull();

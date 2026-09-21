@@ -17,6 +17,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The one check the unit suite cannot make: that the shipped templates and the order the record
  * fills them in still agree. A template whose slots were reordered in {@code strings.json} would
  * pass every case written against a copy of it and reach a player with the versions swapped.
+ *
+ * <p>Asserted as the whole modal rather than row by row, because the modal is a block: which rows
+ * there are, what order they come in and how their labels line up are as much what a player reads as
+ * the values in them. A row whose padding was edited out of column in the shipped file is a change
+ * worth failing on.
  */
 final class CompatibilityFailureIntegrationTest {
 
@@ -40,14 +45,18 @@ final class CompatibilityFailureIntegrationTest {
         @Test
         void readsAsTheModalWhereBothVersionsWereRead() {
 
+            // Both versions arrive with the prefix their subjects self-report, and neither reaches
+            // the player with it: the label already says a version is what follows, and the two
+            // versions come from two places that need not agree about carrying one.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForPlayer())
-                .isEqualTo("Fast Rendering version mismatch"
-                    + "\n\nKMLib was built against Fast Rendering v0.8.8, and this install has v0.9.1."
-                    + "\n\n" + CompatibilityFailureFixture.LOST_FEATURE
-                    + " Everything else, including your save, is unaffected."
-                    + " See starsector.log for which part is mismatched.");
+                .isEqualTo("Fast Rendering version mismatch. See starsector.log for details."
+                    + "\n\n    Mod:        " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
+                    + "\n    Built for:  0.8.8"
+                    + "\n    Installed:  0.9.1"
+                    + "\n    Effect:     " + CompatibilityFailureFixture.LOST_FEATURE
+                    + "\n    No effect:  " + CompatibilityFailureFixture.UNAFFECTED_FEATURE);
         }
 
         @Test
@@ -56,13 +65,13 @@ final class CompatibilityFailureIntegrationTest {
             var failure = CompatibilityFailureFixture.createFailure();
 
             assertThat(failure.describeForPlayer())
-                .isEqualTo("Fast Rendering version mismatch"
-                    + "\n\nKMLib was built against Fast Rendering (version unknown),"
-                    + " and this install's version could not be read."
-                    + " It is either newer and carries breaking changes, or too old for this build."
-                    + "\n\n" + CompatibilityFailureFixture.LOST_FEATURE
-                    + " Everything else, including your save, is unaffected."
-                    + " See starsector.log for which part is mismatched.");
+                .isEqualTo("Fast Rendering version mismatch. See starsector.log for details."
+                    + "\n\n    Mod:        " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
+                    + "\n    Built for:  (version unknown)"
+                    + "\n    Installed:  could not be read - either newer and carrying breaking"
+                    + " changes, or too old for this build"
+                    + "\n    Effect:     " + CompatibilityFailureFixture.LOST_FEATURE
+                    + "\n    No effect:  " + CompatibilityFailureFixture.UNAFFECTED_FEATURE);
         }
     }
 }

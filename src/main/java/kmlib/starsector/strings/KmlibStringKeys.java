@@ -28,39 +28,69 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_TITLE = "compatibility_notice_title";
 
     /**
-     * Names both versions when the installed one could be read. Three slots: the subject's name, the
-     * version KMLib was built against, and the version installed.
+     * The sentence closing the heading paragraph, after the title. No slots.
      *
-     * <p>Naming both is what turns "version mismatch" into an actionable sentence, and it removes any
-     * need to classify the failure as too-new or too-old - the two numbers say which it is. Versions
-     * carry their own {@code v} prefix, as the subjects self-report them, so the template adds none.
+     * <p>Its own string rather than the tail of the title, because it is the generic half: every
+     * subject's notice carries it and no subject's wording changes it. Kept honest by
+     * {@code CompatibilityNotice}, which writes the log block before it asks for the dialog and
+     * whatever the dialog then does - so a player sent to the log always finds something there.
      */
-    public static final String COMPATIBILITY_NOTICE_BUILT_AGAINST = "compatibility_notice_built_against";
+    public static final String COMPATIBILITY_NOTICE_SEE_LOG = "compatibility_notice_see_log";
 
     /**
-     * The same sentence for an installed version that could not be read. Two slots: the subject's
-     * name and the version KMLib was built against.
+     * The row naming the mod that lost something. One slot: the mod as
+     * {@code CompatibilityConsumer.describeMod()} words it - its own name beside its ID, or the ID
+     * alone where the game lists no such mod.
+     *
+     * <p>A row of the body and never part of the heading. The heading names the third party that
+     * stopped holding, and a heading carrying the consuming mod's name too would put the player's
+     * eye on the mod that is working correctly.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_MOD = "compatibility_notice_row_mod";
+
+    /**
+     * The row naming what this build was type-checked against. One slot: that version.
+     *
+     * <p>Naming both versions is what turns "version mismatch" into an actionable sentence, and it
+     * removes any need to classify the failure as too-new or too-old - the two numbers say which it
+     * is. The subject is not named again here: the heading above already says whose versions these
+     * are, and a row repeating it reads as a second subject. A self-reported {@code v} prefix is
+     * stripped before the slot is filled, the label already saying that a version is what follows.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_BUILT_FOR = "compatibility_notice_row_built_for";
+
+    /** The row naming the installed version. One slot: that version. */
+    public static final String COMPATIBILITY_NOTICE_ROW_INSTALLED = "compatibility_notice_row_installed";
+
+    /**
+     * The same row where the installed version could not be read at all. No slots.
      *
      * <p>Reading a subject's version is itself a third-party binding and can fail on its own, so the
-     * wording has to hold without the second number. The either/or clause covers both directions the
+     * report has to hold without the second number. The either/or wording covers both directions the
      * mismatch can run in, which is why too-new and too-old need no separate handling.
      */
-    public static final String COMPATIBILITY_NOTICE_BUILT_AGAINST_UNREADABLE =
-        "compatibility_notice_built_against_unreadable";
+    public static final String COMPATIBILITY_NOTICE_ROW_INSTALLED_UNREADABLE =
+        "compatibility_notice_row_installed_unreadable";
 
     /**
-     * What the player loses and what they do not. One slot: the sentence naming the lost feature.
+     * The row naming what the player loses. One slot: the consumer's own sentence.
      *
      * <p>That sentence is the caller's to supply, out of its own strings, and is the only part of the
      * notice that is: what a mismatch costs is knowledge of the feature that broke, which lives with
      * whoever built it. Written here it would name a consumer's feature and would have to be
      * rewritten for the second client of the channel.
-     *
-     * <p>The reassurance around it is the point of the paragraph. A modal about a version mismatch
-     * reads as "your save is in danger" unless it says otherwise, and the degraded state costs a
-     * feature for the session and nothing else.
      */
-    public static final String COMPATIBILITY_NOTICE_CONSEQUENCE = "compatibility_notice_consequence";
+    public static final String COMPATIBILITY_NOTICE_ROW_EFFECT = "compatibility_notice_row_effect";
+
+    /**
+     * The row naming what goes on working. One slot: the consumer's own sentence for it.
+     *
+     * <p>Left out of the notice entirely where the consumer supplied none. The sentence is the
+     * consumer's for the same reason the lost one is, and more so: the library cannot promise
+     * anything about another mod's feature or another mod's save, so a reassurance written here
+     * would be the library vouching for a mod it knows nothing about.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_NO_EFFECT = "compatibility_notice_row_no_effect";
 
     /**
      * Stands in for a version slot nothing could fill, so a report never prints {@code null} at a
