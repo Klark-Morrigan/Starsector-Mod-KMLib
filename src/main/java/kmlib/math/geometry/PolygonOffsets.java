@@ -19,7 +19,48 @@ import java.util.List;
  */
 public final class PolygonOffsets {
 
+    // Below this a ring encloses nothing worth the name: an inset that took a ring down to a
+    // hairline has consumed it, whichever way the hairline happens to wind.
+    private static final double COLLAPSED_RING_AREA = 1e-6;
+
     private PolygonOffsets() {
+    }
+
+    /**
+     * Whether an inset folded a ring over rather than cleanly offsetting it.
+     *
+     * <p>Fewer than three corners left, a vanishing or sign-flipped area, or - for an outer
+     * ring - an area that grew. A miter offset past a convex ring's own width does not invert
+     * the winding; it re-expands the corners into a larger ring of the same winding, so a grown
+     * outer ring is the tell-tale of over-inset. An outer ring (positive, counter-clockwise)
+     * must shrink under an inward inset, while a hole (negative, clockwise) legitimately grows
+     * as its border backs into the surrounding solid - so the grew-check is applied only to
+     * outer rings.
+     *
+     * <p>Asked before any resolve rather than left to it. A boundary tessellation handed a lone
+     * ring wound the wrong way does not drop it: it takes the ring's own winding as the plane's
+     * and hands it back as a fill, and handed that ring with its holes it hands the holes back
+     * as fills too. So a folded ring has to be recognised while its raw ring is still beside it
+     * to compare against, which is the only moment this can be told.
+     *
+     * @param rawRing   the ring before the inset
+     * @param insetRing the ring the inset left
+     * @return true where the inset ring is nothing to draw
+     */
+    public static boolean hasInsetCollapsed(List<double[]> rawRing, List<double[]> insetRing) {
+
+        if (insetRing.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return true;
+        }
+        var rawArea = PolygonRegions.computeSignedArea(rawRing);
+        var insetArea = PolygonRegions.computeSignedArea(insetRing);
+
+        if (Math.abs(insetArea) < COLLAPSED_RING_AREA
+                || Math.signum(rawArea) != Math.signum(insetArea)) {
+
+            return true;
+        }
+        return rawArea > 0 && insetArea > rawArea;
     }
 
     /**
