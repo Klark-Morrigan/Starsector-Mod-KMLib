@@ -65,12 +65,14 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void switchesToTheUnreadableWordingWhereTheInstalledVersionIsAbsent() {
+        void standsTheUnknownWordingInForAnAbsentInstalledVersion() {
 
+            // The same one-word stand-in both version rows take. A row that explained instead of
+            // answering would be the longest line in a panel that does not grow to hold it.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
 
             assertThat(failure.describeForPlayer())
-                .contains("unreadable[]")
+                .contains("installed[?]")
                 .doesNotContain("null");
         }
 
@@ -114,7 +116,7 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForLog())
-                .isEqualTo("Fast Rendering compatibility failure."
+                .isEqualTo("Fast Rendering version mismatch."
                     + "\n    Built against: 0.8.8"
                     + "\n    Installed:     0.9.1"
                     + "\n    Failed while:  resolving the binding"

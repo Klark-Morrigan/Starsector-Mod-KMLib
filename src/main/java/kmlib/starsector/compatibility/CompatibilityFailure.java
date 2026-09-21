@@ -70,9 +70,10 @@ public record CompatibilityFailure(
      * here. They mean nothing to a player and everything to whoever fixes it, and that reader has
      * the log.
      *
-     * <p>Every row is a whole template in KMLib's own strings category, label and padding together,
-     * so the wording is editable without a rebuild and a translation whose labels are longer keeps
-     * its own alignment rather than inheriting a column width measured in English.
+     * <p>Every row is a whole template in KMLib's own strings category, label and spacing together,
+     * so the wording is editable without a rebuild and a translation sets its own spacing rather
+     * than inheriting one measured in English. The spacing reads as a column in a monospaced
+     * editor and only approximately on screen, every font the game ships being proportional.
      *
      * @return the heading, the rows, and the reassurance, a blank line apart
      */
@@ -88,7 +89,10 @@ public record CompatibilityFailure(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_BUILT_FOR,
             subject.describeBuiltAgainstVersion(
                 KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN))));
-        rows.add(describeInstalledVersionRow());
+        rows.add(KmlibStringKeys.format(
+            KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INSTALLED,
+            subject.describeInstalledVersion(
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN))));
         rows.add(KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_EFFECT, consumer.lostFeature()));
 
         // Left out rather than filled with a stand-in where the consumer said nothing about what
@@ -137,15 +141,4 @@ public record CompatibilityFailure(
             : String.format(NAME_WITH_ID, modName, consumer.modId());
     }
 
-    // Two templates rather than one with a hole in it: "installed: (version unknown)" states a
-    // reading that was never taken, where the second wording says what happened and what it implies.
-    private String describeInstalledVersionRow() {
-
-        return subject.hasInstalledVersion()
-            ? KmlibStringKeys.format(
-                KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INSTALLED,
-                subject.describeInstalledVersion(
-                    KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN)))
-            : KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INSTALLED_UNREADABLE);
-    }
 }

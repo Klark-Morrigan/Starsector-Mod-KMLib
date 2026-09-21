@@ -63,16 +63,6 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_ROW_INSTALLED = "compatibility_notice_row_installed";
 
     /**
-     * The same row where the installed version could not be read at all. No slots.
-     *
-     * <p>Reading a subject's version is itself a third-party binding and can fail on its own, so the
-     * report has to hold without the second number. The either/or wording covers both directions the
-     * mismatch can run in, which is why too-new and too-old need no separate handling.
-     */
-    public static final String COMPATIBILITY_NOTICE_ROW_INSTALLED_UNREADABLE =
-        "compatibility_notice_row_installed_unreadable";
-
-    /**
      * The row naming what the player loses. One slot: the consumer's own sentence.
      *
      * <p>That sentence is the caller's to supply, out of its own strings, and is the only part of the
@@ -94,10 +84,25 @@ public final class KmlibStringKeys {
 
     /**
      * Stands in for a version slot nothing could fill, so a report never prints {@code null} at a
-     * player. Reads as a parenthetical after the subject's name, which keeps the surrounding sentence
-     * grammatical whichever slot is missing.
+     * player. One word, because it sits in a value slot beside a label that already says a version
+     * belongs there, and both version rows take it - a row that explained instead of answering
+     * would be the longest line in a block whose panel is a fixed size.
+     *
+     * <p>Reading a subject's version is itself a third-party binding and can fail on its own, so
+     * the report has to hold without either number. Which direction a mismatch runs in is not
+     * guessed at here: where both versions are known the numbers say it, and where one is not,
+     * nothing said in this slot would be true of both cases.
      */
     public static final String COMPATIBILITY_NOTICE_VERSION_UNKNOWN = "compatibility_notice_version_unknown";
+
+    /**
+     * The label on the one button the notice's dialog carries. No slots.
+     *
+     * <p>A confirm dialog with no cancel label renders a single button, which is how the game's own
+     * one-button notices are put up. The word is the player's, so it ships here rather than sitting
+     * as a literal beside the call.
+     */
+    public static final String COMPATIBILITY_NOTICE_CONFIRM_BUTTON = "compatibility_notice_confirm_button";
 
     /**
      * What the player loses where the library's own LunaLib bindings did not install. No slots.

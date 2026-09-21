@@ -67,9 +67,8 @@ final class CompatibilityFailureIntegrationTest {
             assertThat(failure.describeForPlayer())
                 .isEqualTo("Fast Rendering version mismatch. See starsector.log for details."
                     + "\n\n    Mod:        " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
-                    + "\n    Built for:  (version unknown)"
-                    + "\n    Installed:  could not be read - either newer and carrying breaking"
-                    + " changes, or too old for this build"
+                    + "\n    Built for:  unknown"
+                    + "\n    Installed:  unknown"
                     + "\n    Effect:     " + CompatibilityFailureFixture.LOST_FEATURE
                     + "\n    No effect:  " + CompatibilityFailureFixture.UNAFFECTED_FEATURE);
         }

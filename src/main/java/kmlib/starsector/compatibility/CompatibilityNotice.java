@@ -2,8 +2,11 @@ package kmlib.starsector.compatibility;
 
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.Script;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
+
+import kmlib.starsector.strings.KmlibStringKeys;
 
 import org.apache.log4j.Logger;
 
@@ -40,6 +43,28 @@ import java.util.Objects;
 public final class CompatibilityNotice implements EveryFrameScript {
 
     private static final Logger LOG = Global.getLogger(CompatibilityNotice.class);
+
+    // The panel the block is drawn in. The game's own default for a confirm dialog is 500 by 200,
+    // which holds a paragraph; this block is a heading and up to five labelled rows, several of
+    // which wrap, so it takes more of both. These are the knob: too small cuts the last rows off
+    // below the panel's edge, too large leaves the text floating in a mostly empty frame.
+    private static final float DIALOG_WIDTH = 640f;
+    private static final float DIALOG_HEIGHT = 340f;
+
+    // No cancel label, which is what renders the dialog with a single button. Null rather than a
+    // blank string: a blank one is a button with nothing written on it.
+    private static final String NO_CANCEL_BUTTON = null;
+
+    // Nothing to run on either button. The notice is read and dismissed, and the failure has
+    // already left the record by the time it is on screen.
+    private static final Script NO_BUTTON_ACTION = null;
+
+    private static final String DIALOG_REFUSED_MESSAGE =
+        "The game would not open a compatibility notice; the failure it was for is the line above this one.";
+
+    private static final String DIALOG_FAILED_MESSAGE =
+        "Could not show a compatibility notice to the player; "
+            + "the failure it was for is the line above this one.";
 
     private final CompatibilityFailures failures;
     private final SectorAPI sector;
@@ -106,27 +131,43 @@ public final class CompatibilityNotice implements EveryFrameScript {
     // Logged first and shown second, so what a report is written from exists whatever the
     // dialog call does: a faulting call loses the modal alone. The failure has already left the
     // record, which is what keeps a faulting dialog from being retried on it every frame.
+    //
+    // A confirm dialog rather than a message dialog, which is how the game puts up its own
+    // one-button notices: the message dialog takes no size, and its fixed panel cut the last rows
+    // of a block this long off below its own edge. It also answers whether it opened, where the
+    // message dialog returns nothing and drops silently.
     private void showFailure(CampaignUIAPI campaignUi, CompatibilityFailure failure) {
 
         LOG.error(failure.describeForLog(), failure.cause());
 
         try {
-            campaignUi.showMessageDialog(failure.describeForPlayer());
+            var wasShown = campaignUi.showConfirmDialog(
+                failure.describeForPlayer(),
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_CONFIRM_BUTTON),
+                NO_CANCEL_BUTTON,
+                DIALOG_WIDTH,
+                DIALOG_HEIGHT,
+                NO_BUTTON_ACTION,
+                NO_BUTTON_ACTION);
+
+            if (!wasShown) {
+                reportDialogProblemOnce(DIALOG_REFUSED_MESSAGE, null);
+            }
 
         } catch (RuntimeException dialogFailure) {
-            reportDialogFailureOnce(dialogFailure);
+            reportDialogProblemOnce(DIALOG_FAILED_MESSAGE, dialogFailure);
         }
     }
 
-    private void reportDialogFailureOnce(RuntimeException dialogFailure) {
+    // One latch over both ways the dialog can fail to appear. Either is a standing state of the
+    // call rather than news about the failure that met it, so a second report of the same thing
+    // would say nothing the first did not.
+    private void reportDialogProblemOnce(String problemMessage, RuntimeException dialogFailure) {
 
         if (hasLoggedDialogError) {
             return;
         }
         hasLoggedDialogError = true;
-        LOG.error(
-            "Could not show a compatibility notice to the player; "
-                + "the failure it was for is the line above this one.",
-            dialogFailure);
+        LOG.error(problemMessage, dialogFailure);
     }
 }

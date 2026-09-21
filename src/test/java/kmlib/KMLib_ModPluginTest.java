@@ -27,6 +27,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -305,7 +306,7 @@ final class KMLib_ModPluginTest {
             transientScripts.get(0).advance(ONE_FRAME);
 
             verify(campaignUiMock)
-                .showMessageDialog(anyString());
+                .showConfirmDialog(anyString(), anyString(), any(), anyFloat(), anyFloat(), any(), any());
         }
     }
 

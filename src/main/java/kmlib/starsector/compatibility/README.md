@@ -46,7 +46,11 @@ and the report is filed under whichever key the record settled on.
 
 [`CompatibilityNotice`](CompatibilityNotice.java) is the report:
 a transient per-frame script that drains the record
-and shows each failure as the game's own message dialog.
+and shows each failure as the game's own confirm dialog, sized and carrying a single button.
+A confirm dialog rather than the message dialog beside it,
+which is how the game puts up its own one-button notices:
+the message dialog takes no size, so its fixed panel cut the last rows of this block off
+below its own edge, and it answers nothing about whether it opened.
 Transient because what it reports is a fact about the jars installed this session,
 not about the save.
 It writes the log block before it asks for the dialog,
@@ -67,7 +71,7 @@ sequenceDiagram
   N->>Reg: hasUnreported()
   N->>Reg: takeNextUnreported()
   N->>N: log describeForLog()
-  N->>UI: showMessageDialog(describeForPlayer())
+  N->>UI: showConfirmDialog(describeForPlayer(), size)
 ```
 
 ## A binding is a third party and a consumer
@@ -258,13 +262,16 @@ in [`KmlibStringKeys`](../strings/KmlibStringKeys.java).
 
 ## One dialog per frame
 
-The game's message dialog is dropped, silently,
-when asked for while any dialog is up -
+The game refuses a dialog asked for while any dialog is up,
 and its dialog check reads the same flag.
 So the notice gates on that check,
 and shows one failure per frame rather than every failure it took:
-a second dialog asked for on the same frame as the first would be the one dropped.
+a second dialog asked for on the same frame as the first would be the one refused.
 A frame later it waits for the first to be dismissed.
+The call answers whether it opened,
+so a refusal that slips past the gate is logged rather than lost -
+the failure's own block having already been written, a player who never saw the modal
+still leaves a report behind.
 
 ## Threads
 

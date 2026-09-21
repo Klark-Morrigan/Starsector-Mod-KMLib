@@ -24,10 +24,10 @@ public final class CompatibilitySlotTemplates {
         "compatibility_notice_row_mod", "mod[%s]",
         "compatibility_notice_row_built_for", "built[%s]",
         "compatibility_notice_row_installed", "installed[%s]",
-        "compatibility_notice_row_installed_unreadable", "unreadable[]",
         "compatibility_notice_row_effect", "effect[%s]",
         "compatibility_notice_row_no_effect", "noeffect[%s]",
-        "compatibility_notice_version_unknown", "?");
+        "compatibility_notice_version_unknown", "?",
+        "compatibility_notice_confirm_button", "ok[]");
 
     private CompatibilitySlotTemplates() {
         // fixture of static wiring, no instances.

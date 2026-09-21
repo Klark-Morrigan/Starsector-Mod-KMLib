@@ -24,7 +24,10 @@ final class CompatibilityLogBlock {
     // up in a column. Padded in the literal rather than formatted to a width, so the alignment is
     // visible where it is written and a row added beside these is lined up by eye rather than by a
     // constant whose effect is somewhere else.
-    private static final String HEADING_SUFFIX = " compatibility failure.";
+    // The same heading the player's modal carries, so one failure does not arrive under two names
+    // for the reader holding both. Without the modal's pointer at the log, which a log need not
+    // make to itself.
+    private static final String HEADING_SUFFIX = " version mismatch.";
     private static final String BUILT_AGAINST_ROW = "\n    Built against: ";
     private static final String INSTALLED_ROW = "\n    Installed:     ";
     private static final String FAILED_WHILE_ROW = "\n    Failed while:  ";
