@@ -122,7 +122,7 @@ final class ModIntegrationTest {
             ModStateScopes.runWithoutGameSettings(() -> {
                 var installationFailure = new IllegalStateException("routes already registered");
 
-                var failure = INTEGRATION.composeFailure(FAILURE_SITE, installationFailure);
+                var failure = INTEGRATION.composeFailure(CONSUMER, FAILURE_SITE, installationFailure);
 
                 assertThat(failure.consumer())
                     .isEqualTo(CONSUMER);
@@ -132,10 +132,36 @@ final class ModIntegrationTest {
         }
 
         @Test
+        void carriesTheConsumerItWasHandedRatherThanItsOwn() {
+            // The record hands back the integration's consumer under a numbered key where it found
+            // that key reused, and only the record knows whether it did - so the composition takes
+            // the consumer rather than reading its own.
+            ModStateScopes.runWithoutGameSettings(() -> {
+                var failure = INTEGRATION.composeFailure(
+                    CONSUMER.deconflictFeatureKey(2),
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered"));
+
+                assertThat(failure.consumer().consumerKey())
+                    .isEqualTo("map-mod:map-overlay-2");
+            });
+        }
+
+        @Test
+        void refusesToComposeAFailureForNoConsumer() {
+
+            assertThatNullPointerException()
+                .isThrownBy(() -> INTEGRATION.composeFailure(
+                    null,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered")));
+        }
+
+        @Test
         void refusesToComposeAFailureFromNothingThrown() {
 
             assertThatNullPointerException()
-                .isThrownBy(() -> INTEGRATION.composeFailure(FAILURE_SITE, null));
+                .isThrownBy(() -> INTEGRATION.composeFailure(CONSUMER, FAILURE_SITE, null));
         }
     }
 
@@ -144,6 +170,7 @@ final class ModIntegrationTest {
     private static CompatibilityFailure composeFailure() {
 
         return INTEGRATION.composeFailure(
+            CONSUMER,
             FAILURE_SITE,
             new IllegalStateException("routes already registered"));
     }

@@ -146,7 +146,7 @@ public final class WiringSteps {
             failureRecord.recordOnce(
                 integration.subjectModId(),
                 integration.consumer(),
-                () -> integration.composeFailure(WHILE_INSTALLING_INTEGRATION, stepFailure));
+                recordedAs -> integration.composeFailure(recordedAs, WHILE_INSTALLING_INTEGRATION, stepFailure));
 
         } catch (RuntimeException reportFailure) {
             stepLog.error(REPORT_FAILURE_MESSAGE, reportFailure);

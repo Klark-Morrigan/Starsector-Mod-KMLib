@@ -64,11 +64,14 @@ final class FastRenderingBridgeFailures {
             String failureSite,
             Throwable bindingFailure) {
 
+        // Composed against the consumer the record hands back rather than the one given: the two
+        // differ only where the record found the consumer's key reused, and the report is filed
+        // under whichever key the record settled on.
         failureRecord.recordOnce(
             FastRendering.COMPATIBILITY_SUBJECT_KEY,
             consumer,
-            () -> composeBridgeFailure(
-                consumer,
+            recordedAs -> composeBridgeFailure(
+                recordedAs,
                 failureSite,
                 bindingFailure,
                 FastRenderingBridgeDiagnostic.probeInstalledBridge()));

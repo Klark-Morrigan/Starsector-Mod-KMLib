@@ -56,6 +56,11 @@ public record ModIntegration(
      * game's mod manager, which is a question worth asking once about a step that broke and never
      * about the ones that worked.
      *
+     * @param recordedAs          the consumer as the record filed it: this integration's own, or
+     *                            its own under a numbered feature key where the record found that
+     *                            key already holding another of the wiring mod's features. Taken
+     *                            rather than read off this value because only the record knows
+     *                            which of the two it is
      * @param failureSite         where the binding stopped holding, in the wording of whichever
      *                            guard caught it - the guard being the only thing that knows which
      *                            one it was
@@ -63,8 +68,14 @@ public record ModIntegration(
      *                            line beside the block renders a trace of it
      * @return the failure to record, with the consumer's sentences already in it
      */
-    public CompatibilityFailure composeFailure(String failureSite, Throwable installationFailure) {
+    public CompatibilityFailure composeFailure(
+            CompatibilityConsumer recordedAs,
+            String failureSite,
+            Throwable installationFailure) {
 
+        Objects.requireNonNull(
+            recordedAs,
+            "A failure composed for no consumer could not say whose feature the binding cost.");
         Objects.requireNonNull(
             installationFailure,
             "A failure composed from nothing thrown would report an installation that worked.");
@@ -73,7 +84,7 @@ public record ModIntegration(
         // binding was checked against, so there is nothing a build could have stamped for it.
         return new CompatibilityFailure(
             new CompatibilitySubject(subjectModName, null, InstalledMods.readModVersion(subjectModId)),
-            consumer,
+            recordedAs,
             new CompatibilityBreakage(failureSite, describeThrown(installationFailure)),
             installationFailure);
     }

@@ -126,6 +126,43 @@ final class CompatibilityConsumerTest {
     }
 
     @Nested
+    class DeconflictFeatureKey {
+
+        @Test
+        void numbersTheFeatureHalfOfTheKey() {
+
+            // The feature is what collided - the mod half is the mod's own ID - so the number lands
+            // there, and the key still reads as that mod and one feature of it.
+            assertThat(new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE)
+                .deconflictFeatureKey(2)
+                .consumerKey())
+                .isEqualTo("some-mod:map-cursor-2");
+        }
+
+        @Test
+        void keepsTheModAndBothSentences() {
+
+            var deconflicted = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE, UNAFFECTED_FEATURE)
+                .deconflictFeatureKey(2);
+
+            assertThat(deconflicted.modId())
+                .isEqualTo(MOD_ID);
+            assertThat(deconflicted.lostFeature())
+                .isEqualTo(LOST_FEATURE);
+            assertThat(deconflicted.unaffectedFeature())
+                .isEqualTo(UNAFFECTED_FEATURE);
+        }
+
+        @Test
+        void refusesTheFirstPositionWhichKeepsTheKeyBare() {
+
+            assertThatIllegalArgumentException()
+                .isThrownBy(() -> new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE)
+                    .deconflictFeatureKey(1));
+        }
+    }
+
+    @Nested
     class HasUnaffectedFeature {
 
         @Test
