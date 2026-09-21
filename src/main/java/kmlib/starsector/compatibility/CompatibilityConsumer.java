@@ -1,6 +1,5 @@
 package kmlib.starsector.compatibility;
 
-import kmlib.starsector.settings.modmanager.InstalledMods;
 import kmlib.text.KmlibStrings;
 
 /**
@@ -18,10 +17,11 @@ import kmlib.text.KmlibStrings;
  * and those have to latch apart or the second is dropped - which is the bug the pair latch exists to
  * prevent, at mod granularity instead of subject granularity.
  *
- * <p>The ID is not checked against the game here. That would put a mod-manager read on the healthy
- * path, where this value is built and never looked at again, and there is no honest answer for the
- * moments before the game is up. An ID naming no installed mod instead shows as itself in the
- * report, which is where somebody notices.
+ * <p>Plain data: the ID is not checked against the game and no name is looked up for it here. That
+ * would put a mod-manager read on the healthy path, where this value is built and never looked at
+ * again, and it would make a value object depend on a running game to be read at all. The report
+ * resolves the name when it composes one - see {@link CompatibilityFailure#describeMod} - and an ID
+ * naming no installed mod shows as itself there, which is where somebody notices.
  *
  * <p>The sentence is the taking mod's rather than the library's, for the reason this package's
  * README sets out.
@@ -47,9 +47,6 @@ public record CompatibilityConsumer(
     // What joins the two halves of the key. A colon because no mod ID carries one, so the join
     // cannot be spelled inside either half and collide with a pair nobody registered.
     private static final String KEY_SEPARATOR = ":";
-
-    // How a report names a mod whose display name the game could answer for.
-    private static final String NAME_WITH_ID = "%s (%s)";
 
     public CompatibilityConsumer {
 
@@ -93,28 +90,12 @@ public record CompatibilityConsumer(
 
     /**
      * @return the identity a record latches under: the mod and the feature, joined. Never shown to a
-     *         player as-is - {@link #describeMod()} is what a report names the mod with
+     *         player as-is - {@link CompatibilityFailure#describeMod} is what a report names the
+     *         mod with
      */
     public String consumerKey() {
 
         return modId + KEY_SEPARATOR + featureKey;
-    }
-
-    /**
-     * Names the mod for a report: its own name beside its ID where the game holds one, and the ID
-     * alone where it does not.
-     *
-     * <p>Resolved at report time rather than held, so that the healthy path never reads the mod
-     * manager and a report composed before the game is up still names something. An ID the game
-     * lists no mod for shows as itself, which is how a misspelled or invented one surfaces.
-     *
-     * @return the mod as a report names it, never blank
-     */
-    public String describeMod() {
-
-        var modName = InstalledMods.readModName(modId);
-
-        return modName == null ? modId : String.format(NAME_WITH_ID, modName, modId);
     }
 
     // The transposition the two key slots cannot catch between themselves: a sentence in a key slot
