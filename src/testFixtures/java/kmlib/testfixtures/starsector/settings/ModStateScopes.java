@@ -42,6 +42,23 @@ public final class ModStateScopes {
     }
 
     /**
+     * Runs body with the mod set readable and one named mod installed under a display name. Every
+     * other mod ID reports no spec, which is what the game answers for an ID naming no installed
+     * mod.
+     *
+     * @param modId   the mod the body's subject asks about
+     * @param modName the name the game holds for it
+     * @param body    the case to run inside the scope
+     */
+    public static void runWithModNamed(String modId, String modName, Runnable body) {
+
+        runWithSettingsInstalled(
+            () -> StarsectorSettingsFake.installSettingsWithModNames(
+                askedModId -> modId.equals(askedModId) ? modName : null),
+            body);
+    }
+
+    /**
      * Runs body with settings up but no mod manager on them - the half-built state between a game
      * that is up and one that is not, and the one a guard is easiest to leave out of.
      *

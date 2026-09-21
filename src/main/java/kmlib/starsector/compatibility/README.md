@@ -44,9 +44,10 @@ a transient per-frame script that drains the record
 and shows each failure as the game's own message dialog.
 Transient because what it reports is a fact about the jars installed this session,
 not about the save.
-It writes the log line before it asks for the dialog,
-so the line a report to the third party's author is written from
-exists whatever the dialog call does.
+It writes the log block before it asks for the dialog,
+so what a report to the third party's author is written from
+exists whatever the dialog call does -
+which is also what the modal's own pointer at the log promises is there.
 
 ```mermaid
 sequenceDiagram

@@ -1,13 +1,14 @@
 package kmlib.starsector.compatibility;
 
+import kmlib.starsector.settings.modmanager.InstalledMods;
 import kmlib.starsector.strings.KmlibStringKeys;
 
 import java.util.ArrayList;
 import java.util.Objects;
 
 /**
- * One binding to third-party code that stopped holding, in the shape the sentence shown to the
- * player and the line written to the log are both composed from.
+ * One binding to third-party code that stopped holding, in the shape the block shown to the player
+ * and the block written to the log are both composed from.
  *
  * <p>Kept apart from the registry that stores it so the wording can be read without one, and so the
  * registry itself carries no formatting. What the two sentences say and why is documented on
@@ -37,25 +38,12 @@ public record CompatibilityFailure(
     // Between the rows of a block, which are a list rather than a paragraph.
     private static final String ROW_BREAK = "\n";
 
+    // How a report names a mod whose display name the game could answer for.
+    private static final String NAME_WITH_ID = "%s (%s)";
+
     // Between the two sentences of the heading paragraph: which subject mismatched, and where to
     // look. One paragraph rather than two, the second being about the first.
     private static final String HEADING_SENTENCE_BREAK = " ";
-
-    // How an unread version is named in the log, which is written in English whatever the install's
-    // localisation - the player-facing parenthetical lives in strings.json instead.
-    private static final String UNKNOWN_VERSION_IN_LOG = "an unknown version";
-
-    // The log block's rows, each carrying its own newline and indent, and each label padded so the
-    // values line up in a column. Padded in the literal rather than formatted to a width, so the
-    // alignment is visible where it is written and a row added beside these is lined up by eye
-    // rather than by a constant whose effect is somewhere else.
-    private static final String MOD_ROW = "\n    Mod:           ";
-    private static final String BUILT_AGAINST_ROW = "\n    Built against: ";
-    private static final String INSTALLED_ROW = "\n    Installed:     ";
-    private static final String FAILED_WHILE_ROW = "\n    Failed while:  ";
-    private static final String BROKEN_ROW = "\n    Broken:        ";
-    private static final String CONSUMER_ROW = "\n    Consumer:      ";
-    private static final String EFFECT_ROW = "\n    Effect:        ";
 
     public CompatibilityFailure {
 
@@ -93,7 +81,7 @@ public record CompatibilityFailure(
             + KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_SEE_LOG);
 
         var rows = new ArrayList<String>();
-        rows.add(KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, consumer.describeMod()));
+        rows.add(KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, describeMod()));
         rows.add(KmlibStringKeys.format(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_BUILT_FOR,
             subject.describeBuiltAgainstVersion(
@@ -114,36 +102,37 @@ public record CompatibilityFailure(
     }
 
     /**
-     * The same failure as a block for the log, carrying the mechanics the modal deliberately leaves
-     * out: which guard caught the binding and what no longer holds, beside the two versions.
+     * The same failure as the block written to the log, carrying the mechanics the modal leaves
+     * out. Composed by {@link CompatibilityLogBlock}, which is where that block's vocabulary and
+     * alignment live.
      *
-     * <p>A block of labelled rows rather than one line, because these are five separate readings and
-     * the one that matters varies by report - a mismatch is diagnosed off the site and the broken
-     * member, an "is it even mine" question off the versions. Run together they are a sentence
-     * nobody finishes reading, and the values a reader is comparing across two logs do not line up
-     * under each other.
-     *
-     * <p>Built from literals rather than from strings.json: this is what a report to the third
-     * party's author is written from, so it has to read the same whatever the install's localisation
-     * and has to hold on a path where the game's settings may not be up yet. The one row that is not
-     * a literal is what the player was told, which is here so that a report pairs the screenshot
-     * with the mechanics behind it.
-     *
-     * <p>The throwable is not in it. It goes to the logger beside this, which is what renders a
-     * stack trace.
-     *
-     * @return a heading and five labelled rows, newline separated
+     * @return a heading and seven labelled rows, newline separated
      */
     public String describeForLog() {
 
-        return subject.name() + " compatibility failure."
-            + BUILT_AGAINST_ROW + subject.describeBuiltAgainstVersion(UNKNOWN_VERSION_IN_LOG)
-            + INSTALLED_ROW + subject.describeInstalledVersion(UNKNOWN_VERSION_IN_LOG)
-            + FAILED_WHILE_ROW + breakage.failureSite()
-            + BROKEN_ROW + breakage.brokenDetail()
-            + MOD_ROW + consumer.describeMod()
-            + CONSUMER_ROW + consumer.consumerKey()
-            + EFFECT_ROW + consumer.lostFeature();
+        return CompatibilityLogBlock.describe(this);
+    }
+
+    /**
+     * Names the consuming mod for a report: its own name beside its ID where the game holds one,
+     * and the ID alone where it does not.
+     *
+     * <p>Resolved here rather than on {@link CompatibilityConsumer}, which stays plain data: a
+     * value that read the mod manager to be read itself could not be built or asserted without a
+     * running game, and this is the only place the answer is wanted. Resolved at report time rather
+     * than held, so the healthy path never reads the mod manager and a report composed before the
+     * game is up still names something. An ID the game lists no mod for shows as itself, which is
+     * how a misspelled or invented one surfaces.
+     *
+     * @return the mod as a report names it, never blank
+     */
+    String describeMod() {
+
+        var modName = InstalledMods.readModName(consumer.modId());
+
+        return modName == null
+            ? consumer.modId()
+            : String.format(NAME_WITH_ID, modName, consumer.modId());
     }
 
     // Two templates rather than one with a hole in it: "installed: (version unknown)" states a
@@ -153,7 +142,8 @@ public record CompatibilityFailure(
         return subject.hasInstalledVersion()
             ? KmlibStringKeys.format(
                 KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INSTALLED,
-                subject.describeInstalledVersion(""))
+                subject.describeInstalledVersion(
+                    KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN)))
             : KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INSTALLED_UNREADABLE);
     }
 }

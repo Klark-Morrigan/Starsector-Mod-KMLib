@@ -2,6 +2,7 @@ package kmlib.testfixtures.starsector.settings;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ModManagerAPI;
+import com.fs.starfarer.api.ModSpecAPI;
 import com.fs.starfarer.api.SettingsAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
@@ -71,6 +72,20 @@ public final class StarsectorSettingsFake {
     }
 
     /**
+     * Pluggable adapter for {@link com.fs.starfarer.api.ModSpecAPI#getName()}, for a test whose
+     * subject shows a mod's own name rather than the ID it holds. Implementations answer for the
+     * mod IDs they know and null for the rest, which is what the game answers for an ID naming no
+     * installed mod.
+     */
+    @FunctionalInterface
+    public interface ModNamesSource {
+        String nameOf(String modId);
+    }
+
+    /** {@link ModNamesSource} for a mod manager that knows no mod by name. */
+    public static final ModNamesSource NO_NAMED_MODS = modId -> null;
+
+    /**
      * Pluggable adapter for the element a panel built through {@link SettingsAPI#createCustom}
      * hands back from {@code createUIElement}, for a test whose subject makes a tooltip surface of
      * its own rather than being handed one. That surface never reaches the caller, so the element
@@ -117,7 +132,7 @@ public final class StarsectorSettingsFake {
             SettingsStringSource stringSource,
             SettingsColourSource colourSource) {
         installSettings(new SettingsAnswers(
-            stringSource, colourSource, null, NO_UI_ELEMENTS));
+            stringSource, colourSource, null, NO_NAMED_MODS, NO_UI_ELEMENTS));
     }
 
     /**
@@ -130,7 +145,7 @@ public final class StarsectorSettingsFake {
             SettingsStringSource stringSource,
             UiElementSource uiElementSource) {
         installSettings(new SettingsAnswers(
-            stringSource, DEFAULT_COLOURS, null, uiElementSource));
+            stringSource, DEFAULT_COLOURS, null, NO_NAMED_MODS, uiElementSource));
     }
 
     /**
@@ -141,7 +156,19 @@ public final class StarsectorSettingsFake {
      */
     public static void installSettingsWithEnabledMods(EnabledModsSource enabledMods) {
         installSettings(new SettingsAnswers(
-            EMPTY_STRINGS, DEFAULT_COLOURS, enabledMods, NO_UI_ELEMENTS));
+            EMPTY_STRINGS, DEFAULT_COLOURS, enabledMods, NO_NAMED_MODS, NO_UI_ELEMENTS));
+    }
+
+    /**
+     * Installs the proxy carrying a mod manager that knows mods by name as well as by enablement.
+     * Use this overload for a subject that shows a mod's own name: with every ID answering nothing,
+     * the name a report found and the ID it fell back to are the same string.
+     *
+     * @param modNames what the mod manager's specs answer for their names
+     */
+    public static void installSettingsWithModNames(ModNamesSource modNames) {
+        installSettings(new SettingsAnswers(
+            EMPTY_STRINGS, DEFAULT_COLOURS, modId -> modNames.nameOf(modId) != null, modNames, NO_UI_ELEMENTS));
     }
 
     public static void clearSettings() {
@@ -160,7 +187,7 @@ public final class StarsectorSettingsFake {
             if ("getModManager".equals(method.getName())) {
                 return answers.enabledModsSource() == null
                     ? null
-                    : modManager(answers.enabledModsSource());
+                    : modManager(answers.enabledModsSource(), answers.modNamesSource());
             }
             // Misc.<clinit> reads several floats and a colour before any
             // test code runs; returning safe defaults keeps it quiet.
@@ -198,14 +225,32 @@ public final class StarsectorSettingsFake {
 
     // A mod manager answering the caller's enablement rule and defaults for everything else, so a
     // subject asking one question of the mod set does not have to be handed a whole one.
-    private static ModManagerAPI modManager(EnabledModsSource enabledMods) {
+    private static ModManagerAPI modManager(EnabledModsSource enabledMods, ModNamesSource modNames) {
 
         return proxy(ModManagerAPI.class, (proxy, method, args) -> {
             if ("isModEnabled".equals(method.getName()) && args != null && args.length == 1) {
                 return enabledMods.isEnabled((String) args[0]);
             }
+            if ("getModSpec".equals(method.getName()) && args != null && args.length == 1) {
+                return modSpec(modNames, (String) args[0]);
+            }
             return resolveDefaultValue(method.getReturnType());
         });
+    }
+
+    // The spec for one mod, or null where the source knows no such ID - which is what the game
+    // answers for an ID naming no installed mod, and the branch a report's fallback stands on.
+    private static ModSpecAPI modSpec(ModNamesSource modNames, String modId) {
+
+        var modName = modNames.nameOf(modId);
+
+        if (modName == null) {
+            return null;
+        }
+        return proxy(ModSpecAPI.class, (proxy, method, args) ->
+            "getName".equals(method.getName())
+                ? modName
+                : resolveDefaultValue(method.getReturnType()));
     }
 
     // The colour a getColor call answers with: the caller's, where it named one for that key, and the
@@ -253,12 +298,14 @@ public final class StarsectorSettingsFake {
      * @param colourSource      what {@code getColor} answers
      * @param enabledModsSource what the mod manager answers, or null for a settings object
      *                          carrying no mod manager at all
+     * @param modNamesSource    what that manager's specs answer for their names
      * @param uiElementSource   what a panel's {@code createUIElement} answers
      */
     private record SettingsAnswers(
         SettingsStringSource stringSource,
         SettingsColourSource colourSource,
         EnabledModsSource enabledModsSource,
+        ModNamesSource modNamesSource,
         UiElementSource uiElementSource) {
     }
 }

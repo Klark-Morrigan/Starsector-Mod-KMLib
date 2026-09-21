@@ -26,9 +26,10 @@ import java.util.Objects;
  * the dialog check exists for, and why a second failure waits a frame rather than being shown on
  * the same one as the first: shown then, it would be the one dropped.
  *
- * <p>The log line is written before the dialog is opened, and whatever the dialog does. It is the
- * line a report to the third party's author is written from, so it must not depend on a UI call
- * that is itself a binding to code outside this library.
+ * <p>The log block is written before the dialog is opened, and whatever the dialog does. It is what
+ * a report to the third party's author is written from, and it is also what the modal's own "see
+ * the log" sentence promises is there - so it must not depend on a UI call that is itself a binding
+ * to code outside this library.
  *
  * <p>Runs while paused, because the frames it needs are mostly paused ones: a failure found with the
  * map open is found under a pause, and the dialog it waits behind holds one.
@@ -102,7 +103,7 @@ public final class CompatibilityNotice implements EveryFrameScript {
         return campaignUi;
     }
 
-    // Logged first and shown second, so the line a report is written from exists whatever the
+    // Logged first and shown second, so what a report is written from exists whatever the
     // dialog call does: a faulting call loses the modal alone. The failure has already left the
     // record, which is what keeps a faulting dialog from being retried on it every frame.
     private void showFailure(CampaignUIAPI campaignUi, CompatibilityFailure failure) {
