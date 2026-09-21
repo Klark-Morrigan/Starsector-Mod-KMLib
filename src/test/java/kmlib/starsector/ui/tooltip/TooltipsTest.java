@@ -156,8 +156,9 @@ class TooltipsTest {
 
         @BeforeEach
         void installStarsectorSettings() {
-            StarsectorSettingsFake.installSettings(
-                StarsectorSettingsFake.EMPTY_STRINGS, () -> elementMock);
+            StarsectorSettingsFake.buildSettings()
+                .answerUiElements(() -> elementMock)
+                .installSettings();
         }
 
         @AfterEach

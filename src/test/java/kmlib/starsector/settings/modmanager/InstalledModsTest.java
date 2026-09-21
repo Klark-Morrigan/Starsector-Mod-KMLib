@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins that a caller composing a report can ask the game a mod's name without the asking becoming
- * the thing that fails.
+ * Pins that a caller composing a report can ask the game a mod's name and the version it declares
+ * without the asking becoming the thing that fails.
  *
  * <p>The reason is the same one {@link ModPresence} beside it exists for, and sharper here: the
  * caller is already reporting that something broke, so a throw on the way to naming who it was about
@@ -21,6 +21,8 @@ final class InstalledModsTest {
     private static final String MOD_ID = "some_mod";
 
     private static final String MOD_NAME = "Some Mod";
+
+    private static final String MOD_VERSION = "2.4.1";
 
     @Nested
     class ReadModName {
@@ -66,6 +68,52 @@ final class InstalledModsTest {
 
             ModStateScopes.runWithModNamed(MOD_ID, MOD_NAME, () ->
                 assertThat(InstalledMods.readModName(null))
+                    .isNull());
+        }
+    }
+
+    @Nested
+    class ReadModVersion {
+
+        @Test
+        void answersTheVersionThatModDeclares() {
+
+            ModStateScopes.runWithModVersioned(MOD_ID, MOD_NAME, MOD_VERSION, () ->
+                assertThat(InstalledMods.readModVersion(MOD_ID))
+                    .isEqualTo(MOD_VERSION));
+        }
+
+        @Test
+        void answersNothingForAModTheGameListsNoSpecFor() {
+
+            ModStateScopes.runWithModVersioned(MOD_ID, MOD_NAME, MOD_VERSION, () ->
+                assertThat(InstalledMods.readModVersion("a_mod_this_install_does_not_have"))
+                    .isNull());
+        }
+
+        @Test
+        void answersNothingForASpecDeclaringNoVersion() {
+
+            // A report then states the mod and an unknown version rather than failing to compose,
+            // which is the point of asking through this rather than through the spec directly.
+            ModStateScopes.runWithModNamed(MOD_ID, MOD_NAME, () ->
+                assertThat(InstalledMods.readModVersion(MOD_ID))
+                    .isNull());
+        }
+
+        @Test
+        void answersNothingBeforeTheGameSettingsAreUp() {
+
+            ModStateScopes.runWithoutGameSettings(() ->
+                assertThat(InstalledMods.readModVersion(MOD_ID))
+                    .isNull());
+        }
+
+        @Test
+        void answersNothingWhileTheSettingsCarryNoModManager() {
+
+            ModStateScopes.runWithoutModManager(() ->
+                assertThat(InstalledMods.readModVersion(MOD_ID))
                     .isNull());
         }
     }

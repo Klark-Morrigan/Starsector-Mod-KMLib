@@ -419,12 +419,16 @@ No Starsector API on the signature.
 #### Starsector-facing wrappers and seams
 
 - [`kmlib/`](src/main/java/kmlib/) -
-  the mod plugin the launcher loads.
+  the mod plugin the launcher loads,
+  and the library's own mod ID beside it.
   At application load it binds the library's own log verbosity,
   registers the optional-mod adapters,
   and states which GL renderer every KM draw call reaches.
   Each step is guarded on its own,
-  so a failure costs that step rather than every mod depending on the library.
+  so a failure costs that step rather than every mod depending on the library -
+  and where the step was an integration with another mod,
+  the player is told once under the library's own ID,
+  the library being the mod that lost something by it.
 - [`mods/`](src/main/java/kmlib/mods/) -
   every adapter to a third-party mod,
   one package per mod and nothing else here.
@@ -685,8 +689,23 @@ No Starsector API on the signature.
   whether a mod is enabled,
   answered the same way for every optional-mod gate
   and answering "not installed" before the game is up;
+  what the game holds for one beyond that,
+  its display name and the version it declares,
+  which is what a report about a mod names it and states a mismatch against;
   and the source a piece of game data was read from,
   named for a player and carrying the mod ID where the manager accounts for one.
+  Every read answers nothing rather than throwing wherever there is nothing to ask,
+  a caller wanting a mod's name or version being one composing a report -
+  and a report that threw while naming who it was about would lose the report.
+- [`starsector/startup/`](src/main/java/kmlib/starsector/startup/) -
+  running one step of a mod's start-up wiring behind its own failure boundary,
+  so a step that throws costs its own registration rather than every step after it
+  or every mod loading behind it.
+  Logged as the mod that is wiring rather than as the library,
+  so a failed step stays inside the switch that mod's player turns up;
+  and where the step was an integration with another mod,
+  recorded for the player to be told once
+  rather than left to a line nobody reads.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) -
   defensive wrapper around strings.json localisation lookups
   (loud REDACTED on missing or malformed entries),

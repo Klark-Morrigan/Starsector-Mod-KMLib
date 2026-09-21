@@ -36,15 +36,16 @@ public final class ModStateScopes {
     public static void runWithModEnabled(String modId, boolean isModEnabled, Runnable body) {
 
         runWithSettingsInstalled(
-            () -> StarsectorSettingsFake.installSettingsWithEnabledMods(
-                askedModId -> isModEnabled && modId.equals(askedModId)),
+            () -> StarsectorSettingsFake.buildSettings()
+                .answerEnabledMods(askedModId -> isModEnabled && modId.equals(askedModId))
+                .installSettings(),
             body);
     }
 
     /**
-     * Runs body with the mod set readable and one named mod installed under a display name. Every
-     * other mod ID reports no spec, which is what the game answers for an ID naming no installed
-     * mod.
+     * Runs body with the mod set readable and one named mod installed under a display name, whose
+     * spec declares no version. Every other mod ID reports no spec, which is what the game answers
+     * for an ID naming no installed mod.
      *
      * @param modId   the mod the body's subject asks about
      * @param modName the name the game holds for it
@@ -52,9 +53,29 @@ public final class ModStateScopes {
      */
     public static void runWithModNamed(String modId, String modName, Runnable body) {
 
+        runWithModVersioned(modId, modName, null, body);
+    }
+
+    /**
+     * Runs body with the mod set readable and one named mod installed at a stated version. Every
+     * other mod ID reports no spec, as {@link #runWithModNamed} leaves it.
+     *
+     * @param modId      the mod the body's subject asks about
+     * @param modName    the name the game holds for it
+     * @param modVersion the version that mod's spec declares
+     * @param body       the case to run inside the scope
+     */
+    public static void runWithModVersioned(
+            String modId,
+            String modName,
+            String modVersion,
+            Runnable body) {
+
         runWithSettingsInstalled(
-            () -> StarsectorSettingsFake.installSettingsWithModNames(
-                askedModId -> modId.equals(askedModId) ? modName : null),
+            () -> StarsectorSettingsFake.buildSettings()
+                .answerModNames(askedModId -> modId.equals(askedModId) ? modName : null)
+                .answerModVersions(askedModId -> modId.equals(askedModId) ? modVersion : null)
+                .installSettings(),
             body);
     }
 

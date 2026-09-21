@@ -13,6 +13,7 @@ what it holds is the channel a binding reports through.
 
 - [Record, then report](#record-then-report)
 - [A binding is a third party and a consumer](#a-binding-is-a-third-party-and-a-consumer)
+- [A step that integrates with another mod](#a-step-that-integrates-with-another-mod)
 - [One record per session](#one-record-per-session)
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
@@ -108,6 +109,32 @@ and nothing about what was drawn over the reading it can no longer serve.
 So the consumer writes that sentence,
 out of its own strings,
 and the library puts it in the failure's lost-feature slot.
+
+## A step that integrates with another mod
+
+A binding does not have to be a call into somebody else's internals.
+A mod's start-up wiring registers its adapters for whichever optional mods the install has,
+and a registration that throws is the same class of silent degradation:
+the player enabled a mod, the mod did not integrate,
+and nothing said so but a line in the log.
+
+[`ModIntegration`](ModIntegration.java) is that case as the channel states one -
+the third party the step is with, and the mod that loses something by it -
+and it composes the failure from what was thrown.
+Two things run the other way round from a binding to a renderer patch.
+The versions: nothing was compiled against an optional mod,
+the binding going through the game's own API,
+so the built-for row stands at its unknown wording
+while the installed one is read off the mod manager.
+And what broke: there is no probe to run and no member to point at,
+the step having called into the mod and the mod having refused,
+so what was thrown is the whole of the finding.
+
+The guard is [`starsector/startup/`](../startup/),
+which is also where the phrase a log's "failed while" row takes for these is spelled.
+KMLib's own plugin is the first consumer to run through it,
+losing library features to third parties under the library's own mod ID -
+which is how a channel built for one client shows it is one.
 
 ## One record per session
 
@@ -218,6 +245,9 @@ The notice runs on the campaign thread alone.
 - The bindings that record.
   Detecting that a binding no longer holds is the binder's job,
   and which member broke is what it records.
+- The guard a start-up step runs behind.
+  [`starsector/startup/`](../startup/) owns the failure boundary and the log line;
+  this package owns only what a failure it caught is reported as.
 - The transient install.
   [`starsector/scripts/`](../scripts/) is what registers the notice on a sector,
   and [`KMLib_ModPlugin`](../../KMLib_ModPlugin.java) is what asks it to on each load.

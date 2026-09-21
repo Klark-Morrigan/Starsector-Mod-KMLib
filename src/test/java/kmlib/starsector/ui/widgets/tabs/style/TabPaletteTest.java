@@ -124,11 +124,11 @@ final class TabPaletteTest {
     // scope, since every role is read as the record is built.
     private static TabPalette buildMapTabPaletteUnderStubbedEngine() {
 
-        StarsectorSettingsFake.installSettings(
-            StarsectorSettingsFake.EMPTY_STRINGS,
-            key -> BUTTON_BG_DARK_KEY.equals(key)
+        StarsectorSettingsFake.buildSettings()
+            .answerColours(key -> BUTTON_BG_DARK_KEY.equals(key)
                 ? STUBBED_BUTTON_BG_DARK
-                : null);
+                : null)
+            .installSettings();
         try (var miscMock = Mockito.mockStatic(Misc.class)) {
 
             miscMock

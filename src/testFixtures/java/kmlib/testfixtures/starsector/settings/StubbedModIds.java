@@ -1,8 +1,9 @@
 package kmlib.testfixtures.starsector.settings;
 
 /**
- * The third-party mod IDs a test hands {@link ModStateScopes}, so the several subjects across the
- * KM mod series that gate on the same mod are settled against one spelling of it.
+ * The third-party mod IDs a test hands {@link ModStateScopes}, or holds a subject's report against,
+ * so the several subjects across the KM mod series that name the same mod are settled against one
+ * spelling of it.
  *
  * <p>Stated as literals rather than read off the production constants that carry the same values,
  * which is the whole reason this exists rather than a reference to them: a borrowed constant makes
@@ -22,6 +23,9 @@ public final class StubbedModIds {
 
     /** Console Commands, which loads the commands KMLib registers with it. */
     public static final String CONSOLE_COMMANDS = "lw_console";
+
+    /** LunaLib, whose settings KMLib binds its own log verbosity to. */
+    public static final String LUNALIB = "lunalib";
 
     /** Nexerelin, whose own colonisation KMLib hands a founding to rather than composing one. */
     public static final String NEXERELIN = "nexerelin";

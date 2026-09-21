@@ -49,11 +49,11 @@ class HotkeyStyleTest {
     void setUp() {
         // Misc.<clinit> reads from Global.getSettings(), so the proxy must be in place before Mockito's
         // instrumentation triggers that class init.
-        StarsectorSettingsFake.installSettings(
-            StarsectorSettingsFake.EMPTY_STRINGS,
-            key -> SHORTCUT_COLOUR_KEY.equals(key)
+        StarsectorSettingsFake.buildSettings()
+            .answerColours(key -> SHORTCUT_COLOUR_KEY.equals(key)
                 ? stubbedShortcutGold
-                : null);
+                : null)
+            .installSettings();
 
         miscMock = Mockito.mockStatic(Misc.class);
     }
