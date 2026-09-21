@@ -689,8 +689,14 @@ No Starsector API on the signature.
   whether a mod is enabled,
   answered the same way for every optional-mod gate
   and answering "not installed" before the game is up;
+  what the game holds for one beyond that,
+  its display name and the version it declares,
+  which is what a report about a mod names it and states a mismatch against;
   and the source a piece of game data was read from,
   named for a player and carrying the mod ID where the manager accounts for one.
+  Every read answers nothing rather than throwing wherever there is nothing to ask,
+  a caller wanting a mod's name or version being one composing a report -
+  and a report that threw while naming who it was about would lose the report.
 - [`starsector/startup/`](src/main/java/kmlib/starsector/startup/) -
   running one step of a mod's start-up wiring behind its own failure boundary,
   so a step that throws costs its own registration rather than every step after it

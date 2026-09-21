@@ -50,8 +50,9 @@ class VanillaButtonLabelTest {
     @BeforeEach
     void installPalette() {
 
-        StarsectorSettingsFake.installSettings(
-            StarsectorSettingsFake.EMPTY_STRINGS, colourKey -> SHORTCUT_COLOUR);
+        StarsectorSettingsFake.buildSettings()
+            .answerColours(colourKey -> SHORTCUT_COLOUR)
+            .installSettings();
     }
 
     @AfterEach

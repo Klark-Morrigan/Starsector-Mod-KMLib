@@ -5,6 +5,8 @@ import kmlib.starsector.compatibility.CompatibilityBreakage;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilitySubject;
+import kmlib.starsector.compatibility.ModIntegration;
+import kmlib.testfixtures.starsector.settings.StubbedModIds;
 
 /**
  * One representative compatibility failure, with a builder per slot a case varies.
@@ -25,7 +27,7 @@ public final class CompatibilityFailureFixture {
     public static final String FAST_RENDERING_SUBJECT_KEY = "fast-rendering";
 
     /** A second subject's key, for a case about two subjects recorded apart. */
-    public static final String NEXERELIN_SUBJECT_KEY = "nexerelin";
+    public static final String NEXERELIN_SUBJECT_KEY = StubbedModIds.NEXERELIN;
 
     /** The sentence naming what the session loses, in the wording a consumer would supply. */
     public static final String LOST_FEATURE = "Sector map overlays will not respond to the cursor this session.";
@@ -71,6 +73,22 @@ public final class CompatibilityFailureFixture {
      */
     public static final CompatibilityConsumer COLONY_PANEL_CONSUMER =
         new CompatibilityConsumer(COLONY_PANEL_MOD_ID, "colony-panel", COLONY_PANEL_LOST_FEATURE);
+
+    /** The third party a start-up step integrates with here, as the ID its records latch under. */
+    public static final String INTEGRATED_MOD_ID = StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS;
+
+    /** That mod as a report names it, which is not a string its ID could be mistaken for. */
+    public static final String INTEGRATED_MOD_NAME = "Random Assortment of Things";
+
+    /**
+     * A start-up step's integration with that mod, losing what the representative consumer loses.
+     *
+     * <p>Here rather than at each suite that needs one: the guard and the composition are two
+     * subjects and both are about the same integration, and two copies of it are two that can be
+     * edited apart until a case passes against an integration the other one never had.
+     */
+    public static final ModIntegration MOD_INTEGRATION =
+        new ModIntegration(INTEGRATED_MOD_ID, INTEGRATED_MOD_NAME, MAP_OVERLAY_CONSUMER);
 
     private CompatibilityFailureFixture() {
         // fixture of static builders, no instances.

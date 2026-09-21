@@ -444,8 +444,9 @@ class MapFilterToggleTest {
             var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
             var elementMock = mock(TooltipMakerAPI.class);
 
-            StarsectorSettingsFake.installSettings(
-                StarsectorSettingsFake.EMPTY_STRINGS, () -> elementMock);
+            StarsectorSettingsFake.buildSettings()
+                .answerUiElements(() -> elementMock)
+                .installSettings();
 
             try {
                 toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
@@ -505,8 +506,9 @@ class MapFilterToggleTest {
     // it out and mean it.
     private static void bindShortcutUnderThePalette(MapFilterToggle toggle, int keycode) {
 
-        StarsectorSettingsFake.installSettings(
-            StarsectorSettingsFake.EMPTY_STRINGS, colourKey -> SHORTCUT_COLOUR);
+        StarsectorSettingsFake.buildSettings()
+            .answerColours(colourKey -> SHORTCUT_COLOUR)
+            .installSettings();
         try {
             toggle.bindShortcut(keycode);
         } finally {

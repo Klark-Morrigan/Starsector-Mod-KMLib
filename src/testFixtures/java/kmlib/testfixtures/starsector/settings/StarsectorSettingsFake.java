@@ -127,99 +127,41 @@ public final class StarsectorSettingsFake {
     }
 
     /**
-     * Installs the proxy with a caller-supplied {@code getString}
-     * resolver. Use the overload when tests assert on localised labels
-     * that the resolver is expected to surface.
+     * Installs the proxy with a caller-supplied {@code getString} resolver. Use this when tests
+     * assert on localised labels that the resolver is expected to surface.
      */
     public static void installSettings(SettingsStringSource stringSource) {
-        installSettings(stringSource, DEFAULT_COLOURS);
+        buildSettings().answerStrings(stringSource).installSettings();
     }
 
     /**
-     * Installs the proxy with caller-supplied {@code getString} and
-     * {@code getColor} resolvers. Use this overload when the subject
-     * builds a shade out of a named engine colour: with every key
-     * answering the same default, a derived colour and the value it was
-     * derived from are indistinguishable, and the assertion pins nothing.
-     */
-    public static void installSettings(
-            SettingsStringSource stringSource,
-            SettingsColourSource colourSource) {
-        installSettings(new SettingsAnswers(
-            stringSource, colourSource, null, NO_NAMED_MODS, NO_MOD_VERSIONS, NO_UI_ELEMENTS));
-    }
-
-    /**
-     * Installs the proxy with a caller-supplied {@code getString} resolver and panels that build
-     * one known element. Use this overload for a subject that makes its own tooltip surface: the
-     * panel and the element it comes off are internal to that subject, so the element named here
-     * is what an assertion about the attachment is made against.
-     */
-    public static void installSettings(
-            SettingsStringSource stringSource,
-            UiElementSource uiElementSource) {
-        installSettings(new SettingsAnswers(
-            stringSource, DEFAULT_COLOURS, null, NO_NAMED_MODS, NO_MOD_VERSIONS, uiElementSource));
-    }
-
-    /**
-     * Installs the proxy carrying a mod manager, which the overloads above deliberately leave off:
-     * a settings object whose {@code getModManager} answers null is the state a read taken before
-     * the game is fully up meets, and a fixture that always supplied one could not stand for it.
-     * Use this overload for a subject that gates on another mod being installed.
-     */
-    public static void installSettingsWithEnabledMods(EnabledModsSource enabledMods) {
-        installSettings(new SettingsAnswers(
-            EMPTY_STRINGS, DEFAULT_COLOURS, enabledMods, NO_NAMED_MODS, NO_MOD_VERSIONS, NO_UI_ELEMENTS));
-    }
-
-    /**
-     * Installs the proxy carrying a mod manager that knows mods by name as well as by enablement.
-     * Use this overload for a subject that shows a mod's own name: with every ID answering nothing,
-     * the name a report found and the ID it fell back to are the same string.
+     * Opens a settings object to be described adapter by adapter, for everything the two shapes
+     * above do not cover.
      *
-     * @param modNames what the mod manager's specs answer for their names
-     */
-    public static void installSettingsWithModNames(ModNamesSource modNames) {
-        installSettingsWithModSpecs(modNames, NO_MOD_VERSIONS);
-    }
-
-    /**
-     * Installs the proxy carrying a mod manager whose specs state a version as well as a name. Use
-     * this overload for a subject that reports which release of a mod is installed: with every ID
-     * answering nothing, a version that was read and one that could not be are the same absence.
+     * <p>A builder rather than an overload per combination. The adapters are independent and most
+     * tests name one, so overloads multiply with every adapter added - and two of them differed
+     * only in which functional interface the second argument was, which no lambda at a call site
+     * can tell apart. Named adapters cannot be transposed and cannot be ambiguous.
      *
-     * @param modNames    what the mod manager's specs answer for their names, and which IDs it
-     *                    lists a spec for at all
-     * @param modVersions what those specs answer for their versions
+     * @return a settings object answering the defaults, to be narrowed and then installed
      */
-    public static void installSettingsWithModSpecs(ModNamesSource modNames, ModVersionsSource modVersions) {
-        installSettings(new SettingsAnswers(
-            EMPTY_STRINGS,
-            DEFAULT_COLOURS,
-            modId -> modNames.nameOf(modId) != null,
-            modNames,
-            modVersions,
-            NO_UI_ELEMENTS));
+    public static SettingsBuilder buildSettings() {
+        return new SettingsBuilder();
     }
 
     public static void clearSettings() {
         Global.setSettings(null);
     }
 
-    private static void installSettings(SettingsAnswers answers) {
-        Global.setSettings(settings(answers));
-    }
-
-    private static SettingsAPI settings(SettingsAnswers answers) {
+    private static SettingsAPI settings(SettingsBuilder answers) {
 
         return proxy(SettingsAPI.class, (proxy, method, args) -> {
-            // Null unless a caller asked for one, so the no-mod-manager state stays reachable -
-            // see installSettingsWithEnabledMods.
+            // Null unless a caller named one of the mod adapters, so the no-mod-manager state
+            // stays reachable - see SettingsBuilder.
             if ("getModManager".equals(method.getName())) {
-                return answers.enabledModsSource() == null
-                    ? null
-                    : modManager(answers);
+                return answers.hasModManager()
+                    ? modManager(answers)
+                    : null;
             }
             // Misc.<clinit> reads several floats and a colour before any
             // test code runs; returning safe defaults keeps it quiet.
@@ -227,16 +169,16 @@ public final class StarsectorSettingsFake {
                 return 1f;
             }
             if ("getColor".equals(method.getName())) {
-                return resolveColour(answers.colourSource(), args);
+                return resolveColour(answers.colourSource, args);
             }
             if ("getString".equals(method.getName())) {
                 if (args != null && args.length == 2) {
-                    return answers.stringSource().get((String) args[0], (String) args[1]);
+                    return answers.stringSource.get((String) args[0], (String) args[1]);
                 }
                 return null;
             }
             if ("createCustom".equals(method.getName())) {
-                return customPanel(answers.uiElementSource());
+                return customPanel(answers.uiElementSource);
             }
             return resolveDefaultValue(method.getReturnType());
         });
@@ -257,11 +199,11 @@ public final class StarsectorSettingsFake {
 
     // A mod manager answering the caller's enablement rule and defaults for everything else, so a
     // subject asking one question of the mod set does not have to be handed a whole one.
-    private static ModManagerAPI modManager(SettingsAnswers answers) {
+    private static ModManagerAPI modManager(SettingsBuilder answers) {
 
         return proxy(ModManagerAPI.class, (proxy, method, args) -> {
             if ("isModEnabled".equals(method.getName()) && args != null && args.length == 1) {
-                return answers.enabledModsSource().isEnabled((String) args[0]);
+                return answers.resolveEnabledMods().isEnabled((String) args[0]);
             }
             if ("getModSpec".equals(method.getName()) && args != null && args.length == 1) {
                 return modSpec(answers, (String) args[0]);
@@ -274,9 +216,9 @@ public final class StarsectorSettingsFake {
     // answers for an ID naming no installed mod, and the branch a report's fallback stands on.
     // A spec the source names but states no version for answers null for it, the state a mod
     // declaring none leaves a reader in.
-    private static ModSpecAPI modSpec(SettingsAnswers answers, String modId) {
+    private static ModSpecAPI modSpec(SettingsBuilder answers, String modId) {
 
-        var modName = answers.modNamesSource().nameOf(modId);
+        var modName = answers.resolveModNames().nameOf(modId);
 
         if (modName == null) {
             return null;
@@ -286,7 +228,7 @@ public final class StarsectorSettingsFake {
                 return modName;
             }
             if ("getVersion".equals(method.getName())) {
-                return answers.modVersionsSource().versionOf(modId);
+                return answers.resolveModVersions().versionOf(modId);
             }
             return resolveDefaultValue(method.getReturnType());
         });
@@ -325,28 +267,141 @@ public final class StarsectorSettingsFake {
     }
 
     /**
-     * Everything one installed settings object answers with, carried as one value.
+     * One settings object described adapter by adapter, each named where it is supplied.
      *
-     * <p>Each adapter is optional and most tests name one of them, so the alternative is an
-     * overload per combination - and the combinations multiply with every adapter added, while the
-     * plumbing behind them takes the same list of arguments either way. Held together, the public
-     * overloads stay the handful of shapes callers actually ask for and the proxy below takes one
-     * parameter however many adapters there come to be.
+     * <p>Every adapter is optional and most tests name one, so an entry point per combination
+     * multiplies with each adapter added while the plumbing behind them takes the same list either
+     * way. Naming each at the call site also settles what an overload pair could not: two adapters
+     * are told apart by the name they are passed under rather than by their functional interface,
+     * which a lambda does not carry.
      *
-     * @param stringSource      what {@code getString} answers
-     * @param colourSource      what {@code getColor} answers
-     * @param enabledModsSource what the mod manager answers, or null for a settings object
-     *                          carrying no mod manager at all
-     * @param modNamesSource    what that manager's specs answer for their names
-     * @param modVersionsSource what those specs answer for their versions
-     * @param uiElementSource   what a panel's {@code createUIElement} answers
+     * <p>An adapter left unnamed answers the default beside its interface, and a mod manager is
+     * present only where one of the three mod adapters was named - a settings object whose
+     * {@code getModManager} answers null is the state a read taken before the game is fully up
+     * meets, and a fixture that always supplied one could not stand for it.
      */
-    private record SettingsAnswers(
-        SettingsStringSource stringSource,
-        SettingsColourSource colourSource,
-        EnabledModsSource enabledModsSource,
-        ModNamesSource modNamesSource,
-        ModVersionsSource modVersionsSource,
-        UiElementSource uiElementSource) {
+    public static final class SettingsBuilder {
+
+        private SettingsStringSource stringSource = EMPTY_STRINGS;
+
+        private SettingsColourSource colourSource = DEFAULT_COLOURS;
+
+        // Null rather than a default: absent is what decides whether there is a mod manager at
+        // all, which no source value can say.
+        private EnabledModsSource enabledModsSource;
+        private ModNamesSource modNamesSource;
+        private ModVersionsSource modVersionsSource;
+
+        private UiElementSource uiElementSource = NO_UI_ELEMENTS;
+
+        private SettingsBuilder() {
+        }
+
+        /**
+         * @param colourSource what {@code getColor} answers. Name it where the subject builds a
+         *                     shade out of a named engine colour: with every key answering the same
+         *                     default, a derived colour and the value it came from are the same
+         *                     colour and the assertion pins nothing
+         * @return this builder
+         */
+        public SettingsBuilder answerColours(SettingsColourSource colourSource) {
+
+            this.colourSource = colourSource;
+            return this;
+        }
+
+        /**
+         * @param enabledModsSource what the mod manager reports for a mod ID. Name it where the
+         *                          subject gates on another mod being installed
+         * @return this builder
+         */
+        public SettingsBuilder answerEnabledMods(EnabledModsSource enabledModsSource) {
+
+            this.enabledModsSource = enabledModsSource;
+            return this;
+        }
+
+        /**
+         * @param modNamesSource what the mod manager's specs answer for their names, and which IDs
+         *                       it lists a spec for at all. Name it where the subject shows a mod's
+         *                       own name: with every ID answering nothing, the name a report found
+         *                       and the ID it fell back to are the same string
+         * @return this builder
+         */
+        public SettingsBuilder answerModNames(ModNamesSource modNamesSource) {
+
+            this.modNamesSource = modNamesSource;
+            return this;
+        }
+
+        /**
+         * @param modVersionsSource what those specs answer for their versions. Name it where the
+         *                          subject reports which release of a mod is installed: with every
+         *                          ID answering nothing, a version that was read and one that could
+         *                          not be are the same absence
+         * @return this builder
+         */
+        public SettingsBuilder answerModVersions(ModVersionsSource modVersionsSource) {
+
+            this.modVersionsSource = modVersionsSource;
+            return this;
+        }
+
+        /**
+         * @param stringSource what {@code getString} answers
+         * @return this builder
+         */
+        public SettingsBuilder answerStrings(SettingsStringSource stringSource) {
+
+            this.stringSource = stringSource;
+            return this;
+        }
+
+        /**
+         * @param uiElementSource what a panel's {@code createUIElement} answers. Name it where the
+         *                        subject makes its own tooltip surface: that surface never reaches
+         *                        the caller, so the element named here is the only place the
+         *                        attachment can be observed from outside
+         * @return this builder
+         */
+        public SettingsBuilder answerUiElements(UiElementSource uiElementSource) {
+
+            this.uiElementSource = uiElementSource;
+            return this;
+        }
+
+        /** Installs what this describes into {@link Global}, in place of whatever was there. */
+        public void installSettings() {
+
+            Global.setSettings(settings(this));
+        }
+
+        // Whether the settings object carries a mod manager at all. Any of the three mod adapters
+        // implies one: a caller naming what specs answer has plainly not asked for the state where
+        // there is nothing to ask.
+        private boolean hasModManager() {
+
+            return enabledModsSource != null || modNamesSource != null || modVersionsSource != null;
+        }
+
+        // Enablement where only the specs were named: a mod the manager lists is a mod it has. The
+        // two readings are separable - a spec can exist for a disabled mod - but a caller that
+        // cared about the difference would have named the rule.
+        private EnabledModsSource resolveEnabledMods() {
+
+            return enabledModsSource == null
+                ? modId -> resolveModNames().nameOf(modId) != null
+                : enabledModsSource;
+        }
+
+        private ModNamesSource resolveModNames() {
+
+            return modNamesSource == null ? NO_NAMED_MODS : modNamesSource;
+        }
+
+        private ModVersionsSource resolveModVersions() {
+
+            return modVersionsSource == null ? NO_MOD_VERSIONS : modVersionsSource;
+        }
     }
 }

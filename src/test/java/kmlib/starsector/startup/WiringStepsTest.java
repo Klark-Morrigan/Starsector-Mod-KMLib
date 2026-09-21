@@ -31,14 +31,7 @@ final class WiringStepsTest {
 
     private static final String FAILURE_MESSAGE = "Failed to install the test integration";
 
-    private static final String SUBJECT_MOD_ID = "assortment_of_things";
-
-    private static final String SUBJECT_MOD_NAME = "Random Assortment of Things";
-
-    private static final ModIntegration INTEGRATION = new ModIntegration(
-        SUBJECT_MOD_ID,
-        SUBJECT_MOD_NAME,
-        CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER);
+    private static final ModIntegration INTEGRATION = CompatibilityFailureFixture.MOD_INTEGRATION;
 
     private final Logger stepLogMock = mock(Logger.class);
 
@@ -124,7 +117,7 @@ final class WiringStepsTest {
             var failure = failureRecord.takeNextUnreported();
 
             assertThat(failure.subject().name())
-                .isEqualTo(SUBJECT_MOD_NAME);
+                .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);
             assertThat(failure.consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
             assertThat(failure.breakage().failureSite())

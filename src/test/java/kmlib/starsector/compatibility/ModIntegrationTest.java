@@ -21,18 +21,20 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
  */
 final class ModIntegrationTest {
 
-    private static final String SUBJECT_MOD_ID = "assortment_of_things";
+    private static final String SUBJECT_MOD_ID = CompatibilityFailureFixture.INTEGRATED_MOD_ID;
 
-    private static final String SUBJECT_MOD_NAME = "Random Assortment of Things";
+    private static final String SUBJECT_MOD_NAME = CompatibilityFailureFixture.INTEGRATED_MOD_NAME;
 
     private static final String SUBJECT_MOD_VERSION = "1.9.2";
 
-    private static final String FAILURE_SITE = "installing the integration at start-up";
+    // Whatever the guard that caught the failure called itself. Deliberately not the phrase
+    // WiringSteps files under: this composes the site it is handed and reads none of it, so
+    // borrowing the production wording would imply a coupling that is not here.
+    private static final String FAILURE_SITE = "catching it somewhere";
 
     private static final CompatibilityConsumer CONSUMER = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
 
-    private static final ModIntegration INTEGRATION =
-        new ModIntegration(SUBJECT_MOD_ID, SUBJECT_MOD_NAME, CONSUMER);
+    private static final ModIntegration INTEGRATION = CompatibilityFailureFixture.MOD_INTEGRATION;
 
     @Nested
     class Construction {

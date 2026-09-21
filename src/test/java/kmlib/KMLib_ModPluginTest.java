@@ -15,6 +15,7 @@ import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
+import kmlib.testfixtures.starsector.settings.StubbedModIds;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,8 +62,33 @@ final class KMLib_ModPluginTest {
     // under and no other case reads.
     private static final String SUBJECT_KEY = "kmlib-mod-plugin-subject";
 
+    // Every key answers a sentence naming itself, so a case reads as which wording landed in which
+    // slot without the shipped wording being known here - that file is a matter for the suite that
+    // walks it. Shared by the two nests that need the library's own sentences to resolve at all.
+    private static final StarsectorSettingsFake.SettingsStringSource STRINGS_NAMING_THEIR_OWN_KEYS =
+        (category, key) -> "the sentence for " + key;
+
     @Nested
     class OnApplicationLoad {
+
+        @AfterEach
+        void clearSettingsAndDrainTheSessionRecord() {
+
+            StarsectorSettingsFake.clearSettings();
+
+            // A step that fails here records into the process's own record, which outlives the
+            // case. Left there, the next case to drain it finds a failure it never filed and reads
+            // as healthy while reporting somebody else's.
+            while (CompatibilityFailures.SESSION_RECORD.takeNextUnreported() != null) {
+                // drained for its side effect.
+            }
+        }
+
+        @BeforeEach
+        void answerEveryStringWithItsOwnKey() {
+
+            StarsectorSettingsFake.installSettings(STRINGS_NAMING_THEIR_OWN_KEYS);
+        }
 
         @Test
         void standsUpEveryStepALaunchIsMadeOf() {
@@ -85,10 +111,31 @@ final class KMLib_ModPluginTest {
         }
 
         @Test
-        void standsUpTheRemainingStepsAfterOneIntegrationRefusesToInstall() {
+        void standsUpTheRemainingStepsAfterTheFirstOneRefusesToInstall() {
             // The guard's isolation, asserted where the steps are actually listed: a wiring whose
             // first failing install aborted the rest would leave the library half composed, and
-            // every step after the failure looks installed from its own suite.
+            // every step after the failure looks installed from its own suite. Failed at the first
+            // step, that being the one with every other step behind it.
+            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
+                    var fastRenderingMock = mockStatic(FastRendering.class);
+                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
+                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
+
+                lunaSettingsMock.when(KmlibLunaSettings::installBindings)
+                    .thenThrow(new IllegalStateException("no settings library to bind to"));
+
+                new KMLib_ModPlugin().onApplicationLoad();
+
+                nexerelinMock.verify(NexerelinIntegration::installRoutines);
+                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+            }
+        }
+
+        @Test
+        void recordsTheIntegrationThatRefusedToInstallAndNoOther() {
+            // A different step from the case above, because the session's record latches per third
+            // party and consumer for the run: two cases failing one step would leave whichever ran
+            // second recording nothing.
             try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
                     var fastRenderingMock = mockStatic(FastRendering.class);
                     var nexerelinMock = mockStatic(NexerelinIntegration.class);
@@ -98,9 +145,16 @@ final class KMLib_ModPluginTest {
                     .thenThrow(new IllegalStateException("no routines to register with"));
 
                 new KMLib_ModPlugin().onApplicationLoad();
-
-                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
             }
+
+            var failure = CompatibilityFailures.SESSION_RECORD.takeNextUnreported();
+
+            assertThat(failure.subject().name())
+                .isEqualTo("Nexerelin");
+            assertThat(failure.consumer().consumerKey())
+                .isEqualTo("kmlib:nexerelin-routines");
+            assertThat(CompatibilityFailures.SESSION_RECORD.takeNextUnreported())
+                .isNull();
         }
     }
 
@@ -115,10 +169,8 @@ final class KMLib_ModPluginTest {
 
         @BeforeEach
         void answerEveryStringWithItsOwnKey() {
-            // Every key answers a sentence naming itself, so a case reads as which wording landed
-            // in which slot without the shipped wording being known here - that file is a matter
-            // for the suite that walks it.
-            StarsectorSettingsFake.installSettings((category, key) -> "the sentence for " + key);
+
+            StarsectorSettingsFake.installSettings(STRINGS_NAMING_THEIR_OWN_KEYS);
         }
 
         @Test
@@ -127,7 +179,7 @@ final class KMLib_ModPluginTest {
             var integration = KMLib_ModPlugin.describeLunaLibIntegration();
 
             assertThat(integration.subjectModId())
-                .isEqualTo("lunalib");
+                .isEqualTo(StubbedModIds.LUNALIB);
             assertThat(integration.subjectModName())
                 .isEqualTo("LunaLib");
             assertThat(integration.consumer().consumerKey())
@@ -144,7 +196,7 @@ final class KMLib_ModPluginTest {
             var integration = KMLib_ModPlugin.describeNexerelinIntegration();
 
             assertThat(integration.subjectModId())
-                .isEqualTo("nexerelin");
+                .isEqualTo(StubbedModIds.NEXERELIN);
             assertThat(integration.subjectModName())
                 .isEqualTo("Nexerelin");
             assertThat(integration.consumer().consumerKey())
@@ -161,7 +213,7 @@ final class KMLib_ModPluginTest {
             var integration = KMLib_ModPlugin.describeRandomAssortmentOfThingsIntegration();
 
             assertThat(integration.subjectModId())
-                .isEqualTo("assortment_of_things");
+                .isEqualTo(StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS);
             assertThat(integration.subjectModName())
                 .isEqualTo("Random Assortment of Things");
             assertThat(integration.consumer().consumerKey())

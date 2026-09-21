@@ -42,13 +42,13 @@ class StarsectorRelationColoursTest {
     @BeforeEach
     void installNamedHighlightColours() {
 
-        StarsectorSettingsFake.installSettings(
-            StarsectorSettingsFake.EMPTY_STRINGS,
-            key -> switch (key) {
+        StarsectorSettingsFake.buildSettings()
+            .answerColours(key -> switch (key) {
                 case POSITIVE_HIGHLIGHT_KEY -> POSITIVE_HIGHLIGHT;
                 case NEGATIVE_HIGHLIGHT_KEY -> NEGATIVE_HIGHLIGHT;
                 default -> null;
-            });
+            })
+            .installSettings();
     }
 
     @AfterEach
