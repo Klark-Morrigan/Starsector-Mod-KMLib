@@ -126,15 +126,26 @@ final class CompatibilityConsumerTest {
     }
 
     @Nested
-    class DeconflictFeatureKey {
+    class ResolveConsumerAtPosition {
 
         @Test
-        void numbersTheFeatureHalfOfTheKey() {
+        void answersItselfAtTheFirstPosition() {
+
+            // Which position keeps the bare key is this value's rule rather than the record's, so
+            // the first position is answered here rather than refused for the record to handle.
+            var consumer = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE);
+
+            assertThat(consumer.resolveConsumerAtPosition(1))
+                .isSameAs(consumer);
+        }
+
+        @Test
+        void numbersTheFeatureHalfOfTheKeyAfterTheFirstPosition() {
 
             // The feature is what collided - the mod half is the mod's own ID - so the number lands
             // there, and the key still reads as that mod and one feature of it.
             assertThat(new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE)
-                .deconflictFeatureKey(2)
+                .resolveConsumerAtPosition(2)
                 .consumerKey())
                 .isEqualTo("some-mod:map-cursor-2");
         }
@@ -142,23 +153,23 @@ final class CompatibilityConsumerTest {
         @Test
         void keepsTheModAndBothSentences() {
 
-            var deconflicted = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE, UNAFFECTED_FEATURE)
-                .deconflictFeatureKey(2);
+            var numbered = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE, UNAFFECTED_FEATURE)
+                .resolveConsumerAtPosition(2);
 
-            assertThat(deconflicted.modId())
+            assertThat(numbered.modId())
                 .isEqualTo(MOD_ID);
-            assertThat(deconflicted.lostFeature())
+            assertThat(numbered.lostFeature())
                 .isEqualTo(LOST_FEATURE);
-            assertThat(deconflicted.unaffectedFeature())
+            assertThat(numbered.unaffectedFeature())
                 .isEqualTo(UNAFFECTED_FEATURE);
         }
 
         @Test
-        void refusesTheFirstPositionWhichKeepsTheKeyBare() {
+        void refusesAPositionBelowTheFirst() {
 
             assertThatIllegalArgumentException()
                 .isThrownBy(() -> new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE)
-                    .deconflictFeatureKey(1));
+                    .resolveConsumerAtPosition(0));
         }
     }
 

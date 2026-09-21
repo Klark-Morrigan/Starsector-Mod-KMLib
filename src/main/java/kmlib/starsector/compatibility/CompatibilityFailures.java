@@ -36,10 +36,6 @@ public final class CompatibilityFailures {
      */
     public static final CompatibilityFailures SESSION_RECORD = new CompatibilityFailures();
 
-    // The position under a key that keeps the key bare: the first sentence recorded there, which
-    // is the only sentence wherever nobody reused the key.
-    private static final int FIRST_POSITION = 1;
-
     // What the latch is taken under. This record's own lock rather than the record itself, which
     // is a public singleton anything could synchronise on and stall every writer behind.
     private final Object latchLock = new Object();
@@ -73,26 +69,22 @@ public final class CompatibilityFailures {
      * that pair is recorded this session with that consumer's sentence, and ignores every record
      * of it afterwards.
      *
-     * <p>A record under a pair already holding a different sentence is a second feature the mod
-     * filed under a key it had already used - its own bug, in its own code - and is kept rather
-     * than dropped: the describer is handed the consumer under its feature key numbered, so both
-     * reports arrive and the log names the reuse where its author will see it. The sentence is
-     * what tells the two apart because it is what the caller already passed: the same feature
-     * recording again carries the same sentence, and the ignored path still builds nothing.
+     * <p>A different sentence under a pair already recorded is a second feature the mod filed
+     * under one feature key, and is kept: the describer is handed that consumer under a numbered
+     * key, so both reports arrive. The sentence is what tells that from the same feature recording
+     * again, being what the caller already passed - so the ignored path still builds nothing.
      *
      * @param subjectKey      the identity a third party is latched under, spelled once by whoever
      *                        binds to it; a key rather than a {@link CompatibilitySubject} because
      *                        the subject carries versions the description is what reads
      * @param consumer        the mod that took the binding, whose key completes the latch and whose
      *                        sentence tells a second feature under that key from the same one again
-     * @param describeFailure builds the failure from the consumer the record is filed under - the
-     *                        one given, or the one given under a numbered key where the record found
-     *                        its key already holding another sentence. Invoked only on the record
-     *                        that is kept, which is what makes a description that costs something,
-     *                        a reflective probe or a version read, affordable on a per-frame path.
-     *                        The latch is taken first, so one that throws is invoked once for the
-     *                        session too: the throw reaches the caller and the binding records
-     *                        nothing, a lost report rather than a repeated one
+     * @param describeFailure builds the failure from the consumer the record filed it under,
+     *                        invoked only on the record that is kept - which is what makes a
+     *                        reflective probe or a version read affordable on a per-frame path. The
+     *                        latch is taken first, so a describer that throws is invoked once for
+     *                        the session too: the binding records nothing rather than throwing on
+     *                        every frame
      */
     public void recordOnce(
             String subjectKey,
@@ -158,11 +150,8 @@ public final class CompatibilityFailures {
 
             sentences.add(consumer.lostFeature());
 
-            var position = sentences.size();
-
-            return position == FIRST_POSITION
-                ? consumer
-                : consumer.deconflictFeatureKey(position);
+            // Which position keeps the bare key is the consumer's rule, not this one's.
+            return consumer.resolveConsumerAtPosition(sentences.size());
         }
     }
 

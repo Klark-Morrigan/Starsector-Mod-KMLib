@@ -18,6 +18,10 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
  * renderer patch - nothing was compiled against it, so there is no built-against release, while the
  * installed one is published - and a composition filling those the way the other one does would
  * report a mismatch between two versions it never read.
+ *
+ * <p>Filing that report is covered apart from composing it, because the two answer different
+ * questions: which slot each part lands in, and which consumer the composition runs against once
+ * the record has decided what the report is filed under.
  */
 final class ModIntegrationTest {
 
@@ -138,7 +142,7 @@ final class ModIntegrationTest {
             // the consumer rather than reading its own.
             ModStateScopes.runWithoutGameSettings(() -> {
                 var failure = INTEGRATION.composeFailure(
-                    CONSUMER.deconflictFeatureKey(2),
+                    CONSUMER.resolveConsumerAtPosition(2),
                     FAILURE_SITE,
                     new IllegalStateException("routes already registered"));
 
@@ -162,6 +166,73 @@ final class ModIntegrationTest {
 
             assertThatNullPointerException()
                 .isThrownBy(() -> INTEGRATION.composeFailure(CONSUMER, FAILURE_SITE, null));
+        }
+    }
+
+    @Nested
+    class RecordFailure {
+
+        private final CompatibilityFailures failureRecord = new CompatibilityFailures();
+
+        @Test
+        void recordsOneFailureUnderTheThirdPartysOwnModId() {
+
+            ModStateScopes.runWithoutGameSettings(() -> {
+                INTEGRATION.recordFailure(
+                    failureRecord,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered"));
+
+                var failure = failureRecord.takeNextUnreported();
+
+                assertThat(failure.subject().name())
+                    .isEqualTo(SUBJECT_MOD_NAME);
+                assertThat(failure.consumer())
+                    .isEqualTo(CONSUMER);
+                assertThat(failureRecord.takeNextUnreported())
+                    .isNull();
+            });
+        }
+
+        @Test
+        void filesASecondFeatureUnderOneKeyAsANumberedOne() {
+            // The hand-off nothing else here would catch. Composed against this integration's own
+            // consumer rather than the one the record settled on, a second feature the wiring mod
+            // filed under one key would report under the first's key and read as that feature
+            // failing twice.
+            ModStateScopes.runWithoutGameSettings(() -> {
+                var secondFeatureUnderOneKey = new ModIntegration(
+                    SUBJECT_MOD_ID,
+                    SUBJECT_MOD_NAME,
+                    new CompatibilityConsumer(
+                        CONSUMER.modId(),
+                        CONSUMER.featureKey(),
+                        "A second feature of the wiring mod stopped working."));
+
+                INTEGRATION.recordFailure(
+                    failureRecord,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered"));
+                secondFeatureUnderOneKey.recordFailure(
+                    failureRecord,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered"));
+
+                failureRecord.takeNextUnreported();
+
+                assertThat(failureRecord.takeNextUnreported().consumer().consumerKey())
+                    .isEqualTo("map-mod:map-overlay-2");
+            });
+        }
+
+        @Test
+        void refusesToRecordWithNowhereToRecordInto() {
+
+            assertThatNullPointerException()
+                .isThrownBy(() -> INTEGRATION.recordFailure(
+                    null,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered")));
         }
     }
 

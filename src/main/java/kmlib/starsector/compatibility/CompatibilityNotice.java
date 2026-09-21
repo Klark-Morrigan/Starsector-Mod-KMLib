@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
 import java.util.Objects;
 
 /**
- * Tells the player, once per failed subject, that a binding to third-party code has stopped holding
+ * Tells the player, once per failed binding, that a binding to third-party code has stopped holding
  * - as the game's own message dialog, from a frame that can open one.
  *
  * <p>A failure is recorded where it happens, which is a render pass or a load step: neither is a

@@ -5,6 +5,7 @@ import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,17 +37,25 @@ final class CompatibilityFailuresTest {
 
     private static final CompatibilityConsumer COLONY_PANEL = CompatibilityFailureFixture.COLONY_PANEL_CONSUMER;
 
+    // What two more of that mod's features lose, each named once so a case asserts the sentence it
+    // filed rather than a literal spelled again beside it.
+    private static final String MAP_LEGEND_LOST_FEATURE =
+        "Map legends will not name their factions this session.";
+
+    private static final String MAP_SEARCH_LOST_FEATURE =
+        "Map search will not find systems this session.";
+
     // The same mod under the same feature key as MAP_OVERLAY, losing something else: what one mod
     // spelling one feature key for two features looks like at the record.
     private static final CompatibilityConsumer MAP_LEGEND_UNDER_REUSED_KEY = new CompatibilityConsumer(
         CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID,
         CompatibilityFailureFixture.MAP_OVERLAY_FEATURE_KEY,
-        "Map legends will not name their factions this session.");
+        MAP_LEGEND_LOST_FEATURE);
 
     private static final CompatibilityConsumer MAP_SEARCH_UNDER_REUSED_KEY = new CompatibilityConsumer(
         CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID,
         CompatibilityFailureFixture.MAP_OVERLAY_FEATURE_KEY,
-        "Map search will not find systems this session.");
+        MAP_SEARCH_LOST_FEATURE);
 
     // Another mod spelling the same feature key, which is no collision: the mod ID leads the key.
     private static final CompatibilityConsumer ANOTHER_MODS_MAP_OVERLAY = new CompatibilityConsumer(
@@ -174,7 +183,7 @@ final class CompatibilityFailuresTest {
             assertThat(secondConsumer.consumerKey())
                 .isEqualTo("map-mod:map-overlay-2");
             assertThat(secondConsumer.lostFeature())
-                .isEqualTo("Map legends will not name their factions this session.");
+                .isEqualTo(MAP_LEGEND_LOST_FEATURE);
         }
 
         @Test
@@ -184,10 +193,10 @@ final class CompatibilityFailuresTest {
             // built afresh every time its publisher is, and a record numbering every construction
             // would mint a new key per map open and report one failure once a frame forever.
             var rebuiltMapOverlay = new CompatibilityConsumer(
-                MAP_OVERLAY.modId(),
-                MAP_OVERLAY.featureKey(),
-                MAP_OVERLAY.lostFeature(),
-                MAP_OVERLAY.unaffectedFeature());
+                CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID,
+                CompatibilityFailureFixture.MAP_OVERLAY_FEATURE_KEY,
+                CompatibilityFailureFixture.LOST_FEATURE,
+                CompatibilityFailureFixture.UNAFFECTED_FEATURE);
 
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailureTakenBy(recordedAs));
             failures.recordOnce(FAST_RENDERING, rebuiltMapOverlay, recordedAs -> createFailureTakenBy(recordedAs));
@@ -295,6 +304,30 @@ final class CompatibilityFailuresTest {
             assertThat(failures.takeNextUnreported())
                 .isNull();
         }
+
+        @Test
+        void handsOutEachPositionOnceWhereTwoThreadsRecordUnderOneKeyAtOnce() throws InterruptedException {
+
+            // The race the numbering has to survive: two of one mod's features, under the key it
+            // spelled for both, recorded at once. A position read outside the latch would hand two
+            // records one number, or the same key twice.
+            var startGate = new CountDownLatch(1);
+            var renderThread = new Thread(buildRecordReleasedBy(startGate, MAP_OVERLAY));
+            var gameThread = new Thread(buildRecordReleasedBy(startGate, MAP_LEGEND_UNDER_REUSED_KEY));
+            renderThread.start();
+            gameThread.start();
+
+            startGate.countDown();
+            renderThread.join();
+            gameThread.join();
+
+            // Which sentence takes the bare key is whichever won the race, so what is pinned is
+            // that the two positions were handed out once each.
+            assertThat(List.of(
+                    failures.takeNextUnreported().consumer().consumerKey(),
+                    failures.takeNextUnreported().consumer().consumerKey()))
+                .containsExactlyInAnyOrder("map-mod:map-overlay", "map-mod:map-overlay-2");
+        }
     }
 
     @Nested
@@ -338,6 +371,15 @@ final class CompatibilityFailuresTest {
             assertThat(failures.takeNextUnreported())
                 .isNull();
         }
+    }
+
+    // One record parked on the gate, so several released together race rather than run in turn.
+    private Runnable buildRecordReleasedBy(CountDownLatch startGate, CompatibilityConsumer consumer) {
+
+        return () -> {
+            awaitStart(startGate);
+            failures.recordOnce(FAST_RENDERING, consumer, recordedAs -> createFailureTakenBy(recordedAs));
+        };
     }
 
     // Parks the calling thread until the gate opens; an interruption while parked is reported as a

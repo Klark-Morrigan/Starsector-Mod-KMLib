@@ -153,7 +153,11 @@ and nothing said so but a line in the log.
 
 [`ModIntegration`](ModIntegration.java) is that case as the channel states one -
 the third party the step is with, and the mod that loses something by it -
-and it composes the failure from what was thrown.
+and it composes the failure from what was thrown and files it itself.
+Filing rather than handing a composed failure back to the guard,
+because the record hands a describer the consumer it filed under,
+and that hand-off is the channel's business:
+a guard is about the failure boundary a step runs behind, not about the shape of a report.
 Two things run the other way round from a binding to a renderer patch.
 The versions: nothing was compiled against an optional mod,
 the binding going through the game's own API,
@@ -280,7 +284,8 @@ The notice runs on the campaign thread alone.
   Detecting that a binding no longer holds is the binder's job,
   and which member broke is what it records.
 - The guard a start-up step runs behind.
-  [`starsector/startup/`](../startup/) owns the failure boundary and the log line;
+  [`starsector/startup/`](../startup/) owns the failure boundary, the log line
+  and the phrase a failed installation files under;
   this package owns only what a failure it caught is reported as.
 - The transient install.
   [`starsector/scripts/`](../scripts/) is what registers the notice on a sector,

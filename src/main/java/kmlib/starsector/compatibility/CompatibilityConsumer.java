@@ -18,7 +18,7 @@ import kmlib.text.KmlibStrings;
  * prevent, at mod granularity instead of subject granularity. A mod that spells one feature key for
  * two features is not refused here, this value being built freely and never checked against what
  * else was built: the record tells the two apart by their sentences and numbers the second's key,
- * through {@link #deconflictFeatureKey}.
+ * through {@link #resolveConsumerAtPosition}.
  *
  * <p>Plain data: the ID is not checked against the game and no name is looked up for it here. That
  * would put a mod-manager read on the healthy path, where this value is built and never looked at
@@ -56,8 +56,8 @@ public record CompatibilityConsumer(
     // on one side of the colon, the feature and its number on the other.
     private static final String FEATURE_NUMBER_SEPARATOR = "-";
 
-    // The position under a key that keeps the key bare. A record asks for a numbered key only for
-    // the positions after it, and asking for this one would be asking for the key as it stands.
+    // The position under a key that keeps the key bare, and so the only place the rule is stated:
+    // a record asks this value which consumer a position takes rather than deciding it itself.
     private static final int FIRST_POSITION = 1;
 
     public CompatibilityConsumer {
@@ -111,24 +111,31 @@ public record CompatibilityConsumer(
     }
 
     /**
-     * This consumer under its feature key numbered, for a record that found the key already
-     * holding a different feature of the same mod.
+     * This consumer as the record's nth under its key: itself at the first position, and its
+     * feature key numbered at each position after it.
      *
-     * <p>The number lands on the feature key because that is what collided: the mod half is the
+     * <p>The number lands on the feature key because that is what collided. The mod half is the
      * mod's own ID and cannot collide between mods, so two sentences under one key are one mod
-     * spelling one feature key twice. Both sentences are that mod's, so the mod and the sentences
-     * travel unchanged and only the key is told apart - and a numbered key in the log is the
+     * spelling one feature key twice - and both sentences are that mod's, so the mod and the
+     * sentences travel unchanged while only the key is told apart. A numbered key in a log is the
      * finding, naming the reuse where its author will see it.
      *
-     * @param position which record under the reused key this is, counted from one; the first keeps
-     *                 the bare key and is never asked for here
-     * @return the same mod and sentences under {@code <featureKey>-<position>}
+     * <p>Answered here rather than decided by whoever counts the positions, so which position
+     * keeps the bare key is stated once.
+     *
+     * @param position which record under the key this is, counted from one
+     * @return this consumer at the first position, else the same mod and sentences under
+     *         {@code <featureKey>-<position>}
      */
-    public CompatibilityConsumer deconflictFeatureKey(int position) {
+    public CompatibilityConsumer resolveConsumerAtPosition(int position) {
 
-        if (position <= FIRST_POSITION) {
+        if (position < FIRST_POSITION) {
             throw new IllegalArgumentException(
-                "The first record under a key keeps the key bare; only a later one is numbered. Got: " + position);
+                "A record under a key takes a position counted from one. Got: " + position);
+        }
+
+        if (position == FIRST_POSITION) {
+            return this;
         }
 
         return new CompatibilityConsumer(

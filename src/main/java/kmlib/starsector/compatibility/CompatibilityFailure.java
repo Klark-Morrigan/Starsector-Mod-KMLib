@@ -15,11 +15,13 @@ import java.util.Objects;
  * the strings that render them, in {@link KmlibStringKeys}; this record only fills their slots.
  *
  * @param subject   the third party and the two versions the mismatch is stated as
- * @param consumer  the mod that took the binding: the key its record latched under, for the log,
- *                  and the sentence naming what it loses, for the player. Held whole rather than
- *                  unpacked into its sentence, so a report can say which mod lost something as well
- *                  as what - two mods over one broken binding file two reports, and told apart by
- *                  their sentences alone they are two the reader has to recognise by prose
+ * @param consumer  the mod that took the binding, as the record filed it: the key it was recorded
+ *                  under - numbered where that mod had already used the key for another feature -
+ *                  for the log, and the sentence naming what it loses, for the player. Held whole
+ *                  rather than unpacked into its sentence, so a report can say which mod lost
+ *                  something as well as what - two mods over one broken binding file two reports,
+ *                  and told apart by their sentences alone they are two the reader has to
+ *                  recognise by prose
  * @param breakage  which guard caught the binding and what no longer holds, for the log alone
  * @param cause     what was thrown, or {@code null} where nothing was - a probe that finds a member
  *                  missing has no throwable to report. Handed to the logger beside

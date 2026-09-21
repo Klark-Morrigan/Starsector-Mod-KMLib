@@ -65,6 +65,7 @@ public final class WiringSteps {
         this.stepLog = Objects.requireNonNull(
             stepLog,
             "A guard with nowhere to log would swallow every step that failed.");
+            
         this.failureRecord = Objects.requireNonNull(
             failureRecord,
             "A guard with nowhere to record would degrade silently and tell no player why.");
@@ -124,6 +125,7 @@ public final class WiringSteps {
             wiringStep.run();
 
         } catch (RuntimeException stepFailure) {
+
             stepLog.error(failureMessage, stepFailure);
 
             if (describeIntegration != null) {
@@ -141,14 +143,12 @@ public final class WiringSteps {
             RuntimeException stepFailure) {
 
         try {
-            var integration = describeIntegration.get();
-
-            failureRecord.recordOnce(
-                integration.subjectModId(),
-                integration.consumer(),
-                recordedAs -> integration.composeFailure(recordedAs, WHILE_INSTALLING_INTEGRATION, stepFailure));
+            describeIntegration
+                .get()
+                .recordFailure(failureRecord, WHILE_INSTALLING_INTEGRATION, stepFailure);
 
         } catch (RuntimeException reportFailure) {
+
             stepLog.error(REPORT_FAILURE_MESSAGE, reportFailure);
         }
     }
