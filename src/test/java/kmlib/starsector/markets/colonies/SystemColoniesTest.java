@@ -81,8 +81,9 @@ final class SystemColoniesTest {
         @Test
         void admitsAConditionOnlyMarketCarryingTheDecivilisedCondition() {
             // The one condition-only market a colony set holds, and the narrowest admission that
-            // reaches it: a ruin is stripped of its owner as it dies, so ownership refuses it along
-            // with every bare rock, and the decivilised condition is what parts it from those.
+            // reaches it: a decivilised world is stripped of its owner as it collapses, so
+            // ownership refuses it along with every bare rock, and the decivilised condition is
+            // what parts it from those.
             var fixture = new ColonyFixture("kumari_kandam");
             var decivilisedWorld = fixture.buildDecivilisedWorld();
 
@@ -93,10 +94,10 @@ final class SystemColoniesTest {
         }
 
         @Test
-        void admitsADeadWorldThePlayerHasNotSurveyed() {
+        void admitsADecivilisedWorldThePlayerHasNotSurveyed() {
             // The set is unfogged, a mechanic mirrored from vanilla having to see what vanilla
-            // sees, so what the player may be told about the ruins is decided over the set rather
-            // than by leaving them out of it.
+            // sees, so what the player may be told about such a world is decided over the set
+            // rather than by leaving it out of it.
             var fixture = new ColonyFixture("kumari_kandam");
             var decivilisedWorld = fixture.buildUnsurveyedDecivilisedWorld();
 
@@ -142,7 +143,7 @@ final class SystemColoniesTest {
         @Test
         void marksADerelictStationAsAnAbandonedStation() {
             // The set admits it like any other owned market - what changes is that the colony
-            // says what it is, so a reader downstream is not left to take a hulk for a town.
+            // says what it is, so a reader downstream is not left to take a derelict for a town.
             var fixture = new ColonyFixture("corvus");
             var derelict = fixture.buildDerelictStation();
 

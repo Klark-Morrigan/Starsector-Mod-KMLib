@@ -71,7 +71,7 @@ final class MarketTargetRequirementTest {
 
         @Test
         void refusesADerelictStationFlyingTheNeutralFlagAsTransferable() {
-            // A hulk carries a faction like any other market, and it is the neutral one - so a
+            // A derelict carries a faction like any other market, and it is the neutral one - so a
             // requirement asking only whether some faction held the place would offer a derelict
             // as a colony to hand out.
             assertThat(MarketTargetRequirement.EXISTING_COLONY.isMetBy(

@@ -12,7 +12,7 @@ import java.util.List;
  * question it was never asked.
  *
  * <p>Asked of a whole place at once rather than colony by colony. Whether one colony may be named
- * can turn on what else stands beside it - a hulk in orbit over an inhabited world is common
+ * can turn on what else stands beside it - a derelict in orbit over an inhabited world is common
  * knowledge there - so a per-colony question would have every implementation fold the place again
  * for each of its colonies.
  *

@@ -121,7 +121,7 @@ public final class ColonyMarketFixture {
     }
 
     /**
-     * The same hulk at a stated size.
+     * The same derelict at a stated size.
      *
      * <p>The neutral owner is the shape rather than a detail of it: it is what makes this a
      * derelict instead of a station somebody keeps, so it is fixed here rather than left to a
@@ -135,7 +135,7 @@ public final class ColonyMarketFixture {
     }
 
     /**
-     * The same hulk on an entity the player has not found, which is what most of the sector's
+     * The same derelict on an entity the player has not found, which is what most of the sector's
      * derelicts are: nothing conceals it, and nobody has been near it.
      *
      * @return the market mock
@@ -152,7 +152,7 @@ public final class ColonyMarketFixture {
 
     /**
      * A station somebody keeps: the same derelict condition on a market a real faction holds.
-     * Nothing but the owner parts it from the hulk above, which is what makes the pair worth
+     * Nothing but the owner parts it from the derelict above, which is what makes the pair worth
      * posing together - a kind read splitting them on anything else would be reading the wrong
      * thing.
      */
@@ -353,7 +353,7 @@ public final class ColonyMarketFixture {
      *
      * <p>Whether it is the neutral one is answered off the faction, as the engine answers it,
      * rather than left false: every place nobody has settled is handed to neutral as it is built,
-     * so a fixture that had neutral deny being neutral would pose an unowned hulk as a station
+     * so a fixture that had neutral deny being neutral would pose an unowned derelict as a station
      * somebody keeps.
      *
      * @param id the faction ID
