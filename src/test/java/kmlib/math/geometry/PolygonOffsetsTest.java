@@ -43,6 +43,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * single negative-distance edge outward, bevels a sharp convex corner where two
  * outward edges would spike, drops a collapsed ring, and rejects a non-parallel
  * array.
+ *
+ * <p>And of {@link PolygonOffsets#hasInsetCollapsed}: a ring that shrank is sound, one left
+ * with too few corners, one whose winding flipped and an outer ring that grew are all folds,
+ * and a hole that grew is not - a hole backing into the solid around it is what an inward
+ * inset does to a hole.
  */
 final class PolygonOffsetsTest {
 
@@ -438,6 +443,95 @@ final class PolygonOffsetsTest {
                 }
             }
             return kept;
+        }
+    }
+
+    @Nested
+    class HasInsetCollapsed {
+
+        // A square 10 across, wound counter-clockwise as an outer ring is.
+        private static final List<double[]> OUTER = List.of(
+            new double[] {0, 0},
+            new double[] {10, 0},
+            new double[] {10, 10},
+            new double[] {0, 10});
+
+        // The same square wound clockwise, as a hole is.
+        private static final List<double[]> HOLE = List.of(
+            new double[] {0, 0},
+            new double[] {0, 10},
+            new double[] {10, 10},
+            new double[] {10, 0});
+
+        // A square 6 across inside the first, wound the same way: what a clean inset of 2
+        // leaves.
+        private static final List<double[]> OUTER_SHRUNK = List.of(
+            new double[] {2, 2},
+            new double[] {8, 2},
+            new double[] {8, 8},
+            new double[] {2, 8});
+
+        // The shrunk square wound the other way: what an inset past half the width leaves,
+        // the offset lines having crossed before they met.
+        private static final List<double[]> OUTER_TURNED_INSIDE_OUT = List.of(
+            new double[] {2, 2},
+            new double[] {2, 8},
+            new double[] {8, 8},
+            new double[] {8, 2});
+
+        // A square 14 across around the first, wound the same way: a miter run past the
+        // ring's own width re-expands the corners rather than inverting them.
+        private static final List<double[]> OUTER_GROWN = List.of(
+            new double[] {-2, -2},
+            new double[] {12, -2},
+            new double[] {12, 12},
+            new double[] {-2, 12});
+
+        // The same grown square wound as a hole: a hole legitimately grows under an inward
+        // inset, its border backing into the solid around it.
+        private static final List<double[]> HOLE_GROWN = List.of(
+            new double[] {-2, -2},
+            new double[] {-2, 12},
+            new double[] {12, 12},
+            new double[] {12, -2});
+
+        private static final List<double[]> TOO_FEW_CORNERS = List.of(
+            new double[] {2, 2},
+            new double[] {8, 8});
+
+        @Test
+        void aRingThatShrankIsSound() {
+
+            assertThat(PolygonOffsets.hasInsetCollapsed(OUTER, OUTER_SHRUNK))
+                .isFalse();
+        }
+
+        @Test
+        void tooFewCornersLeftIsAFold() {
+
+            assertThat(PolygonOffsets.hasInsetCollapsed(OUTER, TOO_FEW_CORNERS))
+                .isTrue();
+        }
+
+        @Test
+        void aFlippedWindingIsAFold() {
+
+            assertThat(PolygonOffsets.hasInsetCollapsed(OUTER, OUTER_TURNED_INSIDE_OUT))
+                .isTrue();
+        }
+
+        @Test
+        void anOuterRingThatGrewIsAFold() {
+
+            assertThat(PolygonOffsets.hasInsetCollapsed(OUTER, OUTER_GROWN))
+                .isTrue();
+        }
+
+        @Test
+        void aHoleThatGrewIsSound() {
+
+            assertThat(PolygonOffsets.hasInsetCollapsed(HOLE, HOLE_GROWN))
+                .isFalse();
         }
     }
 
