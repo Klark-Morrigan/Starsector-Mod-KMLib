@@ -9,6 +9,15 @@ public final class NexerelinPresence {
 
     public static final String MOD_ID = "nexerelin";
 
+    /**
+     * The mod's name as a reader knows it: what a line about which mod is doing the work names, and
+     * what a report about this integration having stopped holding is headed with.
+     *
+     * <p>Beside the ID rather than at each of the places that show it, so a record latched under the
+     * ID and a report naming the mod cannot drift into two mods.
+     */
+    public static final String MOD_NAME = "Nexerelin";
+
     private NexerelinPresence() { // utility class, no instances.
     }
 

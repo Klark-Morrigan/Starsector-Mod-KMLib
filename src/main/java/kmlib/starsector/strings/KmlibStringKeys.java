@@ -99,6 +99,40 @@ public final class KmlibStringKeys {
      */
     public static final String COMPATIBILITY_NOTICE_VERSION_UNKNOWN = "compatibility_notice_version_unknown";
 
+    /**
+     * What the player loses where the library's own LunaLib bindings did not install. No slots.
+     *
+     * <p>The library's own sentence, in the slot a consuming mod fills with its. Where one of
+     * KMLib's start-up steps binds to a third-party mod, the library is the mod that lost something
+     * by that binding, so it writes its consequence out of its own strings exactly as a consuming
+     * mod does - which is also what shows the channel takes more than one client.
+     */
+    public static final String COMPATIBILITY_LOST_LUNALIB_SETTINGS = "compatibility_lost_lunalib_settings";
+
+    /** What a failed Nexerelin integration costs. No slots. */
+    public static final String COMPATIBILITY_LOST_NEXERELIN_ROUTINES = "compatibility_lost_nexerelin_routines";
+
+    /** What a failed Random Assortment of Things integration costs. No slots. */
+    public static final String COMPATIBILITY_LOST_RAT_ACCESS_ROUTES = "compatibility_lost_rat_access_routes";
+
+    /**
+     * What a failed LunaLib binding does not cost. No slots.
+     *
+     * <p>Every one of these three names the save, because that is the question a player reads a
+     * compatibility modal asking themselves. None of them promises anything about another mod's
+     * feature: what the library may vouch for is what the library does.
+     */
+    public static final String COMPATIBILITY_UNAFFECTED_LUNALIB_SETTINGS =
+        "compatibility_unaffected_lunalib_settings";
+
+    /** What a failed Nexerelin integration does not cost. No slots. */
+    public static final String COMPATIBILITY_UNAFFECTED_NEXERELIN_ROUTINES =
+        "compatibility_unaffected_nexerelin_routines";
+
+    /** What a failed Random Assortment of Things integration does not cost. No slots. */
+    public static final String COMPATIBILITY_UNAFFECTED_RAT_ACCESS_ROUTES =
+        "compatibility_unaffected_rat_access_routes";
+
     /** Display word for a jump point, e.g. "&lt;focus&gt; Jump-point &lt;radius&gt;". */
     public static final String JUMP_POINT_LABEL = "jump_point_label";
 

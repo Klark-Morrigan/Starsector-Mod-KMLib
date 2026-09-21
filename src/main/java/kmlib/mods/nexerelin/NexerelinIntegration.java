@@ -34,8 +34,9 @@ public final class NexerelinIntegration {
 
     // What this integration is called in a line about what is founding colonies or moving them on
     // this install. The mod's own name rather than its ID: what a log line is read for here is
-    // which mod is doing the work, and that is the name the reader knows it by.
-    private static final String INTEGRATION_NAME = "Nexerelin";
+    // which mod is doing the work, and that is the name the reader knows it by. Read off the
+    // presence beside this rather than spelled again, so this mod is one name wherever it is shown.
+    private static final String INTEGRATION_NAME = NexerelinPresence.MOD_NAME;
 
     private NexerelinIntegration() {
         // utility class, no instances.

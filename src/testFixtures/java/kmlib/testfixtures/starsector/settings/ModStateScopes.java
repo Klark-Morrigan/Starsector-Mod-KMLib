@@ -59,6 +59,28 @@ public final class ModStateScopes {
     }
 
     /**
+     * Runs body with the mod set readable and one named mod installed at a stated version. Every
+     * other mod ID reports no spec, as {@link #runWithModNamed} leaves it.
+     *
+     * @param modId      the mod the body's subject asks about
+     * @param modName    the name the game holds for it
+     * @param modVersion the version that mod's spec declares
+     * @param body       the case to run inside the scope
+     */
+    public static void runWithModVersioned(
+            String modId,
+            String modName,
+            String modVersion,
+            Runnable body) {
+
+        runWithSettingsInstalled(
+            () -> StarsectorSettingsFake.installSettingsWithModSpecs(
+                askedModId -> modId.equals(askedModId) ? modName : null,
+                askedModId -> modId.equals(askedModId) ? modVersion : null),
+            body);
+    }
+
+    /**
      * Runs body with settings up but no mod manager on them - the half-built state between a game
      * that is up and one that is not, and the one a guard is easiest to leave out of.
      *

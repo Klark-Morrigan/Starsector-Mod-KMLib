@@ -1,5 +1,6 @@
 package kmlib.settings;
 
+import kmlib.KmlibMod;
 import kmlib.logging.KmLogging;
 
 /**
@@ -19,7 +20,19 @@ import kmlib.logging.KmLogging;
  */
 public final class KmlibLunaSettings {
 
-    private static final String MOD_ID = "kmlib";
+    /**
+     * LunaLib's own mod ID, as the key a compatibility record about this binding latches under and
+     * what its installed version is read by.
+     *
+     * <p>Here rather than under {@code kmlib.mods}, which is the home for the mods a consumer may
+     * run without. LunaLib is a declared dependency: the library is compiled against it and cannot
+     * run without it, so its identity belongs with the code that binds to it, which is this.
+     */
+    public static final String LUNALIB_MOD_ID = "lunalib";
+
+    /** LunaLib as a report about a binding to it is headed. */
+    public static final String LUNALIB_MOD_NAME = "LunaLib";
+
     private static final String LOGGER_ROOT = "kmlib";
     private static final String LOG_LEVEL_FIELD = "kmlib_logLevel";
 
@@ -31,6 +44,6 @@ public final class KmlibLunaSettings {
      * load, by which point LunaLib - a declared dependency - has loaded.
      */
     public static void installBindings() {
-        KmLogging.bindToLunaSetting(MOD_ID, LOGGER_ROOT, LOG_LEVEL_FIELD);
+        KmLogging.bindToLunaSetting(KmlibMod.MOD_ID, LOGGER_ROOT, LOG_LEVEL_FIELD);
     }
 }
