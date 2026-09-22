@@ -7,9 +7,10 @@ package kmlib.starsector.ui.map.icons;
  *
  * @param mapShowingEdge           whether a map came up or went down on this advance
  * @param attemptsSinceLastClear   lifts made since the icon was last seen clear, as the advance
- *                                 left it - carried on both edges, because a count that runs up
- *                                 across opens is the thing a log has to show running up
- * @param hasStoodDown             whether the lift has been abandoned for the session
+ *                                 left it - on a closed edge, what the open that just ended spent,
+ *                                 the count being forgotten only after these notes are composed
+ * @param hasStoodDown             whether the lift has been abandoned for the rest of the open;
+ *                                 on a closed edge, whether the open that just ended stood down
  * @param wasIconSeenClearThisOpen whether the icon was read clear at least once since the map
  *                                 opened; on a closed edge this describes the open that just ended
  * @param isDisagreementToReport   whether this advance is the one to report the map read and the

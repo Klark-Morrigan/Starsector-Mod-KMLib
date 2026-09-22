@@ -39,10 +39,11 @@ import java.util.function.Supplier;
  * rare - one per re-seeding of the icon map - so the lines stay readable beside a mod's own
  * icon-order trace. So are the map coming and going, each carrying the count of lifts the icon has
  * not been seen clear since, because that count running up across opens is what a layering that
- * degrades over a session looks like from inside. Two states are said at WARN, since neither comes
- * right on its own: a map that stays up with no icon placeable for the entity - the map read and the
- * placement read disagreeing about what is on screen - once per open, and the stand-down once, with
- * the readings that led to it.
+ * degrades over a session looks like from inside. Two states are said at WARN, each once per session,
+ * since neither comes right within the open and a line per open would be noise on a failure that
+ * does not heal: a map that stays up with no icon placeable for the entity - the map read and the
+ * placement read disagreeing about what is on screen - and the stand-down, with the readings that
+ * led to it.
  *
  * <p>Runs while paused. Opening a map holds the campaign paused for as long as it is up, which is
  * the whole window this works in - a script standing down while paused would never advance here.
@@ -71,9 +72,13 @@ public final class MapIconReseater implements EveryFrameScript {
     // failure is recorded, the rest silenced.
     private boolean hasLoggedReseatError;
 
-    // The same guard for the stand-down, which is a standing state rather than an event: without it
-    // every advance for the rest of the session would report it again.
+    // The same guard for the stand-down, which the decision reaches afresh on every map open it
+    // cannot lift on: without it every such open would report it again.
     private boolean hasLoggedStandDown;
+
+    // The same guard for the two reads disagreeing, which the decision detects once per open: a
+    // failure that does not heal would otherwise be said on every open for the rest of the session.
+    private boolean hasLoggedDisagreement;
 
     /**
      * @param isMapShowing whether a map whose icon order matters is on screen; it scopes the move to
@@ -232,30 +237,38 @@ public final class MapIconReseater implements EveryFrameScript {
             }
         }
         if (notes.isDisagreementToReport()) {
-            reportDisagreement(entityThisAdvance);
+            reportDisagreementOnce(entityThisAdvance);
         }
         reportStandingDownOnce(entityThisAdvance);
     }
 
-    // Says once per open that the two reads this is handed do not describe the same screen: the
-    // map read says a map this cares about is up, and for as long as it has been, the placement
-    // read has found no icon for the entity - which is there to be found. Nothing can be lifted on
-    // such a map, and neither read alone says why. WARN because it will not come right within the
-    // open; once per open because the next open may be read from a different widget.
-    private void reportDisagreement(EntityThisAdvance entityThisAdvance) {
+    // Says once that the two reads this is handed do not describe the same screen: the map read
+    // says a map this cares about is up, and for as long as it has been, the placement read has
+    // found no icon for the entity - which is there to be found. Nothing can be lifted on such a
+    // map, and neither read alone says why. WARN because it will not come right within the open;
+    // once per session rather than per open, which is how often the decision detects it, because
+    // a failure that does not heal is detected on every open and the first line already says all
+    // of it.
+    private void reportDisagreementOnce(EntityThisAdvance entityThisAdvance) {
+
+        if (hasLoggedDisagreement) {
+            return;
+        }
+        hasLoggedDisagreement = true;
         LOG.warn("Map icon reseat: a map has been showing for "
             + MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT + " advances with "
             + describeEntity(entityThisAdvance.resolveEntity())
             + " in its location and no icon placeable for it. The map read and the placement read "
             + "disagree about what is on screen, so nothing is lifted past the nebulae on this "
-            + "map. Reported once per map open.");
+            + "map. Said once per session; later opens that read the same way are not reported.");
     }
 
     // Says once that the lift has been abandoned, which is the only state a player could otherwise
     // only diagnose from the picture. WARN rather than DEBUG: unlike the moves above, this one
-    // reports something that will not come right on its own. Carries the readings that led to it,
-    // since "did not clear" alone cannot say whether the lifts were never observed or observed and
-    // undone.
+    // reports something that will not come right within the open. Once per session although the
+    // decision stands down per open, for the reason the disagreement is. Carries the readings that
+    // led to it, since "did not clear" alone cannot say whether the lifts were never observed or
+    // observed and undone.
     private void reportStandingDownOnce(EntityThisAdvance entityThisAdvance) {
 
         if (hasLoggedStandDown || !reseatDecision.hasStoodDown()) {
@@ -266,7 +279,8 @@ public final class MapIconReseater implements EveryFrameScript {
             + describeEntity(entityThisAdvance.resolveEntity())
             + " past the map's nebulae after " + MapIconReseatDecision.MAX_ATTEMPTS
             + " attempts that did not clear them. Its layering is left as the widget seeded it "
-            + "for the rest of this session. The readings leading to it, oldest first: "
+            + "until the map is next opened, when the lift is tried again. Said once per session. "
+            + "The readings leading to it, oldest first: "
             + reseatDecision.describeRecentReadings());
     }
 

@@ -45,10 +45,12 @@ import java.util.stream.Collectors;
  *
  * <p>Reading the state does mean the move can be attempted against a build where it no longer works,
  * where an event-keyed rule would simply have fired once and stopped. {@link #MAX_ATTEMPTS} is what
- * bounds that: a lift that does not clear the fog is retried a few times and then abandoned for the
- * session, leaving the icon where the widget seeded it. That is the same graceful direction the
- * whole lever fails in, rather than an entity flickering out of its location for as long as the game
- * is running.
+ * bounds that: a lift that does not clear the fog is retried a few times and then abandoned until
+ * the map is next opened, leaving the icon where the widget seeded it. That is the same graceful
+ * direction the whole lever fails in, rather than an entity flickering out of its location for as
+ * long as a map is up. Scoped to the open rather than to the session because a stand-down that
+ * outlives its cause is indistinguishable, from outside, from the lever having stopped working: the
+ * next open is a fresh widget with a fresh seeding, and it is owed a fresh try.
  *
  * <p>Beside the action it keeps what a log needs when the picture is wrong and the moves alone do
  * not say why: the {@link ReseatReading readings} behind the latest advances, the
@@ -64,9 +66,9 @@ import java.util.stream.Collectors;
 final class MapIconReseatDecision {
 
     // How many lifts that fail to clear the nebulae are attempted before this stands down for the
-    // session. Above one, because the first read after a put-back can legitimately still see the old
-    // placement - the icon is re-seeded by a render, not by the add. Low, because a lift that has
-    // not taken by then is a build this no longer fits rather than a slow frame.
+    // rest of the map open. Above one, because the first read after a put-back can legitimately
+    // still see the old placement - the icon is re-seeded by a render, not by the add. Low, because
+    // a lift that has not taken by then is a build this no longer fits rather than a slow frame.
     static final int MAX_ATTEMPTS = 4;
 
     // How many advances the entity may spend out of its location waiting for the widget to drop its
@@ -114,8 +116,8 @@ final class MapIconReseatDecision {
     // put-back, so what is counted is attempts that achieved nothing.
     private int attemptsSinceLastClear;
 
-    // Set once the attempts run out, so a build this no longer fits costs a handful of moves rather
-    // than two per frame forever.
+    // Set once the attempts run out and cleared when the map goes down, so a build this no longer
+    // fits costs a handful of moves per map open rather than two per frame for as long as one is up.
     private boolean hasStoodDown;
 
     // Whether the previous advance had a map showing, from which this advance's edge is read.
@@ -169,6 +171,11 @@ final class MapIconReseatDecision {
             wasIconSeenClearThisOpen,
             claimDisagreementReport());
 
+        // After the notes, so the closing line reports the open as it ended and the next open
+        // starts from nothing owed.
+        if (mapShowingEdge == MapShowingEdge.CLOSED) {
+            endOpen();
+        }
         wasMapShowing = isMapShowing;
         return action;
     }
@@ -186,7 +193,10 @@ final class MapIconReseatDecision {
             .collect(Collectors.joining(", ", "[", "]"));
     }
 
-    /** @return whether this has abandoned the move for the session, for the caller to report once */
+    /**
+     * @return whether this has abandoned the move for the rest of the current map open, for the
+     *         caller to report
+     */
     boolean hasStoodDown() {
         return hasStoodDown;
     }
@@ -322,6 +332,14 @@ final class MapIconReseatDecision {
         }
         isEntityDetached = true;
         return recordReading(ReseatObservation.ICON_NOT_YET_DROPPED, ReseatAction.NONE);
+    }
+
+    // Forgets what the open that just ended spent, so its stand-down cannot outlive the widget that
+    // earned it. The clear sighting is left for the next opened edge, which is what the closing
+    // line reports it from.
+    private void endOpen() {
+        attemptsSinceLastClear = 0;
+        hasStoodDown = false;
     }
 
     // Keeps the reading behind an action, dropping the oldest once the capacity is reached, and

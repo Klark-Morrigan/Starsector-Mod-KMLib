@@ -237,6 +237,21 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
+        void liftsAgainOnTheNextOpenAfterStandingDown() {
+            // The next open is a fresh widget with a fresh seeding, owed a fresh try: a stand-down
+            // that outlived the open that earned it would read, from outside, as the lever having
+            // stopped working for the session.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT))
+                .isEqualTo(ReseatAction.REMOVE);
+        }
+
+        @Test
         void keepsLiftingWhileTheAttemptsHaveNotRunOut() {
             // One short of the cap, so the bound is pinned from both sides: a cap that fired early
             // would abandon the move on a game merely running slowly enough for a put-back to be
@@ -327,6 +342,19 @@ class MapIconReseatDecisionTest {
 
             assertThat(reseatDecision.hasStoodDown())
                 .isTrue();
+        }
+
+        @Test
+        void hasStoodDownIsFalseAgainOnceTheMapHasClosed() {
+            // The stand-down is the open's, not the session's.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.hasStoodDown())
+                .isFalse();
         }
     }
 
@@ -427,9 +455,9 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void carriesTheSpentLiftsAcrossTheClosedEdge() {
-            // The count is not reset by the map going down - only a clear sighting resets it - so
-            // the closing line is where a count running up across opens can be watched running up.
+        void carriesTheSpentLiftsOnTheClosedEdge() {
+            // The closing line reports the open as it ended; the count is forgotten only after the
+            // notes are composed, so what was spent on that open is still there to be read.
             var reseatDecision = new MapIconReseatDecision();
 
             driveFailedLifts(reseatDecision, 2);
@@ -437,6 +465,32 @@ class MapIconReseatDecisionTest {
 
             assertThat(reseatDecision.readNotesOfLastAdvance().attemptsSinceLastClear())
                 .isEqualTo(2);
+        }
+
+        @Test
+        void carriesTheStandDownOnTheClosedEdge() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().hasStoodDown())
+                .isTrue();
+        }
+
+        @Test
+        void forgetsTheSpentLiftsWhenTheMapOpensAgain() {
+            // What the previous open spent says nothing about this one.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, 2);
+            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().attemptsSinceLastClear())
+                .isEqualTo(0);
         }
 
         @Test
