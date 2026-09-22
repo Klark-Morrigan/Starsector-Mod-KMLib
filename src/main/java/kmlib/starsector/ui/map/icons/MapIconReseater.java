@@ -47,10 +47,11 @@ import java.util.function.Supplier;
  * <p>Runs while paused. Opening a map holds the campaign paused for as long as it is up, which is
  * the whole window this works in - a script standing down while paused would never advance here.
  *
- * <p>The entity is out of its location for one advance - a few more where a fault delays the
- * put-back - which is worth knowing for anything that reads the location on a timer: a save written
- * inside that window does not hold it, so whatever put the entity there is what has to put it back
- * on the next load.
+ * <p>The entity is out of its location until the widget has dropped its icon - one advance on an
+ * ordinary frame, a few under the campaign's speed-up, which advances several times per rendered
+ * frame, a few more where a fault delays the put-back - which is worth knowing for anything that
+ * reads the location on a timer: a save written inside that window does not hold it, so whatever
+ * put the entity there is what has to put it back on the next load.
  */
 public final class MapIconReseater implements EveryFrameScript {
 

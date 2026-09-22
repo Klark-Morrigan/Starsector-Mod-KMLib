@@ -10,8 +10,12 @@ package kmlib.starsector.ui.map.icons;
  */
 enum ReseatObservation {
 
-    /** The previous advance took the entity out, and it is not in its location. */
+    /** The entity is out of its location and the widget has dropped its icon, or no map is up. */
     PUT_BACK_OWED,
+
+    /** The entity is out of its location and the widget still shows its icon: no frame has rendered
+     * without it yet. */
+    ICON_NOT_YET_DROPPED,
 
     /** The previous advance took the entity out, and something else has already put it back. */
     ENTITY_RESTORED_WHILE_OUT,

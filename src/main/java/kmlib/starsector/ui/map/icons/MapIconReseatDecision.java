@@ -18,10 +18,19 @@ import java.util.stream.Collectors;
  * drawn beneath the fog, and there is no published call that says otherwise or moves it.
  *
  * <p>Insertion order is reachable all the same. An icon missing from one rendered frame is dropped
- * from the widget's map, and a re-added entity re-enters at the tail. Removing on one advance and
- * adding back on the next therefore lifts the icon past everything seeded on open - and no further,
- * the widget walking terrain-tagged icons and the rest in separate passes that no insertion order
- * crosses.
+ * from the widget's map, and a re-added entity re-enters at the tail. Removing the entity and adding
+ * it back once the widget has dropped its icon therefore lifts the icon past everything seeded on
+ * open - and no further, the widget walking terrain-tagged icons and the rest in separate passes
+ * that no insertion order crosses.
+ *
+ * <p>The put-back waits for the drop rather than for the next advance, because an advance is not a
+ * frame. The campaign advances its scripts once per rendered frame ordinarily and several times per
+ * frame under its speed-up, which a player can leave toggled on with a map open - and a removal and
+ * a put-back landing in one frame leave the widget nothing to drop, so the icon stays where it was
+ * seeded however often the lift is tried. Reading the placement while the entity is out is what
+ * tells the frame that rendered without it from the advances that merely passed. The wait is
+ * bounded by {@link #MAX_ADVANCES_DETACHED}, and ends at once when the map goes down, so a map that
+ * is not rendering cannot keep the entity out.
  *
  * <p>It acts on where the icon <em>is</em> rather than on an event that would have moved it. The
  * obvious trigger is the edge into "a map is showing", the map being seeded per open - but that is a
@@ -60,6 +69,15 @@ final class MapIconReseatDecision {
     // not taken by then is a build this no longer fits rather than a slow frame.
     static final int MAX_ATTEMPTS = 4;
 
+    // How many advances the entity may spend out of its location waiting for the widget to drop its
+    // icon before it is put back regardless. The drop shows on the first advance after the frame
+    // that rendered without the entity, so the wait is as many advances as the campaign runs per
+    // frame: one ordinarily, its speed-up multiplier under the speed-up toggle. Well above any
+    // multiplier a player sets, since a put-back that came too early is a lift that did nothing;
+    // low enough that a map which has stopped rendering costs the entity a blink rather than a
+    // stretch.
+    static final int MAX_ADVANCES_DETACHED = 16;
+
     // How many advances in a row a showing map may leave the icon unplaceable, with the entity in
     // its location, before that is reported as the two reads disagreeing: one says a map this cares
     // about is up, the other finds no icon for the entity in whatever widget it reached. Well above
@@ -68,9 +86,10 @@ final class MapIconReseatDecision {
     // report per open that fired on the ordinary case would be noise nobody reads.
     static final int UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT = 30;
 
-    // How many of the latest readings are kept for the stand-down report. A lift is two advances -
-    // out, then back - so this holds every advance of the attempts the bound allows, with room for
-    // the reads between them.
+    // How many of the latest readings are kept for the stand-down report. A lift is at least two
+    // advances - out, then back - so this holds every advance of the attempts the bound allows when
+    // each drop shows at once, and the tail of them when the waits run longer, which is the end a
+    // report wants either way.
     static final int RECENT_READINGS_CAPACITY = 12;
 
     // The readings behind the latest advances that had a map to read or a put-back to order, oldest
@@ -82,10 +101,14 @@ final class MapIconReseatDecision {
     // of them reads as the frames nothing was recorded on.
     private long advanceCount;
 
-    // Whether the previous advance took the entity out and is owed the put-back. One advance is the
-    // entire window, and deliberately so: it exists only so that exactly one frame renders without
-    // the icon, which is what drops it from the widget's map.
+    // Whether the entity is out of its location and owed the put-back. Held for as long as the
+    // widget still shows the icon, bounded, since the window exists only so that one frame renders
+    // without the icon - which is what drops it from the widget's map - and an advance is not a
+    // frame.
     private boolean isEntityDetached;
+
+    // Advances the entity has spent out on the current lift, against the bound above.
+    private int advancesDetached;
 
     // Lifts attempted since the icon was last seen clear. Reset by that sighting rather than by a
     // put-back, so what is counted is attempts that achieved nothing.
@@ -176,7 +199,7 @@ final class MapIconReseatDecision {
      * consumed the moment the next advance asks, while the caller's - the entity and the location
      * owed it - is held until the move is made. A fault in between leaves the caller holding an
      * entity no later advance has any reason to put back, and only the caller can tell that state
-     * from the ordinary one frame it spends out.
+     * from the ordinary advances it spends out waiting for the widget to drop its icon.
      *
      * @return whether a removal is still awaiting its put-back
      */
@@ -221,13 +244,7 @@ final class MapIconReseatDecision {
             BooleanSupplier isEntityPresent) {
 
         if (isEntityDetached) {
-            isEntityDetached = false;
-            // Put back regardless of what the map is doing now. The removal is a means, never a
-            // state to leave standing: a map closed mid-sequence would otherwise strand the entity
-            // out of its location until whatever put it there runs again.
-            return isEntityPresent.getAsBoolean()
-                ? recordReading(ReseatObservation.ENTITY_RESTORED_WHILE_OUT, ReseatAction.NONE)
-                : recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+            return decidePutBack(isMapShowing, readIconLayering, isEntityPresent);
         }
 
         if (hasStoodDown || !isMapShowing) {
@@ -265,7 +282,46 @@ final class MapIconReseatDecision {
             return recordReading(ReseatObservation.ICON_BURIED, ReseatAction.NONE);
         }
         isEntityDetached = true;
+        advancesDetached = 0;
         return recordReading(ReseatObservation.ICON_BURIED, ReseatAction.REMOVE);
+    }
+
+    // What an advance with the entity out owes it: the put-back once the widget has dropped the
+    // icon, at once if the map is down or the wait has run out, and nothing if something else has
+    // already put the entity back.
+    //
+    // The owed state is spent by the asking and re-armed only by a deliberate wait, so a read that
+    // faults here leaves nothing owed - which is what lets the caller holding the entity return it
+    // rather than hold it for an order no later advance would give.
+    private ReseatAction decidePutBack(
+            boolean isMapShowing,
+            Supplier<MapIconLayering> readIconLayering,
+            BooleanSupplier isEntityPresent) {
+
+        isEntityDetached = false;
+
+        if (isEntityPresent.getAsBoolean()) {
+            return recordReading(ReseatObservation.ENTITY_RESTORED_WHILE_OUT, ReseatAction.NONE);
+        }
+        // Put back regardless of the placement once no map is up. The removal is a means, never a
+        // state to leave standing: a map closed mid-sequence would otherwise strand the entity out
+        // of its location until whatever put it there runs again.
+        if (!isMapShowing) {
+            return recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+        }
+        // An icon that can no longer be placed is one the widget has dropped, which is the frame
+        // this waited for; a widget that cannot be read at all answers the same and is put back
+        // for the same reason, nothing further being learnable from waiting.
+        if (readIconLayering.get() == MapIconLayering.UNREADABLE) {
+            return recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+        }
+
+        advancesDetached++;
+        if (advancesDetached >= MAX_ADVANCES_DETACHED) {
+            return recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+        }
+        isEntityDetached = true;
+        return recordReading(ReseatObservation.ICON_NOT_YET_DROPPED, ReseatAction.NONE);
     }
 
     // Keeps the reading behind an action, dropping the oldest once the capacity is reached, and

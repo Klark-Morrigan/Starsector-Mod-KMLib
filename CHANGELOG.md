@@ -15,6 +15,10 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+### Fixed
+
+- **`MapIconReseater` lifts an icon under the campaign's speed-up.** The put-back waits until the map widget has dropped the icon rather than for the next advance, because an advance is not a frame: with the speed-up toggled on the campaign advances its scripts several times per rendered frame, map open or not, so a removal and a put-back on consecutive advances landed in one frame, the widget never rendered without the icon, and the lift was repeated until abandoned - leaving every layer under the nebulae for the session, on every open, with a save reload and a Starscape toggle both unable to move it. The wait ends at once when the map goes down and after `MAX_ADVANCES_DETACHED` advances regardless, so a map that is not rendering cannot keep the entity out.
+
 ### Added
 
 - **`VerticalRadioSpec`**: a column of option cells stacked top to bottom, one lit - the shape an option set of more than two or three reads as, where the same options laid across a row letter too narrow to tell apart. Carries no segment sizing and no trailing caption, both being row-only.
