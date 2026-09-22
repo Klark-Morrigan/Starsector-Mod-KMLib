@@ -281,14 +281,14 @@ public final class CompatibilityNoticePanel {
 
                 // Read before it is claimed: a consumed event refuses its value, and the read is
                 // the one thing this needs from it.
-                var isEscape = event.isKeyDownEvent() && event.getEventValue() == Keyboard.KEY_ESCAPE;
+                var isDismissRequested = event.isKeyDownEvent() && isDismissKey(event.getEventValue());
 
                 // Claimed whether or not it dismisses: the screen underneath is stood down for as
                 // long as the notice is up, which is what makes it read as a modal rather than as
                 // something drawn over a map still taking clicks.
                 event.consume();
 
-                if (isEscape) {
+                if (isDismissRequested) {
                     dismissNotice();
                     return;
                 }
@@ -301,6 +301,16 @@ public final class CompatibilityNoticePanel {
             if (buttonId == CONFIRM_BUTTON_ID) {
                 dismissNotice();
             }
+        }
+
+        // Which keys take a one-button notice off the screen. The game's own binds both its
+        // keyboard confirm and its keyboard cancel to the single option, so enter and escape both
+        // dismiss; space is the third a player reaches for without being told.
+        private boolean isDismissKey(int keyCode) {
+
+            return keyCode == Keyboard.KEY_ESCAPE
+                || keyCode == Keyboard.KEY_RETURN
+                || keyCode == Keyboard.KEY_SPACE;
         }
     }
 }
