@@ -70,5 +70,8 @@ public record CompatibilityNoticeLine(
 
         /** Warned with: what went wrong, what it costs, or what the player has to do about it. */
         WARNING,
+
+        /** Set at ease: what goes on working regardless. */
+        REASSURANCE,
     }
 }

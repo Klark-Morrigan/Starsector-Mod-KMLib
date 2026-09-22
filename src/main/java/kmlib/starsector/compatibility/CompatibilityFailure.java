@@ -202,7 +202,10 @@ public record CompatibilityFailure(
         // still works. A row reading "No effect: -" claims less than no row at all and takes as
         // much of the player's eye.
         if (consumer.hasUnaffectedFeature()) {
-            rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_NO_EFFECT, consumer.unaffectedFeature()));
+            rows.add(buildEmphasisedRow(
+                KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_NO_EFFECT,
+                consumer.unaffectedFeature(),
+                Emphasis.REASSURANCE));
         }
 
         return rows;
