@@ -58,19 +58,24 @@ public final class ModalOverlays {
     }
 
     /**
-     * What the overlay holding the screen is doing, or nothing where none is.
+     * What the overlay on screen is doing, or nothing where none is.
      *
-     * <p>The first raised reading wins where two are up, which is the one raised first: an overlay
+     * <p>An overlay counts while it is still fading as well as while it holds the screen, so that
+     * whatever rides its fade has a curve to ride all the way down. A reading is asked each time
+     * rather than believed once, so a panel that has come down but not yet handed its reading back
+     * reports itself gone.
+     *
+     * <p>The first showing reading wins where two are up, which is the one raised first: an overlay
      * over another is the second's problem to stand aside for, not this read's to arbitrate.
      *
-     * @return the raised overlay's presence, or {@link OverlayPresence#NONE}
+     * @return the showing overlay's presence, or {@link OverlayPresence#NONE}
      */
-    public static OverlayPresence resolveRaisedPresence() {
+    public static OverlayPresence resolveShowingPresence() {
 
         for (var presence : RAISED_OVERLAYS) {
             var reading = presence.get();
 
-            if (reading.isRaised()) {
+            if (reading.isShowing()) {
                 return reading;
             }
         }
