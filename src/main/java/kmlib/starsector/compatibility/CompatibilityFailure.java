@@ -59,9 +59,11 @@ public record CompatibilityFailure(
         Objects.requireNonNull(
             subject,
             "A failure with no subject would report that something broke and not whose.");
+
         Objects.requireNonNull(
             consumer,
             "A failure with no consumer could not say whose feature the binding cost.");
+
         Objects.requireNonNull(
             breakage,
             "A failure with no breakage leaves the log with nothing to diagnose from.");
@@ -173,19 +175,28 @@ public record CompatibilityFailure(
     public List<CompatibilityNoticeLine> describeRowsForPlayer() {
 
         var unknownVersion = describeUnknownVersion();
-
         var rows = new ArrayList<CompatibilityNoticeLine>();
+
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, describeMod()));
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INTEGRATION, consumer.consumerKey()));
+
         rows.add(buildRow(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_TARGETED,
             subject.describeBuiltAgainstVersion(unknownVersion)));
+
         rows.add(buildRow(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_DETECTED,
             subject.describeInstalledVersion(unknownVersion)));
+
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_BROKEN, breakage.brokenDetail()));
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_FAILED_WHILE, breakage.failureSite()));
-        rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_EFFECT, consumer.lostFeature()));
+
+        // The two rows a player actually weighs, and the only two that are not neutral: what is
+        // lost warns, what is not is the one line of good news in the notice.
+        rows.add(buildEmphasisedRow(
+            KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_EFFECT,
+            consumer.lostFeature(),
+            Emphasis.WARNING));
 
         // Left out rather than filled with a stand-in where the consumer said nothing about what
         // still works. A row reading "No effect: -" claims less than no row at all and takes as
@@ -263,6 +274,17 @@ public record CompatibilityFailure(
     private static CompatibilityNoticeLine buildRow(String rowKey, String rowValue) {
 
         return buildLine(KmlibStringKeys.format(rowKey, rowValue), bringForward(rowValue));
+    }
+
+    // The same, where the row's value stands out as something other than a plain answer.
+    private static CompatibilityNoticeLine buildEmphasisedRow(
+            String rowKey,
+            String rowValue,
+            Emphasis emphasis) {
+
+        return buildLine(
+            KmlibStringKeys.format(rowKey, rowValue),
+            new EmphasisedRun(rowValue, emphasis));
     }
 
     // One line and the runs of it that stand out, which must be given in the order they appear.

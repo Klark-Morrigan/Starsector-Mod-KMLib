@@ -33,6 +33,7 @@ public record CompatibilityNoticeLine(
         KmlibStrings.requireText(
             lineText,
             "A notice line with no wording would take a player's eye and tell them nothing.");
+
         Objects.requireNonNull(
             emphasisedRuns,
             "A notice line with no run list could not say which of it stands out.");
@@ -67,7 +68,7 @@ public record CompatibilityNoticeLine(
         /** Brought forward: a name, a version, or the place to look. */
         HIGHLIGHT,
 
-        /** Warned with: what went wrong, or what the player has to do about it. */
-        WARNING
+        /** Warned with: what went wrong, what it costs, or what the player has to do about it. */
+        WARNING,
     }
 }
