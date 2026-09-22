@@ -33,6 +33,11 @@ class MapIconReseatDecisionTest {
     private static final Supplier<MapIconLayering> ICON_CLEAR = () -> MapIconLayering.CLEAR_OF_NEBULAE;
     private static final Supplier<MapIconLayering> ICON_UNPLACEABLE = () -> MapIconLayering.UNREADABLE;
 
+    // Faults if it is asked, so a case that must not read the placement says so by construction.
+    private static final Supplier<MapIconLayering> PLACEMENT_NOT_TO_BE_READ = () -> {
+        throw new AssertionError("the placement must not be read on this advance");
+    };
+
     private static final boolean MAP_SHOWING = true;
     private static final boolean NO_MAP_SHOWING = false;
 
@@ -64,13 +69,80 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void addsTheEntityBackOnTheVeryNextAdvance() {
-            // One advance out and no more: the absence exists only so a single rendered frame drops
-            // the icon, and every further frame without it is a frame the entity does not draw.
+        void addsTheEntityBackOnceTheWidgetHasDroppedItsIcon() {
+            // An icon that can no longer be placed is one a frame rendered without, which is the
+            // whole of what the absence exists for; every further advance without the entity is one
+            // it does not draw.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.decideReseatAction(
+                    MAP_SHOWING,
+                    ICON_UNPLACEABLE,
+                    ENTITY_ABSENT))
+                .isEqualTo(ReseatAction.ADD);
+        }
+
+        @Test
+        void keepsTheEntityOutWhileTheWidgetStillShowsItsIcon() {
+            // An advance is not a frame. Under the campaign's speed-up several advances pass per
+            // rendered frame, and a put-back ordered on the next advance lands in the frame the
+            // removal did - the widget then never renders without the icon and drops nothing, so
+            // the lift is repeated until it is abandoned. The regression a whole class of reports
+            // came down to.
             var reseatDecision = new MapIconReseatDecision();
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
 
             assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT))
+                .isEqualTo(ReseatAction.NONE);
+        }
+
+        @Test
+        void liftsUnderSeveralAdvancesPerFrameByWaitingForTheDrop() {
+            // Two advances per frame: the removal on the first, the icon still seeded on the second,
+            // dropped on the first advance of the next frame, and the put-back then re-seeds it at
+            // the tail - clear on the advance after that.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT))
+                .isEqualTo(ReseatAction.NONE);
+            assertThat(reseatDecision.isPutBackOwed())
+                .isFalse();
+        }
+
+        @Test
+        void addsTheEntityBackOnceTheWaitForTheDropRunsOut() {
+            // A map that has stopped rendering never drops the icon, and the entity must not stay
+            // out for as long as that lasts. Pinned from both sides: one advance short still waits.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            for (var advance = 0; advance < MapIconReseatDecision.MAX_ADVANCES_DETACHED - 1; advance++) {
+                assertThat(reseatDecision.decideReseatAction(
+                        MAP_SHOWING,
+                        ICON_BURIED,
+                        ENTITY_ABSENT))
+                    .isEqualTo(ReseatAction.NONE);
+            }
+
+            assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT))
+                .isEqualTo(ReseatAction.ADD);
+        }
+
+        @Test
+        void addsTheEntityBackWithoutReadingThePlacementOnceTheMapIsDown() {
+            // With no map up there is no widget to wait on, and the read behind the placement
+            // walks a live tree that is not there.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.decideReseatAction(
+                    NO_MAP_SHOWING,
+                    PLACEMENT_NOT_TO_BE_READ,
+                    ENTITY_ABSENT))
                 .isEqualTo(ReseatAction.ADD);
         }
 
@@ -93,7 +165,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
 
             assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT))
@@ -288,10 +360,23 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
 
             assertThat(reseatDecision.isPutBackOwed())
                 .isFalse();
+        }
+
+        @Test
+        void isPutBackOwedStaysTrueWhileTheWidgetStillShowsTheIcon() {
+            // A wait is a removal still in progress, so the caller holding the entity must keep
+            // holding it rather than return it early and undo the lift.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.isPutBackOwed())
+                .isTrue();
         }
     }
 
@@ -517,6 +602,19 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
+        void describesAWaitAsTheIconNotYetDropped() {
+            // The reading that tells several advances per frame from a lift that never takes: the
+            // entity is out and the widget still shows the icon.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.describeRecentReadings())
+                .isEqualTo("[#1 ICON_BURIED -> REMOVE, #2 ICON_NOT_YET_DROPPED -> NONE]");
+        }
+
+        @Test
         void recordsNothingOnAnOrdinaryFrameButCountsIt() {
             // The frame with no map up is nearly every frame and says nothing, but it still counts,
             // so a gap in the numbering reads as the frames between two opens.
@@ -559,12 +657,12 @@ class MapIconReseatDecisionTest {
         }
     }
 
-    // Runs whole lift cycles - out on one advance, back on the next - that never clear the fog, which
-    // is the sequence the attempt bound is about.
+    // Runs whole lift cycles - out on one advance, the icon dropped and the entity back on the next
+    // - that never clear the fog, which is the sequence the attempt bound is about.
     private static void driveFailedLifts(MapIconReseatDecision reseatDecision, int liftCount) {
         for (var lift = 0; lift < liftCount; lift++) {
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
         }
     }
 

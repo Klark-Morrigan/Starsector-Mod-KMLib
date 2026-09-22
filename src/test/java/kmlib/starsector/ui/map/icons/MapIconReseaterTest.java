@@ -43,6 +43,14 @@ class MapIconReseaterTest {
     private static final Function<SectorEntityToken, MapIconLayering> ICON_BURIED =
         entity -> MapIconLayering.BURIED_UNDER_NEBULAE;
 
+    // The placement as the live widget reports it one frame on: buried while the entity is in its
+    // location, and unplaceable once it is out - the script hands the read no entity then, exactly
+    // as the live probe answers for none.
+    private static final Function<SectorEntityToken, MapIconLayering> ICON_BURIED_UNTIL_THE_ENTITY_IS_OUT =
+        entity -> entity == null
+            ? MapIconLayering.UNREADABLE
+            : MapIconLayering.BURIED_UNDER_NEBULAE;
+
     // Faults if it is asked, so a case that must not reach the widget says so by construction rather
     // than in a comment. The read costs a walk into the live tree, and the ordinary campaign frame -
     // which is nearly every frame - must not pay for one.
@@ -56,7 +64,7 @@ class MapIconReseaterTest {
     class Advance {
 
         @Test
-        void takesTheEntityOutAndPutsItBackOnTheNextAdvance() {
+        void takesTheEntityOutAndPutsItBackOnceTheWidgetHasDroppedItsIcon() {
             // The whole point of the script: one rendered frame without the icon drops it from the
             // widget's map, and the re-add puts it back at the tail of the draw order.
             var locationMock = mock(LocationAPI.class);
@@ -69,7 +77,7 @@ class MapIconReseaterTest {
             var reseater = new MapIconReseater(
                 MAP_SHOWING,
                 buildEntityReadThatEmptiesOnRemovalFrom(locationMock, entityMock),
-                ICON_BURIED);
+                ICON_BURIED_UNTIL_THE_ENTITY_IS_OUT);
 
             reseater.advance(ONE_FRAME);
             reseater.advance(ONE_FRAME);
@@ -81,6 +89,26 @@ class MapIconReseaterTest {
                 .removeEntity(entityMock);
             moveOrder
                 .verify(locationMock)
+                .addEntity(entityMock);
+        }
+
+        @Test
+        void keepsTheEntityOutWhileTheWidgetStillShowsItsIcon() {
+            // The campaign advances several times per rendered frame under its speed-up. A put-back
+            // on the next advance would then land in the frame the removal did, and the widget would
+            // render with the icon throughout - the lift undone before it could take.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                buildEntityReadThatEmptiesOnRemovalFrom(locationMock, entityMock),
+                ICON_BURIED);
+
+            reseater.advance(ONE_FRAME);
+            reseater.advance(ONE_FRAME);
+
+            verify(locationMock, never())
                 .addEntity(entityMock);
         }
 
@@ -97,7 +125,10 @@ class MapIconReseaterTest {
             Supplier<SectorEntityToken> findEntityWhileItIsIn = () ->
                 entityMock.getContainingLocation() == null ? null : entityMock;
 
-            var reseater = new MapIconReseater(MAP_SHOWING, findEntityWhileItIsIn, ICON_BURIED);
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                findEntityWhileItIsIn,
+                ICON_BURIED_UNTIL_THE_ENTITY_IS_OUT);
             reseater.advance(ONE_FRAME);
 
             when(entityMock.getContainingLocation())
