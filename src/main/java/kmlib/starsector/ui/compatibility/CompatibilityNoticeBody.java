@@ -75,9 +75,12 @@ final class CompatibilityNoticeBody {
 
         addNoticeLine(box, failure.describeHeadingForPlayer(), 0f);
 
-        var diagnosis = failure.describeDiagnosisForPlayer();
-        if (diagnosis != null) {
-            addNoticeLine(box, diagnosis, PARAGRAPH_GAP);
+        // The lead of a diagnosis opens a paragraph; the cases under it are a list within it.
+        var gapAboveDiagnosisLine = PARAGRAPH_GAP;
+
+        for (var diagnosisLine : failure.describeDiagnosisForPlayer()) {
+            addNoticeLine(box, diagnosisLine, gapAboveDiagnosisLine);
+            gapAboveDiagnosisLine = ROW_GAP;
         }
 
         var gapAboveRow = PARAGRAPH_GAP;
@@ -104,7 +107,7 @@ final class CompatibilityNoticeBody {
      *                     resized window moves the fill with it
      * @param alphaMult    the fade the panel is being drawn at
      */
-    static void renderFills(PositionAPI boxPlacement, float alphaMult) {
+    static void renderFills(PositionAPI boxPlacement, float boxPadding, float alphaMult) {
 
         UiFill.renderQuad(
             VanillaScreen.resolveScreenBox(),
@@ -112,8 +115,10 @@ final class CompatibilityNoticeBody {
 
         if (boxPlacement != null) {
 
+            // Grown by the padding the text is inset by, so the fill reaches the frame around it
+            // rather than stopping where the words do and leaving a ring of the map showing.
             UiFill.renderQuad(
-                VanillaPositions.toRectangle(boxPlacement),
+                VanillaPositions.toRectangle(boxPlacement).computeInsetBox(-boxPadding),
                 new UiElementPaint(StarsectorUiColour.BLACK.resolve(), BOX_ALPHA * alphaMult));
         }
     }
@@ -136,8 +141,10 @@ final class CompatibilityNoticeBody {
     // What each kind of emphasis is tinted. The one place a colour is put to a kind.
     private static Color resolveEmphasisColour(CompatibilityNoticeLine.Emphasis emphasis) {
 
-        return emphasis == CompatibilityNoticeLine.Emphasis.WARNING
-            ? StarsectorUiColour.VANILLA_HIGHLIGHT_RED.resolve()
-            : StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve();
+        return switch (emphasis) {
+            case WARNING -> StarsectorUiColour.VANILLA_HIGHLIGHT_RED.resolve();
+            case REASSURANCE -> StarsectorUiColour.VANILLA_HIGHLIGHT_GREEN.resolve();
+            case HIGHLIGHT -> StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve();
+        };
     }
 }

@@ -41,19 +41,8 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_TITLE_ERROR = "compatibility_notice_title_error";
 
     /**
-     * What the player can do about it, where the installed version could not be read. Five slots:
-     * the third party, the update phrase below, the targeted version, the consuming mod, and the
-     * downgrade-or-wait phrase below.
-     *
-     * <p>Both directions in one sentence, because with one version unread nothing said of either
-     * alone would be true of both cases.
-     */
-    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_VERSION =
-        "compatibility_notice_diagnosis_unknown_version";
-
-    /**
-     * What the player can do about it, where the install is behind the build. Three slots: the
-     * third party, the update phrase below, the targeted version.
+     * What the player can do about it, where the install is behind the build. Two slots: the third
+     * party, the update phrase below.
      */
     public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_OLDER_VERSION =
         "compatibility_notice_diagnosis_older_version";
@@ -66,7 +55,51 @@ public final class KmlibStringKeys {
         "compatibility_notice_diagnosis_newer_version";
 
     /**
-     * The phrase a diagnosis states the update with, which is the run of it that warns. No slots.
+     * The line opening the diagnosis where the installed version could not be read. One slot: the
+     * third party.
+     *
+     * <p>Three lines rather than one sentence, because with one version unread both directions are
+     * live at once and a sentence carrying both reads as a single tangled claim. A lead and two
+     * cases under it say the same thing as a choice the player can scan.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_VERSION =
+        "compatibility_notice_diagnosis_unknown_version";
+
+    /**
+     * The first of the two cases under that lead. Two slots: the too-old phrase below, then the
+     * update phrase below.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_OLDER =
+        "compatibility_notice_diagnosis_unknown_older";
+
+    /**
+     * The second of the two cases under that lead. Four slots: the carries-changes phrase below,
+     * the consuming mod, the depends-on phrase below, then the downgrade-or-wait phrase below.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_NEWER =
+        "compatibility_notice_diagnosis_unknown_newer";
+
+    /** The phrase naming the install as behind, which is a run that warns. No slots. */
+    public static final String COMPATIBILITY_NOTICE_PHRASE_TOO_OLD = "compatibility_notice_phrase_too_old";
+
+    /** The phrase naming the install as ahead, which is a run that warns. No slots. */
+    public static final String COMPATIBILITY_NOTICE_PHRASE_CARRIES_CHANGES =
+        "compatibility_notice_phrase_carries_changes";
+
+    /**
+     * The phrase closing that one, after the consuming mod is named. No slots.
+     *
+     * <p>Its own key because the mod it names is brought forward between the two halves, so the
+     * warning around it is two runs rather than one.
+     */
+    public static final String COMPATIBILITY_NOTICE_PHRASE_DEPENDS_ON = "compatibility_notice_phrase_depends_on";
+
+    /**
+     * The phrase a diagnosis states the update with, which is the run of it that warns. One slot:
+     * the targeted version.
+     *
+     * <p>The version is inside the warned run rather than brought forward beside it, so the whole
+     * instruction reads as one thing the player has to act on.
      */
     public static final String COMPATIBILITY_NOTICE_ACTION_UPDATE = "compatibility_notice_action_update";
 
@@ -122,7 +155,7 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_ROW_FAILED_WHILE = "compatibility_notice_row_failed_while";
 
     /**
-     * The row naming what the player loses. One slot: the consumer's own sentence.
+     * The row naming what the player loses. One slot: the consumer's own sentence, warned with.
      *
      * <p>That sentence is the caller's to supply, out of its own strings, and is the only part of the
      * notice that is: what a mismatch costs is knowledge of the feature that broke, which lives with
@@ -132,7 +165,8 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_ROW_EFFECT = "compatibility_notice_row_effect";
 
     /**
-     * The row naming what goes on working. One slot: the consumer's own sentence for it.
+     * The row naming what goes on working. One slot: the consumer's own sentence for it, set at
+     * ease rather than warned with - it is the one row that is good news.
      *
      * <p>Left out of the notice entirely where the consumer supplied none. The sentence is the
      * consumer's for the same reason the lost one is, and more so: the library cannot promise

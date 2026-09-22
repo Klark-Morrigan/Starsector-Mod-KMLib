@@ -117,13 +117,23 @@ each searched from where the last one ended:
 a name brought forward early and appearing again inside a later phrase
 is tinted once for each rather than twice for the first.
 
-The diagnosis is the one piece that varies by what was found.
+The diagnosis is the one line that varies by what was found.
 [`CompatibilitySubject`](CompatibilitySubject.java) reads how the installed version stands to the targeted one -
 behind, ahead, the same, or not comparable -
-and the notice advises an update, a downgrade or a wait, or both where the install could not be read.
-Nothing where the build stamped no target, since every sentence names the release to move to;
+and the notice advises an update where it is behind and a downgrade or a wait where it is ahead.
+Where the version could not be read it runs to three lines instead,
+a lead and the two cases under it,
+because both directions are live at once
+and a sentence carrying both reads as one tangled claim.
+Nothing at all where the build stamped no target, since every sentence names the release to move to;
 and nothing where the two name one release, since neither direction would be true.
 Wording only: nothing gates on the comparison, so a self-report that lies costs a sentence.
+
+What each kind of emphasis means is fixed, and what colour it takes is the surface's.
+A name, a version or the log's own file is brought forward;
+the phrase naming the failure and the instructions for fixing it warn;
+and what goes on working regardless is the one run set at ease,
+so the good news and the bad do not read as one list the eye has to parse.
 
 ## A binding is a third party and a consumer
 

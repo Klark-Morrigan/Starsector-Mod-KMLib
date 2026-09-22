@@ -147,36 +147,38 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void advisesAnUpdateWhereTheInstallIsBehindTheBuild() {
+        void advisesAnUpdateOnOneLineWhereTheInstallIsBehindTheBuild() {
 
+            // One line, because the version was read and there is one thing to say.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8");
 
-            assertThat(failure.describeDiagnosisForPlayer().lineText())
-                .isEqualTo("diagnose-older{Fast Rendering|do-update|0.9.1}");
+            assertThat(failure.describeDiagnosisForPlayer())
+                .extracting(CompatibilityNoticeLine::lineText)
+                .containsExactly("diagnose-older{Fast Rendering|do-update{0.9.1}}");
         }
 
         @Test
-        void warnsOnTheUpdatePhraseAloneWhereTheInstallIsBehind() {
+        void warnsOnTheWholeUpdateInstructionWhereTheInstallIsBehind() {
 
-            // The names and the version are brought forward; only the instruction warns. Listed in
-            // the order they appear, which is what the engine matches them in.
+            // The version is inside the warned run rather than brought forward beside it, so the
+            // instruction reads as one thing to act on.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8");
 
-            assertThat(failure.describeDiagnosisForPlayer().emphasisedRuns())
+            assertThat(failure.describeDiagnosisForPlayer().get(0).emphasisedRuns())
                 .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
                 .containsExactly(
                     tuple("Fast Rendering", Emphasis.HIGHLIGHT),
-                    tuple("do-update", Emphasis.WARNING),
-                    tuple("0.9.1", Emphasis.HIGHLIGHT));
+                    tuple("do-update{0.9.1}", Emphasis.WARNING));
         }
 
         @Test
-        void advisesADowngradeOrAWaitWhereTheInstallIsAheadOfTheBuild() {
+        void advisesADowngradeOrAWaitOnOneLineWhereTheInstallIsAhead() {
 
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
-            assertThat(failure.describeDiagnosisForPlayer().lineText())
-                .isEqualTo("diagnose-newer{Fast Rendering|" + MOD_ID
+            assertThat(failure.describeDiagnosisForPlayer())
+                .extracting(CompatibilityNoticeLine::lineText)
+                .containsExactly("diagnose-newer{Fast Rendering|" + MOD_ID
                     + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}");
         }
 
@@ -188,7 +190,7 @@ final class CompatibilityFailureTest {
             // in order, which is what keeps the engine matching the early ones first.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
-            assertThat(failure.describeDiagnosisForPlayer().emphasisedRuns())
+            assertThat(failure.describeDiagnosisForPlayer().get(0).emphasisedRuns())
                 .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
                 .containsExactly(
                     tuple("Fast Rendering", Emphasis.HIGHLIGHT),
@@ -197,30 +199,37 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void advisesBothWaysWhereTheInstalledVersionCouldNotBeRead() {
+        void advisesBothCasesUnderALeadWhereTheInstalledVersionCouldNotBeRead() {
 
-            // Both directions in one sentence: with one version unread, nothing said of either
-            // alone would be true of both cases.
+            // Three lines: both directions are live at once, and a sentence carrying both reads as
+            // one tangled claim where a lead and two cases read as a choice.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
 
-            assertThat(failure.describeDiagnosisForPlayer().lineText())
-                .isEqualTo("diagnose-unknown{Fast Rendering|do-update|0.8.8|" + MOD_ID
-                    + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}");
+            assertThat(failure.describeDiagnosisForPlayer())
+                .extracting(CompatibilityNoticeLine::lineText)
+                .containsExactly(
+                    "diagnose-unknown{Fast Rendering}",
+                    "case-older{is-old|do-update{0.8.8}}",
+                    "case-newer{is-new|" + MOD_ID + "|needs-it|do-choose{Fast Rendering|0.8.8|"
+                        + MOD_ID + "}}");
         }
 
         @Test
-        void warnsOnBothInstructionsWhereTheInstalledVersionCouldNotBeRead() {
+        void warnsOnEachCaseAndBringsOnlyTheNamesForward() {
 
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
+            var diagnosis = failure.describeDiagnosisForPlayer();
 
-            assertThat(failure.describeDiagnosisForPlayer().emphasisedRuns())
+            assertThat(diagnosis.get(0).emphasisedRuns())
+                .extracting(EmphasisedRun::emphasis)
+                .containsExactly(Emphasis.HIGHLIGHT);
+            assertThat(diagnosis.get(1).emphasisedRuns())
+                .extracting(EmphasisedRun::emphasis)
+                .containsExactly(Emphasis.WARNING, Emphasis.WARNING);
+            assertThat(diagnosis.get(2).emphasisedRuns())
                 .extracting(EmphasisedRun::emphasis)
                 .containsExactly(
-                    Emphasis.HIGHLIGHT,
-                    Emphasis.WARNING,
-                    Emphasis.HIGHLIGHT,
-                    Emphasis.HIGHLIGHT,
-                    Emphasis.WARNING);
+                    Emphasis.WARNING, Emphasis.HIGHLIGHT, Emphasis.WARNING, Emphasis.WARNING);
         }
 
         @Test
@@ -230,7 +239,7 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions(null, "v0.9.1");
 
             assertThat(failure.describeDiagnosisForPlayer())
-                .isNull();
+                .isEmpty();
         }
 
         @Test
@@ -241,7 +250,7 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8");
 
             assertThat(failure.describeDiagnosisForPlayer())
-                .isNull();
+                .isEmpty();
         }
     }
 
@@ -273,16 +282,35 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void bringsEachRowsValueForwardAndWarnsOnNone() {
+        void standsExactlyOneRunOutPerRow() {
 
             // A row's label says what it is and every notice carries the same ones; what differs
             // between two notices is the value, so that is the only run of a row that stands out.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeRowsForPlayer())
-                .allSatisfy(row -> assertThat(row.emphasisedRuns())
-                    .extracting(EmphasisedRun::emphasis)
-                    .containsExactly(Emphasis.HIGHLIGHT));
+                .allSatisfy(row -> assertThat(row.emphasisedRuns()).hasSize(1));
+        }
+
+        @Test
+        void warnsOnWhatIsLostAndSetsAtEaseOnWhatIsNot() {
+
+            // The two rows a player actually weighs. Read as one gold list, the good news and the
+            // bad look alike and the eye has to read both to tell which is which.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+            var rows = failure.describeRowsForPlayer();
+
+            assertThat(rows)
+                .extracting(row -> row.emphasisedRuns().get(0).emphasis())
+                .containsExactly(
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.WARNING,
+                    Emphasis.REASSURANCE);
         }
 
         @Test

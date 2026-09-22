@@ -81,13 +81,11 @@ public record CompatibilityFailure(
         paragraphs.add(describeHeadingForPlayer().lineText());
 
         var diagnosis = describeDiagnosisForPlayer();
-        if (diagnosis != null) {
-            paragraphs.add(diagnosis.lineText());
+        if (!diagnosis.isEmpty()) {
+            paragraphs.add(joinLines(diagnosis));
         }
 
-        paragraphs.add(String.join(
-            ROW_BREAK,
-            describeRowsForPlayer().stream().map(CompatibilityNoticeLine::lineText).toList()));
+        paragraphs.add(joinLines(describeRowsForPlayer()));
         paragraphs.add(describeClosingForPlayer().lineText());
 
         return String.join(PARAGRAPH_BREAK, paragraphs);
@@ -106,7 +104,10 @@ public record CompatibilityFailure(
 
         return buildLine(
             KmlibStringKeys.format(
-                KmlibStringKeys.COMPATIBILITY_NOTICE_TITLE, failurePhrase, modName, subject.name()),
+                KmlibStringKeys.COMPATIBILITY_NOTICE_TITLE,
+                failurePhrase,
+                modName,
+                subject.name()),
             warn(failurePhrase),
             bringForward(modName),
             bringForward(subject.name()));
@@ -117,53 +118,57 @@ public record CompatibilityFailure(
      * one: update where it is behind, downgrade or wait where it is ahead, and both where it could
      * not be read.
      *
-     * <p>Nothing where the build stamped no target, since every sentence names the release to move
-     * to; and nothing where the two name one release, since neither direction is true and a
-     * sentence saying so would be a guess dressed as advice.
+     * <p>Where it could not be read the answer runs to three lines - a lead and the two cases under
+     * it - because both directions are live at once and a sentence carrying both reads as one
+     * tangled claim. Where a version was read it is a single line, there being one thing to say.
      *
-     * @return the diagnosis, or {@code null} where none can be given
+     * <p>Empty where the build stamped no target, since every sentence names the release to move
+     * to; and empty where the two name one release, since neither direction is true and a sentence
+     * saying so would be a guess dressed as advice.
+     *
+     * @return the diagnosis in reading order, empty where none can be given
      */
-    public CompatibilityNoticeLine describeDiagnosisForPlayer() {
+    public List<CompatibilityNoticeLine> describeDiagnosisForPlayer() {
 
         if (!subject.hasBuiltAgainstVersion()) {
-            return null;
+            return List.of();
         }
 
         var targeted = subject.describeBuiltAgainstVersion(describeUnknownVersion());
         var modName = describeModName();
-        var updatePhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_UPDATE);
+
+        var updatePhrase = KmlibStringKeys.format(
+            KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_UPDATE,
+            targeted);
+
         var choicePhrase = KmlibStringKeys.format(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_DOWNGRADE_OR_WAIT,
-            subject.name(), targeted, modName);
+            subject.name(),
+            targeted,
+            modName);
 
         return switch (subject.resolveInstalledVersionRelation()) {
-            case OLDER -> buildLine(
+            case OLDER -> List.of(buildLine(
                 KmlibStringKeys.format(
                     KmlibStringKeys.COMPATIBILITY_NOTICE_DIAGNOSIS_OLDER_VERSION,
-                    subject.name(), updatePhrase, targeted),
+                    subject.name(),
+                    updatePhrase),
                 bringForward(subject.name()),
-                warn(updatePhrase),
-                bringForward(targeted));
+                warn(updatePhrase)));
 
-            case NEWER -> buildLine(
+            case NEWER -> List.of(buildLine(
                 KmlibStringKeys.format(
                     KmlibStringKeys.COMPATIBILITY_NOTICE_DIAGNOSIS_NEWER_VERSION,
-                    subject.name(), modName, choicePhrase),
+                    subject.name(),
+                    modName,
+                    choicePhrase),
                 bringForward(subject.name()),
                 bringForward(modName),
-                warn(choicePhrase));
+                warn(choicePhrase)));
 
-            case UNKNOWN -> buildLine(
-                KmlibStringKeys.format(
-                    KmlibStringKeys.COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_VERSION,
-                    subject.name(), updatePhrase, targeted, modName, choicePhrase),
-                bringForward(subject.name()),
-                warn(updatePhrase),
-                bringForward(targeted),
-                bringForward(modName),
-                warn(choicePhrase));
+            case UNKNOWN -> describeBothDirections(modName, updatePhrase, choicePhrase);
 
-            case SAME -> null;
+            case SAME -> List.of();
         };
     }
 
@@ -257,7 +262,9 @@ public record CompatibilityFailure(
         if (modName != null) {
             named = String.format(NAME_WITH_ID, modName, consumer.modId());
         }
-        return modVersion == null ? named : named + VERSION_SEPARATOR + modVersion;
+        return modVersion == null
+            ? named
+            : named + VERSION_SEPARATOR + modVersion;
     }
 
     /**
@@ -270,13 +277,56 @@ public record CompatibilityFailure(
 
         var modName = InstalledMods.readModName(consumer.modId());
 
-        return modName == null ? consumer.modId() : modName;
+        return modName == null
+            ? consumer.modId()
+            : modName;
+    }
+
+    // The lead and the two cases under it, for an install whose version could not be read. Both
+    // directions are stated because either could be true and nothing here can tell which.
+    private List<CompatibilityNoticeLine> describeBothDirections(
+            String modName,
+            String updatePhrase,
+            String choicePhrase) {
+
+        var tooOldPhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_TOO_OLD);
+        var carriesChangesPhrase =
+            KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_CARRIES_CHANGES);
+
+        var dependsOnPhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_DEPENDS_ON);
+
+        return List.of(
+            buildLine(
+                KmlibStringKeys.format(
+                    KmlibStringKeys.COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_VERSION,
+                    subject.name()),
+                bringForward(subject.name())),
+
+            buildLine(
+                KmlibStringKeys.format(
+                    KmlibStringKeys.COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_OLDER,
+                    tooOldPhrase,
+                    updatePhrase),
+                warn(tooOldPhrase),
+                warn(updatePhrase)),
+
+            buildLine(
+                KmlibStringKeys.format(
+                    KmlibStringKeys.COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_NEWER,
+                    carriesChangesPhrase,
+                    modName,
+                    dependsOnPhrase,
+                    choicePhrase),
+                warn(carriesChangesPhrase),
+                bringForward(modName),
+                warn(dependsOnPhrase),
+                warn(choicePhrase)));
     }
 
     // One row, as the wording its key holds with its value in the slot, the value brought forward.
     private static CompatibilityNoticeLine buildRow(String rowKey, String rowValue) {
 
-        return buildLine(KmlibStringKeys.format(rowKey, rowValue), bringForward(rowValue));
+        return buildEmphasisedRow(rowKey, rowValue, Emphasis.HIGHLIGHT);
     }
 
     // The same, where the row's value stands out as something other than a plain answer.
@@ -288,6 +338,17 @@ public record CompatibilityFailure(
         return buildLine(
             KmlibStringKeys.format(rowKey, rowValue),
             new EmphasisedRun(rowValue, emphasis));
+    }
+
+    // Lines of one block, each on its own row.
+    private static String joinLines(List<CompatibilityNoticeLine> lines) {
+
+        return String.join(
+            ROW_BREAK,
+            lines
+                .stream()
+                .map(CompatibilityNoticeLine::lineText)
+                .toList());
     }
 
     // One line and the runs of it that stand out, which must be given in the order they appear.

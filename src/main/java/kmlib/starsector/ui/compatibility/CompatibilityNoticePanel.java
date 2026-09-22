@@ -6,6 +6,8 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 
+import kmlib.animation.TraverseDurations;
+import kmlib.animation.TraverseFraction;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
@@ -63,12 +65,18 @@ public final class CompatibilityNoticePanel {
     // a widget of the game's, the game publishing one that strokes and none that fills.
     private static final float BORDER_THICKNESS = 2f;
 
-    // What this reports while it is up. No fade, so wholly in place from the frame it is raised:
-    // whatever stands aside for a modal stands aside at once rather than dissolving into it.
-    private static final OverlayPresence FULLY_RAISED = new OverlayPresence(true, 1f);
+    // The pace the game's own prompts arrive and leave at, so two dialogs over one screen move
+    // together and anything riding this fade rides the same curve it rides theirs.
+    private static final TraverseDurations MODAL_DURATIONS = new TraverseDurations(0.3f, 0.2f);
 
     // The reading handed to whatever stands aside for a modal, held so the same one is taken back.
     private final Supplier<OverlayPresence> screenHold = this::resolveScreenPresence;
+
+    // How far onto the screen the notice is painted. Apart from whether it holds the screen,
+    // because the two part company for the length of a fade: input comes back on the press while
+    // the paint runs on, and a notice still dissolving must claim nothing or it eats the click
+    // after it.
+    private final TraverseFraction fadeProgress = new TraverseFraction();
 
     // Where a map was last found, so the panel comes down with the screen it was raised on.
     private final Supplier<Object> resolveShownMapTab;
@@ -78,6 +86,9 @@ public final class CompatibilityNoticePanel {
 
     // Where the layout settled the box, which is what the backdrop is painted against.
     private PositionAPI boxPlacement;
+
+    // Whether the notice holds the screen. Moves on the press, never on the fade.
+    private boolean isRaised;
 
     private CompatibilityNoticePanel(Supplier<Object> resolveShownMapTab) {
 
@@ -123,18 +134,15 @@ public final class CompatibilityNoticePanel {
     }
 
     /**
-     * Takes the notice off the screen, and does nothing where it is already off.
+     * Hands the screen back, leaving the notice to fade from wherever it stands.
+     *
+     * <p>The panel outlives the press for the length of that fall, and claims nothing for it.
+     * Standing aside is what lets whatever thinned itself under the notice come back on the same
+     * curve rather than snapping.
      */
     public void dismissNotice() {
 
-        if (panel == null) {
-            return;
-        }
-        ModalOverlays.releaseScreen(screenHold);
-        CoreUiOverlayPanels.detachOverlayPanel(panel);
-
-        panel = null;
-        boxPlacement = null;
+        isRaised = false;
     }
 
     /**
@@ -174,6 +182,11 @@ public final class CompatibilityNoticePanel {
         }
         placement.inTL(NO_OFFSET, NO_OFFSET);
         panel = newPanel;
+        isRaised = true;
+
+        // Painted at nothing on the frame it is stood up, so the first frame is the start of the
+        // rise rather than a flash of the whole box before the fade has been stepped once.
+        paintFadeOntoPanel();
 
         // Said the moment the panel is up rather than once it is filled: input has to stand down
         // from the first frame, and what fills the box a frame later changes nothing about that.
@@ -182,10 +195,32 @@ public final class CompatibilityNoticePanel {
         return true;
     }
 
+    // Takes the panel off the screen and forgets everything built into it, the fade included: what
+    // comes down here is not fading, it is gone.
+    private void takePanelDown() {
+
+        ModalOverlays.releaseScreen(screenHold);
+        CoreUiOverlayPanels.detachOverlayPanel(panel);
+
+        panel = null;
+        boxPlacement = null;
+        fadeProgress.dropToRest();
+    }
+
+    // Where the paint stands, written onto the panel as its opacity - the one write that fades
+    // every part of the notice together, the engine multiplying it into the alpha it hands each
+    // widget and this plugin's render hook alike.
+    private void paintFadeOntoPanel() {
+
+        panel.setOpacity(fadeProgress.getEasedValue());
+    }
+
     // What this is doing on one frame, for whatever stands aside for a modal.
     private OverlayPresence resolveScreenPresence() {
 
-        return panel == null ? OverlayPresence.NONE : FULLY_RAISED;
+        return panel == null
+            ? OverlayPresence.NONE
+            : new OverlayPresence(isRaised, fadeProgress.getEasedValue());
     }
 
     // Fails closed, the opposite way round from the reads it goes through: a reach that raises
@@ -249,7 +284,7 @@ public final class CompatibilityNoticePanel {
         @Override
         public void renderBelow(float alphaMult) {
 
-            CompatibilityNoticeBody.renderFills(boxPlacement, alphaMult);
+            CompatibilityNoticeBody.renderFills(boxPlacement, BOX_PADDING, alphaMult);
         }
 
         @Override
@@ -259,17 +294,36 @@ public final class CompatibilityNoticePanel {
         @Override
         public void advance(float amount) {
 
+            // A panel this has already let go of, which is what a detach that could not reach the
+            // core UI leaves behind: still advanced by whoever holds it, and no longer ours.
+            if (panel == null) {
+                return;
+            }
+
             // The panel hangs from the core UI, which outlives the screen the notice was raised on,
-            // so leaving that screen has to be noticed rather than waited for.
-            if (panel != null && !isScreenShowing()) {
-                dismissNotice();
+            // so leaving that screen has to be noticed rather than waited for. Down at once rather
+            // than faded: there is no screen left under it to fade against.
+            if (!isScreenShowing()) {
+                takePanelDown();
+                return;
+            }
+
+            fadeProgress.advanceTowardEnd(isRaised, amount, MODAL_DURATIONS);
+            paintFadeOntoPanel();
+
+            // Off the screen once the fall has run out, a notice still fading being one the player
+            // is watching leave.
+            if (!isRaised && fadeProgress.hasSettledAtRest()) {
+                takePanelDown();
             }
         }
 
         @Override
         public void processInput(List<InputEventAPI> events) {
 
-            if (panel == null) {
+            // Nothing is claimed once the screen has been handed back: the notice is only fading
+            // from here, and the events under it are the screen's again.
+            if (panel == null || !isRaised) {
                 return;
             }
 

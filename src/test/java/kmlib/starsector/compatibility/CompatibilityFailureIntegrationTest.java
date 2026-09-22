@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,26 +67,31 @@ final class CompatibilityFailureIntegrationTest {
                     + "\n    Failed while:  " + CompatibilityFailureFixture.FAILURE_SITE
                     + "\n    Effect:        " + CompatibilityFailureFixture.LOST_FEATURE
                     + "\n    No effect:     " + CompatibilityFailureFixture.UNAFFECTED_FEATURE
-                    + "\n\nSee starsector.log for details.");
+                    + "\n\nSee starsector.log for more details.");
         }
 
         @Test
         void readsAsTheNoticeWhereTheInstallIsBehindTheBuild() {
 
+            // One line, because there is one thing to say: the version was read and it is behind.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8");
 
             assertThat(failure.describeForPlayer())
-                .contains("\n\nYour Fast Rendering is too old and needs to be updated at least to 0.9.1.\n\n");
+                .contains("\n\nYour Fast Rendering is too old and needs to be updated"
+                    + " to at least 0.9.1.\n\n");
         }
 
         @Test
-        void readsAsTheNoticeWhereTheInstalledVersionCouldNotBeRead() {
+        void readsAsTheTwoCasesWhereTheInstalledVersionCouldNotBeRead() {
 
+            // A lead and the two cases under it, because both directions are live at once and a
+            // sentence carrying both reads as one tangled claim.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
 
             assertThat(failure.describeForPlayer())
-                .contains("\n\nThe likely cause is that your Fast Rendering is too old and needs to be updated"
-                    + " at least to 0.8.8, or it's new and carries changes to public contracts " + MOD_ID
+                .contains("\n\nThe likely cause is that your Fast Rendering is either:"
+                    + "\n- too old and needs to be updated to at least 0.8.8,"
+                    + "\n- or it's new and carries changes to public contracts " + MOD_ID
                     + " depends on and you can either downgrade Fast Rendering to 0.8.8"
                     + " or wait for a " + MOD_ID + " update.\n\n")
                 .contains("\n    Detected:      unknown");
@@ -108,7 +113,7 @@ final class CompatibilityFailureIntegrationTest {
                     + "\n    Failed while:  " + CompatibilityFailureFixture.FAILURE_SITE
                     + "\n    Effect:        " + CompatibilityFailureFixture.LOST_FEATURE
                     + "\n    No effect:     " + CompatibilityFailureFixture.UNAFFECTED_FEATURE
-                    + "\n\nSee starsector.log for details.");
+                    + "\n\nSee starsector.log for more details.");
         }
     }
 
@@ -133,13 +138,9 @@ final class CompatibilityFailureIntegrationTest {
         // the last one ended, which is what makes a repeated name land on its own occurrence.
         private void assertEveryRunIsFoundInOrder(CompatibilityFailure failure) {
 
-            var lines = new java.util.ArrayList<CompatibilityNoticeLine>();
+            var lines = new ArrayList<CompatibilityNoticeLine>();
             lines.add(failure.describeHeadingForPlayer());
-
-            var diagnosis = failure.describeDiagnosisForPlayer();
-            if (diagnosis != null) {
-                lines.add(diagnosis);
-            }
+            lines.addAll(failure.describeDiagnosisForPlayer());
             lines.addAll(failure.describeRowsForPlayer());
             lines.add(failure.describeClosingForPlayer());
 
@@ -152,7 +153,7 @@ final class CompatibilityFailureIntegrationTest {
 
             var searchedFrom = 0;
 
-            for (EmphasisedRun run : List.copyOf(line.emphasisedRuns())) {
+            for (EmphasisedRun run : line.emphasisedRuns()) {
                 var foundAt = line.lineText().indexOf(run.runText(), searchedFrom);
 
                 assertThat(foundAt)
