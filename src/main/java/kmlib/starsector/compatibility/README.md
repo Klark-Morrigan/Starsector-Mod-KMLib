@@ -96,11 +96,34 @@ and a failure the panel declines to show is still waiting when the player return
 Declining is the ordinary case rather than an error:
 there is no screen to stand on at load, and none on the campaign view.
 
-What each row says is settled here and not on either surface.
-[`CompatibilityNoticeRow`](CompatibilityNoticeRow.java) is a row as its template and the value that fills it,
-and `CompatibilityFailure.describeRowsForPlayer` decides which rows there are and in what order -
-so a row added to the notice arrives on both,
-rather than on whichever was edited.
+What the notice says is settled here and not on either surface.
+[`CompatibilityFailure`](CompatibilityFailure.java) answers it as
+[`CompatibilityNoticeLine`](CompatibilityNoticeLine.java)s -
+a heading, a diagnosis, the rows, a closing line -
+each carrying its wording and the runs of it that stand out.
+A surface of widgets tints those runs;
+the dialog reads the same lines plain.
+Which lines there are and what order they come in is decided once,
+so a line added to the notice arrives on both surfaces rather than on whichever was edited.
+
+Emphasis is named, never marked up.
+Every run that stands out is a value the composition filled into a template -
+a name, a version, or a phrase with a key of its own -
+so the composition already holds each one and simply says which they were.
+Nothing parses the wording,
+and nothing inside a value can be mistaken for a directive.
+The runs are given in reading order because that is how the engine matches them,
+each searched from where the last one ended:
+a name brought forward early and appearing again inside a later phrase
+is tinted once for each rather than twice for the first.
+
+The diagnosis is the one piece that varies by what was found.
+[`CompatibilitySubject`](CompatibilitySubject.java) reads how the installed version stands to the targeted one -
+behind, ahead, the same, or not comparable -
+and the notice advises an update, a downgrade or a wait, or both where the install could not be read.
+Nothing where the build stamped no target, since every sentence names the release to move to;
+and nothing where the two name one release, since neither direction would be true.
+Wording only: nothing gates on the comparison, so a self-report that lies costs a sentence.
 
 ## A binding is a third party and a consumer
 

@@ -10,6 +10,11 @@ package kmlib.starsector.strings;
  * every call; this holder is the KMLib-specific other half it documents - a category-bound
  * shortcut, not a parallel implementation. The keys live in exactly one place and never reappear as
  * loose literals that can drift from the JSON.
+ *
+ * <p>The compatibility notice's emphasis is carried by its slots rather than by any markup. Every
+ * run that stands out is a value filled into a template - a name, a version, or one of the phrases
+ * below - so the composition knows each one and nothing parses the wording. A phrase meant to stand
+ * out therefore has a key of its own.
  */
 public final class KmlibStringKeys {
 
@@ -17,8 +22,8 @@ public final class KmlibStringKeys {
     public static final String CATEGORY = "kmlib";
 
     /**
-     * Heading of the modal shown when a binding to third-party code stops holding. One slot: the
-     * third party's name.
+     * Heading of the notice shown when a binding to third-party code stops holding. Three slots:
+     * the phrase below that names the failure, the consuming mod's name, then the third party's.
      *
      * <p>Never the word "mod" for the subject - some subjects, Fast Rendering among them, are install
      * patches with no folder under {@code mods\} and no {@code mod_info.json}, so calling one a mod
@@ -28,39 +33,93 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_TITLE = "compatibility_notice_title";
 
     /**
-     * The sentence closing the heading paragraph, after the title. No slots.
+     * The phrase the heading names the failure with, which is the run of it that warns. No slots.
      *
-     * <p>Its own string rather than the tail of the title, because it is the generic half: every
-     * subject's notice carries it and no subject's wording changes it. Kept honest by
-     * {@code CompatibilityNotice}, which writes the log block before it asks for the dialog and
-     * whatever the dialog then does - so a player sent to the log always finds something there.
+     * <p>Its own key rather than the opening words of the heading, because it is what stands out
+     * and the composition has to hand it to a surface as a run of its own.
      */
-    public static final String COMPATIBILITY_NOTICE_SEE_LOG = "compatibility_notice_see_log";
+    public static final String COMPATIBILITY_NOTICE_TITLE_ERROR = "compatibility_notice_title_error";
 
     /**
-     * The row naming the mod that lost something. One slot: the mod as
-     * {@code CompatibilityConsumer.describeMod()} words it - its own name beside its ID, or the ID
-     * alone where the game lists no such mod.
+     * What the player can do about it, where the installed version could not be read. Five slots:
+     * the third party, the update phrase below, the targeted version, the consuming mod, and the
+     * downgrade-or-wait phrase below.
      *
-     * <p>A row of the body and never part of the heading. The heading names the third party that
-     * stopped holding, and a heading carrying the consuming mod's name too would put the player's
-     * eye on the mod that is working correctly.
+     * <p>Both directions in one sentence, because with one version unread nothing said of either
+     * alone would be true of both cases.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_VERSION =
+        "compatibility_notice_diagnosis_unknown_version";
+
+    /**
+     * What the player can do about it, where the install is behind the build. Three slots: the
+     * third party, the update phrase below, the targeted version.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_OLDER_VERSION =
+        "compatibility_notice_diagnosis_older_version";
+
+    /**
+     * What the player can do about it, where the install is ahead of the build. Three slots: the
+     * third party, the consuming mod, the downgrade-or-wait phrase below.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_NEWER_VERSION =
+        "compatibility_notice_diagnosis_newer_version";
+
+    /**
+     * The phrase a diagnosis states the update with, which is the run of it that warns. No slots.
+     */
+    public static final String COMPATIBILITY_NOTICE_ACTION_UPDATE = "compatibility_notice_action_update";
+
+    /**
+     * The phrase a diagnosis states the choice with, which is the run of it that warns. Three
+     * slots: the third party, the targeted version, the consuming mod.
+     *
+     * <p>One clause rather than the words around its values, so that what warns is a phrase a
+     * translation can carry whole. Its values are inside the warned run and are not brought forward
+     * again: the run stands out as one thing.
+     */
+    public static final String COMPATIBILITY_NOTICE_ACTION_DOWNGRADE_OR_WAIT =
+        "compatibility_notice_action_downgrade_or_wait";
+
+    /**
+     * The row naming the mod that lost something. One slot: the mod as the report words it - its
+     * own name beside its ID and version where the game holds them, or the ID alone where it does
+     * not.
+     *
+     * <p>A row of the body and never part of the heading's emphasis. The heading names both parties;
+     * this row is where the consuming mod is pinned down to a version.
      */
     public static final String COMPATIBILITY_NOTICE_ROW_MOD = "compatibility_notice_row_mod";
 
     /**
+     * The row naming which integration of the consuming mod broke. One slot: the key the record
+     * latched it under, the mod's ID and its feature key joined.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_INTEGRATION = "compatibility_notice_row_integration";
+
+    /**
      * The row naming what this build was type-checked against. One slot: that version.
      *
-     * <p>Naming both versions is what turns "version mismatch" into an actionable sentence, and it
-     * removes any need to classify the failure as too-new or too-old - the two numbers say which it
-     * is. The subject is not named again here: the heading above already says whose versions these
-     * are, and a row repeating it reads as a second subject. A self-reported {@code v} prefix is
-     * stripped before the slot is filled, the label already saying that a version is what follows.
+     * <p>Naming both versions is what turns "version mismatch" into an actionable sentence. The
+     * subject is not named again here: the heading above already says whose versions these are. A
+     * self-reported {@code v} prefix is stripped before the slot is filled, the label already saying
+     * that a version is what follows.
      */
-    public static final String COMPATIBILITY_NOTICE_ROW_BUILT_FOR = "compatibility_notice_row_built_for";
+    public static final String COMPATIBILITY_NOTICE_ROW_TARGETED = "compatibility_notice_row_targeted";
 
     /** The row naming the installed version. One slot: that version. */
-    public static final String COMPATIBILITY_NOTICE_ROW_INSTALLED = "compatibility_notice_row_installed";
+    public static final String COMPATIBILITY_NOTICE_ROW_DETECTED = "compatibility_notice_row_detected";
+
+    /**
+     * The row naming what no longer holds. One slot: the member or detail, as whichever guard
+     * caught it words it - every mirrored member a probe found broken, or what a step threw.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_BROKEN = "compatibility_notice_row_broken";
+
+    /**
+     * The row naming which guard caught the binding. One slot: the phrase that guard files under.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_FAILED_WHILE = "compatibility_notice_row_failed_while";
 
     /**
      * The row naming what the player loses. One slot: the consumer's own sentence.
@@ -83,24 +142,27 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_ROW_NO_EFFECT = "compatibility_notice_row_no_effect";
 
     /**
+     * The sentence closing the notice, pointing at the log. One slot: the log's own file name,
+     * which is not wording and so is not translated.
+     *
+     * <p>Its own string because it is the generic half: every subject's notice carries it and no
+     * subject's wording changes it. Kept honest by the reporters, which write the log block before
+     * they ask for anything on screen - so a player sent to the log always finds something there.
+     */
+    public static final String COMPATIBILITY_NOTICE_SEE_LOG = "compatibility_notice_see_log";
+
+    /**
      * Stands in for a version slot nothing could fill, so a report never prints {@code null} at a
      * player. One word, because it sits in a value slot beside a label that already says a version
-     * belongs there, and both version rows take it - a row that explained instead of answering
-     * would be the longest line in a block whose panel is a fixed size.
-     *
-     * <p>Reading a subject's version is itself a third-party binding and can fail on its own, so
-     * the report has to hold without either number. Which direction a mismatch runs in is not
-     * guessed at here: where both versions are known the numbers say it, and where one is not,
-     * nothing said in this slot would be true of both cases.
+     * belongs there, and both version rows take it.
      */
     public static final String COMPATIBILITY_NOTICE_VERSION_UNKNOWN = "compatibility_notice_version_unknown";
 
     /**
-     * The label on the one button the notice's dialog carries. No slots.
+     * The label on the one button the notice carries. No slots.
      *
-     * <p>A confirm dialog with no cancel label renders a single button, which is how the game's own
-     * one-button notices are put up. The word is the player's, so it ships here rather than sitting
-     * as a literal beside the call.
+     * <p>The word is the player's, so it ships here rather than sitting as a literal beside the
+     * widget.
      */
     public static final String COMPATIBILITY_NOTICE_CONFIRM_BUTTON = "compatibility_notice_confirm_button";
 
@@ -124,7 +186,7 @@ public final class KmlibStringKeys {
      * What a failed LunaLib binding does not cost. No slots.
      *
      * <p>Every one of these three names the save, because that is the question a player reads a
-     * compatibility modal asking themselves. None of them promises anything about another mod's
+     * compatibility notice asking themselves. None of them promises anything about another mod's
      * feature: what the library may vouch for is what the library does.
      */
     public static final String COMPATIBILITY_UNAFFECTED_LUNALIB_SETTINGS =

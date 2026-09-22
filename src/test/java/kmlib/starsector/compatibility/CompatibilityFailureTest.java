@@ -1,5 +1,7 @@
 package kmlib.starsector.compatibility;
 
+import kmlib.starsector.compatibility.CompatibilityNoticeLine.Emphasis;
+import kmlib.starsector.compatibility.CompatibilityNoticeLine.EmphasisedRun;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
@@ -13,14 +15,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * Covers how a failure fills the slots of the two sentences it composes: which value lands in which
- * slot, and what stands in a version slot nothing could fill.
+ * Covers how a failure fills the slots of the lines it composes: which value lands in which slot,
+ * which diagnosis the two versions pick, and which runs of a line it names as standing out.
+ *
+ * <p>The runs are worth as much as the wording. The engine matches each from where the last one
+ * ended, so a run listed out of order tints the wrong words or nothing at all - and the cases below
+ * pin the order as much as the membership.
  *
  * <p>The player-facing templates are stand-ins that expose their slots rather than copies of the
  * shipped wording: a copy agrees with the code however the shipped file is edited, so it is
- * {@code CompatibilityFailureIntegrationTest} that composes the sentence a player reads.
+ * {@code CompatibilityFailureIntegrationTest} that composes the notice a player reads.
  */
 final class CompatibilityFailureTest {
+
+    private static final String MOD_ID = CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID;
 
     @AfterEach
     void clearSettings() {
@@ -38,19 +46,25 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void laysOutTheHeadingAndEveryRow() {
+        void laysOutEveryLineInReadingOrder() {
 
-            // The whole modal as one value: it is a block, so which rows there are and what order
-            // they come in is as much the subject as what lands in each.
+            // The whole notice as one value: it is a sequence of lines, so which there are and what
+            // order they come in is as much the subject as what lands in each.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForPlayer())
-                .isEqualTo("title[Fast Rendering] seelog[]"
-                    + "\n\nmod[" + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID + "]"
-                    + "\nbuilt[0.8.8]"
-                    + "\ninstalled[0.9.1]"
-                    + "\neffect[" + CompatibilityFailureFixture.LOST_FEATURE + "]"
-                    + "\nnoeffect[" + CompatibilityFailureFixture.UNAFFECTED_FEATURE + "]");
+                .isEqualTo("title{failed|" + MOD_ID + "|Fast Rendering}"
+                    + "\n\ndiagnose-newer{Fast Rendering|" + MOD_ID
+                    + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}"
+                    + "\n\nmod{" + MOD_ID + "}"
+                    + "\nintegration{" + MOD_ID + ":map-overlay}"
+                    + "\ntargeted{0.8.8}"
+                    + "\ndetected{0.9.1}"
+                    + "\nbroken{" + CompatibilityFailureFixture.BROKEN_DETAIL + "}"
+                    + "\nfailedwhile{" + CompatibilityFailureFixture.FAILURE_SITE + "}"
+                    + "\neffect{" + CompatibilityFailureFixture.LOST_FEATURE + "}"
+                    + "\nnoeffect{" + CompatibilityFailureFixture.UNAFFECTED_FEATURE + "}"
+                    + "\n\nseelog{starsector.log}");
         }
 
         @Test
@@ -62,18 +76,16 @@ final class CompatibilityFailureTest {
                 CompatibilityFailureFixture.LOST_FEATURE);
 
             assertThat(failure.describeForPlayer())
-                .doesNotContain("noeffect[");
+                .doesNotContain("noeffect{");
         }
 
         @Test
         void standsTheUnknownWordingInForAnAbsentInstalledVersion() {
 
-            // The same one-word stand-in both version rows take. A row that explained instead of
-            // answering would be the longest line in a panel that does not grow to hold it.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
 
             assertThat(failure.describeForPlayer())
-                .contains("installed[?]")
+                .contains("detected{?}")
                 .doesNotContain("null");
         }
 
@@ -85,23 +97,7 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("", "v0.9.1");
 
             assertThat(failure.describeForPlayer())
-                .contains("built[?]");
-        }
-
-        @Test
-        void readsTheSameRowsTheRowListAnswers() {
-
-            // The two surfaces show one notice, so the string the dialog takes is the rows the
-            // panel draws, filled. Composed apart, a row added for one would go missing on the
-            // other and only the surface nobody was looking at would be wrong.
-            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
-
-            var filledRows = failure.describeRowsForPlayer().stream()
-                .map(CompatibilityNoticeRow::fillRow)
-                .toList();
-
-            assertThat(failure.describeForPlayer())
-                .isEqualTo(failure.describeHeadingForPlayer() + "\n\n" + String.join("\n", filledRows));
+                .contains("targeted{?}");
         }
 
         @Test
@@ -114,7 +110,138 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailure();
 
             assertThat(failure.describeForPlayer())
-                .contains("mod[" + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID + "]");
+                .contains("mod{" + MOD_ID + "}");
+        }
+    }
+
+    @Nested
+    class DescribeHeadingForPlayer {
+
+        @BeforeEach
+        void installSlotTemplates() {
+
+            CompatibilitySlotTemplates.installSlotTemplates();
+        }
+
+        @Test
+        void warnsOnTheFailurePhraseAndBringsBothNamesForward() {
+
+            var failure = CompatibilityFailureFixture.createFailure();
+
+            assertThat(failure.describeHeadingForPlayer().emphasisedRuns())
+                .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
+                .containsExactly(
+                    tuple("failed", Emphasis.WARNING),
+                    tuple(MOD_ID, Emphasis.HIGHLIGHT),
+                    tuple("Fast Rendering", Emphasis.HIGHLIGHT));
+        }
+    }
+
+    @Nested
+    class DescribeDiagnosisForPlayer {
+
+        @BeforeEach
+        void installSlotTemplates() {
+
+            CompatibilitySlotTemplates.installSlotTemplates();
+        }
+
+        @Test
+        void advisesAnUpdateWhereTheInstallIsBehindTheBuild() {
+
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8");
+
+            assertThat(failure.describeDiagnosisForPlayer().lineText())
+                .isEqualTo("diagnose-older{Fast Rendering|do-update|0.9.1}");
+        }
+
+        @Test
+        void warnsOnTheUpdatePhraseAloneWhereTheInstallIsBehind() {
+
+            // The names and the version are brought forward; only the instruction warns. Listed in
+            // the order they appear, which is what the engine matches them in.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8");
+
+            assertThat(failure.describeDiagnosisForPlayer().emphasisedRuns())
+                .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
+                .containsExactly(
+                    tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple("do-update", Emphasis.WARNING),
+                    tuple("0.9.1", Emphasis.HIGHLIGHT));
+        }
+
+        @Test
+        void advisesADowngradeOrAWaitWhereTheInstallIsAheadOfTheBuild() {
+
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            assertThat(failure.describeDiagnosisForPlayer().lineText())
+                .isEqualTo("diagnose-newer{Fast Rendering|" + MOD_ID
+                    + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}");
+        }
+
+        @Test
+        void warnsOnTheWholeChoiceWhereTheInstallIsAhead() {
+
+            // The choice warns as one run, values and all, so nothing inside it is brought forward
+            // separately. The names that appear both before it and inside it are listed once each,
+            // in order, which is what keeps the engine matching the early ones first.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            assertThat(failure.describeDiagnosisForPlayer().emphasisedRuns())
+                .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
+                .containsExactly(
+                    tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple(MOD_ID, Emphasis.HIGHLIGHT),
+                    tuple("do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}", Emphasis.WARNING));
+        }
+
+        @Test
+        void advisesBothWaysWhereTheInstalledVersionCouldNotBeRead() {
+
+            // Both directions in one sentence: with one version unread, nothing said of either
+            // alone would be true of both cases.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
+
+            assertThat(failure.describeDiagnosisForPlayer().lineText())
+                .isEqualTo("diagnose-unknown{Fast Rendering|do-update|0.8.8|" + MOD_ID
+                    + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}");
+        }
+
+        @Test
+        void warnsOnBothInstructionsWhereTheInstalledVersionCouldNotBeRead() {
+
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
+
+            assertThat(failure.describeDiagnosisForPlayer().emphasisedRuns())
+                .extracting(EmphasisedRun::emphasis)
+                .containsExactly(
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.WARNING,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.HIGHLIGHT,
+                    Emphasis.WARNING);
+        }
+
+        @Test
+        void advisesNothingWhereTheBuildStampedNoTarget() {
+
+            // Every sentence names the release to move to, and there is none to name.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions(null, "v0.9.1");
+
+            assertThat(failure.describeDiagnosisForPlayer())
+                .isNull();
+        }
+
+        @Test
+        void advisesNothingWhereTheTwoNameOneRelease() {
+
+            // Neither direction is true, and a sentence saying one would be a guess dressed as
+            // advice. The rows still show the two versions, which is the whole of what is known.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8");
+
+            assertThat(failure.describeDiagnosisForPlayer())
+                .isNull();
         }
     }
 
@@ -128,20 +255,34 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void answersEachRowAsItsTemplateAndTheValueThatFillsIt() {
+        void answersEachRowInReadingOrder() {
 
-            // The template unfilled and the value beside it, which is what lets a surface draw the
-            // label and the value differently - the one thing a filled string cannot be asked for.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeRowsForPlayer())
-                .extracting(CompatibilityNoticeRow::rowTemplate, CompatibilityNoticeRow::rowValue)
+                .extracting(CompatibilityNoticeLine::lineText)
                 .containsExactly(
-                    tuple("mod[%s]", CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID),
-                    tuple("built[%s]", "0.8.8"),
-                    tuple("installed[%s]", "0.9.1"),
-                    tuple("effect[%s]", CompatibilityFailureFixture.LOST_FEATURE),
-                    tuple("noeffect[%s]", CompatibilityFailureFixture.UNAFFECTED_FEATURE));
+                    "mod{" + MOD_ID + "}",
+                    "integration{" + MOD_ID + ":map-overlay}",
+                    "targeted{0.8.8}",
+                    "detected{0.9.1}",
+                    "broken{" + CompatibilityFailureFixture.BROKEN_DETAIL + "}",
+                    "failedwhile{" + CompatibilityFailureFixture.FAILURE_SITE + "}",
+                    "effect{" + CompatibilityFailureFixture.LOST_FEATURE + "}",
+                    "noeffect{" + CompatibilityFailureFixture.UNAFFECTED_FEATURE + "}");
+        }
+
+        @Test
+        void bringsEachRowsValueForwardAndWarnsOnNone() {
+
+            // A row's label says what it is and every notice carries the same ones; what differs
+            // between two notices is the value, so that is the only run of a row that stands out.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            assertThat(failure.describeRowsForPlayer())
+                .allSatisfy(row -> assertThat(row.emphasisedRuns())
+                    .extracting(EmphasisedRun::emphasis)
+                    .containsExactly(Emphasis.HIGHLIGHT));
         }
 
         @Test
@@ -151,8 +292,30 @@ final class CompatibilityFailureTest {
                 CompatibilityFailureFixture.LOST_FEATURE);
 
             assertThat(failure.describeRowsForPlayer())
-                .extracting(CompatibilityNoticeRow::rowTemplate)
-                .doesNotContain("noeffect[%s]");
+                .extracting(CompatibilityNoticeLine::lineText)
+                .noneMatch(row -> row.startsWith("noeffect{"));
+        }
+    }
+
+    @Nested
+    class DescribeClosingForPlayer {
+
+        @BeforeEach
+        void installSlotTemplates() {
+
+            CompatibilitySlotTemplates.installSlotTemplates();
+        }
+
+        @Test
+        void bringsTheLogsOwnFileNameForward() {
+
+            // The file name is not wording and is not translated, so it is supplied rather than
+            // read - and it is the one run of the closing line worth the player's eye.
+            var failure = CompatibilityFailureFixture.createFailure();
+
+            assertThat(failure.describeClosingForPlayer().emphasisedRuns())
+                .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
+                .containsExactly(tuple("starsector.log", Emphasis.HIGHLIGHT));
         }
     }
 
@@ -171,17 +334,16 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeForLog())
-                .isEqualTo("Fast Rendering version mismatch."
-                    + "\n    Built against: 0.8.8"
-                    + "\n    Installed:     0.9.1"
-                    + "\n    Failed while:  resolving the binding"
+                .isEqualTo("Error integrating " + MOD_ID + " with Fast Rendering."
+                    + "\n    Mod:           " + MOD_ID
+                    + "\n    Integration:   " + MOD_ID + ":map-overlay"
+                    + "\n    Targeted:      0.8.8"
+                    + "\n    Detected:      0.9.1"
                     + "\n    Broken:        GLCommand.run"
                     + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)"
-                    + "\n    Mod:           " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
-                    + "\n    Consumer:      " + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID
-                    + ":map-overlay"
-                    + "\n    Effect:        "
-                    + "Sector map overlays will not respond to the cursor this session.");
+                    + "\n    Failed while:  resolving the binding"
+                    + "\n    Effect:        " + CompatibilityFailureFixture.LOST_FEATURE
+                    + "\n    No effect:     " + CompatibilityFailureFixture.UNAFFECTED_FEATURE);
         }
 
         @Test
@@ -190,8 +352,18 @@ final class CompatibilityFailureTest {
             var failure = CompatibilityFailureFixture.createFailure();
 
             assertThat(failure.describeForLog())
-                .contains("\n    Built against: an unknown version")
-                .contains("\n    Installed:     an unknown version");
+                .contains("\n    Targeted:      unknown")
+                .contains("\n    Detected:      unknown");
+        }
+
+        @Test
+        void leavesOutTheNoEffectRowWhereTheConsumerSaidNothingAboutOne() {
+
+            var failure = CompatibilityFailureFixture.createFailureLosing(
+                CompatibilityFailureFixture.LOST_FEATURE);
+
+            assertThat(failure.describeForLog())
+                .doesNotContain("No effect:");
         }
 
         @Test

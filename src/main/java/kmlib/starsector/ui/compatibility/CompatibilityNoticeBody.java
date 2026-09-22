@@ -4,6 +4,7 @@ import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 import kmlib.starsector.compatibility.CompatibilityFailure;
+import kmlib.starsector.compatibility.CompatibilityNoticeLine;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.highlight.Highlight;
 import kmlib.starsector.ui.highlight.HighlightedParagraph;
@@ -12,22 +13,26 @@ import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.screen.VanillaScreen;
 
+import java.awt.Color;
+
 /**
  * What the on-screen compatibility notice is made of: the two filled areas under it, and the
- * heading, rows and button drawn in it.
+ * heading, diagnosis, rows, closing line and button drawn in it.
  *
  * <p>Drawn from the game's own text widgets rather than handed over as one string, which is what
- * the dialog beside this has to do. That buys the one thing a string cannot carry: each row's value
- * is tinted while its label is left alone, so both versions and the mod that lost something are
- * found by eye rather than read for. No font the game ships is monospaced, so the spacing in a row's
- * wording reads as a column only approximately either way - what tells the values apart here is
- * their colour.
+ * the dialog beside this has to do. That buys the one thing a string cannot carry: the runs the
+ * notice names as standing out are tinted - names, versions and the log's own file brought forward,
+ * what went wrong and what to do about it warned with - and everything else reads plain. No font the
+ * game ships is monospaced, so what separates a row's answer from its label on screen is its colour.
  *
- * <p>The rows themselves are not composed here. Which rows a notice carries and what order they
- * come in is {@link CompatibilityFailure#describeRowsForPlayer()}'s, so the panel and the dialog
- * show the same notice; this decides only how one is painted.
+ * <p>Which colour each kind of emphasis takes is decided here and nowhere else. Which runs there
+ * are is {@link CompatibilityFailure}'s, so the panel and the dialog show one notice.
  *
- * <p>Static: it draws into a element and a placement its caller holds, and keeps nothing of either.
+ * <p>Runs are handed over in the order the notice gives them, which the engine relies on: it
+ * matches each from where the last one ended, so a name brought forward early and appearing again
+ * inside a later phrase is tinted once for each rather than twice for the first.
+ *
+ * <p>Static: it draws into an element and a placement its caller holds, and keeps nothing of either.
  */
 final class CompatibilityNoticeBody {
 
@@ -38,13 +43,13 @@ final class CompatibilityNoticeBody {
     // The box's own surface, opaque enough to read text over whatever the map drew underneath.
     private static final float BOX_ALPHA = 0.9f;
 
-    // Between the heading and the first row, which are two readings rather than one run.
-    private static final float HEADING_GAP = 10f;
+    // Between the paragraphs of the notice, which are separate readings.
+    private static final float PARAGRAPH_GAP = 12f;
 
     // Between rows, which are a list.
     private static final float ROW_GAP = 3f;
 
-    // Above the button, which is not part of the list and should not read as another row.
+    // Above the button, which is not part of the text and should not read as another line of it.
     private static final float BUTTON_GAP = 14f;
 
     private static final float BUTTON_WIDTH = 90f;
@@ -54,8 +59,8 @@ final class CompatibilityNoticeBody {
     }
 
     /**
-     * Draws the notice into {@code box}: the heading, one paragraph per row, and the button that
-     * dismisses it.
+     * Draws the notice into {@code box}: the heading, the diagnosis where there is one, one
+     * paragraph per row, the closing line, and the button that dismisses it.
      *
      * @param box             the element the notice is drawn in, sized by its caller
      * @param failure         what the notice is about
@@ -68,28 +73,21 @@ final class CompatibilityNoticeBody {
             Object confirmButtonId,
             String confirmText) {
 
-        var highlightColour = StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve();
+        addNoticeLine(box, failure.describeHeadingForPlayer(), 0f);
 
-        // The third party is the one word in the heading a player is looking for, the rest of it
-        // being the same two sentences under every notice.
-        new HighlightedParagraph(
-                failure.describeHeadingForPlayer(),
-                new Highlight(failure.subject().name(), highlightColour))
-            .addTo(box, 0f);
+        var diagnosis = failure.describeDiagnosisForPlayer();
+        if (diagnosis != null) {
+            addNoticeLine(box, diagnosis, PARAGRAPH_GAP);
+        }
 
-        var gapAboveRow = HEADING_GAP;
+        var gapAboveRow = PARAGRAPH_GAP;
 
         for (var row : failure.describeRowsForPlayer()) {
-
-            // Tinted on the value alone. The label says what the row is and every notice carries
-            // the same ones; what differs between two notices is what fills them.
-            new HighlightedParagraph(
-                    row.fillRow(),
-                    new Highlight(row.rowValue(), highlightColour))
-                .addTo(box, gapAboveRow);
-
+            addNoticeLine(box, row, gapAboveRow);
             gapAboveRow = ROW_GAP;
         }
+
+        addNoticeLine(box, failure.describeClosingForPlayer(), PARAGRAPH_GAP);
 
         box.addButton(confirmText, confirmButtonId, BUTTON_WIDTH, BUTTON_HEIGHT, BUTTON_GAP);
     }
@@ -118,5 +116,28 @@ final class CompatibilityNoticeBody {
                 VanillaPositions.toRectangle(boxPlacement),
                 new UiElementPaint(StarsectorUiColour.BLACK.resolve(), BOX_ALPHA * alphaMult));
         }
+    }
+
+    // One line of the notice as a paragraph, its named runs tinted by kind.
+    private static void addNoticeLine(TooltipMakerAPI box, CompatibilityNoticeLine line, float gapAbove) {
+
+        var runs = line.emphasisedRuns();
+        var highlights = new Highlight[runs.size()];
+
+        for (var i = 0; i < highlights.length; i++) {
+            var run = runs.get(i);
+
+            highlights[i] = new Highlight(run.runText(), resolveEmphasisColour(run.emphasis()));
+        }
+
+        new HighlightedParagraph(line.lineText(), highlights).addTo(box, gapAbove);
+    }
+
+    // What each kind of emphasis is tinted. The one place a colour is put to a kind.
+    private static Color resolveEmphasisColour(CompatibilityNoticeLine.Emphasis emphasis) {
+
+        return emphasis == CompatibilityNoticeLine.Emphasis.WARNING
+            ? StarsectorUiColour.VANILLA_HIGHLIGHT_RED.resolve()
+            : StarsectorUiColour.VANILLA_HIGHLIGHT_GOLD.resolve();
     }
 }
