@@ -8,6 +8,7 @@ import com.fs.starfarer.api.ui.PositionAPI;
 
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.strings.KmlibStringKeys;
+import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.coreui.CoreUiOverlayPanels;
 import kmlib.starsector.ui.coreui.ModalOverlays;
 import kmlib.starsector.ui.coreui.OverlayPresence;
@@ -57,6 +58,10 @@ public final class CompatibilityNoticePanel {
     // The height the box is built at before its contents are measured. Generous, because an element
     // created too short clips what is drawn into it before there is anything to measure.
     private static final float BOX_BUILD_HEIGHT = 600f;
+
+    // The rule around the box, in the base colour the game frames its own dialogs with. Stroked by
+    // a widget of the game's, the game publishing one that strokes and none that fills.
+    private static final float BORDER_THICKNESS = 2f;
 
     // What this reports while it is up. No fade, so wholly in place from the frame it is raised:
     // whatever stands aside for a modal stands aside at once rather than dissolving into it.
@@ -214,6 +219,14 @@ public final class CompatibilityNoticePanel {
             KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_CONFIRM_BUTTON));
 
         var boxHeight = box.getHeightSoFar() + BOX_PADDING * 2;
+
+        // The rule around the box, laid outside the text by the padding on every side. Added
+        // without advancing the layout, so it frames what was measured rather than adding to it.
+        var border = box.createRect(StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(), BORDER_THICKNESS);
+        box.addCustomDoNotSetPosition(border)
+            .getPosition()
+            .inTL(-BOX_PADDING, -BOX_PADDING)
+            .setSize(BOX_WIDTH, boxHeight);
 
         boxPlacement = noticePanel.addUIElement(box);
         boxPlacement.inTL(
