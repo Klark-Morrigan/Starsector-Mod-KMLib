@@ -246,12 +246,16 @@ public final class CompatibilityNoticePanel {
                     continue;
                 }
 
+                // Read before it is claimed: a consumed event refuses its value, and the read is
+                // the one thing this needs from it.
+                var isEscape = event.isKeyDownEvent() && event.getEventValue() == Keyboard.KEY_ESCAPE;
+
                 // Claimed whether or not it dismisses: the screen underneath is stood down for as
                 // long as the notice is up, which is what makes it read as a modal rather than as
                 // something drawn over a map still taking clicks.
                 event.consume();
 
-                if (event.isKeyDownEvent() && event.getEventValue() == Keyboard.KEY_ESCAPE) {
+                if (isEscape) {
                     dismissNotice();
                     return;
                 }
