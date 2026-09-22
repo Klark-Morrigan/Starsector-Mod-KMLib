@@ -15,7 +15,7 @@
     "compatibility_notice_row_failed_while": "    Failed while:  %s",
     "compatibility_notice_row_effect": "    Effect:        %s",
     "compatibility_notice_row_no_effect": "    No effect:     %s",
-    "compatibility_notice_see_log": "See %s for details.",
+    "compatibility_notice_see_log": "See %s for more details.",
     "compatibility_notice_version_unknown": "unknown",
     "compatibility_notice_confirm_button": "Ok",
 
