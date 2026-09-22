@@ -23,4 +23,8 @@ record ReseatAdvanceNotes(
     boolean hasStoodDown,
     boolean wasIconSeenClearThisOpen,
     boolean isDisagreementToReport) {
+
+    /** The notes of nothing having happened, which is what stands before the first advance. */
+    static final ReseatAdvanceNotes BEFORE_ANY_ADVANCE =
+        new ReseatAdvanceNotes(MapShowingEdge.NONE, 0, false, false, false);
 }

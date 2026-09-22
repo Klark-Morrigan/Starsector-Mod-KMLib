@@ -13,8 +13,7 @@ enum ReseatObservation {
     /** The entity is out of its location and the widget has dropped its icon, or no map is up. */
     PUT_BACK_OWED,
 
-    /** The entity is out of its location and the widget still shows its icon: no frame has rendered
-     * without it yet. */
+    /** The entity is out of its location and the widget still shows its icon: no frame rendered without it yet. */
     ICON_NOT_YET_DROPPED,
 
     /** The previous advance took the entity out, and something else has already put it back. */

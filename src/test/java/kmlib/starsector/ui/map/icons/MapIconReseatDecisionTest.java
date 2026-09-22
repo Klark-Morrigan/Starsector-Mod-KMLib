@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the rule the reseat rests on: it acts on where the icon is rather than on an event that would
- * have moved it, acts over exactly two advances, puts the entity back from every way that pair of
- * advances can be interrupted, and abandons a lift that never takes.
+ * have moved it, takes the entity out until the widget has dropped its icon, puts it back from every
+ * way that wait can be interrupted, and abandons a lift that never takes for the rest of the open.
  *
  * <p>The state-keyed shape is what most of these are about. An earlier rule armed on the edge into a
  * map being shown, which every test of it passed and which failed in play the first time an open
@@ -243,9 +243,8 @@ class MapIconReseatDecisionTest {
             // stopped working for the session.
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT))
                 .isEqualTo(ReseatAction.REMOVE);
@@ -336,9 +335,7 @@ class MapIconReseatDecisionTest {
             // otherwise a state a player could only diagnose from the picture.
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
 
             assertThat(reseatDecision.hasStoodDown())
                 .isTrue();
@@ -349,9 +346,8 @@ class MapIconReseatDecisionTest {
             // The stand-down is the open's, not the session's.
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.hasStoodDown())
                 .isFalse();
@@ -423,7 +419,7 @@ class MapIconReseatDecisionTest {
             // The moment a log wants marked: from here on the count of lifts is this open's.
             var reseatDecision = new MapIconReseatDecision();
 
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().mapShowingEdge())
@@ -448,7 +444,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().mapShowingEdge())
                 .isEqualTo(MapShowingEdge.CLOSED);
@@ -461,7 +457,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             driveFailedLifts(reseatDecision, 2);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().attemptsSinceLastClear())
                 .isEqualTo(2);
@@ -472,9 +468,8 @@ class MapIconReseatDecisionTest {
 
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().hasStoodDown())
                 .isTrue();
@@ -486,7 +481,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             driveFailedLifts(reseatDecision, 2);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().attemptsSinceLastClear())
@@ -499,7 +494,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().wasIconSeenClearThisOpen())
                 .isTrue();
@@ -511,7 +506,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             driveFailedLifts(reseatDecision, 1);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().wasIconSeenClearThisOpen())
                 .isFalse();
@@ -523,7 +518,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().wasIconSeenClearThisOpen())
@@ -535,8 +530,7 @@ class MapIconReseatDecisionTest {
 
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
 
             assertThat(reseatDecision.readNotesOfLastAdvance().hasStoodDown())
                 .isTrue();
@@ -591,7 +585,7 @@ class MapIconReseatDecisionTest {
             driveUnplaceableAdvances(
                 reseatDecision,
                 MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT);
-            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
             driveUnplaceableAdvances(
                 reseatDecision,
                 MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT);
@@ -687,8 +681,7 @@ class MapIconReseatDecisionTest {
             // report reads the whole run of unconfirmed lifts up to the one that ended it.
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
 
             assertThat(reseatDecision.describeRecentReadings())
                 .endsWith("#8 PUT_BACK_OWED -> ADD, #9 ICON_BURIED -> NONE]");
@@ -726,5 +719,18 @@ class MapIconReseatDecisionTest {
         for (var advance = 0; advance < advanceCount; advance++) {
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
         }
+    }
+
+    // Spends the whole attempt budget on lifts that never clear the fog, then reads the icon buried
+    // once more - the advance the decision stands down on.
+    private static void driveToStandDown(MapIconReseatDecision reseatDecision) {
+        driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
+        reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+    }
+
+    // An advance with no map up: the one before the first open, or the one that closes a map. The
+    // placement is not there to be read on either, and the supplier says so by faulting.
+    private static void advanceWithNoMapShowing(MapIconReseatDecision reseatDecision) {
+        reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
     }
 }

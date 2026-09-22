@@ -9,55 +9,19 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Decides when an entity has to leave its location and come straight back, which is what moves its
- * icon to the end of the map widget's draw order.
+ * Decides when an entity has to leave its location and come back, which is what moves its icon to
+ * the end of the map widget's draw order: out while the widget still shows the icon, back once a
+ * frame has rendered without it, and nothing at all while no map the caller cares about is up.
  *
- * <p>The widget keeps one icon per entity in an insertion-ordered map, and seeds that map afresh
- * each time a map is opened - from the location's own entities first, and the map's synthetic
- * nebulae appended after all of them. So an entity that was in its location when the map opened is
- * drawn beneath the fog, and there is no published call that says otherwise or moves it.
+ * <p>It acts on where the icon is rather than on an event that would have moved it, waits for the
+ * widget to drop the icon rather than for an advance to pass, and abandons a lift that keeps failing
+ * for the rest of the map open. Each of those is a lesson from play; the package README says what
+ * taught it and why the alternatives were wrong.
  *
- * <p>Insertion order is reachable all the same. An icon missing from one rendered frame is dropped
- * from the widget's map, and a re-added entity re-enters at the tail. Removing the entity and adding
- * it back once the widget has dropped its icon therefore lifts the icon past everything seeded on
- * open - and no further, the widget walking terrain-tagged icons and the rest in separate passes
- * that no insertion order crosses.
- *
- * <p>The put-back waits for the drop rather than for the next advance, because an advance is not a
- * frame. The campaign advances its scripts once per rendered frame ordinarily and several times per
- * frame under its speed-up, which a player can leave toggled on with a map open - and a removal and
- * a put-back landing in one frame leave the widget nothing to drop, so the icon stays where it was
- * seeded however often the lift is tried. Reading the placement while the entity is out is what
- * tells the frame that rendered without it from the advances that merely passed. The wait is
- * bounded by {@link #MAX_ADVANCES_DETACHED}, and ends at once when the map goes down, so a map that
- * is not rendering cannot keep the entity out.
- *
- * <p>It acts on where the icon <em>is</em> rather than on an event that would have moved it. The
- * obvious trigger is the edge into "a map is showing", the map being seeded per open - but that is a
- * proxy, and a proxy is only as good as its every occurrence being observed. One missed edge leaves
- * the icon buried for the rest of the session with nothing able to notice, which is exactly what a
- * layering that comes and goes looks like from the outside. Reading the placement instead makes this
- * self-correcting: whatever re-seeded the map, and whatever was missed, the next advance sees a
- * buried icon and lifts it.
- *
- * <p>The map read stays as a scope rather than a trigger. It says which map's ordering the caller
- * cares about, so nothing is moved for a screen the caller has no interest in.
- *
- * <p>Reading the state does mean the move can be attempted against a build where it no longer works,
- * where an event-keyed rule would simply have fired once and stopped. {@link #MAX_ATTEMPTS} is what
- * bounds that: a lift that does not clear the fog is retried a few times and then abandoned until
- * the map is next opened, leaving the icon where the widget seeded it. That is the same graceful
- * direction the whole lever fails in, rather than an entity flickering out of its location for as
- * long as a map is up. Scoped to the open rather than to the session because a stand-down that
- * outlives its cause is indistinguishable, from outside, from the lever having stopped working: the
- * next open is a fresh widget with a fresh seeding, and it is owed a fresh try.
- *
- * <p>Beside the action it keeps what a log needs when the picture is wrong and the moves alone do
- * not say why: the {@link ReseatReading readings} behind the latest advances, the
- * {@link MapShowingEdge edges} of the map coming and going with the attempt count carried across
- * them, and a map that stays up with no icon placeable for the entity - the two reads this is handed
- * disagreeing about what is on screen, a state no single reading shows. All of it is read off state
- * this already keeps, which is why it is detected here and only worded by the caller.
+ * <p>Beside the action it keeps what a log needs when the picture is wrong: the readings behind the
+ * latest advances, the edges of the map coming and going, and a map that stays up with no icon
+ * placeable for the entity - the two reads this is handed disagreeing about what is on screen. All
+ * of it is read off state this already keeps, so it is detected here and only worded by the caller.
  *
  * <p>Only the decision is here. Reaching the entity, reading its placement, removing and adding are
  * {@link MapIconReseater}'s, which leaves the state machine - the part with something to get wrong -
@@ -85,7 +49,7 @@ final class MapIconReseatDecision {
     // about is up, the other finds no icon for the entity in whatever widget it reached. Well above
     // the handful an open legitimately spends there - the icon is seeded by the widget's first
     // render rather than by the open, and again by the first render after a put-back - since a
-    // report per open that fired on the ordinary case would be noise nobody reads.
+    // report that fired on the ordinary case would be noise nobody reads.
     static final int UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT = 30;
 
     // How many of the latest readings are kept for the stand-down report. A lift is at least two
@@ -112,32 +76,15 @@ final class MapIconReseatDecision {
     // Advances the entity has spent out on the current lift, against the bound above.
     private int advancesDetached;
 
-    // Lifts attempted since the icon was last seen clear. Reset by that sighting rather than by a
-    // put-back, so what is counted is attempts that achieved nothing.
-    private int attemptsSinceLastClear;
-
-    // Set once the attempts run out and cleared when the map goes down, so a build this no longer
-    // fits costs a handful of moves per map open rather than two per frame for as long as one is up.
-    private boolean hasStoodDown;
-
     // Whether the previous advance had a map showing, from which this advance's edge is read.
     private boolean wasMapShowing;
 
-    // Whether the icon has been seen clear since the map opened. Carried to the closing edge,
-    // because an open that never saw it clear is one whose lifts all count as achieving nothing.
-    private boolean wasIconSeenClearThisOpen;
-
-    // Consecutive advances of this open on which a map was showing and the icon could not be placed
-    // while the entity was in its location. Ends at any other reading.
-    private int unplaceableRunThisOpen;
-
-    // Whether the disagreement has been reported for this open, so it is said once per open rather
-    // than on every advance past the threshold.
-    private boolean hasReportedDisagreementThisOpen;
+    // What the current map open has accrued, replaced whole when the map goes down: what one open
+    // spent says nothing about the next, which is a fresh widget with a fresh seeding.
+    private MapOpenTally openTally = new MapOpenTally();
 
     // What the latest advance is worth saying, for the caller to read after it has decided.
-    private ReseatAdvanceNotes notesOfLastAdvance =
-        new ReseatAdvanceNotes(MapShowingEdge.NONE, 0, false, false, false);
+    private ReseatAdvanceNotes notesOfLastAdvance = ReseatAdvanceNotes.BEFORE_ANY_ADVANCE;
 
     /**
      * @param isMapShowing whether a map whose icon order matters is on screen this advance
@@ -156,25 +103,20 @@ final class MapIconReseatDecision {
         advanceCount++;
 
         var mapShowingEdge = resolveMapShowingEdge(isMapShowing);
-        if (mapShowingEdge == MapShowingEdge.OPENED) {
-            beginOpen();
-        }
         var action = decideActionThisAdvance(isMapShowing, readIconLayering, isEntityPresent);
 
-        // Composed after the action, so the count and the flags describe the advance as it left
-        // them; on a closed edge the clear sighting still describes the open that just ended, being
-        // reset only by the next opened edge.
+        // Composed after the action, so the tally describes the advance as it left it.
         notesOfLastAdvance = new ReseatAdvanceNotes(
             mapShowingEdge,
-            attemptsSinceLastClear,
-            hasStoodDown,
-            wasIconSeenClearThisOpen,
-            claimDisagreementReport());
+            openTally.attemptsSinceLastClear,
+            openTally.hasStoodDown,
+            openTally.wasIconSeenClear,
+            openTally.claimDisagreementReport());
 
         // After the notes, so the closing line reports the open as it ended and the next open
         // starts from nothing owed.
         if (mapShowingEdge == MapShowingEdge.CLOSED) {
-            endOpen();
+            openTally = new MapOpenTally();
         }
         wasMapShowing = isMapShowing;
         return action;
@@ -198,15 +140,15 @@ final class MapIconReseatDecision {
      *         caller to report
      */
     boolean hasStoodDown() {
-        return hasStoodDown;
+        return openTally.hasStoodDown;
     }
 
     /**
-     * Whether the next advance will order the put-back, so the caller holding an entity out of its
+     * Whether a later advance will order the put-back, so the caller holding an entity out of its
      * location can tell a removal still in progress from one nothing is coming back for.
      *
      * <p>Published because the two records of the same removal can part company: this one is
-     * consumed the moment the next advance asks, while the caller's - the entity and the location
+     * consumed the moment an advance asks after it, while the caller's - the entity and the location
      * owed it - is held until the move is made. A fault in between leaves the caller holding an
      * entity no later advance has any reason to put back, and only the caller can tell that state
      * from the ordinary advances it spends out waiting for the widget to drop its icon.
@@ -227,26 +169,6 @@ final class MapIconReseatDecision {
         return notesOfLastAdvance;
     }
 
-    // Forgets what the previous open established, so a clear sighting or a report made on one open
-    // says nothing about the next.
-    private void beginOpen() {
-        wasIconSeenClearThisOpen = false;
-        unplaceableRunThisOpen = 0;
-        hasReportedDisagreementThisOpen = false;
-    }
-
-    // True on exactly one advance per open: the one the unplaceable run reaches the threshold on.
-    // Claimed rather than read, so the report cannot be made twice for one run.
-    private boolean claimDisagreementReport() {
-
-        if (hasReportedDisagreementThisOpen
-                || unplaceableRunThisOpen < UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT) {
-            return false;
-        }
-        hasReportedDisagreementThisOpen = true;
-        return true;
-    }
-
     // The rule itself, apart from the bookkeeping around it.
     private ReseatAction decideActionThisAdvance(
             boolean isMapShowing,
@@ -257,7 +179,7 @@ final class MapIconReseatDecision {
             return decidePutBack(isMapShowing, readIconLayering, isEntityPresent);
         }
 
-        if (hasStoodDown || !isMapShowing) {
+        if (openTally.hasStoodDown || !isMapShowing) {
             return ReseatAction.NONE;
         }
 
@@ -266,29 +188,24 @@ final class MapIconReseatDecision {
             // The one reading that says a lift worked. Everything else - no map, no icon yet, a
             // tree that cannot be read - leaves the count alone rather than forgiving attempts on
             // the strength of an answer nobody got.
-            attemptsSinceLastClear = 0;
-            wasIconSeenClearThisOpen = true;
-            unplaceableRunThisOpen = 0;
+            openTally.attemptsSinceLastClear = 0;
+            openTally.wasIconSeenClear = true;
+            openTally.unplaceableRun = 0;
             return recordReading(ReseatObservation.ICON_CLEAR, ReseatAction.NONE);
         }
         if (layering == MapIconLayering.UNREADABLE) {
-            // Not acted on, but counted: an icon that stays unplaceable while the entity is there
-            // and a map is up is the two reads disagreeing, which no single advance can tell from
-            // the frame before the widget has seeded the icon.
-            unplaceableRunThisOpen = isEntityPresent.getAsBoolean()
-                ? unplaceableRunThisOpen + 1
-                : 0;
+            noteUnplaceableReading(isEntityPresent);
             return recordReading(ReseatObservation.ICON_UNPLACEABLE, ReseatAction.NONE);
         }
 
-        unplaceableRunThisOpen = 0;
+        openTally.unplaceableRun = 0;
         if (!isEntityPresent.getAsBoolean()) {
             return recordReading(ReseatObservation.ENTITY_ABSENT, ReseatAction.NONE);
         }
 
-        attemptsSinceLastClear++;
-        if (attemptsSinceLastClear > MAX_ATTEMPTS) {
-            hasStoodDown = true;
+        openTally.attemptsSinceLastClear++;
+        if (openTally.attemptsSinceLastClear > MAX_ATTEMPTS) {
+            openTally.hasStoodDown = true;
             return recordReading(ReseatObservation.ICON_BURIED, ReseatAction.NONE);
         }
         isEntityDetached = true;
@@ -334,12 +251,14 @@ final class MapIconReseatDecision {
         return recordReading(ReseatObservation.ICON_NOT_YET_DROPPED, ReseatAction.NONE);
     }
 
-    // Forgets what the open that just ended spent, so its stand-down cannot outlive the widget that
-    // earned it. The clear sighting is left for the next opened edge, which is what the closing
-    // line reports it from.
-    private void endOpen() {
-        attemptsSinceLastClear = 0;
-        hasStoodDown = false;
+    // Counts an advance with a map up and no icon placeable while the entity is there, which is the
+    // two reads disagreeing once it has gone on long enough - and no single advance can tell it
+    // from the frame before the widget has seeded the icon. An absent entity ends the count, that
+    // being the ordinary state before whatever seeds it has run.
+    private void noteUnplaceableReading(BooleanSupplier isEntityPresent) {
+        openTally.unplaceableRun = isEntityPresent.getAsBoolean()
+            ? openTally.unplaceableRun + 1
+            : 0;
     }
 
     // Keeps the reading behind an action, dropping the oldest once the capacity is reached, and
@@ -378,5 +297,42 @@ final class MapIconReseatDecision {
 
         /** Leave the location alone. */
         NONE
+    }
+
+    // What one open of the map has accrued. One holder rather than five fields so what is per open
+    // is a type, and forgetting an open is replacing it.
+    private static final class MapOpenTally {
+
+        // Lifts attempted since the icon was last seen clear. Reset by that sighting rather than by
+        // a put-back, so what is counted is attempts that achieved nothing.
+        private int attemptsSinceLastClear;
+
+        // Set once the attempts run out, so a build the lever no longer fits costs a handful of
+        // moves per map open rather than two per frame for as long as one is up.
+        private boolean hasStoodDown;
+
+        // Whether the icon has been seen clear since the map opened: an open that never saw it
+        // clear is one whose lifts all count as achieving nothing.
+        private boolean wasIconSeenClear;
+
+        // Consecutive advances on which a map was showing and the icon could not be placed while
+        // the entity was in its location. Ends at any other reading.
+        private int unplaceableRun;
+
+        // Whether the disagreement has been claimed for this open, so it is claimed once rather
+        // than on every advance past the threshold.
+        private boolean hasReportedDisagreement;
+
+        // True on exactly one advance per open: the one the unplaceable run reaches the threshold
+        // on. Claimed rather than read, so the report cannot be made twice for one run.
+        private boolean claimDisagreementReport() {
+
+            if (hasReportedDisagreement
+                    || unplaceableRun < UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT) {
+                return false;
+            }
+            hasReportedDisagreement = true;
+            return true;
+        }
     }
 }

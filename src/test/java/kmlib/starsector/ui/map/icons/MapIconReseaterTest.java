@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import kmlib.starsector.ui.map.MapIconLayering;
+import kmlib.testfixtures.logging.LogAppenderFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,11 @@ class MapIconReseaterTest {
     private static final Function<SectorEntityToken, MapIconLayering> ICON_BURIED =
         entity -> MapIconLayering.BURIED_UNDER_NEBULAE;
 
+    // A widget that places no icon for the entity, whatever it does: the reading a map read and a
+    // placement read disagree on.
+    private static final Function<SectorEntityToken, MapIconLayering> ICON_UNPLACEABLE =
+        entity -> MapIconLayering.UNREADABLE;
+
     // The placement as the live widget reports it one frame on: buried while the entity is in its
     // location, and unplaceable once it is out - the script hands the read no entity then, exactly
     // as the live probe answers for none.
@@ -76,7 +82,7 @@ class MapIconReseaterTest {
             // this test asserting a move nothing in the game would make.
             var reseater = new MapIconReseater(
                 MAP_SHOWING,
-                buildEntityReadThatEmptiesOnRemovalFrom(locationMock, entityMock),
+                buildEntityReadFollowingMovesIn(locationMock, entityMock),
                 ICON_BURIED_UNTIL_THE_ENTITY_IS_OUT);
 
             reseater.advance(ONE_FRAME);
@@ -102,7 +108,7 @@ class MapIconReseaterTest {
 
             var reseater = new MapIconReseater(
                 MAP_SHOWING,
-                buildEntityReadThatEmptiesOnRemovalFrom(locationMock, entityMock),
+                buildEntityReadFollowingMovesIn(locationMock, entityMock),
                 ICON_BURIED);
 
             reseater.advance(ONE_FRAME);
@@ -110,6 +116,104 @@ class MapIconReseaterTest {
 
             verify(locationMock, never())
                 .addEntity(entityMock);
+        }
+
+        @Test
+        void warnsOfTheStandDownOnceAcrossTwoOpens() {
+            // The decision stands down afresh on every open it cannot lift on, and a failure that
+            // does not heal reaches it on every open; the first line says all of it.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var isMapShowing = new boolean[] { true };
+
+            var reseater = new MapIconReseater(
+                () -> isMapShowing[0],
+                buildEntityReadFollowingMovesIn(locationMock, entityMock),
+                ICON_BURIED_UNTIL_THE_ENTITY_IS_OUT);
+
+            var logAppenderFake = LogAppenderFake.captureLogOf(MapIconReseater.class, () -> {
+                driveToStandDown(reseater);
+                closeAndReopenTheMap(reseater, isMapShowing);
+                driveToStandDown(reseater);
+            });
+
+            assertThat(logAppenderFake.getMessages())
+                .filteredOn(message -> message.contains("gave up lifting"))
+                .hasSize(1);
+        }
+
+        @Test
+        void carriesTheReadingsInTheStandDownWarning() {
+            // "Did not clear" alone cannot say whether the lifts were never observed or observed
+            // and undone; the readings can.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                buildEntityReadFollowingMovesIn(locationMock, entityMock),
+                ICON_BURIED_UNTIL_THE_ENTITY_IS_OUT);
+
+            var logAppenderFake = LogAppenderFake.captureLogOf(
+                MapIconReseater.class,
+                () -> driveToStandDown(reseater));
+
+            assertThat(logAppenderFake.getMessages())
+                .filteredOn(message -> message.contains("gave up lifting"))
+                .singleElement()
+                .asString()
+                .contains("ICON_BURIED -> REMOVE, ")
+                .contains("PUT_BACK_OWED -> ADD, ")
+                .endsWith("ICON_BURIED -> NONE]");
+        }
+
+        @Test
+        void warnsOfTheDisagreementOnceAcrossTwoOpens() {
+            // Detected per open by the decision, said once per session here: the next open reads
+            // the same way on a failure that does not heal, and the line would only repeat.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var isMapShowing = new boolean[] { true };
+
+            var reseater = new MapIconReseater(
+                () -> isMapShowing[0],
+                () -> entityMock,
+                ICON_UNPLACEABLE);
+
+            var logAppenderFake = LogAppenderFake.captureLogOf(MapIconReseater.class, () -> {
+                driveUnplaceableAdvances(reseater);
+                closeAndReopenTheMap(reseater, isMapShowing);
+                driveUnplaceableAdvances(reseater);
+            });
+
+            assertThat(logAppenderFake.getMessages())
+                .filteredOn(message -> message.contains("no icon placeable"))
+                .hasSize(1);
+        }
+
+        @Test
+        void tracesTheMapOpeningAndClosingAtDebug() {
+            // The edges are what a log is read by when a count runs up over a session, and they
+            // are DEBUG: a map opening is not news at the default level.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var isMapShowing = new boolean[] { true };
+
+            var reseater = new MapIconReseater(
+                () -> isMapShowing[0],
+                () -> entityMock,
+                ICON_UNPLACEABLE);
+
+            var logAppenderFake = LogAppenderFake.captureLogOf(MapIconReseater.class, () -> {
+                reseater.advance(ONE_FRAME);
+                isMapShowing[0] = false;
+                reseater.advance(ONE_FRAME);
+            });
+
+            assertThat(logAppenderFake.getEvents())
+                .extracting(event -> event.getLevel() + " " + event.getMessage())
+                .anyMatch(line -> line.startsWith("DEBUG Map icon reseat: a map this lifts for opened"))
+                .anyMatch(line -> line.startsWith("DEBUG Map icon reseat: the map closed"));
         }
 
         @Test
@@ -309,7 +413,7 @@ class MapIconReseaterTest {
 
             var reseater = new MapIconReseater(
                 MAP_SHOWING,
-                buildEntityReadThatEmptiesOnRemovalFrom(locationMock, entityMock),
+                buildEntityReadFollowingMovesIn(locationMock, entityMock),
                 ICON_BURIED);
 
             reseater.advance(ONE_FRAME);
@@ -364,10 +468,11 @@ class MapIconReseaterTest {
         }
     }
 
-    // An entity read that stops answering once the location is asked to remove it, standing in for a
-    // live walk over what a location holds. Driven off the removal itself rather than off a call
-    // count, so the two stay in step however many times the read is asked.
-    private static Supplier<SectorEntityToken> buildEntityReadThatEmptiesOnRemovalFrom(
+    // An entity read that follows the entity out of the location and back in as the script moves
+    // it, standing in for a live walk over what a location holds across a whole lift. Driven off the
+    // moves themselves rather than off a call count, so the two stay in step however many times the
+    // read is asked.
+    private static Supplier<SectorEntityToken> buildEntityReadFollowingMovesIn(
             LocationAPI locationMock,
             SectorEntityToken entityMock) {
 
@@ -378,7 +483,36 @@ class MapIconReseaterTest {
             return null;
         }).when(locationMock).removeEntity(entityMock);
 
+        doAnswer(addition -> {
+            isEntityHeld[0] = true;
+            return null;
+        }).when(locationMock).addEntity(entityMock);
+
         return () -> isEntityHeld[0] ? entityMock : null;
+    }
+
+    // Spends the whole attempt budget on lifts whose put-back lands the icon buried again, then
+    // reads it buried once more - the advance the decision stands down on. Each lift is two
+    // advances here, the widget standing in dropping the icon as soon as the entity is out.
+    private static void driveToStandDown(MapIconReseater reseater) {
+        for (var advance = 0; advance < MapIconReseatDecision.MAX_ATTEMPTS * 2 + 1; advance++) {
+            reseater.advance(ONE_FRAME);
+        }
+    }
+
+    // Runs the advances that take an unplaceable icon, with a map up and the entity there, to the
+    // threshold the disagreement is claimed at.
+    private static void driveUnplaceableAdvances(MapIconReseater reseater) {
+        for (var advance = 0; advance < MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT; advance++) {
+            reseater.advance(ONE_FRAME);
+        }
+    }
+
+    // One advance with the map down and the next with it up again: the closed edge, then the opened.
+    private static void closeAndReopenTheMap(MapIconReseater reseater, boolean[] isMapShowing) {
+        isMapShowing[0] = false;
+        reseater.advance(ONE_FRAME);
+        isMapShowing[0] = true;
     }
 
     private static SectorEntityToken buildEntityIn(LocationAPI location) {
