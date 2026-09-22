@@ -12,6 +12,7 @@ what it holds is the channel a binding reports through.
 ## Index
 
 - [Record, then report](#record-then-report)
+- [Two surfaces, one record](#two-surfaces-one-record)
 - [A binding is a third party and a consumer](#a-binding-is-a-third-party-and-a-consumer)
 - [A feature key one mod reused](#a-feature-key-one-mod-reused)
 - [A step that integrates with another mod](#a-step-that-integrates-with-another-mod)
@@ -73,6 +74,33 @@ sequenceDiagram
   N->>N: log describeForLog()
   N->>UI: showConfirmDialog(describeForPlayer(), size)
 ```
+
+## Two surfaces, one record
+
+A binding to a renderer breaks inside a map render pass,
+and the notice above is a transient script on the sector,
+which the campaign engine does not advance while a core screen is up.
+So a failure found on the map reaches that reporter only once the player has left the screen it was about.
+
+[`ui/compatibility/`](../ui/compatibility/) is the second surface:
+a panel stood in the core UI's own widget tree,
+which the screen holding it advances,
+so it can be raised on the frame the failure is found.
+It is drawn from the game's own text widgets rather than handed over as one string,
+which is what lets each row's value be tinted while its label is left alone.
+
+Both drain the one record and neither repeats the other.
+Whichever shows a failure takes it,
+so the dialog never re-opens a notice already dismissed on the map,
+and a failure the panel declines to show is still waiting when the player returns to the campaign.
+Declining is the ordinary case rather than an error:
+there is no screen to stand on at load, and none on the campaign view.
+
+What each row says is settled here and not on either surface.
+[`CompatibilityNoticeRow`](CompatibilityNoticeRow.java) is a row as its template and the value that fills it,
+and `CompatibilityFailure.describeRowsForPlayer` decides which rows there are and in what order -
+so a row added to the notice arrives on both,
+rather than on whichever was edited.
 
 ## A binding is a third party and a consumer
 
@@ -294,6 +322,9 @@ The notice runs on the campaign thread alone.
   [`starsector/startup/`](../startup/) owns the failure boundary, the log line
   and the phrase a failed installation files under;
   this package owns only what a failure it caught is reported as.
+- The panel the notice is drawn on where a screen can hold one.
+  [`ui/compatibility/`](../ui/compatibility/) owns that surface and the widget tree it stands in;
+  this package owns what a failure says and which rows say it.
 - The transient install.
   [`starsector/scripts/`](../scripts/) is what registers the notice on a sector,
   and [`KMLib_ModPlugin`](../../KMLib_ModPlugin.java) is what asks it to on each load.

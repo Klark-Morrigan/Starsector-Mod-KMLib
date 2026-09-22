@@ -507,7 +507,8 @@ No Starsector API on the signature.
   what a binding to third-party code that has stopped holding is reported as,
   and how that report reaches the player:
   recorded where the binding broke, once per third party and mod bound to it,
-  shown as the game's own confirm dialog from a frame that can open one.
+  shown on the screen it was found on where that screen can hold a panel,
+  and otherwise as the game's own confirm dialog from a frame that can open one.
   [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,

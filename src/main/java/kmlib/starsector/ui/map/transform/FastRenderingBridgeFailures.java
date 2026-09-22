@@ -7,6 +7,7 @@ import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilitySubject;
+import kmlib.starsector.ui.compatibility.ScreenCompatibilityNotices;
 
 /**
  * How a Fast Rendering binding that stopped holding is described and recorded, for the two places
@@ -75,6 +76,15 @@ final class FastRenderingBridgeFailures {
                 failureSite,
                 bindingFailure,
                 FastRenderingBridgeDiagnostic.probeInstalledBridge()));
+
+        // Told on the screen it was found on, where that is safe. A binding to this renderer breaks
+        // during a map pass, and the script that shows the campaign's dialog is not advanced while
+        // a core screen is up - so left to that reporter alone, a failure found on the map is shown
+        // only once the player has left the screen it was about. A raise that finds no screen
+        // leaves the record untouched and the dialog gets it as before.
+        if (isGameThreadSite(failureSite)) {
+            ScreenCompatibilityNotices.showPendingFailureOnScreen(failureRecord);
+        }
     }
 
     // What the player and the log are told, as the slots of one failure: the renderer and the two
@@ -99,5 +109,16 @@ final class FastRenderingBridgeFailures {
             consumer,
             new CompatibilityBreakage(failureSite, diagnostic.describeBrokenMembers()),
             bindingFailure);
+    }
+
+    // Whether the guard that caught a failure was one the game's own thread runs, which is what
+    // decides whether anything may be put on screen from it. Named rather than negated from the
+    // render-thread constant, so a guard added beside these is off the screen path until it says
+    // otherwise - the safe way round for a question whose wrong answer touches the widget tree
+    // from a thread the game does not expect.
+    private static boolean isGameThreadSite(String failureSite) {
+
+        return WHILE_RESOLVING_BINDING.equals(failureSite)
+            || WHILE_CALLING_FROM_GAME_THREAD.equals(failureSite);
     }
 }

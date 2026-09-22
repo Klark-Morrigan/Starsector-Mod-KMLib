@@ -4,6 +4,7 @@ import kmlib.starsector.settings.modmanager.InstalledMods;
 import kmlib.starsector.strings.KmlibStringKeys;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -79,32 +80,62 @@ public record CompatibilityFailure(
      */
     public String describeForPlayer() {
 
-        var heading = KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_TITLE, subject.name())
+        var rows = describeRowsForPlayer().stream()
+            .map(CompatibilityNoticeRow::fillRow)
+            .toList();
+
+        return describeHeadingForPlayer() + PARAGRAPH_BREAK + String.join(ROW_BREAK, rows);
+    }
+
+    /**
+     * The paragraph the notice opens with: which third party stopped holding, and where the
+     * mechanics are.
+     *
+     * <p>Apart from the rows because it is not one - it names no label and fills no slot, and a
+     * surface drawing the rows as widgets heads them with this rather than listing it among them.
+     *
+     * @return the two sentences of the heading, a space apart
+     */
+    public String describeHeadingForPlayer() {
+
+        return KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_TITLE, subject.name())
             + HEADING_SENTENCE_BREAK
             + KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_SEE_LOG);
+    }
 
-        var rows = new ArrayList<String>();
-        rows.add(KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, describeMod()));
-        rows.add(KmlibStringKeys.format(
+    /**
+     * The notice's body as labelled rows, each still a template and the value that fills it.
+     *
+     * <p>Which rows there are and what order they come in is decided here and nowhere else, so a
+     * row added to the notice reaches both the dialog and the panel. What a surface then does with
+     * a row - fill it into a line, or draw the label and tint the value - is the surface's.
+     *
+     * @return the rows in reading order, never empty
+     */
+    public List<CompatibilityNoticeRow> describeRowsForPlayer() {
+
+        var unknownVersion = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN);
+
+        var rows = new ArrayList<CompatibilityNoticeRow>();
+        rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, describeMod()));
+        rows.add(buildRow(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_BUILT_FOR,
-            subject.describeBuiltAgainstVersion(
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN))));
-        rows.add(KmlibStringKeys.format(
+            subject.describeBuiltAgainstVersion(unknownVersion)));
+        rows.add(buildRow(
             KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INSTALLED,
-            subject.describeInstalledVersion(
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_VERSION_UNKNOWN))));
-        rows.add(KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_EFFECT, consumer.lostFeature()));
+            subject.describeInstalledVersion(unknownVersion)));
+        rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_EFFECT, consumer.lostFeature()));
 
         // Left out rather than filled with a stand-in where the consumer said nothing about what
         // still works. A row reading "No effect: -" claims less than no row at all and takes as
         // much of the player's eye.
         if (consumer.hasUnaffectedFeature()) {
-            rows.add(KmlibStringKeys.format(
+            rows.add(buildRow(
                 KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_NO_EFFECT,
                 consumer.unaffectedFeature()));
         }
 
-        return heading + PARAGRAPH_BREAK + String.join(ROW_BREAK, rows);
+        return rows;
     }
 
     /**
@@ -132,7 +163,7 @@ public record CompatibilityFailure(
      *
      * @return the mod as a report names it, never blank
      */
-    String describeMod() {
+    public String describeMod() {
 
         var modName = InstalledMods.readModName(consumer.modId());
 
@@ -141,4 +172,10 @@ public record CompatibilityFailure(
             : String.format(NAME_WITH_ID, modName, consumer.modId());
     }
 
+    // One row, as the template its key holds and the value that fills it. The template is read
+    // rather than filled here, the filling being what each surface does differently.
+    private static CompatibilityNoticeRow buildRow(String rowKey, String rowValue) {
+
+        return new CompatibilityNoticeRow(KmlibStringKeys.get(rowKey), rowValue);
+    }
 }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Covers how a failure fills the slots of the two sentences it composes: which value lands in which
@@ -88,6 +89,22 @@ final class CompatibilityFailureTest {
         }
 
         @Test
+        void readsTheSameRowsTheRowListAnswers() {
+
+            // The two surfaces show one notice, so the string the dialog takes is the rows the
+            // panel draws, filled. Composed apart, a row added for one would go missing on the
+            // other and only the surface nobody was looking at would be wrong.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            var filledRows = failure.describeRowsForPlayer().stream()
+                .map(CompatibilityNoticeRow::fillRow)
+                .toList();
+
+            assertThat(failure.describeForPlayer())
+                .isEqualTo(failure.describeHeadingForPlayer() + "\n\n" + String.join("\n", filledRows));
+        }
+
+        @Test
         void namesTheModByItsIdAloneWhereTheGameListsNoSuchMod() {
 
             // The mod row is resolved against the game's mod manager at report time, and the fake
@@ -98,6 +115,44 @@ final class CompatibilityFailureTest {
 
             assertThat(failure.describeForPlayer())
                 .contains("mod[" + CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID + "]");
+        }
+    }
+
+    @Nested
+    class DescribeRowsForPlayer {
+
+        @BeforeEach
+        void installSlotTemplates() {
+
+            CompatibilitySlotTemplates.installSlotTemplates();
+        }
+
+        @Test
+        void answersEachRowAsItsTemplateAndTheValueThatFillsIt() {
+
+            // The template unfilled and the value beside it, which is what lets a surface draw the
+            // label and the value differently - the one thing a filled string cannot be asked for.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            assertThat(failure.describeRowsForPlayer())
+                .extracting(CompatibilityNoticeRow::rowTemplate, CompatibilityNoticeRow::rowValue)
+                .containsExactly(
+                    tuple("mod[%s]", CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID),
+                    tuple("built[%s]", "0.8.8"),
+                    tuple("installed[%s]", "0.9.1"),
+                    tuple("effect[%s]", CompatibilityFailureFixture.LOST_FEATURE),
+                    tuple("noeffect[%s]", CompatibilityFailureFixture.UNAFFECTED_FEATURE));
+        }
+
+        @Test
+        void leavesOutTheNoEffectRowWhereTheConsumerSaidNothingAboutOne() {
+
+            var failure = CompatibilityFailureFixture.createFailureLosing(
+                CompatibilityFailureFixture.LOST_FEATURE);
+
+            assertThat(failure.describeRowsForPlayer())
+                .extracting(CompatibilityNoticeRow::rowTemplate)
+                .doesNotContain("noeffect[%s]");
         }
     }
 
