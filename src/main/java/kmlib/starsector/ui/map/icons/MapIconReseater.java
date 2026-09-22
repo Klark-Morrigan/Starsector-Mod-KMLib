@@ -37,7 +37,12 @@ import java.util.function.Supplier;
  * <p>Every move it makes is logged at DEBUG on this library's own logger, not the calling mod's, so
  * following a layering problem means turning KMLib's verbosity up rather than the mod's. A move is
  * rare - one per re-seeding of the icon map - so the lines stay readable beside a mod's own
- * icon-order trace.
+ * icon-order trace. So are the map coming and going, each carrying the count of lifts the icon has
+ * not been seen clear since, because that count running up across opens is what a layering that
+ * degrades over a session looks like from inside. Two states are said at WARN, since neither comes
+ * right on its own: a map that stays up with no icon placeable for the entity - the map read and the
+ * placement read disagreeing about what is on screen - once per open, and the stand-down once, with
+ * the readings that led to it.
  *
  * <p>Runs while paused. Opening a map holds the campaign paused for as long as it is up, which is
  * the whole window this works in - a script standing down while paused would never advance here.
@@ -135,8 +140,11 @@ public final class MapIconReseater implements EveryFrameScript {
         switch (action) {
             case REMOVE -> detachMapIcon(entityThisAdvance.resolveEntity());
             case ADD -> attachMapIcon();
-            case NONE -> reportStandingDownOnce(entityThisAdvance);
+            case NONE -> {
+                // Nothing owed the location this advance.
+            }
         }
+        reportAdvanceDiagnostics(entityThisAdvance);
     }
 
     private void detachMapIcon(SectorEntityToken entity) {
@@ -205,9 +213,48 @@ public final class MapIconReseater implements EveryFrameScript {
         }
     }
 
+    // What this advance says about the lift beyond the move itself, for a log read after the picture
+    // went wrong: the map coming and going with the count carried across, the two reads behind the
+    // decision disagreeing, and the stand-down. Detecting each is the decision's, being read off
+    // state it keeps; wording them is this script's, the logger being its.
+    private void reportAdvanceDiagnostics(EntityThisAdvance entityThisAdvance) {
+
+        var notes = reseatDecision.readNotesOfLastAdvance();
+
+        switch (notes.mapShowingEdge()) {
+            case OPENED -> LOG.debug("Map icon reseat: a map this lifts for opened; "
+                + describeLiftCount(notes));
+            case CLOSED -> LOG.debug("Map icon reseat: the map closed; icon seen clear while it "
+                + "was up=" + notes.wasIconSeenClearThisOpen() + ", " + describeLiftCount(notes));
+            case NONE -> {
+                // The map is as it was, so there is no moment to mark.
+            }
+        }
+        if (notes.isDisagreementToReport()) {
+            reportDisagreement(entityThisAdvance);
+        }
+        reportStandingDownOnce(entityThisAdvance);
+    }
+
+    // Says once per open that the two reads this is handed do not describe the same screen: the
+    // map read says a map this cares about is up, and for as long as it has been, the placement
+    // read has found no icon for the entity - which is there to be found. Nothing can be lifted on
+    // such a map, and neither read alone says why. WARN because it will not come right within the
+    // open; once per open because the next open may be read from a different widget.
+    private void reportDisagreement(EntityThisAdvance entityThisAdvance) {
+        LOG.warn("Map icon reseat: a map has been showing for "
+            + MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT + " advances with "
+            + describeEntity(entityThisAdvance.resolveEntity())
+            + " in its location and no icon placeable for it. The map read and the placement read "
+            + "disagree about what is on screen, so nothing is lifted past the nebulae on this "
+            + "map. Reported once per map open.");
+    }
+
     // Says once that the lift has been abandoned, which is the only state a player could otherwise
     // only diagnose from the picture. WARN rather than DEBUG: unlike the moves above, this one
-    // reports something that will not come right on its own.
+    // reports something that will not come right on its own. Carries the readings that led to it,
+    // since "did not clear" alone cannot say whether the lifts were never observed or observed and
+    // undone.
     private void reportStandingDownOnce(EntityThisAdvance entityThisAdvance) {
 
         if (hasLoggedStandDown || !reseatDecision.hasStoodDown()) {
@@ -218,7 +265,14 @@ public final class MapIconReseater implements EveryFrameScript {
             + describeEntity(entityThisAdvance.resolveEntity())
             + " past the map's nebulae after " + MapIconReseatDecision.MAX_ATTEMPTS
             + " attempts that did not clear them. Its layering is left as the widget seeded it "
-            + "for the rest of this session.");
+            + "for the rest of this session. The readings leading to it, oldest first: "
+            + reseatDecision.describeRecentReadings());
+    }
+
+    // The count both edges carry, worded once so the two lines agree on what it is.
+    private static String describeLiftCount(ReseatAdvanceNotes notes) {
+        return "lifts since the icon was last seen clear=" + notes.attemptsSinceLastClear()
+            + (notes.hasStoodDown() ? ", stood down" : "");
     }
 
     // One line for a fault that repeats every frame. What it costs is stated rather than the fault
