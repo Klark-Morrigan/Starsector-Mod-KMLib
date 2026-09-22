@@ -17,8 +17,9 @@ import com.fs.starfarer.api.ui.UIPanelAPI;
  * <p>That is the whole of what this buys, and it is worth being plain about what it does not. The
  * game dims nothing behind such a panel and stops dispatching to nothing under it, because the
  * dimming and the interception belong to the modal base {@link CoreUiDialogView} recognises and
- * nothing here descends from it. A caller wanting either supplies its own, and a caller wanting to
- * be seen as a modal by anything reading that base cannot be.
+ * nothing here descends from it. A caller wanting either supplies its own. A caller wanting to be
+ * seen as a modal by anything reading that base hands its presence to {@link ModalOverlays}, which
+ * that view reads beside the base.
  *
  * <p>Reached through the published panel interface rather than by name. The core UI's own class is
  * obfuscated, but it is a panel, and adding and removing children is what the interface is for - so

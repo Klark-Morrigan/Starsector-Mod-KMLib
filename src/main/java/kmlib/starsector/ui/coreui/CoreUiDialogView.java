@@ -61,6 +61,12 @@ public final class CoreUiDialogView {
      */
     public static boolean isModalDialogShowing() {
 
+        // This library's own overlays first: a flag read over a holder, which is cheaper than the
+        // walk, and an overlay of ours holds the screen exactly as the game's modal does.
+        if (ModalOverlays.resolveRaisedPresence().isRaised()) {
+            return true;
+        }
+
         try {
             return isModalDialogShowingUnder(CoreUiTree.resolveActiveCoreUi());
 
@@ -86,6 +92,12 @@ public final class CoreUiDialogView {
      *         is none or the reach fails
      */
     public static OverlayPresence resolveModalPresence() {
+
+        // This library's own overlays first, for the reason the presence read above gives.
+        var raisedByLibrary = ModalOverlays.resolveRaisedPresence();
+        if (raisedByLibrary.isRaised()) {
+            return raisedByLibrary;
+        }
 
         try {
             return resolveModalPresenceUnder(CoreUiTree.resolveActiveCoreUi());

@@ -9,6 +9,8 @@ import com.fs.starfarer.api.ui.PositionAPI;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.ui.coreui.CoreUiOverlayPanels;
+import kmlib.starsector.ui.coreui.ModalOverlays;
+import kmlib.starsector.ui.coreui.OverlayPresence;
 import kmlib.starsector.ui.map.probes.ShownMapTab;
 
 import org.lwjgl.input.Keyboard;
@@ -55,6 +57,13 @@ public final class CompatibilityNoticePanel {
     // The height the box is built at before its contents are measured. Generous, because an element
     // created too short clips what is drawn into it before there is anything to measure.
     private static final float BOX_BUILD_HEIGHT = 600f;
+
+    // What this reports while it is up. No fade, so wholly in place from the frame it is raised:
+    // whatever stands aside for a modal stands aside at once rather than dissolving into it.
+    private static final OverlayPresence FULLY_RAISED = new OverlayPresence(true, 1f);
+
+    // The reading handed to whatever stands aside for a modal, held so the same one is taken back.
+    private final Supplier<OverlayPresence> screenHold = this::resolveScreenPresence;
 
     // Where a map was last found, so the panel comes down with the screen it was raised on.
     private final Supplier<Object> resolveShownMapTab;
@@ -116,6 +125,7 @@ public final class CompatibilityNoticePanel {
         if (panel == null) {
             return;
         }
+        ModalOverlays.releaseScreen(screenHold);
         CoreUiOverlayPanels.detachOverlayPanel(panel);
 
         panel = null;
@@ -160,7 +170,17 @@ public final class CompatibilityNoticePanel {
         placement.inTL(NO_OFFSET, NO_OFFSET);
         panel = newPanel;
 
+        // Said the moment the panel is up rather than once it is filled: input has to stand down
+        // from the first frame, and what fills the box a frame later changes nothing about that.
+        ModalOverlays.holdScreen(screenHold);
+
         return true;
+    }
+
+    // What this is doing on one frame, for whatever stands aside for a modal.
+    private OverlayPresence resolveScreenPresence() {
+
+        return panel == null ? OverlayPresence.NONE : FULLY_RAISED;
     }
 
     // Fails closed, the opposite way round from the reads it goes through: a reach that raises
