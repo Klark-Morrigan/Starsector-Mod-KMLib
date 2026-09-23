@@ -65,7 +65,7 @@ public final class WiringSteps {
         this.stepLog = Objects.requireNonNull(
             stepLog,
             "A guard with nowhere to log would swallow every step that failed.");
-            
+
         this.failureRecord = Objects.requireNonNull(
             failureRecord,
             "A guard with nowhere to record would degrade silently and tell no player why.");
