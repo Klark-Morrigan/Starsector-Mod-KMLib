@@ -5,6 +5,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
+import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.map.MapIconLayering;
 
 import org.apache.log4j.Logger;
@@ -34,18 +35,19 @@ import java.util.function.Supplier;
  * reader of the wiring would have to be told. Within an advance the entity is read once and handed
  * to both, so the pairing costs a walk rather than three.
  *
- * <p>Every move it makes is logged at DEBUG on this library's own logger, not the calling mod's, so
- * following a layering problem means turning KMLib's verbosity up rather than the mod's. A move is
- * rare - one per re-seeding of the icon map - so the lines stay readable beside a mod's own
- * icon-order trace.
+ * <p>It says in the log what it saw, on this library's own logger rather than the calling mod's, so
+ * following a layering problem means turning KMLib's verbosity up rather than the mod's: each move
+ * and each edge of the map coming and going at DEBUG, and at WARN, once per session each, the two
+ * states that do not come right within a map open. The package README lists the lines.
  *
  * <p>Runs while paused. Opening a map holds the campaign paused for as long as it is up, which is
  * the whole window this works in - a script standing down while paused would never advance here.
  *
- * <p>The entity is out of its location for one advance - a few more where a fault delays the
- * put-back - which is worth knowing for anything that reads the location on a timer: a save written
- * inside that window does not hold it, so whatever put the entity there is what has to put it back
- * on the next load.
+ * <p>The entity is out of its location until the widget has dropped its icon - one advance on an
+ * ordinary frame, a few under the campaign's speed-up, which advances several times per rendered
+ * frame, a few more where a fault delays the put-back - which is worth knowing for anything that
+ * reads the location on a timer: a save written inside that window does not hold it, so whatever
+ * put the entity there is what has to put it back on the next load.
  */
 public final class MapIconReseater implements EveryFrameScript {
 
@@ -56,18 +58,22 @@ public final class MapIconReseater implements EveryFrameScript {
     private final Function<SectorEntityToken, MapIconLayering> readIconLayeringOf;
     private final MapIconReseatDecision reseatDecision = new MapIconReseatDecision();
 
-    // The entity taken out, with the location it came from, held for the single advance it spends
-    // out. One field rather than two so the pair cannot part company: an entity without its former
+    // The two states worth a WARN, each said once per session although the decision reaches them
+    // afresh on every map open it cannot lift on: a failure that does not heal recurs on every open,
+    // and the first line says all of it. Two holders rather than one, the two being different
+    // failures with different lines.
+    private final SessionWarning disagreementWarning = new SessionWarning(LOG);
+    private final SessionWarning standDownWarning = new SessionWarning(LOG);
+
+    // The entity taken out, with the location it came from, held for the advances it spends out.
+    // One field rather than two so the pair cannot part company: an entity without its former
     // location has nowhere to go back to, and neither half is any use alone.
     private DetachedMapIcon detachedMapIcon;
 
     // One-shot guard: this runs every frame, so a recurring fault would flood the log. The first
-    // failure is recorded, the rest silenced.
+    // failure is recorded, the rest silenced. Its own flag rather than a holder like the two above,
+    // that shape being for a WARN and this being an ERROR.
     private boolean hasLoggedReseatError;
-
-    // The same guard for the stand-down, which is a standing state rather than an event: without it
-    // every advance for the rest of the session would report it again.
-    private boolean hasLoggedStandDown;
 
     /**
      * @param isMapShowing whether a map whose icon order matters is on screen; it scopes the move to
@@ -135,8 +141,11 @@ public final class MapIconReseater implements EveryFrameScript {
         switch (action) {
             case REMOVE -> detachMapIcon(entityThisAdvance.resolveEntity());
             case ADD -> attachMapIcon();
-            case NONE -> reportStandingDownOnce(entityThisAdvance);
+            case NONE -> {
+                // Nothing owed the location this advance.
+            }
         }
+        reportAdvanceDiagnostics(entityThisAdvance);
     }
 
     private void detachMapIcon(SectorEntityToken entity) {
@@ -176,13 +185,13 @@ public final class MapIconReseater implements EveryFrameScript {
         detachedMapIcon = null;
     }
 
-    // Puts the entity back when nothing else is going to. A removal is owed its put-back on the very
-    // next advance and the decision is what orders it, but the two records of that removal can part
-    // company: the decision's is spent the moment the next advance asks, while the pair held here
-    // lasts until the move is actually made. A fault between the two therefore leaves an entity out
-    // of its location that no later advance has any reason to return - the placement it would read
-    // is gone along with the entity - which would cost the caller the very surface the lift exists
-    // to keep drawing, for the rest of the session.
+    // Puts the entity back when nothing else is going to. A removal is owed its put-back once the
+    // widget has dropped the icon and the decision is what orders it, but the two records of that
+    // removal can part company: the decision's is spent the moment an advance asks after it, while
+    // the pair held here lasts until the move is actually made. A fault between the two therefore
+    // leaves an entity out of its location that no later advance has any reason to return - the
+    // placement it would read is gone along with the entity - which would cost the caller the very
+    // surface the lift exists to keep drawing, for the rest of the session.
     //
     // Guarded on its own, and quietly: it runs on a frame whose fault has already been reported, and
     // an entity it cannot return now stays held, so the next advance tries again.
@@ -205,20 +214,68 @@ public final class MapIconReseater implements EveryFrameScript {
         }
     }
 
-    // Says once that the lift has been abandoned, which is the only state a player could otherwise
-    // only diagnose from the picture. WARN rather than DEBUG: unlike the moves above, this one
-    // reports something that will not come right on its own.
-    private void reportStandingDownOnce(EntityThisAdvance entityThisAdvance) {
+    // What this advance says about the lift beyond the move itself, for a log read after the picture
+    // went wrong: the map coming and going with the count carried across, the two reads behind the
+    // decision disagreeing, and the stand-down. Detecting each is the decision's, being read off
+    // state it keeps; wording them is this script's, the logger being its.
+    private void reportAdvanceDiagnostics(EntityThisAdvance entityThisAdvance) {
 
-        if (hasLoggedStandDown || !reseatDecision.hasStoodDown()) {
+        var notes = reseatDecision.readNotesOfLastAdvance();
+
+        switch (notes.mapShowingEdge()) {
+            case OPENED -> LOG.debug("Map icon reseat: a map this lifts for opened; "
+                + describeLiftCount(notes));
+            case CLOSED -> LOG.debug("Map icon reseat: the map closed; icon seen clear while it "
+                + "was up=" + notes.wasIconSeenClearThisOpen() + ", " + describeLiftCount(notes));
+            case NONE -> {
+                // The map is as it was, so there is no moment to mark.
+            }
+        }
+        if (notes.isDisagreementToReport()) {
+            reportDisagreementOnce(entityThisAdvance);
+        }
+        reportStandingDownOnce(entityThisAdvance);
+    }
+
+    // The two reads this is handed do not describe the same screen: the map read says a map this
+    // cares about is up, and for as long as it has been, the placement read has found no icon for
+    // the entity - which is there to be found. Nothing can be lifted on such a map, and neither
+    // read alone says why.
+    private void reportDisagreementOnce(EntityThisAdvance entityThisAdvance) {
+
+        if (disagreementWarning.hasWarnedThisSession()) {
             return;
         }
-        hasLoggedStandDown = true;
-        LOG.warn("Map icon reseat: gave up lifting "
+        disagreementWarning.warnOnce("Map icon reseat: a map has been showing for "
+            + MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT + " advances with "
+            + describeEntity(entityThisAdvance.resolveEntity())
+            + " in its location and no icon placeable for it. The map read and the placement read "
+            + "disagree about what is on screen, so nothing is lifted past the nebulae on this "
+            + "map. Said once per session; later opens that read the same way are not reported.");
+    }
+
+    // The lift has been abandoned for this map open, which is otherwise a state a player could only
+    // diagnose from the picture. Carries the readings that led to it, since "did not clear" alone
+    // cannot say whether the lifts were never observed or observed and undone - and they are built
+    // only where the line is going to be written.
+    private void reportStandingDownOnce(EntityThisAdvance entityThisAdvance) {
+
+        if (standDownWarning.hasWarnedThisSession() || !reseatDecision.hasStoodDown()) {
+            return;
+        }
+        standDownWarning.warnOnce("Map icon reseat: gave up lifting "
             + describeEntity(entityThisAdvance.resolveEntity())
             + " past the map's nebulae after " + MapIconReseatDecision.MAX_ATTEMPTS
             + " attempts that did not clear them. Its layering is left as the widget seeded it "
-            + "for the rest of this session.");
+            + "until the map is next opened, when the lift is tried again. Said once per session. "
+            + "The readings leading to it, oldest first: "
+            + reseatDecision.describeRecentReadings());
+    }
+
+    // The count both edges carry, worded once so the two lines agree on what it is.
+    private static String describeLiftCount(ReseatAdvanceNotes notes) {
+        return "lifts since the icon was last seen clear=" + notes.attemptsSinceLastClear()
+            + (notes.hasStoodDown() ? ", stood down" : "");
     }
 
     // One line for a fault that repeats every frame. What it costs is stated rather than the fault
@@ -230,8 +287,8 @@ public final class MapIconReseater implements EveryFrameScript {
         }
         hasLoggedReseatError = true;
         LOG.error(
-            "Could not reseat a map icon; "
-                + "its layering is left as the widget seeded it this session.",
+            "Could not reseat a map icon on this advance; "
+                + "later advances keep trying, and further faults are not reported.",
             reseatFailure);
     }
 

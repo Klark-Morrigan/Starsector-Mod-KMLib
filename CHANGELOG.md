@@ -15,6 +15,11 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+### Fixed
+
+- **`MapIconReseater` lifts an icon under the campaign's speed-up.** With the speed-up toggled on, the campaign advances its scripts several times per rendered frame, map open or not, so a removal and a put-back on consecutive advances landed in one frame and the widget never rendered without the icon: every layer stayed under the nebulae on every open, unmoved by a save reload or a Starscape toggle. The put-back now waits until the widget has dropped the icon, bounded by `MAX_ADVANCES_DETACHED` advances and ended at once when the map goes down. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
+- **A stood-down lift is tried again on the next map open.** The attempt bound abandons a lift for the rest of the open rather than for the session: the next open is a fresh widget with a fresh seeding, and a stand-down that outlived its cause read, from outside, as the lever having stopped working.
+
 ### Added
 
 - **`VerticalRadioSpec`**: a column of option cells stacked top to bottom, one lit - the shape an option set of more than two or three reads as, where the same options laid across a row letter too narrow to tell apart. Carries no segment sizing and no trailing caption, both being row-only.
@@ -86,6 +91,7 @@ A binding to third-party code that stops holding now costs the feature built ove
 
 ### Changed
 
+- **`MapIconReseater` says in the log what it saw.** A layering that degrades over a session cannot be diagnosed from the picture, and the moves alone do not say why one stopped taking. The map coming and going is traced at DEBUG, each edge carrying the count of lifts the icon has not been seen clear since and, on the close, whether it was seen clear at all while the map was up. Two states are reported at WARN, each once per session so a failure that does not heal costs one line rather than one per open: a map that stays up with the entity in its location and no icon placeable for it, the map read and the placement read then disagreeing about what is on screen; and the stand-down, carrying the readings that led to it so it says whether the lifts were never observed or observed and undone. All on the library's own logger, which `KmlibLunaSettings` binds to KMLib's verbosity field; the package README lists the lines.
 - **`VoronoiCellBuilder` lays the corners its cells share.** Where a neighbour's border meets the radius bound, both cells now put that corner in the same place, worked out from the two sites and the reach rather than from either cell's own seed - so they agree exactly rather than to a tolerance. The seed is a polygon inscribed in the bound, and its flat sides used to move such a corner, or at a coarse segment count cut it away altogether; a consumer chaining adjacent cells' frontier edges into one outline found a gap at every one of those, wide enough at a low count to leak one enclosed region into the next. A corner that is cut away is now put back, by breaking the span it should have stood on and running the boundary through it.
 
   The segment count therefore decides how smoothly an arc is drawn and nothing else. The corners a cell offers are the same at any count, which is what anything laid against a cell needs. Where three cells meet inside the bound their shared corner is one corner, not two with an empty span between them.
@@ -120,7 +126,7 @@ A binding to third-party code that stops holding now costs the feature built ove
 
 ### Dependency changes
 
-- Reflection utils are lifted from **MagicLib** per **Numan**'s recommendation. Scoped to **coreui** package.
+- Reflection utils are lifted from **MagicLib** per **Numan**'s recommendation [at USC](https://discord.com/channels/187635036525166592/1549091275167240272/1549267098415403011) (he's working on dev builds of **MagicLib**). Scoped to **coreui** package.
 - **MagicLib** dependency is removed.
 - The project is relicenced under under **LGPL-3.0-only** to comply with licencing of donor code.
 
@@ -128,8 +134,8 @@ A binding to third-party code that stops holding now costs the feature built ove
 
 ### Fixed
 
-- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - Reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
-- **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature in now handled and logged, resulting in terrain reseating standing down for the rest of the section.
+- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - Reported at **USC** by [**Elia Rowan (zinzrinz)**](https://discord.com/channels/187635036525166592/1549091275167240272/1549127910084972614) and [**MattTheMatt2**](https://discord.com/channels/187635036525166592/1549091275167240272/1549149360644948121), localised and fix suggested by [**WolframSegler**](https://discord.com/channels/187635036525166592/1549091275167240272/1549130150312935506).
+- **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature is now handled and logged, resulting in terrain reseating standing down for the rest of the section.
 - **Altered map render state**. Failed terrain reseating now restores reseated terrain placement before standing down.
 - **Duplicate map entity**. A location that refuses to give an entity up no longer leaves the reseat owing a put-back for an entity that never left, which added a second copy of it on the next advance.
 

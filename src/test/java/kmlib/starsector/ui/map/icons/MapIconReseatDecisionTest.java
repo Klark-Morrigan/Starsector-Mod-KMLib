@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the rule the reseat rests on: it acts on where the icon is rather than on an event that would
- * have moved it, acts over exactly two advances, puts the entity back from every way that pair of
- * advances can be interrupted, and abandons a lift that never takes.
+ * have moved it, takes the entity out until the widget has dropped its icon, puts it back from every
+ * way that wait can be interrupted, and abandons a lift that never takes for the rest of the open.
  *
  * <p>The state-keyed shape is what most of these are about. An earlier rule armed on the edge into a
  * map being shown, which every test of it passed and which failed in play the first time an open
@@ -32,6 +32,11 @@ class MapIconReseatDecisionTest {
     private static final Supplier<MapIconLayering> ICON_BURIED = () -> MapIconLayering.BURIED_UNDER_NEBULAE;
     private static final Supplier<MapIconLayering> ICON_CLEAR = () -> MapIconLayering.CLEAR_OF_NEBULAE;
     private static final Supplier<MapIconLayering> ICON_UNPLACEABLE = () -> MapIconLayering.UNREADABLE;
+
+    // Faults if it is asked, so a case that must not read the placement says so by construction.
+    private static final Supplier<MapIconLayering> PLACEMENT_NOT_TO_BE_READ = () -> {
+        throw new AssertionError("the placement must not be read on this advance");
+    };
 
     private static final boolean MAP_SHOWING = true;
     private static final boolean NO_MAP_SHOWING = false;
@@ -64,13 +69,80 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void addsTheEntityBackOnTheVeryNextAdvance() {
-            // One advance out and no more: the absence exists only so a single rendered frame drops
-            // the icon, and every further frame without it is a frame the entity does not draw.
+        void addsTheEntityBackOnceTheWidgetHasDroppedItsIcon() {
+            // An icon that can no longer be placed is one a frame rendered without, which is the
+            // whole of what the absence exists for; every further advance without the entity is one
+            // it does not draw.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.decideReseatAction(
+                    MAP_SHOWING,
+                    ICON_UNPLACEABLE,
+                    ENTITY_ABSENT))
+                .isEqualTo(ReseatAction.ADD);
+        }
+
+        @Test
+        void keepsTheEntityOutWhileTheWidgetStillShowsItsIcon() {
+            // An advance is not a frame. Under the campaign's speed-up several advances pass per
+            // rendered frame, and a put-back ordered on the next advance lands in the frame the
+            // removal did - the widget then never renders without the icon and drops nothing, so
+            // the lift is repeated until it is abandoned. The regression a whole class of reports
+            // came down to.
             var reseatDecision = new MapIconReseatDecision();
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
 
             assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT))
+                .isEqualTo(ReseatAction.NONE);
+        }
+
+        @Test
+        void liftsUnderSeveralAdvancesPerFrameByWaitingForTheDrop() {
+            // Two advances per frame: the removal on the first, the icon still seeded on the second,
+            // dropped on the first advance of the next frame, and the put-back then re-seeds it at
+            // the tail - clear on the advance after that.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT))
+                .isEqualTo(ReseatAction.NONE);
+            assertThat(reseatDecision.isPutBackOwed())
+                .isFalse();
+        }
+
+        @Test
+        void addsTheEntityBackOnceTheWaitForTheDropRunsOut() {
+            // A map that has stopped rendering never drops the icon, and the entity must not stay
+            // out for as long as that lasts. Pinned from both sides: one advance short still waits.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            for (var advance = 0; advance < MapIconReseatDecision.MAX_ADVANCES_DETACHED - 1; advance++) {
+                assertThat(reseatDecision.decideReseatAction(
+                        MAP_SHOWING,
+                        ICON_BURIED,
+                        ENTITY_ABSENT))
+                    .isEqualTo(ReseatAction.NONE);
+            }
+
+            assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT))
+                .isEqualTo(ReseatAction.ADD);
+        }
+
+        @Test
+        void addsTheEntityBackWithoutReadingThePlacementOnceTheMapIsDown() {
+            // With no map up there is no widget to wait on, and the read behind the placement
+            // walks a live tree that is not there.
+            var reseatDecision = new MapIconReseatDecision();
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.decideReseatAction(
+                    NO_MAP_SHOWING,
+                    PLACEMENT_NOT_TO_BE_READ,
+                    ENTITY_ABSENT))
                 .isEqualTo(ReseatAction.ADD);
         }
 
@@ -93,7 +165,7 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
 
             assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT))
@@ -162,6 +234,20 @@ class MapIconReseatDecisionTest {
 
             assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT))
                 .isEqualTo(ReseatAction.NONE);
+        }
+
+        @Test
+        void liftsAgainOnTheNextOpenAfterStandingDown() {
+            // The next open is a fresh widget with a fresh seeding, owed a fresh try: a stand-down
+            // that outlived the open that earned it would read, from outside, as the lever having
+            // stopped working for the session.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveToStandDown(reseatDecision);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT))
+                .isEqualTo(ReseatAction.REMOVE);
         }
 
         @Test
@@ -249,12 +335,22 @@ class MapIconReseatDecisionTest {
             // otherwise a state a player could only diagnose from the picture.
             var reseatDecision = new MapIconReseatDecision();
 
-            driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
-
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            driveToStandDown(reseatDecision);
 
             assertThat(reseatDecision.hasStoodDown())
                 .isTrue();
+        }
+
+        @Test
+        void hasStoodDownIsFalseAgainOnceTheMapHasClosed() {
+            // The stand-down is the open's, not the session's.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveToStandDown(reseatDecision);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.hasStoodDown())
+                .isFalse();
         }
     }
 
@@ -288,19 +384,353 @@ class MapIconReseatDecisionTest {
             var reseatDecision = new MapIconReseatDecision();
 
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
 
             assertThat(reseatDecision.isPutBackOwed())
                 .isFalse();
         }
+
+        @Test
+        void isPutBackOwedStaysTrueWhileTheWidgetStillShowsTheIcon() {
+            // A wait is a removal still in progress, so the caller holding the entity must keep
+            // holding it rather than return it early and undo the lift.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.isPutBackOwed())
+                .isTrue();
+        }
     }
 
-    // Runs whole lift cycles - out on one advance, back on the next - that never clear the fog, which
-    // is the sequence the attempt bound is about.
+    @Nested
+    class ReadNotesOfLastAdvance {
+
+        @Test
+        void reportsNoEdgeBeforeAnyAdvance() {
+
+            assertThat(new MapIconReseatDecision().readNotesOfLastAdvance().mapShowingEdge())
+                .isEqualTo(MapShowingEdge.NONE);
+        }
+
+        @Test
+        void reportsAnOpenedEdgeOnTheFirstAdvanceWithAMapShowing() {
+            // The moment a log wants marked: from here on the count of lifts is this open's.
+            var reseatDecision = new MapIconReseatDecision();
+
+            advanceWithNoMapShowing(reseatDecision);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().mapShowingEdge())
+                .isEqualTo(MapShowingEdge.OPENED);
+        }
+
+        @Test
+        void reportsNoEdgeWhileTheMapStaysUp() {
+            // The level is read every advance; only the moments it moves are worth a line.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().mapShowingEdge())
+                .isEqualTo(MapShowingEdge.NONE);
+        }
+
+        @Test
+        void reportsAClosedEdgeOnTheFirstAdvanceWithoutAMap() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().mapShowingEdge())
+                .isEqualTo(MapShowingEdge.CLOSED);
+        }
+
+        @Test
+        void carriesTheSpentLiftsOnTheClosedEdge() {
+            // The closing line reports the open as it ended; the count is forgotten only after the
+            // notes are composed, so what was spent on that open is still there to be read.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, 2);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().attemptsSinceLastClear())
+                .isEqualTo(2);
+        }
+
+        @Test
+        void carriesTheStandDownOnTheClosedEdge() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveToStandDown(reseatDecision);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().hasStoodDown())
+                .isTrue();
+        }
+
+        @Test
+        void forgetsTheSpentLiftsWhenTheMapOpensAgain() {
+            // What the previous open spent says nothing about this one.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, 2);
+            advanceWithNoMapShowing(reseatDecision);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().attemptsSinceLastClear())
+                .isEqualTo(0);
+        }
+
+        @Test
+        void saysTheIconWasSeenClearWhenTheMapClosesAfterAClearReading() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().wasIconSeenClearThisOpen())
+                .isTrue();
+        }
+
+        @Test
+        void saysTheIconWasNotSeenClearWhenTheMapClosesAfterLiftsAlone() {
+            // An open whose lifts were never confirmed is exactly the open that spends the budget.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, 1);
+            advanceWithNoMapShowing(reseatDecision);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().wasIconSeenClearThisOpen())
+                .isFalse();
+        }
+
+        @Test
+        void forgetsTheClearSightingWhenTheMapOpensAgain() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
+            advanceWithNoMapShowing(reseatDecision);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().wasIconSeenClearThisOpen())
+                .isFalse();
+        }
+
+        @Test
+        void reportsTheStandDownOnceTheAttemptsAreSpent() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveToStandDown(reseatDecision);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().hasStoodDown())
+                .isTrue();
+        }
+
+        @Test
+        void reportsTheDisagreementOnTheAdvanceTheUnplaceableRunReachesTheThreshold() {
+            // A map up, the entity there, and no icon for it for this long is not the frame before
+            // the widget seeds the icon - it is the two reads describing different screens.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().isDisagreementToReport())
+                .isTrue();
+        }
+
+        @Test
+        void reportsNoDisagreementWhileTheUnplaceableRunIsShortOfTheThreshold() {
+            // One short, so the threshold is pinned from below: an open legitimately reads
+            // unplaceable for a few advances before the first render seeds the icon.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT - 1);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().isDisagreementToReport())
+                .isFalse();
+        }
+
+        @Test
+        void reportsTheDisagreementOnlyOnceWhileTheMapStaysUp() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT + 1);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().isDisagreementToReport())
+                .isFalse();
+        }
+
+        @Test
+        void reportsTheDisagreementAgainOnTheNextOpen() {
+            // The next open may be read from a different widget, so it earns its own report.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT);
+            advanceWithNoMapShowing(reseatDecision);
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().isDisagreementToReport())
+                .isTrue();
+        }
+
+        @Test
+        void reportsNoDisagreementWhileTheEntityIsAbsent() {
+            // No icon for an entity that is in no location is the ordinary state before whatever
+            // seeds the entity has run, not two reads disagreeing.
+            var reseatDecision = new MapIconReseatDecision();
+
+            for (var advance = 0;
+                    advance < MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT;
+                    advance++) {
+                reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
+            }
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().isDisagreementToReport())
+                .isFalse();
+        }
+
+        @Test
+        void endsTheUnplaceableRunOnAClearReading() {
+            // Consecutive advances, not a total: a run broken by any other reading starts over.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT - 1);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
+            driveUnplaceableAdvances(
+                reseatDecision,
+                MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT - 1);
+
+            assertThat(reseatDecision.readNotesOfLastAdvance().isDisagreementToReport())
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class DescribeRecentReadings {
+
+        @Test
+        void describesNothingBeforeAnyMapWasRead() {
+
+            assertThat(new MapIconReseatDecision().describeRecentReadings())
+                .isEqualTo("[]");
+        }
+
+        @Test
+        void describesEachReadingWithItsAdvanceWhatWasFoundAndWhatWasOrdered() {
+
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveFailedLifts(reseatDecision, 1);
+
+            assertThat(reseatDecision.describeRecentReadings())
+                .isEqualTo("[#1 ICON_BURIED -> REMOVE, #2 PUT_BACK_OWED -> ADD]");
+        }
+
+        @Test
+        void describesAWaitAsTheIconNotYetDropped() {
+            // The reading that tells several advances per frame from a lift that never takes: the
+            // entity is out and the widget still shows the icon.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.describeRecentReadings())
+                .isEqualTo("[#1 ICON_BURIED -> REMOVE, #2 ICON_NOT_YET_DROPPED -> NONE]");
+        }
+
+        @Test
+        void recordsNothingOnAnOrdinaryFrameButCountsIt() {
+            // The frame with no map up is nearly every frame and says nothing, but it still counts,
+            // so a gap in the numbering reads as the frames between two opens.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(NO_MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
+
+            assertThat(reseatDecision.describeRecentReadings())
+                .isEqualTo("[#2 ICON_CLEAR -> NONE]");
+        }
+
+        @Test
+        void endsWithTheReadingThatStoodTheLiftDown() {
+            // The stand-down is recorded as the buried reading it was, with no move ordered, so a
+            // report reads the whole run of unconfirmed lifts up to the one that ended it.
+            var reseatDecision = new MapIconReseatDecision();
+
+            driveToStandDown(reseatDecision);
+
+            assertThat(reseatDecision.describeRecentReadings())
+                .endsWith("#8 PUT_BACK_OWED -> ADD, #9 ICON_BURIED -> NONE]");
+        }
+
+        @Test
+        void keepsOnlyTheLatestReadings() {
+            // Thirteen readings into a capacity of twelve: the first is dropped and the rest kept in
+            // order, so the report is always the end of the story rather than its start.
+            var reseatDecision = new MapIconReseatDecision();
+
+            for (var advance = 0; advance < MapIconReseatDecision.RECENT_READINGS_CAPACITY + 1; advance++) {
+                reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
+            }
+
+            assertThat(reseatDecision.describeRecentReadings())
+                .startsWith("[#2 ICON_CLEAR -> NONE, ")
+                .endsWith(", #13 ICON_CLEAR -> NONE]")
+                .doesNotContain("#1 ");
+        }
+    }
+
+    // Runs whole lift cycles - out on one advance, the icon dropped and the entity back on the next
+    // - that never clear the fog, which is the sequence the attempt bound is about.
     private static void driveFailedLifts(MapIconReseatDecision reseatDecision, int liftCount) {
         for (var lift = 0; lift < liftCount; lift++) {
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
-            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_ABSENT);
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
         }
+    }
+
+    // Runs advances on which a map is up and the entity is there but its icon cannot be placed,
+    // which is the sequence the disagreement threshold is about.
+    private static void driveUnplaceableAdvances(MapIconReseatDecision reseatDecision, int advanceCount) {
+        for (var advance = 0; advance < advanceCount; advance++) {
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_PRESENT);
+        }
+    }
+
+    // Spends the whole attempt budget on lifts that never clear the fog, then reads the icon buried
+    // once more - the advance the decision stands down on.
+    private static void driveToStandDown(MapIconReseatDecision reseatDecision) {
+        driveFailedLifts(reseatDecision, MapIconReseatDecision.MAX_ATTEMPTS);
+        reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+    }
+
+    // An advance with no map up: the one before the first open, or the one that closes a map. The
+    // placement is not there to be read on either, and the supplier says so by faulting.
+    private static void advanceWithNoMapShowing(MapIconReseatDecision reseatDecision) {
+        reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
     }
 }
