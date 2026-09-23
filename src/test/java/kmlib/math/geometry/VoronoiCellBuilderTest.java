@@ -494,18 +494,15 @@ final class VoronoiCellBuilderTest {
 
         private void reportPassCost(List<double[]> sites, long[] clip, long[] corners) {
 
-            System.out.printf(
-                "%nVoronoiCellBuilder passes (%d sites, %d bound segments, "
-                    + "%.1f claimants per cell):%n",
-                SITE_COUNT, BOUND_SEGMENTS, measureClaimantsPerCell(sites));
-
-            System.out.printf(
-                "  clip against neighbours: %,d ns/build (%,d ns/cell)  %s%n",
-                clip[0], clip[0] / SITE_COUNT, readAllocationText(clip[1]));
-
-            System.out.printf(
-                "  lay the bound corners:   %,d ns/build (%,d ns/cell)  %s%n",
-                corners[0], corners[0] / SITE_COUNT, readAllocationText(corners[1]));
+            reportCostPair(
+                String.format(
+                    "VoronoiCellBuilder passes (%d sites, %d bound segments, "
+                        + "%.1f claimants per cell):",
+                    SITE_COUNT, BOUND_SEGMENTS, measureClaimantsPerCell(sites)),
+                "clip against neighbours",
+                clip,
+                "lay the bound corners",
+                corners);
 
             System.out.printf(
                 "  corners as a share of both: %.1f%%%n",
@@ -514,16 +511,19 @@ final class VoronoiCellBuilderTest {
 
         // How many sites the average cell has to weigh a candidate corner against, which is
         // what the corner pass's cost is made of and the one number that says whether this
-        // layout resembles a sector or only looks like one. Two reaches, because that is the
-        // distance inside which another site can hold a corner of this cell.
+        // layout resembles a sector or only looks like one.
+        //
+        // Counted at the pass's own claim distance rather than at a repeat of it, so the
+        // report cannot come to describe a catchment the pass does not use.
         private double measureClaimantsPerCell(List<double[]> sites) {
 
             var claimants = 0L;
+            var claimReach = VoronoiCellCorners.CLAIM_REACH_MULTIPLE * MAX_CELL_RADIUS;
 
             for (var site : sites) {
                 for (var other : sites) {
 
-                    if (other != site && computeDistance(site, other) <= 2 * MAX_CELL_RADIUS) {
+                    if (other != site && computeDistance(site, other) <= claimReach) {
                         claimants++;
                     }
                 }
@@ -579,7 +579,7 @@ final class VoronoiCellBuilderTest {
                 }
             });
 
-            computeReportCost(labelledCost, bareCost);
+            reportLabellingCost(labelledCost, bareCost);
         }
 
         private List<double[]> buildRandomSites() {
@@ -697,28 +697,45 @@ final class VoronoiCellBuilderTest {
             return new long[] {nanosPerBuild, bytesPerBuild};
         }
 
-        private void computeReportCost(long[] labelled, long[] bare) {
+        private void reportLabellingCost(long[] labelled, long[] bare) {
 
-            System.out.printf(
-                "%nVoronoiCellBuilder clip pass, labels against none (%d sites):%n",
-                SITE_COUNT);
-
-            System.out.printf(
-                "  labelled: %,d ns/build (%,d ns/cell)  %s%n",
-                labelled[0],
-                labelled[0] / SITE_COUNT,
-                readAllocationText(labelled[1]));
-
-            System.out.printf(
-                "  bare:     %,d ns/build (%,d ns/cell)  %s%n",
-                bare[0],
-                bare[0] / SITE_COUNT,
-                readAllocationText(bare[1]));
+            reportCostPair(
+                String.format(
+                    "VoronoiCellBuilder clip pass, labels against none (%d sites):",
+                    SITE_COUNT),
+                "labelled",
+                labelled,
+                "bare",
+                bare);
 
             System.out.printf(
                 "  labelled/bare: %.2fx time%s%n",
                 computeRatio(labelled[0], bare[0]),
                 readAllocationRatioText(labelled[1], bare[1]));
+        }
+
+        // The shape both reports above print: a heading, then one row per measurement with its
+        // per-build and per-cell time and what it allocated. Only the line comparing the two
+        // differs between them, so only that line is each one's own - written out twice, the
+        // rows drifted in width and in what they named the same number.
+        private void reportCostPair(
+                String heading,
+                String firstLabel,
+                long[] first,
+                String secondLabel,
+                long[] second) {
+
+            System.out.printf("%n%s%n", heading);
+
+            reportOneCost(firstLabel, first);
+            reportOneCost(secondLabel, second);
+        }
+
+        private void reportOneCost(String label, long[] cost) {
+
+            System.out.printf(
+                "  %-24s %,d ns/build (%,d ns/cell)  %s%n",
+                label + ":", cost[0], cost[0] / SITE_COUNT, readAllocationText(cost[1]));
         }
 
         private String readAllocationText(long bytesPerBuild) {

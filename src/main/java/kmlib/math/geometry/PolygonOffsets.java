@@ -43,6 +43,13 @@ public final class PolygonOffsets {
      * as fills too. So a folded ring has to be recognised while its raw ring is still beside it
      * to compare against, which is the only moment this can be told.
      *
+     * <p><b>What it cannot see</b>: a ring every edge of which crosses, re-emerging as a
+     * smaller ring of the same winding. A square inset past half its width does exactly that,
+     * and reads here as a clean shrink. The folds this is aimed at - a shape pinching to a neck
+     * somewhere along it, which is what an inset of anything irregular produces - flip the
+     * winding, and are caught. A caller needing certainty rather than this guard has
+     * {@link PolygonRegions#countSelfCrossings}, at the cost of asking every pair of edges.
+     *
      * @param rawRing   the ring before the inset
      * @param insetRing the ring the inset left
      * @return true where the inset ring is nothing to draw

@@ -34,6 +34,17 @@ import java.util.List;
  */
 final class VoronoiCellCorners {
 
+    /**
+     * How many reaches away a site can still hold a corner of this cell.
+     *
+     * <p>Two, because a site further than that is further from every point of this bound than
+     * this site is. Named and package-visible because it is what this pass's cost is made of:
+     * a benchmark reporting how many claimants the average cell weighs has to count them by
+     * the same distance the pass uses, and the two spelled apart would drift the day the
+     * reach changed.
+     */
+    static final double CLAIM_REACH_MULTIPLE = 2;
+
     private VoronoiCellCorners() {
     }
 
@@ -217,7 +228,8 @@ final class VoronoiCellCorners {
         for (var other = 0; other < sites.size(); other++) {
 
             if (other != siteIndex
-                    && Points.computeDistance(site, sites.get(other)) <= 2 * maxCellRadius) {
+                    && Points.computeDistance(site, sites.get(other))
+                        <= CLAIM_REACH_MULTIPLE * maxCellRadius) {
                 claimants.add(other);
             }
         }
