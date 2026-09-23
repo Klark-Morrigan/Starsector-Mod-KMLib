@@ -126,7 +126,7 @@ A binding to third-party code that stops holding now costs the feature built ove
 
 ### Dependency changes
 
-- Reflection utils are lifted from **MagicLib** per **Numan**'s recommendation. Scoped to **coreui** package.
+- Reflection utils are lifted from **MagicLib** per **Numan**'s recommendation [at USC](https://discord.com/channels/187635036525166592/1549091275167240272/1549267098415403011) (he's working on dev builds of **MagicLib**). Scoped to **coreui** package.
 - **MagicLib** dependency is removed.
 - The project is relicenced under under **LGPL-3.0-only** to comply with licencing of donor code.
 
@@ -134,8 +134,8 @@ A binding to third-party code that stops holding now costs the feature built ove
 
 ### Fixed
 
-- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - Reported at **USC** by **Elia Rowan (zinzrinz)** and **MattTheMatt2**, localised and fix suggested by **WolframSegler**.
-- **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature in now handled and logged, resulting in terrain reseating standing down for the rest of the section.
+- **Crash on Linux**. EventsPanel.getMap() returns an obfuscated type that isn't the same on different platforms. - Reported at **USC** by [**Elia Rowan (zinzrinz)**](https://discord.com/channels/187635036525166592/1549091275167240272/1549127910084972614) and [**MattTheMatt2**](https://discord.com/channels/187635036525166592/1549091275167240272/1549149360644948121), localised and fix suggested by [**WolframSegler**](https://discord.com/channels/187635036525166592/1549091275167240272/1549130150312935506).
+- **Crash**. **Starscape** Map terrain reseat failure on a mismatched widget signature is now handled and logged, resulting in terrain reseating standing down for the rest of the section.
 - **Altered map render state**. Failed terrain reseating now restores reseated terrain placement before standing down.
 - **Duplicate map entity**. A location that refuses to give an entity up no longer leaves the reseat owing a put-back for an entity that never left, which added a second copy of it on the next advance.
 
