@@ -62,4 +62,16 @@ public final class CompatibilitySlotTemplates {
 
         StarsectorSettingsFake.installSettings((category, key) -> TEMPLATES_BY_KEY.get(key));
     }
+
+    /**
+     * The templates themselves, for a case that has to install something else beside them - a
+     * subject reading a colour as well as its wording cannot take the one-call install above,
+     * which answers wording alone.
+     *
+     * @return key to template, unknown keys absent
+     */
+    public static Map<String, String> readSlotTemplates() {
+
+        return TEMPLATES_BY_KEY;
+    }
 }

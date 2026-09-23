@@ -117,7 +117,7 @@ each searched from where the last one ended:
 a name brought forward early and appearing again inside a later phrase
 is tinted once for each rather than twice for the first.
 
-The diagnosis is the one line that varies by what was found.
+The diagnosis is the part of the notice that varies by what was found.
 [`CompatibilitySubject`](CompatibilitySubject.java) reads how the installed version stands to the targeted one -
 behind, ahead, the same, or not comparable -
 and the notice advises an update where it is behind and a downgrade or a wait where it is ahead.
@@ -141,14 +141,16 @@ and what goes on working regardless is the one run set at ease,
 so the good news and the bad do not read as one list the eye has to parse.
 
 A mod is brought forward wherever it is named, including inside a warning.
-The instruction to downgrade or wait names both mods again,
-so that phrase is split into runs rather than warned as one:
+Two of the phrases name a mod that way - the instruction to downgrade or wait, which names both,
+and the one asking for a report - so each is split into runs rather than warned as one:
 the wording around the names warns, the names themselves are brought forward,
 and the version stays inside the warning, being what the player is told to move to
 rather than a party to the mismatch.
 A value marked the same as the wording around it is folded into that run instead of kept apart,
 which is what keeps a two-letter join out of the run list -
 a short run being the one thing that could match inside a longer word.
+[`CompatibilityNoticeLines`](CompatibilityNoticeLines.java) is where those rules live,
+apart from the failure they compose, since none of them knows what a compatibility failure is.
 
 ## A binding is a third party and a consumer
 

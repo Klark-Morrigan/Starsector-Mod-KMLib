@@ -8,7 +8,12 @@ import kmlib.starsector.strings.KmlibStringKeys;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
+
+import static kmlib.starsector.compatibility.CompatibilityNoticeLines.bringForward;
+import static kmlib.starsector.compatibility.CompatibilityNoticeLines.buildLine;
+import static kmlib.starsector.compatibility.CompatibilityNoticeLines.buildPhrase;
+import static kmlib.starsector.compatibility.CompatibilityNoticeLines.buildSplicedLine;
+import static kmlib.starsector.compatibility.CompatibilityNoticeLines.warn;
 
 /**
  * One binding to third-party code that stopped holding, in the shape the notice shown to the player
@@ -54,9 +59,6 @@ public record CompatibilityFailure(
 
     // Between the mod as named and the version it is at, where the game answered one.
     private static final String VERSION_SEPARATOR = " ";
-
-    // The slot a template carries, which is also where a phrase is split into its runs.
-    private static final String VALUE_SLOT = "%s";
 
     public CompatibilityFailure {
 
@@ -142,31 +144,14 @@ public record CompatibilityFailure(
             return List.of();
         }
 
-        var targeted = subject.describeBuiltAgainstVersion(describeUnknownVersion());
-        var modName = describeModName();
-
-        var updatePhrase = KmlibStringKeys.format(
-            KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_UPDATE,
-            targeted);
-
-        // Built as runs rather than as one warned phrase, so the two mods it names are brought
-        // forward inside it as they are everywhere else. The version stays part of the warning: it
-        // is what the player is being told to move to, not a party to the mismatch.
-        var choicePhrase = buildPhrase(
-            KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_DOWNGRADE_OR_WAIT),
-            Emphasis.WARNING,
-            bringForward(subject.name()),
-            warn(targeted),
-            bringForward(modName));
-
         return switch (subject.resolveInstalledVersionRelation()) {
-            case OLDER -> List.of(describeTooOld(updatePhrase));
+            case OLDER -> List.of(describeTooOld());
 
-            case NEWER -> List.of(describeTooNew(modName, choicePhrase));
+            case NEWER -> List.of(describeTooNew());
 
-            case UNKNOWN -> describeBothDirections(modName, updatePhrase, choicePhrase);
+            case UNKNOWN -> describeBothDirections();
 
-            case SAME -> List.of(describeSameVersion(modName));
+            case SAME -> List.of(describeSameVersion());
         };
     }
 
@@ -253,13 +238,14 @@ public record CompatibilityFailure(
      */
     String describeMod() {
 
-        var modVersion = InstalledMods.readModVersion(consumer.modId());
-        var named = describeModName();
         var modName = InstalledMods.readModName(consumer.modId());
 
-        if (modName != null) {
-            named = String.format(NAME_WITH_ID, modName, consumer.modId());
-        }
+        var named = modName == null
+            ? consumer.modId()
+            : String.format(NAME_WITH_ID, modName, consumer.modId());
+
+        var modVersion = InstalledMods.readModVersion(consumer.modId());
+
         return modVersion == null
             ? named
             : named + VERSION_SEPARATOR + modVersion;
@@ -281,9 +267,10 @@ public record CompatibilityFailure(
     }
 
     // The one line for an install known to be behind: the state warns, and so does the instruction.
-    private CompatibilityNoticeLine describeTooOld(String updatePhrase) {
+    private CompatibilityNoticeLine describeTooOld() {
 
         var tooOldPhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_TOO_OLD);
+        var updatePhrase = describeUpdatePhrase();
 
         return buildLine(
             KmlibStringKeys.format(
@@ -298,11 +285,14 @@ public record CompatibilityFailure(
 
     // The one line for an install known to be ahead: what it did warns either side of the mod it
     // did it to, and the choice the player has follows.
-    private CompatibilityNoticeLine describeTooNew(String modName, CompatibilityNoticeLine choicePhrase) {
+    private CompatibilityNoticeLine describeTooNew() {
 
         var carriesChangesPhrase =
             KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_CARRIES_CHANGES);
         var dependsOnPhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_DEPENDS_ON);
+
+        var modName = describeModName();
+        var choicePhrase = describeChoicePhrase();
 
         return buildSplicedLine(
             KmlibStringKeys.format(
@@ -323,12 +313,12 @@ public record CompatibilityFailure(
     // The one line for an install reporting the very version the build targeted: no version to
     // move to, so the instruction is to report it. Built as runs for the same reason the choice is
     // - the mod it names is brought forward inside the warning rather than taking its colour.
-    private CompatibilityNoticeLine describeSameVersion(String modName) {
+    private CompatibilityNoticeLine describeSameVersion() {
 
         var reportPhrase = buildPhrase(
             KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_REPORT_TO_DEVELOPER),
             Emphasis.WARNING,
-            bringForward(modName));
+            bringForward(describeModName()));
 
         return buildSplicedLine(
             KmlibStringKeys.format(
@@ -341,16 +331,17 @@ public record CompatibilityFailure(
 
     // The lead and the two cases under it, for an install whose version could not be read. Both
     // directions are stated because either could be true and nothing here can tell which.
-    private List<CompatibilityNoticeLine> describeBothDirections(
-            String modName,
-            String updatePhrase,
-            CompatibilityNoticeLine choicePhrase) {
+    private List<CompatibilityNoticeLine> describeBothDirections() {
 
         var tooOldPhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_TOO_OLD);
         var carriesChangesPhrase =
             KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_NEW_AND_CARRIES_CHANGES);
 
         var dependsOnPhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_PHRASE_DEPENDS_ON);
+
+        var modName = describeModName();
+        var updatePhrase = describeUpdatePhrase();
+        var choicePhrase = describeChoicePhrase();
 
         return List.of(
             buildLine(
@@ -376,6 +367,34 @@ public record CompatibilityFailure(
                     choicePhrase.lineText()),
                 List.of(warn(carriesChangesPhrase), bringForward(modName), warn(dependsOnPhrase)),
                 choicePhrase.emphasisedRuns()));
+    }
+
+    // The instruction naming the release to move up to, which both shapes that can advise an update
+    // state the same way.
+    private String describeUpdatePhrase() {
+
+        return KmlibStringKeys.format(
+            KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_UPDATE,
+            describeTargetedVersion());
+    }
+
+    // The choice an install ahead of the build leaves, which both shapes that can advise one state
+    // the same way. Built as runs rather than as one warned phrase, so the two mods it names are
+    // brought forward inside it as they are everywhere else. The version stays part of the warning:
+    // it is what the player is being told to move to, not a party to the mismatch.
+    private CompatibilityNoticeLine describeChoicePhrase() {
+
+        return buildPhrase(
+            KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_ACTION_DOWNGRADE_OR_WAIT),
+            Emphasis.WARNING,
+            bringForward(subject.name()),
+            warn(describeTargetedVersion()),
+            bringForward(describeModName()));
+    }
+
+    private String describeTargetedVersion() {
+
+        return subject.describeBuiltAgainstVersion(describeUnknownVersion());
     }
 
     // One row, as the wording its key holds with its value in the slot, the value brought forward.
@@ -404,96 +423,6 @@ public record CompatibilityFailure(
                 .stream()
                 .map(CompatibilityNoticeLine::lineText)
                 .toList());
-    }
-
-    // One line and the runs of it that stand out, which must be given in the order they appear.
-    private static CompatibilityNoticeLine buildLine(String lineText, EmphasisedRun... runs) {
-
-        return new CompatibilityNoticeLine(lineText, List.of(runs));
-    }
-
-    // The same, where a phrase filled into the line brought runs of its own. They follow the line's
-    // because the phrase sits at the end of every template that takes one; reading order is what
-    // the engine matches on, so a phrase spliced in ahead of them would find nothing.
-    private static CompatibilityNoticeLine buildSplicedLine(
-            String lineText,
-            List<EmphasisedRun> leadingRuns,
-            List<EmphasisedRun> phraseRuns) {
-
-        var runs = new ArrayList<>(leadingRuns);
-        runs.addAll(phraseRuns);
-
-        return new CompatibilityNoticeLine(lineText, runs);
-    }
-
-    /**
-     * One templated phrase as its filled text and the runs it is made of.
-     *
-     * <p>Split on the slot the template already carries, so that a value can stand out differently
-     * from the wording around it - a mod named inside a warning is brought forward there as it is
-     * anywhere else, rather than disappearing into the colour of the instruction holding it.
-     *
-     * <p>A value marked the same as the wording is folded into it rather than kept apart, so what
-     * reads as one colour arrives as one run. That is what keeps a two-letter join out of the run
-     * list, a short run being the one thing this could hand the engine that might match inside a
-     * longer word.
-     */
-    private static CompatibilityNoticeLine buildPhrase(
-            String template,
-            Emphasis wordingEmphasis,
-            EmphasisedRun... values) {
-
-        var text = new StringBuilder();
-        var runs = new ArrayList<EmphasisedRun>();
-        var wording = new StringBuilder();
-        var parts = template.split(Pattern.quote(VALUE_SLOT), -1);
-
-        for (var i = 0; i < parts.length; i++) {
-            text.append(parts[i]);
-            wording.append(parts[i]);
-
-            if (i >= values.length) {
-                continue;
-            }
-            var value = values[i];
-            text.append(value.runText());
-
-            if (value.emphasis() == wordingEmphasis) {
-                wording.append(value.runText());
-                continue;
-            }
-            closeWordingRun(runs, wording, wordingEmphasis);
-            runs.add(value);
-        }
-        closeWordingRun(runs, wording, wordingEmphasis);
-
-        return new CompatibilityNoticeLine(text.toString(), runs);
-    }
-
-    // The wording gathered since the last value, as one run. Trimmed so a run begins and ends on a
-    // word: the engine checks the character before a match, and a run opening on a space would be
-    // asked to start in the middle of the word before it.
-    private static void closeWordingRun(
-            List<EmphasisedRun> runs,
-            StringBuilder wording,
-            Emphasis wordingEmphasis) {
-
-        var run = wording.toString().trim();
-        wording.setLength(0);
-
-        if (!run.isEmpty()) {
-            runs.add(new EmphasisedRun(run, wordingEmphasis));
-        }
-    }
-
-    private static EmphasisedRun bringForward(String runText) {
-
-        return new EmphasisedRun(runText, Emphasis.HIGHLIGHT);
-    }
-
-    private static EmphasisedRun warn(String runText) {
-
-        return new EmphasisedRun(runText, Emphasis.WARNING);
     }
 
     private static String describeUnknownVersion() {

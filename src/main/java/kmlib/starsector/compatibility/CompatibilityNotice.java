@@ -14,7 +14,7 @@ import java.util.Objects;
 
 /**
  * Tells the player, once per failed binding, that a binding to third-party code has stopped holding
- * - as the game's own message dialog, from a frame that can open one.
+ * - as the game's own confirm dialog, from a frame that can open one.
  *
  * <p>A failure is recorded where it happens, which is a render pass or a load step: neither is a
  * place a dialog can be opened from, and at load there may be no campaign UI to open it on at all.
@@ -45,11 +45,17 @@ public final class CompatibilityNotice implements EveryFrameScript {
     private static final Logger LOG = Global.getLogger(CompatibilityNotice.class);
 
     // The panel the block is drawn in. The game's own default for a confirm dialog is 500 by 200,
-    // which holds a paragraph; this block is a heading and up to five labelled rows, several of
-    // which wrap, so it takes more of both. These are the knob: too small cuts the last rows off
-    // below the panel's edge, too large leaves the text floating in a mostly empty frame.
+    // which holds a paragraph; this notice is a heading, a diagnosis of up to three lines, up to
+    // eight labelled rows and a closing line, several of which wrap, so it takes more of both.
+    //
+    // The height is sized off the longest shape rather than by eye, the dialog having no way to
+    // grow to its content: an unreadable installed version, which is the shape whose diagnosis
+    // runs to three lines, wraps to nineteen lines of the game's default font at this width -
+    // insignia15LTaa, whose lineHeight is 15 - so 285px of text before the button row and the
+    // panel's own padding. Erring high: too large leaves the text high in the frame, where too
+    // small silently cuts the closing line, which is the one pointing at the log.
     private static final float DIALOG_WIDTH = 640f;
-    private static final float DIALOG_HEIGHT = 340f;
+    private static final float DIALOG_HEIGHT = 400f;
 
     // No cancel label, which is what renders the dialog with a single button. Null rather than a
     // blank string: a blank one is a button with nothing written on it.

@@ -133,6 +133,65 @@ final class CompatibilityFailureIntegrationTest {
     }
 
     @Nested
+    class LogBlockAgainstNoticeRows {
+
+        @Test
+        void carryTheSameReadingsInTheSameOrder() {
+
+            // The two blocks are written apart on purpose - the log from literals, so it holds on
+            // a path where the game's settings may not be up, and the notice from the strings file
+            // so its wording can be edited - and nothing but this holds them to the same readings
+            // in the same order. A row added to one alone is what it catches.
+            //
+            // Compared by the values rather than by the rendered rows, so that a translated label
+            // or a re-padded column is not a failure. Every row names exactly one run, and that
+            // run is its value.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            assertThat(failure.describeForLog())
+                .containsSubsequence(readNoticeRowValues(failure));
+        }
+
+        @Test
+        void carryTheSameNumberOfRows() {
+
+            // The order check above passes over a row the log gained and the notice did not, the
+            // values it looks for still being there in order. This is that other direction.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+
+            assertThat(countLogRows(failure))
+                .isEqualTo(failure.describeRowsForPlayer().size());
+        }
+
+        @Test
+        void dropTheSameRowWhereTheConsumerSaidNothingAboutWhatStillWorks() {
+
+            // The one row either block may carry or leave out, and so the one most likely to be
+            // dropped on a single side.
+            var failure = CompatibilityFailureFixture.createFailureLosing(
+                CompatibilityFailureFixture.LOST_FEATURE);
+
+            assertThat(countLogRows(failure))
+                .isEqualTo(failure.describeRowsForPlayer().size());
+        }
+
+        // The value of each notice row, in reading order.
+        private String[] readNoticeRowValues(CompatibilityFailure failure) {
+
+            return failure.describeRowsForPlayer()
+                .stream()
+                .map(row -> row.emphasisedRuns().get(0).runText())
+                .toArray(String[]::new);
+        }
+
+        // The block's rows, which is every line of it but the heading.
+        private int countLogRows(CompatibilityFailure failure) {
+
+            return failure.describeForLog().split("\n").length - 1;
+        }
+    }
+
+    @Nested
     class EmphasisedRuns {
 
         @Test
