@@ -20,6 +20,12 @@ import java.util.Objects;
  * the built-for row stands at its unknown wording, while the installed version is published and is
  * read when a report is composed.
  *
+ * <p>It files its own report rather than handing one to a guard to file, the way a binding to a
+ * renderer patch does. The record hands a describer the consumer it filed under, which is this
+ * integration's own except where the wiring mod reused a feature key, and that hand-off is the
+ * channel's business rather than a guard's - a guard being about the failure boundary a step runs
+ * behind, not about the shape of a report.
+ *
  * @param subjectModId   the third party's own mod ID, as its {@code mod_info.json} declares it: the
  *                       key a record latches the third party under, and what the installed version
  *                       is read by. The game holds one spec per ID, so no two third parties can
@@ -49,6 +55,38 @@ public record ModIntegration(
     }
 
     /**
+     * Records that a step binding to this mod did not install, under the mod's own ID.
+     *
+     * <p>The failure is composed inside the record rather than before it, so the mod-manager read
+     * behind the installed version is paid on the record that is kept and not on one the latch
+     * ignores.
+     *
+     * @param failureRecord       where the session's failures are collected
+     * @param failureSite         where the binding stopped holding, in the wording of whichever
+     *                            guard caught it - the guard being the only thing that knows which
+     *                            one it was
+     * @param installationFailure what the step threw, carried as the failure's cause so the log
+     *                            line beside the block renders a trace of it
+     */
+    public void recordFailure(
+            CompatibilityFailures failureRecord,
+            String failureSite,
+            Throwable installationFailure) {
+
+        Objects.requireNonNull(
+            failureRecord,
+            "An integration with nowhere to record would degrade silently and tell no player why.");
+
+        // Composed against the consumer the record hands back rather than this integration's own:
+        // the two differ where the record found that consumer's key already holding another of the
+        // wiring mod's features, and the report is filed under whichever key the record settled on.
+        failureRecord.recordOnce(
+            subjectModId,
+            consumer,
+            recordedAs -> composeFailure(recordedAs, failureSite, installationFailure));
+    }
+
+    /**
      * Builds the failure a report is drawn from, for a step that bound to this mod and did not
      * install.
      *
@@ -56,15 +94,24 @@ public record ModIntegration(
      * game's mod manager, which is a question worth asking once about a step that broke and never
      * about the ones that worked.
      *
+     * @param recordedAs          the consumer as the record filed it: this integration's own, or
+     *                            its own under a numbered feature key where the record found that
+     *                            key already holding another of the wiring mod's features. Taken
+     *                            rather than read off this value because only the record knows
+     *                            which of the two it is
      * @param failureSite         where the binding stopped holding, in the wording of whichever
-     *                            guard caught it - the guard being the only thing that knows which
-     *                            one it was
-     * @param installationFailure what the step threw, carried as the failure's cause so the log
-     *                            line beside the block renders a trace of it
+     *                            guard caught it
+     * @param installationFailure what the step threw, carried as the failure's cause
      * @return the failure to record, with the consumer's sentences already in it
      */
-    public CompatibilityFailure composeFailure(String failureSite, Throwable installationFailure) {
+    CompatibilityFailure composeFailure(
+            CompatibilityConsumer recordedAs,
+            String failureSite,
+            Throwable installationFailure) {
 
+        Objects.requireNonNull(
+            recordedAs,
+            "A failure composed for no consumer could not say whose feature the binding cost.");
         Objects.requireNonNull(
             installationFailure,
             "A failure composed from nothing thrown would report an installation that worked.");
@@ -73,7 +120,7 @@ public record ModIntegration(
         // binding was checked against, so there is nothing a build could have stamped for it.
         return new CompatibilityFailure(
             new CompatibilitySubject(subjectModName, null, InstalledMods.readModVersion(subjectModId)),
-            consumer,
+            recordedAs,
             new CompatibilityBreakage(failureSite, describeThrown(installationFailure)),
             installationFailure);
     }

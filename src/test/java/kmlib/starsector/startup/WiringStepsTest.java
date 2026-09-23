@@ -1,5 +1,6 @@
 package kmlib.starsector.startup;
 
+import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
@@ -107,12 +108,7 @@ final class WiringStepsTest {
         @Test
         void recordsOneFailureNamingTheThirdPartyAndWhatTheModLost() {
 
-            wiringSteps.runGuardedStep(
-                () -> {
-                    throw new IllegalStateException("routes already registered");
-                },
-                FAILURE_MESSAGE,
-                () -> INTEGRATION);
+            wiringSteps.runGuardedStep(buildStepRefusingToInstall(), FAILURE_MESSAGE, () -> INTEGRATION);
 
             var failure = failureRecord.takeNextUnreported();
 
@@ -150,13 +146,36 @@ final class WiringStepsTest {
         }
 
         @Test
+        void filesASecondFeatureTheWiringModPutUnderOneKeyAsANumberedOne() {
+            // Two steps binding to one mod, under the one feature key the wiring mod spelled for
+            // both. Reported against each integration's own consumer rather than the one the
+            // record settled on, the second would file under the first's key and reach nobody.
+            var secondFeatureUnderOneKey = new ModIntegration(
+                CompatibilityFailureFixture.INTEGRATED_MOD_ID,
+                CompatibilityFailureFixture.INTEGRATED_MOD_NAME,
+                new CompatibilityConsumer(
+                    CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID,
+                    CompatibilityFailureFixture.MAP_OVERLAY_FEATURE_KEY,
+                    "A second feature of the wiring mod stopped working."));
+
+            wiringSteps.runGuardedStep(buildStepRefusingToInstall(), FAILURE_MESSAGE, () -> INTEGRATION);
+            wiringSteps.runGuardedStep(
+                buildStepRefusingToInstall(),
+                FAILURE_MESSAGE,
+                () -> secondFeatureUnderOneKey);
+
+            failureRecord.takeNextUnreported();
+
+            assertThat(failureRecord.takeNextUnreported().consumer().consumerKey())
+                .isEqualTo("map-mod:map-overlay-2");
+        }
+
+        @Test
         void losesTheReportRatherThanTheLoadWhereTheDescriberThrows() {
             // The report is composed from wording that may not have loaded, on a path that already
             // runs inside a catch - so a throw here would escape into the game's load sequence.
             assertThatCode(() -> wiringSteps.runGuardedStep(
-                    () -> {
-                        throw new IllegalStateException("routes already registered");
-                    },
+                    buildStepRefusingToInstall(),
                     FAILURE_MESSAGE,
                     () -> {
                         throw new IllegalArgumentException("the wording did not load");
@@ -176,6 +195,15 @@ final class WiringStepsTest {
                 .isThrownBy(() -> wiringSteps.runGuardedStep(() -> {
                 }, FAILURE_MESSAGE, null));
         }
+    }
+
+    // A step that binds to a third party and does not install, as every case needing a failure
+    // from one arranges it.
+    private static Runnable buildStepRefusingToInstall() {
+
+        return () -> {
+            throw new IllegalStateException("routes already registered");
+        };
     }
 
     private static ModIntegration countAndDescribe(AtomicInteger describeCount) {

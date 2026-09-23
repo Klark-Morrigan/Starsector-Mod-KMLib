@@ -126,6 +126,54 @@ final class CompatibilityConsumerTest {
     }
 
     @Nested
+    class ResolveConsumerAtPosition {
+
+        @Test
+        void answersItselfAtTheFirstPosition() {
+
+            // Which position keeps the bare key is this value's rule rather than the record's, so
+            // the first position is answered here rather than refused for the record to handle.
+            var consumer = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE);
+
+            assertThat(consumer.resolveConsumerAtPosition(1))
+                .isSameAs(consumer);
+        }
+
+        @Test
+        void numbersTheFeatureHalfOfTheKeyAfterTheFirstPosition() {
+
+            // The feature is what collided - the mod half is the mod's own ID - so the number lands
+            // there, and the key still reads as that mod and one feature of it.
+            assertThat(new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE)
+                .resolveConsumerAtPosition(2)
+                .consumerKey())
+                .isEqualTo("some-mod:map-cursor-2");
+        }
+
+        @Test
+        void keepsTheModAndBothSentences() {
+
+            var numbered = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE, UNAFFECTED_FEATURE)
+                .resolveConsumerAtPosition(2);
+
+            assertThat(numbered.modId())
+                .isEqualTo(MOD_ID);
+            assertThat(numbered.lostFeature())
+                .isEqualTo(LOST_FEATURE);
+            assertThat(numbered.unaffectedFeature())
+                .isEqualTo(UNAFFECTED_FEATURE);
+        }
+
+        @Test
+        void refusesAPositionBelowTheFirst() {
+
+            assertThatIllegalArgumentException()
+                .isThrownBy(() -> new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE)
+                    .resolveConsumerAtPosition(0));
+        }
+    }
+
+    @Nested
     class HasUnaffectedFeature {
 
         @Test

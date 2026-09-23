@@ -13,6 +13,7 @@ what it holds is the channel a binding reports through.
 
 - [Record, then report](#record-then-report)
 - [A binding is a third party and a consumer](#a-binding-is-a-third-party-and-a-consumer)
+- [A feature key one mod reused](#a-feature-key-one-mod-reused)
 - [A step that integrates with another mod](#a-step-that-integrates-with-another-mod)
 - [One record per session](#one-record-per-session)
 - [What a failure says](#what-a-failure-says)
@@ -36,9 +37,12 @@ One at a time, because a reporter can only show one at a time -
 handing over the lot would leave it holding a second queue of what it could not yet show.
 Once per binding is what stops one that fails on every frame filing a report per frame;
 never unlatched is what stops the frame after a report filing it again.
-The failure is built through a supplier invoked only on the record that is kept,
+The failure is built through a describer invoked only on the record that is kept,
 so a description that costs something - a reflective probe, a version read -
-is paid once per subject.
+is paid once per binding.
+The describer is handed the consumer to compose against rather than reading the one the caller holds:
+the two differ only where the record had to tell a reused key apart,
+and the report is filed under whichever key the record settled on.
 
 [`CompatibilityNotice`](CompatibilityNotice.java) is the report:
 a transient per-frame script that drains the record
@@ -57,7 +61,7 @@ sequenceDiagram
   participant N as CompatibilityNotice
   participant UI as CampaignUIAPI
   B->>Reg: recordOnce(subject, consumer, describe)
-  Reg->>Reg: latch; build the failure once
+  Reg->>Reg: latch; describe(consumer) once
   B->>Reg: recordOnce(subject, consumer, describe)
   Reg-->>B: ignored
   N->>Reg: hasUnreported()
@@ -110,6 +114,35 @@ So the consumer writes that sentence,
 out of its own strings,
 and the library puts it in the failure's lost-feature slot.
 
+## A feature key one mod reused
+
+The mod half of a key cannot collide between mods.
+What is left is one mod spelling one feature key for two features -
+its own bug, in its own code -
+and latched on the pair alone that cost the second feature's report entirely:
+the record read a pair it already held and dropped it,
+exactly as it drops the same feature recording twice.
+
+So the latch is the triple of subject, consumer key and the consumer's sentence,
+and what tells a collision from the same feature again is the sentence.
+The same feature recording again carries the same sentence and is dropped as before;
+a second feature under one key carries a different one and is kept,
+with the describer handed the consumer under its feature key numbered - `<feature>-2`, then `-3` -
+so both reports arrive and the log's consumer row names the reuse where its author will see it.
+Read off the consumer the caller already passed,
+so the dropped path still builds nothing.
+
+At the record and never where a consumer is built.
+That value is built freely - the map's is built afresh every time its publisher is -
+and a registry numbering each construction would mint a new key per map open,
+break the latch outright,
+and report one failure once a frame forever.
+
+Which feature keeps the bare key depends on which failed first,
+so two sessions can name one feature differently.
+That is acceptable for a session-scoped latch and is not the row's job anyway:
+a numbered key in a log means "this mod reused a key", which is the finding.
+
 ## A step that integrates with another mod
 
 A binding does not have to be a call into somebody else's internals.
@@ -120,7 +153,11 @@ and nothing said so but a line in the log.
 
 [`ModIntegration`](ModIntegration.java) is that case as the channel states one -
 the third party the step is with, and the mod that loses something by it -
-and it composes the failure from what was thrown.
+and it composes the failure from what was thrown and files it itself.
+Filing rather than handing a composed failure back to the guard,
+because the record hands a describer the consumer it filed under,
+and that hand-off is the channel's business:
+a guard is about the failure boundary a step runs behind, not about the shape of a report.
 Two things run the other way round from a binding to a renderer patch.
 The versions: nothing was compiled against an optional mod,
 the binding going through the game's own API,
@@ -236,8 +273,9 @@ A deferred renderer runs a binding's command on its own render thread
 while the game thread resolves and calls the same binding,
 and the two can fail on the same subject in the same frame.
 The record is safe from any thread,
-and the latch is one atomic add:
-one of the two wins it, and the other's description is never built.
+and the latch is taken under one lock, held for a lookup and an append:
+whether a sentence is new under its key and which position it takes there are one decision,
+so one of the two wins it, and the other's description is never built.
 The notice runs on the campaign thread alone.
 
 ## What is not here
@@ -246,7 +284,8 @@ The notice runs on the campaign thread alone.
   Detecting that a binding no longer holds is the binder's job,
   and which member broke is what it records.
 - The guard a start-up step runs behind.
-  [`starsector/startup/`](../startup/) owns the failure boundary and the log line;
+  [`starsector/startup/`](../startup/) owns the failure boundary, the log line
+  and the phrase a failed installation files under;
   this package owns only what a failure it caught is reported as.
 - The transient install.
   [`starsector/scripts/`](../scripts/) is what registers the notice on a sector,

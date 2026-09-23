@@ -15,7 +15,10 @@ import kmlib.text.KmlibStrings;
  * <p>The feature half stays the caller's because it is the half nothing else knows. One mod can take
  * two bindings to one third party for two different features and lose two different things by them,
  * and those have to latch apart or the second is dropped - which is the bug the pair latch exists to
- * prevent, at mod granularity instead of subject granularity.
+ * prevent, at mod granularity instead of subject granularity. A mod that spells one feature key for
+ * two features is not refused here, this value being built freely and never checked against what
+ * else was built: the record tells the two apart by their sentences and numbers the second's key,
+ * through {@link #resolveConsumerAtPosition}.
  *
  * <p>Plain data: the ID is not checked against the game and no name is looked up for it here. That
  * would put a mod-manager read on the healthy path, where this value is built and never looked at
@@ -47,6 +50,15 @@ public record CompatibilityConsumer(
     // What joins the two halves of the key. A colon because no mod ID carries one, so the join
     // cannot be spelled inside either half and collide with a pair nobody registered.
     private static final String KEY_SEPARATOR = ":";
+
+    // What joins a feature key and the number a record tells a reused one apart with. A hyphen
+    // rather than the key separator, so the numbered key still reads as one feature key: the mod
+    // on one side of the colon, the feature and its number on the other.
+    private static final String FEATURE_NUMBER_SEPARATOR = "-";
+
+    // The position under a key that keeps the key bare, and so the only place the rule is stated:
+    // a record asks this value which consumer a position takes rather than deciding it itself.
+    private static final int FIRST_POSITION = 1;
 
     public CompatibilityConsumer {
 
@@ -96,6 +108,41 @@ public record CompatibilityConsumer(
     public String consumerKey() {
 
         return modId + KEY_SEPARATOR + featureKey;
+    }
+
+    /**
+     * This consumer as the record's nth under its key: itself at the first position, and its
+     * feature key numbered at each position after it.
+     *
+     * <p>The number lands on the feature key because that is what collided. The mod half is the
+     * mod's own ID and cannot collide between mods, so two sentences under one key are one mod
+     * spelling one feature key twice - and both sentences are that mod's, so the mod and the
+     * sentences travel unchanged while only the key is told apart. A numbered key in a log is the
+     * finding, naming the reuse where its author will see it.
+     *
+     * <p>Answered here rather than decided by whoever counts the positions, so which position
+     * keeps the bare key is stated once.
+     *
+     * @param position which record under the key this is, counted from one
+     * @return this consumer at the first position, else the same mod and sentences under
+     *         {@code <featureKey>-<position>}
+     */
+    public CompatibilityConsumer resolveConsumerAtPosition(int position) {
+
+        if (position < FIRST_POSITION) {
+            throw new IllegalArgumentException(
+                "A record under a key takes a position counted from one. Got: " + position);
+        }
+
+        if (position == FIRST_POSITION) {
+            return this;
+        }
+
+        return new CompatibilityConsumer(
+            modId,
+            featureKey + FEATURE_NUMBER_SEPARATOR + position,
+            lostFeature,
+            unaffectedFeature);
     }
 
     // The transposition the two key slots cannot catch between themselves: a sentence in a key slot

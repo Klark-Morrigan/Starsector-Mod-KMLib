@@ -63,9 +63,12 @@ public final class CompatibilityFailureFixture {
     /** A second mod, so a case about two mods over one binding cannot pass on one ID standing for two. */
     public static final String COLONY_PANEL_MOD_ID = "colony-mod";
 
+    /** The feature the representative consumer took the binding for, as the other half of its key. */
+    public static final String MAP_OVERLAY_FEATURE_KEY = "map-overlay";
+
     /** A mod over the binding, as the key its records latch under and the sentence it loses. */
     public static final CompatibilityConsumer MAP_OVERLAY_CONSUMER =
-        new CompatibilityConsumer(MAP_OVERLAY_MOD_ID, "map-overlay", LOST_FEATURE, UNAFFECTED_FEATURE);
+        new CompatibilityConsumer(MAP_OVERLAY_MOD_ID, MAP_OVERLAY_FEATURE_KEY, LOST_FEATURE, UNAFFECTED_FEATURE);
 
     /**
      * A second mod over the same binding, losing something of its own - so a case about two
@@ -150,9 +153,19 @@ public final class CompatibilityFailureFixture {
      */
     public static CompatibilityFailure createFailureLosing(String lostFeature) {
 
+        return createFailureTakenBy(
+            new CompatibilityConsumer(MAP_OVERLAY_MOD_ID, MAP_OVERLAY_FEATURE_KEY, lostFeature));
+    }
+
+    /**
+     * @param consumer the mod the failure is filed for, as the record handed it to a describer
+     * @return the representative failure, told apart from another by the consumer it carries
+     */
+    public static CompatibilityFailure createFailureTakenBy(CompatibilityConsumer consumer) {
+
         return new CompatibilityFailure(
             createUnversionedSubject(),
-            new CompatibilityConsumer(MAP_OVERLAY_MOD_ID, "map-overlay", lostFeature),
+            consumer,
             new CompatibilityBreakage(FAILURE_SITE, BROKEN_DETAIL),
             null);
     }

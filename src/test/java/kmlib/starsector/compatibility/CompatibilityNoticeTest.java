@@ -91,7 +91,7 @@ final class CompatibilityNoticeTest {
         void showsTheRecordedFailureAsTheModalItComposes() {
 
             var failure = createFailure();
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> failure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> failure);
 
             notice.advance(ONE_FRAME);
 
@@ -102,7 +102,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsAFailureOnceHoweverManyFramesFollow() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
 
             notice.advance(ONE_FRAME);
             notice.advance(ONE_FRAME);
@@ -135,7 +135,7 @@ final class CompatibilityNoticeTest {
         @Test
         void holdsTheFailureWhileADialogIsUp() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
             when(campaignUiMock.isShowingDialog())
                 .thenReturn(true);
 
@@ -148,7 +148,7 @@ final class CompatibilityNoticeTest {
         @Test
         void showsTheHeldFailureOnTheFrameTheDialogIsDown() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
             when(campaignUiMock.isShowingDialog())
                 .thenReturn(true, false);
 
@@ -162,7 +162,7 @@ final class CompatibilityNoticeTest {
         @Test
         void holdsTheFailureWhileTheSectorHasNoCampaignUi() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
             when(sectorMock.getCampaignUI())
                 .thenReturn(null, campaignUiMock);
 
@@ -177,7 +177,7 @@ final class CompatibilityNoticeTest {
         void showsNothingAndThrowsNothingWhereThereIsNoSector() {
 
             var noticeWithoutSector = new CompatibilityNotice(null, failures);
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
 
             assertThatCode(() -> noticeWithoutSector.advance(ONE_FRAME))
                 .doesNotThrowAnyException();
@@ -192,8 +192,8 @@ final class CompatibilityNoticeTest {
             // together is shown on the next frame that can show it, not stacked on the first.
             var firstFailure = createFailureLosing("The first feature stopped working.");
             var secondFailure = createFailureLosing("The second feature stopped working.");
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> firstFailure);
-            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> secondFailure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> firstFailure);
+            failures.recordOnce(NEXERELIN, MAP_OVERLAY, recordedAs -> secondFailure);
 
             notice.advance(ONE_FRAME);
             verify(campaignUiMock, times(1))
@@ -210,7 +210,7 @@ final class CompatibilityNoticeTest {
         @Test
         void takesTheFailureOffTheRecordOnceShown() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
 
             notice.advance(ONE_FRAME);
 
@@ -222,7 +222,7 @@ final class CompatibilityNoticeTest {
         void logsTheFailuresLogLineWhenItShowsIt() {
 
             var failure = CompatibilityFailureFixture.createFailure();
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> failure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> failure);
 
             var appenderFake = LogAppenderFake.captureLogOf(
                 CompatibilityNotice.class,
@@ -236,7 +236,7 @@ final class CompatibilityNoticeTest {
         void logsTheFailuresLogLineWhereTheDialogCallThrows() {
 
             var failure = CompatibilityFailureFixture.createFailure();
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> failure);
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> failure);
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -252,7 +252,7 @@ final class CompatibilityNoticeTest {
         @Test
         void survivesADialogCallThatThrowsAndDoesNotRetryIt() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -268,8 +268,14 @@ final class CompatibilityNoticeTest {
         @Test
         void logsADialogFaultOnceHoweverManyFailuresItStrikes() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailureLosing("The first feature stopped working."));
-            failures.recordOnce(NEXERELIN, MAP_OVERLAY, () -> createFailureLosing("The second feature stopped working."));
+            failures.recordOnce(
+                FAST_RENDERING,
+                MAP_OVERLAY,
+                recordedAs -> createFailureLosing("The first feature stopped working."));
+            failures.recordOnce(
+                NEXERELIN,
+                MAP_OVERLAY,
+                recordedAs -> createFailureLosing("The second feature stopped working."));
             doThrow(new IllegalStateException("no screen panel"))
                 .when(campaignUiMock)
                 .showMessageDialog(anyString());
@@ -307,7 +313,7 @@ final class CompatibilityNoticeTest {
         @Test
         void isFalseForTheWholeSession() {
 
-            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, () -> createFailure());
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
             notice.advance(ONE_FRAME);
 
             assertThat(notice.isDone())

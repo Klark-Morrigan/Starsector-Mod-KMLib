@@ -202,6 +202,33 @@ final class FastRenderingBridgeFailuresTest {
             assertThat(failures.takeNextUnreported())
                 .isNull();
         }
+
+        @Test
+        void filesASecondFeatureOfOneModUnderOneKeyAsANumberedOne() {
+            // Composed against the consumer handed in rather than the one the record settled on, a
+            // mod that took two bindings to this renderer under one feature key would file both
+            // under that key and read as one feature failing twice.
+            var mapLegendUnderTheSameKey = new CompatibilityConsumer(
+                CompatibilityFailureFixture.MAP_OVERLAY_MOD_ID,
+                CompatibilityFailureFixture.MAP_OVERLAY_FEATURE_KEY,
+                "Map legends will not name their factions this session.");
+
+            FastRenderingBridgeFailures.recordBridgeFailure(
+                failures,
+                MAP_OVERLAY,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
+                BRIDGE_CLASS_GONE_ERROR);
+            FastRenderingBridgeFailures.recordBridgeFailure(
+                failures,
+                mapLegendUnderTheSameKey,
+                FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING,
+                BRIDGE_CLASS_GONE_ERROR);
+
+            failures.takeNextUnreported();
+
+            assertThat(failures.takeNextUnreported().consumer().consumerKey())
+                .isEqualTo("map-mod:map-overlay-2");
+        }
     }
 
     // A probe's answer stated by the case rather than read off the machine: the live probe reports
