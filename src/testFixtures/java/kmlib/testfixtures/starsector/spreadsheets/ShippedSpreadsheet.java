@@ -49,6 +49,10 @@ public final class ShippedSpreadsheet {
     /** The column the engine's own tables key their rows by, and what the keyed readings assume. */
     public static final String ID_COLUMN = "id";
 
+    // A shipped file is named as a Path rather than a File, matching the sibling fixtures that
+    // already read one - ShippedStrings and LunaSettingsTable. One spelling, so nothing has to
+    // convert at the boundary: the read below wants a Path either way.
+
     private ShippedSpreadsheet() {
         // fixture of static readers, no instances.
     }
