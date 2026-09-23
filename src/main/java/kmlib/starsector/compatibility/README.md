@@ -125,15 +125,30 @@ Where the version could not be read it runs to three lines instead,
 a lead and the two cases under it,
 because both directions are live at once
 and a sentence carrying both reads as one tangled claim.
-Nothing at all where the build stamped no target, since every sentence names the release to move to;
-and nothing where the two name one release, since neither direction would be true.
+Where the two name one release there is no version to move to,
+so the line asks for a report instead:
+the rows either side of it show one version twice,
+which on its own reads as though nothing is wrong,
+and a version match is exactly what a fault in the integration survives.
+Nothing at all where the build stamped no target, since every sentence names the release to move to.
 Wording only: nothing gates on the comparison, so a self-report that lies costs a sentence.
 
 What each kind of emphasis means is fixed, and what colour it takes is the surface's.
 A name, a version or the log's own file is brought forward;
-the phrase naming the failure and the instructions for fixing it warn;
+what is wrong warns, both the state and the instruction for fixing it,
+so a player scanning for the trouble finds it without reading the sentence;
 and what goes on working regardless is the one run set at ease,
 so the good news and the bad do not read as one list the eye has to parse.
+
+A mod is brought forward wherever it is named, including inside a warning.
+The instruction to downgrade or wait names both mods again,
+so that phrase is split into runs rather than warned as one:
+the wording around the names warns, the names themselves are brought forward,
+and the version stays inside the warning, being what the player is told to move to
+rather than a party to the mismatch.
+A value marked the same as the wording around it is folded into that run instead of kept apart,
+which is what keeps a two-letter join out of the run list -
+a short run being the one thing that could match inside a longer word.
 
 ## A binding is a third party and a consumer
 

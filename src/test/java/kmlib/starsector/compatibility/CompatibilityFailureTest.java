@@ -54,8 +54,8 @@ final class CompatibilityFailureTest {
 
             assertThat(failure.describeForPlayer())
                 .isEqualTo("title{failed|" + MOD_ID + "|Fast Rendering}"
-                    + "\n\ndiagnose-newer{Fast Rendering|" + MOD_ID
-                    + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}"
+                    + "\n\ndiagnose-newer{Fast Rendering|is-changed|" + MOD_ID + "|needs-it"
+                    + "|down Fast Rendering to 0.8.8 or-wait " + MOD_ID + " up}"
                     + "\n\nmod{" + MOD_ID + "}"
                     + "\nintegration{" + MOD_ID + ":map-overlay}"
                     + "\ntargeted{0.8.8}"
@@ -154,20 +154,22 @@ final class CompatibilityFailureTest {
 
             assertThat(failure.describeDiagnosisForPlayer())
                 .extracting(CompatibilityNoticeLine::lineText)
-                .containsExactly("diagnose-older{Fast Rendering|do-update{0.9.1}}");
+                .containsExactly("diagnose-older{Fast Rendering|is-old|do-update{0.9.1}}");
         }
 
         @Test
-        void warnsOnTheWholeUpdateInstructionWhereTheInstallIsBehind() {
+        void warnsOnTheStateAndTheInstructionWhereTheInstallIsBehind() {
 
-            // The version is inside the warned run rather than brought forward beside it, so the
-            // instruction reads as one thing to act on.
+            // What the install is warns as well as what to do about it, so a player scanning for
+            // the trouble finds it without reading the sentence. The version is inside the warned
+            // instruction rather than brought forward beside it, that being one thing to act on.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8");
 
             assertThat(failure.describeDiagnosisForPlayer().get(0).emphasisedRuns())
                 .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
                 .containsExactly(
                     tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple("is-old", Emphasis.WARNING),
                     tuple("do-update{0.9.1}", Emphasis.WARNING));
         }
 
@@ -178,24 +180,31 @@ final class CompatibilityFailureTest {
 
             assertThat(failure.describeDiagnosisForPlayer())
                 .extracting(CompatibilityNoticeLine::lineText)
-                .containsExactly("diagnose-newer{Fast Rendering|" + MOD_ID
-                    + "|do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}}");
+                .containsExactly("diagnose-newer{Fast Rendering|is-changed|" + MOD_ID + "|needs-it"
+                    + "|down Fast Rendering to 0.8.8 or-wait " + MOD_ID + " up}");
         }
 
         @Test
-        void warnsOnTheWholeChoiceWhereTheInstallIsAhead() {
+        void bringsTheModsInsideTheChoiceForwardAndWarnsOnTheWordsAround() {
 
-            // The choice warns as one run, values and all, so nothing inside it is brought forward
-            // separately. The names that appear both before it and inside it are listed once each,
-            // in order, which is what keeps the engine matching the early ones first.
+            // The choice names both mods again, and a mod is brought forward wherever it is named
+            // rather than disappearing into the colour of the instruction holding it. The version
+            // stays inside the warning: it is what the player is told to move to, not a party to
+            // the mismatch, so it is folded into the wording around it rather than kept apart.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
 
             assertThat(failure.describeDiagnosisForPlayer().get(0).emphasisedRuns())
                 .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
                 .containsExactly(
                     tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple("is-changed", Emphasis.WARNING),
                     tuple(MOD_ID, Emphasis.HIGHLIGHT),
-                    tuple("do-choose{Fast Rendering|0.8.8|" + MOD_ID + "}", Emphasis.WARNING));
+                    tuple("needs-it", Emphasis.WARNING),
+                    tuple("down", Emphasis.WARNING),
+                    tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple("to 0.8.8 or-wait", Emphasis.WARNING),
+                    tuple(MOD_ID, Emphasis.HIGHLIGHT),
+                    tuple("up", Emphasis.WARNING));
         }
 
         @Test
@@ -210,13 +219,15 @@ final class CompatibilityFailureTest {
                 .containsExactly(
                     "diagnose-unknown{Fast Rendering}",
                     "case-older{is-old|do-update{0.8.8}}",
-                    "case-newer{is-new|" + MOD_ID + "|needs-it|do-choose{Fast Rendering|0.8.8|"
-                        + MOD_ID + "}}");
+                    "case-newer{is-new|" + MOD_ID + "|needs-it|down Fast Rendering to 0.8.8 or-wait "
+                        + MOD_ID + " up}");
         }
 
         @Test
-        void warnsOnEachCaseAndBringsOnlyTheNamesForward() {
+        void warnsOnEachCaseAndBringsEveryModNamedForward() {
 
+            // The second case names three mods: the one it is about, and the two the choice inside
+            // it names again. All three are brought forward, whichever run they sit in.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null);
             var diagnosis = failure.describeDiagnosisForPlayer();
 
@@ -227,9 +238,16 @@ final class CompatibilityFailureTest {
                 .extracting(EmphasisedRun::emphasis)
                 .containsExactly(Emphasis.WARNING, Emphasis.WARNING);
             assertThat(diagnosis.get(2).emphasisedRuns())
-                .extracting(EmphasisedRun::emphasis)
+                .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
                 .containsExactly(
-                    Emphasis.WARNING, Emphasis.HIGHLIGHT, Emphasis.WARNING, Emphasis.WARNING);
+                    tuple("is-new", Emphasis.WARNING),
+                    tuple(MOD_ID, Emphasis.HIGHLIGHT),
+                    tuple("needs-it", Emphasis.WARNING),
+                    tuple("down", Emphasis.WARNING),
+                    tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple("to 0.8.8 or-wait", Emphasis.WARNING),
+                    tuple(MOD_ID, Emphasis.HIGHLIGHT),
+                    tuple("up", Emphasis.WARNING));
         }
 
         @Test
@@ -243,14 +261,31 @@ final class CompatibilityFailureTest {
         }
 
         @Test
-        void advisesNothingWhereTheTwoNameOneRelease() {
+        void asksForAReportOnOneLineWhereTheTwoNameOneRelease() {
 
-            // Neither direction is true, and a sentence saying one would be a guess dressed as
-            // advice. The rows still show the two versions, which is the whole of what is known.
+            // No version to move to, so the instruction is the one thing left to do. Without the
+            // line the rows show two matching versions and read as though nothing is wrong.
             var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8");
 
             assertThat(failure.describeDiagnosisForPlayer())
-                .isEmpty();
+                .extracting(CompatibilityNoticeLine::lineText)
+                .containsExactly("diagnose-same{Fast Rendering|report-to " + MOD_ID + " dev}");
+        }
+
+        @Test
+        void bringsTheModToReportToForwardInsideTheWarningWhereTheTwoNameOneRelease() {
+
+            // The mod the report goes to is brought forward inside the instruction as it is
+            // everywhere else, rather than disappearing into the colour of the warning holding it.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8");
+
+            assertThat(failure.describeDiagnosisForPlayer().get(0).emphasisedRuns())
+                .extracting(EmphasisedRun::runText, EmphasisedRun::emphasis)
+                .containsExactly(
+                    tuple("Fast Rendering", Emphasis.HIGHLIGHT),
+                    tuple("report-to", Emphasis.WARNING),
+                    tuple(MOD_ID, Emphasis.HIGHLIGHT),
+                    tuple("dev", Emphasis.WARNING));
         }
     }
 

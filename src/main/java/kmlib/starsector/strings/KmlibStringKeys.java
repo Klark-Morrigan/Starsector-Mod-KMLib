@@ -41,15 +41,16 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_TITLE_ERROR = "compatibility_notice_title_error";
 
     /**
-     * What the player can do about it, where the install is behind the build. Two slots: the third
-     * party, the update phrase below.
+     * What the player can do about it, where the install is behind the build. Three slots: the
+     * third party, the too-old phrase below, the update phrase below.
      */
     public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_OLDER_VERSION =
         "compatibility_notice_diagnosis_older_version";
 
     /**
-     * What the player can do about it, where the install is ahead of the build. Three slots: the
-     * third party, the consuming mod, the downgrade-or-wait phrase below.
+     * What the player can do about it, where the install is ahead of the build. Five slots: the
+     * third party, the carries-changes phrase below, the consuming mod, the depends-on phrase
+     * below, the downgrade-or-wait phrase below.
      */
     public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_NEWER_VERSION =
         "compatibility_notice_diagnosis_newer_version";
@@ -79,12 +80,41 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_UNKNOWN_NEWER =
         "compatibility_notice_diagnosis_unknown_newer";
 
+    /**
+     * What the player can do about it, where the two versions name one release. Two slots: the
+     * third party, then the integration-fault phrase below.
+     *
+     * <p>Says nothing about updating or downgrading, there being nowhere to move to. Everything
+     * else in the notice invites the player to compare the two versions, and this is the one shape
+     * where that comparison leads nowhere: the install is the release the binding was type-checked
+     * against, so the version is the one thing already known to be right.
+     *
+     * <p>Worded as "reports" rather than "is", which leaves room for a third party whose
+     * self-report is wrong without spending a clause claiming it - Fast Rendering has reported
+     * {@code v0.8.4} while being {@code v0.8.5rc1}.
+     */
+    public static final String COMPATIBILITY_NOTICE_DIAGNOSIS_SAME_VERSION =
+        "compatibility_notice_diagnosis_same_version";
+
     /** The phrase naming the install as behind, which is a run that warns. No slots. */
     public static final String COMPATIBILITY_NOTICE_PHRASE_TOO_OLD = "compatibility_notice_phrase_too_old";
 
-    /** The phrase naming the install as ahead, which is a run that warns. No slots. */
+    /**
+     * The phrase naming the install as ahead where a version was read, which is a run that warns.
+     * No slots.
+     */
     public static final String COMPATIBILITY_NOTICE_PHRASE_CARRIES_CHANGES =
         "compatibility_notice_phrase_carries_changes";
+
+    /**
+     * The same phrase as the second case under the lead, where it opens on the state rather than
+     * following the third party's name. No slots.
+     *
+     * <p>Its own key rather than the one above with the state spliced on, because the two are one
+     * run each in their sentences and a translation carries each sentence whole.
+     */
+    public static final String COMPATIBILITY_NOTICE_PHRASE_NEW_AND_CARRIES_CHANGES =
+        "compatibility_notice_phrase_new_and_carries_changes";
 
     /**
      * The phrase closing that one, after the consuming mod is named. No slots.
@@ -93,6 +123,25 @@ public final class KmlibStringKeys {
      * warning around it is two runs rather than one.
      */
     public static final String COMPATIBILITY_NOTICE_PHRASE_DEPENDS_ON = "compatibility_notice_phrase_depends_on";
+
+    /**
+     * The phrase a diagnosis states the report with, where the versions match and there is nothing
+     * to move to. One slot: the consuming mod.
+     *
+     * <p>An instruction rather than a verdict, matching the other diagnoses: every one of them
+     * ends on something the player can do, and where no version can be changed what is left to do
+     * is report it. A version match is exactly what a mirrored member that never existed, an
+     * unexercised call path or an unhandled state survives, so the report is worth more here than
+     * anywhere else in the notice - and reinstalling the third party is worth nothing, its version
+     * being the one thing already known to be right.
+     *
+     * <p>Names the consuming mod because that is the mod the player installed and the address a
+     * report goes to. Where the fault is really in the library underneath, its author depends on
+     * the library and forwards it; nothing here can tell the two apart, and the integration row
+     * names the binding for whoever can.
+     */
+    public static final String COMPATIBILITY_NOTICE_PHRASE_REPORT_TO_DEVELOPER =
+        "compatibility_notice_phrase_report_to_developer";
 
     /**
      * The phrase a diagnosis states the update with, which is the run of it that warns. One slot:

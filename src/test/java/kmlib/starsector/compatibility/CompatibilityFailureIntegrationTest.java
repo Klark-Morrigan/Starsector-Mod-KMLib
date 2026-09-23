@@ -98,6 +98,21 @@ final class CompatibilityFailureIntegrationTest {
         }
 
         @Test
+        void readsAsARequestToReportWhereTheTwoVersionsNameOneRelease() {
+
+            // No version to move to, so the line asks for the one thing left to do. The rows
+            // either side of it show one version twice, which alone reads as though nothing is
+            // wrong.
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8");
+
+            assertThat(failure.describeForPlayer())
+                .contains("\n\nYour Fast Rendering reports the version this integration was built"
+                    + " for, so it's better to report this issue to the " + MOD_ID + " developer.\n\n")
+                .contains("\n    Targeted:      0.8.8")
+                .contains("\n    Detected:      0.8.8");
+        }
+
+        @Test
         void readsAsTheNoticeWhereNeitherVersionWasRead() {
 
             // No diagnosis at all: every one names the release to move to, and there is none.
@@ -123,7 +138,7 @@ final class CompatibilityFailureIntegrationTest {
         @Test
         void everyRunOfEveryLineIsFoundInOrderInTheShippedWording() {
 
-            // Walked over all four shapes a notice takes, because which runs a line names differs
+            // Walked over all five shapes a notice takes, because which runs a line names differs
             // by shape and a run that went missing tints nothing rather than failing.
             assertEveryRunIsFoundInOrder(
                 CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1"));
@@ -131,6 +146,8 @@ final class CompatibilityFailureIntegrationTest {
                 CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8"));
             assertEveryRunIsFoundInOrder(
                 CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null));
+            assertEveryRunIsFoundInOrder(
+                CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8"));
             assertEveryRunIsFoundInOrder(CompatibilityFailureFixture.createFailure());
         }
 
