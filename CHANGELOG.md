@@ -17,7 +17,7 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **`MapIconReseater` lifts an icon under the campaign's speed-up.** With the speed-up toggled on, the campaign advances its scripts several times per rendered frame, map open or not, so a removal and a put-back on consecutive advances landed in one frame and the widget never rendered without the icon: every layer stayed under the nebulae on every open, unmoved by a save reload or a Starscape toggle. The put-back now waits until the widget has dropped the icon, bounded by `MAX_ADVANCES_DETACHED` advances and ended at once when the map goes down.
+- **`MapIconReseater` lifts an icon under the campaign's speed-up.** With the speed-up toggled on, the campaign advances its scripts several times per rendered frame, map open or not, so a removal and a put-back on consecutive advances landed in one frame and the widget never rendered without the icon: every layer stayed under the nebulae on every open, unmoved by a save reload or a Starscape toggle. The put-back now waits until the widget has dropped the icon, bounded by `MAX_ADVANCES_DETACHED` advances and ended at once when the map goes down. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
 - **A stood-down lift is tried again on the next map open.** The attempt bound abandons a lift for the rest of the open rather than for the session: the next open is a fresh widget with a fresh seeding, and a stand-down that outlived its cause read, from outside, as the lever having stopped working.
 
 ### Added
