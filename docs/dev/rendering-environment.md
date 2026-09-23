@@ -34,7 +34,7 @@ Treat the page as unproven against anything else.
 | What | Version | Identity |
 | --- | --- | --- |
 | Starsector | `0.98a-RC8` | - |
-| Fast Rendering | `v0.8.9` | `fr.jar` SHA-256 `e669b6dd6b9c1fc4e34b44b40e9e03c19374d8dc46e7820b9e3a4813cbc3208f`, 716583 bytes; `fr.agent.jar` SHA-256 `a6bd66743a95104f07a8bb367356881fcfae7549d26d765d296c094ea687590d`, 14841 bytes |
+| Fast Rendering | `v0.8.10rc1` | `fr.jar` SHA-256 `573fca71f6aeac3f3e6a9030f6ff1ea302def4ffea20b0be804ea5024d3f6074`, 716402 bytes; `fr.agent.jar` SHA-256 `8f2be98314d73d2fabfea47bb8088d147a6eccef359caffe0bd2f942bb303725`, 14844 bytes |
 
 That row is the release the citations below were read out of.
 An install is patched by dropping the release zip's jars into `starsector-core\`,
@@ -48,10 +48,14 @@ Its size sat at 15558 bytes across `v0.8.5rc1`,
 (15561 on `v0.8.7rc1`)
 while its contents changed in every one of them,
 so a size *match* there is no evidence.
-`v0.8.9` is the first release in that run to move it,
-to 14841,
-because it merged two transformation tables into one class -
-but treat that as a coincidence of this release rather than a habit.
+`v0.8.9` moved it to 14841,
+having merged two transformation tables into one class,
+and `v0.8.10rc1` moved it again to 14844 -
+for three characters of release string and nothing else,
+every other class in that jar being byte-identical.
+So neither direction carries information:
+a match can hide a rewrite,
+and a move can be a banner.
 That jar is where the bridge package name and the rewrite tables live,
 which is the half of the patch KM's detection depends on.
 
@@ -70,7 +74,7 @@ and each is flagged where it appears:
   Through `v0.8.7rc1` it was armed on the first combat frame instead,
   which made a stalling read on the campaign map survive any session that never entered a battle.
   This is the delta on this page with the most teeth for KM code.
-- **`GL_CURRENT_PROGRAM` is answered from `AttribTracker`** on `v0.8.5rc1` through `v0.8.9` and on `v0.8.3` and earlier,
+- **`GL_CURRENT_PROGRAM` is answered from `AttribTracker`** on `v0.8.3` and earlier and from `v0.8.5rc1`,
   and from `ShaderTracker` on `v0.8.4` alone.
 - **`glIsTexture` is an inline read**,
   from `v0.8.4`.
@@ -103,10 +107,10 @@ and each is flagged where it appears:
   `GL14`,
   `Display` and `GLContext` redirected.
 
-Nothing KMLib binds to has moved or changed signature through `v0.8.9`.
+Nothing KMLib binds to has moved or changed signature through `v0.8.10rc1`.
 `GLCommand`,
 `GLGetter`,
-`TransformManager` and `ContextManager` are byte-identical across `v0.8.5rc1` to `v0.8.9`;
+`TransformManager` and `ContextManager` are byte-identical across `v0.8.5rc1` to `v0.8.10rc1`;
 `Context.transformManager`,
 `Context.exec` and `Executor.execute(GLCommand)` kept their names and signatures
 while the code around them turned over -
@@ -121,6 +125,7 @@ then `v0.8.9` merged it with `ObfTransformations` into a single `Transformations
 holding one named map per rewrite family,
 and repointed every `GLnn` entry at the new facade package.
 Neither the merge nor the repoint is in the release notes.
+`v0.8.10rc1` left that class byte-identical.
 KM detection spans it because it matches the `com.genir.renderer.` prefix rather than a whole class name,
 which is the case this tolerance was built for.
 
@@ -134,7 +139,7 @@ and the jar hash is what settles it.
 
 The agent logs a release at startup,
 before anything else runs:
-`Agent.premain` writes `Fast Rendering: v0.8.9` at INFO,
+`Agent.premain` writes `Fast Rendering: v0.8.10rc1` at INFO,
 followed by the SHA-256 of `starfarer_obf.jar`
 (`starsector-core/fr.agent/com/genir/renderer/agent/Agent.java:21-24`).
 The line appeared in `v0.8.4`;
@@ -147,7 +152,7 @@ so it identifies the Starsector build being patched and says nothing about which
 `com.genir.renderer.Version.getVersion()`
 (`starsector-core/fr/com/genir/renderer/Version.java:7-8`),
 returning a release string -
-`"v0.8.9"` on `v0.8.9`.
+`"v0.8.10rc1"` on `v0.8.10rc1`.
 Nothing in either jar calls it,
 so it names the artifact rather than the session,
 which is what a build wants:
@@ -158,13 +163,17 @@ correct from `v0.8.6`,
 and a KMLib build bound against `v0.8.5rc1` reports `Fast Rendering: v0.8.4`.
 
 The third is a display string in the shadowed copy of the game's own version class,
-`"Starsector 0.98a-RC8 FR8.9"`
+`"Starsector 0.98a-RC8 FR8.10rc1"`
 (`starsector-core/fr/com/fs/starfarer/Version.java:28`, `:36`),
-which is what puts `FR8.9` on the launcher and the main menu.
+which is what puts `FR8.10rc1` on the launcher and the main menu.
 Its shape is `FR` followed by the release tag with its leading `v0.` dropped,
 patch letters and release-candidate suffixes included,
 so `v0.7.1` reads `FR7.1`,
 `v0.7.1b` reads `FR7.1b` and `v0.8.7rc1` reads `FR8.7rc1`.
+What follows the dot is a counter rather than a decimal,
+which starts to matter from `v0.8.10rc1`:
+`FR8.10rc1` is a later release than `FR8.9`,
+and is not `FR8.1`.
 It tracked the release exactly except at `v0.8.5rc1`,
 which reads `FR8.4`.
 It is the only identifier readable without opening a jar and so the one to ask a player for,
@@ -187,11 +196,15 @@ sha256sum "<starsector>/starsector-core/fr.jar"
 ```
 
 Sizes still separate neighbouring releases
-(`v0.7.6` is 632557 bytes, `v0.7.7` is 632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887, `v0.8.3` is 634576, `v0.8.4rc1` is 632459, `v0.8.4` is 639820, `v0.8.5rc1` is 642412, `v0.8.6` is 660831, `v0.8.7rc1` is 666557, `v0.8.7` is 668949, `v0.8.8` is 669864, `v0.8.9` is 716583),
+(`v0.7.6` is 632557 bytes, `v0.7.7` is 632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887, `v0.8.3` is 634576, `v0.8.4rc1` is 632459, `v0.8.4` is 639820, `v0.8.5rc1` is 642412, `v0.8.6` is 660831, `v0.8.7rc1` is 666557, `v0.8.7` is 668949, `v0.8.8` is 669864, `v0.8.9` is 716583, `v0.8.10rc1` is 716402),
 so a size mismatch is a fast first check before hashing.
 Treat only the mismatch as informative:
 `v0.7.6` and `v0.7.7` are 83 bytes apart,
 close enough that a size *match* is weak evidence and hashing is what settles it.
+The figure does not climb,
+either:
+`v0.8.10rc1` is 181 bytes *smaller* than `v0.8.9`,
+so a size cannot be read as a position in the sequence.
 Release candidates are published as ordinary releases and get installed as such,
 so `rc` builds are part of the set an install can be -
 and on `v0.8.5rc1` the size is the *only* cheap discriminator against `v0.8.4`,
@@ -254,6 +267,16 @@ moved `commands/GL11`'s compressed-texture read into a new `context/TextureReadM
 and brought back a `stall/BufferManager` -
 the name `v0.8.4` deleted,
 now holding an unrelated mapped-buffer shim (below).
+`v0.8.10rc1` reworked `context/TextureManager`:
+its methods are `synchronized`,
+`manageTexture` gained a `Context` and a target parameter,
+its `LOADED` state became `DO_NOT_MANAGE`,
+and a new `assetLoadingFinished` gate makes every texture created after asset loading upload eagerly
+rather than lazily -
+which is the release's VRAM Optimizer portrait fix.
+The same release made mipmap generation unconditional in
+`overrides/loading/textures/TextureBuilder` and `DDSIntegration`,
+where through `v0.8.9` only textures of 1024x1024 or smaller got a mipmapping minification filter.
 
 So byte-identity of the tree is the wrong thing to check on an upgrade;
 the six members KMLib mirrors are -
@@ -451,7 +474,7 @@ so the exclusion is now purely a bytecode-rewriting one and the mod's plugin loa
 VRAM Optimizer is the mod on the far side of that exclusion,
 and Fast Rendering reaches back into it by name rather than the other way round:
 `DDSIntegration` looks up `DeCell.VOpt.Commons.Rendering.TextureLoading.UploadDDSTexture` and falls back to an older `...Rendering.Textures` entry point when that is absent
-(`.../overrides/loading/textures/DDSIntegration.java:260`, `:268`).
+(`.../overrides/loading/textures/DDSIntegration.java:258`, `:266`).
 Both are reflective lookups through the script classloader,
 so neither mod is a build-time dependency of the other,
 and a missing method is logged rather than fatal.
@@ -655,8 +678,11 @@ Counting starts once the game is up,
 and from `v0.8.7` "up" means **the end of game initialisation**:
 the detector is armed in `ResourceLoader.initEpilogue`,
 immediately after every mod's `onApplicationLoad` has run
-and the same flag Fast Rendering treats as "game initialised" is set
-(`.../overrides/loading/ResourceLoader.java:187-188`).
+and beside the same flag Fast Rendering treats as "game initialised"
+(`.../overrides/loading/ResourceLoader.java:187-190`).
+`v0.8.10rc1` arms it twice in that method,
+once either side of the flag,
+the second call being redundant rather than a second detector.
 So arming happens before the main menu is ever drawn,
 and a per-frame stalling read on the campaign map is fatal from the first time the map is opened.
 
@@ -760,7 +786,7 @@ the bridge's entire *implemented* `glGet*` surface is `glGetInteger(int)` and `g
 `glGetTexLevelParameteri`,
 `glGetTexParameteri` and two `glGetTexImage` overloads,
 plus the two `glIs*` predicates
-(`.../bridge/commands/GL11.java:1228-1480`).
+(`.../bridge/commands/GL11.java:1228-1479`).
 
 Read "implemented" strictly from `v0.8.9`,
 because the facade changed what *declared* means.
@@ -810,7 +836,7 @@ Always inline:
   blend,
   lighting,
   and **scissor test**
-  (`.../bridge/commands/GL11.java:1445-1475`).
+  (`.../bridge/commands/GL11.java:1444-1474`).
 - `glGetFloat(int)` for `GL_LINE_WIDTH`
   (`.../bridge/commands/GL11.java:1319-1334`).
 - `glGetString` for `GL_EXTENSIONS`,
@@ -820,7 +846,7 @@ Always inline:
   (`.../bridge/commands/GL11.java:1294-1304`).
 - `glIsTexture`,
   from `v0.8.4`
-  (`.../bridge/commands/GL11.java:1477-1480`, `.../bridge/context/stall/TextureTracker.java:71-90`).
+  (`.../bridge/commands/GL11.java:1476-1479`, `.../bridge/context/stall/TextureTracker.java:71-90`).
   `TextureTracker` keeps a caller-side record of which target each texture name was last bound to,
   and the answer comes from that;
   the real GL call still runs,
@@ -830,7 +856,7 @@ Always inline:
 - `glGetTexLevelParameteri` for `GL_TEXTURE_WIDTH`,
   `GL_TEXTURE_HEIGHT` and `GL_TEXTURE_INTERNAL_FORMAT`,
   from `v0.8.5rc1`
-  (`.../bridge/commands/GL11.java:1392-1410`, `.../bridge/context/stall/TextureTracker.java:108-148`).
+  (`.../bridge/commands/GL11.java:1392-1409`, `.../bridge/context/stall/TextureTracker.java:108-148`).
   `TextureTracker` caches those three per texture name as level 0 is uploaded,
   and the read is inline only when the texture currently bound **to that target** has an entry
   and the pname is one of the three;
@@ -842,6 +868,10 @@ Always inline:
   Mip levels above 30000 are the exception and the trap:
   they short-circuit to `0` without touching GL or the cache at all,
   which makes that a read to distrust rather than rely on.
+  Through `v0.8.9` the stalling fall-through issued the driver read twice and discarded the first result;
+  `v0.8.10rc1` dropped the dead one.
+  The stall is one round trip either way,
+  so nothing a caller can observe changed.
 
 Inline only after one stall.
 Four `glGetInteger(int)` pnames and three `glGetString` names go through a learn-on-first-miss cache
@@ -884,7 +914,7 @@ each to stop a per-frame reader from tripping the stall detector.
 which is the counter-example worth holding onto:
 it closed a `NoSuchMethodError` without adding an inline path,
 so it always stalls
-(`.../bridge/commands/GL11.java:1412-1422`).
+(`.../bridge/commands/GL11.java:1411-1421`).
 A call being *present* in the bridge is therefore not evidence that it is cheap -
 and from `v0.8.9` it is not even evidence that it is implemented,
 since the facade declares the whole LWJGL surface and throws on most of it.
@@ -907,6 +937,7 @@ and it reuses the class name `v0.8.4` deleted for something unrelated,
 so a `stall/BufferManager` frame means `v0.8.3` or earlier,
 or `v0.8.9` or later,
 and the two are not the same code.
+`v0.8.10rc1` added no inline answer and removed no stall.
 
 Two consequences for KM code.
 Whether a given read is fatal depends on the Fast Rendering version,
@@ -951,12 +982,14 @@ never by reading it back through GL
 `fr.jar` also ships patched copies of core game classes under `com.fs.*` (and `sound.*`),
 not just the GL bridge,
 and they shadow the game's own copies in `starfarer_obf.jar` / `fs.common_obf.jar`.
-There are 21 on `v0.8.9`,
+There are 21 on `v0.8.10rc1`,
 unchanged in membership since `v0.8.1` -
 though their contents are not stable at all:
 `graphics/TextureLoader` was rewritten in `v0.8.5rc1` to load DDS textures on demand rather than at startup,
 `loading/ResourceLoaderState` and `loading/scripts/ScriptStore` both changed in `v0.8.6`,
-and `Version` and `loading/ResourceLoaderState` both changed again in `v0.8.9`.
+`Version` and `loading/ResourceLoaderState` both changed again in `v0.8.9`,
+and `Version` again in `v0.8.10rc1`,
+carrying nothing but its release string.
 Membership holding says nothing about behaviour holding.
 They reach well past rendering:
 `Version`,
