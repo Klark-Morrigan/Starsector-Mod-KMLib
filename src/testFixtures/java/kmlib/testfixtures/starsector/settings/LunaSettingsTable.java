@@ -1,9 +1,7 @@
 package kmlib.testfixtures.starsector.settings;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import kmlib.testfixtures.starsector.spreadsheets.ShippedSpreadsheet;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -282,26 +280,6 @@ public final class LunaSettingsTable {
         return !HEADER_FIELD_TYPE.equals(fieldType) && !TEXT_FIELD_TYPE.equals(fieldType);
     }
 
-    // Splits one CSV line into its cells, honouring double quotes - the description and option
-    // columns both contain commas, so a plain split would shift every later column.
-    private static List<String> splitCsvLine(String line) {
-        var cells = new ArrayList<String>();
-        var cell = new StringBuilder();
-        var isQuoted = false;
-        for (var character : line.toCharArray()) {
-            if (character == '"') {
-                isQuoted = !isQuoted;
-            } else if (character == ',' && !isQuoted) {
-                cells.add(cell.toString().trim());
-                cell.setLength(0);
-            } else {
-                cell.append(character);
-            }
-        }
-        cells.add(cell.toString().trim());
-        return cells;
-    }
-
     private List<String> findRow(String fieldId) {
 
         var rows = readSettingsRows().stream()
@@ -345,20 +323,13 @@ public final class LunaSettingsTable {
             .toList();
     }
 
+    // Read by column position rather than by header name, because every reading above is written
+    // against the column indices the file lays out. The parse itself - the description and option
+    // columns both carry commas inside quotes, which a split on the comma would shift every later
+    // column past - is ShippedSpreadsheet's, so it is one parser's business rather than this
+    // fixture's.
     private List<List<String>> readSettingsRows() {
-        try {
-            return Files
-                .readAllLines(settingsCsv, StandardCharsets.UTF_8)
-                .stream()
-                .map(LunaSettingsTable::splitCsvLine)
-                .toList();
-        } catch (IOException failure) {
-            // Surfaced rather than swallowed: the file is shipped data, so a read failure means the
-            // reading is looking in the wrong place, not that the settings are fine.
-            throw new UncheckedIOException(
-                "Could not read " + settingsCsv.toAbsolutePath(),
-                failure);
-        }
+        return ShippedSpreadsheet.readCells(settingsCsv);
     }
 
     /**

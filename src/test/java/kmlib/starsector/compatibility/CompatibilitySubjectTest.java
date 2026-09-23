@@ -73,6 +73,24 @@ final class CompatibilitySubjectTest {
     }
 
     @Nested
+    class HasBuiltAgainstVersion {
+
+        @Test
+        void isTrueWhereTheBuildStampedOne() {
+
+            assertThat(new CompatibilitySubject("Fast Rendering", "v0.8.8", null).hasBuiltAgainstVersion())
+                .isTrue();
+        }
+
+        @Test
+        void isFalseForABlank() {
+
+            assertThat(new CompatibilitySubject("Fast Rendering", " ", null).hasBuiltAgainstVersion())
+                .isFalse();
+        }
+    }
+
+    @Nested
     class HasInstalledVersion {
 
         @Test
@@ -87,6 +105,78 @@ final class CompatibilitySubjectTest {
 
             assertThat(new CompatibilitySubject("Fast Rendering", null, "").hasInstalledVersion())
                 .isFalse();
+        }
+    }
+
+    @Nested
+    class ResolveInstalledVersionRelation {
+
+        @Test
+        void readsAnInstallBehindTheBuildAsOlder() {
+
+            assertThat(relationBetween("v0.9.1", "v0.8.9"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.OLDER);
+        }
+
+        @Test
+        void readsAnInstallAheadOfTheBuildAsNewer() {
+
+            assertThat(relationBetween("v0.8.9", "v0.9.1"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.NEWER);
+        }
+
+        @Test
+        void readsTheSameReleaseAsSameWhateverThePrefix() {
+
+            // The two come from two places that need not agree about carrying the letter.
+            assertThat(relationBetween("v0.8.9", "0.8.9"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.SAME);
+        }
+
+        @Test
+        void readsAMissingTrailingSegmentAsZero() {
+
+            // 1.2 and 1.2.0 are one release, not two.
+            assertThat(relationBetween("1.2", "1.2.0"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.SAME);
+        }
+
+        @Test
+        void comparesSegmentsAsNumbersRatherThanAsText() {
+
+            // Ten is after nine, which a character comparison gets the other way round.
+            assertThat(relationBetween("0.9", "0.10"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.NEWER);
+        }
+
+        @Test
+        void answersUnknownWhereTheInstalledVersionWasNotRead() {
+
+            assertThat(relationBetween("v0.8.9", null))
+                .isEqualTo(CompatibilitySubject.VersionRelation.UNKNOWN);
+        }
+
+        @Test
+        void answersUnknownWhereTheBuildStampedNoVersion() {
+
+            assertThat(relationBetween(null, "v0.9.1"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.UNKNOWN);
+        }
+
+        @Test
+        void answersUnknownWhereAVersionCarriesNoNumber() {
+
+            // A sentinel or a word in the slot is not a version to compare by.
+            assertThat(relationBetween("unknown", "v0.9.1"))
+                .isEqualTo(CompatibilitySubject.VersionRelation.UNKNOWN);
+        }
+
+        private CompatibilitySubject.VersionRelation relationBetween(
+                String builtAgainstVersion,
+                String installedVersion) {
+
+            return new CompatibilitySubject("Fast Rendering", builtAgainstVersion, installedVersion)
+                .resolveInstalledVersionRelation();
         }
     }
 }

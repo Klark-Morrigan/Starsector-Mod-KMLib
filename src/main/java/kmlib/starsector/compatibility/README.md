@@ -12,6 +12,7 @@ what it holds is the channel a binding reports through.
 ## Index
 
 - [Record, then report](#record-then-report)
+- [Two surfaces, one record](#two-surfaces-one-record)
 - [A binding is a third party and a consumer](#a-binding-is-a-third-party-and-a-consumer)
 - [A feature key one mod reused](#a-feature-key-one-mod-reused)
 - [A step that integrates with another mod](#a-step-that-integrates-with-another-mod)
@@ -46,7 +47,11 @@ and the report is filed under whichever key the record settled on.
 
 [`CompatibilityNotice`](CompatibilityNotice.java) is the report:
 a transient per-frame script that drains the record
-and shows each failure as the game's own message dialog.
+and shows each failure as the game's own confirm dialog, sized and carrying a single button.
+A confirm dialog rather than the message dialog beside it,
+which is how the game puts up its own one-button notices:
+the message dialog takes no size, so its fixed panel cut the last rows of this block off
+below its own edge, and it answers nothing about whether it opened.
 Transient because what it reports is a fact about the jars installed this session,
 not about the save.
 It writes the log block before it asks for the dialog,
@@ -67,8 +72,85 @@ sequenceDiagram
   N->>Reg: hasUnreported()
   N->>Reg: takeNextUnreported()
   N->>N: log describeForLog()
-  N->>UI: showMessageDialog(describeForPlayer())
+  N->>UI: showConfirmDialog(describeForPlayer(), size)
 ```
+
+## Two surfaces, one record
+
+A binding to a renderer breaks inside a map render pass,
+and the notice above is a transient script on the sector,
+which the campaign engine does not advance while a core screen is up.
+So a failure found on the map reaches that reporter only once the player has left the screen it was about.
+
+[`ui/compatibility/`](../ui/compatibility/) is the second surface:
+a panel stood in the core UI's own widget tree,
+which the screen holding it advances,
+so it can be raised on the frame the failure is found.
+It is drawn from the game's own text widgets rather than handed over as one string,
+which is what lets each row's value be tinted while its label is left alone.
+
+Both drain the one record and neither repeats the other.
+Whichever shows a failure takes it,
+so the dialog never re-opens a notice already dismissed on the map,
+and a failure the panel declines to show is still waiting when the player returns to the campaign.
+Declining is the ordinary case rather than an error:
+there is no screen to stand on at load, and none on the campaign view.
+
+What the notice says is settled here and not on either surface.
+[`CompatibilityFailure`](CompatibilityFailure.java) answers it as
+[`CompatibilityNoticeLine`](CompatibilityNoticeLine.java)s -
+a heading, a diagnosis, the rows, a closing line -
+each carrying its wording and the runs of it that stand out.
+A surface of widgets tints those runs;
+the dialog reads the same lines plain.
+Which lines there are and what order they come in is decided once,
+so a line added to the notice arrives on both surfaces rather than on whichever was edited.
+
+Emphasis is named, never marked up.
+Every run that stands out is a value the composition filled into a template -
+a name, a version, or a phrase with a key of its own -
+so the composition already holds each one and simply says which they were.
+Nothing parses the wording,
+and nothing inside a value can be mistaken for a directive.
+The runs are given in reading order because that is how the engine matches them,
+each searched from where the last one ended:
+a name brought forward early and appearing again inside a later phrase
+is tinted once for each rather than twice for the first.
+
+The diagnosis is the part of the notice that varies by what was found.
+[`CompatibilitySubject`](CompatibilitySubject.java) reads how the installed version stands to the targeted one -
+behind, ahead, the same, or not comparable -
+and the notice advises an update where it is behind and a downgrade or a wait where it is ahead.
+Where the version could not be read it runs to three lines instead,
+a lead and the two cases under it,
+because both directions are live at once
+and a sentence carrying both reads as one tangled claim.
+Where the two name one release there is no version to move to,
+so the line asks for a report instead:
+the rows either side of it show one version twice,
+which on its own reads as though nothing is wrong,
+and a version match is exactly what a fault in the integration survives.
+Nothing at all where the build stamped no target, since every sentence names the release to move to.
+Wording only: nothing gates on the comparison, so a self-report that lies costs a sentence.
+
+What each kind of emphasis means is fixed, and what colour it takes is the surface's.
+A name, a version or the log's own file is brought forward;
+what is wrong warns, both the state and the instruction for fixing it,
+so a player scanning for the trouble finds it without reading the sentence;
+and what goes on working regardless is the one run set at ease,
+so the good news and the bad do not read as one list the eye has to parse.
+
+A mod is brought forward wherever it is named, including inside a warning.
+Two of the phrases name a mod that way - the instruction to downgrade or wait, which names both,
+and the one asking for a report - so each is split into runs rather than warned as one:
+the wording around the names warns, the names themselves are brought forward,
+and the version stays inside the warning, being what the player is told to move to
+rather than a party to the mismatch.
+A value marked the same as the wording around it is folded into that run instead of kept apart,
+which is what keeps a two-letter join out of the run list -
+a short run being the one thing that could match inside a longer word.
+[`CompatibilityNoticeLines`](CompatibilityNoticeLines.java) is where those rules live,
+apart from the failure they compose, since none of them knows what a compatibility failure is.
 
 ## A binding is a third party and a consumer
 
@@ -258,13 +340,16 @@ in [`KmlibStringKeys`](../strings/KmlibStringKeys.java).
 
 ## One dialog per frame
 
-The game's message dialog is dropped, silently,
-when asked for while any dialog is up -
+The game refuses a dialog asked for while any dialog is up,
 and its dialog check reads the same flag.
 So the notice gates on that check,
 and shows one failure per frame rather than every failure it took:
-a second dialog asked for on the same frame as the first would be the one dropped.
+a second dialog asked for on the same frame as the first would be the one refused.
 A frame later it waits for the first to be dismissed.
+The call answers whether it opened,
+so a refusal that slips past the gate is logged rather than lost -
+the failure's own block having already been written, a player who never saw the modal
+still leaves a report behind.
 
 ## Threads
 
@@ -287,6 +372,9 @@ The notice runs on the campaign thread alone.
   [`starsector/startup/`](../startup/) owns the failure boundary, the log line
   and the phrase a failed installation files under;
   this package owns only what a failure it caught is reported as.
+- The panel the notice is drawn on where a screen can hold one.
+  [`ui/compatibility/`](../ui/compatibility/) owns that surface and the widget tree it stands in;
+  this package owns what a failure says and which rows say it.
 - The transient install.
   [`starsector/scripts/`](../scripts/) is what registers the notice on a sector,
   and [`KMLib_ModPlugin`](../../KMLib_ModPlugin.java) is what asks it to on each load.

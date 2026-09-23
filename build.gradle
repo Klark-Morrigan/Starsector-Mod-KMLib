@@ -211,6 +211,14 @@ dependencies {
     // classpaths a shipped class is built against and leaves the fixtures - a source set most
     // game jars have nothing to do with - out of it.
     testFixturesCompileOnly files(jsonJarFile)
+
+    // Apache Commons CSV is RFC 4180 - compliant and handles every quoting wrinkle the shipped
+    // tables use (quoted commas, embedded newlines, doubled `""` escapes). `api` rather than
+    // `implementation` because ShippedSpreadsheet hands rows to a consumer's own suite, and a
+    // consumer reading a shipped table needs the parser on its test runtime to do it. Nothing the
+    // game loads is involved: the engine parses its own tables inside the game classloader, and
+    // this exists only so a suite can read the same file from outside it.
+    testFixturesApi 'org.apache.commons:commons-csv:1.11.0'
 }
 
 dependOnModJars(files(lunaLibJarFile))

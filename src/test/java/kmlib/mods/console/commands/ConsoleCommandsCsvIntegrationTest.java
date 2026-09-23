@@ -1,6 +1,7 @@
 package kmlib.mods.console.commands;
 
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.spreadsheets.ShippedSpreadsheet;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,15 +52,12 @@ class ConsoleCommandsCsvIntegrationTest {
 
     private static final String JAVA_SUFFIX = ".java";
 
-    // Where the class column sits in a row. Only the first two fields are read, and both are
-    // free of commas and quoting - which is what lets the split stop at the third field rather
-    // than the help text having to be parsed as CSV.
-    private static final int CLASS_COLUMN = 1;
+    // The columns this suite reads, by the names the table's own header gives them.
+    private static final String CLASS_COLUMN = "class";
 
-    private static final int COLUMNS_READ = 3;
+    private static final String COMMAND_COLUMN = "command";
 
-    // The first line names the columns rather than a command.
-    private static final int HEADER_LINES = 1;
+    private static final String SYNTAX_COLUMN = "syntax";
 
     private static final String LIST_FACTIONS_COMMAND = "kmlib_list_factions";
 
@@ -76,9 +73,7 @@ class ConsoleCommandsCsvIntegrationTest {
     // so a read that came back with nothing would pass all of them without checking anything.
     private static List<String> readRegisteredClassNames() {
 
-        var registeredClassNames = readCommandRows().stream()
-            .map(row -> row.split(",", COLUMNS_READ)[CLASS_COLUMN])
-            .toList();
+        var registeredClassNames = ShippedSpreadsheet.listColumnValues(COMMANDS_CSV, CLASS_COLUMN);
 
         if (registeredClassNames.isEmpty()) {
             throw new AssertionError("No command rows read from " + COMMANDS_CSV);
@@ -86,33 +81,18 @@ class ConsoleCommandsCsvIntegrationTest {
         return registeredClassNames;
     }
 
-    // The syntax column of one command's row. Cut at the quotes bounding the fields on either side
-    // of it rather than parsed as CSV: the tags before it and the help after it are the only quoted
-    // fields, and both carry commas a bare split would break on.
+    // The syntax column of one command's row, read by header name. The tags and help columns around it
+    // both carry commas inside quotes, which is the parser's business rather than this suite's.
     private static String readSyntaxColumnOf(String commandName) {
 
-        for (var row : readCommandRows()) {
+        var row = ShippedSpreadsheet
+            .readRowsById(COMMANDS_CSV, COMMAND_COLUMN)
+            .get(commandName);
 
-            if (!row.startsWith(commandName + ",")) {
-                continue;
-            }
-            var tagsEnd = row.indexOf("\",");
-            var helpStart = row.indexOf(",\"", tagsEnd + 2);
-
-            return row.substring(tagsEnd + 2, helpStart);
+        if (row == null) {
+            throw new AssertionError("No row for " + commandName + " in " + COMMANDS_CSV);
         }
-        throw new AssertionError("No row for " + commandName + " in " + COMMANDS_CSV);
-    }
-
-    private static List<String> readCommandRows() {
-        try {
-            return Files.readAllLines(COMMANDS_CSV, StandardCharsets.UTF_8).stream()
-                .skip(HEADER_LINES)
-                .filter(line -> !line.isBlank())
-                .toList();
-        } catch (IOException failure) {
-            throw new UncheckedIOException(failure);
-        }
+        return row.get(SYNTAX_COLUMN);
     }
 
     // Every command this package actually ships: a concrete class the console could run. The

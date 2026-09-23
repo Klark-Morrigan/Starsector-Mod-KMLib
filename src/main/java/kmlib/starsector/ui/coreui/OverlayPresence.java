@@ -27,4 +27,20 @@ public record OverlayPresence(
     /** Nothing raised over the screen, which is every ordinary frame. */
     public static final OverlayPresence NONE =
         new OverlayPresence(false, 0f);
+
+    /**
+     * Whether any of the overlay is on screen: it holds the screen, or it has let go and its paint
+     * has not yet run out.
+     *
+     * <p>Wider than {@link #isRaised()} on purpose. Something standing aside for an overlay stops
+     * routing input the moment it is raised, but goes on riding the fade until there is nothing
+     * left to ride - so what asks "is there anything to follow here" asks this, and what asks "has
+     * it taken the screen" asks the flag.
+     *
+     * @return {@code true} while the overlay is raised or still fading
+     */
+    public boolean isShowing() {
+
+        return isRaised || fadeFraction > 0f;
+    }
 }
