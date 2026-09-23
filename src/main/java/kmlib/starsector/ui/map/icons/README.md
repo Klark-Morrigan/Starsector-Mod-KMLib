@@ -29,6 +29,13 @@ after the nebulae.
 
 So a lift is a removal from the location followed by a put-back,
 with a frame rendered between them.
+The types here are named for that pair rather than for what it achieves:
+a *reseat* is the removal and the put-back,
+which is how the icon takes a new seat at the tail,
+and a *lift* is what one is for -
+the icon ending up past the nebulae that were seeded after it.
+The prose says lift wherever the effect is the point.
+
 Which entity, which maps matter and where an icon currently sits are all ports the consuming mod wires in:
 a rule about the first two would be a guess about somebody's content,
 and reading the third here would make a package that writes depend on the [probes](../probes/) that only read.
