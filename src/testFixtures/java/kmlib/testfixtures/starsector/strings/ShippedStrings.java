@@ -1,15 +1,17 @@
 package kmlib.testfixtures.starsector.strings;
 
 import kmlib.testfixtures.reflection.DeclaredConstants;
+import kmlib.testfixtures.starsector.json.ShippedJson;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.TreeMap;
+
+import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
+import static kmlib.testfixtures.starsector.json.ShippedJson.requireObject;
+import static kmlib.testfixtures.starsector.json.ShippedJson.requireString;
 
 /**
  * Reads the two halves a localisation guard holds together: the wording a mod ships, and the string
@@ -21,14 +23,9 @@ import java.util.regex.Pattern;
  * names is wording that ships, is translated, and is never drawn.
  *
  * <p>Here rather than in each mod's suite because the guard is the same guard every time - every KM
- * mod ships one strings file and names its keys from one holder - and the walk below is the part
- * that can be subtly wrong. A regex that stopped matching some entries would leave both directions
- * passing over less of the file than they claim, in whichever repo was not updated.
- *
- * <p>The file is walked by hand rather than parsed, no JSON reader being on the test classpath. It
- * is flat - one key and its wording per line, inside a single category object, no escapes - so the
- * line shape below reads it exactly, and a file that stopped being flat would fail the walk rather
- * than quietly matching less of it.
+ * mod ships one strings file and names its keys from one holder. The file is parsed through
+ * {@link ShippedJson}, the engine's own reading, so a file the game loads reads here in full and a
+ * file it refuses - a key declared twice, above all - fails here too.
  */
 public final class ShippedStrings {
 
@@ -36,11 +33,6 @@ public final class ShippedStrings {
     // it looks at. A caller cannot usefully name another, so this is stated once rather than taken
     // as an argument.
     private static final Path STRINGS_JSON = Path.of("data", "strings", "strings.json");
-
-    // One entry as the file writes it: a key, its wording, and the comma every line but the last
-    // carries. The wording is captured whole, including any trailing punctuation of its own.
-    private static final Pattern ENTRY_LINE =
-        Pattern.compile("^\\s*\"([a-z_]+)\"\\s*:\\s*\"(.*)\"\\s*,?\\s*$");
 
     // The constant a holder names its category with rather than one of the strings inside it. Every
     // KM holder spells it this way, and a holder that did not would simply have it counted among its
@@ -51,7 +43,32 @@ public final class ShippedStrings {
     }
 
     /**
-     * The shipped file's entries, in the order it declares them.
+     * Any strings file's wording, by category and then by key, both sorted. The engine merges the file
+     * category by category and key by key, so neither order carries meaning.
+     *
+     * @param stringsFile the strings file to read
+     * @return key to wording, per category
+     */
+    public static Map<String, Map<String, String>> readStringsByCategory(Path stringsFile) {
+
+        var location = stringsFile.toString();
+        var stringsByKeyByCategory = new TreeMap<String, Map<String, String>>();
+
+        ShippedJson.readObjectFile(stringsFile).forEach((category, categoryValue) -> {
+
+            var categoryLocation = locateMember(location, category);
+            var stringsByKey = new TreeMap<String, String>();
+
+            requireObject(categoryValue, categoryLocation).forEach((key, wording) ->
+                stringsByKey.put(key, requireString(wording, locateMember(categoryLocation, key))));
+
+            stringsByKeyByCategory.put(category, Collections.unmodifiableMap(stringsByKey));
+        });
+        return Collections.unmodifiableMap(stringsByKeyByCategory);
+    }
+
+    /**
+     * The shipped file's entries, every category's keys together, sorted.
      *
      * <p>Read relative to the working directory, which is the mod's own repo root under Gradle - so
      * a suite calling this reads the file its build ships, not another mod's.
@@ -60,16 +77,19 @@ public final class ShippedStrings {
      */
     public static Map<String, String> readStringsByKey() {
 
-        var stringsByKey = new LinkedHashMap<String, String>();
+        var stringsByKey = new TreeMap<String, String>();
 
-        for (var line : readFileLines()) {
-            var entry = ENTRY_LINE.matcher(line);
+        readStringsByCategory(STRINGS_JSON).forEach((category, categoryStrings) ->
+            categoryStrings.forEach((key, wording) -> {
 
-            if (entry.matches()) {
-                stringsByKey.put(entry.group(1), entry.group(2));
-            }
-        }
-        return stringsByKey;
+                // Held apart by category in the file but flattened here, so one key in two
+                // categories would leave the guard comparing against whichever came last.
+                if (stringsByKey.put(key, wording) != null) {
+                    throw new AssertionError(
+                        STRINGS_JSON + " declares \"" + key + "\" in more than one category");
+                }
+            }));
+        return Collections.unmodifiableMap(stringsByKey);
     }
 
     /**
@@ -90,13 +110,5 @@ public final class ShippedStrings {
         idsByConstantName.remove(CATEGORY_CONSTANT);
 
         return idsByConstantName;
-    }
-
-    private static Iterable<String> readFileLines() {
-        try {
-            return Files.readAllLines(STRINGS_JSON, StandardCharsets.UTF_8);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Cannot read " + STRINGS_JSON, exception);
-        }
     }
 }

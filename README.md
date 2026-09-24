@@ -1412,11 +1412,26 @@ holds one representative compatibility failure with a builder per slot a case va
 two consumers that lose different things,
 and the notice's templates as stand-ins that expose their slots,
 so what a failure composes reads as which value landed where without the shipped wording being known.
+[`starsector/json/`](src/testFixtures/java/kmlib/testfixtures/starsector/json/)
+reads a mod's shipped JSON the way the engine does -
+its `#` comment strip in front of the game's own org.json -
+so a file the game loads reads in full and a file it refuses fails,
+where a stricter reader would fail vanilla's own commented files
+and a looser one would pass a key declared twice.
 [`starsector/strings/`](src/testFixtures/java/kmlib/testfixtures/starsector/strings/)
-reads a mod's shipped `data/strings/strings.json` beside the string IDs its holder class names,
-for the guard that pins each against the other -
-written once because the walk is the part that can be subtly wrong,
-and a regex quietly matching fewer entries would leave the guard passing over less than it claims.
+reads a mod's shipped `data/strings/strings.json` through it,
+beside the string IDs its holder class names,
+for the guard that pins each against the other.
+[`localisation/`](src/testFixtures/java/kmlib/testfixtures/localisation/)
+reads a mod's `l10n/` directory:
+the manifest naming its locales, its default and where each bundle file lands,
+and each locale's bundle -
+its strings,
+its launcher fragment,
+and its settings table -
+each through the reading a mod's shipped copy of that file gets.
+Any key the manifest or a fragment does not know is refused,
+so a misspelt field fails the read rather than reading as an absent one.
 [`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
 holds the save a stored value lands in and two stand-in addresses to hold it apart under,
 and
