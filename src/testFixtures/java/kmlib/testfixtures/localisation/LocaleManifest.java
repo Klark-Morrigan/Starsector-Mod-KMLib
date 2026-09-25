@@ -34,7 +34,7 @@ import static kmlib.testfixtures.starsector.json.ShippedJson.requireString;
  *
  * @param defaultLocaleTag          the locale a build falls back to when none is named
  * @param dataPathsByBundleFileName each file a bundle holds, keyed by its name inside the bundle,
- *                                  mapped to where materialisation copies it, relative to the mod root
+ *                                  mapped to where writing a locale copies it, relative to the mod root
  * @param declaredLocalesByTag      every locale the mod ships, keyed by tag
  */
 public record LocaleManifest(
@@ -51,7 +51,7 @@ public record LocaleManifest(
     private static final String CORE_LOCALISATION_KEY = "coreLocalisation";
     private static final Set<String> LOCALE_KEYS = Set.of(DISPLAY_NAME_KEY, CORE_LOCALISATION_KEY);
 
-    // Materialisation copies onto the data paths, so one that climbs out of the mod root or names a
+    // Writing a locale copies onto the data paths, so one that climbs out of the mod root or names a
     // drive is a write outside the repository.
     private static final String PARENT_SEGMENT = "..";
 
@@ -222,7 +222,7 @@ public record LocaleManifest(
         return declaredLocalesByTag;
     }
 
-    // One file map entry, as materialisation will act on it: a bare bundle file name, never the launcher
+    // One file map entry, as writing a locale will act on it: a bare bundle file name, never the launcher
     // file - that one is merged from its base rather than copied, and mapping it would overwrite the
     // merged result - and a data path that stays inside the mod root.
     private static void requireCopyableMapping(String bundleFileName, Path dataPath) {

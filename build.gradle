@@ -49,6 +49,10 @@ def testBuildScripts = tasks.register('testBuildScripts', Test) {
     testClassesDirs = sourceSets.buildScriptTest.output.classesDirs
     classpath = sourceSets.buildScriptTest.runtimeClasspath
     useJUnitPlatform()
+
+    // writeLocaleFiles reads with the game's own parser, and the throwaway builds
+    // driving it are separate processes that cannot locate an install of their own.
+    systemProperty 'kmlib.gameJsonJarFile', gameJsonJarFile.absolutePath
 }
 
 reportTestOutcomesOf(testBuildScripts.get())

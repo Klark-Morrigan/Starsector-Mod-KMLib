@@ -166,11 +166,18 @@ jar {
     destinationDirectory = file("$projectDir/jars")
 }
 
+// The game's own JSON parser, which writeLocaleFiles reads a mod's manifest
+// and launcher files with, so they parse at build time exactly as the game parses
+// them.
+ext.gameJsonJarFile = resolveCoreJarFile('json.jar')
+
 // Per-concern task scripts, each self-contained enough to read on its own: the
-// manifest-pair report a consumer gets warned by, and the local fill of its
-// VersionChecker template (registered only for a mod that commits one). Kept out
-// of this file so it stays what its header claims - classpath, version source and
-// jar location.
+// manifest-pair report a consumer gets warned by, the local fill of its
+// VersionChecker template (registered only for a mod that commits one), and the
+// write of one locale's bundle (registered only for a mod that commits a
+// localisation manifest). Kept out of this file so it stays what its header claims -
+// classpath, version source and jar location.
 def starsectorTasksDir = new File(buildscript.sourceFile.parentFile, 'tasks')
 apply from: new File(starsectorTasksDir, 'checks/report-kmlib-version-mismatch.gradle')
 apply from: new File(starsectorTasksDir, 'release/write-version-file.gradle')
+apply from: new File(starsectorTasksDir, 'generate/write-locale-files.gradle')
