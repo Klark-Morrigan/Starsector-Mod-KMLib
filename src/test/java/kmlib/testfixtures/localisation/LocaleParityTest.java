@@ -115,17 +115,75 @@ final class LocaleParityTest {
 
         var localisation = modRoot.resolve("localisation");
 
-        writeFile(localisation.resolve("manifest.json"), manifest);
-        writeFile(localisation.resolve("en").resolve("strings.json"), ENGLISH_STRINGS);
-        writeFile(localisation.resolve("en").resolve("LunaSettings.csv"), ENGLISH_SETTINGS);
-        writeFile(localisation.resolve("zh-hans").resolve("strings.json"), TRANSLATED_STRINGS);
-        writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), TRANSLATED_SETTINGS);
+        writeFile(
+            localisation.resolve("manifest.json"),
+            manifest);
+
+        writeFile(
+            localisation
+                .resolve("en")
+                .resolve("strings.json"),
+            ENGLISH_STRINGS);
+
+        writeFile(
+            localisation
+                .resolve("en")
+                .resolve("LunaSettings.csv"),
+            ENGLISH_SETTINGS);
+
+        writeFile(
+            localisation
+                .resolve("zh-hans")
+                .resolve("strings.json"),
+            TRANSLATED_STRINGS);
+
+        writeFile(
+            localisation
+                .resolve("zh-hans")
+                .resolve("LunaSettings.csv"),
+            TRANSLATED_SETTINGS);
 
         return localisation;
     }
 
     private static Path writeAgreeingMod(Path modRoot) throws IOException {
         return writeAgreeingMod(modRoot, MANIFEST_WITH_CORE_LOCALISATION);
+    }
+
+    // The agreeing translation with one run of it replaced, so a case states exactly the break it makes.
+    // A run the text does not hold fails the case, which would otherwise pass over an agreeing file.
+    private static String replaceRun(String agreeingText, String agreeingRun, String brokenRun) {
+
+        if (!agreeingText.contains(agreeingRun)) {
+            throw new IllegalArgumentException("The agreeing translation holds no \"" + agreeingRun + "\"");
+        }
+        return agreeingText.replace(agreeingRun, brokenRun);
+    }
+
+    private static void writeTranslatedSettingsReplacing(Path localisation, String agreeingRun, String brokenRun)
+            throws IOException {
+
+        writeFile(
+            localisation
+                .resolve("zh-hans")
+                .resolve("LunaSettings.csv"),
+            replaceRun(
+                TRANSLATED_SETTINGS,
+                agreeingRun,
+                brokenRun));
+    }
+
+    private static void writeTranslatedStringsReplacing(Path localisation, String agreeingRun, String brokenRun)
+            throws IOException {
+
+        writeFile(
+            localisation
+                .resolve("zh-hans")
+                .resolve("strings.json"),
+            replaceRun(
+                TRANSLATED_STRINGS,
+                agreeingRun,
+                brokenRun));
     }
 
     private static LocaleParity createParity(Path localisation) {
@@ -147,8 +205,15 @@ final class LocaleParityTest {
 
             var localisation = modRoot.resolve("localisation");
 
-            writeFile(localisation.resolve("manifest.json"), MANIFEST_WITH_CORE_LOCALISATION);
-            writeFile(localisation.resolve("en").resolve("strings.json"), ENGLISH_STRINGS);
+            writeFile(
+                localisation.resolve("manifest.json"),
+                MANIFEST_WITH_CORE_LOCALISATION);
+
+            writeFile(
+                localisation
+                    .resolve("en")
+                    .resolve("strings.json"),
+                ENGLISH_STRINGS);
 
             assertThat(createParity(localisation).findDeclaredLocalesWithoutBundleDirectory())
                 .containsExactly("zh-hans: declared by the manifest, but has no bundle directory");
@@ -170,9 +235,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "%2$d, %1$s", "farewell": "Au revoir" } }
-                """);
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Bonjour %s, %d",
+                "%2$d, %1$s");
 
             assertThat(createParity(localisation).findFormatArgumentMismatches())
                 .isEmpty();
@@ -183,9 +249,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "Bonjour %s", "farewell": "Au revoir" } }
-                """);
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Bonjour %s, %d",
+                "Bonjour %s");
 
             assertThat(createParity(localisation).findFormatArgumentMismatches())
                 .containsExactly("zh-hans: strings.json kmu > greeting takes [%1$s] where en takes [%1$s, %2$d]");
@@ -196,9 +263,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "Bonjour %s, %s", "farewell": "Au revoir" } }
-                """);
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Bonjour %s, %d",
+                "Bonjour %s, %s");
 
             assertThat(createParity(localisation).findFormatArgumentMismatches())
                 .containsExactly("zh-hans: strings.json kmu > greeting takes [%1$s, %2$s] where en takes [%1$s, %2$d]");
@@ -213,9 +281,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "%s %%s %%d", "farewell": "%s" } }
-                """.formatted(CHINESE_TEXT, CHINESE_TEXT));
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Au revoir",
+                CHINESE_TEXT);
 
             assertThat(createParity(localisation).findLocalesMissingCoreLocalisation())
                 .isEmpty();
@@ -226,9 +295,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot, MANIFEST_WITHOUT_CORE_LOCALISATION);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "%s %%s %%d", "farewell": "%s" } }
-                """.formatted(LATIN_1_TEXT, LATIN_1_TEXT));
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Au revoir",
+                LATIN_1_TEXT);
 
             assertThat(createParity(localisation).findLocalesMissingCoreLocalisation())
                 .isEmpty();
@@ -239,9 +309,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot, MANIFEST_WITHOUT_CORE_LOCALISATION);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "%s %%s %%d", "farewell": "Au revoir" } }
-                """.formatted(CHINESE_TEXT));
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Au revoir",
+                CHINESE_TEXT);
 
             assertThat(createParity(localisation).findLocalesMissingCoreLocalisation())
                 .containsExactly("zh-hans: strings.json draws characters outside Latin-1, "
@@ -253,12 +324,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot, MANIFEST_WITHOUT_CORE_LOCALISATION);
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuel
-                kmu_note,,,,,,Text,%s,,,,,,,,,Autre
-                """.formatted(CHINESE_TEXT));
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "Une note",
+                CHINESE_TEXT);
 
             assertThat(createParity(localisation).findLocalesMissingCoreLocalisation())
                 .containsExactly("zh-hans: LunaSettings.csv draws characters outside Latin-1, "
@@ -281,7 +350,9 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            Files.delete(localisation.resolve("zh-hans").resolve("LunaSettings.csv"));
+            Files.delete(localisation
+                .resolve("zh-hans")
+                .resolve("LunaSettings.csv"));
 
             assertThat(createParity(localisation).findMissingBundleFiles())
                 .containsExactly("zh-hans: holds no LunaSettings.csv, which the manifest maps");
@@ -292,9 +363,21 @@ final class LocaleParityTest {
 
             var localisation = modRoot.resolve("localisation");
 
-            writeFile(localisation.resolve("manifest.json"), MANIFEST_WITH_CORE_LOCALISATION);
-            writeFile(localisation.resolve("en").resolve("strings.json"), ENGLISH_STRINGS);
-            writeFile(localisation.resolve("en").resolve("LunaSettings.csv"), ENGLISH_SETTINGS);
+            writeFile(
+                localisation.resolve("manifest.json"),
+                MANIFEST_WITH_CORE_LOCALISATION);
+
+            writeFile(
+                localisation
+                    .resolve("en")
+                    .resolve("strings.json"),
+                ENGLISH_STRINGS);
+
+            writeFile(
+                localisation
+                    .resolve("en")
+                    .resolve("LunaSettings.csv"),
+                ENGLISH_SETTINGS);
 
             assertThat(createParity(localisation).findMissingBundleFiles())
                 .isEmpty();
@@ -309,8 +392,15 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(modRoot.resolve("mod_info.base.json"), MOD_INFO_BASE);
-            writeFile(localisation.resolve("zh-hans").resolve("mod_info.json"), """
+            writeFile(
+                modRoot.resolve("mod_info.base.json"),
+                MOD_INFO_BASE);
+
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("mod_info.json"),
+                """
                 { "name": "Nom", "dependencies": { "kmlib": "Bibliotheque" } }
                 """);
 
@@ -323,8 +413,15 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(modRoot.resolve("mod_info.base.json"), MOD_INFO_BASE);
-            writeFile(localisation.resolve("zh-hans").resolve("mod_info.json"), """
+            writeFile(
+                modRoot.resolve("mod_info.base.json"),
+                MOD_INFO_BASE);
+
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("mod_info.json"),
+                """
                 { "dependencies": { "lunalib": "Reglages" } }
                 """);
 
@@ -338,7 +435,11 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("mod_info.json"), """
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("mod_info.json"),
+                """
                 { "name": "Nom" }
                 """);
 
@@ -351,8 +452,15 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(modRoot.resolve("mod_info.base.json"), MOD_INFO_BASE);
-            writeFile(localisation.resolve("zh-hans").resolve("mod_info.json"), """
+            writeFile(
+                modRoot.resolve("mod_info.base.json"),
+                MOD_INFO_BASE);
+
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("mod_info.json"),
+                """
                 { "version": "2.0.0" }
                 """);
 
@@ -377,12 +485,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Or,"Or, Argent",,,Quelle palette,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuel
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "Radio,Gold,\"Gold, Silver\"",
+                "Radio,Or,\"Or, Argent\"");
 
             assertThat(createParity(localisation).findSettingsBehaviourMismatches())
                 .containsExactly(
@@ -397,12 +503,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,9,Visuel
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "1,8,Visuel",
+                "1,9,Visuel");
 
             assertThat(createParity(localisation).findSettingsBehaviourMismatches())
                 .containsExactly(
@@ -415,9 +519,10 @@ final class LocaleParityTest {
             var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_STRINGS_ONLY);
 
             // A settings file left in a bundle the manifest does not map is not the mod's settings table.
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,9,Visuel
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "1,8,Visuel",
+                "1,9,Visuel");
 
             assertThat(createParity(localisation).findSettingsBehaviourMismatches())
                 .isEmpty();
@@ -439,12 +544,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_height,,,,Hauteur,,Int,4,,,,Quelle hauteur,,,1,8,Visuel
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur",
+                "kmu_height,,,,Hauteur,,Int,4,,,,Quelle hauteur");
 
             assertThat(createParity(localisation).findSettingsRowMismatches())
                 .containsExactly(
@@ -456,13 +559,13 @@ final class LocaleParityTest {
         void theFirstRowOutOfPlaceIsFound(@TempDir Path modRoot) throws IOException {
 
             var localisation = writeAgreeingMod(modRoot);
+            var paletteRow = "kmu_palette,,,,Palette,,Radio,Gold,\"Gold, Silver\",,,Quelle palette,,,,,Visuel\n";
+            var widthRow = "kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuel\n";
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                paletteRow + widthRow,
+                widthRow + paletteRow);
 
             assertThat(createParity(localisation).findSettingsRowMismatches())
                 .containsExactly("zh-hans: LunaSettings.csv places kmu_width at row 2, where en places kmu_palette");
@@ -472,14 +575,12 @@ final class LocaleParityTest {
         void aRowDeclaredTwiceIsFound(@TempDir Path modRoot) throws IOException {
 
             var localisation = writeAgreeingMod(modRoot);
+            var noteRow = "kmu_note,,,,,,Text,Une note,,,,,,,,,Autre\n";
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuel
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                noteRow,
+                noteRow + noteRow);
 
             assertThat(createParity(localisation).findSettingsRowMismatches())
                 .containsExactly("zh-hans: LunaSettings.csv declares 5 rows, where en declares 4");
@@ -501,12 +602,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuels
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Autre
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "1,8,Visuel",
+                "1,8,Visuels");
 
             assertThat(createParity(localisation).findSettingsTabMismatches())
                 .containsExactly("zh-hans: LunaSettings.csv splits en tab Visuals across tabs [Visuel, Visuels]");
@@ -517,12 +616,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("LunaSettings.csv"), SETTINGS_HEADER_LINE + """
-                kmu_caption,,,,Couleurs,,Header,Couleurs,,,,,,,,,Visuel
-                kmu_palette,,,,Palette,,Radio,Gold,"Gold, Silver",,,Quelle palette,,,,,Visuel
-                kmu_width,,,,Largeur,,Int,4,,,,Quelle largeur,,,1,8,Visuel
-                kmu_note,,,,,,Text,Une note,,,,,,,,,Visuel
-                """);
+            writeTranslatedSettingsReplacing(
+                localisation,
+                ",Autre",
+                ",Visuel");
 
             assertThat(createParity(localisation).findSettingsTabMismatches())
                 .containsExactly("zh-hans: LunaSettings.csv merges en tabs [General, Visuals] into tab Visuel");
@@ -544,9 +641,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "Bonjour %s, %d", "welcome": "Bienvenue" } }
-                """);
+            writeTranslatedStringsReplacing(
+                localisation,
+                "\"farewell\": \"Au revoir\"",
+                "\"welcome\": \"Bienvenue\"");
 
             assertThat(createParity(localisation).findStringsKeyMismatches())
                 .containsExactly(
@@ -559,9 +657,10 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(localisation.resolve("zh-hans").resolve("strings.json"), """
-                { "kmu": { "greeting": "Bonjour %s, %d" }, "other": { "farewell": "Au revoir" } }
-                """);
+            writeTranslatedStringsReplacing(
+                localisation,
+                ", \"farewell\": \"Au revoir\" }",
+                " }, \"other\": { \"farewell\": \"Au revoir\" }");
 
             assertThat(createParity(localisation).findStringsKeyMismatches())
                 .containsExactly(
@@ -574,7 +673,9 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            Files.delete(localisation.resolve("en").resolve("strings.json"));
+            Files.delete(localisation
+                .resolve("en")
+                .resolve("strings.json"));
 
             assertThat(createParity(localisation).findStringsKeyMismatches())
                 .isEmpty();
@@ -611,8 +712,15 @@ final class LocaleParityTest {
 
             var localisation = writeAgreeingMod(modRoot);
 
-            writeFile(modRoot.resolve("mod_info.base.json"), MOD_INFO_BASE);
-            writeFile(localisation.resolve("zh-hans").resolve("mod_info.json"), """
+            writeFile(
+                modRoot.resolve("mod_info.base.json"),
+                MOD_INFO_BASE);
+
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("mod_info.json"),
+                """
                 { "name": "Nom" }
                 """);
 
