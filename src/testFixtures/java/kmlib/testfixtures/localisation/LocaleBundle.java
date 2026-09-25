@@ -1,5 +1,6 @@
 package kmlib.testfixtures.localisation;
 
+import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
 
 import java.nio.file.Path;
@@ -12,8 +13,8 @@ import java.util.regex.Pattern;
  * locale's launcher fragment.
  *
  * <p>Each file is read the way a mod's shipped copy of it is read, so a bundle file is never parsed a
- * second way: the strings file through {@link ShippedStrings}, and a settings table through
- * {@link kmlib.testfixtures.starsector.settings.LunaSettingsTable} over {@link #resolveBundleFile}.
+ * second way: the strings file through {@link ShippedStrings}, and the settings table through
+ * {@link LunaSettingsTable}.
  */
 public final class LocaleBundle {
 
@@ -22,11 +23,14 @@ public final class LocaleBundle {
     // which is what keeps out "..".
     private static final Pattern BUNDLE_FILE_NAME = Pattern.compile("[A-Za-z0-9_-][A-Za-z0-9_.-]*");
 
-    // The name every bundle gives its strings file, and the name the game gives it too.
-    private static final String STRINGS_FILE_NAME = "strings.json";
-
     // The name every bundle gives its launcher fragment, after the file it is merged into.
     static final String MOD_INFO_FILE_NAME = "mod_info.json";
+
+    // The name every bundle gives its settings table, and the name LunaLib gives it too.
+    static final String SETTINGS_FILE_NAME = LunaSettingsTable.SETTINGS_CSV.getFileName().toString();
+
+    // The name every bundle gives its strings file, and the name the game gives it too.
+    static final String STRINGS_FILE_NAME = ShippedStrings.STRINGS_JSON.getFileName().toString();
 
     private final Path directory;
     private final DeclaredLocale locale;
@@ -49,6 +53,16 @@ public final class LocaleBundle {
      */
     public DeclaredLocale getLocale() {
         return locale;
+    }
+
+    /**
+     * Opens a reading of this locale's settings table.
+     *
+     * @param fieldIdPrefix what every one of the mod's field IDs starts with
+     * @return the reading
+     */
+    public LunaSettingsTable openSettingsTable(String fieldIdPrefix) {
+        return new LunaSettingsTable(resolveBundleFile(SETTINGS_FILE_NAME), fieldIdPrefix);
     }
 
     /**

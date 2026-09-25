@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.persistence.PersistedChoice;
+
 /**
  * How many columns a picker list wraps its rows across - one tall stack or two side by side.
  * Declared outright rather than as a per-consumer seam like {@link ListSortMode}, because nothing in
@@ -18,7 +20,7 @@ package kmlib.starsector.ui.widgets.lists;
  * The values are declared in the order the selector lays its segments out left to right, so the
  * segment a click reports maps straight back to a choice by position.
  */
-public enum ListColumns {
+public enum ListColumns implements PersistedChoice {
     // The stored key happens to spell the count, but it is not derived from it: a key is a frozen
     // save identity and the count is a layout number, so deriving one from the other would let a
     // change to the layout silently rewrite what every existing save resolves through.
@@ -37,27 +39,10 @@ public enum ListColumns {
     }
 
     /**
-     * Resolves a stored column-count key back to its choice, falling back to {@link #DEFAULT} when
-     * the key is absent (a save that never picked a count) or names a choice this build no longer
-     * offers (a key left by an older or a modded build), so the list always resolves to a live
-     * count rather than failing on an unknown key.
-     *
-     * @param key the persisted column-count key, or null when nothing is stored
-     * @return the matching choice, or {@link #DEFAULT} when the key is null or unrecognised
-     */
-    public static ListColumns fromKeyOrDefault(String key) {
-        for (var choice : values()) {
-            if (choice.persistenceKey.equals(key)) {
-                return choice;
-            }
-        }
-        return DEFAULT;
-    }
-
-    /**
      * @return the save-stable key this choice persists under; frozen once shipped, since renaming it
      *         silently resets every save that stored this count back to {@link #DEFAULT}
      */
+    @Override
     public String persistenceKey() {
         return persistenceKey;
     }

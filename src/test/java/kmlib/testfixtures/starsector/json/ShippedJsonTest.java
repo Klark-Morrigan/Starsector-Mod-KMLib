@@ -269,6 +269,25 @@ final class ShippedJsonTest {
     }
 
     @Nested
+    class RequireList {
+
+        @Test
+        void anArrayComesBackInFileOrder() {
+
+            assertThat(ShippedJson.requireList(List.of("b", "a"), LOCATION))
+                .containsExactly("b", "a");
+        }
+
+        @Test
+        void aMemberOfAnotherTypeIsReportedAsSuch() {
+
+            assertThatThrownBy(() -> ShippedJson.requireList(Map.of(), LOCATION))
+                .isInstanceOf(AssertionError.class)
+                .hasMessage("file must be a JSON array");
+        }
+    }
+
+    @Nested
     class RequireObject {
 
         @Test
@@ -310,6 +329,17 @@ final class ShippedJsonTest {
 
             assertThat(ShippedJson.locateMember("manifest.json > files", "strings.json"))
                 .isEqualTo("manifest.json > files > strings.json");
+        }
+    }
+
+    @Nested
+    class LocateElement {
+
+        @Test
+        void theIndexIsBracketedAfterTheArray() {
+
+            assertThat(ShippedJson.locateElement("mod_info.json > dependencies", 2))
+                .isEqualTo("mod_info.json > dependencies[2]");
         }
     }
 }

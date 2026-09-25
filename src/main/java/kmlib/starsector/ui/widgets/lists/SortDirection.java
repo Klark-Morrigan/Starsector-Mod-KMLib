@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.persistence.PersistedChoice;
+
 /**
  * The direction a picker list's active sort runs in - ascending or descending on the chosen metric.
  * It rides alongside a sort mode: a mode fixes which key ranks the rows, this fixes which way that key
@@ -11,7 +13,7 @@ package kmlib.starsector.ui.widgets.lists;
  * key is stored is the consumer's, so nothing here reaches a save.
  * {@link #opposite()} is the flip a re-pick applies.
  */
-public enum SortDirection {
+public enum SortDirection implements PersistedChoice {
     ASCENDING("asc"),
     DESCENDING("desc");
 
@@ -22,28 +24,10 @@ public enum SortDirection {
     }
 
     /**
-     * Resolves a stored direction key back to its direction, falling back to {@code fallback} when the
-     * key is absent (a save that predates the sort direction, or one that never flipped) or names a
-     * direction this build no longer knows. The fallback is the active mode's default direction, so an
-     * unresolved key reads as "this mode's natural order" rather than failing.
-     *
-     * @param key      the persisted direction key, or null when nothing is stored
-     * @param fallback the direction to use when the key is null or unrecognised
-     * @return the matching direction, or {@code fallback} when the key is null or unrecognised
-     */
-    public static SortDirection fromKeyOrDefault(String key, SortDirection fallback) {
-        for (var direction : values()) {
-            if (direction.persistenceKey.equals(key)) {
-                return direction;
-            }
-        }
-        return fallback;
-    }
-
-    /**
      * @return the save-stable key this direction persists under; frozen once shipped, since renaming
      *         it silently resets every save that stored this direction to its mode's default
      */
+    @Override
     public String persistenceKey() {
         return persistenceKey;
     }

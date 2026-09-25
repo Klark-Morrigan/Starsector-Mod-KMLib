@@ -337,6 +337,10 @@ No Starsector API on the signature.
   A cut takes a `HatchPattern` -
   the line family as one value -
   so a caller holds what shapes its geometry apart from how it strokes the result.
+- [`persistence/`](src/main/java/kmlib/persistence/) -
+  options a save stores by a key of their own,
+  and the one lookup that reads a stored key back to its option,
+  falling back where nothing is stored or nothing answers to it.
 - [`profiling/`](src/main/java/kmlib/profiling/) -
   the vocabulary a caller names:
   the profiler seam a mod binds,
@@ -1479,13 +1483,22 @@ for the guard that pins each against the other.
 [`localisation/`](src/testFixtures/java/kmlib/testfixtures/localisation/)
 reads a mod's `localisation/` directory:
 the manifest naming its locales, its default and where each bundle file lands,
-and each locale's bundle -
+each locale's bundle -
 its strings,
 its launcher fragment,
 and its settings table -
-each through the reading a mod's shipped copy of that file gets.
+each through the reading a mod's shipped copy of that file gets,
+and the `mod_info.base.json` the fragments merge over.
 Any key the manifest or a fragment does not know is refused,
 so a misspelt field fails the read rather than reading as an absent one.
+`LocaleParity` holds every locale to the default over those readings.
+It is strict wherever a gap has no fallback -
+a missing key or row,
+a slot taking another argument,
+a row varying what it stores,
+a tab split or merged,
+glyphs no named core localisation supplies -
+and lists the launcher fields a locale leaves to the base without failing on them.
 [`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
 holds the save a stored value lands in and two stand-in addresses to hold it apart under,
 and

@@ -48,6 +48,22 @@ final class LocaleBundleTest {
     }
 
     @Nested
+    class OpenSettingsTable {
+
+        @Test
+        void theBundlesOwnSettingsTableIsRead(@TempDir Path directory) throws IOException {
+
+            var bundle = createBundleWith(directory, "LunaSettings.csv", """
+                fieldID,,,,fieldName,,fieldType,defaultValue,secondaryValue,,,fieldDescription,,,minValue,maxValue,tab
+                kmu_only,,,,Only,,Boolean,true,,,,Description,,,,,General
+                """);
+
+            assertThat(bundle.openSettingsTable("kmu_").readDeclaredFieldIds())
+                .containsExactly("kmu_only");
+        }
+    }
+
+    @Nested
     class ReadModInfoFragment {
 
         @Test

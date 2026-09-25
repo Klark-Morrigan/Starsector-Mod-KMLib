@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A mod's shipped LunaLib settings file, read as rows and columns.
@@ -44,9 +45,18 @@ public final class LunaSettingsTable {
     private static final int FIELD_TYPE_COLUMN = 6;
     private static final int DEFAULT_VALUE_COLUMN = 7;
     private static final int OPTIONS_COLUMN = 8;
+    private static final int FIELD_DESCRIPTION_COLUMN = 11;
     private static final int MIN_VALUE_COLUMN = 14;
     private static final int MAX_VALUE_COLUMN = 15;
     private static final int TAB_COLUMN = 16;
+
+    // The header row's names for the columns a behaviour is compared over, so a difference names the cell
+    // a reader of the file finds rather than an index.
+    private static final String FIELD_TYPE_HEADER = "fieldType";
+    private static final String DEFAULT_VALUE_HEADER = "defaultValue";
+    private static final String OPTIONS_HEADER = "secondaryValue";
+    private static final String MIN_VALUE_HEADER = "minValue";
+    private static final String MAX_VALUE_HEADER = "maxValue";
 
     // The two row types that carry an ID so LunaLib can place them but store nothing, so no source
     // reads either: a section caption, and a run of prose standing among the knobs. Every other row
@@ -165,6 +175,36 @@ public final class LunaSettingsTable {
     }
 
     /**
+     * What each row does as against what it says, keyed by field ID: the columns that decide what is
+     * stored and how, which no wording of the row may change.
+     *
+     * @return each row's behaviour by field ID, in file order
+     */
+    public Map<String, FieldBehaviour> readBehavioursByFieldId() {
+
+        var behavioursByFieldId = new LinkedHashMap<String, FieldBehaviour>();
+
+        for (var row : readFieldRows()) {
+
+            // A draw-only row's default is the words it draws, not a value, so it is text rather than
+            // behaviour and stays out.
+            var storedDefaultValue = isStoredValueRow(row)
+                ? Optional.of(row.get(DEFAULT_VALUE_COLUMN))
+                : Optional.<String>empty();
+
+            var behaviour = new FieldBehaviour(
+                row.get(FIELD_TYPE_COLUMN),
+                storedDefaultValue,
+                row.get(OPTIONS_COLUMN),
+                row.get(MIN_VALUE_COLUMN),
+                row.get(MAX_VALUE_COLUMN));
+
+            putOnce(behavioursByFieldId, row.get(FIELD_ID_COLUMN), behaviour);
+        }
+        return behavioursByFieldId;
+    }
+
+    /**
      * Every prefixed ID the file declares a row for, section captions included: a caption stores
      * nothing, but it is still a row the file declares, so a source naming one is not naming a key
      * that does not exist.
@@ -200,6 +240,38 @@ public final class LunaSettingsTable {
      */
     public String readDefaultValue(String fieldId, String expectedFieldType) {
         return readColumn(fieldId, DEFAULT_VALUE_COLUMN, expectedFieldType);
+    }
+
+    /**
+     * Every piece of text the settings screen draws from the file: each row's tab, a value row's name,
+     * description and, for a Radio, its options, and a caption's or a prose row's words. The cells
+     * nothing draws - IDs, types, bounds, a stored default - are left out.
+     *
+     * @return those texts, in file order, blanks dropped
+     */
+    public List<String> readDisplayedTexts() {
+
+        var displayedTexts = new ArrayList<String>();
+
+        for (var row : readFieldRows()) {
+
+            displayedTexts.add(row.get(TAB_COLUMN));
+
+            if (isStoredValueRow(row)) {
+
+                displayedTexts.add(row.get(FIELD_NAME_COLUMN));
+                displayedTexts.add(row.get(FIELD_DESCRIPTION_COLUMN));
+
+                if (RADIO_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN))) {
+                    displayedTexts.add(row.get(OPTIONS_COLUMN));
+                }
+            } else {
+                displayedTexts.add(row.get(DEFAULT_VALUE_COLUMN));
+            }
+        }
+        displayedTexts.removeIf(String::isEmpty);
+
+        return displayedTexts;
     }
 
     /**
@@ -261,6 +333,21 @@ public final class LunaSettingsTable {
             .toList();
     }
 
+    /**
+     * The tab each row is placed on, keyed by field ID.
+     *
+     * @return each row's tab name by field ID, in file order
+     */
+    public Map<String, String> readTabsByFieldId() {
+
+        var tabsByFieldId = new LinkedHashMap<String, String>();
+
+        for (var row : readFieldRows()) {
+            putOnce(tabsByFieldId, row.get(FIELD_ID_COLUMN), row.get(TAB_COLUMN));
+        }
+        return tabsByFieldId;
+    }
+
     /** @return every field the screen stores a value for, in file order */
     public List<String> readValueFieldIds() {
         return readFieldRows()
@@ -278,6 +365,16 @@ public final class LunaSettingsTable {
         var fieldType = row.get(FIELD_TYPE_COLUMN);
 
         return !HEADER_FIELD_TYPE.equals(fieldType) && !TEXT_FIELD_TYPE.equals(fieldType);
+    }
+
+    // A reading keyed by field ID holds one row per ID, so a second row under one would be dropped from
+    // it unseen - and which of the two LunaLib honours is nothing the file states.
+    private static <V> void putOnce(Map<String, V> valuesByFieldId, String fieldId, V value) {
+
+        if (valuesByFieldId.put(fieldId, value) != null) {
+
+            throw new AssertionError("Field " + fieldId + " is declared by more than one row");
+        }
     }
 
     private List<String> findRow(String fieldId) {
@@ -329,6 +426,61 @@ public final class LunaSettingsTable {
             .filter(row -> row.size() > TAB_COLUMN)
             .filter(row -> row.get(FIELD_ID_COLUMN).startsWith(fieldIdPrefix))
             .toList();
+    }
+
+    /**
+     * The cells of one row that decide what LunaLib stores and how, as against the words it draws.
+     *
+     * @param fieldType              the row's declared type
+     * @param storedDefaultValueText the default a fresh player is given; empty for a caption or a prose
+     *                               row, whose default cell is the words it draws rather than a value
+     * @param optionsText            the options cell as written, which for a Radio is also the stored value
+     *                               of whichever option is picked
+     * @param minValueText           the low end of a slider
+     * @param maxValueText           the high end of a slider
+     */
+    public record FieldBehaviour(
+        String fieldType,
+        Optional<String> storedDefaultValueText,
+        String optionsText,
+        String minValueText,
+        String maxValueText) {
+
+        /**
+         * Each column in which this row does something other than {@code referenceBehaviour}, named as
+         * the file's header names it so the message points at the cell to fix.
+         *
+         * @param referenceBehaviour the row to hold this one to
+         * @return one {@code <column>: "<this>" against "<reference>"} entry per differing column, in
+         *         column order
+         */
+        public List<String> describeDifferencesFrom(FieldBehaviour referenceBehaviour) {
+
+            var differences = new ArrayList<String>();
+
+            describeDifference(differences, FIELD_TYPE_HEADER, fieldType, referenceBehaviour.fieldType);
+            describeDifference(
+                differences,
+                DEFAULT_VALUE_HEADER,
+                storedDefaultValueText.orElse(""),
+                referenceBehaviour.storedDefaultValueText.orElse(""));
+            describeDifference(differences, OPTIONS_HEADER, optionsText, referenceBehaviour.optionsText);
+            describeDifference(differences, MIN_VALUE_HEADER, minValueText, referenceBehaviour.minValueText);
+            describeDifference(differences, MAX_VALUE_HEADER, maxValueText, referenceBehaviour.maxValueText);
+
+            return differences;
+        }
+
+        private static void describeDifference(
+                List<String> differences,
+                String columnName,
+                String text,
+                String referenceText) {
+
+            if (!text.equals(referenceText)) {
+                differences.add(columnName + ": \"" + text + "\" against \"" + referenceText + "\"");
+            }
+        }
     }
 
     /**

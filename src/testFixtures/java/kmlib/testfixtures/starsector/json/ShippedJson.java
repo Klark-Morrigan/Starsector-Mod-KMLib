@@ -81,6 +81,17 @@ public final class ShippedJson {
     }
 
     /**
+     * Names one element of an array for a failure message.
+     *
+     * @param location the file or member holding the array
+     * @param index    the element's position
+     * @return the element's location
+     */
+    public static String locateElement(String location, int index) {
+        return location + "[" + index + "]";
+    }
+
+    /**
      * Names one member of an object for a failure message.
      *
      * @param location the file or member holding it
@@ -111,6 +122,24 @@ public final class ShippedJson {
                 location + " does not parse as the game reads it: " + jsonException.getMessage(),
                 jsonException);
         }
+    }
+
+    /**
+     * Narrows a member to a JSON array.
+     *
+     * @param value    the member, null where the key is absent
+     * @param location the file and member path a failure names
+     * @return the array's elements, in file order
+     */
+    @SuppressWarnings("unchecked")
+    public static List<Object> requireList(Object value, String location) {
+
+        requirePresent(value, location);
+
+        if (!(value instanceof List)) {
+            throw new AssertionError(location + " must be a JSON array");
+        }
+        return (List<Object>) value;
     }
 
     /**
@@ -220,7 +249,7 @@ public final class ShippedJson {
         var elements = new ArrayList<>();
 
         for (var index = 0; index < array.length(); index++) {
-            elements.add(convertValue(array.get(index), location + "[" + index + "]"));
+            elements.add(convertValue(array.get(index), locateElement(location, index)));
         }
         return Collections.unmodifiableList(elements);
     }

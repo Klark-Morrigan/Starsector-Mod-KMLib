@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -36,6 +38,35 @@ final class StringTemplatesTest {
 
             assertThat(StringTemplates.countFormatArguments(template))
                 .isEqualTo(expectedArguments);
+        }
+    }
+
+    @Nested
+    class ReadArgumentConversions {
+
+        // Pipe-delimited so a template may carry commas; the expected slots are space-separated, an empty
+        // cell meaning none.
+        @ParameterizedTest(name = "\"{0}\" takes [{1}]")
+        @CsvSource(delimiter = '|', value = {
+            "plain wording                | ''",
+            "100%% certain%n              | ''",
+            "%s and %d                    | %1$s %2$d",
+            "%2$d before %1$s             | %1$s %2$d",
+            "%,.2f credits                | %1$f",
+            "%S shouted                   | %1$s",
+            "%1$s then %1$s again         | %1$s",
+            "%s then %<s again            | %1$s",
+            "%1$s read as %1$d            | %1$d %1$s",
+            "%s beside %3$s               | %1$s %3$s",
+        })
+        void readsEachSlotByTheArgumentItTakes(String template, String expectedSlots) {
+
+            var expectedConversions = expectedSlots.isEmpty()
+                ? List.<String>of()
+                : List.of(expectedSlots.split(" "));
+
+            assertThat(StringTemplates.readArgumentConversions(template))
+                .isEqualTo(expectedConversions);
         }
     }
 }

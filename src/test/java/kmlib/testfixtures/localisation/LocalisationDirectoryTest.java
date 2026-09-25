@@ -9,6 +9,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,6 +77,31 @@ final class LocalisationDirectoryTest {
 
             assertThat(new LocalisationDirectory(directory).readManifest().defaultLocaleTag())
                 .isEqualTo("en");
+        }
+    }
+
+    @Nested
+    class ReadModInfoBase {
+
+        @Test
+        void theBaseIsReadFromBesideTheDirectory(@TempDir Path modRoot) throws IOException {
+
+            Files.writeString(modRoot.resolve("mod_info.base.json"), """
+                { "name": "Name", "dependencies": [ { "id": "kmlib" } ] }
+                """, StandardCharsets.UTF_8);
+
+            var base = new LocalisationDirectory(modRoot.resolve("localisation")).readModInfoBase();
+
+            assertThat(base)
+                .map(ModInfoBase::dependencyIds)
+                .contains(Set.of("kmlib"));
+        }
+
+        @Test
+        void aModCommittingNoBaseHasNone(@TempDir Path modRoot) {
+
+            assertThat(new LocalisationDirectory(modRoot.resolve("localisation")).readModInfoBase())
+                .isEmpty();
         }
     }
 }

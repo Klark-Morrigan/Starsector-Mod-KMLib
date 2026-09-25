@@ -7,39 +7,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the column choice's surfaces: the frozen persistence keys a consumer's save round-trips
- * through, the column count each choice feeds the list geometry, the default a fresh or unrecognised
- * save falls back to, and the count each segment draws. The keys are pinned as literals so a rename
+ * through, the column count each choice feeds the list geometry, and the count each segment draws. The keys are pinned as literals so a rename
  * that would silently reset every save's column choice fails here rather than shipping.
  */
 final class ListColumnsTest {
-
-    @Nested
-    class FromKeyOrDefault {
-
-        @Test
-        void fromKeyOrDefaultResolvesAKnownKeyToItsChoice() {
-            assertThat(ListColumns.fromKeyOrDefault("2"))
-                .isEqualTo(ListColumns.TWO);
-        }
-
-        @Test
-        void fromKeyOrDefaultFallsBackToOneColumnWhenTheKeyIsNull() {
-            // A fresh save has stored no key, which must resolve to the single-column default
-            // rather than fail.
-            assertThat(ListColumns.fromKeyOrDefault(null))
-                .isEqualTo(ListColumns.DEFAULT);
-            assertThat(ListColumns.DEFAULT)
-                .isEqualTo(ListColumns.ONE);
-        }
-
-        @Test
-        void fromKeyOrDefaultFallsBackToDefaultWhenTheKeyIsUnrecognised() {
-            // A key left by an older or modded build names no choice here, so the list defaults
-            // rather than failing on it.
-            assertThat(ListColumns.fromKeyOrDefault("no_such_count"))
-                .isEqualTo(ListColumns.DEFAULT);
-        }
-    }
 
     @Nested
     class PersistenceKey {

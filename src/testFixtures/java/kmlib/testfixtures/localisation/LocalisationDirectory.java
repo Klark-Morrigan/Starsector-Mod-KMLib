@@ -6,13 +6,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
- * A mod's {@code localisation/} directory: the manifest at its root and one bundle directory per locale.
+ * A mod's {@code localisation/} directory: the manifest at its root, one bundle directory per locale,
+ * and the launcher base beside it that every locale's fragment is merged over.
  *
  * <p>Offered to every mod on these conventions because the layout is the tooling's rather than any one
  * mod's. What a mod translates is its own business, and none of it is decided here - this reads, and
- * the suite above judges.
+ * {@link LocaleParity} judges.
  *
  * <p>Bundles are opened by declaration rather than by name, so only a locale the manifest declares can
  * be read as one. A directory the manifest never names is still listed, since a bundle nobody declared
@@ -25,6 +27,9 @@ public final class LocalisationDirectory {
 
     /** The manifest's name inside that directory. */
     public static final String MANIFEST_FILE_NAME = "manifest.json";
+
+    /** The launcher file every locale's fragment is merged over, beside the directory at the mod root. */
+    public static final String MOD_INFO_BASE_FILE_NAME = "mod_info.base.json";
 
     private final Path directory;
 
@@ -80,5 +85,20 @@ public final class LocalisationDirectory {
      */
     public LocaleManifest readManifest() {
         return LocaleManifest.readManifest(directory.resolve(MANIFEST_FILE_NAME));
+    }
+
+    /**
+     * Reads the launcher base beside this directory. Absent for a mod still committing its launcher file
+     * whole, which then has nothing for a fragment to be merged over.
+     *
+     * @return what a fragment can reach of it, or nothing where the mod commits none
+     */
+    public Optional<ModInfoBase> readModInfoBase() {
+
+        var baseFile = directory.resolveSibling(MOD_INFO_BASE_FILE_NAME);
+
+        return Files.exists(baseFile)
+            ? Optional.of(ModInfoBase.readBase(baseFile))
+            : Optional.empty();
     }
 }

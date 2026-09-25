@@ -29,10 +29,11 @@ import static kmlib.testfixtures.starsector.json.ShippedJson.requireString;
  */
 public final class ShippedStrings {
 
-    // Where the engine reads a mod's localisation from, which is not a convention but the only path
-    // it looks at. A caller cannot usefully name another, so this is stated once rather than taken
-    // as an argument.
-    private static final Path STRINGS_JSON = Path.of("data", "strings", "strings.json");
+    /**
+     * Where the engine reads a mod's strings from, which is not a convention but the only path it looks
+     * at - so the no-argument readings take no path.
+     */
+    public static final Path STRINGS_JSON = Path.of("data", "strings", "strings.json");
 
     // The constant a holder names its category with rather than one of the strings inside it. Every
     // KM holder spells it this way, and a holder that did not would simply have it counted among its

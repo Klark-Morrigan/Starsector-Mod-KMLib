@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.persistence.PersistedChoice;
 import kmlib.starsector.ui.text.TextSpan;
 
 import java.awt.Color;
@@ -21,13 +22,14 @@ import java.util.List;
  *
  * @param <T> the list item type this mode's comparator ranks
  */
-public interface ListSortMode<T> {
+public interface ListSortMode<T> extends PersistedChoice {
 
     /**
      * @return the save-stable key this mode persists under; frozen once shipped, since renaming it
      *         silently resets every save that stored this mode back to the declaring consumer's
      *         default
      */
+    @Override
     String persistenceKey();
 
     /**

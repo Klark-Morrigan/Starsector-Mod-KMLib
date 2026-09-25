@@ -4,12 +4,16 @@ import kmlib.testfixtures.starsector.json.ShippedJson;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 import static kmlib.testfixtures.starsector.json.ShippedJson.requireObject;
@@ -44,11 +48,18 @@ public record ModInfoFragment(
     private static final String NAME_KEY = "name";
     private static final String DESCRIPTION_KEY = "description";
     private static final String AUTHOR_KEY = "author";
-    private static final String DEPENDENCIES_KEY = "dependencies";
 
-    // The launcher fields a fragment may carry, as the launcher file spells them.
-    private static final Set<String> TRANSLATABLE_FIELD_NAMES =
-        Set.of(NAME_KEY, DESCRIPTION_KEY, AUTHOR_KEY, DEPENDENCIES_KEY);
+    // Where the launcher file lists dependencies, which a fragment keys by ID instead.
+    static final String DEPENDENCIES_KEY = "dependencies";
+
+    // The launcher text fields a fragment may carry, as the launcher file spells them. The base is read
+    // for the same three, being what a fragment falls back to.
+    static final Set<String> TRANSLATABLE_TEXT_FIELD_NAMES = Set.of(NAME_KEY, DESCRIPTION_KEY, AUTHOR_KEY);
+
+    // Every launcher field a fragment may carry: the text fields, and the dependency names.
+    private static final Set<String> TRANSLATABLE_FIELD_NAMES = Stream
+        .concat(TRANSLATABLE_TEXT_FIELD_NAMES.stream(), Stream.of(DEPENDENCIES_KEY))
+        .collect(Collectors.toUnmodifiableSet());
 
     /**
      * Refuses blank text, which the launcher would draw as an empty row rather than fall back from.
@@ -70,7 +81,7 @@ public record ModInfoFragment(
         authorText.ifPresent(text -> requireNonBlankText(text, AUTHOR_KEY));
 
         dependencyNamesById.forEach((dependencyId, dependencyName) ->
-            requireNonBlankText(dependencyName, DEPENDENCIES_KEY + "." + dependencyId));
+            requireNonBlankText(dependencyName, locateMember(DEPENDENCIES_KEY, dependencyId)));
 
         dependencyNamesById = Collections.unmodifiableMap(new TreeMap<>(dependencyNamesById));
     }
@@ -83,6 +94,34 @@ public record ModInfoFragment(
      */
     public static ModInfoFragment createUntranslatedFragment() {
         return new ModInfoFragment(Optional.empty(), Optional.empty(), Optional.empty(), Map.of());
+    }
+
+    /**
+     * Each translatable field the base carries that this fragment leaves to it - which the launcher then
+     * shows in the base file's wording. A choice rather than a defect: an author line or another mod's
+     * name is often best left as written.
+     *
+     * @param base the base this fragment is merged over
+     * @return the fields falling back, text fields by name and then dependencies as
+     *         {@code dependencies > <id>}, each sorted
+     */
+    public List<String> listFallbackFieldNames(ModInfoBase base) {
+
+        var fallbackFieldNames = new ArrayList<String>();
+
+        for (var fieldName : base.translatableFieldNames()) {
+
+            if (resolveText(fieldName).isEmpty()) {
+                fallbackFieldNames.add(fieldName);
+            }
+        }
+        for (var dependencyId : base.dependencyIds()) {
+
+            if (!dependencyNamesById.containsKey(dependencyId)) {
+                fallbackFieldNames.add(locateMember(DEPENDENCIES_KEY, dependencyId));
+            }
+        }
+        return fallbackFieldNames;
     }
 
     /**
@@ -141,5 +180,15 @@ public record ModInfoFragment(
         if (text.isBlank()) {
             throw new IllegalArgumentException(fieldName + " is blank");
         }
+    }
+
+    private Optional<String> resolveText(String fieldName) {
+
+        return switch (fieldName) {
+            case NAME_KEY -> nameText;
+            case DESCRIPTION_KEY -> descriptionText;
+            case AUTHOR_KEY -> authorText;
+            default -> throw new IllegalArgumentException(fieldName + " is not a launcher text field");
+        };
     }
 }
