@@ -19,6 +19,17 @@ import java.util.function.Supplier;
  * an option worth having at load: it would take down every mod that depends on this library, or on
  * whichever mod is wiring, over one registration.
  *
+ * <p>A failure to link is caught alongside a throw, and is the more important of the two here. A
+ * third party that moved a class, renamed a member or changed a signature raises a
+ * {@link LinkageError} rather than an exception, and raises it at the moment the step first reaches
+ * the class - which is inside this guard. A guard catching only {@link RuntimeException} would
+ * therefore miss the precise failure an integration step is guarded for, and a mod that merely
+ * updated would take the load down.
+ *
+ * <p>Nothing wider than those two is caught. An exhausted heap or a blown stack is the process's
+ * trouble rather than this step's, and swallowing one would leave a game that cannot run reporting
+ * that it wired.
+ *
  * <p>Logged as the mod that is wiring rather than as this package. The logger is the caller's,
  * because a level set through {@code KmLogging} scopes to a package subtree: a library logging a
  * consuming mod's failed step under {@code kmlib} would put it outside the switch that mod's player
@@ -124,7 +135,7 @@ public final class WiringSteps {
         try {
             wiringStep.run();
 
-        } catch (RuntimeException stepFailure) {
+        } catch (LinkageError | RuntimeException stepFailure) {
 
             stepLog.error(failureMessage, stepFailure);
 
@@ -138,16 +149,19 @@ public final class WiringSteps {
     // anything escaping here would take down every mod loading behind it over a report - the exact
     // outcome the guard above exists to prevent. A describer that cannot compose its sentences,
     // because the wording did not load, therefore costs the report and nothing else.
+    //
+    // Guarded as widely as the step itself, and for the same reason: the describer is the wiring
+    // mod's own, so it can name a third-party type and fail to link exactly as the step did.
     private void recordInstallationFailure(
             Supplier<ModIntegration> describeIntegration,
-            RuntimeException stepFailure) {
+            Throwable stepFailure) {
 
         try {
             describeIntegration
                 .get()
                 .recordFailure(failureRecord, WHILE_INSTALLING_INTEGRATION, stepFailure);
 
-        } catch (RuntimeException reportFailure) {
+        } catch (LinkageError | RuntimeException reportFailure) {
 
             stepLog.error(REPORT_FAILURE_MESSAGE, reportFailure);
         }
