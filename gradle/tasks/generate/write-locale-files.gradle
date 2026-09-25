@@ -1,0 +1,390 @@
+// Writes one locale's bundle into the files the game reads, so a mod keeping
+// its player-facing text per language under localisation/<locale>/ still has the
+// single data/ copy and the single mod_info.json the game and the launcher load.
+//
+// The game has no locale concept a mod can use: LunaLib reads each mod's one
+// settings CSV, and the launcher reads one mod_info.json. So a language is chosen
+// when the mod is built rather than when it is played, and this is where the
+// choice is made. Registered only for a mod committing localisation/manifest.json,
+// so a mod keeping no bundles is untouched.
+//
+// Each file the manifest maps is copied whole, byte for byte: a bundle holds a
+// complete file rather than an overlay, so writing one is a plain copy. The
+// launcher file is the one exception, because the game gives no choice -
+// it mixes translatable text with the version, the jar list and the dependency
+// graph in one file the launcher parses as a whole. A locale's mod_info.json
+// fragment is therefore merged over the committed mod_info.base.json, and only
+// for a mod that commits one.
+//
+// Every file is read as the game reads it, through the shipped JSON reader - the
+// same rules the fixtures under kmlib.testfixtures.localisation read by. They own
+// the full schema; this task holds a file to what it acts on - which locales exist,
+// which files are copied, where they land and which launcher fields a locale may
+// vary - and leaves the rest to them.
+//
+// Self-contained, so it can be applied into a throwaway project and driven directly.
+//
+// Input, read from the applying project:
+//   ext.shippedJson - the reader shipped-json-reader.gradle publishes.
+
+import groovy.json.JsonGenerator
+import groovy.json.JsonOutput
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+
+def localisationDirectory = file('localisation')
+def manifestFile = new File(localisationDirectory, 'manifest.json')
+
+if (manifestFile.isFile()) {
+
+    def modInfoFileName = 'mod_info.json'
+    def modInfoFile = file(modInfoFileName)
+    def modInfoBaseFile = file('mod_info.base.json')
+
+    def defaultLocaleKey = 'defaultLocale'
+    def filesKey = 'files'
+    def localesKey = 'locales'
+    def manifestKeys = [defaultLocaleKey, filesKey, localesKey] as Set
+
+    def dependenciesKey = 'dependencies'
+    def dependencyIdKey = 'id'
+    def dependencyNameKey = 'name'
+
+    // The launcher fields shown as text, and so the only ones a locale may vary. The
+    // rest are functional - the ID, the version, the jar list, the dependency graph -
+    // and a fragment varying one would build a different mod per locale.
+    def translatableTextKeys = ['name', 'description', 'author']
+    def translatableModInfoKeys = (translatableTextKeys + dependenciesKey) as Set
+
+    // A tag names its bundle directory, so it is held to lowercased BCP 47 before it
+    // is ever resolved into a path: nothing matching it can step out of localisation/.
+    def localeTagPattern = ~/[a-z]{2,3}(-[a-z0-9]{1,8})*/
+
+    // A bundle file is named bare, so a mapping can never read from outside its bundle.
+    def bundleFileNamePattern = ~/[A-Za-z0-9_-][A-Za-z0-9_.-]*/
+
+    // The '-Plocale=<tag>' a build names; absent, the manifest's default is built.
+    def requestedLocaleTag = providers.gradleProperty('locale')
+
+    // Written as UTF-8 with the text left literal, so a translated name reads as
+    // itself in the generated file rather than as \u escapes.
+    def modInfoJsonGenerator = new JsonGenerator.Options().disableUnicodeEscaping().build()
+
+    def locateMember = shippedJson.locateMember
+
+    // Blank launcher text would draw as an empty row rather than fall back to the base.
+    def requireNonBlankString = { Object value, String location ->
+
+        def text = shippedJson.requireString(value, location)
+
+        if (text.isBlank()) {
+            throw new GradleException("${location} is blank")
+        }
+        return text
+    }
+
+    // Where one bundle file lands, held inside the mod root: relative, forward
+    // slashes, no parent segment, and never the launcher file, which is merged from
+    // its base rather than copied - mapping it would overwrite the merged result. The
+    // copy is a write into the repository, so this is the check the task cannot leave
+    // to anyone else.
+    def resolveDataFile = { String bundleFileName, String dataPathText, String location ->
+
+        if (!(bundleFileName ==~ bundleFileNamePattern)) {
+            throw new GradleException("${location}: \"${bundleFileName}\" is not a bare file name")
+        }
+        if (bundleFileName == modInfoFileName) {
+
+            throw new GradleException("${location}: ${modInfoFileName} is the launcher file, "
+                + 'which is merged from its base rather than copied')
+        }
+        if (dataPathText.contains('\\')) {
+            throw new GradleException("${location} maps to \"${dataPathText}\", "
+                + 'which is not written with forward slashes')
+        }
+        def dataPath = Path.of(dataPathText)
+        def climbsOut = dataPath.any { segment -> segment.toString() == '..' }
+
+        if (dataPath.root != null || dataPathText.isBlank() || climbsOut) {
+            throw new GradleException("${location} maps to \"${dataPathText}\", "
+                + 'which is not a path inside the mod root')
+        }
+        return file(dataPathText)
+    }
+
+    def readLocaleTags = { Map manifest, String location ->
+
+        def localesLocation = locateMember(location, localesKey)
+        def localeTags = new TreeSet<String>(shippedJson.requireObject(manifest[localesKey], localesLocation).keySet())
+
+        localeTags.each { localeTag ->
+
+            if (!(localeTag ==~ localeTagPattern)) {
+                throw new GradleException("${localesLocation}: \"${localeTag}\" is not a lowercased BCP 47 tag "
+                    + 'such as en or zh-hans')
+            }
+        }
+        return localeTags
+    }
+
+    def readDataFiles = { Map manifest, String location ->
+
+        def filesLocation = locateMember(location, filesKey)
+        def dataFilesByBundleFileName = new TreeMap<String, File>()
+
+        shippedJson.requireObject(manifest[filesKey], filesLocation).each { bundleFileName, dataPathValue ->
+
+            def entryLocation = locateMember(filesLocation, bundleFileName)
+            def dataPathText = shippedJson.requireString(dataPathValue, entryLocation)
+            def dataFile = resolveDataFile(bundleFileName, dataPathText, entryLocation)
+
+            // Two bundle files landing on one file would leave whichever was copied
+            // last, in an order nothing states.
+            if (dataFilesByBundleFileName.containsValue(dataFile)) {
+                throw new GradleException("${entryLocation} maps to ${dataFile}, which another bundle file already "
+                    + 'maps to')
+            }
+            dataFilesByBundleFileName[bundleFileName] = dataFile
+        }
+        if (dataFilesByBundleFileName.isEmpty()) {
+            throw new GradleException("${filesLocation} maps no bundle files")
+        }
+        return dataFilesByBundleFileName
+    }
+
+    // What writing a locale needs of the manifest: the declared locale tags, the
+    // default, and each mapped bundle file with the file it lands on.
+    def readManifest = { ->
+
+        def location = manifestFile.path
+        def manifest = shippedJson.readObjectFile(manifestFile)
+
+        shippedJson.requireOnlyKeys(manifest, manifestKeys, location)
+
+        def defaultLocaleTag = shippedJson.requireString(
+            manifest[defaultLocaleKey],
+            locateMember(location, defaultLocaleKey))
+        def localeTags = readLocaleTags(manifest, location)
+
+        if (!localeTags.contains(defaultLocaleTag)) {
+            throw new GradleException("${location}: default locale ${defaultLocaleTag} is not among the declared "
+                + "locales ${localeTags}")
+        }
+        return [
+            defaultLocaleTag         : defaultLocaleTag,
+            localeTags               : localeTags,
+            dataFilesByBundleFileName: readDataFiles(manifest, location)]
+    }
+
+    def selectLocaleTag = { Map manifestReading ->
+
+        def localeTag = requestedLocaleTag.getOrElse(manifestReading.defaultLocaleTag)
+
+        if (!manifestReading.localeTags.contains(localeTag)) {
+            throw new GradleException("Cannot write locale ${localeTag}: ${manifestFile} declares only "
+                + "${manifestReading.localeTags}")
+        }
+        return localeTag
+    }
+
+    // Strict: a bundle missing a mapped file has nothing true to fall back to, and
+    // the previous locale's copy left in place would ship as this one's.
+    def copyBundleFiles = { Map<String, File> dataFilesByBundleFileName, File bundleDirectory, String localeTag ->
+
+        dataFilesByBundleFileName.each { bundleFileName, dataFile ->
+
+            def bundleFile = new File(bundleDirectory, bundleFileName)
+
+            if (!bundleFile.isFile()) {
+                throw new GradleException("Locale ${localeTag} holds no ${bundleFileName}: expected ${bundleFile}")
+            }
+            dataFile.parentFile.mkdirs()
+
+            Files.copy(bundleFile.toPath(), dataFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+
+    // The base as the launcher needs it: an object, and a dependency list whose
+    // entries a fragment can name by ID.
+    def readModInfoBase = { ->
+
+        def location = modInfoBaseFile.path
+        def baseModInfo = shippedJson.readObjectFile(modInfoBaseFile)
+
+        if (baseModInfo.containsKey(dependenciesKey)) {
+
+            def dependenciesLocation = locateMember(location, dependenciesKey)
+
+            shippedJson.requireList(baseModInfo[dependenciesKey], dependenciesLocation)
+                .eachWithIndex { dependency, index ->
+
+                    def entryLocation = "${dependenciesLocation}[${index}]"
+                    def dependencyEntry = shippedJson.requireObject(dependency, entryLocation)
+
+                    shippedJson.requireString(
+                        dependencyEntry[dependencyIdKey],
+                        locateMember(entryLocation, dependencyIdKey))
+                }
+        }
+        return baseModInfo
+    }
+
+    // A locale's launcher fragment, held to the translatable fields. This is the check
+    // that matters most: a fragment carrying the version or the jar list would build a
+    // different mod per locale, which is the failure the base split exists to prevent.
+    def readModInfoFragment = { File fragmentFile, Map baseModInfo ->
+
+        def location = fragmentFile.path
+        def fragment = shippedJson.readObjectFile(fragmentFile)
+
+        shippedJson.requireOnlyKeys(fragment, translatableModInfoKeys, location)
+
+        translatableTextKeys
+            .findAll { key -> fragment.containsKey(key) }
+            .each { key -> requireNonBlankString(fragment[key], locateMember(location, key)) }
+
+        if (fragment.containsKey(dependenciesKey)) {
+
+            def dependenciesLocation = locateMember(location, dependenciesKey)
+            def declaredDependencyIds = new TreeSet<String>(
+                (baseModInfo[dependenciesKey] ?: []).collect { dependency -> dependency[dependencyIdKey] })
+
+            shippedJson.requireObject(fragment[dependenciesKey], dependenciesLocation)
+                .each { dependencyId, dependencyName ->
+
+                    def entryLocation = locateMember(dependenciesLocation, dependencyId)
+
+                    requireNonBlankString(dependencyName, entryLocation)
+
+                    if (!declaredDependencyIds.contains(dependencyId)) {
+                        throw new GradleException("${entryLocation} names a dependency ${modInfoBaseFile.name} "
+                            + "does not declare; it declares ${declaredDependencyIds}")
+                    }
+                }
+        }
+        return fragment
+    }
+
+    // The base with the fragment's text laid over it. A dependency keeps its ID and
+    // version and takes only its name, keyed by ID in the fragment because a locale
+    // has no reason to restate a version.
+    def mergeModInfo = { Map baseModInfo, Map fragment ->
+
+        def mergedModInfo = new TreeMap<String, Object>(baseModInfo)
+
+        translatableTextKeys
+            .findAll { key -> fragment.containsKey(key) }
+            .each { key -> mergedModInfo[key] = fragment[key] }
+
+        def dependencyNamesById = (Map) (fragment[dependenciesKey] ?: [:])
+
+        if (!dependencyNamesById.isEmpty()) {
+
+            mergedModInfo[dependenciesKey] = baseModInfo[dependenciesKey].collect { dependency ->
+
+                def dependencyId = dependency[dependencyIdKey]
+
+                return dependencyNamesById.containsKey(dependencyId)
+                    ? new TreeMap<String, Object>(dependency) + [(dependencyNameKey): dependencyNamesById[dependencyId]]
+                    : dependency
+            }
+        }
+        return mergedModInfo
+    }
+
+    // Key order is sorted, the parse having kept none.
+    def writeModInfo = { Map mergedModInfo ->
+
+        def modInfoText = JsonOutput.prettyPrint(modInfoJsonGenerator.toJson(mergedModInfo), true)
+
+        Files.writeString(modInfoFile.toPath(), modInfoText + '\n', StandardCharsets.UTF_8)
+    }
+
+    // The launcher file for one locale: the base with that locale's fragment over it,
+    // or the base alone where the locale translates no launcher field. A fragment
+    // with no base is refused rather than skipped, since its text would silently
+    // never reach the launcher.
+    def writeLauncherFile = { File bundleDirectory ->
+
+        def fragmentFile = new File(bundleDirectory, modInfoFileName)
+
+        if (!modInfoBaseFile.isFile()) {
+
+            if (fragmentFile.isFile()) {
+                throw new GradleException("${fragmentFile} has no ${modInfoBaseFile.name} beside the manifest "
+                    + 'to be merged over')
+            }
+            return
+        }
+        def baseModInfo = readModInfoBase()
+        def fragment = fragmentFile.isFile() ? readModInfoFragment(fragmentFile, baseModInfo) : [:]
+
+        writeModInfo(mergeModInfo(baseModInfo, fragment))
+    }
+
+    def writeLocaleFilesTask = tasks.register('writeLocaleFiles') {
+
+        group = 'build'
+
+        description = ('Copies one locale\'s bundle from localisation/ into the files the game reads, '
+            + 'and merges its launcher text over mod_info.base.json. -Plocale=<tag> selects; '
+            + 'omitted, the manifest\'s default is built.')
+
+        // The requested locale is an input of its own, so switching it re-runs the copy
+        // rather than leaving the task up to date over the wrong language.
+        inputs.property('locale', requestedLocaleTag).optional(true)
+        inputs.dir(localisationDirectory)
+            .withPropertyName('localisationDirectory')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+
+        // As a collection rather than a single file, because a mod that has not split
+        // its launcher file commits no base, and a declared single file must exist.
+        inputs.files(modInfoBaseFile)
+            .withPropertyName('modInfoBaseFile')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+
+        // Read off the manifest when Gradle asks, rather than while the build
+        // configures, so a machine with no install configures every other task.
+        outputs.files(provider {
+
+            def dataFiles = readManifest().dataFilesByBundleFileName.values()
+
+            return modInfoBaseFile.isFile() ? dataFiles + modInfoFile : dataFiles
+        })
+
+        doLast {
+
+            def manifestReading = readManifest()
+            def localeTag = selectLocaleTag(manifestReading)
+            def bundleDirectory = new File(localisationDirectory, localeTag)
+
+            copyBundleFiles(manifestReading.dataFilesByBundleFileName, bundleDirectory, localeTag)
+            writeLauncherFile(bundleDirectory)
+
+            logger.lifecycle("Wrote locale ${localeTag}.")
+        }
+    }
+
+    plugins.withId('java') {
+
+        // Hung off jar, for the reason writeVersionFile is: a checkout symlinked into
+        // mods/ is refreshed by `gradlew jar`, and data/ left on the previous locale
+        // is the exact disagreement this task exists to prevent.
+        tasks.named('jar') {
+            dependsOn writeLocaleFilesTask
+        }
+
+        // An input of the suites as well: they read the files this writes - the
+        // strings guard, the settings-table suites - which exist only once
+        // written, and CI runs test before jar. As an input rather than a bare
+        // dependency, a locale switch also re-runs them against the new files.
+        tasks.named('test') {
+            inputs.files(writeLocaleFilesTask)
+                .withPropertyName('writtenLocaleFiles')
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+        }
+    }
+}

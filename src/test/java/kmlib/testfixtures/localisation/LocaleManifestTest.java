@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Pins the manifest's schema: what a well-formed one reads as, and each malformed shape the tooling
  * would otherwise act on.
  *
- * <p>The refusals matter more than the happy path. Materialisation copies onto the paths this reads
+ * <p>The refusals matter more than the happy path. Writing a locale copies onto the paths this reads
  * and the release body links the URLs, so a manifest this let through would be a write outside the
  * repository or a link handed to players.
  */
@@ -249,7 +249,7 @@ final class LocaleManifestTest {
         @ValueSource(strings = {"../outside/strings.json", "data/../../strings.json", "/data/strings.json", ""})
         void aDataPathOutsideTheModRootIsRefused(String dataPath, @TempDir Path directory) throws IOException {
 
-            // Materialisation writes to this path, so anything leaving the mod root is a write outside
+            // Writing a locale copies onto this path, so anything leaving the mod root is a write outside
             // the repository.
             var manifestFile = writeManifest(directory, createManifestMappingStringsTo(dataPath));
 
@@ -290,7 +290,9 @@ final class LocaleManifestTest {
             var manifestFile = writeManifest(
                 directory,
                 WELL_FORMED_MANIFEST
-                    .replace("\"strings.json\": \"data/strings/strings.json\"", "\"mod_info.json\": \"mod_info.json\""));
+                    .replace(
+                        "\"strings.json\": \"data/strings/strings.json\"",
+                        "\"mod_info.json\": \"mod_info.json\""));
 
             assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
                 .isInstanceOf(AssertionError.class)
@@ -334,7 +336,7 @@ final class LocaleManifestTest {
         @Test
         void aDataPathOutsideTheModRootIsRefusedHoweverTheManifestWasBuilt() {
 
-            // The path rules guard the writes materialisation makes, so they hold for a manifest
+            // The path rules guard where writing a locale copies to, so they hold for a manifest
             // built in code as well as for one read from a file.
             var dataPathsByBundleFileName = Map.of("strings.json", Path.of("..", "strings.json"));
             var declaredLocalesByTag = Map.of("en", ENGLISH);

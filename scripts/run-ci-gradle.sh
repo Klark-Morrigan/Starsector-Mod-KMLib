@@ -3,8 +3,9 @@
 # CI runs via Common-Java's reusable ci-gradle workflow. Thin shim to
 # Common-Java's run-ci-gradle.sh entry, pointed at this repo via
 # COMMON_JAVA_TARGET_REPO. Pass tasks as arguments to override the default
-# (test jar). Common-Java is expected as a sibling checkout under the same
-# parent directory.
+# (test jar). Every argument reaches Gradle as given, so a mod keeping locale
+# bundles builds one by naming it: `run-ci-gradle.sh test jar -Plocale=zh-hans`.
+# Common-Java is expected as a sibling checkout under the same parent directory.
 #
 # The build resolves the Starsector install from STARSECTOR_HOME (or
 # -PstarsectorRoot); set STARSECTOR_HOME in your environment first, the

@@ -156,6 +156,12 @@ Build:
   and this checkout.
   Applied by the conventions script,
   so a consumer gets it from the one `apply from`.
+- [`gradle/shipped-json-reader.gradle`](gradle/shipped-json-reader.gradle) -
+  reads a mod's shipped JSON the way the engine does,
+  for the task scripts that act on one:
+  the build-time counterpart of the fixtures' `ShippedJson`,
+  over the same `json.jar`.
+  Applied by the conventions script.
 - [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle) -
   KMLib's own,
   not shared:
@@ -170,6 +176,8 @@ Build:
   generates the constant naming which Fast Rendering release the bridge adapter was type-checked against.
 - [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle) -
   registers `writeVersionFile` for a mod that commits a template.
+- [`gradle/tasks/generate/write-locale-files.gradle`](gradle/tasks/generate/write-locale-files.gradle) -
+  registers `writeLocaleFiles` for a mod that commits a localisation manifest.
 - [`.gitattributes`](.gitattributes) -
   line-ending pins:
   `*.sh` and `gradlew` to LF,
@@ -735,7 +743,10 @@ No Starsector API on the signature.
   or presence-only at a nought,
   for a faction holding nothing the mechanic ever reached.
 - [`starsector/time/`](src/main/java/kmlib/starsector/time/) -
-  campaign clock wrapper.
+  the calendar constants the campaign clock does not publish,
+  and `CampaignCountdown`,
+  a span of campaign days read against whichever clock is running,
+  with the completion slack its reads share.
 
 The UI toolkit is tiered by render substrate:
 a spec names content
@@ -1226,6 +1237,43 @@ located on Windows from the git on `PATH`.
   or the remote -
   changes.
 
+A mod keeping its player-facing files per language,
+one bundle per locale under `localisation/<locale>/` beside a `localisation/manifest.json`,
+gets `writeLocaleFiles`,
+which writes one locale into the files the game reads.
+`-Plocale=<tag>` selects;
+omitted,
+the manifest's `defaultLocale` is built.
+
+- Registered by
+  [write-locale-files.gradle](gradle/tasks/generate/write-locale-files.gradle),
+  which the shared Starsector conventions apply.
+  No manifest,
+  no task.
+- Each file the manifest's `files` map names is copied whole,
+  byte for byte,
+  onto the path it maps to.
+  A mapping outside the mod root fails the build,
+  and so does a bundle missing a mapped file:
+  the previous locale's copy left in place would otherwise ship as this one's.
+- `mod_info.json` is the one merge.
+  Where a mod commits `mod_info.base.json`,
+  the locale's `mod_info.json` fragment is laid over it -
+  `name`, `description`, `author` and dependency names only,
+  any other field refused -
+  and the result is written to the repo root with its keys sorted.
+- The manifest and the fragments are read the way the game reads JSON,
+  through [shipped-json-reader.gradle](gradle/shipped-json-reader.gradle):
+  the same comment strip and the game's own `json.jar` the [test fixtures](#test-fixtures) use,
+  so the build and the checks never disagree on whether a file parses.
+- `jar` depends on it,
+  for the reason it depends on `writeVersionFile`,
+  and `test` takes its outputs as inputs:
+  the suites read the files it writes,
+  and CI runs `test` before `jar`.
+  The requested locale is an input of its own,
+  so switching it re-runs both rather than reporting either up to date.
+
 The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this folder
 (the canonical layout when the mod lives at `<starsector>/mods/KMLib`).
@@ -1290,8 +1338,14 @@ and report green for a check that never ran.
 For double-click runs from Explorer,
 [scripts/run-tests-gradle.bat](scripts/run-tests-gradle.bat) and
 [scripts/run-coverage-gradle.bat](scripts/run-coverage-gradle.bat)
-wrap the `test` and `coverage` tasks above against the deployed install
+wrap the `test` and `coverage` tasks above
 and pause on exit.
+Each runs the checkout it sits in,
+never a copy synced into an install's `mods/` folder,
+so what is tested is the working tree.
+Extra arguments,
+`-Plocale=<tag>` among them,
+pass through to Gradle.
 
 ## Local linting
 
