@@ -737,7 +737,10 @@ No Starsector API on the signature.
   or presence-only at a nought,
   for a faction holding nothing the mechanic ever reached.
 - [`starsector/time/`](src/main/java/kmlib/starsector/time/) -
-  campaign clock wrapper.
+  the calendar constants the campaign clock does not publish,
+  and `CampaignCountdown`,
+  a span of campaign days read against whichever clock is running,
+  with the completion slack its reads share.
 
 The UI toolkit is tiered by render substrate:
 a spec names content
