@@ -1,6 +1,7 @@
 package kmlib.testfixtures.starsector.settings;
 
 import kmlib.testfixtures.starsector.settings.LunaSettingsTable.FieldBehaviour;
+import kmlib.testfixtures.starsector.settings.LunaSettingsTable.FieldRow;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,8 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins the readings that split a settings row into what it does and what it says: its behaviour, the
- * text the screen draws, and the tab it is placed on.
+ * Pins every reading of a settings table against a file laid out the way LunaLib reads it: rows told
+ * apart by type, sections bound by file order, and the cells a caller asks for by meaning rather than by
+ * column.
  */
 final class LunaSettingsTableTest {
 
@@ -42,6 +44,86 @@ final class LunaSettingsTableTest {
         Files.writeString(settingsCsv, HEADER_LINE + "\n" + rows, StandardCharsets.UTF_8);
 
         return new LunaSettingsTable(settingsCsv, "kmu_");
+    }
+
+    @Nested
+    class FindHeaderRowsWhoseCaptionColumnsDisagree {
+
+        @Test
+        void aCaptionWhoseNameAndDefaultDifferIsFound(@TempDir Path directory) throws IOException {
+
+            // A value row's name and default are different things by design, so only captions are asked.
+            var table = createTable(directory, """
+                kmu_agreed,,,,Colours,,Header,Colours,,,,,,,,,General
+                kmu_drifted,,,,Colors,,Header,Colours,,,,,,,,,General
+                kmu_width,,,,Width,,Int,4,,,,How wide,,,1,8,General
+                """);
+
+            assertThat(table.findHeaderRowsWhoseCaptionColumnsDisagree())
+                .containsExactly("kmu_drifted");
+        }
+    }
+
+    @Nested
+    class FindRowsStrandedFromTheirSection {
+
+        @Test
+        void aValueRowOffItsCaptionsTabOrAheadOfEveryCaptionIsFound(@TempDir Path directory) throws IOException {
+
+            // Prose ahead of every caption owns nothing and belongs to no section, so it is never stranded.
+            var table = createTable(directory, """
+                kmu_intro,,,,,,Text,Hello,,,,,,,,,General
+                kmu_early,,,,Early,,Boolean,true,,,,,,,,,General
+                kmu_general,,,,General,,Header,General,,,,,,,,,General
+                kmu_placed,,,,Placed,,Boolean,true,,,,,,,,,General
+                kmu_visuals,,,,Visuals,,Header,Visuals,,,,,,,,,Visuals
+                kmu_moved,,,,Moved,,Boolean,true,,,,,,,,,General
+                """);
+
+            assertThat(table.findRowsStrandedFromTheirSection())
+                .containsExactly("kmu_early", "kmu_moved");
+        }
+    }
+
+    @Nested
+    class FindTabsDeclaredInMoreThanOneRun {
+
+        @Test
+        void aTabInterruptedByAnotherIsFound(@TempDir Path directory) throws IOException {
+
+            var table = createTable(directory, """
+                kmu_first,,,,First,,Boolean,true,,,,,,,,,General
+                kmu_second,,,,Second,,Boolean,true,,,,,,,,,Visuals
+                kmu_third,,,,Third,,Boolean,true,,,,,,,,,General
+                """);
+
+            assertThat(table.findTabsDeclaredInMoreThanOneRun())
+                .containsExactly("General");
+        }
+
+        @Test
+        void oneUnbrokenRunPerTabPasses(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).findTabsDeclaredInMoreThanOneRun())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class FindTextRowsWhoseWordsAreNotDrawn {
+
+        @Test
+        void proseWithANameOrWithoutWordsIsFound(@TempDir Path directory) throws IOException {
+
+            var table = createTable(directory, """
+                kmu_drawn,,,,,,Text,Drawn words,,,,,,,,,General
+                kmu_named,,,,Invisible,,Text,Drawn words,,,,,,,,,General
+                kmu_blank,,,,,,Text,,,,,,,,,,General
+                """);
+
+            assertThat(table.findTextRowsWhoseWordsAreNotDrawn())
+                .containsExactly("kmu_named", "kmu_blank");
+        }
     }
 
     @Nested
@@ -75,6 +157,62 @@ final class LunaSettingsTableTest {
     }
 
     @Nested
+    class ReadDeclaredFieldIds {
+
+        @Test
+        void everyPrefixedRowIsReadAndTheFurnitureIsNot(@TempDir Path directory) throws IOException {
+
+            // The header line and the spacer carry no prefixed ID.
+            assertThat(createTable(directory, ROWS).readDeclaredFieldIds())
+                .containsExactly("kmu_caption", "kmu_note", "kmu_palette", "kmu_width");
+        }
+    }
+
+    @Nested
+    class ReadDeclaredTabs {
+
+        @Test
+        void everyRowsTabIsReadInFileOrder(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readDeclaredTabs())
+                .containsExactly("General", "General", "Visuals", "Visuals");
+        }
+    }
+
+    @Nested
+    class ReadDefaultValue {
+
+        @Test
+        void theDefaultCellIsRead(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readDefaultValue("kmu_palette", "Radio"))
+                .isEqualTo("Gold");
+        }
+
+        @Test
+        void aRowReadAsAnotherTypeIsRefused(@TempDir Path directory) throws IOException {
+
+            var table = createTable(directory, ROWS);
+
+            assertThatThrownBy(() -> table.readDefaultValue("kmu_palette", "Int"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Field kmu_palette in ")
+                .hasMessageEndingWith(" is declared Radio but was read as Int");
+        }
+
+        @Test
+        void aRowTheFileDoesNotDeclareIsRefused(@TempDir Path directory) throws IOException {
+
+            var table = createTable(directory, ROWS);
+
+            assertThatThrownBy(() -> table.readDefaultValue("kmu_absent", "Int"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageStartingWith("Expected exactly one row for field kmu_absent in ")
+                .hasMessageEndingWith(" but found 0");
+        }
+    }
+
+    @Nested
     class ReadDisplayedTexts {
 
         @Test
@@ -92,6 +230,79 @@ final class LunaSettingsTableTest {
     }
 
     @Nested
+    class ReadFieldIdsAndTypes {
+
+        @Test
+        void everyRowIsReadAsItsIdAndType(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readFieldIdsAndTypes())
+                .containsExactly(
+                    new FieldRow("kmu_caption", "Header"),
+                    new FieldRow("kmu_note", "Text"),
+                    new FieldRow("kmu_palette", "Radio"),
+                    new FieldRow("kmu_width", "Int"));
+        }
+    }
+
+    @Nested
+    class ReadMaxValue {
+
+        @Test
+        void theSlidersHighEndIsRead(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readMaxValue("kmu_width", "Int"))
+                .isEqualTo("8");
+        }
+    }
+
+    @Nested
+    class ReadMinValue {
+
+        @Test
+        void theSlidersLowEndIsRead(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readMinValue("kmu_width", "Int"))
+                .isEqualTo("1");
+        }
+    }
+
+    @Nested
+    class ReadOptions {
+
+        @Test
+        void optionsAreTrimmedAndEmptiesDropped(@TempDir Path directory) throws IOException {
+
+            var table = createTable(directory, """
+                kmu_spaced,,,,Spaced,,Radio,Gold,"Gold ,  Silver,",,,Which,,,,,General
+                """);
+
+            assertThat(table.readOptions("kmu_spaced"))
+                .containsExactly("Gold", "Silver");
+        }
+
+        @Test
+        void aRowThatIsNoRadioIsRefused(@TempDir Path directory) throws IOException {
+
+            var table = createTable(directory, ROWS);
+
+            assertThatThrownBy(() -> table.readOptions("kmu_width"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageEndingWith(" is declared Int but was read as Radio");
+        }
+    }
+
+    @Nested
+    class ReadRadioFieldIds {
+
+        @Test
+        void onlyRadioRowsAreRead(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readRadioFieldIds())
+                .containsExactly("kmu_palette");
+        }
+    }
+
+    @Nested
     class ReadTabsByFieldId {
 
         @Test
@@ -103,6 +314,17 @@ final class LunaSettingsTableTest {
                     Map.entry("kmu_note", "General"),
                     Map.entry("kmu_palette", "Visuals"),
                     Map.entry("kmu_width", "Visuals"));
+        }
+    }
+
+    @Nested
+    class ReadValueFieldIds {
+
+        @Test
+        void captionsAndProseAreLeftOut(@TempDir Path directory) throws IOException {
+
+            assertThat(createTable(directory, ROWS).readValueFieldIds())
+                .containsExactly("kmu_palette", "kmu_width");
         }
     }
 
