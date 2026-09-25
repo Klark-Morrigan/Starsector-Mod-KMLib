@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A mod's {@code l10n/} directory: the manifest at its root and one bundle directory per locale.
+ * A mod's {@code localisation/} directory: the manifest at its root and one bundle directory per locale.
  *
  * <p>Offered to every mod on these conventions because the layout is the tooling's rather than any one
  * mod's. What a mod translates is its own business, and none of it is decided here - this reads, and
@@ -21,7 +21,7 @@ import java.util.Objects;
 public final class LocalisationDirectory {
 
     /** Where a mod on these conventions keeps its locale bundles, relative to its root. */
-    public static final Path L10N_DIRECTORY = Path.of("l10n");
+    public static final Path LOCALISATION_DIRECTORY = Path.of("localisation");
 
     /** The manifest's name inside that directory. */
     public static final String MANIFEST_FILE_NAME = "manifest.json";
@@ -32,7 +32,7 @@ public final class LocalisationDirectory {
      * Opens a reading of one mod's localisation directory.
      *
      * @param directory the directory, relative to the module the suite runs in;
-     *                  {@link #L10N_DIRECTORY} is where these conventions put it
+     *                  {@link #LOCALISATION_DIRECTORY} is where these conventions put it
      */
     public LocalisationDirectory(Path directory) {
         this.directory = Objects.requireNonNull(directory, "directory");

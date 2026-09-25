@@ -102,9 +102,9 @@ A binding to third-party code that stops holding now costs the feature built ove
 
 #### Localisation
 
-A mod's player-facing files can be kept per language, one bundle per locale under `l10n/<locale>/`, with a manifest naming the locales, the default and where each bundle file lands in the mod. These fixtures read that layout for the checks a mod runs over it. Every file is read the way the mod's shipped copy of it is read - JSON through `ShippedJson`, strings through `ShippedStrings`, a settings table through `LunaSettingsTable` - so a bundle is never parsed a second way.
+A mod's player-facing files can be kept per language, one bundle per locale under `localisation/<locale>/`, with a manifest naming the locales, the default and where each bundle file lands in the mod. These fixtures read that layout for the checks a mod runs over it. Every file is read the way the mod's shipped copy of it is read - JSON through `ShippedJson`, strings through `ShippedStrings`, a settings table through `LunaSettingsTable` - so a bundle is never parsed a second way.
 
-- **`LocalisationDirectory`**: a mod's `l10n/` directory. Reads the manifest at its root, lists every bundle directory beside it whether declared or not, and opens a bundle only for a locale the manifest declares.
+- **`LocalisationDirectory`**: a mod's `localisation/` directory. Reads the manifest at its root, lists every bundle directory beside it whether declared or not, and opens a bundle only for a locale the manifest declares.
 - **`LocaleManifest`**: which locales exist, which is the default, and which files a bundle holds and where each lands - the single source of truth for all three. Every key it may carry is known and any other is refused, so a misspelt `coreLocalization` fails rather than reading as absent. Its data paths are held inside the mod root however a manifest is built, a copy onto one being a write into the repository.
 - **`DeclaredLocale`**: one declared locale - a lowercased BCP 47 tag, its name in its own language, and, where the vanilla atlases lack its glyphs, the https project its players install over `starsector-core`.
 - **`LocaleBundle`**: one locale's directory. Reads its strings file and its launcher fragment, and resolves any other bundle file by bare name only, so no bundle reaches into another.

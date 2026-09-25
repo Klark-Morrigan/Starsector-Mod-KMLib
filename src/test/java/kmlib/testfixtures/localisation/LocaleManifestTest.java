@@ -337,8 +337,9 @@ final class LocaleManifestTest {
             // The path rules guard the writes materialisation makes, so they hold for a manifest
             // built in code as well as for one read from a file.
             var dataPathsByBundleFileName = Map.of("strings.json", Path.of("..", "strings.json"));
+            var declaredLocalesByTag = Map.of("en", ENGLISH);
 
-            assertThatThrownBy(() -> new LocaleManifest("en", dataPathsByBundleFileName, Map.of("en", ENGLISH)))
+            assertThatThrownBy(() -> new LocaleManifest("en", dataPathsByBundleFileName, declaredLocalesByTag))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("which is not a path inside the mod root");
         }

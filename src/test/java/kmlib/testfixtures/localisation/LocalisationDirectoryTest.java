@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins the layout of a mod's {@code l10n/} directory: the manifest at its root, bundles beside it.
+ * Pins the layout of a mod's {@code localisation/} directory: the manifest at its root, bundles beside it.
  */
 final class LocalisationDirectoryTest {
 
@@ -38,11 +38,11 @@ final class LocalisationDirectoryTest {
         @Test
         void anAbsentDirectoryNamesItself(@TempDir Path directory) {
 
-            var localisationDirectory = new LocalisationDirectory(directory.resolve("l10n"));
+            var localisationDirectory = new LocalisationDirectory(directory.resolve("localisation"));
 
             assertThatThrownBy(localisationDirectory::listBundleDirectoryNames)
                 .isInstanceOf(UncheckedIOException.class)
-                .hasMessageContaining("l10n");
+                .hasMessageContaining("localisation");
         }
     }
 

@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
- * One locale's directory under {@code l10n/}: every file the manifest maps, held whole, plus the
+ * One locale's directory under {@code localisation/}: every file the manifest maps, held whole, plus the
  * locale's launcher fragment.
  *
  * <p>Each file is read the way a mod's shipped copy of it is read, so a bundle file is never parsed a

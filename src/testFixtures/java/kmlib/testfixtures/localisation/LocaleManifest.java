@@ -19,7 +19,7 @@ import static kmlib.testfixtures.starsector.json.ShippedJson.requireOnlyKeys;
 import static kmlib.testfixtures.starsector.json.ShippedJson.requireString;
 
 /**
- * A mod's {@code l10n/manifest.json}: which locales exist, which is the default, and which files a
+ * A mod's {@code localisation/manifest.json}: which locales exist, which is the default, and which files a
  * bundle holds and where each lands in the mod.
  *
  * <p>The single source of truth for all three. Everything that needs the file map reads it from this

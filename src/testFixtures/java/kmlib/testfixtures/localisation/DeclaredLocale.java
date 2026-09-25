@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 /**
  * One locale a mod's localisation manifest declares.
  *
- * <p>The tag doubles as the bundle's directory name under {@code l10n/} and as a release file suffix,
+ * <p>The tag doubles as the bundle's directory name under {@code localisation/} and as a release file suffix,
  * which is why its shape is held here rather than trusted: lowercased BCP 47, so {@code zh-hans} and
  * never {@code zh-Hans}, and nothing that could step out of the directory it names.
  *

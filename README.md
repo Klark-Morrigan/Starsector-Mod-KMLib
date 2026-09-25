@@ -1423,7 +1423,7 @@ reads a mod's shipped `data/strings/strings.json` through it,
 beside the string IDs its holder class names,
 for the guard that pins each against the other.
 [`localisation/`](src/testFixtures/java/kmlib/testfixtures/localisation/)
-reads a mod's `l10n/` directory:
+reads a mod's `localisation/` directory:
 the manifest naming its locales, its default and where each bundle file lands,
 and each locale's bundle -
 its strings,
