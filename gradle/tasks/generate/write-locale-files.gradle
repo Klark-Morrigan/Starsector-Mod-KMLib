@@ -16,10 +16,8 @@
 // fragment is therefore merged over the committed mod_info.base.json, and only
 // for a mod that commits one.
 //
-// JSON is read as the game reads it - its '#' comment strip in front of the
-// org.json in its own json.jar - and never through JsonSlurper, whose syntax is not
-// the game's. The fixtures under kmlib.testfixtures.localisation read the same files
-// by the same rules, so a file parses here exactly when it parses there. They own
+// Every file is read as the game reads it, through the shipped JSON reader - the
+// same rules the fixtures under kmlib.testfixtures.localisation read by. They own
 // the full schema; this task holds a file to what it acts on - which locales exist,
 // which files are copied, where they land and which launcher fields a locale may
 // vary - and leaves the rest to them.
@@ -27,14 +25,11 @@
 // Self-contained, so it can be applied into a throwaway project and driven directly.
 //
 // Input, read from the applying project:
-//   ext.gameJsonJarFile - the game's json.jar.
+//   ext.shippedJson - the reader shipped-json-reader.gradle publishes.
 
 import groovy.json.JsonGenerator
 import groovy.json.JsonOutput
 
-import java.lang.reflect.InvocationTargetException
-import java.nio.ByteBuffer
-import java.nio.charset.CharacterCodingException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -71,218 +66,24 @@ if (manifestFile.isFile()) {
     // A bundle file is named bare, so a mapping can never read from outside its bundle.
     def bundleFileNamePattern = ~/[A-Za-z0-9_-][A-Za-z0-9_.-]*/
 
-    // Joins keys in a failure's location. Not a dot, because file names carry dots.
-    def memberSeparator = ' > '
-
-    // UTF-8's byte-order mark, which the game's parser reads as the document's first
-    // character and refuses as "must begin with '{'".
-    def utf8ByteOrderMark = [(byte) 0xEF, (byte) 0xBB, (byte) 0xBF] as byte[]
-
     // The '-Plocale=<tag>' a build names; absent, the manifest's default is built.
     def requestedLocaleTag = providers.gradleProperty('locale')
 
-    def locateMember = { String location, String key -> location + memberSeparator + key }
+    // Written as UTF-8 with the text left literal, so a translated name reads as
+    // itself in the generated file rather than as \u escapes.
+    def modInfoJsonGenerator = new JsonGenerator.Options().disableUnicodeEscaping().build()
 
-    // The engine's comment strip, character for character, as ShippedJson copies it: a
-    // '#' outside double quotes drops the rest of its line, and a line break ends both
-    // the comment and any open quote. Carriage returns are dropped and newlines kept.
-    // Its quote tracking toggles on every double quote, escaped ones included, and so
-    // does this.
-    def stripComments = { String text ->
-
-        def stripped = new StringBuilder(text.length())
-        def isInComment = false
-        def isInQuote = false
-
-        for (char character : text.toCharArray()) {
-
-            if (character == ('"' as char)) {
-                isInQuote = !isInQuote
-            }
-            if (character == ('\n' as char) || character == ('\r' as char)) {
-
-                isInComment = false
-                isInQuote = false
-
-                if (character == ('\n' as char)) {
-                    stripped.append('\n')
-                }
-            } else if (character == ('#' as char) && !isInQuote) {
-
-                isInComment = true
-
-            } else if (!isInComment) {
-
-                stripped.append(character)
-            }
-        }
-        return stripped.toString()
-    }
-
-    // Decoded strictly, so a file saved in a legacy code page fails here rather than
-    // reaching the launcher as replacement characters.
-    def readShippedText = { File jsonFile ->
-
-        def bytes = jsonFile.bytes
-
-        if (bytes.length >= utf8ByteOrderMark.length
-            && Arrays.equals(bytes, 0, utf8ByteOrderMark.length, utf8ByteOrderMark, 0, utf8ByteOrderMark.length)) {
-
-            throw new GradleException("${jsonFile} starts with a UTF-8 byte-order mark, which the game refuses")
-        }
-        try {
-            return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString()
-
-        } catch (CharacterCodingException characterCodingException) {
-
-            throw new GradleException("${jsonFile} is not valid UTF-8", characterCodingException)
-        }
-    }
-
-    // Hands the reading a closure parsing one JSON object file into sorted maps and
-    // lists, with the game's parser loaded for the duration and closed after it.
-    //
-    // Loaded under a bootstrap-parented loader, so org.json cannot resolve against
-    // the build's own classpath, and closed at once: a daemon holding the install's
-    // json.jar open would block the next overwrite of that install on Windows.
-    // Reached reflectively rather than put on the buildscript classpath, so a build
-    // on a machine with no install still configures, and fails only when it asks for
-    // this task - the way a compile fails only when it runs.
-    def withGameJsonReader = { Closure reading ->
-
-        def jsonJarFile = (File) project.findProperty('gameJsonJarFile')
-
-        if (jsonJarFile == null || !jsonJarFile.isFile()) {
-
-            throw new GradleException("Cannot write locale files: the game's json.jar was not found at "
-                + "${jsonJarFile}. Set STARSECTOR_HOME or pass -PstarsectorRoot=<path>.")
-        }
-        def loader = new URLClassLoader([jsonJarFile.toURI().toURL()] as URL[], (ClassLoader) null)
-
-        try {
-            def jsonObjectClass = loader.loadClass('org.json.JSONObject')
-            def jsonArrayClass = loader.loadClass('org.json.JSONArray')
-            def jsonNull = jsonObjectClass.getField('NULL').get(null)
-            def jsonTextConstructor = jsonObjectClass.getConstructor(String)
-
-            // Everything org.json hands back, as plain Groovy values. Objects are sorted
-            // by key: the game's parser keeps no member order, so nothing it reads can
-            // depend on one.
-            def convertValue
-            convertValue = { Object value, String location ->
-
-                if (jsonObjectClass.isInstance(value)) {
-
-                    def members = new TreeMap<String, Object>()
-
-                    for (def keys = value.keys(); keys.hasNext();) {
-
-                        def key = (String) keys.next()
-
-                        members[key] = convertValue(value.get(key), locateMember(location, key))
-                    }
-                    return members
-                }
-                if (jsonArrayClass.isInstance(value)) {
-
-                    return (0..<value.length()).collect { index ->
-                        convertValue(value.get(index), "${location}[${index}]")
-                    }
-                }
-                if (jsonNull.equals(value)) {
-                    throw new GradleException("${location} is null, which no shipped file uses")
-                }
-                return value
-            }
-
-            def readObjectFile = { File jsonFile ->
-
-                def parsedObject
-
-                try {
-                    parsedObject = jsonTextConstructor.newInstance(stripComments(readShippedText(jsonFile)))
-
-                } catch (InvocationTargetException invocationTargetException) {
-
-                    // The engine's own message - a duplicated key among them - with the
-                    // file it would have named in the log.
-                    def parseFailure = invocationTargetException.cause
-
-                    throw new GradleException(
-                        "${jsonFile} does not parse as the game reads it: ${parseFailure.message}",
-                        parseFailure)
-                }
-                return convertValue(parsedObject, jsonFile.path)
-            }
-
-            return reading(readObjectFile)
-
-        } finally {
-            loader.close()
-        }
-    }
-
-    // Absent and wrongly typed are told apart, since the fix for each is a different edit.
-    def requirePresent = { Object value, String location ->
-
-        if (value == null) {
-            throw new GradleException("${location} is missing")
-        }
-    }
-
-    def requireObject = { Object value, String location ->
-
-        requirePresent(value, location)
-
-        if (!(value instanceof Map)) {
-            throw new GradleException("${location} must be a JSON object")
-        }
-        return (Map<String, Object>) value
-    }
-
-    def requireList = { Object value, String location ->
-
-        requirePresent(value, location)
-
-        if (!(value instanceof List)) {
-            throw new GradleException("${location} must be a JSON array")
-        }
-        return (List<Object>) value
-    }
-
-    def requireString = { Object value, String location ->
-
-        requirePresent(value, location)
-
-        if (!(value instanceof String)) {
-            throw new GradleException("${location} must be a JSON string")
-        }
-        return (String) value
-    }
+    def locateMember = shippedJson.locateMember
 
     // Blank launcher text would draw as an empty row rather than fall back to the base.
     def requireNonBlankString = { Object value, String location ->
 
-        def text = requireString(value, location)
+        def text = shippedJson.requireString(value, location)
 
         if (text.isBlank()) {
             throw new GradleException("${location} is blank")
         }
         return text
-    }
-
-    // A misspelt key would otherwise read as an absent one, and take its fallback.
-    def requireOnlyKeys = { Map<String, Object> object, Set<String> allowedKeys, String location ->
-
-        def unknownKeys = new TreeSet<String>(object.keySet())
-
-        unknownKeys.removeAll(allowedKeys)
-
-        if (!unknownKeys.isEmpty()) {
-
-            throw new GradleException("${location} carries unknown keys ${unknownKeys}; "
-                + "known keys are ${new TreeSet<String>(allowedKeys)}")
-        }
     }
 
     // Where one bundle file lands, held inside the mod root: relative, forward
@@ -314,18 +115,10 @@ if (manifestFile.isFile()) {
         return file(dataPathText)
     }
 
-    // What writing a locale needs of the manifest: the declared locale tags, the
-    // default, and each mapped bundle file with the file it lands on.
-    def readManifest = { Closure readObjectFile ->
+    def readLocaleTags = { Map manifest, String location ->
 
-        def location = manifestFile.path
-        def manifest = readObjectFile(manifestFile)
-
-        requireOnlyKeys(manifest, manifestKeys, location)
-
-        def defaultLocaleTag = requireString(manifest[defaultLocaleKey], locateMember(location, defaultLocaleKey))
         def localesLocation = locateMember(location, localesKey)
-        def localeTags = new TreeSet<String>(requireObject(manifest[localesKey], localesLocation).keySet())
+        def localeTags = new TreeSet<String>(shippedJson.requireObject(manifest[localesKey], localesLocation).keySet())
 
         localeTags.each { localeTag ->
 
@@ -334,17 +127,19 @@ if (manifestFile.isFile()) {
                     + 'such as en or zh-hans')
             }
         }
-        if (!localeTags.contains(defaultLocaleTag)) {
-            throw new GradleException("${location}: default locale ${defaultLocaleTag} is not among the declared "
-                + "locales ${localeTags}")
-        }
+        return localeTags
+    }
+
+    def readDataFiles = { Map manifest, String location ->
+
         def filesLocation = locateMember(location, filesKey)
         def dataFilesByBundleFileName = new TreeMap<String, File>()
 
-        requireObject(manifest[filesKey], filesLocation).each { bundleFileName, dataPathValue ->
+        shippedJson.requireObject(manifest[filesKey], filesLocation).each { bundleFileName, dataPathValue ->
 
             def entryLocation = locateMember(filesLocation, bundleFileName)
-            def dataFile = resolveDataFile(bundleFileName, requireString(dataPathValue, entryLocation), entryLocation)
+            def dataPathText = shippedJson.requireString(dataPathValue, entryLocation)
+            def dataFile = resolveDataFile(bundleFileName, dataPathText, entryLocation)
 
             // Two bundle files landing on one file would leave whichever was copied
             // last, in an order nothing states.
@@ -357,10 +152,31 @@ if (manifestFile.isFile()) {
         if (dataFilesByBundleFileName.isEmpty()) {
             throw new GradleException("${filesLocation} maps no bundle files")
         }
+        return dataFilesByBundleFileName
+    }
+
+    // What writing a locale needs of the manifest: the declared locale tags, the
+    // default, and each mapped bundle file with the file it lands on.
+    def readManifest = { ->
+
+        def location = manifestFile.path
+        def manifest = shippedJson.readObjectFile(manifestFile)
+
+        shippedJson.requireOnlyKeys(manifest, manifestKeys, location)
+
+        def defaultLocaleTag = shippedJson.requireString(
+            manifest[defaultLocaleKey],
+            locateMember(location, defaultLocaleKey))
+        def localeTags = readLocaleTags(manifest, location)
+
+        if (!localeTags.contains(defaultLocaleTag)) {
+            throw new GradleException("${location}: default locale ${defaultLocaleTag} is not among the declared "
+                + "locales ${localeTags}")
+        }
         return [
             defaultLocaleTag         : defaultLocaleTag,
             localeTags               : localeTags,
-            dataFilesByBundleFileName: dataFilesByBundleFileName]
+            dataFilesByBundleFileName: readDataFiles(manifest, location)]
     }
 
     def selectLocaleTag = { Map manifestReading ->
@@ -374,15 +190,57 @@ if (manifestFile.isFile()) {
         return localeTag
     }
 
+    // Strict: a bundle missing a mapped file has nothing true to fall back to, and
+    // the previous locale's copy left in place would ship as this one's.
+    def copyBundleFiles = { Map<String, File> dataFilesByBundleFileName, File bundleDirectory, String localeTag ->
+
+        dataFilesByBundleFileName.each { bundleFileName, dataFile ->
+
+            def bundleFile = new File(bundleDirectory, bundleFileName)
+
+            if (!bundleFile.isFile()) {
+                throw new GradleException("Locale ${localeTag} holds no ${bundleFileName}: expected ${bundleFile}")
+            }
+            dataFile.parentFile.mkdirs()
+
+            Files.copy(bundleFile.toPath(), dataFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+
+    // The base as the launcher needs it: an object, and a dependency list whose
+    // entries a fragment can name by ID.
+    def readModInfoBase = { ->
+
+        def location = modInfoBaseFile.path
+        def baseModInfo = shippedJson.readObjectFile(modInfoBaseFile)
+
+        if (baseModInfo.containsKey(dependenciesKey)) {
+
+            def dependenciesLocation = locateMember(location, dependenciesKey)
+
+            shippedJson.requireList(baseModInfo[dependenciesKey], dependenciesLocation)
+                .eachWithIndex { dependency, index ->
+
+                    def entryLocation = "${dependenciesLocation}[${index}]"
+                    def dependencyEntry = shippedJson.requireObject(dependency, entryLocation)
+
+                    shippedJson.requireString(
+                        dependencyEntry[dependencyIdKey],
+                        locateMember(entryLocation, dependencyIdKey))
+                }
+        }
+        return baseModInfo
+    }
+
     // A locale's launcher fragment, held to the translatable fields. This is the check
     // that matters most: a fragment carrying the version or the jar list would build a
     // different mod per locale, which is the failure the base split exists to prevent.
-    def readModInfoFragment = { Closure readObjectFile, File fragmentFile, Map baseModInfo ->
+    def readModInfoFragment = { File fragmentFile, Map baseModInfo ->
 
         def location = fragmentFile.path
-        def fragment = readObjectFile(fragmentFile)
+        def fragment = shippedJson.readObjectFile(fragmentFile)
 
-        requireOnlyKeys(fragment, translatableModInfoKeys, location)
+        shippedJson.requireOnlyKeys(fragment, translatableModInfoKeys, location)
 
         translatableTextKeys
             .findAll { key -> fragment.containsKey(key) }
@@ -391,21 +249,21 @@ if (manifestFile.isFile()) {
         if (fragment.containsKey(dependenciesKey)) {
 
             def dependenciesLocation = locateMember(location, dependenciesKey)
-            def declaredDependencyIds = (baseModInfo[dependenciesKey] ?: []).collect { dependency ->
-                dependency[dependencyIdKey]
-            } as Set
+            def declaredDependencyIds = new TreeSet<String>(
+                (baseModInfo[dependenciesKey] ?: []).collect { dependency -> dependency[dependencyIdKey] })
 
-            requireObject(fragment[dependenciesKey], dependenciesLocation).each { dependencyId, dependencyName ->
+            shippedJson.requireObject(fragment[dependenciesKey], dependenciesLocation)
+                .each { dependencyId, dependencyName ->
 
-                def entryLocation = locateMember(dependenciesLocation, dependencyId)
+                    def entryLocation = locateMember(dependenciesLocation, dependencyId)
 
-                requireNonBlankString(dependencyName, entryLocation)
+                    requireNonBlankString(dependencyName, entryLocation)
 
-                if (!declaredDependencyIds.contains(dependencyId)) {
-                    throw new GradleException("${entryLocation} names a dependency ${modInfoBaseFile.name} does not "
-                        + "declare; it declares ${new TreeSet<String>(declaredDependencyIds)}")
+                    if (!declaredDependencyIds.contains(dependencyId)) {
+                        throw new GradleException("${entryLocation} names a dependency ${modInfoBaseFile.name} "
+                            + "does not declare; it declares ${declaredDependencyIds}")
+                    }
                 }
-            }
         }
         return fragment
     }
@@ -437,38 +295,34 @@ if (manifestFile.isFile()) {
         return mergedModInfo
     }
 
-    // The base as the launcher needs it: an object, and a dependency list whose
-    // entries a fragment can name by ID.
-    def readModInfoBase = { Closure readObjectFile ->
-
-        def location = modInfoBaseFile.path
-        def baseModInfo = readObjectFile(modInfoBaseFile)
-
-        if (baseModInfo.containsKey(dependenciesKey)) {
-
-            def dependenciesLocation = locateMember(location, dependenciesKey)
-
-            requireList(baseModInfo[dependenciesKey], dependenciesLocation).eachWithIndex { dependency, index ->
-
-                def entryLocation = "${dependenciesLocation}[${index}]"
-
-                requireString(requireObject(dependency, entryLocation)[dependencyIdKey],
-                    locateMember(entryLocation, dependencyIdKey))
-            }
-        }
-        return baseModInfo
-    }
-
-    // Written as UTF-8 with the text left literal, so a translated name reads as
-    // itself in the generated file rather than as \u escapes. Key order is sorted,
-    // the parse having kept none.
-    def modInfoJsonGenerator = new JsonGenerator.Options().disableUnicodeEscaping().build()
-
+    // Key order is sorted, the parse having kept none.
     def writeModInfo = { Map mergedModInfo ->
 
         def modInfoText = JsonOutput.prettyPrint(modInfoJsonGenerator.toJson(mergedModInfo), true)
 
         Files.writeString(modInfoFile.toPath(), modInfoText + '\n', StandardCharsets.UTF_8)
+    }
+
+    // The launcher file for one locale: the base with that locale's fragment over it,
+    // or the base alone where the locale translates no launcher field. A fragment
+    // with no base is refused rather than skipped, since its text would silently
+    // never reach the launcher.
+    def writeLauncherFile = { File bundleDirectory ->
+
+        def fragmentFile = new File(bundleDirectory, modInfoFileName)
+
+        if (!modInfoBaseFile.isFile()) {
+
+            if (fragmentFile.isFile()) {
+                throw new GradleException("${fragmentFile} has no ${modInfoBaseFile.name} beside the manifest "
+                    + 'to be merged over')
+            }
+            return
+        }
+        def baseModInfo = readModInfoBase()
+        def fragment = fragmentFile.isFile() ? readModInfoFragment(fragmentFile, baseModInfo) : [:]
+
+        writeModInfo(mergeModInfo(baseModInfo, fragment))
     }
 
     def writeLocaleFilesTask = tasks.register('writeLocaleFiles') {
@@ -496,55 +350,21 @@ if (manifestFile.isFile()) {
         // configures, so a machine with no install configures every other task.
         outputs.files(provider {
 
-            def dataFiles = withGameJsonReader(readManifest).dataFilesByBundleFileName.values()
+            def dataFiles = readManifest().dataFilesByBundleFileName.values()
 
             return modInfoBaseFile.isFile() ? dataFiles + modInfoFile : dataFiles
         })
 
         doLast {
 
-            withGameJsonReader { Closure readObjectFile ->
+            def manifestReading = readManifest()
+            def localeTag = selectLocaleTag(manifestReading)
+            def bundleDirectory = new File(localisationDirectory, localeTag)
 
-                def manifestReading = readManifest(readObjectFile)
-                def localeTag = selectLocaleTag(manifestReading)
-                def bundleDirectory = new File(localisationDirectory, localeTag)
+            copyBundleFiles(manifestReading.dataFilesByBundleFileName, bundleDirectory, localeTag)
+            writeLauncherFile(bundleDirectory)
 
-                manifestReading.dataFilesByBundleFileName.each { String bundleFileName, File dataFile ->
-
-                    def bundleFile = new File(bundleDirectory, bundleFileName)
-
-                    // Strict: a bundle missing a mapped file has nothing true to fall
-                    // back to, and the previous locale's copy left in place would ship
-                    // as this one's.
-                    if (!bundleFile.isFile()) {
-                        throw new GradleException(
-                            "Locale ${localeTag} holds no ${bundleFileName}: expected ${bundleFile}")
-                    }
-                    dataFile.parentFile.mkdirs()
-
-                    Files.copy(bundleFile.toPath(), dataFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                }
-
-                def fragmentFile = new File(bundleDirectory, modInfoFileName)
-
-                if (modInfoBaseFile.isFile()) {
-
-                    def baseModInfo = readModInfoBase(readObjectFile)
-                    def fragment = fragmentFile.isFile()
-                        ? readModInfoFragment(readObjectFile, fragmentFile, baseModInfo)
-                        : [:]
-
-                    writeModInfo(mergeModInfo(baseModInfo, fragment))
-
-                } else if (fragmentFile.isFile()) {
-
-                    // Refused rather than skipped: the fragment's text would silently
-                    // never reach the launcher.
-                    throw new GradleException("${fragmentFile} has no ${modInfoBaseFile.name} beside the manifest "
-                        + 'to be merged over')
-                }
-                logger.lifecycle("Wrote locale ${localeTag}.")
-            }
+            logger.lifecycle("Wrote locale ${localeTag}.")
         }
     }
 

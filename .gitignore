@@ -3,7 +3,7 @@
 .compile-check/
 
 .gradle/
-# Machine-local values. See gradle.properties.example.
+# Machine-local values, such as starsectorRoot=<install root>.
 gradle.properties
 
 # Generated from kmlib.version.template; exists only where something

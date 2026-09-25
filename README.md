@@ -156,6 +156,12 @@ Build:
   and this checkout.
   Applied by the conventions script,
   so a consumer gets it from the one `apply from`.
+- [`gradle/shipped-json-reader.gradle`](gradle/shipped-json-reader.gradle) -
+  reads a mod's shipped JSON the way the engine does,
+  for the task scripts that act on one:
+  the build-time counterpart of the fixtures' `ShippedJson`,
+  over the same `json.jar`.
+  Applied by the conventions script.
 - [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle) -
   KMLib's own,
   not shared:
@@ -1257,7 +1263,8 @@ the manifest's `defaultLocale` is built.
   any other field refused -
   and the result is written to the repo root with its keys sorted.
 - The manifest and the fragments are read the way the game reads JSON,
-  through the same comment strip and the game's own `json.jar` the [test fixtures](#test-fixtures) use,
+  through [shipped-json-reader.gradle](gradle/shipped-json-reader.gradle):
+  the same comment strip and the game's own `json.jar` the [test fixtures](#test-fixtures) use,
   so the build and the checks never disagree on whether a file parses.
 - `jar` depends on it,
   for the reason it depends on `writeVersionFile`,
@@ -1331,8 +1338,11 @@ and report green for a check that never ran.
 For double-click runs from Explorer,
 [scripts/run-tests-gradle.bat](scripts/run-tests-gradle.bat) and
 [scripts/run-coverage-gradle.bat](scripts/run-coverage-gradle.bat)
-wrap the `test` and `coverage` tasks above against the deployed install
+wrap the `test` and `coverage` tasks above
 and pause on exit.
+Each runs the checkout it sits in,
+never a copy synced into an install's `mods/` folder,
+so what is tested is the working tree.
 Extra arguments,
 `-Plocale=<tag>` among them,
 pass through to Gradle.

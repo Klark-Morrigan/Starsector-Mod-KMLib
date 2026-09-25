@@ -290,7 +290,9 @@ final class LocaleManifestTest {
             var manifestFile = writeManifest(
                 directory,
                 WELL_FORMED_MANIFEST
-                    .replace("\"strings.json\": \"data/strings/strings.json\"", "\"mod_info.json\": \"mod_info.json\""));
+                    .replace(
+                        "\"strings.json\": \"data/strings/strings.json\"",
+                        "\"mod_info.json\": \"mod_info.json\""));
 
             assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
                 .isInstanceOf(AssertionError.class)

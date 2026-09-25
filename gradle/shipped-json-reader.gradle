@@ -1,0 +1,228 @@
+// Reads a JSON file a mod ships the way the engine reads it, for the build scripts
+// that act on one: the engine's '#' comment strip in front of the org.json in the
+// game's own json.jar. What the game loads reads here, trailing commas and comments
+// included, and what it refuses fails here. JsonSlurper is not a substitute - its
+// syntax is not the game's, so a build reading with it could refuse a file the game
+// loads or act on one the game refuses.
+//
+// The Groovy counterpart of kmlib.testfixtures.starsector.json.ShippedJson, holding
+// the same rules and failing in the same words, so a file parses at build time
+// exactly when it parses under test. A copy rather than a call, because a build
+// script cannot load the fixtures: they are compiled by the very build that would
+// need them.
+//
+// Objects come back as maps sorted by key, arrays as lists. The game's parser keeps
+// no member order, so nothing it reads can depend on one.
+//
+// Input, read from the applying project:
+//   ext.gameJsonJarFile - the game's json.jar.
+//
+// Published back to it:
+//   ext.shippedJson - readObjectFile(File), and the shape checks a reading states its
+//   fields through: locateMember, requireObject, requireList, requireString and
+//   requireOnlyKeys. Each check names the member's location and fails the build.
+
+import java.lang.reflect.InvocationTargetException
+import java.nio.ByteBuffer
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.StandardCharsets
+
+// Joins keys in a failure's location. Not a dot, because keys carry dots - a strings
+// key rarely, a file name always.
+def memberSeparator = ' > '
+
+// UTF-8's byte-order mark, which the game's parser reads as the document's first
+// character and refuses as "must begin with '{'".
+def utf8ByteOrderMark = [(byte) 0xEF, (byte) 0xBB, (byte) 0xBF] as byte[]
+
+def locateMember = { String location, String key -> location + memberSeparator + key }
+
+// The engine's comment strip, character for character: a '#' outside double quotes
+// drops the rest of its line, and a line break ends both the comment and any open
+// quote. Carriage returns are dropped and newlines kept. Its quote tracking toggles
+// on every double quote, escaped ones included, and so does this.
+def stripComments = { String text ->
+
+    def stripped = new StringBuilder(text.length())
+    def isInComment = false
+    def isInQuote = false
+
+    for (char character : text.toCharArray()) {
+
+        if (character == ('"' as char)) {
+            isInQuote = !isInQuote
+        }
+        if (character == ('\n' as char) || character == ('\r' as char)) {
+
+            isInComment = false
+            isInQuote = false
+
+            if (character == ('\n' as char)) {
+                stripped.append('\n')
+            }
+        } else if (character == ('#' as char) && !isInQuote) {
+
+            isInComment = true
+
+        } else if (!isInComment) {
+
+            stripped.append(character)
+        }
+    }
+    return stripped.toString()
+}
+
+// Decoded strictly, so a file saved in a legacy code page fails here rather than
+// reading as replacement characters.
+def readShippedText = { File jsonFile ->
+
+    def bytes = jsonFile.bytes
+
+    if (bytes.length >= utf8ByteOrderMark.length
+        && Arrays.equals(bytes, 0, utf8ByteOrderMark.length, utf8ByteOrderMark, 0, utf8ByteOrderMark.length)) {
+
+        throw new GradleException("${jsonFile} starts with a UTF-8 byte-order mark, which the game refuses")
+    }
+    try {
+        return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString()
+
+    } catch (CharacterCodingException characterCodingException) {
+
+        throw new GradleException("${jsonFile} is not valid UTF-8", characterCodingException)
+    }
+}
+
+// Loaded under a bootstrap-parented loader, so org.json cannot resolve against the
+// build's own classpath, and closed as soon as the file is read: a daemon holding
+// the install's json.jar open would block the next overwrite of that install on
+// Windows. Reached reflectively rather than put on the buildscript classpath, so a
+// build on a machine with no install still configures, and fails only when a task
+// reads - the way a compile fails only when it runs.
+def readObjectFile = { File jsonFile ->
+
+    def jsonJarFile = (File) project.findProperty('gameJsonJarFile')
+
+    if (jsonJarFile == null || !jsonJarFile.isFile()) {
+
+        throw new GradleException("Cannot read ${jsonFile}: the game's json.jar was not found at "
+            + "${jsonJarFile}. Set STARSECTOR_HOME or pass -PstarsectorRoot=<path>.")
+    }
+    def loader = new URLClassLoader([jsonJarFile.toURI().toURL()] as URL[], (ClassLoader) null)
+
+    try {
+        def jsonObjectClass = loader.loadClass('org.json.JSONObject')
+        def jsonArrayClass = loader.loadClass('org.json.JSONArray')
+        def jsonNull = jsonObjectClass.getField('NULL').get(null)
+
+        // Everything org.json hands back, as the plain values a caller can hold
+        // without naming it.
+        def convertValue
+        convertValue = { Object value, String location ->
+
+            if (jsonObjectClass.isInstance(value)) {
+
+                def members = new TreeMap<String, Object>()
+
+                for (def keys = value.keys(); keys.hasNext();) {
+
+                    def key = (String) keys.next()
+
+                    members[key] = convertValue(value.get(key), locateMember(location, key))
+                }
+                return members
+            }
+            if (jsonArrayClass.isInstance(value)) {
+
+                return (0..<value.length()).collect { index ->
+                    convertValue(value.get(index), "${location}[${index}]")
+                }
+            }
+            if (jsonNull.equals(value)) {
+                throw new GradleException("${location} is null, which no shipped file uses")
+            }
+            return value
+        }
+
+        def parsedObject
+
+        try {
+            parsedObject = jsonObjectClass
+                .getConstructor(String)
+                .newInstance(stripComments(readShippedText(jsonFile)))
+
+        } catch (InvocationTargetException invocationTargetException) {
+
+            // The engine's own message - a duplicated key among them - with the file it
+            // would have named in the log.
+            def parseFailure = invocationTargetException.cause
+
+            throw new GradleException(
+                "${jsonFile} does not parse as the game reads it: ${parseFailure.message}",
+                parseFailure)
+        }
+        return convertValue(parsedObject, jsonFile.path)
+
+    } finally {
+        loader.close()
+    }
+}
+
+// Absent and wrongly typed are told apart, since the fix for each is a different edit.
+def requirePresent = { Object value, String location ->
+
+    if (value == null) {
+        throw new GradleException("${location} is missing")
+    }
+}
+
+def requireObject = { Object value, String location ->
+
+    requirePresent(value, location)
+
+    if (!(value instanceof Map)) {
+        throw new GradleException("${location} must be a JSON object")
+    }
+    return (Map<String, Object>) value
+}
+
+def requireList = { Object value, String location ->
+
+    requirePresent(value, location)
+
+    if (!(value instanceof List)) {
+        throw new GradleException("${location} must be a JSON array")
+    }
+    return (List<Object>) value
+}
+
+def requireString = { Object value, String location ->
+
+    requirePresent(value, location)
+
+    if (!(value instanceof String)) {
+        throw new GradleException("${location} must be a JSON string")
+    }
+    return (String) value
+}
+
+// A misspelt key would otherwise read as an absent one, and take its fallback.
+def requireOnlyKeys = { Map<String, Object> object, Set<String> allowedKeys, String location ->
+
+    def unknownKeys = new TreeSet<String>(object.keySet())
+
+    unknownKeys.removeAll(allowedKeys)
+
+    if (!unknownKeys.isEmpty()) {
+
+        throw new GradleException("${location} carries unknown keys ${unknownKeys}; "
+            + "known keys are ${new TreeSet<String>(allowedKeys)}")
+    }
+}
+
+ext.shippedJson = [
+    readObjectFile : readObjectFile,
+    locateMember   : locateMember,
+    requireObject  : requireObject,
+    requireList    : requireList,
+    requireString  : requireString,
+    requireOnlyKeys: requireOnlyKeys]
