@@ -2,6 +2,7 @@ package kmlib.starsector.intel;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.starsector.time.CampaignCountdown;
 import kmlib.starsector.time.StarsectorClock;
 
 /**
@@ -27,6 +28,8 @@ import kmlib.starsector.time.StarsectorClock;
  */
 public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
 
+    private static final float NO_SLACK_DAYS = 0f;
+
     private final long createdTimestamp;
 
     protected BaseExpiringIntelPlugin() {
@@ -40,8 +43,12 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
      * the creation timestamp locally for the expiry check.
      */
     protected BaseExpiringIntelPlugin(String... extraIntelTags) {
+
         super(extraIntelTags);
-        this.createdTimestamp = Global.getSector().getClock().getTimestamp();
+        this.createdTimestamp = Global
+            .getSector()
+            .getClock()
+            .getTimestamp();
     }
 
     /**
@@ -59,11 +66,14 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
      * yet expired" rather than as a hard error.</p>
      */
     public final boolean isExpired() {
+
         var sector = Global.getSector();
         if (sector == null) {
             return false;
         }
-        return sector.getClock().getElapsedDaysSince(createdTimestamp) >= getExpiryDays();
+        // No slack: an intel's window is a player-facing promise with no frame-jitter completion to absorb.
+        return new CampaignCountdown(createdTimestamp, getExpiryDays(), NO_SLACK_DAYS)
+            .isComplete(sector.getClock());
     }
 
     /**
@@ -84,6 +94,7 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
      * same null branch they already need for the empty-list case.</p>
      */
     public static <T extends BaseExpiringIntelPlugin> T findActive(Class<T> intelClass) {
+
         var sector = Global.getSector();
         if (sector == null) {
             return null;
@@ -94,6 +105,7 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
         }
         var items = intelManager.getIntel(intelClass);
         for (var item : items) {
+
             var typed = intelClass.cast(item);
             if (!typed.isExpired()) {
                 return typed;
@@ -125,6 +137,7 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
 
     @Override
     protected void advanceImpl(float amount) {
+
         if (Global.getSector() == null) {
             return;
         }
