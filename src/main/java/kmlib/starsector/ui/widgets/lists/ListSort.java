@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.widgets.lists;
 
+import kmlib.persistence.PersistedChoices;
+
 import java.util.Comparator;
 
 /**
@@ -63,8 +65,14 @@ public record ListSort<T>(
             String storedDirectionKey,
             ListSortModes<T> sortModes) {
 
-        var mode = resolveModeOrDefault(storedModeKey, sortModes);
-        var direction = SortDirection.fromKeyOrDefault(storedDirectionKey, mode.defaultDirection());
+        // A stored key the caller no longer offers - a key left by an older or a modded build -
+        // falls back to the caller's default mode, and then to that mode's own direction, so a
+        // picker always resolves to a live sort rather than failing on an unknown key.
+        var mode = PersistedChoices.fromKey(sortModes.modes(), storedModeKey, sortModes.defaultMode());
+        var direction = PersistedChoices.fromKey(
+            SortDirection.values(),
+            storedDirectionKey,
+            mode.defaultDirection());
 
         return new ListSort<>(mode, direction, sortModes);
     }
@@ -77,21 +85,5 @@ public record ListSort<T>(
      */
     public Comparator<T> comparator() {
         return mode.comparator(direction);
-    }
-
-    // The stored mode key matched back to one of the caller's modes, falling back to the caller's
-    // default when nothing is stored (a fresh save) or the key names a mode the caller no longer
-    // offers (a key left by an older or a modded build), so a picker always resolves to a live
-    // mode rather than failing on an unknown key.
-    private static <T> ListSortMode<T> resolveModeOrDefault(
-            String storedModeKey,
-            ListSortModes<T> sortModes) {
-
-        for (var candidate : sortModes.modes()) {
-            if (candidate.persistenceKey().equals(storedModeKey)) {
-                return candidate;
-            }
-        }
-        return sortModes.defaultMode();
     }
 }

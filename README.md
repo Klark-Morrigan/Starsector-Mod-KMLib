@@ -337,6 +337,10 @@ No Starsector API on the signature.
   A cut takes a `HatchPattern` -
   the line family as one value -
   so a caller holds what shapes its geometry apart from how it strokes the result.
+- [`persistence/`](src/main/java/kmlib/persistence/) -
+  options a save stores by a key of their own,
+  and the one lookup that reads a stored key back to its option,
+  falling back where nothing is stored or nothing answers to it.
 - [`profiling/`](src/main/java/kmlib/profiling/) -
   the vocabulary a caller names:
   the profiler seam a mod binds,
