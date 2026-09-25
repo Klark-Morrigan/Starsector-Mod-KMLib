@@ -269,6 +269,25 @@ final class ShippedJsonTest {
     }
 
     @Nested
+    class RequireList {
+
+        @Test
+        void anArrayComesBackInFileOrder() {
+
+            assertThat(ShippedJson.requireList(List.of("b", "a"), LOCATION))
+                .containsExactly("b", "a");
+        }
+
+        @Test
+        void aMemberOfAnotherTypeIsReportedAsSuch() {
+
+            assertThatThrownBy(() -> ShippedJson.requireList(Map.of(), LOCATION))
+                .isInstanceOf(AssertionError.class)
+                .hasMessage("file must be a JSON array");
+        }
+    }
+
+    @Nested
     class RequireObject {
 
         @Test

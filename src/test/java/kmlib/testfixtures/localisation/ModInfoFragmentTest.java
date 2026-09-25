@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,6 +47,40 @@ final class ModInfoFragmentTest {
                 .isEmpty();
             assertThat(fragment.dependencyNamesById())
                 .isEmpty();
+        }
+    }
+
+    @Nested
+    class ListFallbackFieldNames {
+
+        private static final ModInfoBase BASE =
+            new ModInfoBase(Set.of("name", "description", "author"), Set.of("kmlib", "lunalib"));
+
+        @Test
+        void everyFieldTheBaseCarriesFallsBackFromAnUntranslatedFragment() {
+
+            assertThat(ModInfoFragment.createUntranslatedFragment().listFallbackFieldNames(BASE))
+                .containsExactly("author", "description", "name", "dependencies > kmlib", "dependencies > lunalib");
+        }
+
+        @Test
+        void aTranslatedFieldDoesNotFallBack(@TempDir Path directory) throws IOException {
+
+            var fragmentFile = writeFragment(directory, """
+                { "name": "Name", "dependencies": { "kmlib": "Library" } }
+                """);
+
+            assertThat(ModInfoFragment.readFragment(fragmentFile).listFallbackFieldNames(BASE))
+                .containsExactly("author", "description", "dependencies > lunalib");
+        }
+
+        @Test
+        void aFieldTheBaseDoesNotCarryHasNothingToFallBackTo() {
+
+            var baseWithoutAuthor = new ModInfoBase(Set.of("name", "description"), Set.of());
+
+            assertThat(ModInfoFragment.createUntranslatedFragment().listFallbackFieldNames(baseWithoutAuthor))
+                .containsExactly("description", "name");
         }
     }
 

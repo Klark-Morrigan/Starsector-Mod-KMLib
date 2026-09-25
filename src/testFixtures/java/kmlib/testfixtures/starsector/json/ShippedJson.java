@@ -114,6 +114,24 @@ public final class ShippedJson {
     }
 
     /**
+     * Narrows a member to a JSON array.
+     *
+     * @param value    the member, null where the key is absent
+     * @param location the file and member path a failure names
+     * @return the array's elements, in file order
+     */
+    @SuppressWarnings("unchecked")
+    public static List<Object> requireList(Object value, String location) {
+
+        requirePresent(value, location);
+
+        if (!(value instanceof List)) {
+            throw new AssertionError(location + " must be a JSON array");
+        }
+        return (List<Object>) value;
+    }
+
+    /**
      * Narrows a member to a JSON object.
      *
      * @param value    the member, null where the key is absent

@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A mod's {@code localisation/} directory: the manifest at its root and one bundle directory per locale.
@@ -25,6 +26,9 @@ public final class LocalisationDirectory {
 
     /** The manifest's name inside that directory. */
     public static final String MANIFEST_FILE_NAME = "manifest.json";
+
+    /** The launcher file every locale's fragment is merged over, beside the directory at the mod root. */
+    public static final String MOD_INFO_BASE_FILE_NAME = "mod_info.base.json";
 
     private final Path directory;
 
@@ -80,5 +84,20 @@ public final class LocalisationDirectory {
      */
     public LocaleManifest readManifest() {
         return LocaleManifest.readManifest(directory.resolve(MANIFEST_FILE_NAME));
+    }
+
+    /**
+     * Reads the launcher base beside this directory. Absent for a mod still committing its launcher file
+     * whole, which then has nothing for a fragment to be merged over.
+     *
+     * @return what a fragment can reach of it, or nothing where the mod commits none
+     */
+    public Optional<ModInfoBase> readModInfoBase() {
+
+        var baseFile = directory.resolveSibling(MOD_INFO_BASE_FILE_NAME);
+
+        return Files.exists(baseFile)
+            ? Optional.of(ModInfoBase.readBase(baseFile))
+            : Optional.empty();
     }
 }
