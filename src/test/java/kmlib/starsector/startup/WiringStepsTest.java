@@ -81,7 +81,7 @@ final class WiringStepsTest {
             // RuntimeException-only guard misses. A third party that moved a class or changed a
             // signature is met where the step first reaches it, which is inside this guard, and
             // arrives as an Error rather than an exception.
-            var linkFailure = new NoSuchMethodError("the mod moved what the step binds to");
+            var linkFailure = buildLinkFailure();
 
             assertThatCode(() -> wiringSteps.runGuardedStep(
                     () -> {
@@ -165,7 +165,7 @@ final class WiringStepsTest {
             // exactly the case a player is entitled to be told about, and it never arrives as an
             // exception. What was thrown is carried as the failure's cause, so the log block beside
             // the notice renders a trace of the link that failed.
-            var linkFailure = new NoSuchMethodError("the mod moved what the step binds to");
+            var linkFailure = buildLinkFailure();
 
             wiringSteps.runGuardedStep(
                 () -> {
@@ -264,6 +264,13 @@ final class WiringStepsTest {
         return () -> {
             throw new IllegalStateException("routes already registered");
         };
+    }
+
+    // What a step meets where a third party moved or changed what it binds to, as the cases about
+    // a changed contract arrange it. An Error rather than an exception, which is the whole point.
+    private static NoSuchMethodError buildLinkFailure() {
+
+        return new NoSuchMethodError("the mod moved what the step binds to");
     }
 
     private static ModIntegration countAndDescribe(AtomicInteger describeCount) {
