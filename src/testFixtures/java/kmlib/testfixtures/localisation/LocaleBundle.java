@@ -30,7 +30,7 @@ public final class LocaleBundle {
     static final String SETTINGS_FILE_NAME = LunaSettingsTable.SETTINGS_CSV.getFileName().toString();
 
     // The name every bundle gives its strings file, and the name the game gives it too.
-    static final String STRINGS_FILE_NAME = "strings.json";
+    static final String STRINGS_FILE_NAME = ShippedStrings.STRINGS_JSON.getFileName().toString();
 
     private final Path directory;
     private final DeclaredLocale locale;

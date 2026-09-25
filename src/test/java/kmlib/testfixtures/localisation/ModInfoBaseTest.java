@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,6 +26,18 @@ final class ModInfoBaseTest {
         Files.writeString(baseFile, contents, StandardCharsets.UTF_8);
 
         return baseFile;
+    }
+
+    @Nested
+    class Constructor {
+
+        @Test
+        void aFieldNoFragmentCanTranslateIsRefused() {
+
+            assertThatThrownBy(() -> new ModInfoBase(Set.of("version"), Set.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("version is not a launcher text field; they are [author, description, name]");
+        }
     }
 
     @Nested

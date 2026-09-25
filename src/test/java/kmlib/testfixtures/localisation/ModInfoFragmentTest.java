@@ -185,7 +185,7 @@ final class ModInfoFragmentTest {
 
             assertThatThrownBy(() -> ModInfoFragment.readFragment(fragmentFile))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("dependencies.kmlib is blank");
+                .hasMessageContaining("dependencies > kmlib is blank");
         }
     }
 }

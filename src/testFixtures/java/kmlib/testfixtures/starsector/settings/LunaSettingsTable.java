@@ -50,6 +50,14 @@ public final class LunaSettingsTable {
     private static final int MAX_VALUE_COLUMN = 15;
     private static final int TAB_COLUMN = 16;
 
+    // The header row's names for the columns a behaviour is compared over, so a difference names the cell
+    // a reader of the file finds rather than an index.
+    private static final String FIELD_TYPE_HEADER = "fieldType";
+    private static final String DEFAULT_VALUE_HEADER = "defaultValue";
+    private static final String OPTIONS_HEADER = "secondaryValue";
+    private static final String MIN_VALUE_HEADER = "minValue";
+    private static final String MAX_VALUE_HEADER = "maxValue";
+
     // The two row types that carry an ID so LunaLib can place them but store nothing, so no source
     // reads either: a section caption, and a run of prose standing among the knobs. Every other row
     // holds a value. They are told apart as well as together - a caption owns the rows under it,
@@ -450,15 +458,15 @@ public final class LunaSettingsTable {
 
             var differences = new ArrayList<String>();
 
-            describeDifference(differences, "fieldType", fieldType, referenceBehaviour.fieldType);
+            describeDifference(differences, FIELD_TYPE_HEADER, fieldType, referenceBehaviour.fieldType);
             describeDifference(
                 differences,
-                "defaultValue",
+                DEFAULT_VALUE_HEADER,
                 storedDefaultValueText.orElse(""),
                 referenceBehaviour.storedDefaultValueText.orElse(""));
-            describeDifference(differences, "secondaryValue", optionsText, referenceBehaviour.optionsText);
-            describeDifference(differences, "minValue", minValueText, referenceBehaviour.minValueText);
-            describeDifference(differences, "maxValue", maxValueText, referenceBehaviour.maxValueText);
+            describeDifference(differences, OPTIONS_HEADER, optionsText, referenceBehaviour.optionsText);
+            describeDifference(differences, MIN_VALUE_HEADER, minValueText, referenceBehaviour.minValueText);
+            describeDifference(differences, MAX_VALUE_HEADER, maxValueText, referenceBehaviour.maxValueText);
 
             return differences;
         }

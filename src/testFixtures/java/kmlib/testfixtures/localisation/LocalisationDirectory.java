@@ -9,11 +9,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A mod's {@code localisation/} directory: the manifest at its root and one bundle directory per locale.
+ * A mod's {@code localisation/} directory: the manifest at its root, one bundle directory per locale,
+ * and the launcher base beside it that every locale's fragment is merged over.
  *
  * <p>Offered to every mod on these conventions because the layout is the tooling's rather than any one
  * mod's. What a mod translates is its own business, and none of it is decided here - this reads, and
- * the suite above judges.
+ * {@link LocaleParity} judges.
  *
  * <p>Bundles are opened by declaration rather than by name, so only a locale the manifest declares can
  * be read as one. A directory the manifest never names is still listed, since a bundle nobody declared

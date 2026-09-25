@@ -12,6 +12,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 import static kmlib.testfixtures.starsector.json.ShippedJson.requireObject;
@@ -54,9 +56,10 @@ public record ModInfoFragment(
     // for the same three, being what a fragment falls back to.
     static final Set<String> TRANSLATABLE_TEXT_FIELD_NAMES = Set.of(NAME_KEY, DESCRIPTION_KEY, AUTHOR_KEY);
 
-    // Every launcher field a fragment may carry.
-    private static final Set<String> TRANSLATABLE_FIELD_NAMES =
-        Set.of(NAME_KEY, DESCRIPTION_KEY, AUTHOR_KEY, DEPENDENCIES_KEY);
+    // Every launcher field a fragment may carry: the text fields, and the dependency names.
+    private static final Set<String> TRANSLATABLE_FIELD_NAMES = Stream
+        .concat(TRANSLATABLE_TEXT_FIELD_NAMES.stream(), Stream.of(DEPENDENCIES_KEY))
+        .collect(Collectors.toUnmodifiableSet());
 
     /**
      * Refuses blank text, which the launcher would draw as an empty row rather than fall back from.
@@ -78,7 +81,7 @@ public record ModInfoFragment(
         authorText.ifPresent(text -> requireNonBlankText(text, AUTHOR_KEY));
 
         dependencyNamesById.forEach((dependencyId, dependencyName) ->
-            requireNonBlankText(dependencyName, DEPENDENCIES_KEY + "." + dependencyId));
+            requireNonBlankText(dependencyName, locateMember(DEPENDENCIES_KEY, dependencyId)));
 
         dependencyNamesById = Collections.unmodifiableMap(new TreeMap<>(dependencyNamesById));
     }

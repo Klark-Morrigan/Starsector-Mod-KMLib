@@ -37,7 +37,8 @@ public record ModInfoBase(
     private static final String DEPENDENCY_ID_KEY = "id";
 
     /**
-     * Holds both sets sorted, however they were built.
+     * Holds both sets sorted, however they were built, and the field names to those a fragment can
+     * translate: a fallback is reported per field, and a name no fragment could carry has none.
      *
      * @param translatableFieldNames see the record
      * @param dependencyIds          see the record
@@ -46,6 +47,16 @@ public record ModInfoBase(
 
         Objects.requireNonNull(translatableFieldNames, "translatableFieldNames");
         Objects.requireNonNull(dependencyIds, "dependencyIds");
+
+        for (var fieldName : translatableFieldNames) {
+
+            if (!ModInfoFragment.TRANSLATABLE_TEXT_FIELD_NAMES.contains(fieldName)) {
+
+                throw new IllegalArgumentException(
+                    fieldName + " is not a launcher text field; they are "
+                        + new TreeSet<>(ModInfoFragment.TRANSLATABLE_TEXT_FIELD_NAMES));
+            }
+        }
 
         translatableFieldNames = Collections.unmodifiableSet(new TreeSet<>(translatableFieldNames));
         dependencyIds = Collections.unmodifiableSet(new TreeSet<>(dependencyIds));
