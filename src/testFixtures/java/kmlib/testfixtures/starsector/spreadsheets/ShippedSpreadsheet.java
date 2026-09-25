@@ -39,10 +39,10 @@ import java.util.Map;
  * guessing - so that one is read positionally, which is why {@link #readCells} exists alongside the
  * keyed readings rather than beneath them.
  *
- * <p>Deliberately no JSON reading here. A mod whose own table parser takes the engine's row-object
- * shape builds it from {@link #readRowsByHeader} in its own suite, where its own org.json is: the game
- * ships one whose {@code JSONException} is checked, and a mod on a current org.json has one that is
- * not, so a reading spelled here would compile against the wrong one for somebody.
+ * <p>Deliberately no JSON shaping here. A mod whose own table parser takes the engine's row-object
+ * shape builds it from {@link #readRowsByHeader} in its own suite: a reading returning org.json types
+ * would put {@code json.jar} on the test compile classpath of every mod reading a table, for the one
+ * parser that takes that shape.
  */
 public final class ShippedSpreadsheet {
 

@@ -12,7 +12,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 
 import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 import static kmlib.testfixtures.starsector.json.ShippedJson.requireObject;
@@ -23,9 +22,8 @@ import static kmlib.testfixtures.starsector.json.ShippedJson.requireString;
  * A mod's {@code l10n/manifest.json}: which locales exist, which is the default, and which files a
  * bundle holds and where each lands in the mod.
  *
- * <p>The single source of truth for all three. The build task that materialises a locale and the
- * suites that compare bundles both read this file, so the file map has one definition rather than a
- * Groovy copy and a Java copy that agree until one changes.
+ * <p>The single source of truth for all three. Everything that needs the file map reads it from this
+ * file, so it has one definition rather than a copy per reader that agrees until one changes.
  *
  * <p>Read with the same parser as every other JSON file a mod ships, so one set of syntax rules covers
  * all of them. Every key the manifest may carry is known here and any other is refused, so a
@@ -53,18 +51,16 @@ public record LocaleManifest(
     private static final String CORE_LOCALISATION_KEY = "coreLocalisation";
     private static final Set<String> LOCALE_KEYS = Set.of(DISPLAY_NAME_KEY, CORE_LOCALISATION_KEY);
 
-    // A bundle file is named bare: it sits directly in its locale's directory, and a separator or a
-    // parent step would let one bundle reach into another's.
-    private static final Pattern BUNDLE_FILE_NAME = Pattern.compile("[A-Za-z0-9_-][A-Za-z0-9_.-]*");
-
-    // Materialisation copies onto these paths, so a path that climbs out of the mod root or names a
-    // drive is a write outside the repository. Forward slashes only, the manifest being read on every
-    // platform and a backslash being a filename character on most of them.
+    // Materialisation copies onto the data paths, so one that climbs out of the mod root or names a
+    // drive is a write outside the repository.
     private static final String PARENT_SEGMENT = "..";
+
+    // The manifest is read on every platform, and a backslash is a filename character on most of them
+    // while Windows would take it as a separator - so a data path is written with forward slashes.
     private static final String BACKSLASH = "\\";
 
     /**
-     * Holds the manifest to the invariants the tooling depends on.
+     * Holds the manifest to the invariants the tooling depends on, however it was built.
      *
      * @param defaultLocaleTag          see the record
      * @param dataPathsByBundleFileName see the record
@@ -91,6 +87,7 @@ public record LocaleManifest(
                     + " is not among the declared locales " + declaredLocalesByTag.keySet());
         }
         declaredLocalesByTag.forEach(LocaleManifest::requireKeyedByOwnTag);
+        dataPathsByBundleFileName.forEach(LocaleManifest::requireCopyableMapping);
         requireDistinctDataPaths(dataPathsByBundleFileName);
 
         // Sorted, so every reading walks the same order however the maps were built.
@@ -111,23 +108,19 @@ public record LocaleManifest(
 
         requireOnlyKeys(manifest, MANIFEST_KEYS, location);
 
-        var defaultLocaleLocation = locateMember(location, DEFAULT_LOCALE_KEY);
-        var filesLocation = locateMember(location, FILES_KEY);
-        var localesLocation = locateMember(location, LOCALES_KEY);
+        var defaultLocaleTag = requireString(
+            manifest.get(DEFAULT_LOCALE_KEY),
+            locateMember(location, DEFAULT_LOCALE_KEY));
+        var dataPathsByBundleFileName = readDataPaths(
+            manifest.get(FILES_KEY),
+            locateMember(location, FILES_KEY));
+        var declaredLocalesByTag = readDeclaredLocales(
+            manifest.get(LOCALES_KEY),
+            locateMember(location, LOCALES_KEY));
 
-        try {
-            return new LocaleManifest(
-                requireString(manifest.get(DEFAULT_LOCALE_KEY), defaultLocaleLocation),
-                readDataPaths(manifest.get(FILES_KEY), filesLocation),
-                readDeclaredLocales(manifest.get(LOCALES_KEY), localesLocation));
-
-        } catch (IllegalArgumentException illegalArgunentException) {
-
-            // The records state what is wrong; the file is what a reader has to open to fix it.
-            throw new AssertionError(
-                location + ": " + illegalArgunentException.getMessage(),
-                illegalArgunentException);
-        }
+        return ShippedJson.constructValueAt(
+            location,
+            () -> new LocaleManifest(defaultLocaleTag, dataPathsByBundleFileName, declaredLocalesByTag));
     }
 
     /**
@@ -137,6 +130,22 @@ public record LocaleManifest(
      */
     public DeclaredLocale getDefaultLocale() {
         return declaredLocalesByTag.get(defaultLocaleTag);
+    }
+
+    // Relative, non-empty, and never stepping up: a root, a drive or a parent segment anywhere would let
+    // a copy land outside the repository.
+    private static boolean isInsideModRoot(Path dataPath) {
+
+        if (dataPath.getRoot() != null || dataPath.toString().isBlank()) {
+            return false;
+        }
+        for (var segment : dataPath) {
+
+            if (PARENT_SEGMENT.equals(segment.toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Absent means the vanilla install suffices, which is why this is the one optional locale field.
@@ -158,24 +167,16 @@ public record LocaleManifest(
         }
     }
 
+    // The one data path check that needs the text as written: once parsed, a backslash is already a
+    // separator on Windows and a filename character elsewhere. Every other rule is the constructor's.
     private static Path readDataPath(String dataPathText, String location) {
 
-        var dataPath = Path.of(dataPathText);
-        var hasParentSegment = false;
-
-        for (var segment : dataPath) {
-
-            hasParentSegment |= PARENT_SEGMENT.equals(segment.toString());
-        }
-        if (dataPathText.isBlank() || dataPathText.contains(BACKSLASH) || dataPath.getRoot() != null
-                || hasParentSegment) {
+        if (dataPathText.contains(BACKSLASH)) {
 
             throw new AssertionError(
-                location
-                    + " maps to \"" + dataPathText
-                    + "\", which is not a forward-slashed path inside the mod root");
+                location + " maps to \"" + dataPathText + "\", which is not written with forward slashes");
         }
-        return dataPath;
+        return ShippedJson.constructValueAt(location, () -> Path.of(dataPathText));
     }
 
     private static Map<String, Path> readDataPaths(Object filesValue, String location) {
@@ -186,8 +187,6 @@ public record LocaleManifest(
             .forEach((bundleFileName, dataPathValue) -> {
 
                 var entryLocation = locateMember(location, bundleFileName);
-
-                requireBundleFileName(bundleFileName, entryLocation);
 
                 dataPathsByBundleFileName.put(
                     bundleFileName,
@@ -216,23 +215,31 @@ public record LocaleManifest(
                 locale.get(CORE_LOCALISATION_KEY),
                 locateMember(entryLocation, CORE_LOCALISATION_KEY));
 
-            declaredLocalesByTag.put(localeTag, new DeclaredLocale(localeTag, displayName, coreLocalisation));
+            declaredLocalesByTag.put(localeTag, ShippedJson.constructValueAt(
+                entryLocation,
+                () -> new DeclaredLocale(localeTag, displayName, coreLocalisation)));
         });
         return declaredLocalesByTag;
     }
 
-    // The launcher's own file is merged from a base rather than copied, so it has a reading of its own
-    // and is never one of the copied files - mapping it would overwrite the merged result.
-    private static void requireBundleFileName(String bundleFileName, String location) {
+    // One file map entry, as materialisation will act on it: a bare bundle file name, never the launcher
+    // file - that one is merged from its base rather than copied, and mapping it would overwrite the
+    // merged result - and a data path that stays inside the mod root.
+    private static void requireCopyableMapping(String bundleFileName, Path dataPath) {
 
-        if (!BUNDLE_FILE_NAME.matcher(bundleFileName).matches()) {
+        LocaleBundle.requireBundleFileName(bundleFileName);
 
-            throw new AssertionError(location + " is not a bare file name");
-        }
         if (LocaleBundle.MOD_INFO_FILE_NAME.equals(bundleFileName)) {
 
-            throw new AssertionError(
-                location + " maps the launcher file, which is merged from its base rather than copied");
+            throw new IllegalArgumentException(
+                "Bundle file " + bundleFileName
+                    + " is the launcher file, which is merged from its base rather than copied");
+        }
+        if (!isInsideModRoot(dataPath)) {
+
+            throw new IllegalArgumentException(
+                "Bundle file " + bundleFileName
+                    + " maps to \"" + dataPath + "\", which is not a path inside the mod root");
         }
     }
 

@@ -281,6 +281,28 @@ final class ShippedJsonTest {
     }
 
     @Nested
+    class ConstructValueAt {
+
+        @Test
+        void anAcceptedValueComesBackAsBuilt() {
+
+            assertThat(ShippedJson.constructValueAt(LOCATION, () -> "built"))
+                .isEqualTo("built");
+        }
+
+        @Test
+        void aRefusalNamesTheLocationItWasReadFrom() {
+
+            assertThatThrownBy(() -> ShippedJson.constructValueAt(LOCATION, () -> {
+                    throw new IllegalArgumentException("the tag is uppercase");
+                }))
+                .isInstanceOf(AssertionError.class)
+                .hasMessage("file: the tag is uppercase")
+                .hasCauseInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     class LocateMember {
 
         @Test

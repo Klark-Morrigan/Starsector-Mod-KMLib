@@ -46,8 +46,8 @@ public record ModInfoFragment(
     private static final String AUTHOR_KEY = "author";
     private static final String DEPENDENCIES_KEY = "dependencies";
 
-    /** The launcher fields a fragment may carry, as the launcher file spells them. */
-    public static final Set<String> TRANSLATABLE_FIELD_NAMES =
+    // The launcher fields a fragment may carry, as the launcher file spells them.
+    private static final Set<String> TRANSLATABLE_FIELD_NAMES =
         Set.of(NAME_KEY, DESCRIPTION_KEY, AUTHOR_KEY, DEPENDENCIES_KEY);
 
     /**
@@ -60,15 +60,17 @@ public record ModInfoFragment(
      */
     public ModInfoFragment {
 
-        requireNonBlank(nameText, NAME_KEY);
-        requireNonBlank(descriptionText, DESCRIPTION_KEY);
-        requireNonBlank(authorText, AUTHOR_KEY);
+        Objects.requireNonNull(nameText, NAME_KEY);
+        Objects.requireNonNull(descriptionText, DESCRIPTION_KEY);
+        Objects.requireNonNull(authorText, AUTHOR_KEY);
+        Objects.requireNonNull(dependencyNamesById, DEPENDENCIES_KEY);
 
-        Objects
-            .requireNonNull(dependencyNamesById, DEPENDENCIES_KEY)
-            .forEach((dependencyId, dependencyName) -> requireNonBlank(
-                Optional.of(dependencyName),
-                DEPENDENCIES_KEY + "." + dependencyId));
+        nameText.ifPresent(text -> requireNonBlankText(text, NAME_KEY));
+        descriptionText.ifPresent(text -> requireNonBlankText(text, DESCRIPTION_KEY));
+        authorText.ifPresent(text -> requireNonBlankText(text, AUTHOR_KEY));
+
+        dependencyNamesById.forEach((dependencyId, dependencyName) ->
+            requireNonBlankText(dependencyName, DEPENDENCIES_KEY + "." + dependencyId));
 
         dependencyNamesById = Collections.unmodifiableMap(new TreeMap<>(dependencyNamesById));
     }
@@ -99,19 +101,16 @@ public record ModInfoFragment(
 
         requireOnlyKeys(fragment, TRANSLATABLE_FIELD_NAMES, location);
 
-        try {
-            return new ModInfoFragment(
-                readOptionalText(fragment.get(NAME_KEY), locateMember(location, NAME_KEY)),
-                readOptionalText(fragment.get(DESCRIPTION_KEY), locateMember(location, DESCRIPTION_KEY)),
-                readOptionalText(fragment.get(AUTHOR_KEY), locateMember(location, AUTHOR_KEY)),
-                readDependencyNames(fragment.get(DEPENDENCIES_KEY), locateMember(location, DEPENDENCIES_KEY)));
+        var nameText = readOptionalText(fragment.get(NAME_KEY), locateMember(location, NAME_KEY));
+        var descriptionText = readOptionalText(fragment.get(DESCRIPTION_KEY), locateMember(location, DESCRIPTION_KEY));
+        var authorText = readOptionalText(fragment.get(AUTHOR_KEY), locateMember(location, AUTHOR_KEY));
+        var dependencyNamesById = readDependencyNames(
+            fragment.get(DEPENDENCIES_KEY),
+            locateMember(location, DEPENDENCIES_KEY));
 
-        } catch (IllegalArgumentException illegalArgumentException) {
-
-            throw new AssertionError(
-                location + ": " + illegalArgumentException.getMessage(),
-                illegalArgumentException);
-        }
+        return ShippedJson.constructValueAt(
+            location,
+            () -> new ModInfoFragment(nameText, descriptionText, authorText, dependencyNamesById));
     }
 
     private static Map<String, String> readDependencyNames(Object dependenciesValue, String location) {
@@ -137,11 +136,9 @@ public record ModInfoFragment(
             : Optional.of(requireString(value, location));
     }
 
-    private static void requireNonBlank(Optional<String> text, String fieldName) {
+    private static void requireNonBlankText(String text, String fieldName) {
 
-        Objects.requireNonNull(text, fieldName);
-
-        if (text.filter(String::isBlank).isPresent()) {
+        if (text.isBlank()) {
             throw new IllegalArgumentException(fieldName + " is blank");
         }
     }

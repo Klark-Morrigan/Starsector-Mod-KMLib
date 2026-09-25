@@ -76,17 +76,28 @@ public final class ShippedStrings {
      * @return key to wording, empty where the file declares nothing
      */
     public static Map<String, String> readStringsByKey() {
+        return readStringsByKey(STRINGS_JSON);
+    }
+
+    /**
+     * Any strings file's entries, every category's keys together, sorted.
+     *
+     * @param stringsFile the strings file to read
+     * @return key to wording, empty where the file declares nothing
+     */
+    public static Map<String, String> readStringsByKey(Path stringsFile) {
 
         var stringsByKey = new TreeMap<String, String>();
 
-        readStringsByCategory(STRINGS_JSON).forEach((category, categoryStrings) ->
+        readStringsByCategory(stringsFile).forEach((category, categoryStrings) ->
             categoryStrings.forEach((key, wording) -> {
 
                 // Held apart by category in the file but flattened here, so one key in two
                 // categories would leave the guard comparing against whichever came last.
                 if (stringsByKey.put(key, wording) != null) {
+
                     throw new AssertionError(
-                        STRINGS_JSON + " declares \"" + key + "\" in more than one category");
+                        stringsFile + " declares \"" + key + "\" in more than one category");
                 }
             }));
         return Collections.unmodifiableMap(stringsByKey);

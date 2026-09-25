@@ -3,6 +3,8 @@ package kmlib.testfixtures.localisation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +28,25 @@ final class ModInfoFragmentTest {
         Files.writeString(fragmentFile, contents, StandardCharsets.UTF_8);
 
         return fragmentFile;
+    }
+
+    @Nested
+    class CreateUntranslatedFragment {
+
+        @Test
+        void noLauncherFieldIsTranslated() {
+
+            var fragment = ModInfoFragment.createUntranslatedFragment();
+
+            assertThat(fragment.nameText())
+                .isEmpty();
+            assertThat(fragment.descriptionText())
+                .isEmpty();
+            assertThat(fragment.authorText())
+                .isEmpty();
+            assertThat(fragment.dependencyNamesById())
+                .isEmpty();
+        }
     }
 
     @Nested
@@ -106,17 +127,18 @@ final class ModInfoFragmentTest {
                 .hasMessageContaining("mod_info.json > dependencies must be a JSON object");
         }
 
-        @Test
-        void aBlankNameIsRefused(@TempDir Path directory) throws IOException {
+        @ParameterizedTest
+        @ValueSource(strings = {"name", "description", "author"})
+        void blankLauncherTextIsRefused(String fieldName, @TempDir Path directory) throws IOException {
 
-            // The launcher would draw an empty row rather than fall back to the base file's name.
+            // The launcher would draw an empty row rather than fall back to the base file's text.
             var fragmentFile = writeFragment(directory, """
-                { "name": "  " }
-                """);
+                { "%s": "  " }
+                """.formatted(fieldName));
 
             assertThatThrownBy(() -> ModInfoFragment.readFragment(fragmentFile))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("name is blank");
+                .hasMessageContaining(fieldName + " is blank");
         }
 
         @Test

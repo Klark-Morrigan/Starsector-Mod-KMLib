@@ -32,7 +32,7 @@ final class LocaleManifestTest {
     // manifest field where non-ASCII is expected.
     private static final String SIMPLIFIED_CHINESE_DISPLAY_NAME = "简体中文";
 
-    // Both locales, the default first, and both files, so every reading below has something to read.
+    // Both locales and both files, so every reading below has something to read.
     private static final String WELL_FORMED_MANIFEST = """
         {
           "defaultLocale": "en",
@@ -201,6 +201,19 @@ final class LocaleManifestTest {
         }
 
         @Test
+        void aCoreLocalisationThatDoesNotParseAsAUrlIsRefused(@TempDir Path directory) throws IOException {
+
+            var manifestFile = writeManifest(
+                directory,
+                WELL_FORMED_MANIFEST
+                    .replace(CORE_LOCALISATION_URL, "https://github.com/two words"));
+
+            assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("locales > zh-hans > coreLocalisation is not a URL");
+        }
+
+        @Test
         void aManifestDeclaringNoLocalesIsRefused(@TempDir Path directory) throws IOException {
 
             var manifestFile = writeManifest(directory, """
@@ -233,8 +246,7 @@ final class LocaleManifestTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"../outside/strings.json", "data/../../strings.json", "/data/strings.json",
-            "data\\strings\\strings.json", ""})
+        @ValueSource(strings = {"../outside/strings.json", "data/../../strings.json", "/data/strings.json", ""})
         void aDataPathOutsideTheModRootIsRefused(String dataPath, @TempDir Path directory) throws IOException {
 
             // Materialisation writes to this path, so anything leaving the mod root is a write outside
@@ -243,7 +255,19 @@ final class LocaleManifestTest {
 
             assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("which is not a forward-slashed path inside the mod root");
+                .hasMessageContaining("which is not a path inside the mod root");
+        }
+
+        @Test
+        void aBackslashedDataPathIsRefused(@TempDir Path directory) throws IOException {
+
+            // A separator on Windows and a filename character elsewhere, so the same manifest would
+            // copy to different places depending on who built it.
+            var manifestFile = writeManifest(directory, createManifestMappingStringsTo("data\\strings.json"));
+
+            assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("which is not written with forward slashes");
         }
 
         @Test
@@ -256,7 +280,7 @@ final class LocaleManifestTest {
 
             assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("files > strings/strings.json is not a bare file name");
+                .hasMessageContaining("\"strings/strings.json\" is not a bare file name");
         }
 
         @Test
@@ -270,7 +294,7 @@ final class LocaleManifestTest {
 
             assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("maps the launcher file");
+                .hasMessageContaining("is the launcher file");
         }
 
         @Test
@@ -284,6 +308,39 @@ final class LocaleManifestTest {
             assertThatThrownBy(() -> LocaleManifest.readManifest(manifestFile))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("which another bundle file already maps to");
+        }
+    }
+
+    @Nested
+    class Constructor {
+
+        private static final DeclaredLocale ENGLISH =
+            DeclaredLocale.createLocaleWithoutCoreLocalisation("en", "English");
+
+        private static final Map<String, Path> STRINGS_ONLY =
+            Map.of("strings.json", Path.of("data", "strings", "strings.json"));
+
+        @Test
+        void aLocaleKeyedUnderAnotherTagIsRefused() {
+
+            // Unreachable from a file, whose key is the tag; reachable from any code building one.
+            var declaredLocalesByTag = Map.of("en", ENGLISH, "fr", ENGLISH);
+
+            assertThatThrownBy(() -> new LocaleManifest("en", STRINGS_ONLY, declaredLocalesByTag))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Locale en is keyed under fr");
+        }
+
+        @Test
+        void aDataPathOutsideTheModRootIsRefusedHoweverTheManifestWasBuilt() {
+
+            // The path rules guard the writes materialisation makes, so they hold for a manifest
+            // built in code as well as for one read from a file.
+            var dataPathsByBundleFileName = Map.of("strings.json", Path.of("..", "strings.json"));
+
+            assertThatThrownBy(() -> new LocaleManifest("en", dataPathsByBundleFileName, Map.of("en", ENGLISH)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("which is not a path inside the mod root");
         }
     }
 

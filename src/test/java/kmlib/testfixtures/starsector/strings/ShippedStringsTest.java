@@ -88,4 +88,39 @@ final class ShippedStringsTest {
                 .hasMessageContaining("strings.json > kmu must be a JSON object");
         }
     }
+
+    @Nested
+    class ReadStringsByKey {
+
+        @Test
+        void everyCategorysKeysComeBackTogetherSorted(@TempDir Path directory) throws IOException {
+
+            var stringsFile = writeStrings(directory, """
+                {
+                  "kmu": { "second": "Two" },
+                  "kmlib": { "first": "One" }
+                }
+                """);
+
+            assertThat(ShippedStrings.readStringsByKey(stringsFile))
+                .containsExactly(Map.entry("first", "One"), Map.entry("second", "Two"));
+        }
+
+        @Test
+        void aKeyDeclaredInTwoCategoriesIsRefused(@TempDir Path directory) throws IOException {
+
+            // Flattened, one of the two wordings would be dropped without a word, and a guard would
+            // compare against whichever category happened to be walked last.
+            var stringsFile = writeStrings(directory, """
+                {
+                  "kmu": { "shared": "One" },
+                  "kmlib": { "shared": "Two" }
+                }
+                """);
+
+            assertThatThrownBy(() -> ShippedStrings.readStringsByKey(stringsFile))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("declares \"shared\" in more than one category");
+        }
+    }
 }

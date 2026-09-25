@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 
 /**
  * The JSON files a mod ships, read the way the engine reads them, plus the shape checks a reading of
@@ -38,8 +39,8 @@ import java.util.TreeSet;
  *
  * <p>Objects come back as maps sorted by key. The game's parser keeps no member order, so nothing the
  * game reads can depend on one, and a sorted map makes every reading and every failure deterministic.
- * No org.json type crosses the boundary: the game's {@code JSONException} is checked and a current
- * org.json's is not, so a signature naming one would compile against the wrong one for somebody.
+ * No org.json type crosses the boundary, so a consumer reads its files without {@code json.jar} on its
+ * own test compile classpath.
  */
 public final class ShippedJson {
 
@@ -55,6 +56,28 @@ public final class ShippedJson {
 
     private ShippedJson() {
         // fixture of static readers, no instances.
+    }
+
+    /**
+     * Builds a value read out of a file, naming the file when the value refuses what was read. A value
+     * type states what is wrong with its arguments; only the reading knows which file they came from,
+     * and the file is what a reader has to open to fix it.
+     *
+     * @param location          the file, or the member of it, the arguments were read from
+     * @param valueConstructor  builds the value, throwing {@link IllegalArgumentException} on a refusal
+     * @param <T>               the value's type
+     * @return the value
+     */
+    public static <T> T constructValueAt(String location, Supplier<T> valueConstructor) {
+        try {
+            return valueConstructor.get();
+
+        } catch (IllegalArgumentException illegalArgumentException) {
+
+            throw new AssertionError(
+                location + ": " + illegalArgumentException.getMessage(),
+                illegalArgumentException);
+        }
     }
 
     /**
