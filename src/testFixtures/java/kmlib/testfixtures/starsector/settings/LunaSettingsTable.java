@@ -254,8 +254,8 @@ public final class LunaSettingsTable {
 
     /** @return every Radio field the shipped file declares, in file order */
     public List<String> readRadioFieldIds() {
-        return readSettingsRows().stream()
-            .filter(row -> row.size() > FIELD_TYPE_COLUMN)
+        return readFieldRows()
+            .stream()
             .filter(row -> RADIO_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN)))
             .map(row -> row.get(FIELD_ID_COLUMN))
             .toList();
@@ -282,8 +282,8 @@ public final class LunaSettingsTable {
 
     private List<String> findRow(String fieldId) {
 
-        var rows = readSettingsRows().stream()
-            .filter(row -> row.size() > OPTIONS_COLUMN)
+        var rows = readFieldRows()
+            .stream()
             .filter(row -> fieldId.equals(row.get(FIELD_ID_COLUMN)))
             .toList();
 
@@ -313,23 +313,22 @@ public final class LunaSettingsTable {
     }
 
     // Every row the file declares for one of the mod's fields, section captions included, in file
-    // order. The spacing rows between sections and the file's own column-header line carry no
-    // prefixed ID, so the prefix is also what tells a row from the file's furniture.
-    private List<List<String>> readFieldRows() {
-        return readSettingsRows()
-            .stream()
-            .filter(row -> row.size() > TAB_COLUMN)
-            .filter(row -> row.get(FIELD_ID_COLUMN).startsWith(fieldIdPrefix))
-            .toList();
-    }
-
+    // order - the one reading every other goes through, so no reading judges a row differently. The
+    // spacing rows between sections and the file's own column-header line carry no prefixed ID, so
+    // the prefix is also what tells a row from the file's furniture.
+    //
     // Read by column position rather than by header name, because every reading above is written
     // against the column indices the file lays out. The parse itself - the description and option
     // columns both carry commas inside quotes, which a split on the comma would shift every later
     // column past - is ShippedSpreadsheet's, so it is one parser's business rather than this
     // fixture's.
-    private List<List<String>> readSettingsRows() {
-        return ShippedSpreadsheet.readCells(settingsCsv);
+    private List<List<String>> readFieldRows() {
+        return ShippedSpreadsheet
+            .readCells(settingsCsv)
+            .stream()
+            .filter(row -> row.size() > TAB_COLUMN)
+            .filter(row -> row.get(FIELD_ID_COLUMN).startsWith(fieldIdPrefix))
+            .toList();
     }
 
     /**

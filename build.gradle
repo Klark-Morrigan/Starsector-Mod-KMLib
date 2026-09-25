@@ -206,10 +206,11 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-launcher'
 
 
-    // The common-data fake poses a port whose signatures are spelled in org.json, so the fixtures
-    // need the jar too. Not covered by dependOnGameJars below, which adds the two compile
-    // classpaths a shipped class is built against and leaves the fixtures - a source set most
-    // game jars have nothing to do with - out of it.
+    // The common-data fake poses a port whose signatures are spelled in org.json, and ShippedJson
+    // parses a shipped JSON file with the game's own parser, so the fixtures need the jar too. Not
+    // covered by dependOnGameJars below, which adds the two compile classpaths a shipped class is
+    // built against and leaves the fixtures - a source set most game jars have nothing to do with -
+    // out of it. No runtime entry is needed: every test runtime already carries the core jars.
     testFixturesCompileOnly files(jsonJarFile)
 
     // Apache Commons CSV is RFC 4180 - compliant and handles every quoting wrinkle the shipped
