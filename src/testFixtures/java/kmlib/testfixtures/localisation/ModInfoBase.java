@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static kmlib.testfixtures.starsector.json.ShippedJson.locateElement;
 import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 import static kmlib.testfixtures.starsector.json.ShippedJson.requireList;
 import static kmlib.testfixtures.starsector.json.ShippedJson.requireObject;
@@ -85,7 +86,7 @@ public record ModInfoBase(
 
         for (var index = 0; index < dependencies.size(); index++) {
 
-            var entryLocation = location + "[" + index + "]";
+            var entryLocation = locateElement(location, index);
             var dependency = requireObject(dependencies.get(index), entryLocation);
 
             dependencyIds.add(requireString(

@@ -331,4 +331,15 @@ final class ShippedJsonTest {
                 .isEqualTo("manifest.json > files > strings.json");
         }
     }
+
+    @Nested
+    class LocateElement {
+
+        @Test
+        void theIndexIsBracketedAfterTheArray() {
+
+            assertThat(ShippedJson.locateElement("mod_info.json > dependencies", 2))
+                .isEqualTo("mod_info.json > dependencies[2]");
+        }
+    }
 }

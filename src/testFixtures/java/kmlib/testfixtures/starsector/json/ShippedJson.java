@@ -81,6 +81,17 @@ public final class ShippedJson {
     }
 
     /**
+     * Names one element of an array for a failure message.
+     *
+     * @param location the file or member holding the array
+     * @param index    the element's position
+     * @return the element's location
+     */
+    public static String locateElement(String location, int index) {
+        return location + "[" + index + "]";
+    }
+
+    /**
      * Names one member of an object for a failure message.
      *
      * @param location the file or member holding it
@@ -238,7 +249,7 @@ public final class ShippedJson {
         var elements = new ArrayList<>();
 
         for (var index = 0; index < array.length(); index++) {
-            elements.add(convertValue(array.get(index), location + "[" + index + "]"));
+            elements.add(convertValue(array.get(index), locateElement(location, index)));
         }
         return Collections.unmodifiableList(elements);
     }
