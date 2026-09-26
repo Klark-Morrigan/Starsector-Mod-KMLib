@@ -59,6 +59,8 @@ and measured off the points it encloses.
 boxes that miss cannot meet,
 so an edge-against-edge crossing is only paid where it can change an answer,
 and a touch counts as an overlap so the test never discards a pair it cannot rule out.
+`Rectangle.computeEnclosingRectangle` measures the same box for points laid out on screen,
+through the one min/max walk `Bounds` measures with.
 
 `LabelledPolygon` is what lets a clip answer "what is across this edge"
 rather than only "where is this edge".

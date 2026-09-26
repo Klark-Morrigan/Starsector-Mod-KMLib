@@ -1,5 +1,9 @@
 package kmlib.math.geometry;
 
+import org.lwjgl.util.vector.Vector2f;
+
+import java.util.List;
+
 /**
  * An axis-aligned rectangle given by its lower-left corner and size. Immutable and free of any
  * UI or engine coupling, so it serves equally as a laid-out UI box (UI origin is bottom-left,
@@ -11,6 +15,26 @@ public record Rectangle(
     float y,
     float width,
     float height) {
+
+    /**
+     * Measures the box a list of vectors fits inside - {@link Bounds#computeEnclosingBounds} stated
+     * as a corner and a size, for points laid out in the float coordinates the game's UI works in.
+     *
+     * @param points the points to enclose; must be non-empty
+     * @return the smallest rectangle containing every point, its corner at the lowest x and y
+     * @throws IllegalArgumentException if {@code points} is empty (a box is undefined with nothing
+     *         to enclose)
+     */
+    public static Rectangle computeEnclosingRectangle(List<Vector2f> points) {
+
+        var bounds = Bounds.computeEnclosingBounds(points, point -> point.x, point -> point.y);
+
+        return new Rectangle(
+            (float) bounds.minX(),
+            (float) bounds.minY(),
+            (float) (bounds.maxX() - bounds.minX()),
+            (float) (bounds.maxY() - bounds.minY()));
+    }
 
     /**
      * @return whether {@code (pointX, pointY)} lies within this rectangle, edges inclusive
