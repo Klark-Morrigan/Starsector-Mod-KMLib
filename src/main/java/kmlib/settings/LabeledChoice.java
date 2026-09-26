@@ -11,6 +11,10 @@ package kmlib.settings;
  * an existing save holds resolves to nothing, so the setting silently reverts to its default
  * for every player who had picked that option. Changing the wording is a migration, not a
  * caption edit.
+ *
+ * <p>For the same reason a label is never translated. A settings table shipped per locale carries
+ * the same options, spelt the same, in every locale: a translated label would be a stored value no
+ * other build recognises, so a player moving between builds would lose the choice.
  */
 public interface LabeledChoice {
     /**
