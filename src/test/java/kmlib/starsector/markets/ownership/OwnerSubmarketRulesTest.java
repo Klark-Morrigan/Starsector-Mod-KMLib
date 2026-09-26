@@ -6,6 +6,8 @@ import kmlib.extensions.DeclinedWork;
 import kmlib.extensions.ExecutedWork;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,11 +34,19 @@ import static org.mockito.Mockito.mock;
  * closing anything: what counters an owner's colony trades over is
  * {@code MarketOwnershipRuleTest}'s, and what this pins is only who gets asked and what comes of
  * it.
+ *
+ * <p>Of a rule that fails, only what this port adds is pinned here: that the failure reaches the
+ * record under the integration that registered it, at an ownership change. What the point does
+ * with the rule afterwards is {@code ExtensionPointTest}'s.
  */
 final class OwnerSubmarketRulesTest {
 
     private static final String INCOMING_OWNER_ID = "hegemony";
     private static final String OUTGOING_OWNER_ID = "persean_league";
+
+    // Where every rule here reports, so a failing case records into a record of its own rather
+    // than into the session's.
+    private final CompatibilityFailures failureRecord = new CompatibilityFailures();
 
     private List<String> offeredTo;
     private MarketAPI marketMock;
@@ -117,6 +127,40 @@ final class OwnerSubmarketRulesTest {
             assertThat(seenOwners)
                 .containsExactly(OUTGOING_OWNER_ID, INCOMING_OWNER_ID);
         }
+
+        @Test
+        void leavesTheCountersAndReportsTheIntegrationWhereTheRuleCouldNotLink() {
+            // How a mod that changed underneath its rule is met: on the first ownership change,
+            // before any counter moved - so this library's own table decides them, and the player
+            // is told.
+            installPermittingFallback("Some Mod", (market, oldOwnerId, newOwnerId) -> {
+                throw new NoSuchMethodError("the mod moved what the rule decides with");
+            });
+
+            assertThat(offerSubmarkets().wasExecuted())
+                .isFalse();
+
+            var failure = failureRecord.takeNextUnreported();
+
+            assertThat(failure.subject().name())
+                .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);
+            assertThat(failure.breakage().failureSite())
+                .isEqualTo("deciding a colony's trading counters");
+        }
+
+        @Test
+        void passesOnAndReportsARuleThatFailedPartwayThroughTheCounters() {
+            // Some counters may already be open or closed, which the table must not build on.
+            var counterFailure = new IllegalStateException("half the counters were opened");
+            installPermittingFallback("Some Mod", (market, oldOwnerId, newOwnerId) -> {
+                throw counterFailure;
+            });
+
+            assertThatThrownBy(OwnerSubmarketRulesTest.this::offerSubmarkets)
+                .isSameAs(counterFailure);
+            assertThat(failureRecord.takeNextUnreported().cause())
+                .isSameAs(counterFailure);
+        }
     }
 
     @Nested
@@ -177,24 +221,28 @@ final class OwnerSubmarketRulesTest {
             INCOMING_OWNER_ID);
     }
 
-    private static void installForbiddingFallback(
+    private void installForbiddingFallback(
             String integrationName,
             OwnerSubmarketRule ownerSubmarketRule) {
 
         OwnerSubmarketRules.registerRule(
             integrationName,
             ownerSubmarketRule,
-            FallbackToDefaults.FORBIDDEN);
+            FallbackToDefaults.FORBIDDEN,
+            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+            failureRecord);
     }
 
-    private static void installPermittingFallback(
+    private void installPermittingFallback(
             String integrationName,
             OwnerSubmarketRule ownerSubmarketRule) {
 
         OwnerSubmarketRules.registerRule(
             integrationName,
             ownerSubmarketRule,
-            FallbackToDefaults.PERMITTED);
+            FallbackToDefaults.PERMITTED,
+            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+            failureRecord);
     }
 
     // A rule that records having been offered a colony's counters and answers the stated verdict,

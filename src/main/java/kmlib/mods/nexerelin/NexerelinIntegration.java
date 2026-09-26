@@ -3,11 +3,14 @@ package kmlib.mods.nexerelin;
 import com.fs.starfarer.api.Global;
 
 import kmlib.extensions.FallbackToDefaults;
+import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.starsector.markets.colonisation.ColonisationRoutines;
 import kmlib.starsector.markets.ownership.OwnerSubmarketRules;
 import kmlib.starsector.markets.ownership.OwnershipTransferRoutines;
 
 import org.apache.log4j.Logger;
+
+import java.util.function.Supplier;
 
 /**
  * Where this package's adapters are put in front of the operations that may defer to them.
@@ -49,15 +52,22 @@ public final class NexerelinIntegration {
      * <p>Each operation holds one adapter, so a second call installs the same adapters over the
      * ones this call left - which reads in the log as this integration displacing itself, and is
      * the same install either way.
+     *
+     * @param describeIntegration what a failing adapter is reported as: this mod, and what the
+     *                            registering mod loses without it. The caller's to compose, being
+     *                            the mod that loses something - so an adapter failing when first
+     *                            called files under the same report as the install failing
      */
-    public static void installRoutines() {
-        installRoutines(NexerelinPresence.isModEnabled());
+    public static void installRoutines(Supplier<ModIntegration> describeIntegration) {
+        installRoutines(NexerelinPresence.isModEnabled(), describeIntegration);
     }
 
     // The same installation against a stated answer rather than the live one, which is what lets an
     // install with the mod and one without be posed on a machine that has whichever mods it
     // happens to have.
-    static void installRoutines(boolean isNexerelinEnabled) {
+    static void installRoutines(
+            boolean isNexerelinEnabled,
+            Supplier<ModIntegration> describeIntegration) {
 
         if (!isNexerelinEnabled) {
 
@@ -73,16 +83,19 @@ public final class NexerelinIntegration {
         ColonisationRoutines.registerRoutine(
             INTEGRATION_NAME,
             NexerelinColoniser::establishColony,
-            FallbackToDefaults.PERMITTED);
+            FallbackToDefaults.PERMITTED,
+            describeIntegration);
 
         OwnershipTransferRoutines.registerRoutine(
             INTEGRATION_NAME,
             NexerelinMarketTransfer::transferOwnership,
-            FallbackToDefaults.PERMITTED);
+            FallbackToDefaults.PERMITTED,
+            describeIntegration);
 
         OwnerSubmarketRules.registerRule(
             INTEGRATION_NAME,
             NexerelinSubmarkets::applySubmarkets,
-            FallbackToDefaults.PERMITTED);
+            FallbackToDefaults.PERMITTED,
+            describeIntegration);
     }
 }

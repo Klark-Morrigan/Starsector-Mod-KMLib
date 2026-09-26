@@ -1,7 +1,9 @@
 package kmlib.mods.nexerelin;
 
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * manager reads its own configuration off {@code Global.getSettings()} in a static initialiser, so
  * naming that class outside a running game fails to initialise it whatever is on the classpath.
  * What the far side does with alliances once it has them is {@link NexerelinAllianceReaderTest}'s,
- * over the flattening that needs no manager.
+ * over the flattening that needs no manager, and what a failed read does is
+ * {@link GuardedAllianceSourceTest}'s. What is left here of that is which report it files.
  */
 final class NexerelinAllianceSourceTest {
 
@@ -44,6 +47,37 @@ final class NexerelinAllianceSourceTest {
             ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(NexerelinAllianceSource.readAllianceRecords())
                     .isEmpty());
+        }
+    }
+
+    @Nested
+    class DescribeAllianceIntegration {
+
+        @AfterEach
+        void clearSettings() {
+
+            StarsectorSettingsFake.clearSettings();
+        }
+
+        @Test
+        void namesNexerelinAndTheAlliancesFeatureTheReadCosts() {
+            // Its own feature rather than the routines', so a failed read and a failed routine are
+            // two reports with two sentences. A transposition composes as plausibly as the right
+            // pairing and reaches a player naming the wrong loss.
+            StarsectorSettingsFake.installSettings((category, key) -> "the sentence for " + key);
+
+            var integration = NexerelinAllianceSource.describeAllianceIntegration();
+
+            assertThat(integration.subjectModId())
+                .isEqualTo(NEXERELIN);
+            assertThat(integration.subjectModName())
+                .isEqualTo("Nexerelin");
+            assertThat(integration.consumer().consumerKey())
+                .isEqualTo("kmlib:nexerelin-alliances");
+            assertThat(integration.consumer().lostFeature())
+                .isEqualTo("the sentence for compatibility_lost_nexerelin_alliances");
+            assertThat(integration.consumer().unaffectedFeature())
+                .isEqualTo("the sentence for compatibility_unaffected_nexerelin_alliances");
         }
     }
 

@@ -259,6 +259,9 @@ public final class KmlibStringKeys {
      */
     public static final String COMPATIBILITY_LOST_LUNALIB_SETTINGS = "compatibility_lost_lunalib_settings";
 
+    /** What a failed read of Nexerelin's alliances costs. No slots. */
+    public static final String COMPATIBILITY_LOST_NEXERELIN_ALLIANCES = "compatibility_lost_nexerelin_alliances";
+
     /** What a failed Nexerelin integration costs. No slots. */
     public static final String COMPATIBILITY_LOST_NEXERELIN_ROUTINES = "compatibility_lost_nexerelin_routines";
 
@@ -268,12 +271,16 @@ public final class KmlibStringKeys {
     /**
      * What a failed LunaLib binding does not cost. No slots.
      *
-     * <p>Every one of these three names the save, because that is the question a player reads a
+     * <p>Every one of these names the save, because that is the question a player reads a
      * compatibility notice asking themselves. None of them promises anything about another mod's
      * feature: what the library may vouch for is what the library does.
      */
     public static final String COMPATIBILITY_UNAFFECTED_LUNALIB_SETTINGS =
         "compatibility_unaffected_lunalib_settings";
+
+    /** What a failed read of Nexerelin's alliances does not cost. No slots. */
+    public static final String COMPATIBILITY_UNAFFECTED_NEXERELIN_ALLIANCES =
+        "compatibility_unaffected_nexerelin_alliances";
 
     /** What a failed Nexerelin integration does not cost. No slots. */
     public static final String COMPATIBILITY_UNAFFECTED_NEXERELIN_ROUTINES =

@@ -29,8 +29,10 @@
 
     "compatibility_lost_lunalib_settings": "KMLib's own settings will not take effect this session - the library logs at its default verbosity whatever the settings screen shows.",
     "compatibility_unaffected_lunalib_settings": "On any other mod's settings, and on your save.",
-    "compatibility_lost_nexerelin_routines": "Colonies founded or handed over through KM mods will follow the game's own rules this session rather than Nexerelin's.",
-    "compatibility_unaffected_nexerelin_routines": "On Nexerelin's own colonisation and diplomacy, and on your save.",
+    "compatibility_lost_nexerelin_routines": "Colonies founded or handed over through mods depending on KMLib will follow the game's own rules this session rather than Nexerelin's. Saves made after this point may persist incomplete data.",
+    "compatibility_unaffected_nexerelin_routines": "On Nexerelin itself, and on mods that integrate with Nexerelin outside of KMLib.",
+    "compatibility_lost_nexerelin_alliances": "All mods depending on KMLib will read no Nexerelin alliances this session.",
+    "compatibility_unaffected_nexerelin_alliances": "On Nexerelin itself, on mods that integrate with Nexerelin outside of KMLib, and on your save.",
     "compatibility_lost_rat_access_routes": "Star systems reachable only through Random Assortment of Things' own routes will be read as cut off by KM mods this session.",
     "compatibility_unaffected_rat_access_routes": "On those routes themselves, which still carry a fleet in play, and on your save.",
 

@@ -10,6 +10,7 @@ import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.markets.MarketPlacementFixture;
 
 import org.junit.jupiter.api.AfterEach;
@@ -562,7 +563,10 @@ final class StarSystemsTest {
             // point, so it overrides the cut-off flag the way an active gate
             // does. Stated as a route rather than as any one mod's entity: what
             // this pins is that the read defers at all.
-            ModdedSystemAccessRoutes.registerRoute("granting route", anySystem -> true);
+            ModdedSystemAccessRoutes.registerRoute(
+                "granting route",
+                anySystem -> true,
+                () -> CompatibilityFailureFixture.MOD_INTEGRATION);
 
             assertThat(StarSystems.isReachable(cutOffSystem("a")))
                 .isTrue();
@@ -572,7 +576,10 @@ final class StarSystemsTest {
         void returnsFalseForACutOffSystemNoInstalledRouteReaches() {
             // A route that declines leaves the question where it found it, so
             // the system reads as the cut-off system it is.
-            ModdedSystemAccessRoutes.registerRoute("declining route", anySystem -> false);
+            ModdedSystemAccessRoutes.registerRoute(
+                "declining route",
+                anySystem -> false,
+                () -> CompatibilityFailureFixture.MOD_INTEGRATION);
 
             assertThat(StarSystems.isReachable(cutOffSystem("a")))
                 .isFalse();

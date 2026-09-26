@@ -7,6 +7,8 @@ import kmlib.extensions.DeclinedWork;
 import kmlib.extensions.ExecutedWork;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,11 +34,19 @@ import static org.mockito.Mockito.mock;
  * <p>Routines here record that they were offered and answer a stated verdict, rather than founding
  * anything: what a founding consists of is {@code MarketColoniserTest}'s, and what this pins is
  * only who gets asked and what comes of it.
+ *
+ * <p>Of a routine that fails, only what this port adds is pinned here: that the failure reaches
+ * the record under the integration that registered it, at a founding. What the point does with the
+ * routine afterwards is {@code ExtensionPointTest}'s.
  */
 final class ColonisationRoutinesTest {
 
     private static final int COLONY_SIZE = 3;
     private static final String FACTION_ID = "hegemony";
+
+    // Where every routine here reports, so a failing case records into a record of its own rather
+    // than into the session's.
+    private final CompatibilityFailures failureRecord = new CompatibilityFailures();
 
     private List<String> offeredTo;
     private SectorAPI sectorMock;
@@ -102,6 +112,39 @@ final class ColonisationRoutinesTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Total Conversion");
         }
+
+        @Test
+        void leavesTheFoundingAndReportsTheIntegrationWhereTheRoutineCouldNotLink() {
+            // How a mod that changed underneath its routine is met: on the first founding, where
+            // nothing was founded yet - so the game's own sequence runs, and the player is told.
+            installPermittingFallback("Some Mod", (sector, market, factionId, colonySize) -> {
+                throw new NoSuchMethodError("the mod moved what the routine founds with");
+            });
+
+            assertThat(offerColonisation().wasExecuted())
+                .isFalse();
+
+            var failure = failureRecord.takeNextUnreported();
+
+            assertThat(failure.subject().name())
+                .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);
+            assertThat(failure.breakage().failureSite())
+                .isEqualTo("founding a colony");
+        }
+
+        @Test
+        void passesOnAndReportsARoutineThatFailedPartwayThroughAFounding() {
+            // The market may be half founded, which the game's own sequence must not build on.
+            var foundingFailure = new IllegalStateException("half the colony was founded");
+            installPermittingFallback("Some Mod", (sector, market, factionId, colonySize) -> {
+                throw foundingFailure;
+            });
+
+            assertThatThrownBy(ColonisationRoutinesTest.this::offerColonisation)
+                .isSameAs(foundingFailure);
+            assertThat(failureRecord.takeNextUnreported().cause())
+                .isSameAs(foundingFailure);
+        }
     }
 
     @Nested
@@ -162,24 +205,28 @@ final class ColonisationRoutinesTest {
             COLONY_SIZE);
     }
 
-    private static void installForbiddingFallback(
+    private void installForbiddingFallback(
             String integrationName,
             ColonisationRoutine colonisationRoutine) {
 
         ColonisationRoutines.registerRoutine(
             integrationName,
             colonisationRoutine,
-            FallbackToDefaults.FORBIDDEN);
+            FallbackToDefaults.FORBIDDEN,
+            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+            failureRecord);
     }
 
-    private static void installPermittingFallback(
+    private void installPermittingFallback(
             String integrationName,
             ColonisationRoutine colonisationRoutine) {
 
         ColonisationRoutines.registerRoutine(
             integrationName,
             colonisationRoutine,
-            FallbackToDefaults.PERMITTED);
+            FallbackToDefaults.PERMITTED,
+            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+            failureRecord);
     }
 
     // A routine that records having been offered a founding and answers the stated verdict, so a

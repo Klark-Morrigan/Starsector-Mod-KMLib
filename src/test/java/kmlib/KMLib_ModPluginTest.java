@@ -11,6 +11,7 @@ import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
+import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
@@ -21,9 +22,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,8 +103,8 @@ final class KMLib_ModPluginTest {
 
                 lunaSettingsMock.verify(KmlibLunaSettings::installBindings);
                 fastRenderingMock.verify(FastRendering::isFastRenderingActive);
-                nexerelinMock.verify(NexerelinIntegration::installRoutines);
-                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+                nexerelinMock.verify(() -> NexerelinIntegration.installRoutines(any()));
+                ratMock.verify(() -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(any()));
             }
         }
 
@@ -121,8 +124,8 @@ final class KMLib_ModPluginTest {
 
                 new KMLib_ModPlugin().onApplicationLoad();
 
-                nexerelinMock.verify(NexerelinIntegration::installRoutines);
-                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+                nexerelinMock.verify(() -> NexerelinIntegration.installRoutines(any()));
+                ratMock.verify(() -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(any()));
             }
         }
 
@@ -136,7 +139,7 @@ final class KMLib_ModPluginTest {
                     var nexerelinMock = mockStatic(NexerelinIntegration.class);
                     var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
 
-                nexerelinMock.when(NexerelinIntegration::installRoutines)
+                nexerelinMock.when(() -> NexerelinIntegration.installRoutines(any()))
                     .thenThrow(new IllegalStateException("no routines to register with"));
 
                 new KMLib_ModPlugin().onApplicationLoad();
@@ -150,6 +153,32 @@ final class KMLib_ModPluginTest {
                 .isEqualTo("kmlib:nexerelin-routines");
             assertThat(CompatibilityFailures.SESSION_RECORD.takeNextUnreported())
                 .isNull();
+        }
+
+        @Test
+        void handsEachIntegrationTheDescriberItsInstallIsGuardedUnder() {
+            // An adapter usually meets a changed mod when first called rather than at install, and
+            // the two failures are one report only where both are described alike. Read back as the
+            // key each composes, since a describer handed to the wrong integration composes as
+            // plausibly as the right one.
+            var handedIntegrations = new ArrayList<ModIntegration>();
+
+            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
+                    var fastRenderingMock = mockStatic(FastRendering.class);
+                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
+                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
+
+                nexerelinMock.when(() -> NexerelinIntegration.installRoutines(any()))
+                    .thenAnswer(call -> handedIntegrations.add(describeHandedIntegration(call)));
+                ratMock.when(() -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(any()))
+                    .thenAnswer(call -> handedIntegrations.add(describeHandedIntegration(call)));
+
+                new KMLib_ModPlugin().onApplicationLoad();
+            }
+
+            assertThat(handedIntegrations)
+                .extracting(integration -> integration.consumer().consumerKey())
+                .containsExactly("kmlib:nexerelin-routines", "kmlib:system-access-routes");
         }
     }
 
@@ -308,6 +337,13 @@ final class KMLib_ModPluginTest {
             verify(campaignUiMock)
                 .showConfirmDialog(anyString(), anyString(), any(), anyFloat(), anyFloat(), any(), any());
         }
+    }
+
+    // What the describer a stubbed installation was handed composes, read as that installation
+    // would read it once one of its adapters failed.
+    private static ModIntegration describeHandedIntegration(InvocationOnMock call) {
+
+        return call.<Supplier<ModIntegration>>getArgument(0).get();
     }
 
     // Empties the process's own record, which outlives a case. Left filled, the next case to drain
