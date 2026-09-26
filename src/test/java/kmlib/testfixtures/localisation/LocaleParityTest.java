@@ -191,6 +191,71 @@ final class LocaleParityTest {
     }
 
     @Nested
+    class Constructor {
+
+        @Test
+        void aModMappingNoSettingsTableIsComparedWithoutAPrefix(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_STRINGS_ONLY);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Bonjour %s, %d",
+                "Bonjour %s");
+
+            assertThat(new LocaleParity(new LocalisationDirectory(localisation)).findAllMismatches())
+                .containsExactly("zh-hans: strings.json kmu > greeting takes [%1$s] where en takes [%1$s, %2$d]");
+        }
+
+        @Test
+        void aModMappingASettingsTableIsRefusedWithoutAPrefix(@TempDir Path modRoot) throws IOException {
+
+            var parity = new LocaleParity(new LocalisationDirectory(writeAgreeingMod(modRoot)));
+
+            assertThatThrownBy(parity::findSettingsRowMismatches)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("The manifest maps LunaSettings.csv, so the comparison needs the mod's settings field ID "
+                    + "prefix");
+        }
+    }
+
+    @Nested
+    class FindAllMismatches {
+
+        @Test
+        void agreeingLocalesPass(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot)).findAllMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void findingsOfEveryCheckAreListedDirectoriesFirst(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "1,8,Visuel",
+                "1,9,Visuel");
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "\"farewell\": \"Au revoir\"",
+                "\"welcome\": \"Bienvenue\"");
+
+            Files.createDirectory(localisation.resolve("fr"));
+
+            assertThat(createParity(localisation).findAllMismatches())
+                .containsExactly(
+                    "fr: a bundle directory the manifest does not declare",
+                    "zh-hans: strings.json lacks string kmu > farewell, which en declares",
+                    "zh-hans: strings.json declares string kmu > welcome, which en does not",
+                    "zh-hans: LunaSettings.csv row kmu_width differs from en in maxValue: \"9\" against \"8\"");
+        }
+    }
+
+    @Nested
     class FindDeclaredLocalesWithoutBundleDirectory {
 
         @Test
