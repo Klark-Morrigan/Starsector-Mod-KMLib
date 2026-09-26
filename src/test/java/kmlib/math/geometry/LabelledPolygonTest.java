@@ -10,7 +10,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link LabelledPolygon}: a seed labels every edge alike; an arbitrary ring
+ * Pins {@link LabelledPolygon}: a seed labels every edge alike and starts on the positive x-axis, so
+ * every seed of one disk shares its chords; an arbitrary ring
  * can be seeded from explicit vertices and parallel per-edge labels (rejecting a
  * mismatched pair); a half-plane clip keeps only the kept side, stamps the freshly
  * cut edge with the clip label while every surviving edge keeps its own, leaves the
@@ -61,6 +62,17 @@ final class LabelledPolygonTest {
                     assertThat(Math.sqrt(dx * dx + dy * dy))
                         .isCloseTo(200, within(1e-9));
                 });
+        }
+
+        @Test
+        void createRegularPolygonStartsOnThePositiveXAxis() {
+
+            var polygon = LabelledPolygon.createRegularPolygon(
+                new Disk(new double[] {10, -5}, 200, 8),
+                SEED_LABEL);
+
+            assertThat(polygon.getVertices().get(0))
+                .containsExactly(new double[] {210, -5}, within(1e-9));
         }
     }
 
