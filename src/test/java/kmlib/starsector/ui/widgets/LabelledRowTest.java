@@ -144,6 +144,18 @@ class LabelledRowTest {
             assertThat(labelledRow.trailingRowSlot())
                 .isEqualTo(RowSlot.EMPTY);
         }
+
+        @Test
+        void createRowOverRunsBuildsTheRowItsRunsContinuedOneByOneWould() {
+            // The composed label is a shortcut to the same content, not a second shape of it: a caller
+            // holding a whole sentence arrives where one continuing it run by run would.
+            var runs = List.<LabelRun>of(
+                new TextSpan(TEXT, Color.WHITE),
+                new TextSpan(RUN_TEXT, Color.YELLOW));
+
+            assertThat(LabelledRow.createRow(runs))
+                .isEqualTo(buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW)));
+        }
     }
 
     @Nested
