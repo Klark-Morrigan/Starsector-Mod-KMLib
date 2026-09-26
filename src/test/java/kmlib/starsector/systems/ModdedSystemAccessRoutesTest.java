@@ -3,14 +3,18 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
+import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -47,6 +51,11 @@ final class ModdedSystemAccessRoutesTest {
     // Where every route here reports, so a failing case records into a record of its own rather
     // than into the session's.
     private final CompatibilityFailures failureRecord = new CompatibilityFailures();
+
+    private final IntegrationFailureReporter failureReporter = new IntegrationFailureReporter(
+        () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+        failureRecord,
+        mock(Logger.class));
 
     @BeforeEach
     void setUp() {
@@ -99,8 +108,10 @@ final class ModdedSystemAccessRoutesTest {
         @Test
         void refusesARouteWithNoIntegrationToReportItsFailureUnder() {
 
+            Supplier<ModIntegration> noIntegration = null;
+
             assertThatNullPointerException()
-                .isThrownBy(() -> ModdedSystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE, null));
+                .isThrownBy(() -> ModdedSystemAccessRoutes.registerRoute("a mod", GRANTING_ROUTE, noIntegration));
         }
     }
 
@@ -249,10 +260,12 @@ final class ModdedSystemAccessRoutesTest {
             ModdedSystemAccessRoutes.registerRoute(
                 "a mod",
                 UNLINKABLE_ROUTE,
-                () -> {
-                    throw new IllegalArgumentException("the wording did not load");
-                },
-                failureRecord);
+                new IntegrationFailureReporter(
+                    () -> {
+                        throw new IllegalArgumentException("the wording did not load");
+                    },
+                    failureRecord,
+                    mock(Logger.class)));
 
             assertThatCode(() -> ModdedSystemAccessRoutes.isReachedByAnyRoute(mock(StarSystemAPI.class)))
                 .doesNotThrowAnyException();
@@ -261,10 +274,6 @@ final class ModdedSystemAccessRoutesTest {
 
     private void installRoute(String integrationName, ModdedSystemAccessRoute accessRoute) {
 
-        ModdedSystemAccessRoutes.registerRoute(
-            integrationName,
-            accessRoute,
-            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
-            failureRecord);
+        ModdedSystemAccessRoutes.registerRoute(integrationName, accessRoute, failureReporter);
     }
 }

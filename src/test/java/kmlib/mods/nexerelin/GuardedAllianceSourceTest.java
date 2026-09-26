@@ -1,10 +1,12 @@
 package kmlib.mods.nexerelin;
 
 import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.factions.alliances.AllianceRecord;
 import kmlib.starsector.factions.alliances.AllianceSource;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
 
 /**
  * Pins what an alliance read does once the mod behind it stops answering: it reads no alliances
@@ -108,10 +111,12 @@ final class GuardedAllianceSourceTest {
                 () -> {
                     throw new NoClassDefFoundError("exerelin/campaign/AllianceManager");
                 },
-                () -> {
-                    throw new IllegalArgumentException("the wording did not load");
-                },
-                failureRecord);
+                new IntegrationFailureReporter(
+                    () -> {
+                        throw new IllegalArgumentException("the wording did not load");
+                    },
+                    failureRecord,
+                    mock(Logger.class)));
 
             assertThatCode(guardedSource::readAlliances)
                 .doesNotThrowAnyException();
@@ -122,7 +127,9 @@ final class GuardedAllianceSourceTest {
 
         return new GuardedAllianceSource(
             allianceSource,
-            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
-            failureRecord);
+            new IntegrationFailureReporter(
+                () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+                failureRecord,
+                mock(Logger.class)));
     }
 }

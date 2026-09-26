@@ -1,17 +1,15 @@
 package kmlib.mods.nexerelin;
 
-import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.starsector.markets.colonisation.ColonisationRoutines;
 import kmlib.starsector.markets.ownership.OwnerSubmarketRules;
 import kmlib.starsector.markets.ownership.OwnershipTransferRoutines;
-import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
+import kmlib.testfixtures.starsector.settings.StubbedModIds;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,11 +31,6 @@ final class NexerelinIntegrationTest {
     private static final String INTEGRATION_NAME = "Nexerelin";
     private static final boolean WITHOUT_NEXERELIN = false;
     private static final boolean WITH_NEXERELIN = true;
-
-    // What an adapter failing when first called would report as. Never composed here, no adapter
-    // being called.
-    private static final Supplier<ModIntegration> DESCRIBE_INTEGRATION =
-        () -> CompatibilityFailureFixture.MOD_INTEGRATION;
 
     @BeforeEach
     void setUp() {
@@ -64,7 +57,7 @@ final class NexerelinIntegrationTest {
             // half of an ownership change - and an install with the mod is meant to reach it on
             // all three. A registration missed here is a colony quietly built the vanilla way on
             // a save that expects Nexerelin's.
-            NexerelinIntegration.installRoutines(WITH_NEXERELIN, DESCRIBE_INTEGRATION);
+            NexerelinIntegration.installRoutines(WITH_NEXERELIN);
 
             assertThat(ColonisationRoutines.readRoutine())
                 .isNotNull();
@@ -78,7 +71,7 @@ final class NexerelinIntegrationTest {
         void installsEveryAdapterUnderANameALogLineCanBeReadBy() {
             // What the startup log is read for here is which mod founds colonies and moves them on
             // this install, so the name has to be the mod's rather than a lambda's type.
-            NexerelinIntegration.installRoutines(WITH_NEXERELIN, DESCRIBE_INTEGRATION);
+            NexerelinIntegration.installRoutines(WITH_NEXERELIN);
 
             assertThat(ColonisationRoutines.readRoutineName())
                 .isEqualTo(INTEGRATION_NAME);
@@ -92,7 +85,7 @@ final class NexerelinIntegrationTest {
         void installsNothingOnAnInstallWithoutTheMod() {
             // What keeps every operation clear of a class naming a Nexerelin type: with nothing
             // installed, no offer is ever made and no such class is ever reached.
-            NexerelinIntegration.installRoutines(WITHOUT_NEXERELIN, DESCRIBE_INTEGRATION);
+            NexerelinIntegration.installRoutines(WITHOUT_NEXERELIN);
 
             assertThat(ColonisationRoutines.readRoutine())
                 .isNull();
@@ -100,6 +93,36 @@ final class NexerelinIntegrationTest {
                 .isNull();
             assertThat(OwnerSubmarketRules.readRule())
                 .isNull();
+        }
+    }
+
+    @Nested
+    class DescribeIntegration {
+
+        @AfterEach
+        void clearSettings() {
+
+            StarsectorSettingsFake.clearSettings();
+        }
+
+        @Test
+        void namesNexerelinAndTheRoutinesFeatureItsAdaptersCost() {
+            // A transposition composes as plausibly as the right pairing, and reaches a player as a
+            // report naming a mod that was working or a loss that did not happen.
+            StarsectorSettingsFake.installSettings((category, key) -> "the sentence for " + key);
+
+            var integration = NexerelinIntegration.describeIntegration();
+
+            assertThat(integration.subjectModId())
+                .isEqualTo(StubbedModIds.NEXERELIN);
+            assertThat(integration.subjectModName())
+                .isEqualTo("Nexerelin");
+            assertThat(integration.consumer().consumerKey())
+                .isEqualTo("kmlib:nexerelin-routines");
+            assertThat(integration.consumer().lostFeature())
+                .isEqualTo("the sentence for compatibility_lost_nexerelin_routines");
+            assertThat(integration.consumer().unaffectedFeature())
+                .isEqualTo("the sentence for compatibility_unaffected_nexerelin_routines");
         }
     }
 }

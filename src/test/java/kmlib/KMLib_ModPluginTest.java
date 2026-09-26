@@ -11,22 +11,18 @@ import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
-import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
-import kmlib.testfixtures.starsector.settings.StubbedModIds;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,9 +50,8 @@ import static org.mockito.Mockito.when;
  * install, run every frame and show nothing for the session, and the record the bindings write into
  * would fill unread - both halves looking healthy from their own suites.
  *
- * <p>The integration descriptions are the other such case. Which third party a step is paired with,
- * and which of the library's sentences goes with it, compose and read as plausibly transposed as
- * they do right - and a transposition reaches a player as a report naming a mod that was working.
+ * <p>Which third party each integration is described as is pinned beside that integration, which
+ * holds its own description.
  */
 final class KMLib_ModPluginTest {
 
@@ -66,9 +61,8 @@ final class KMLib_ModPluginTest {
     // under and no other case reads.
     private static final String SUBJECT_KEY = "kmlib-mod-plugin-subject";
 
-    // Every key answers a sentence naming itself, so a case reads as which wording landed in which
-    // slot without the shipped wording being known here - that file is a matter for the suite that
-    // walks it. Shared by the two nests that need the library's own sentences to resolve at all.
+    // Every key answers a sentence naming itself, so a report composes without the shipped wording
+    // being known here - that file is a matter for the suite that walks it.
     private static final StarsectorSettingsFake.SettingsStringSource STRINGS_NAMING_THEIR_OWN_KEYS =
         (category, key) -> "the sentence for " + key;
 
@@ -103,8 +97,8 @@ final class KMLib_ModPluginTest {
 
                 lunaSettingsMock.verify(KmlibLunaSettings::installBindings);
                 fastRenderingMock.verify(FastRendering::isFastRenderingActive);
-                nexerelinMock.verify(() -> NexerelinIntegration.installRoutines(any()));
-                ratMock.verify(() -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(any()));
+                nexerelinMock.verify(NexerelinIntegration::installRoutines);
+                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
             }
         }
 
@@ -124,8 +118,8 @@ final class KMLib_ModPluginTest {
 
                 new KMLib_ModPlugin().onApplicationLoad();
 
-                nexerelinMock.verify(() -> NexerelinIntegration.installRoutines(any()));
-                ratMock.verify(() -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(any()));
+                nexerelinMock.verify(NexerelinIntegration::installRoutines);
+                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
             }
         }
 
@@ -139,8 +133,12 @@ final class KMLib_ModPluginTest {
                     var nexerelinMock = mockStatic(NexerelinIntegration.class);
                     var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
 
-                nexerelinMock.when(() -> NexerelinIntegration.installRoutines(any()))
+                nexerelinMock.when(NexerelinIntegration::installRoutines)
                     .thenThrow(new IllegalStateException("no routines to register with"));
+                // The report is composed from the integration's own description, which a class
+                // stood in for whole would answer with nothing.
+                nexerelinMock.when(NexerelinIntegration::describeIntegration)
+                    .thenCallRealMethod();
 
                 new KMLib_ModPlugin().onApplicationLoad();
             }
@@ -153,99 +151,6 @@ final class KMLib_ModPluginTest {
                 .isEqualTo("kmlib:nexerelin-routines");
             assertThat(CompatibilityFailures.SESSION_RECORD.takeNextUnreported())
                 .isNull();
-        }
-
-        @Test
-        void handsEachIntegrationTheDescriberItsInstallIsGuardedUnder() {
-            // An adapter usually meets a changed mod when first called rather than at install, and
-            // the two failures are one report only where both are described alike. Read back as the
-            // key each composes, since a describer handed to the wrong integration composes as
-            // plausibly as the right one.
-            var handedIntegrations = new ArrayList<ModIntegration>();
-
-            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
-                    var fastRenderingMock = mockStatic(FastRendering.class);
-                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
-                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
-
-                nexerelinMock.when(() -> NexerelinIntegration.installRoutines(any()))
-                    .thenAnswer(call -> handedIntegrations.add(describeHandedIntegration(call)));
-                ratMock.when(() -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(any()))
-                    .thenAnswer(call -> handedIntegrations.add(describeHandedIntegration(call)));
-
-                new KMLib_ModPlugin().onApplicationLoad();
-            }
-
-            assertThat(handedIntegrations)
-                .extracting(integration -> integration.consumer().consumerKey())
-                .containsExactly("kmlib:nexerelin-routines", "kmlib:system-access-routes");
-        }
-    }
-
-    @Nested
-    class IntegrationDescriptions {
-
-        @AfterEach
-        void clearSettings() {
-
-            StarsectorSettingsFake.clearSettings();
-        }
-
-        @BeforeEach
-        void answerEveryStringWithItsOwnKey() {
-
-            StarsectorSettingsFake.installSettings(STRINGS_NAMING_THEIR_OWN_KEYS);
-        }
-
-        @Test
-        void namesLunaLibAsTheThirdPartyTheSettingsBindingIsWith() {
-
-            var integration = KMLib_ModPlugin.describeLunaLibIntegration();
-
-            assertThat(integration.subjectModId())
-                .isEqualTo(StubbedModIds.LUNALIB);
-            assertThat(integration.subjectModName())
-                .isEqualTo("LunaLib");
-            assertThat(integration.consumer().consumerKey())
-                .isEqualTo("kmlib:lunalib-settings");
-            assertThat(integration.consumer().lostFeature())
-                .isEqualTo("the sentence for compatibility_lost_lunalib_settings");
-            assertThat(integration.consumer().unaffectedFeature())
-                .isEqualTo("the sentence for compatibility_unaffected_lunalib_settings");
-        }
-
-        @Test
-        void namesNexerelinAsTheThirdPartyTheRoutinesAreWith() {
-
-            var integration = KMLib_ModPlugin.describeNexerelinIntegration();
-
-            assertThat(integration.subjectModId())
-                .isEqualTo(StubbedModIds.NEXERELIN);
-            assertThat(integration.subjectModName())
-                .isEqualTo("Nexerelin");
-            assertThat(integration.consumer().consumerKey())
-                .isEqualTo("kmlib:nexerelin-routines");
-            assertThat(integration.consumer().lostFeature())
-                .isEqualTo("the sentence for compatibility_lost_nexerelin_routines");
-            assertThat(integration.consumer().unaffectedFeature())
-                .isEqualTo("the sentence for compatibility_unaffected_nexerelin_routines");
-        }
-
-        @Test
-        void namesRandomAssortmentOfThingsAsTheThirdPartyTheRoutesAreWith() {
-
-            var integration = KMLib_ModPlugin.describeRandomAssortmentOfThingsIntegration();
-
-            assertThat(integration.subjectModId())
-                .isEqualTo(StubbedModIds.RANDOM_ASSORTMENT_OF_THINGS);
-            assertThat(integration.subjectModName())
-                .isEqualTo("Random Assortment of Things");
-            assertThat(integration.consumer().consumerKey())
-                .isEqualTo("kmlib:system-access-routes");
-            assertThat(integration.consumer().lostFeature())
-                .isEqualTo("the sentence for compatibility_lost_rat_access_routes");
-            assertThat(integration.consumer().unaffectedFeature())
-                .isEqualTo("the sentence for compatibility_unaffected_rat_access_routes");
         }
     }
 
@@ -337,13 +242,6 @@ final class KMLib_ModPluginTest {
             verify(campaignUiMock)
                 .showConfirmDialog(anyString(), anyString(), any(), anyFloat(), anyFloat(), any(), any());
         }
-    }
-
-    // What the describer a stubbed installation was handed composes, read as that installation
-    // would read it once one of its adapters failed.
-    private static ModIntegration describeHandedIntegration(InvocationOnMock call) {
-
-        return call.<Supplier<ModIntegration>>getArgument(0).get();
     }
 
     // Empties the process's own record, which outlives a case. Left filled, the next case to drain

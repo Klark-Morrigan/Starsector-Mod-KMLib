@@ -78,6 +78,9 @@ public final class MarketOwnershipRule {
      * @param market    the market changing hands; null is left alone
      * @param factionId the incoming owner's faction ID, {@link Factions#PLAYER} for the player;
      *                  null leaves the market alone rather than unowning it
+     * @throws RuntimeException whatever an installed submarket rule threw partway through deciding
+     *                          the counters, passed on rather than finished over with this library's
+     *                          table - the counters being in a state neither produces
      */
     public static void applyOwnership(MarketAPI market, String factionId) {
         applyOwnership(market, factionId, INSTALLED_OWNER_SUBMARKET_RULES);

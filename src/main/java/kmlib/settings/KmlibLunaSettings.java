@@ -2,6 +2,9 @@ package kmlib.settings;
 
 import kmlib.KmlibMod;
 import kmlib.logging.KmLogging;
+import kmlib.starsector.compatibility.CompatibilityConsumer;
+import kmlib.starsector.compatibility.ModIntegration;
+import kmlib.starsector.strings.KmlibStringKeys;
 
 /**
  * KMLib's own LunaLib settings: at present only the verbosity of the library's own output.
@@ -36,7 +39,32 @@ public final class KmlibLunaSettings {
     private static final String LOGGER_ROOT = "kmlib";
     private static final String LOG_LEVEL_FIELD = "kmlib_logLevel";
 
+    // Which of the library's features a failure of these bindings costs, as the half of a latch key
+    // the mod ID does not cover.
+    private static final String LUNALIB_SETTINGS_FEATURE_KEY = "lunalib-settings";
+
     private KmlibLunaSettings() {
+    }
+
+    /**
+     * These bindings as the compatibility channel states them: LunaLib as the third party, and the
+     * library as the mod that loses something by it.
+     *
+     * <p>Composed only once the install has failed, so the wording read out of strings.json and the
+     * mod manager read behind the installed version stay off every load where it worked.
+     *
+     * @return the integration a failure to install these bindings is reported under
+     */
+    public static ModIntegration describeLunaLibIntegration() {
+
+        return new ModIntegration(
+            LUNALIB_MOD_ID,
+            LUNALIB_MOD_NAME,
+            new CompatibilityConsumer(
+                KmlibMod.MOD_ID,
+                LUNALIB_SETTINGS_FEATURE_KEY,
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_LOST_LUNALIB_SETTINGS),
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_UNAFFECTED_LUNALIB_SETTINGS)));
     }
 
     /**

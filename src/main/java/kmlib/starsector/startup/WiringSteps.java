@@ -1,6 +1,7 @@
 package kmlib.starsector.startup;
 
 import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.compatibility.ModIntegration;
 
 import org.apache.log4j.Logger;
@@ -39,7 +40,8 @@ import java.util.function.Supplier;
  * degradation is the same class of problem whether a binding broke at a render pass or at load: a
  * player who enabled a mod is entitled to be told when the mod they enabled did not integrate,
  * rather than finding out by playing a session without it. What that report says is
- * {@link ModIntegration}'s, and the library holds none of the wording.
+ * {@link ModIntegration}'s, and the library holds none of the wording; filing it without throwing is
+ * {@link IntegrationFailureReporter}'s.
  */
 public final class WiringSteps {
 
@@ -48,11 +50,6 @@ public final class WiringSteps {
     // spelled once, so the phrase a log is searched for is one phrase however many mods wire
     // through this.
     private static final String WHILE_INSTALLING_INTEGRATION = "installing the integration at start-up";
-
-    // What a failure to report is logged as. Generic, because the logger it goes to is the wiring
-    // mod's and the sentence would otherwise name a library the reader was not looking at.
-    private static final String REPORT_FAILURE_MESSAGE =
-        "Failed to report a start-up step that did not install.";
 
     private final Logger stepLog;
 
@@ -97,7 +94,14 @@ public final class WiringSteps {
      */
     public void runGuardedStep(Runnable wiringStep, String failureMessage) {
 
-        runStep(wiringStep, failureMessage, null);
+        try {
+            wiringStep.run();
+
+        } catch (LinkageError | RuntimeException stepFailure) {
+
+            // With the trace: nobody is told of this step, so the log is the only place it goes.
+            stepLog.error(failureMessage, stepFailure);
+        }
     }
 
     /**
@@ -117,53 +121,20 @@ public final class WiringSteps {
             String failureMessage,
             Supplier<ModIntegration> describeIntegration) {
 
-        Objects.requireNonNull(
-            describeIntegration,
-            "A step said to integrate with a mod must say which mod, or it can report nothing.");
-
-        runStep(wiringStep, failureMessage, describeIntegration);
-    }
-
-    // The guard itself, with the reporting half optional: null where the step named no third party,
-    // which is the one case that has nothing to tell a player. Private, so the absence is a shape
-    // this class decides rather than one a caller can hand in.
-    private void runStep(
-            Runnable wiringStep,
-            String failureMessage,
-            Supplier<ModIntegration> describeIntegration) {
+        // Built before the step runs, so a step said to integrate with nothing is refused whether
+        // or not it would have failed. Logging to the wiring mod's own logger, for the reason given
+        // on this class.
+        var failureReporter = new IntegrationFailureReporter(describeIntegration, failureRecord, stepLog);
 
         try {
             wiringStep.run();
 
         } catch (LinkageError | RuntimeException stepFailure) {
 
-            stepLog.error(failureMessage, stepFailure);
-
-            if (describeIntegration != null) {
-                recordInstallationFailure(describeIntegration, stepFailure);
-            }
-        }
-    }
-
-    // The report, inside a guard of its own. This runs from a catch block during start-up, so
-    // anything escaping here would take down every mod loading behind it over a report - the exact
-    // outcome the guard above exists to prevent. A describer that cannot compose its sentences,
-    // because the wording did not load, therefore costs the report and nothing else.
-    //
-    // Guarded as widely as the step itself, and for the same reason: the describer is the wiring
-    // mod's own, so it can name a third-party type and fail to link exactly as the step did.
-    private void recordInstallationFailure(
-            Supplier<ModIntegration> describeIntegration,
-            Throwable stepFailure) {
-
-        try {
-            describeIntegration
-                .get()
-                .recordFailure(failureRecord, WHILE_INSTALLING_INTEGRATION, stepFailure);
-
-        } catch (LinkageError | RuntimeException reportFailure) {
-
-            stepLog.error(REPORT_FAILURE_MESSAGE, reportFailure);
+            // One line rather than the trace: the report's own block carries that, and the reporter
+            // logs it wherever no block will.
+            stepLog.error(failureMessage + ": " + stepFailure);
+            failureReporter.recordFailure(WHILE_INSTALLING_INTEGRATION, stepFailure);
         }
     }
 }

@@ -2,8 +2,7 @@ package kmlib.mods.nexerelin;
 
 import com.fs.starfarer.api.Global;
 
-import kmlib.starsector.compatibility.CompatibilityFailures;
-import kmlib.starsector.compatibility.ModIntegration;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.factions.alliances.AllianceRecord;
 import kmlib.starsector.factions.alliances.AllianceSource;
 
@@ -11,7 +10,6 @@ import org.apache.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 /**
  * An alliance read that stops being asked once it has failed: it answers no alliances for the rest
@@ -33,8 +31,7 @@ final class GuardedAllianceSource implements AllianceSource {
     private static final Logger LOG = Global.getLogger(GuardedAllianceSource.class);
 
     private final AllianceSource allianceSource;
-    private final Supplier<ModIntegration> describeIntegration;
-    private final CompatibilityFailures failureRecord;
+    private final IntegrationFailureReporter failureReporter;
 
     // Set once the read has failed, and never cleared: a failure to link is a fact about the jars
     // loaded, and recurs on every read for as long as the game runs. Volatile so a failure one
@@ -42,25 +39,18 @@ final class GuardedAllianceSource implements AllianceSource {
     private volatile boolean isTakenOut;
 
     /**
-     * @param allianceSource      the read being guarded
-     * @param describeIntegration which mod the read is from and what the library loses without it,
-     *                            composed only where the read has failed
-     * @param failureRecord       where that failure is recorded
+     * @param allianceSource  the read being guarded
+     * @param failureReporter what a failed read is reported through, under the integration the read
+     *                        is with
      */
-    GuardedAllianceSource(
-            AllianceSource allianceSource,
-            Supplier<ModIntegration> describeIntegration,
-            CompatibilityFailures failureRecord) {
+    GuardedAllianceSource(AllianceSource allianceSource, IntegrationFailureReporter failureReporter) {
 
         this.allianceSource = Objects.requireNonNull(
             allianceSource,
             "A guard over no read would have nothing to answer with.");
-        this.describeIntegration = Objects.requireNonNull(
-            describeIntegration,
-            "A read from another mod must say which mod, or its failure can report nothing.");
-        this.failureRecord = Objects.requireNonNull(
-            failureRecord,
-            "A guard with nowhere to record would degrade silently and tell no player why.");
+        this.failureReporter = Objects.requireNonNull(
+            failureReporter,
+            "A read from another mod must say how its failure is reported, or it can report nothing.");
     }
 
     @Override
@@ -77,27 +67,12 @@ final class GuardedAllianceSource implements AllianceSource {
 
             isTakenOut = true;
 
-            LOG.error("Reading alliances failed; none are read for the rest of the session", readFailure);
-            reportReadFailure(readFailure);
+            // One line naming the cause rather than its trace: the reporter hands the failure to the
+            // report's own block, and logs the trace itself wherever no block will.
+            LOG.error("Reading alliances failed; none are read for the rest of the session: " + readFailure);
+            failureReporter.recordFailure(WHILE_READING_ALLIANCES, readFailure);
 
             return List.of();
-        }
-    }
-
-    // The report, inside a guard of its own. It runs where the read has already failed, on a read a
-    // poll repeats every few seconds: a report that threw would replace the failure it was
-    // reporting and take the read down with it. Guarded as widely as the read, the describer being
-    // able to fail to link as well.
-    private void reportReadFailure(Throwable readFailure) {
-
-        try {
-            describeIntegration
-                .get()
-                .recordFailure(failureRecord, WHILE_READING_ALLIANCES, readFailure);
-
-        } catch (LinkageError | RuntimeException reportThrown) {
-
-            LOG.error("Could not report the failed alliance read", reportThrown);
         }
     }
 }

@@ -6,10 +6,9 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.extensions.ExtensionPoint;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
-import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.compatibility.ModIntegration;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -26,8 +25,9 @@ import java.util.function.Supplier;
  * moves the colony, and the displacement is logged rather than left to be discovered.
  *
  * <p>A routine that declines, and an install that registered none, both leave the hand-over to the
- * sequence this library composes. So does a routine that failed, which the point takes out for the
- * session and reports under the integration that registered it.
+ * sequence this library composes. A routine that fails is taken out for the session and reported
+ * under the integration that registered it; the hand-over in hand goes to this library's sequence
+ * only where the routine failed before doing any of it - see {@link ExtensionPoint#offerWork}.
  *
  * <p>Final class with a private constructor: the point is the state, and it is one point per
  * running game rather than one per holder of a reference to it.
@@ -89,30 +89,22 @@ public final class OwnershipTransferRoutines {
             integrationName,
             ownershipTransferRoutine,
             fallbackToDefaults,
-            describeIntegration,
-            CompatibilityFailures.SESSION_RECORD);
+            new IntegrationFailureReporter(describeIntegration));
     }
 
-    // The same registration reporting into a stated record rather than the session's, so a suite
-    // records into one of its own.
+    // The same registration reporting through a stated reporter rather than one filing into the
+    // session's record, so a suite records into one of its own.
     static void registerRoutine(
             String integrationName,
             OwnershipTransferRoutine ownershipTransferRoutine,
             FallbackToDefaults fallbackToDefaults,
-            Supplier<ModIntegration> describeIntegration,
-            CompatibilityFailures failureRecord) {
-
-        Objects.requireNonNull(
-            describeIntegration,
-            "A routine from another mod must say which mod, or its failure can report nothing.");
+            IntegrationFailureReporter failureReporter) {
 
         INSTALLED_ROUTINE.registerImplementation(
             integrationName,
             ownershipTransferRoutine,
             fallbackToDefaults,
-            routineFailure -> describeIntegration
-                .get()
-                .recordFailure(failureRecord, WHILE_HANDING_A_COLONY_OVER, routineFailure));
+            routineFailure -> failureReporter.recordFailure(WHILE_HANDING_A_COLONY_OVER, routineFailure));
     }
 
     // Offers the hand-over to whatever is installed, and says whether it was taken. Shaped as one

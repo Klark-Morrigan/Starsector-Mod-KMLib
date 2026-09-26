@@ -5,10 +5,9 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.extensions.ExtensionPoint;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
-import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.compatibility.ModIntegration;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -25,8 +24,9 @@ import java.util.function.Supplier;
  * describes - so the last registered decides them outright and the displacement is logged.
  *
  * <p>A rule that declines, and an install that registered none, both leave the counters to this
- * library's own table. So does a rule that failed, which the point takes out for the session and
- * reports under the integration that registered it.
+ * library's own table. A rule that fails is taken out for the session and reported under the
+ * integration that registered it; the counters in hand go to the table only where the rule failed
+ * before doing any of it - see {@link ExtensionPoint#offerWork}.
  *
  * <p>Final class with a private constructor: the point is the state, and it is one point per
  * running game rather than one per holder of a reference to it.
@@ -86,30 +86,22 @@ public final class OwnerSubmarketRules {
             integrationName,
             ownerSubmarketRule,
             fallbackToDefaults,
-            describeIntegration,
-            CompatibilityFailures.SESSION_RECORD);
+            new IntegrationFailureReporter(describeIntegration));
     }
 
-    // The same registration reporting into a stated record rather than the session's, so a suite
-    // records into one of its own.
+    // The same registration reporting through a stated reporter rather than one filing into the
+    // session's record, so a suite records into one of its own.
     static void registerRule(
             String integrationName,
             OwnerSubmarketRule ownerSubmarketRule,
             FallbackToDefaults fallbackToDefaults,
-            Supplier<ModIntegration> describeIntegration,
-            CompatibilityFailures failureRecord) {
-
-        Objects.requireNonNull(
-            describeIntegration,
-            "A rule from another mod must say which mod, or its failure can report nothing.");
+            IntegrationFailureReporter failureReporter) {
 
         INSTALLED_RULE.registerImplementation(
             integrationName,
             ownerSubmarketRule,
             fallbackToDefaults,
-            ruleFailure -> describeIntegration
-                .get()
-                .recordFailure(failureRecord, WHILE_DECIDING_TRADING_COUNTERS, ruleFailure));
+            ruleFailure -> failureReporter.recordFailure(WHILE_DECIDING_TRADING_COUNTERS, ruleFailure));
     }
 
     // Offers the counters to whatever is installed, and says whether they were decided. Shaped as

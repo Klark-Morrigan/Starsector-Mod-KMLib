@@ -3,7 +3,7 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
-import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.compatibility.ModIntegration;
 
 import org.apache.log4j.Logger;
@@ -12,8 +12,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -97,8 +95,7 @@ public final class ModdedSystemAccessRoutes {
         registerRoute(
             integrationName,
             accessRoute,
-            describeIntegration,
-            CompatibilityFailures.SESSION_RECORD);
+            new IntegrationFailureReporter(describeIntegration));
     }
 
     /**
@@ -135,33 +132,31 @@ public final class ModdedSystemAccessRoutes {
                 // Taken out through the walk's own iterator, the one removal that leaves the walk
                 // standing, so the routes after this one are still asked.
                 installedRoutes.remove();
-                reportTakenOut(installedRoute.getKey(), installedRoute.getValue(), routeFailure);
+
+                // One line naming the cause rather than its trace: the reporter hands the failure
+                // to the report's own block, and logs the trace itself wherever no block will.
+                LOG.error("Modded system access route taken out for the session after failing: "
+                    + installedRoute.getKey() + ": " + routeFailure);
+                installedRoute.getValue()
+                    .failureReporter()
+                    .recordFailure(WHILE_READING_REACHABILITY, routeFailure);
             }
         }
         return false;
     }
 
-    // The same registration reporting into a stated record rather than the session's, so a suite
-    // records into one of its own.
+    // The same registration reporting through a stated reporter rather than one filing into the
+    // session's record, so a suite records into one of its own.
     static void registerRoute(
             String integrationName,
             ModdedSystemAccessRoute accessRoute,
-            Supplier<ModIntegration> describeIntegration,
-            CompatibilityFailures failureRecord) {
-
-        Objects.requireNonNull(
-            describeIntegration,
-            "A route from another mod must say which mod, or its failure can report nothing.");
+            IntegrationFailureReporter failureReporter) {
 
         if (accessRoute == null) {
             return;
         }
 
-        var installedRoute = new InstalledRoute(
-            accessRoute,
-            routeFailure -> describeIntegration
-                .get()
-                .recordFailure(failureRecord, WHILE_READING_REACHABILITY, routeFailure));
+        var installedRoute = new InstalledRoute(accessRoute, failureReporter);
 
         // Said out loud for the same reason a displaced extension point is: a route that was meant
         // to be there and is not turns up much later as "that system reads as cut off", with
@@ -173,32 +168,10 @@ public final class ModdedSystemAccessRoutes {
         }
     }
 
-    // Logs and reports a route that failed. The report is guarded because it runs where the route
-    // has already failed, on a read the map asks on every refresh: a report that threw would replace
-    // the failure it was reporting and take the read down with it. Guarded as widely as the route,
-    // the report being the registrant's own and able to fail to link as well.
-    private static void reportTakenOut(
-            String integrationName,
-            InstalledRoute installedRoute,
-            Throwable routeFailure) {
-
-        LOG.error("Modded system access route failed and is taken out for the session: "
-            + integrationName, routeFailure);
-
-        try {
-            installedRoute.reportFailure().accept(routeFailure);
-
-        } catch (LinkageError | RuntimeException reportThrown) {
-
-            LOG.error("Could not report the failed modded system access route: "
-                + integrationName, reportThrown);
-        }
-    }
-
     // A route and what its registrant is told if it fails, held together so the report cannot be
     // separated from the route it is about.
     private record InstalledRoute(
         ModdedSystemAccessRoute accessRoute,
-        Consumer<Throwable> reportFailure) {
+        IntegrationFailureReporter failureReporter) {
     }
 }

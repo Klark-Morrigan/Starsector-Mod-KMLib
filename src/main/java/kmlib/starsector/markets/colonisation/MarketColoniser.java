@@ -166,6 +166,9 @@ public final class MarketColoniser {
      * @param factionId the owner the colony is founded under, {@link Factions#PLAYER} for the
      *                  player; null leaves the market alone rather than founding an ownerless
      *                  colony
+     * @throws RuntimeException whatever an installed routine or submarket rule threw partway
+     *                          through, passed on rather than finished over with the sequence above -
+     *                          the market being in a state neither produces
      */
     public static void establishColony(SectorAPI sector, MarketAPI market, String factionId) {
         establishColony(sector, market, factionId, INSTALLED_COLONISATION_ROUTINES);

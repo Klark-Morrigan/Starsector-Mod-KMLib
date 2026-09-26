@@ -2,12 +2,13 @@ package kmlib.mods.rat;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.KmlibMod;
+import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.ModIntegration;
+import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.systems.ModdedSystemAccessRoutes;
 
 import org.apache.log4j.Logger;
-
-import java.util.function.Supplier;
 
 /**
  * Where this package's adapters are put in front of the reads that may defer to them.
@@ -42,6 +43,10 @@ public final class RandomAssortmentOfThingsIntegration {
     // beside this rather than spelled again, so this mod is one name wherever it is shown.
     private static final String INTEGRATION_NAME = RandomAssortmentOfThingsPresence.MOD_NAME;
 
+    // Which of the library's features a failure of this route costs, as the half of a latch key the
+    // mod ID does not cover.
+    private static final String RAT_ACCESS_ROUTES_FEATURE_KEY = "system-access-routes";
+
     private RandomAssortmentOfThingsIntegration() {
         // utility class, no instances.
     }
@@ -52,24 +57,39 @@ public final class RandomAssortmentOfThingsIntegration {
      *
      * <p>Routes are keyed by name, so a second call replaces this integration's own route rather
      * than adding a second one beside it - which is the same install either way.
-     *
-     * @param describeIntegration what a failing route is reported as: this mod, and what the
-     *                            registering mod loses without it. The caller's to compose, being
-     *                            the mod that loses something - so a route failing when first asked
-     *                            files under the same report as the install failing
      */
-    public static void installModdedSystemAccessRoutes(Supplier<ModIntegration> describeIntegration) {
-        installModdedSystemAccessRoutes(
-            RandomAssortmentOfThingsPresence.isModEnabled(),
-            describeIntegration);
+    public static void installModdedSystemAccessRoutes() {
+        installModdedSystemAccessRoutes(RandomAssortmentOfThingsPresence.isModEnabled());
+    }
+
+    /**
+     * This route as the compatibility channel states it: Random Assortment of Things as the third
+     * party, and the library as the mod that loses something by it.
+     *
+     * <p>One description for the install and for the route it registers, so a guard over the
+     * install and the route failing when first asked latch under one binding and are one report.
+     * Composed only once something has failed, so the wording read out of strings.json and the mod
+     * manager read behind the installed version stay off every path that worked.
+     *
+     * @return the integration a failure of this install, or of the route it registered, is reported
+     *         under
+     */
+    public static ModIntegration describeIntegration() {
+
+        return new ModIntegration(
+            RandomAssortmentOfThingsPresence.MOD_ID,
+            RandomAssortmentOfThingsPresence.MOD_NAME,
+            new CompatibilityConsumer(
+                KmlibMod.MOD_ID,
+                RAT_ACCESS_ROUTES_FEATURE_KEY,
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_LOST_RAT_ACCESS_ROUTES),
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_UNAFFECTED_RAT_ACCESS_ROUTES)));
     }
 
     // The same installation against a stated answer rather than the live one, which is what lets an
     // install with the mod and one without be posed on a machine that has whichever mods it
     // happens to have.
-    static void installModdedSystemAccessRoutes(
-            boolean isRandomAssortmentOfThingsEnabled,
-            Supplier<ModIntegration> describeIntegration) {
+    static void installModdedSystemAccessRoutes(boolean isRandomAssortmentOfThingsEnabled) {
 
         if (!isRandomAssortmentOfThingsEnabled) {
 
@@ -88,6 +108,6 @@ public final class RandomAssortmentOfThingsIntegration {
         ModdedSystemAccessRoutes.registerRoute(
             INTEGRATION_NAME,
             RandomAssortmentOfThingsMatcher::hasAbyssalFracture,
-            describeIntegration);
+            RandomAssortmentOfThingsIntegration::describeIntegration);
     }
 }

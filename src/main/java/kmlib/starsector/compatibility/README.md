@@ -260,9 +260,17 @@ so the same failure more often arrives at call time than at start-up.
 The places that hold a registered adapter -
 the extension points and the access routes, set out in [`extensions/`](../../extensions/README.md) -
 take a describer of the registering integration's `ModIntegration` at registration
-and file through it,
+and file through an [`IntegrationFailureReporter`](IntegrationFailureReporter.java) built from it,
 each spelling its own "failed while" phrase.
-One describer for both is what makes a failure at install and one at call a single report.
+One describer for both is what makes a failure at install and one at call a single report,
+which is why each integration holds its own describer beside the code that binds it.
+
+The reporter is also where a failure's trace is logged.
+The report's block carries the trace of the failure it was composed from,
+so a boundary logs one line and the reporter logs the trace only where no block will:
+a report that could not be composed,
+and a failure the record dropped because the binding was already reported,
+whose block carries the first failure's trace rather than this one's.
 
 ## One record per session
 

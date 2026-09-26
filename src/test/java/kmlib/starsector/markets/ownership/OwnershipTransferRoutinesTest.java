@@ -8,8 +8,10 @@ import kmlib.extensions.ExecutedWork;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
 import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,6 +48,11 @@ final class OwnershipTransferRoutinesTest {
     // Where every routine here reports, so a failing case records into a record of its own rather
     // than into the session's.
     private final CompatibilityFailures failureRecord = new CompatibilityFailures();
+
+    private final IntegrationFailureReporter failureReporter = new IntegrationFailureReporter(
+        () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+        failureRecord,
+        mock(Logger.class));
 
     private List<String> offeredTo;
     private MarketAPI marketMock;
@@ -206,8 +213,7 @@ final class OwnershipTransferRoutinesTest {
             integrationName,
             ownershipTransferRoutine,
             FallbackToDefaults.FORBIDDEN,
-            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
-            failureRecord);
+            failureReporter);
     }
 
     private void installPermittingFallback(
@@ -218,8 +224,7 @@ final class OwnershipTransferRoutinesTest {
             integrationName,
             ownershipTransferRoutine,
             FallbackToDefaults.PERMITTED,
-            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
-            failureRecord);
+            failureReporter);
     }
 
     // A routine that records having been offered a hand-over and answers the stated verdict, so a
