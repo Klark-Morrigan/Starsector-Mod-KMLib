@@ -6,6 +6,11 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.extensions.ExtensionPoint;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.ModIntegration;
+
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Which hand-over this install moves colonies with, and the offer made to it before one changes
@@ -21,12 +26,17 @@ import kmlib.extensions.WorkOutcome;
  * moves the colony, and the displacement is logged rather than left to be discovered.
  *
  * <p>A routine that declines, and an install that registered none, both leave the hand-over to the
- * sequence this library composes.
+ * sequence this library composes. So does a routine that failed, which the point takes out for the
+ * session and reports under the integration that registered it.
  *
  * <p>Final class with a private constructor: the point is the state, and it is one point per
  * running game rather than one per holder of a reference to it.
  */
 public final class OwnershipTransferRoutines {
+
+    // Where a routine that failed is said to have failed, as the report's "failed while" row takes
+    // it.
+    private static final String WHILE_HANDING_A_COLONY_OVER = "handing a colony over";
 
     private static final ExtensionPoint<OwnershipTransferRoutine> INSTALLED_ROUTINE =
         new ExtensionPoint<>("ownership transfer routine");
@@ -65,16 +75,44 @@ public final class OwnershipTransferRoutines {
      *                                 plain way instead - forbidden by a mod whose colonies cannot
      *                                 change hands without its own standing and intel moving with
      *                                 them
+     * @param describeIntegration      which mod the routine comes from and what the registering
+     *                                 mod loses without it, composed only where the routine has
+     *                                 failed
      */
     public static void registerRoutine(
             String integrationName,
             OwnershipTransferRoutine ownershipTransferRoutine,
-            FallbackToDefaults fallbackToDefaults) {
+            FallbackToDefaults fallbackToDefaults,
+            Supplier<ModIntegration> describeIntegration) {
+
+        registerRoutine(
+            integrationName,
+            ownershipTransferRoutine,
+            fallbackToDefaults,
+            describeIntegration,
+            CompatibilityFailures.SESSION_RECORD);
+    }
+
+    // The same registration reporting into a stated record rather than the session's, so a suite
+    // records into one of its own.
+    static void registerRoutine(
+            String integrationName,
+            OwnershipTransferRoutine ownershipTransferRoutine,
+            FallbackToDefaults fallbackToDefaults,
+            Supplier<ModIntegration> describeIntegration,
+            CompatibilityFailures failureRecord) {
+
+        Objects.requireNonNull(
+            describeIntegration,
+            "A routine from another mod must say which mod, or its failure can report nothing.");
 
         INSTALLED_ROUTINE.registerImplementation(
             integrationName,
             ownershipTransferRoutine,
-            fallbackToDefaults);
+            fallbackToDefaults,
+            routineFailure -> describeIntegration
+                .get()
+                .recordFailure(failureRecord, WHILE_HANDING_A_COLONY_OVER, routineFailure));
     }
 
     // Offers the hand-over to whatever is installed, and says whether it was taken. Shaped as one
@@ -82,12 +120,7 @@ public final class OwnershipTransferRoutines {
     // rather than reading a point it would then have to know the rules of.
     static WorkOutcome offerTransfer(SectorAPI sector, MarketAPI market, String factionId) {
 
-        var ownershipTransferRoutine = readRoutine();
-
-        var outcome = ownershipTransferRoutine != null
-            ? ownershipTransferRoutine.transferOwnership(sector, market, factionId)
-            : null;
-
-        return INSTALLED_ROUTINE.settleWorkOutcome(outcome);
+        return INSTALLED_ROUTINE.offerWork(ownershipTransferRoutine ->
+            ownershipTransferRoutine.transferOwnership(sector, market, factionId));
     }
 }

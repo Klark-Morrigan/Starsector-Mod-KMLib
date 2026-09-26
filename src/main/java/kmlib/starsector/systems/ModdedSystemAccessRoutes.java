@@ -3,12 +3,18 @@ package kmlib.starsector.systems;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.ModIntegration;
+
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Which means of arrival this install has beyond the ones the game itself models, so that the
@@ -25,14 +31,25 @@ import java.util.Map;
  * replaces its own entry rather than stacking a duplicate beside it. Insertion ordered, so routes
  * are consulted, and reported, in the order the install composed them.
  *
+ * <p>A route that throws is taken out for the session and reported once, under the integration
+ * that registered it. The route reaches its mod's types only when it is first asked, so that is
+ * where a mod that changed underneath it is met - and the read it is asked from runs on a map
+ * refresh, where a throw would recur on every one. Whatever was thrown, the route answers as though
+ * it had not granted access: a read has no half-done work to protect, and a system read as cut off
+ * is the answer on every install without the mod.
+ *
  * <p>Final class with a private constructor: the routes are the state, and they are one set per
  * running game rather than one per holder of a reference to it.
  */
 public final class ModdedSystemAccessRoutes {
 
+    // Where a route that failed is said to have failed, as the report's "failed while" row takes
+    // it.
+    private static final String WHILE_READING_REACHABILITY = "reading whether a star system is reachable";
+
     private static final Logger LOG = Global.getLogger(ModdedSystemAccessRoutes.class);
 
-    private static final Map<String, ModdedSystemAccessRoute> INSTALLED_ROUTES = new LinkedHashMap<>();
+    private static final Map<String, InstalledRoute> INSTALLED_ROUTES = new LinkedHashMap<>();
 
     private ModdedSystemAccessRoutes() {
         // utility class, no instances.
@@ -61,28 +78,27 @@ public final class ModdedSystemAccessRoutes {
     /**
      * Adds a means of arrival to the ones this install already has.
      *
-     * @param integrationName who reaches systems this way, for the log - a mod's name reads as the
-     *                        answer to "what makes that system reachable on my install". A second
-     *                        registration under a name already present replaces that one, an
-     *                        integration composing itself twice being one route rather than two
-     * @param accessRoute     the route to consult; null is passed over, an absent integration being
-     *                        a state to leave alone rather than one that should disturb the routes
-     *                        another mod did install
+     * @param integrationName     who reaches systems this way, for the log - a mod's name reads as
+     *                            the answer to "what makes that system reachable on my install". A
+     *                            second registration under a name already present replaces that
+     *                            one, an integration composing itself twice being one route rather
+     *                            than two
+     * @param accessRoute         the route to consult; null is passed over, an absent integration
+     *                            being a state to leave alone rather than one that should disturb
+     *                            the routes another mod did install
+     * @param describeIntegration which mod the route comes from and what the registering mod loses
+     *                            without it, composed only where the route has failed
      */
-    public static void registerRoute(String integrationName, ModdedSystemAccessRoute accessRoute) {
+    public static void registerRoute(
+            String integrationName,
+            ModdedSystemAccessRoute accessRoute,
+            Supplier<ModIntegration> describeIntegration) {
 
-        if (accessRoute == null) {
-            return;
-        }
-
-        // Said out loud for the same reason a displaced extension point is: a route that was meant
-        // to be there and is not turns up much later as "that system reads as cut off", with
-        // nothing anywhere naming the moment it was decided.
-        if (INSTALLED_ROUTES.put(integrationName, accessRoute) != null) {
-            LOG.info("Modded system access route replaced under the same name: " + integrationName);
-        } else {
-            LOG.info("Modded system access route installed: " + integrationName);
-        }
+        registerRoute(
+            integrationName,
+            accessRoute,
+            describeIntegration,
+            CompatibilityFailures.SESSION_RECORD);
     }
 
     /**
@@ -98,15 +114,91 @@ public final class ModdedSystemAccessRoutes {
      * marking the system on the map - cannot be told back out of the folded answer.
      *
      * @param system the system being asked about
-     * @return whether some installed route reaches it
+     * @return whether some installed route reaches it; a route that failed on this read counts as
+     *         not reaching it, and is not asked again
      */
     public static boolean isReachedByAnyRoute(StarSystemAPI system) {
 
-        for (var route : INSTALLED_ROUTES.values()) {
-            if (route.isGrantingAccess(system)) {
-                return true;
+        var installedRoutes = INSTALLED_ROUTES.entrySet().iterator();
+
+        while (installedRoutes.hasNext()) {
+
+            var installedRoute = installedRoutes.next();
+
+            try {
+                if (installedRoute.getValue().accessRoute().isGrantingAccess(system)) {
+                    return true;
+                }
+
+            } catch (LinkageError | RuntimeException routeFailure) {
+
+                // Taken out through the walk's own iterator, the one removal that leaves the walk
+                // standing, so the routes after this one are still asked.
+                installedRoutes.remove();
+                reportTakenOut(installedRoute.getKey(), installedRoute.getValue(), routeFailure);
             }
         }
         return false;
+    }
+
+    // The same registration reporting into a stated record rather than the session's, so a suite
+    // records into one of its own.
+    static void registerRoute(
+            String integrationName,
+            ModdedSystemAccessRoute accessRoute,
+            Supplier<ModIntegration> describeIntegration,
+            CompatibilityFailures failureRecord) {
+
+        Objects.requireNonNull(
+            describeIntegration,
+            "A route from another mod must say which mod, or its failure can report nothing.");
+
+        if (accessRoute == null) {
+            return;
+        }
+
+        var installedRoute = new InstalledRoute(
+            accessRoute,
+            routeFailure -> describeIntegration
+                .get()
+                .recordFailure(failureRecord, WHILE_READING_REACHABILITY, routeFailure));
+
+        // Said out loud for the same reason a displaced extension point is: a route that was meant
+        // to be there and is not turns up much later as "that system reads as cut off", with
+        // nothing anywhere naming the moment it was decided.
+        if (INSTALLED_ROUTES.put(integrationName, installedRoute) != null) {
+            LOG.info("Modded system access route replaced under the same name: " + integrationName);
+        } else {
+            LOG.info("Modded system access route installed: " + integrationName);
+        }
+    }
+
+    // Logs and reports a route that failed. The report is guarded because it runs where the route
+    // has already failed, on a read the map asks on every refresh: a report that threw would replace
+    // the failure it was reporting and take the read down with it. Guarded as widely as the route,
+    // the report being the registrant's own and able to fail to link as well.
+    private static void reportTakenOut(
+            String integrationName,
+            InstalledRoute installedRoute,
+            Throwable routeFailure) {
+
+        LOG.error("Modded system access route failed and is taken out for the session: "
+            + integrationName, routeFailure);
+
+        try {
+            installedRoute.reportFailure().accept(routeFailure);
+
+        } catch (LinkageError | RuntimeException reportThrown) {
+
+            LOG.error("Could not report the failed modded system access route: "
+                + integrationName, reportThrown);
+        }
+    }
+
+    // A route and what its registrant is told if it fails, held together so the report cannot be
+    // separated from the route it is about.
+    private record InstalledRoute(
+        ModdedSystemAccessRoute accessRoute,
+        Consumer<Throwable> reportFailure) {
     }
 }

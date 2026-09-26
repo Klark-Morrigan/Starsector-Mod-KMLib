@@ -4,6 +4,10 @@ import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 /**
  * The one place an implementation supplied from outside is installed, so that the code offering
  * work to it never names one.
@@ -34,6 +38,14 @@ import org.apache.log4j.Logger;
  * so at registration, and a decline from that one fails the run where it happened rather than
  * producing something wrong that nothing later can trace.
  *
+ * <p>An implementation that fails while doing the work is taken out for the rest of the session and
+ * reported once, through whatever report its registrant handed in. The work is offered through
+ * {@link #offerWork} for that reason, rather than handed to the implementation by the caller: an
+ * implementation from another mod reaches that mod's types only when it is first called, so the
+ * first call is where a mod that changed underneath it is met, and a point that did not guard it
+ * would leave every caller to guard it alone. What the failure means for the call in hand depends
+ * on what was thrown - see {@link #offerWork}.
+ *
  * <p>The logger is asked of log4j directly rather than of the game, which is the same logger under
  * the same name - the game's own helper is that call and nothing more. A package that knows nothing
  * about Starsector then stays that way, and the name still sits under {@code kmlib}, so the
@@ -44,6 +56,11 @@ import org.apache.log4j.Logger;
 public final class ExtensionPoint<T> {
 
     private static final Logger LOG = Logger.getLogger(ExtensionPoint.class);
+
+    // How a decline reads once the implementation is out, completing "did not execute (...)". Said
+    // as what happened to it rather than as a reason it gave, since it gave none - it failed, and the
+    // point stopped asking it.
+    private static final String TAKEN_OUT_AFTER_FAILING = "taken out for the session after failing: ";
 
     // How an empty point is named in a line about one, so that a clean install and a displacement
     // read as the same sentence with one word different.
@@ -70,6 +87,15 @@ public final class ExtensionPoint<T> {
     private String implementationName;
     private T implementation;
 
+    // What the installed implementation's registrant is told when it fails, as it handed it in.
+    private Consumer<Throwable> reportFailure;
+
+    // Why the implementation is out, where it failed; null while it is installed, and where nothing
+    // ever was. Kept apart from the implementation, which is emptied, because the policy it was
+    // registered with still stands: a point that forgot a failed implementation had forbidden the
+    // fallback would do the work the ordinary way on an install where that is wrong.
+    private String takenOutReason;
+
     /**
      * @param extensionName what is installed here, in the words a log line should use - "colonisation
      *                      routine", "owner submarket rule". Every line this point writes is about
@@ -94,82 +120,89 @@ public final class ExtensionPoint<T> {
         fallbackToDefaults = FallbackToDefaults.PERMITTED;
         implementationName = null;
         implementation = null;
+        reportFailure = null;
+        takenOutReason = null;
     }
 
     /**
-     * Settles what came of offering the work to whatever is installed here: recorded with the
-     * reason a decline carried, refused where the implementation had to run and did not, and
+     * Offers the work to whatever is installed here, and settles what came of it: recorded with
+     * the reason a decline carried, refused where the implementation had to run and did not, and
      * answered so the caller need not read the outcome itself.
      *
-     * <p>The refusal is the whole reason this is a call rather than a log line. An implementation
-     * registered with no fallback is one whose install has no correct outcome without it, so the
-     * operation carrying on with its own sequence would be quietly producing the wrong thing - and
-     * the wrongness would be discovered much later, in a save, as something nobody can trace back
-     * to here. Failing at the moment it happens is the only report that names the cause, which is
-     * why the decline's own reason is carried into it.
+     * <p>The refusal is the whole reason settling is a call rather than a log line. An
+     * implementation registered with no fallback is one whose install has no correct outcome
+     * without it, so the operation carrying on with its own sequence would be quietly producing the
+     * wrong thing - and the wrongness would be discovered much later, in a save, as something
+     * nobody can trace back to here. Failing at the moment it happens is the only report that names
+     * the cause, which is why the decline's own reason is carried into it.
      *
-     * <p>Everything that is enforced is settled before anything is written to the log, so that a
-     * run with the log turned down is refused exactly as one with it turned up. What is enforced
-     * cannot depend on what is being recorded.
+     * <p>An implementation that throws is taken out for the session, logged, and reported once
+     * through what its registrant handed in. What that means for the call in hand turns on what was
+     * thrown:
      *
-     * @param outcome what the installed implementation answered; null is a broken implementation
-     *                rather than a decline - reported as such, and then treated as a decline with
-     *                no reason to give
+     * <ul>
+     *   <li>A {@link LinkageError} is raised where the implementation first reaches a type or member
+     *       that is no longer there, before any of its own work has run. Nothing was touched, so the
+     *       call settles as a decline and the fallback policy decides what happens next, exactly as
+     *       it would had the implementation said no.</li>
+     *   <li>A {@link RuntimeException} can come from partway through, with the work half done. The
+     *       ordinary sequence run over that would build on a state neither sequence produces, so the
+     *       failure is passed on to the caller rather than settled - the same answer a refusal
+     *       gives, for the same reason.</li>
+     * </ul>
+     *
+     * <p>Nothing wider is caught. An exhausted heap is the process's trouble rather than the
+     * implementation's, and taking it out over one would blame a mod for the machine.
+     *
+     * @param work the work, as a call on the installed implementation; not called where nothing is
+     *             installed, or where what was is out
      * @return the outcome a caller can act on: never null, and carrying a reason wherever the work
      *         was not done, so that whoever asked is holding the same account the log has
      * @throws IllegalStateException where an implementation registered
      *                               {@link FallbackToDefaults#FORBIDDEN} did not perform the work
+     * @throws RuntimeException      whatever the implementation threw partway through its work
      */
-    public WorkOutcome settleWorkOutcome(WorkOutcome outcome) {
+    public WorkOutcome offerWork(Function<T, WorkOutcome> work) {
 
         if (implementation == null) {
-            logNothingInstalled();
-            return new DeclinedWork(NO_IMPLEMENTATION_SUPPLIED + extensionName);
+            return settleEmptyPoint();
         }
 
-        if (outcome != null && outcome.wasExecuted()) {
-            logExecuted();
-            return outcome;
+        WorkOutcome outcome;
+
+        // Only the implementation's own call is inside the boundary. A refusal raised by settling
+        // is this point's own answer about a decline, not a failure of the implementation, and
+        // taking the implementation out over it would punish it for declining.
+        try {
+            outcome = work.apply(implementation);
+
+        } catch (LinkageError linkFailure) {
+
+            takeOut(linkFailure);
+            return settleDecline(takenOutReason);
+
+        } catch (RuntimeException workFailure) {
+
+            takeOut(workFailure);
+            throw workFailure;
         }
-
-        // An implementation answering with nothing at all has broken the one contract that makes a
-        // decline diagnosable, and saying so names the mod that has to fix it. Warned rather than
-        // thrown on its own account: what happens to a run that did not get its work done is the
-        // fallback policy's answer, the same as for any other decline.
-        if (outcome == null) {
-            LOG.warn(extensionName + ": " + implementationName
-                + " answered with no outcome at all, which is a decline that cannot say why");
-        }
-
-        var reason = readDeclineReason(outcome);
-
-        if (fallbackToDefaults == FallbackToDefaults.FORBIDDEN) {
-            throw new IllegalStateException(extensionName + ": " + implementationName
-                + " did not execute (" + reason + "), and was installed with no fallback to "
-                + "defaults");
-        }
-
-        logDeclined(reason);
-
-        // Answered as a decline carrying the reason that was logged, rather than as whatever came
-        // in: a caller reading this back gets the same account the log has, including where what
-        // came in was nothing at all.
-        return new DeclinedWork(reason);
+        return settleOutcome(outcome);
     }
 
     /**
-     * @return what this install put here, or null where nothing did - which is the answer on every
-     *         install running no mod that supplies one
+     * @return what this install put here, or null where nothing did or what did is out - which is
+     *         the answer on every install running no mod that supplies one
      */
     public T readImplementation() {
         return implementation;
     }
 
     /**
-     * @return the name whatever is installed here was registered under, or null where nothing is
+     * @return the name whatever is installed here was registered under, or null where nothing is,
+     *         including where what was installed failed and is out
      */
     public String readImplementationName() {
-        return implementationName;
+        return implementation != null ? implementationName : null;
     }
 
     /**
@@ -186,17 +219,27 @@ public final class ExtensionPoint<T> {
      *                           implementation declines it - stated by whoever installs it,
      *                           because only they know whether a decline is an ordinary answer or
      *                           a broken install
+     * @param reportFailure      what whoever installs it is told where the implementation fails
+     *                           and is taken out, handed what it threw. Called at most once per
+     *                           registration, a failed implementation not being offered work again
      */
     public void registerImplementation(
             String implementationName,
             T implementation,
-            FallbackToDefaults fallbackToDefaults) {
+            FallbackToDefaults fallbackToDefaults,
+            Consumer<Throwable> reportFailure) {
+
+        Objects.requireNonNull(
+            reportFailure,
+            "An implementation with nobody to tell of its failure would be taken out in silence.");
 
         if (implementation == null) {
             return;
         }
 
-        var displacedName = this.implementationName;
+        // Read through the accessor, so an implementation that failed and is out reads as nothing
+        // displaced - it had stopped doing the work before this took it over.
+        var displacedName = readImplementationName();
 
         // An unstated policy reads as the permissive one. Whoever installs without saying has not
         // claimed their work is the only correct outcome on this install, and a library that
@@ -210,6 +253,8 @@ public final class ExtensionPoint<T> {
             : implementation.getClass().getName();
 
         this.implementation = implementation;
+        this.reportFailure = reportFailure;
+        this.takenOutReason = null;
 
         logInstallation(displacedName);
     }
@@ -223,6 +268,88 @@ public final class ExtensionPoint<T> {
             return declinedWork.reason();
         }
         return NO_REASON_GIVEN;
+    }
+
+    // Tells the registrant its implementation is out. Guarded because it runs where the work has
+    // already failed: a report that threw would replace the failure it was reporting, and on a link
+    // failure would take down a call that was about to be settled the ordinary way. Guarded as
+    // widely as the work, the report being the registrant's own and able to fail to link as well.
+    private void reportTakenOut(Throwable implementationFailure) {
+
+        try {
+            reportFailure.accept(implementationFailure);
+
+        } catch (LinkageError | RuntimeException reportThrown) {
+
+            LOG.error(extensionName + ": the failure of " + implementationName
+                + " could not be reported", reportThrown);
+        }
+    }
+
+    // Settles work that was not done. Everything enforced is settled before anything is written to
+    // the log, so that a run with the log turned down is refused exactly as one with it turned up.
+    private WorkOutcome settleDecline(String reason) {
+
+        if (fallbackToDefaults == FallbackToDefaults.FORBIDDEN) {
+            throw new IllegalStateException(extensionName + ": " + implementationName
+                + " did not execute (" + reason + "), and was installed with no fallback to "
+                + "defaults");
+        }
+
+        logDeclined(reason);
+
+        // Answered as a decline carrying the reason that was logged, rather than as whatever came
+        // in: a caller reading this back gets the same account the log has, including where what
+        // came in was nothing at all.
+        return new DeclinedWork(reason);
+    }
+
+    // Settles an offer nothing was asked to take. Where nothing was ever installed that is the
+    // ordinary shape of an optional integration; where something was and failed, it is a decline
+    // under the policy it was registered with, which outlives it.
+    private WorkOutcome settleEmptyPoint() {
+
+        if (takenOutReason != null) {
+            return settleDecline(takenOutReason);
+        }
+
+        logNothingInstalled();
+        return new DeclinedWork(NO_IMPLEMENTATION_SUPPLIED + extensionName);
+    }
+
+    // Settles what the installed implementation answered.
+    private WorkOutcome settleOutcome(WorkOutcome outcome) {
+
+        if (outcome != null && outcome.wasExecuted()) {
+            logExecuted();
+            return outcome;
+        }
+
+        // An implementation answering with nothing at all has broken the one contract that makes a
+        // decline diagnosable, and saying so names the mod that has to fix it. Warned rather than
+        // thrown on its own account: what happens to a run that did not get its work done is the
+        // fallback policy's answer, the same as for any other decline.
+        if (outcome == null) {
+            LOG.warn(extensionName + ": " + implementationName
+                + " answered with no outcome at all, which is a decline that cannot say why");
+        }
+
+        return settleDecline(readDeclineReason(outcome));
+    }
+
+    // Stops offering work to an implementation that failed at it. For the session rather than for
+    // the call: a link failure is a fact about the jars loaded and recurs on every call, and a
+    // failure partway through has already left one piece of work half done - offering the next to
+    // the same implementation risks a second.
+    private void takeOut(Throwable implementationFailure) {
+
+        takenOutReason = TAKEN_OUT_AFTER_FAILING + implementationFailure;
+        implementation = null;
+
+        LOG.error(extensionName + ": " + implementationName
+            + " failed and is taken out for the session", implementationFailure);
+
+        reportTakenOut(implementationFailure);
     }
 
     // Says the work was handed back, and why. Guarded on the level because it is written once per

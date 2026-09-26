@@ -2,6 +2,7 @@ package kmlib.math.geometry;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.lwjgl.util.vector.Vector2f;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>And of {@link PolygonRegions#isPointInsideRing}: a point within a convex ring is
  * inside and one beyond it outside regardless of winding, a concave ring's notch reads
  * as outside while its arms read as inside, and a ring too short to enclose area holds
- * no point.
+ * no point. A ring of vectors answers as the same ring of {x, y} pairs does.
  *
  * <p>And of {@link PolygonRegions#computeDistanceToBoundary}: a point inside measures to
  * its nearest edge, a point outside measures the same unsigned way, a point past the end
@@ -242,6 +243,29 @@ final class PolygonRegionsTest {
                 new double[] {10, 0});
 
             assertThat(PolygonRegions.isPointInsideRing(segment, 5, 0))
+                .isFalse();
+        }
+
+        @Test
+        void aVectorRingAnswersAsThePairRingDoes() {
+            // The notched square as vectors: the arm holds its point and the notch does not,
+            // exactly as the {x, y} ring answers.
+            var ring = buildNotchedSquare().stream()
+                .map(vertex -> new Vector2f((float) vertex[0], (float) vertex[1]))
+                .toList();
+
+            assertThat(PolygonRegions.isPointInsideRing(ring, new Vector2f(2f, 7f)))
+                .isTrue();
+            assertThat(PolygonRegions.isPointInsideRing(ring, new Vector2f(5f, 7f)))
+                .isFalse();
+        }
+
+        @Test
+        void aVectorRingTooShortToEncloseAreaHoldsNoPoint() {
+
+            var segment = List.of(new Vector2f(0f, 0f), new Vector2f(10f, 0f));
+
+            assertThat(PolygonRegions.isPointInsideRing(segment, new Vector2f(5f, 0f)))
                 .isFalse();
         }
     }

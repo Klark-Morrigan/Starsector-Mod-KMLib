@@ -7,6 +7,8 @@ import kmlib.extensions.DeclinedWork;
 import kmlib.extensions.ExecutedWork;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,10 +34,18 @@ import static org.mockito.Mockito.mock;
  * <p>Routines here record that they were offered and answer a stated verdict, rather than moving
  * anything: what a hand-over consists of is {@code MarketOwnershipTransferTest}'s, and what this
  * pins is only who gets asked and what comes of it.
+ *
+ * <p>Of a routine that fails, only what this port adds is pinned here: that the failure reaches
+ * the record under the integration that registered it, at a hand-over. What the point does with
+ * the routine afterwards is {@code ExtensionPointTest}'s.
  */
 final class OwnershipTransferRoutinesTest {
 
     private static final String FACTION_ID = "hegemony";
+
+    // Where every routine here reports, so a failing case records into a record of its own rather
+    // than into the session's.
+    private final CompatibilityFailures failureRecord = new CompatibilityFailures();
 
     private List<String> offeredTo;
     private MarketAPI marketMock;
@@ -99,6 +109,39 @@ final class OwnershipTransferRoutinesTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Total Conversion");
         }
+
+        @Test
+        void leavesTheHandOverAndReportsTheIntegrationWhereTheRoutineCouldNotLink() {
+            // How a mod that changed underneath its routine is met: on the first hand-over, where
+            // nothing had moved yet - so this library's own sequence runs, and the player is told.
+            installPermittingFallback("Some Mod", (sector, market, factionId) -> {
+                throw new NoSuchMethodError("the mod moved what the routine hands over with");
+            });
+
+            assertThat(offerTransfer().wasExecuted())
+                .isFalse();
+
+            var failure = failureRecord.takeNextUnreported();
+
+            assertThat(failure.subject().name())
+                .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);
+            assertThat(failure.breakage().failureSite())
+                .isEqualTo("handing a colony over");
+        }
+
+        @Test
+        void passesOnAndReportsARoutineThatFailedPartwayThroughAHandOver() {
+            // The colony may be half moved, which this library's own sequence must not build on.
+            var handOverFailure = new IllegalStateException("half the colony was handed over");
+            installPermittingFallback("Some Mod", (sector, market, factionId) -> {
+                throw handOverFailure;
+            });
+
+            assertThatThrownBy(OwnershipTransferRoutinesTest.this::offerTransfer)
+                .isSameAs(handOverFailure);
+            assertThat(failureRecord.takeNextUnreported().cause())
+                .isSameAs(handOverFailure);
+        }
     }
 
     @Nested
@@ -155,24 +198,28 @@ final class OwnershipTransferRoutinesTest {
         return OwnershipTransferRoutines.offerTransfer(sectorMock, marketMock, FACTION_ID);
     }
 
-    private static void installForbiddingFallback(
+    private void installForbiddingFallback(
             String integrationName,
             OwnershipTransferRoutine ownershipTransferRoutine) {
 
         OwnershipTransferRoutines.registerRoutine(
             integrationName,
             ownershipTransferRoutine,
-            FallbackToDefaults.FORBIDDEN);
+            FallbackToDefaults.FORBIDDEN,
+            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+            failureRecord);
     }
 
-    private static void installPermittingFallback(
+    private void installPermittingFallback(
             String integrationName,
             OwnershipTransferRoutine ownershipTransferRoutine) {
 
         OwnershipTransferRoutines.registerRoutine(
             integrationName,
             ownershipTransferRoutine,
-            FallbackToDefaults.PERMITTED);
+            FallbackToDefaults.PERMITTED,
+            () -> CompatibilityFailureFixture.MOD_INTEGRATION,
+            failureRecord);
     }
 
     // A routine that records having been offered a hand-over and answers the stated verdict, so a

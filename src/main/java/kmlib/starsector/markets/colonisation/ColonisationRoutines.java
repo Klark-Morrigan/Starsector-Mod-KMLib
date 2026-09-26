@@ -6,6 +6,11 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.extensions.ExtensionPoint;
 import kmlib.extensions.FallbackToDefaults;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.ModIntegration;
+
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Which colonisation this install founds colonies with, and the offer made to it before one is
@@ -23,12 +28,18 @@ import kmlib.extensions.WorkOutcome;
  * that founds, and the displacement is logged rather than left to be discovered.
  *
  * <p>A routine that declines, and an install that registered none, both leave the founding to the
- * game's own sequence - which is what every install without such a mod runs.
+ * game's own sequence - which is what every install without such a mod runs. So does a routine that
+ * failed, which the point takes out for the session and reports under the integration that
+ * registered it.
  *
  * <p>Final class with a private constructor: the point is the state, and it is one point per
  * running game rather than one per holder of a reference to it.
  */
 public final class ColonisationRoutines {
+
+    // Where a routine that failed is said to have failed, as the report's "failed while" row takes
+    // it.
+    private static final String WHILE_FOUNDING_A_COLONY = "founding a colony";
 
     private static final ExtensionPoint<ColonisationRoutine> INSTALLED_ROUTINE =
         new ExtensionPoint<>("colonisation routine");
@@ -67,16 +78,43 @@ public final class ColonisationRoutines {
      *                            way instead - forbidden by a mod whose colonies are not the game's
      *                            colonies, where the plainer founding would be wrong rather than
      *                            merely plainer
+     * @param describeIntegration which mod the routine comes from and what the registering mod
+     *                            loses without it, composed only where the routine has failed
      */
     public static void registerRoutine(
             String integrationName,
             ColonisationRoutine colonisationRoutine,
-            FallbackToDefaults fallbackToDefaults) {
+            FallbackToDefaults fallbackToDefaults,
+            Supplier<ModIntegration> describeIntegration) {
+
+        registerRoutine(
+            integrationName,
+            colonisationRoutine,
+            fallbackToDefaults,
+            describeIntegration,
+            CompatibilityFailures.SESSION_RECORD);
+    }
+
+    // The same registration reporting into a stated record rather than the session's, so a suite
+    // records into one of its own.
+    static void registerRoutine(
+            String integrationName,
+            ColonisationRoutine colonisationRoutine,
+            FallbackToDefaults fallbackToDefaults,
+            Supplier<ModIntegration> describeIntegration,
+            CompatibilityFailures failureRecord) {
+
+        Objects.requireNonNull(
+            describeIntegration,
+            "A routine from another mod must say which mod, or its failure can report nothing.");
 
         INSTALLED_ROUTINE.registerImplementation(
             integrationName,
             colonisationRoutine,
-            fallbackToDefaults);
+            fallbackToDefaults,
+            routineFailure -> describeIntegration
+                .get()
+                .recordFailure(failureRecord, WHILE_FOUNDING_A_COLONY, routineFailure));
     }
 
     // Offers the founding to whatever is installed, and says whether it was taken. Shaped as one
@@ -88,12 +126,7 @@ public final class ColonisationRoutines {
             String factionId,
             int colonySize) {
 
-        var colonisationRoutine = readRoutine();
-
-        var outcome = colonisationRoutine != null
-            ? colonisationRoutine.establishColony(sector, market, factionId, colonySize)
-            : null;
-
-        return INSTALLED_ROUTINE.settleWorkOutcome(outcome);
+        return INSTALLED_ROUTINE.offerWork(colonisationRoutine ->
+            colonisationRoutine.establishColony(sector, market, factionId, colonySize));
     }
 }

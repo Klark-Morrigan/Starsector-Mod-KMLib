@@ -1,7 +1,10 @@
 package kmlib.math.geometry;
 
+import org.lwjgl.util.vector.Vector2f;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.ToDoubleFunction;
 
 /**
  * Interrogates a closed ring, or a region bounded by rings, without reshaping it:
@@ -120,35 +123,22 @@ public final class PolygonRegions {
      *         for a ring too short to enclose area
      */
     public static boolean isPointInsideRing(List<double[]> ring, double x, double y) {
-        if (ring.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-            return false;
-        }
-        var isInside = false;
-        var count = ring.size();
-        for (var i = 0; i < count; i++) {
+        return isPointInsideRing(ring, vertex -> vertex[0], vertex -> vertex[1], x, y);
+    }
 
-            var edgeStart = ring.get(i);
-            var edgeEnd = ring.get((i + 1) % count);
-
-            // Only an edge that straddles the ray's height can cross it. An endpoint
-            // exactly at the height counts below, so a shared corner toggles once
-            // rather than twice.
-            var isStraddlingRayHeight = (edgeStart[1] > y) != (edgeEnd[1] > y);
-            if (!isStraddlingRayHeight) {
-                continue;
-            }
-            // Where the edge meets the ray's horizontal line. A straddling edge spans
-            // the height by definition, so the height delta below is never zero.
-            var crossingX = edgeStart[0]
-                + (y - edgeStart[1]) * (edgeEnd[0] - edgeStart[0])
-                    / (edgeEnd[1] - edgeStart[1]);
-
-            // Only crossings to the point's right count, so the ray runs one way.
-            if (x < crossingX) {
-                isInside = !isInside;
-            }
-        }
-        return isInside;
+    /**
+     * Whether a point falls inside a closed ring of vectors -
+     * {@link #isPointInsideRing(List, double, double)} for a ring laid out in the float
+     * coordinates the game's UI works in, with the same even-odd rule and the same
+     * boundary caveat.
+     *
+     * @param ring  closed polygon vertices, in any winding
+     * @param point the point to test
+     * @return true when the point lies within the ring; false when outside, and always
+     *         for a ring too short to enclose area
+     */
+    public static boolean isPointInsideRing(List<Vector2f> ring, Vector2f point) {
+        return isPointInsideRing(ring, vertex -> vertex.x, vertex -> vertex.y, point.x, point.y);
     }
 
     /**
@@ -466,6 +456,46 @@ public final class PolygonRegions {
             }
         }
         return crossings;
+    }
+
+    // The ray-cast walk both public forms of isPointInsideRing share. Vertex coordinates are read
+    // through the two accessors so neither form copies its ring into the other's type first.
+    private static <P> boolean isPointInsideRing(
+            List<P> ring,
+            ToDoubleFunction<P> readX,
+            ToDoubleFunction<P> readY,
+            double x,
+            double y) {
+
+        if (ring.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+            return false;
+        }
+        var isInside = false;
+        var count = ring.size();
+        for (var i = 0; i < count; i++) {
+
+            var startX = readX.applyAsDouble(ring.get(i));
+            var startY = readY.applyAsDouble(ring.get(i));
+            var endX = readX.applyAsDouble(ring.get((i + 1) % count));
+            var endY = readY.applyAsDouble(ring.get((i + 1) % count));
+
+            // Only an edge that straddles the ray's height can cross it. An endpoint
+            // exactly at the height counts below, so a shared corner toggles once
+            // rather than twice.
+            var isStraddlingRayHeight = (startY > y) != (endY > y);
+            if (!isStraddlingRayHeight) {
+                continue;
+            }
+            // Where the edge meets the ray's horizontal line. A straddling edge spans
+            // the height by definition, so the height delta below is never zero.
+            var crossingX = startX + (y - startY) * (endX - startX) / (endY - startY);
+
+            // Only crossings to the point's right count, so the ray runs one way.
+            if (x < crossingX) {
+                isInside = !isInside;
+            }
+        }
+        return isInside;
     }
 
     // Whether the point lies inside the region the rings bound, by the even-odd rule

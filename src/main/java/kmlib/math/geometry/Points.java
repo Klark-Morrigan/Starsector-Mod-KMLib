@@ -3,6 +3,7 @@ package kmlib.math.geometry;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.util.List;
+import java.util.function.ToDoubleFunction;
 
 /**
  * Operations on 2D points.
@@ -28,20 +29,25 @@ public final class Points {
      *         with nothing to average)
      */
     public static double[] computeMean(List<double[]> points) {
+        return computeMean(points, point -> point[0], point -> point[1]);
+    }
 
-        if (points.isEmpty()) {
-            throw new IllegalArgumentException("Cannot average no points");
-        }
+    /**
+     * The mean position of a list of vectors - {@link #computeMean(List)} for points laid out in
+     * the float coordinates the game's UI works in.
+     *
+     * <p>Named apart from {@code computeMean} rather than overloading it: a {@code List<Vector2f>}
+     * and a {@code List<double[]>} erase to the same parameter type, so Java cannot hold both.
+     *
+     * @param points the points to average; must be non-empty
+     * @return the mean position
+     * @throws IllegalArgumentException if {@code points} is empty (a mean is undefined
+     *         with nothing to average)
+     */
+    public static Vector2f computeMeanOfVectors(List<Vector2f> points) {
 
-        var sumX = 0.0;
-        var sumY = 0.0;
-
-        for (var point : points) {
-
-            sumX += point[0];
-            sumY += point[1];
-        }
-        return new double[] {sumX / points.size(), sumY / points.size()};
+        var mean = computeMean(points, point -> point.x, point -> point.y);
+        return new Vector2f((float) mean[0], (float) mean[1]);
     }
 
     /**
@@ -310,5 +316,27 @@ public final class Points {
 
         // Clamp against rounding drift just outside [-1, 1] before acos.
         return Math.acos(Math.max(-1.0, Math.min(1.0, cosine)));
+    }
+
+    // The averaging walk both public forms share. Coordinates are read through the two accessors
+    // so neither form copies its points into the other's type first.
+    private static <P> double[] computeMean(
+            List<P> points,
+            ToDoubleFunction<P> readX,
+            ToDoubleFunction<P> readY) {
+
+        if (points.isEmpty()) {
+            throw new IllegalArgumentException("Cannot average no points");
+        }
+
+        var sumX = 0.0;
+        var sumY = 0.0;
+
+        for (var point : points) {
+
+            sumX += readX.applyAsDouble(point);
+            sumY += readY.applyAsDouble(point);
+        }
+        return new double[] {sumX / points.size(), sumY / points.size()};
     }
 }

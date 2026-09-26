@@ -2,9 +2,12 @@ package kmlib.mods.rat;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.starsector.systems.ModdedSystemAccessRoutes;
 
 import org.apache.log4j.Logger;
+
+import java.util.function.Supplier;
 
 /**
  * Where this package's adapters are put in front of the reads that may defer to them.
@@ -49,15 +52,24 @@ public final class RandomAssortmentOfThingsIntegration {
      *
      * <p>Routes are keyed by name, so a second call replaces this integration's own route rather
      * than adding a second one beside it - which is the same install either way.
+     *
+     * @param describeIntegration what a failing route is reported as: this mod, and what the
+     *                            registering mod loses without it. The caller's to compose, being
+     *                            the mod that loses something - so a route failing when first asked
+     *                            files under the same report as the install failing
      */
-    public static void installModdedSystemAccessRoutes() {
-        installModdedSystemAccessRoutes(RandomAssortmentOfThingsPresence.isModEnabled());
+    public static void installModdedSystemAccessRoutes(Supplier<ModIntegration> describeIntegration) {
+        installModdedSystemAccessRoutes(
+            RandomAssortmentOfThingsPresence.isModEnabled(),
+            describeIntegration);
     }
 
     // The same installation against a stated answer rather than the live one, which is what lets an
     // install with the mod and one without be posed on a machine that has whichever mods it
     // happens to have.
-    static void installModdedSystemAccessRoutes(boolean isRandomAssortmentOfThingsEnabled) {
+    static void installModdedSystemAccessRoutes(
+            boolean isRandomAssortmentOfThingsEnabled,
+            Supplier<ModIntegration> describeIntegration) {
 
         if (!isRandomAssortmentOfThingsEnabled) {
 
@@ -75,6 +87,7 @@ public final class RandomAssortmentOfThingsIntegration {
         // to find a star drawn for a destination that was never given one.
         ModdedSystemAccessRoutes.registerRoute(
             INTEGRATION_NAME,
-            RandomAssortmentOfThingsMatcher::hasAbyssalFracture);
+            RandomAssortmentOfThingsMatcher::hasAbyssalFracture,
+            describeIntegration);
     }
 }

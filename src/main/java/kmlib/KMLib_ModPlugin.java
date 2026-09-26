@@ -144,15 +144,20 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // rather than every step that had not been reached yet. For an integration, that leaves the
     // library running its own sequences rather than a mod's, which is the behaviour of an install
     // without that mod - a worse colony than the player expected, and the reason they are told.
+    //
+    // Each describer is handed to the installation as well as to its guard. An adapter reaches its
+    // mod's types only when first called, so a mod that changed underneath it usually fails there
+    // rather than here - and one describer for both is what makes the two one report.
     private static void installOptionalModIntegrations() {
 
         WIRING_STEPS.runGuardedStep(
-            NexerelinIntegration::installRoutines,
+            () -> NexerelinIntegration.installRoutines(KMLib_ModPlugin::describeNexerelinIntegration),
             "Failed to install KMLib Nexerelin routines",
             KMLib_ModPlugin::describeNexerelinIntegration);
 
         WIRING_STEPS.runGuardedStep(
-            RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes,
+            () -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(
+                KMLib_ModPlugin::describeRandomAssortmentOfThingsIntegration),
             "Failed to install KMLib Random Assortment of Things system access routes",
             KMLib_ModPlugin::describeRandomAssortmentOfThingsIntegration);
     }

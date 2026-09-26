@@ -255,6 +255,15 @@ KMLib's own plugin is the first consumer to run through it,
 losing library features to third parties under the library's own mod ID -
 which is how a channel built for one client shows it is one.
 
+An adapter reaches its mod's types only when first called,
+so the same failure more often arrives at call time than at start-up.
+The places that hold a registered adapter -
+the extension points and the access routes, set out in [`extensions/`](../../extensions/README.md) -
+take a describer of the registering integration's `ModIntegration` at registration
+and file through it,
+each spelling its own "failed while" phrase.
+One describer for both is what makes a failure at install and one at call a single report.
+
 ## One record per session
 
 `CompatibilityFailures.SESSION_RECORD` is the record every binding records into

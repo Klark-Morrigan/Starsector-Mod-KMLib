@@ -2,12 +2,19 @@ package kmlib.math.geometry;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.lwjgl.util.vector.Vector2f;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins the rectangle's point test: interior points are inside, exterior points are not, and
+ * Pins the rectangle a list of vectors is enclosed by: its corner at their lowest x and y, its size
+ * spanning to their highest, and no rectangle at all for no points.
+ *
+ * <p>Pins the rectangle's point test: interior points are inside, exterior points are not, and
  * the edges count as inside so a hairline-precise hit does not fall through. Also pins the centre
  * accessors used to place a centred element, and the inset box an element drawn inside a frame is
  * placed from - the floor that keeps a box too small for its own inset from inverting included.
@@ -17,36 +24,72 @@ class RectangleTest {
     private static final float TOLERANCE = 0.01f;
 
     @Nested
+    class ComputeEnclosingRectangle {
+
+        @Test
+        void placesTheCornerAtTheLowestPointsAndSpansToTheHighest() {
+            // The extremes come from three different points, so a walk that read the first and
+            // last, or that carried x for y, would come back with a plausible smaller box.
+            var rectangle = Rectangle.computeEnclosingRectangle(List.of(
+                new Vector2f(5f, -2f),
+                new Vector2f(-3f, 7f),
+                new Vector2f(1f, 1f)));
+
+            assertThat(rectangle)
+                .isEqualTo(new Rectangle(-3f, -2f, 8f, 9f));
+        }
+
+        @Test
+        void enclosesASinglePointAsARectangleWithNoArea() {
+
+            assertThat(Rectangle.computeEnclosingRectangle(List.of(new Vector2f(4f, 6f))))
+                .isEqualTo(new Rectangle(4f, 6f, 0f, 0f));
+        }
+
+        @Test
+        void refusesToEncloseNoPointsAtAll() {
+
+            assertThatThrownBy(() -> Rectangle.computeEnclosingRectangle(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     class ContainsPoint {
 
         private final Rectangle rectangle = new Rectangle(10f, 20f, 100f, 50f);
 
         @Test
         void reportsAnInteriorPointAsInside() {
+
             assertThat(rectangle.containsPoint(50f, 40f))
                 .isTrue();
         }
 
         @Test
         void reportsAPointLeftOfTheRectangleAsOutside() {
+
             assertThat(rectangle.containsPoint(5f, 40f))
                 .isFalse();
         }
 
         @Test
         void reportsAPointAboveTheRectangleAsOutside() {
+
             assertThat(rectangle.containsPoint(50f, 80f))
                 .isFalse();
         }
 
         @Test
         void countsTheLowerLeftCornerAsInside() {
+
             assertThat(rectangle.containsPoint(10f, 20f))
                 .isTrue();
         }
 
         @Test
         void countsTheUpperRightCornerAsInside() {
+
             assertThat(rectangle.containsPoint(110f, 70f))
                 .isTrue();
         }
@@ -114,6 +157,7 @@ class RectangleTest {
 
         @Test
         void reportsABoxWhollyInsideAsOverlapping() {
+
             assertThat(surface.overlapsBox(new Rectangle(100f, 100f, 200f, 150f)))
                 .isTrue();
         }
@@ -128,6 +172,7 @@ class RectangleTest {
 
         @Test
         void reportsABoxWhollyOutsideAsNotOverlapping() {
+
             assertThat(surface.overlapsBox(new Rectangle(-400f, 100f, 200f, 150f)))
                 .isFalse();
         }
@@ -217,6 +262,7 @@ class RectangleTest {
 
         @Test
         void returnsTheBoxItselfAtNoInset() {
+
             assertThat(new Rectangle(10f, 20f, 100f, 50f).computeInsetBox(0f))
                 .isEqualTo(new Rectangle(10f, 20f, 100f, 50f));
         }

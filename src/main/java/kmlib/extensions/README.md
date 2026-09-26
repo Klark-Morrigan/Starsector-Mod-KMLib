@@ -48,10 +48,19 @@ Nothing in this package names the Starsector API or any mod.
   so both installs are posed on a machine that has whichever mods it happens to have.
 - **Soft dependency status**:
   every mod reached this way is absent from `mod_info.json`.
+- **A boundary where the adapter is called**.
+  The holder defers the mod's types past install,
+  so a mod that changed underneath an adapter is met when the adapter is first called,
+  not when it is registered.
+  Each shape answers that at the call, as set out under it,
+  and shapes 1 and 3 report it through the compatibility channel
+  under the integration the registration named.
 
 Registration happens in `KMLib_ModPlugin.installOptionalModIntegrations`,
 one guarded step per facade,
 so a mod whose registration throws costs only its own adapters.
+The describer each step reports under is handed to the facade as well,
+so an adapter failing at install and one failing when called are one report.
 
 ## Shape 1: a routine taken over
 
@@ -75,6 +84,19 @@ The seam interface performs the work *and* answers whether it did,
 in one method returning `WorkOutcome`.
 Split into a question and a command,
 a caller could ask and then not call.
+
+The port hands the work over through `offerWork`,
+never by calling the implementation itself,
+so the call runs inside the point's boundary.
+An implementation that throws is taken out for the session and reported once,
+and what that means for the call in hand turns on what was thrown.
+A `LinkageError` comes before any of the implementation's own work,
+so the call settles as a decline and the fallback policy answers it.
+A `RuntimeException` can come with the work half done,
+so it is passed on to the caller rather than settled -
+the ordinary sequence run over half a founding would build on a state neither sequence produces.
+The policy outlives the implementation:
+one that forbade the fallback goes on refusing runs after it is out.
 
 Held by `ColonisationRoutines`,
 `OwnershipTransferRoutines`,
@@ -108,6 +130,10 @@ accessor moved by a release,
 read throwing -
 each reports the answer that leaves a caller behaving as it did before the question existed,
 and warns once naming the hop that broke rather than per frame.
+Where the answer is a feature the player would miss -
+the alliances a map groups factions by -
+the read is also taken out for the session and reported through the compatibility channel,
+since a warning in the log reaches no player.
 
 ## Shape 3: an answer that composes
 
@@ -125,6 +151,12 @@ both are true at once,
 and keeping only the last registered would silently drop one mod's routes
 because another loaded after it.
 One route answering false leaves the question where it found it.
+
+A route that throws is taken out for the session, reported once,
+and answers as not granting access - the answer on an install without its mod.
+Whatever was thrown is treated alike,
+a read having no half-done work to protect,
+and the routes after it are still asked.
 
 ## Choosing between them
 
