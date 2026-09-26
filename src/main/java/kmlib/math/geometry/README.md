@@ -31,6 +31,17 @@ the edge from the last vertex back to the first is implied.
 Counter-clockwise winding gives positive signed area,
 and the passes preserve the winding they are handed.
 
+A caller laying shapes out in the game's float UI coordinates holds LWJGL `Vector2f`s instead,
+so the measures such a caller asks for take those too:
+`Points.computeMeanOfVectors`,
+`PolygonRegions.isPointInsideRing(ring, point)`,
+`Rectangle.computeEnclosingRectangle`
+and `PolygonShapes.computeRegularVertices(centre, radius, sides, startAngle)`.
+Each reads its points through the same walk as its `{x, y}` form,
+so the two cannot disagree and neither copies its points into the other's type.
+The mean is named apart rather than overloaded
+because a `List<Vector2f>` and a `List<double[]>` erase to the same parameter type.
+
 ## Shapes and values
 
 | Type | Holds |
