@@ -1245,6 +1245,9 @@ A mod keeping its player-facing files per language,
 one bundle per locale under `localisation/<locale>/` beside a `localisation/manifest.json`,
 gets `writeLocaleFiles`,
 which writes one locale into the files the game reads.
+A locale is chosen when the mod is built because nothing can choose one in play:
+LunaLib reads each mod's single settings table and has no language concept,
+and the launcher reads one `mod_info.json`.
 `-Plocale=<tag>` selects;
 omitted,
 the manifest's `defaultLocale` is built.
@@ -1499,6 +1502,9 @@ a row varying what it stores,
 a tab split or merged,
 glyphs no named core localisation supplies -
 and lists the launcher fields a locale leaves to the base without failing on them.
+`findAllMismatches()` gathers every check,
+so a mod's suite is one assertion over its own `localisation/`;
+a mod shipping no settings table opens the comparison without a field ID prefix.
 [`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
 holds the save a stored value lands in and two stand-in addresses to hold it apart under,
 and

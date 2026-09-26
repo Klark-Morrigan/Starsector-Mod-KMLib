@@ -1,5 +1,6 @@
 package kmlib.testfixtures.localisation;
 
+import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
 import kmlib.testfixtures.starsector.settings.LunaSettingsTable.FieldBehaviour;
 import kmlib.testfixtures.starsector.strings.StringTemplates;
 
@@ -14,6 +15,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 
@@ -43,19 +45,57 @@ public final class LocaleParity {
     private static final int LATIN_1_LAST_CODE_POINT = 0xFF;
 
     private final LocalisationDirectory directory;
+
+    // Null for a mod shipping no settings table, which has no field IDs to name. Only a manifest mapping
+    // the table leads to a read of it, and that read refuses a missing prefix.
     private final String settingsFieldIdPrefix;
+
+    /**
+     * Opens a comparison over a mod shipping no settings table, whose manifest maps its other files alone.
+     *
+     * @param directory the directory to compare the locales of
+     */
+    public LocaleParity(LocalisationDirectory directory) {
+
+        this.directory = Objects.requireNonNull(directory, "directory");
+        this.settingsFieldIdPrefix = null;
+    }
 
     /**
      * Opens a comparison over one mod's localisation directory.
      *
      * @param directory             the directory to compare the locales of
-     * @param settingsFieldIdPrefix what every one of the mod's settings field IDs starts with; unread for a
-     *                              mod whose manifest maps no settings table
+     * @param settingsFieldIdPrefix what every one of the mod's settings field IDs starts with
      */
     public LocaleParity(LocalisationDirectory directory, String settingsFieldIdPrefix) {
 
         this.directory = Objects.requireNonNull(directory, "directory");
         this.settingsFieldIdPrefix = Objects.requireNonNull(settingsFieldIdPrefix, "settingsFieldIdPrefix");
+    }
+
+    /**
+     * Every finding of every check below, so a mod holds its locales to the default in one assertion. Each
+     * finding names its locale, its file and the edit to make, so the check it came from needs no naming.
+     * Listed in the order a fix is best made: the directories and files first, since a gap there hides the
+     * comparisons over them, then the strings, the settings table and the launcher fragment.
+     *
+     * @return the findings of every check, in that order
+     */
+    public List<String> findAllMismatches() {
+
+        return Stream.of(
+                findDeclaredLocalesWithoutBundleDirectory(),
+                findUndeclaredBundleDirectories(),
+                findMissingBundleFiles(),
+                findStringsKeyMismatches(),
+                findFormatArgumentMismatches(),
+                findLocalesMissingCoreLocalisation(),
+                findSettingsRowMismatches(),
+                findSettingsBehaviourMismatches(),
+                findSettingsTabMismatches(),
+                findModInfoFragmentMismatches())
+            .flatMap(List::stream)
+            .toList();
     }
 
     /**
@@ -122,7 +162,7 @@ public final class LocaleParity {
 
                 displayedTextsByFileName.put(
                     LocaleBundle.SETTINGS_FILE_NAME,
-                    bundle.openSettingsTable(settingsFieldIdPrefix).readDisplayedTexts());
+                    openSettingsTable(bundle).readDisplayedTexts());
             }
             displayedTextsByFileName.forEach((fileName, displayedTexts) -> {
 
@@ -223,7 +263,7 @@ public final class LocaleParity {
 
         return compareWithDefault(
             LocaleBundle.SETTINGS_FILE_NAME,
-            bundle -> bundle.openSettingsTable(settingsFieldIdPrefix).readBehavioursByFieldId(),
+            bundle -> openSettingsTable(bundle).readBehavioursByFieldId(),
             LocaleParity::describeBehaviourMismatches);
     }
 
@@ -239,7 +279,7 @@ public final class LocaleParity {
 
         return compareWithDefault(
             LocaleBundle.SETTINGS_FILE_NAME,
-            bundle -> bundle.openSettingsTable(settingsFieldIdPrefix).readDeclaredFieldIds(),
+            bundle -> openSettingsTable(bundle).readDeclaredFieldIds(),
             LocaleParity::describeRowMismatches);
     }
 
@@ -255,7 +295,7 @@ public final class LocaleParity {
 
         return compareWithDefault(
             LocaleBundle.SETTINGS_FILE_NAME,
-            bundle -> bundle.openSettingsTable(settingsFieldIdPrefix).readTabsByFieldId(),
+            bundle -> openSettingsTable(bundle).readTabsByFieldId(),
             LocaleParity::describeTabMismatches);
     }
 
@@ -511,6 +551,19 @@ public final class LocaleParity {
             findings.addAll(describeMismatches.apply(readings));
         }
         return findings;
+    }
+
+    // Reached only where the manifest maps a settings table, so a comparison opened without a prefix
+    // fails here, naming the fix, rather than reading every row as spacing.
+    private LunaSettingsTable openSettingsTable(LocaleBundle bundle) {
+
+        if (settingsFieldIdPrefix == null) {
+
+            throw new IllegalStateException(
+                "The manifest maps " + LocaleBundle.SETTINGS_FILE_NAME
+                    + ", so the comparison needs the mod's settings field ID prefix");
+        }
+        return bundle.openSettingsTable(settingsFieldIdPrefix);
     }
 
     /**
