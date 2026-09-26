@@ -38,8 +38,8 @@ public final class ModelviewMatrixReaders {
     private static final Logger LOG = Global.getLogger(ModelviewMatrixReaders.class);
 
     // The selection the game runs on, wired to the live renderer check, the real bridge binding and
-    // the session's record. Held as a value so the same logic can be driven in a test against a
-    // binding that fails - which no test JVM's renderer would otherwise reach at all.
+    // the session's record. Held as a value so the same logic runs over whatever binding it is
+    // handed, a failing one included, rather than only over the one the running renderer offers.
     private static final ModelviewMatrixReaders SESSION_SELECTION = new ModelviewMatrixReaders(
         FastRendering::isFastRenderingActive,
         ModelviewMatrixReaders::bindFastRenderingReader,
