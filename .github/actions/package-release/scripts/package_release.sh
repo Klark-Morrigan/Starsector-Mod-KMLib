@@ -42,6 +42,8 @@ ACTIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
 source "${ACTIONS_DIR}/_lib/mod_info.sh"
+# shellcheck source=../../_lib/json.sh
+source "${ACTIONS_DIR}/_lib/json.sh"
 
 # Called rather than restated, so a zip's version file and the one a mod without
 # locales has always shipped come out of one implementation.
@@ -88,32 +90,18 @@ DIST_DIR="${DIST_ROOT}/${MOD_FOLDER_NAME}"
 # every locale.
 PAYLOAD_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
 
-if ! jq -e 'type == "array"' <<< "${LOCALES}" > /dev/null 2>&1; then
-  echo "${SCRIPT_NAME}: LOCALES is not a JSON array: ${LOCALES}" >&2
-  exit 1
-fi
-
-# Carriage returns dropped because jq on Windows ends its lines with CRLF,
-# which a local run there would otherwise carry into every file name. Split
-# only when non-empty, since a here-string of nothing still reads as one line.
-LOCALE_TAG_LINES=$(jq -r '.[].tag' <<< "${LOCALES}")
-LOCALE_TAG_LINES="${LOCALE_TAG_LINES//$'\r'/}"
+json_require_array "${LOCALES}" "LOCALES"
+# Declared here, being filled through json_read_lines' name reference.
 LOCALE_TAGS=()
-if [[ -n "${LOCALE_TAG_LINES}" ]]; then
-  mapfile -t LOCALE_TAGS <<< "${LOCALE_TAG_LINES}"
-fi
+json_read_lines LOCALE_TAGS -r '.[].tag' <<< "${LOCALES}"
 
 IS_LOCALISED=false
 if (( ${#LOCALE_TAGS[@]} > 0 )); then
 
   IS_LOCALISED=true
-  IS_DEFAULT_DECLARED=false
-  for localeTag in "${LOCALE_TAGS[@]}"; do
-    if [[ "${localeTag}" == "${DEFAULT_LOCALE}" ]]; then
-      IS_DEFAULT_DECLARED=true
-    fi
-  done
-  if [[ "${IS_DEFAULT_DECLARED}" != "true" ]]; then
+  # Its version file is copied to the unsuffixed name last of all, so a
+  # default the loop never packages would fail only after every zip was built.
+  if ! jq -e --arg tag "${DEFAULT_LOCALE}" 'any(.[]; .tag == $tag)' <<< "${LOCALES}" > /dev/null; then
     echo "${SCRIPT_NAME}: default locale '${DEFAULT_LOCALE}' is not among the locales ${LOCALES}" >&2
     exit 1
   fi

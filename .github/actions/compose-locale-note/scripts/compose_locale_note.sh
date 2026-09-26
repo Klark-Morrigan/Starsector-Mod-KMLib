@@ -25,28 +25,35 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
+# shellcheck source=../../_lib/json.sh
+source "${LIB_DIR}/json.sh"
+
+# Separates a locale's fields on one line. A control character no display name
+# or URL carries, so a field is read back exactly, where a tab-separated row
+# would come back with its backslashes escaped.
+FIELD_SEPARATOR=$'\x1f'
 
 LOCALES="${LOCALES:-[]}"
 JAR_SOURCE="${JAR_SOURCE:?${SCRIPT_NAME}: JAR_SOURCE is required}"
 VERSION="${VERSION:?${SCRIPT_NAME}: VERSION is required}"
 
-if ! jq -e 'type == "array"' <<< "${LOCALES}" > /dev/null 2>&1; then
-  echo "${SCRIPT_NAME}: LOCALES is not a JSON array: ${LOCALES}" >&2
-  exit 1
-fi
+json_require_array "${LOCALES}" "LOCALES"
+# Declared here, being filled through json_read_lines' name reference.
+LOCALE_ROWS=()
+# $separator is jq's own, bound by --arg, not the shell's.
+# shellcheck disable=SC2016
+json_read_lines LOCALE_ROWS -r --arg separator "${FIELD_SEPARATOR}" \
+  '.[] | [.tag, .displayName, (.coreLocalisation // "")] | join($separator)' <<< "${LOCALES}"
 
 # One line, because $GITHUB_OUTPUT's key=value form takes no newline and the
 # body joins this under the same rule as the dependency line.
 NOTE=""
-LOCALE_COUNT=$(jq 'length' <<< "${LOCALES}")
 
-if (( LOCALE_COUNT > 0 )); then
+if (( ${#LOCALE_ROWS[@]} > 0 )); then
 
   LOCALE_ENTRIES=()
-  for (( index = 0; index < LOCALE_COUNT; index++ )); do
-    localeTag=$(jq -r --argjson index "${index}" '.[$index].tag' <<< "${LOCALES}")
-    displayName=$(jq -r --argjson index "${index}" '.[$index].displayName' <<< "${LOCALES}")
-    coreLocalisation=$(jq -r --argjson index "${index}" '.[$index].coreLocalisation // ""' <<< "${LOCALES}")
+  for localeRow in "${LOCALE_ROWS[@]}"; do
+    IFS="${FIELD_SEPARATOR}" read -r localeTag displayName coreLocalisation <<< "${localeRow}"
     zipName=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${localeTag}")
 
     localeEntry="${displayName} in \`${zipName}\`"

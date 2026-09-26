@@ -41,8 +41,8 @@ def locateModInfoFile = { File modRoot ->
     return modInfoFile
 }
 
-def readModInfo = { File modRoot -> shippedJson.readObjectFile(locateModInfoFile(modRoot)) }
+def projectModInfoFile = locateModInfoFile(projectDir)
 
-ext.modInfoFile = locateModInfoFile(projectDir)
-ext.modInfo = readModInfo(projectDir)
-ext.readModInfo = readModInfo
+ext.modInfoFile = projectModInfoFile
+ext.modInfo = shippedJson.readObjectFile(projectModInfoFile)
+ext.readModInfo = { File modRoot -> shippedJson.readObjectFile(locateModInfoFile(modRoot)) }

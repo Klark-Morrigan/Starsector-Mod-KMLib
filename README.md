@@ -262,6 +262,8 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   what it contains and what shape its fields take,
   and the release file names that follow from it;
   sourced by the scripts reading that metadata.
+- [`actions/_lib/json.sh`](.github/actions/_lib/json.sh) -
+  the JSON reads the locale scripts share.
 - [`tests/`](.github/tests/) -
   bats-core tests for the action scripts.
 
@@ -1223,8 +1225,8 @@ so no version number is restated by hand outside that file.
   so a caller writing into the checkout and one writing beside it
   each state the path they would state anyway.
 
-Five of the nine read the caller's metadata,
-so which file holds it and what shape its fields take live once in
+Four of the nine read the caller's metadata and a fifth names release files,
+so which file holds the metadata, what shape its fields take and what follows from them live once in
 [_lib/mod_info.sh](.github/actions/_lib/mod_info.sh),
 which they source:
 the base-over-launcher-file rule,
@@ -1248,6 +1250,11 @@ The file sits under `actions/` rather than beside it
 so it is where the scripts sourcing it look,
 each reaching it relative to its own location;
 the leading underscore marks it as not-an-action.
+[_lib/json.sh](.github/actions/_lib/json.sh) beside it holds the two JSON reads the locale scripts share:
+failing an input that is not an array,
+and splitting `jq` output into lines with `jq`'s failure seen,
+carriage returns from a Windows `jq` dropped,
+and no output read as no lines.
 
 `mod-release.yml` names the actions in registry form
 (`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`),
@@ -1366,8 +1373,7 @@ the manifest's `defaultLocale` is built.
   `name`, `description`, `author` and dependency names only,
   any other field refused -
   and the result is written to the repo root with its keys sorted.
-  Such a mod gitignores `mod_info.json` and edits the base,
-  which is also what every build script and the release pipeline read its metadata from.
+  Such a mod gitignores `mod_info.json` and edits the base.
 - The manifest and the fragments are read the way the game reads JSON,
   through [shipped-json-reader.gradle](gradle/shipped-json-reader.gradle):
   the same comment strip and the game's own `json.jar` the [test fixtures](#test-fixtures) use,

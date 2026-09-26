@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
-# What mod_info.json contains and what shape its fields take, in one place.
-#
-# Four composite-action scripts read that file, and before this they each
-# carried their own copy of the filename, the "field is present" check, and
-# the version shape. A field added to mod_info.json, or a decision about what
-# counts as a well-formed version, would have had to land in four scripts to
-# take effect.
+# Which file holds a mod's metadata, what shape its fields take, and the
+# release file names that follow from it, in one place - so a field added, a
+# decision about what counts as a well-formed version, or a change to how a
+# release names its files lands once rather than in every script reading it.
 #
 # Lives under .github/actions/ rather than beside Common-Automation's
-# .github/lib/ helpers so it sits with the four scripts that source it, each
-# of which reaches it by a path relative to its own location. The leading
+# .github/lib/ helpers so it sits with the scripts that source it, each of
+# which reaches it by a path relative to its own location. The leading
 # underscore marks it as not-an-action, matching the _ci-gradle.yml
 # convention.
 #
-# Sourced, not executed: defines mod_info_locate_file,
-# mod_info_require_fields, mod_info_derive_mod_folder_name,
-# mod_info_derive_zip_name, mod_info_derive_version_file_name,
-# mod_info_format_locale_suffix, mod_info_has_dependency and
-# mod_info_read_dependency_version. The two
-# checks report through the sourcing script's own SCRIPT_NAME, so a message
-# still names the step a reader saw fail.
+# Sourced, not executed: defines the mod_info_* functions below. The checks
+# report through the sourcing script's own SCRIPT_NAME, so a message still
+# names the step a reader saw fail.
 
 # Read by the scripts that source this file, which shellcheck cannot see when
 # it checks this one on its own.

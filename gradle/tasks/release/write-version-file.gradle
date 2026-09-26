@@ -30,7 +30,7 @@ if (file(versionFileTemplateName).isFile()) {
     def fillVersionFileScript = new File(actionsDirectory,
         'fill-version-file-template/scripts/fill_version_file_template.sh')
 
-    // Sourced by the script above for the shared mod_info.json helpers, so it is as
+    // Sourced by the script above for the shared metadata helpers, so it is as
     // much an input as the script is: undeclared, an edit to the helpers would leave
     // the task up to date over a file the new code writes differently.
     def modInfoLibraryScript = new File(actionsDirectory, '_lib/mod_info.sh')
@@ -41,7 +41,7 @@ if (file(versionFileTemplateName).isFile()) {
 
     // Two things the generated file's download URL is built from - the release
     // zip's name and the publishing <owner>/<repo> - are derived by the script
-    // rather than restated here: it derives the zip name from mod_info.json's
+    // rather than restated here: it derives the zip name from the metadata's
     // jars[0] when given none, and reads the repository from the checkout's own
     // origin remote when GITHUB_REPOSITORY is absent, which outside Actions it
     // always is. Both rules therefore have one implementation, under bats, rather
@@ -116,7 +116,7 @@ if (file(versionFileTemplateName).isFile()) {
         description = ("Fills ${versionFileName} from ${versionFileTemplateName}, so a checkout "
             + 'used as a dev install reports its version to VersionChecker.')
 
-        // The script reads mod_info.json and the template from its mod-root
+        // The script reads the metadata and the template from its mod-root
         // argument, which defaults to the working directory, and resolves the output
         // path from where the caller stands. Standing in the project directory is
         // what makes the plain names below - no mod-root argument, an output path of

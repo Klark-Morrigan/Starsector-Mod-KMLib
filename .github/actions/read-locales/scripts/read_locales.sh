@@ -29,6 +29,13 @@ set -euo pipefail
 
 SCRIPT_NAME="read_locales"
 
+# Resolved from this script's own location, not from $PWD: these scripts run
+# against the caller's checkout, which is never where they live.
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/json.sh
+source "${LIB_DIR}/json.sh"
+
 MANIFEST_FILE="localisation/manifest.json"
 
 # Lowercased BCP 47, the rule the build holds a tag to. Checked again here
@@ -47,15 +54,9 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
     exit 1
   fi
 
-  # Carriage returns dropped because jq on Windows ends its lines with CRLF,
-  # and a local run there would otherwise read every tag as malformed. Split
-  # only when non-empty, since a here-string of nothing still reads as one line.
-  LOCALE_TAG_LINES=$(jq -r '.locales // {} | keys[]' "${MANIFEST_FILE}")
-  LOCALE_TAG_LINES="${LOCALE_TAG_LINES//$'\r'/}"
+  # Declared here, being filled through json_read_lines' name reference.
   LOCALE_TAGS=()
-  if [[ -n "${LOCALE_TAG_LINES}" ]]; then
-    mapfile -t LOCALE_TAGS <<< "${LOCALE_TAG_LINES}"
-  fi
+  json_read_lines LOCALE_TAGS -r '.locales // {} | keys[]' "${MANIFEST_FILE}"
   for localeTag in "${LOCALE_TAGS[@]}"; do
     if ! [[ "${localeTag}" =~ ${LOCALE_TAG_REGEX} ]]; then
       echo "${SCRIPT_NAME}: ${MANIFEST_FILE} locale '${localeTag}' is not a lowercased BCP 47 tag such as en or zh-hans" >&2
@@ -63,8 +64,7 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
     fi
   done
 
-  IS_DEFAULT_DECLARED=$(jq -r --arg tag "${DEFAULT_LOCALE}" '.locales // {} | has($tag)' "${MANIFEST_FILE}")
-  if [[ "${IS_DEFAULT_DECLARED//$'\r'/}" != "true" ]]; then
+  if ! jq -e --arg tag "${DEFAULT_LOCALE}" '.locales // {} | has($tag)' "${MANIFEST_FILE}" > /dev/null; then
     echo "${SCRIPT_NAME}: ${MANIFEST_FILE} default locale '${DEFAULT_LOCALE}' is not among its locales" >&2
     exit 1
   fi
