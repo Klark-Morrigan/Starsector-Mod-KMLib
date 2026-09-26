@@ -1,5 +1,7 @@
 package kmlib.math.geometry;
 
+import org.lwjgl.util.vector.Vector2f;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ToDoubleFunction;
@@ -122,6 +124,21 @@ public final class PolygonRegions {
      */
     public static boolean isPointInsideRing(List<double[]> ring, double x, double y) {
         return isPointInsideRing(ring, vertex -> vertex[0], vertex -> vertex[1], x, y);
+    }
+
+    /**
+     * Whether a point falls inside a closed ring of vectors -
+     * {@link #isPointInsideRing(List, double, double)} for a ring laid out in the float
+     * coordinates the game's UI works in, with the same even-odd rule and the same
+     * boundary caveat.
+     *
+     * @param ring  closed polygon vertices, in any winding
+     * @param point the point to test
+     * @return true when the point lies within the ring; false when outside, and always
+     *         for a ring too short to enclose area
+     */
+    public static boolean isPointInsideRing(List<Vector2f> ring, Vector2f point) {
+        return isPointInsideRing(ring, vertex -> vertex.x, vertex -> vertex.y, point.x, point.y);
     }
 
     /**
