@@ -73,7 +73,7 @@ final class KMLib_ModPluginTest {
         void clearSettingsAndDrainTheSessionRecord() {
 
             StarsectorSettingsFake.clearSettings();
-            drainTheSessionRecord();
+            CompatibilityFailureFixture.drainSessionRecord();
         }
 
         @BeforeEach
@@ -194,7 +194,7 @@ final class KMLib_ModPluginTest {
 
             // The case below records into the process's own record, and a notice that failed to
             // drain it would leave the failure there for whatever runs next.
-            drainTheSessionRecord();
+            CompatibilityFailureFixture.drainSessionRecord();
         }
 
         @Test
@@ -241,16 +241,6 @@ final class KMLib_ModPluginTest {
 
             verify(campaignUiMock)
                 .showConfirmDialog(anyString(), anyString(), any(), anyFloat(), anyFloat(), any(), any());
-        }
-    }
-
-    // Empties the process's own record, which outlives a case. Left filled, the next case to drain
-    // it finds a failure it never filed and reads as healthy while reporting somebody else's. The
-    // latch under it cannot be emptied, which is why each case here records under a key of its own.
-    private static void drainTheSessionRecord() {
-
-        while (CompatibilityFailures.SESSION_RECORD.takeNextUnreported() != null) {
-            // drained for its side effect.
         }
     }
 

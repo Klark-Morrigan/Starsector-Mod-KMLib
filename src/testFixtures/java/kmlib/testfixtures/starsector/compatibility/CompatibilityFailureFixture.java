@@ -4,6 +4,7 @@ import kmlib.opengl.FastRenderingBridgeDiagnostic;
 import kmlib.starsector.compatibility.CompatibilityBreakage;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
+import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilitySubject;
 import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.testfixtures.starsector.settings.StubbedModIds;
@@ -15,6 +16,9 @@ import kmlib.testfixtures.starsector.settings.StubbedModIds;
  * about one of its slots at most: which versions it names, which detail broke, or what it costs.
  * Each builder varies that one slot and fills the rest from the constants here, so a case reads
  * as being about the slot it names and nothing else.
+ *
+ * <p>Also the drain for the process's own record, which every suite driving a guard that records
+ * into it needs on both sides of a case.
  *
  * <p>Final class with a private constructor: fixture of static builders, no instances.
  */
@@ -168,6 +172,20 @@ public final class CompatibilityFailureFixture {
             consumer,
             new CompatibilityBreakage(FAILURE_SITE, BROKEN_DETAIL),
             null);
+    }
+
+    /**
+     * Empties {@link CompatibilityFailures#SESSION_RECORD} of every failure not yet reported.
+     *
+     * <p>That record is the process's own and outlives a case, so a case left filling it hands the
+     * next one to read it a failure it never filed. Its latch cannot be emptied, which is why a case
+     * recording into it still needs a third party or consumer of its own.
+     */
+    public static void drainSessionRecord() {
+
+        while (CompatibilityFailures.SESSION_RECORD.takeNextUnreported() != null) {
+            // drained for its side effect.
+        }
     }
 
     // The subject every builder that varies something other than a version shares: the third party
