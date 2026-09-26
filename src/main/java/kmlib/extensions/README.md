@@ -59,7 +59,8 @@ Nothing in this package names the Starsector API or any mod.
 Registration happens in `KMLib_ModPlugin.installOptionalModIntegrations`,
 one guarded step per facade,
 so a mod whose registration throws costs only its own adapters.
-The describer each step reports under is handed to the facade as well,
+Each facade holds the description its step's guard reports under,
+and registers its adapters under the same one,
 so an adapter failing at install and one failing when called are one report.
 
 ## Shape 1: a routine taken over

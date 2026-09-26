@@ -16,7 +16,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -180,6 +182,18 @@ final class WiringStepsTest {
                 .isSameAs(linkFailure);
             assertThat(failure.breakage().brokenDetail())
                 .contains("NoSuchMethodError");
+        }
+
+        @Test
+        void logsTheStepAsOneLineLeavingItsTraceToTheReport() {
+            // The report's block carries what was thrown as its cause, so a trace here as well
+            // would be the same trace twice beside every failed integration.
+            wiringSteps.runGuardedStep(buildStepRefusingToInstall(), FAILURE_MESSAGE, () -> INTEGRATION);
+
+            verify(stepLogMock)
+                .error(startsWith(FAILURE_MESSAGE));
+            verify(stepLogMock, never())
+                .error(any(), any(Throwable.class));
         }
 
         @Test

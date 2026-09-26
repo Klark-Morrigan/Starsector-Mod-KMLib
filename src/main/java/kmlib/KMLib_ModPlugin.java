@@ -5,18 +5,13 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.mods.nexerelin.NexerelinIntegration;
-import kmlib.mods.nexerelin.NexerelinPresence;
 import kmlib.mods.rat.RandomAssortmentOfThingsIntegration;
-import kmlib.mods.rat.RandomAssortmentOfThingsPresence;
 import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
-import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
-import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.starsector.scripts.SectorScripts;
 import kmlib.starsector.startup.WiringSteps;
-import kmlib.starsector.strings.KmlibStringKeys;
 
 import org.apache.log4j.Logger;
 
@@ -48,20 +43,13 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // switch a reader chasing the library's output turns up.
     private static final WiringSteps WIRING_STEPS = new WiringSteps(LOG);
 
-    // Which of the library's own features each integration serves, as the half of a latch key the
-    // mod ID does not cover. One per integration, so the library losing two things to two third
-    // parties is two reports rather than the first one and silence.
-    private static final String LUNALIB_SETTINGS_FEATURE_KEY = "lunalib-settings";
-    private static final String NEXERELIN_ROUTINES_FEATURE_KEY = "nexerelin-routines";
-    private static final String RAT_ACCESS_ROUTES_FEATURE_KEY = "system-access-routes";
-
     @Override
     public void onApplicationLoad() {
 
         WIRING_STEPS.runGuardedStep(
             KmlibLunaSettings::installBindings,
             "Failed to install KMLib LunaLib settings bindings",
-            KMLib_ModPlugin::describeLunaLibIntegration);
+            KmlibLunaSettings::describeLunaLibIntegration);
         logActiveRenderer();
         installOptionalModIntegrations();
     }
@@ -91,50 +79,6 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             "Failed to install the KMLib compatibility notice");
     }
 
-    // The three integrations as the channel states one: the third party it is with, and the library
-    // as the mod that loses something by it. Composed when a step has already failed rather than
-    // held as constants, so the wording read out of strings.json - and the mod manager read behind
-    // the installed version - stay off the load path of every install where the step worked.
-    //
-    // Open to the suite because a transposition here is invisible from everywhere else: a report
-    // filed under the wrong mod's ID, or carrying the wrong feature's sentence, composes and reads
-    // as plausibly as the right one and reaches a player naming a mod that was working.
-    static ModIntegration describeLunaLibIntegration() {
-
-        return new ModIntegration(
-            KmlibLunaSettings.LUNALIB_MOD_ID,
-            KmlibLunaSettings.LUNALIB_MOD_NAME,
-            new CompatibilityConsumer(
-                KmlibMod.MOD_ID,
-                LUNALIB_SETTINGS_FEATURE_KEY,
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_LOST_LUNALIB_SETTINGS),
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_UNAFFECTED_LUNALIB_SETTINGS)));
-    }
-
-    static ModIntegration describeNexerelinIntegration() {
-
-        return new ModIntegration(
-            NexerelinPresence.MOD_ID,
-            NexerelinPresence.MOD_NAME,
-            new CompatibilityConsumer(
-                KmlibMod.MOD_ID,
-                NEXERELIN_ROUTINES_FEATURE_KEY,
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_LOST_NEXERELIN_ROUTINES),
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_UNAFFECTED_NEXERELIN_ROUTINES)));
-    }
-
-    static ModIntegration describeRandomAssortmentOfThingsIntegration() {
-
-        return new ModIntegration(
-            RandomAssortmentOfThingsPresence.MOD_ID,
-            RandomAssortmentOfThingsPresence.MOD_NAME,
-            new CompatibilityConsumer(
-                KmlibMod.MOD_ID,
-                RAT_ACCESS_ROUTES_FEATURE_KEY,
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_LOST_RAT_ACCESS_ROUTES),
-                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_UNAFFECTED_RAT_ACCESS_ROUTES)));
-    }
-
     // Puts the adapters for whichever optional mods this install has in front of the operations
     // that may defer to them. It happens here because which mods are present is a fact about the
     // install, and an operation asking that question for itself would be naming a mod it has no
@@ -145,21 +89,19 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // library running its own sequences rather than a mod's, which is the behaviour of an install
     // without that mod - a worse colony than the player expected, and the reason they are told.
     //
-    // Each describer is handed to the installation as well as to its guard. An adapter reaches its
-    // mod's types only when first called, so a mod that changed underneath it usually fails there
-    // rather than here - and one describer for both is what makes the two one report.
+    // Each guard reports under the description the integration itself holds, which is also the one
+    // its adapters report under when they fail at call time - so the two are one report.
     private static void installOptionalModIntegrations() {
 
         WIRING_STEPS.runGuardedStep(
-            () -> NexerelinIntegration.installRoutines(KMLib_ModPlugin::describeNexerelinIntegration),
+            NexerelinIntegration::installRoutines,
             "Failed to install KMLib Nexerelin routines",
-            KMLib_ModPlugin::describeNexerelinIntegration);
+            NexerelinIntegration::describeIntegration);
 
         WIRING_STEPS.runGuardedStep(
-            () -> RandomAssortmentOfThingsIntegration.installModdedSystemAccessRoutes(
-                KMLib_ModPlugin::describeRandomAssortmentOfThingsIntegration),
+            RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes,
             "Failed to install KMLib Random Assortment of Things system access routes",
-            KMLib_ModPlugin::describeRandomAssortmentOfThingsIntegration);
+            RandomAssortmentOfThingsIntegration::describeIntegration);
     }
 
     // Which GL implementation every KM draw call reaches, stated once at load. It changes what a

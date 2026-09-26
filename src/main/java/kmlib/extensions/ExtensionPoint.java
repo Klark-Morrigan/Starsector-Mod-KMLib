@@ -221,7 +221,9 @@ public final class ExtensionPoint<T> {
      *                           a broken install
      * @param reportFailure      what whoever installs it is told where the implementation fails
      *                           and is taken out, handed what it threw. Called at most once per
-     *                           registration, a failed implementation not being offered work again
+     *                           registration, a failed implementation not being offered work again.
+     *                           The point logs the failure as one line and leaves its trace to this,
+     *                           logging the trace itself only where this throws
      */
     public void registerImplementation(
             String implementationName,
@@ -274,6 +276,9 @@ public final class ExtensionPoint<T> {
     // already failed: a report that threw would replace the failure it was reporting, and on a link
     // failure would take down a call that was about to be settled the ordinary way. Guarded as
     // widely as the work, the report being the registrant's own and able to fail to link as well.
+    //
+    // A report that threw carried no trace anywhere, so both traces are logged here: the failure's,
+    // which the line at the take-out left to the report, and the report's own.
     private void reportTakenOut(Throwable implementationFailure) {
 
         try {
@@ -281,8 +286,9 @@ public final class ExtensionPoint<T> {
 
         } catch (LinkageError | RuntimeException reportThrown) {
 
-            LOG.error(extensionName + ": the failure of " + implementationName
-                + " could not be reported", reportThrown);
+            LOG.error(extensionName + ": " + implementationName
+                + " failed, and the failure could not be reported", implementationFailure);
+            LOG.error(extensionName + ": the report of " + implementationName + " threw", reportThrown);
         }
     }
 
@@ -346,8 +352,9 @@ public final class ExtensionPoint<T> {
         takenOutReason = TAKEN_OUT_AFTER_FAILING + implementationFailure;
         implementation = null;
 
-        LOG.error(extensionName + ": " + implementationName
-            + " failed and is taken out for the session", implementationFailure);
+        // One line naming the cause rather than its trace: the report is handed the failure, and
+        // a trace here would put the same one in the log twice.
+        LOG.error(extensionName + ": " + implementationName + " " + takenOutReason);
 
         reportTakenOut(implementationFailure);
     }
@@ -387,6 +394,10 @@ public final class ExtensionPoint<T> {
     // where an install is composed and log4j's own check is the whole of the cost.
     private void logClearing() {
 
+        if (takenOutReason != null) {
+            LOG.debug(extensionName + ": cleared " + implementationName + ", " + takenOutReason);
+            return;
+        }
         if (implementation == null) {
             LOG.debug(extensionName + ": cleared, " + NOTHING_INSTALLED + " was installed");
             return;

@@ -4,6 +4,7 @@ import kmlib.starsector.settings.modmanager.InstalledMods;
 import kmlib.text.KmlibStrings;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A third-party mod that a start-up step binds to, and what the mod running that step loses where
@@ -67,8 +68,10 @@ public record ModIntegration(
      *                            one it was
      * @param installationFailure what the step threw, carried as the failure's cause so the log
      *                            line beside the block renders a trace of it
+     * @return whether the record kept it; false where this binding was already reported this
+     *         session, so the block that reaches the log carries an earlier failure's trace
      */
-    public void recordFailure(
+    public boolean recordFailure(
             CompatibilityFailures failureRecord,
             String failureSite,
             Throwable installationFailure) {
@@ -77,13 +80,23 @@ public record ModIntegration(
             failureRecord,
             "An integration with nowhere to record would degrade silently and tell no player why.");
 
+        // The record invokes the describer only on the record it keeps, so its having run is the
+        // answer - read off the call rather than asked of the record a second time, which another
+        // thread recording the same binding could answer differently.
+        var isRecorded = new AtomicBoolean();
+
         // Composed against the consumer the record hands back rather than this integration's own:
         // the two differ where the record found that consumer's key already holding another of the
         // wiring mod's features, and the report is filed under whichever key the record settled on.
         failureRecord.recordOnce(
             subjectModId,
             consumer,
-            recordedAs -> composeFailure(recordedAs, failureSite, installationFailure));
+            recordedAs -> {
+                isRecorded.set(true);
+                return composeFailure(recordedAs, failureSite, installationFailure);
+            });
+
+        return isRecorded.get();
     }
 
     /**

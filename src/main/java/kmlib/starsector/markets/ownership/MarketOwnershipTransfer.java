@@ -109,6 +109,9 @@ public final class MarketOwnershipTransfer {
      * @param factionId the incoming owner's faction ID; null leaves the colony alone rather than
      *                  detaching it from an owner and giving it to nobody, as does the ID of the
      *                  faction already holding it
+     * @throws RuntimeException whatever an installed routine or submarket rule threw partway
+     *                          through, passed on rather than finished over with the sequence above -
+     *                          the colony being in a state neither produces
      */
     public static void transferOwnership(SectorAPI sector, MarketAPI market, String factionId) {
         transferOwnership(sector, market, factionId, INSTALLED_OWNERSHIP_TRANSFER_ROUTINES);

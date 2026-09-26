@@ -2,7 +2,7 @@ package kmlib.mods.nexerelin;
 
 import kmlib.KmlibMod;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
-import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.IntegrationFailureReporter;
 import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.starsector.factions.alliances.AllianceRecord;
 import kmlib.starsector.factions.alliances.AllianceSource;
@@ -39,8 +39,7 @@ public final class NexerelinAllianceSource {
     // nothing of Nexerelin's - the holder is still first resolved by a read the gate let through.
     private static final AllianceSource SESSION_READ = new GuardedAllianceSource(
         () -> Holder.SOURCE.readAlliances(),
-        NexerelinAllianceSource::describeAllianceIntegration,
-        CompatibilityFailures.SESSION_RECORD);
+        new IntegrationFailureReporter(NexerelinAllianceSource::describeAllianceIntegration));
 
     private NexerelinAllianceSource() {
         // utility class, no instances.

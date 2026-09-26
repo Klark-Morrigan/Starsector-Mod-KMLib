@@ -226,6 +226,28 @@ final class ModIntegrationTest {
         }
 
         @Test
+        void answersWhetherTheRecordKeptIt() {
+            // What decides whether a failure's trace reaches the log beside a report block or on its
+            // own: the same binding failing again is dropped by the latch, and its block carries the
+            // first failure's trace rather than this one's.
+            ModStateScopes.runWithoutGameSettings(() -> {
+                var isFirstRecorded = INTEGRATION.recordFailure(
+                    failureRecord,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes already registered"));
+                var isSecondRecorded = INTEGRATION.recordFailure(
+                    failureRecord,
+                    FAILURE_SITE,
+                    new IllegalStateException("routes registered twice"));
+
+                assertThat(isFirstRecorded)
+                    .isTrue();
+                assertThat(isSecondRecorded)
+                    .isFalse();
+            });
+        }
+
+        @Test
         void refusesToRecordWithNowhereToRecordInto() {
 
             assertThatNullPointerException()
