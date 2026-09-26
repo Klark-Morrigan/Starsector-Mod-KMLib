@@ -57,14 +57,26 @@ public final class KmlibLunaSettings {
      */
     public static ModIntegration describeLunaLibIntegration() {
 
-        return new ModIntegration(
-            LUNALIB_MOD_ID,
-            LUNALIB_MOD_NAME,
+        return describeLunaLibIntegration(
             new CompatibilityConsumer(
                 KmlibMod.MOD_ID,
                 LUNALIB_SETTINGS_FEATURE_KEY,
                 KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_LOST_LUNALIB_SETTINGS),
                 KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_UNAFFECTED_LUNALIB_SETTINGS)));
+    }
+
+    /**
+     * A binding to LunaLib as the compatibility channel states it, for whichever mod took it.
+     *
+     * <p>LunaLib's ID and name travel together here so a mod reporting its own LunaLib bindings
+     * names only itself and what it loses, and cannot pair the ID with some other name.
+     *
+     * @param consumer the mod whose binding it was, and what that mod loses without it
+     * @return the integration a failed LunaLib binding of that mod's is reported under
+     */
+    public static ModIntegration describeLunaLibIntegration(CompatibilityConsumer consumer) {
+
+        return new ModIntegration(LUNALIB_MOD_ID, LUNALIB_MOD_NAME, consumer);
     }
 
     /**
