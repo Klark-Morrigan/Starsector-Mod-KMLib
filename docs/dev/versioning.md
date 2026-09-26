@@ -92,7 +92,9 @@ and its behaviour is narrower than it looks:
 
 Two places pin KMLib and they must agree:
 
-1. **Starsector runtime dependency** in `mod_info.json`:
+1. **Starsector runtime dependency** in `mod_info.json`,
+   or in `mod_info.base.json` for a consumer keeping its launcher text per locale,
+   whose `mod_info.json` is generated from that base:
 
     ```json
     "dependencies": [

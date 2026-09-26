@@ -32,13 +32,23 @@ inputs:
     default: ''
   mod-root:
     description: >-
-      Directory holding mod_info.json and the <mod-id>.version.template file.
+      Directory holding the mod's metadata (mod_info.base.json when committed,
+      else mod_info.json) and the <mod-id>.version.template file.
       Defaults to the working directory, which is where a job checking the
       mod out at the workspace root already stands. Set it when the checkout
       is elsewhere: Actions permits no working-directory on a `uses:` step,
       so an action cannot be positioned the way a `run:` step can.
     required: false
     default: '.'
+  locale:
+    description: >-
+      Locale tag of the zip this file ships in, for a mod releasing one zip
+      per locale. Set, the download URL names that locale's zip and
+      masterVersionFile names that locale's copy of this file, so an install
+      polls the copy leading back to its own language. Empty for a mod
+      keeping no locales.
+    required: false
+    default: ''
 
 # The other half of directDownloadURL is the publishing repository, taken
 # from the GITHUB_REPOSITORY variable the Actions runtime exports rather than
@@ -61,8 +71,9 @@ runs:
         OUTPUT_PATH: ${{ inputs.output-path }}
         ZIP_NAME: ${{ inputs.zip-name }}
         MOD_ROOT: ${{ inputs.mod-root }}
+        LOCALE_TAG: ${{ inputs.locale }}
       # GITHUB_ACTION_PATH points at this action's directory regardless of
       # the caller's working directory, so the script path is stable.
       run: |
         "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh" \
-          "${OUTPUT_PATH}" "${ZIP_NAME}" "${MOD_ROOT}"
+          "${OUTPUT_PATH}" "${ZIP_NAME}" "${MOD_ROOT}" "${LOCALE_TAG}"

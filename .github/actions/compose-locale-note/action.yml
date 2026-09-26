@@ -1,0 +1,53 @@
+# Composes the line a release body carries to tell a player which zip holds
+# which language, and which language needs a core localisation installed over
+# the game before its text can draw.
+#
+# An action rather than a `run:` block in the release workflow, for the reason
+# compose-dependency-note is one: this is player-facing copy with a condition
+# attached - a mod keeping no locales must produce no line - and a workflow's
+# inline bash cannot be unit tested.
+#
+# Delegates to scripts/compose_locale_note.sh so the logic is unit-tested
+# with bats. Composite actions themselves are not unit-testable.
+name: Compose locale note
+description: >-
+  Composes a markdown line naming each locale's release zip and linking the
+  core localisation a locale needs, for appending to a release body. Emits
+  nothing for a mod keeping no locales.
+
+inputs:
+  locales:
+    description: >-
+      The read-locales action's locales output. Empty or [] produces no line.
+    required: false
+    default: '[]'
+  jar-source:
+    description: >-
+      mod_info jars[0], from read-mod-info, which the zip names are derived
+      from by the rule the packaging names them by.
+    required: true
+  version:
+    description: "The version being released."
+    required: true
+
+outputs:
+  note:
+    description: >-
+      The composed markdown line, or empty when no line is due. Empty is the
+      value create-github-release's notes-suffix input treats as absent.
+    value: ${{ steps.compose.outputs.note }}
+
+runs:
+  using: composite
+  steps:
+    - id: compose
+      shell: bash
+      # Passed as environment rather than interpolated into the run body, so
+      # an input cannot break out of the command and run as shell.
+      env:
+        LOCALES: ${{ inputs.locales }}
+        JAR_SOURCE: ${{ inputs.jar-source }}
+        VERSION: ${{ inputs.version }}
+      # GITHUB_ACTION_PATH points at this action's directory regardless
+      # of the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/compose_locale_note.sh"

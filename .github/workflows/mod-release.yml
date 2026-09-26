@@ -1,6 +1,7 @@
 # Reusable release pipeline for a Starsector mod built on KMLib's shared
 # Gradle conventions (gradle/starsector-mod.gradle) and laid out the way this
-# repo's actions expect: mod_info.json at the root, a CHANGELOG.md section per
+# repo's actions expect: the mod's metadata at the root (mod_info.base.json
+# for a mod keeping locales, else mod_info.json), a CHANGELOG.md section per
 # released version, and a self-hosted runner labelled <mod-id>-runner.
 #
 # A consumer mod ships a one-line release.yml that triggers on push to its
@@ -13,12 +14,17 @@
 #         contents: write
 #       secrets: inherit
 #
-# All mod-specific values (id, version, runner label, zip name, jar path, and
-# the repos to clone beside the checkout) are derived inside this workflow from
-# the consumer's mod_info.json via the read-mod-info composite action - callers
-# pass nothing. That action documents each value it emits and how it derives it.
+# All mod-specific values (id, version, runner label, jar path, and the repos
+# to clone beside the checkout) are derived inside this workflow from the
+# consumer's metadata via the read-mod-info composite action, and the locales
+# it releases in from its localisation/manifest.json via read-locales - callers
+# pass nothing. Those actions document each value they emit and how they
+# derive it.
 #
-# The pipeline only does real work when mod_info.json's version differs from
+# A mod committing a localisation manifest releases one zip per locale, each
+# suffixed with its tag; a mod committing none releases the one unsuffixed zip.
+#
+# The pipeline only does real work when the metadata's version differs from
 # the latest git tag, so an ordinary push (no version bump) costs one cheap
 # config job and stops.
 #
@@ -28,7 +34,7 @@ name: mod-release
 
 on:
   workflow_call:
-    # No inputs: every variable is derived from the consumer's mod_info.json.
+    # No inputs: every variable is derived from the consumer's own files.
     # secrets: inherit is documented for callers but not required here - the
     # nested gates fall back to github.token when a secret is absent.
     secrets:
@@ -44,30 +50,34 @@ on:
 permissions:
   contents: write
 
+# The directory the packaging writes every release asset into, the artifact
+# carrying it between the jobs, and the directory create-release unpacks it to.
+# One name for all three, stated once, so the upload and the download cannot
+# drift apart.
+env:
+  RELEASE_ASSETS: release-assets
+
 jobs:
   # Single cheap gate: derive every mod-specific value, decide whether a
   # release is due, and enforce the versioning policy before anything is
-  # built. Runs on a hosted runner because reading mod_info.json and the
-  # changelog needs only jq + git, never the Starsector binaries.
+  # built. Runs on a hosted runner because reading the metadata, the manifest
+  # and the changelog needs only jq + git, never the Starsector binaries.
   config:
     runs-on: ubuntu-latest
     outputs:
-      # Read from mod_info.json once, by the action whose job that is, and
+      # Read from the metadata once, by the action whose job that is, and
       # handed to every step and job that needs it - the tag gate included.
       version: ${{ steps.read.outputs.version }}
       version-updated: ${{ steps.check.outputs.version-updated }}
       mod-id: ${{ steps.read.outputs.mod-id }}
-      # Folder the mod ships as (KMU, KMLib), which is not the mod id - see
-      # the read-mod-info action for why the jar name is what names it.
-      mod-folder-name: ${{ steps.read.outputs.mod-folder-name }}
-      dist-dir: ${{ steps.read.outputs.dist-dir }}
-      zip-name: ${{ steps.read.outputs.zip-name }}
-      # <mod-id>.version, named once here because four steps across two jobs
-      # refer to it: the file generated into the payload, the one generated
-      # for the release, the artifact carrying it between the jobs, and the
-      # asset attached to the release.
-      version-file-name: ${{ steps.read.outputs.version-file-name }}
+      # What the release body derives each zip's name from, by the rule the
+      # packaging names them by.
       jar-source: ${{ steps.read.outputs.jar-source }}
+      # The locales the packaging loops over and the release body lists, and
+      # the one whose version file older installs poll. Both empty for a mod
+      # keeping no locales, which packages the single unsuffixed zip.
+      locales: ${{ steps.locales.outputs.locales }}
+      default-locale: ${{ steps.locales.outputs.default-locale }}
       # JSON label set for self-hosted jobs: a mod builds on its own runner
       # (<mod-id>-runner) which carries STARSECTOR_HOME and the install.
       runner-json: ${{ steps.runner.outputs.json }}
@@ -81,7 +91,7 @@ jobs:
       kmlib-release-url: ${{ steps.kmlib-release.outputs.release-url }}
     steps:
       # Default checkout pulls the CONSUMER repo (the one that triggered the
-      # release), so mod_info.json and CHANGELOG.md below are the consumer's.
+      # release), so the metadata and CHANGELOG.md below are the consumer's.
       # Full history rather than checkout's default shallow depth of 1. The
       # gate below decides whether a release is due by asking git which tags
       # exist, and a shallow fetch brings down only tags pointing into the
@@ -107,7 +117,7 @@ jobs:
       # master while the workflow CONTRACT is pinned by the caller's @tag.
       # Acceptable - the actions are stable bash + jq; tighten to the workflow
       # ref later if reproducibility of the scripts themselves ever matters.
-      - name: Derive mod values from mod_info.json
+      - name: Derive mod values from the mod's metadata
         id: read
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-mod-info@master
 
@@ -135,6 +145,14 @@ jobs:
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/validate-versioning@master
         with:
           version: ${{ steps.read.outputs.version }}
+
+      # Gated like the policy above rather than read on every push: a malformed
+      # manifest has to stop a release, and has no business failing a push that
+      # releases nothing.
+      - name: Read the locales the mod releases in
+        id: locales
+        if: steps.check.outputs.version-updated == 'true'
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-locales@master
 
       # The game refuses to load a mod whose declared dependency version is
       # not installed, and a player installs KMLib from its release page - so
@@ -231,92 +249,35 @@ jobs:
         run: chmod +x gradlew
 
       # Tests already passed in ci-gradle; rebuild only the jar for packaging.
+      # Once, whatever the locale count: the jar is identical across locales,
+      # which is what lets the packaging below be a loop rather than a matrix
+      # rebuilding it per locale on this one runner.
       - name: Build jar
         working-directory: ${{ needs.config.outputs.mod-id }}
         run: ./gradlew jar --no-daemon --console=plain
 
-      # Copy only the runtime payload into the dist folder - no source, tests,
-      # docs/dev, build caches, or Gradle wrapper. Asset dirs are copied when
-      # present, so a jar-only utility (KMLib) and an asset-bearing content
-      # mod share one generic step. The folder is the one read-mod-info
-      # derived, so what a player unzips carries the name a build compiling
-      # against this mod expects to find it under.
-      - name: Assemble dist payload
-        working-directory: ${{ needs.config.outputs.mod-id }}
-        env:
-          DIST: ${{ needs.config.outputs.dist-dir }}
-          JAR_SOURCE: ${{ needs.config.outputs.jar-source }}
-        run: |
-          set -euo pipefail
-          mkdir -p "${DIST}/jars"
-          cp mod_info.json "${DIST}/"
-          for f in README.md CHANGELOG.md LICENSE; do
-            [ -f "${f}" ] && cp "${f}" "${DIST}/"
-          done
-          for d in data graphics sounds; do
-            [ -d "${d}" ] && cp -r "${d}" "${DIST}/"
-          done
-          cp "${JAR_SOURCE}" "${DIST}/jars/"
-
-      # Written at the workspace root, which is where the release asset is
-      # uploaded from. That copy is what makes the template's masterVersionFile
-      # URL (releases/latest/download/<mod-id>.version) resolve: an update
-      # checker polls it without downloading the mod, so a copy sealed inside
-      # the zip cannot serve it.
-      - name: Write the VersionChecker file
-        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/fill-version-file-template@master
+      # Per locale: write the locale into the checkout, assemble the runtime
+      # payload, fill its VersionChecker file, zip it - collecting each zip
+      # and each locale's version file at the workspace root. Those version
+      # files are what the template's masterVersionFile URL resolves to: an
+      # update checker polls one without downloading the mod, so the copy
+      # sealed inside a zip cannot serve it. For a mod keeping no locales,
+      # the one unsuffixed zip and version file.
+      - name: Package the release assets
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/package-release@master
         with:
           mod-root: ${{ needs.config.outputs.mod-id }}
-          output-path: ${{ needs.config.outputs.version-file-name }}
-          zip-name: ${{ needs.config.outputs.zip-name }}
+          output-dir: ${{ env.RELEASE_ASSETS }}
+          locales: ${{ needs.config.outputs.locales }}
+          default-locale: ${{ needs.config.outputs.default-locale }}
 
-      # The player's copy, found beside mod_info.json after unzipping, which
-      # VersionChecker reads to learn what version is installed. Copied rather
-      # than generated a second time because the two are the same file by
-      # definition - generating twice states that only as long as both calls
-      # keep being given the same inputs. It has to land before the zip step.
-      # This step runs from the workspace root, where the mod sits one level
-      # down, so the path into its dist folder is three derived values deep.
-      - name: Copy the VersionChecker file into the dist payload
-        env:
-          MOD_ID: ${{ needs.config.outputs.mod-id }}
-          DIST: ${{ needs.config.outputs.dist-dir }}
-          VERSION_FILE: ${{ needs.config.outputs.version-file-name }}
-        run: |
-          set -euo pipefail
-          # dist-dir is emitted with a trailing slash, trimmed so the path
-          # reads as one in the log rather than carrying an empty segment.
-          cp "${VERSION_FILE}" "${MOD_ID}/${DIST%/}/${VERSION_FILE}"
-
-      - name: Create release zip
-        working-directory: ${{ needs.config.outputs.mod-id }}
-        env:
-          MOD_FOLDER_NAME: ${{ needs.config.outputs.mod-folder-name }}
-          ZIP_NAME: ${{ needs.config.outputs.zip-name }}
-        run: |
-          set -euo pipefail
-          cd dist
-          zip -r "../${ZIP_NAME}" "${MOD_FOLDER_NAME}/"
-
-      # The zip lands inside the checkout, one level down from the workspace,
-      # so the upload path carries that prefix; the artifact NAME stays bare
-      # because create-release downloads it by name into its own workspace root.
-      - name: Upload artifact
+      # One artifact for every asset, since create-release attaches all of
+      # them and an artifact is downloaded whole.
+      - name: Upload the release assets
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ needs.config.outputs.zip-name }}
-          path: ${{ needs.config.outputs.mod-id }}/${{ needs.config.outputs.zip-name }}
-          if-no-files-found: error
-
-      # A second artifact rather than a second path on the one above, because
-      # create-release attaches these as two separate release assets and an
-      # artifact is downloaded whole. This one was written at the workspace
-      # root, so unlike the zip its path carries no checkout prefix.
-      - name: Upload version file artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ${{ needs.config.outputs.version-file-name }}
-          path: ${{ needs.config.outputs.version-file-name }}
+          name: ${{ env.RELEASE_ASSETS }}
+          path: ${{ env.RELEASE_ASSETS }}/
           if-no-files-found: error
 
   # Tag the released commit. Separate from create-release so the tag exists
@@ -363,20 +324,42 @@ jobs:
             .github/lib
           sparse-checkout-cone-mode: false
 
-      - name: Download release artifact
+      # Into its own directory, not the workspace root, so no asset can land on
+      # a file of the checkout above. gh names an asset after its basename, so
+      # the prefix does not reach the release.
+      - name: Download the release assets
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ needs.config.outputs.zip-name }}
+          name: ${{ env.RELEASE_ASSETS }}
+          path: ${{ env.RELEASE_ASSETS }}
 
-      # Into its own directory, not the workspace root: the checkout above
-      # already has a <mod-id>.version there - the committed template - and
-      # the generated file must not land on top of it. gh names an asset
-      # after its basename, so the prefix does not reach the release.
-      - name: Download version file artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      # Listed from what arrived rather than named again here, so the release
+      # attaches exactly what the packaging produced - one zip and one version
+      # file per locale, and the unsuffixed version file - without this job
+      # restating how many locales there were or what their files are called.
+      # Emitted in the multi-line form $GITHUB_OUTPUT takes, one path per line,
+      # which is the shape create-github-release's files input reads.
+      - name: List the release assets
+        id: assets
+        run: |
+          set -euo pipefail
+          {
+            echo 'files<<RELEASE_ASSET_LIST'
+            find "${RELEASE_ASSETS}" -maxdepth 1 -type f | sort
+            echo 'RELEASE_ASSET_LIST'
+          } >> "${GITHUB_OUTPUT}"
+
+      # Which zip holds which language, and which language needs a core
+      # localisation installed over the game to draw at all - a dependency the
+      # launcher cannot see, so the release page is one of the few places a
+      # player can be told. Empty for a mod keeping no locales.
+      - name: Compose the locale line for the release body
+        id: locale-note
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/compose-locale-note@master
         with:
-          name: ${{ needs.config.outputs.version-file-name }}
-          path: version-file
+          locales: ${{ needs.config.outputs.locales }}
+          jar-source: ${{ needs.config.outputs.jar-source }}
+          version: ${{ needs.config.outputs.version }}
 
       # A player reading the release has to install the pinned KMLib to run
       # the mod at all - the game refuses to load it otherwise - so the body
@@ -392,7 +375,7 @@ jobs:
       # section alone. The short display name is stated here rather than read
       # from mod_info.json, whose dependency entry carries the long one.
       - name: Compose the dependency line for the release body
-        id: notes-suffix
+        id: dependency-note
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/compose-dependency-note@master
         with:
           dependency-name: KMLib
@@ -400,16 +383,20 @@ jobs:
           release-url: ${{ needs.config.outputs.kmlib-release-url }}
 
       # Cut the release with the body taken from the matching CHANGELOG.md
-      # section and two assets: the built mod zip (the mod's actual
-      # distribution channel) and the generated .version file that update
-      # checkers poll. The action fails on a missing section, so the body is
-      # never silently empty - also enforced earlier by validate-versioning,
-      # but this is the step that consumes it.
+      # section, the two composed lines under it, and every packaged asset:
+      # the zips (the mod's actual distribution channel) and the generated
+      # .version files that update checkers poll. The action fails on a
+      # missing section, so the body is never silently empty - also enforced
+      # earlier by validate-versioning, but this is the step that consumes it.
+      #
+      # The lines are joined by a blank line and the whole trimmed by the
+      # action, so either one resolving to empty leaves no gap behind it.
       - name: Create GitHub release from changelog
         uses: ./.common-automation/.github/actions/create-github-release
         with:
           version: ${{ needs.config.outputs.version }}
-          notes-suffix: ${{ steps.notes-suffix.outputs.note }}
-          files: |
-            ${{ needs.config.outputs.zip-name }}
-            version-file/${{ needs.config.outputs.version-file-name }}
+          notes-suffix: |
+            ${{ steps.locale-note.outputs.note }}
+
+            ${{ steps.dependency-note.outputs.note }}
+          files: ${{ steps.assets.outputs.files }}

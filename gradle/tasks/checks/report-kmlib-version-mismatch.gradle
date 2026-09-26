@@ -22,13 +22,10 @@
 // messages below name which of those a mismatch will become.
 //
 // Applied from the Starsector conventions, which publish kmlibCheckoutDirectory as
-// the location of the KMLib whose classes a consumer compiles against.
-
-import groovy.json.JsonSlurper
+// the location of the KMLib whose classes a consumer compiles against, modInfo as
+// the consumer's metadata, and readModInfo for reading KMLib's by the same rule.
 
 def kmlibModId = 'kmlib'
-def modInfo = new JsonSlurper().parse(file('mod_info.json'))
-def kmlibModInfoFile = new File(project.ext.kmlibCheckoutDirectory, 'mod_info.json')
 
 // Segments compare as text, so no numeric parse is wanted here: a version may
 // carry a letter (Starsector mods ship versions like 0.12.2b) and equality has
@@ -43,7 +40,7 @@ def readVersionSegments = { String version ->
 // API classpath without depending on KMLib at all.
 def declaredKmlibDependency = modInfo.dependencies?.find { it.id == kmlibModId }
 if (modInfo.id != kmlibModId && declaredKmlibDependency != null) {
-    def builtKmlibVersion = new JsonSlurper().parse(kmlibModInfoFile).version
+    def builtKmlibVersion = readModInfo(project.ext.kmlibCheckoutDirectory).version
 
     // A dependency declared without a version is Starsector's supported way to
     // say "any release", and it is left to stand. Warned about rather than

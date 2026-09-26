@@ -1,24 +1,18 @@
 #!/usr/bin/env bash
-# What mod_info.json contains and what shape its fields take, in one place.
-#
-# Four composite-action scripts read that file, and before this they each
-# carried their own copy of the filename, the "field is present" check, and
-# the version shape. A field added to mod_info.json, or a decision about what
-# counts as a well-formed version, would have had to land in four scripts to
-# take effect.
+# Which file holds a mod's metadata, what shape its fields take, and the
+# release file names that follow from it, in one place - so a field added, a
+# decision about what counts as a well-formed version, or a change to how a
+# release names its files lands once rather than in every script reading it.
 #
 # Lives under .github/actions/ rather than beside Common-Automation's
-# .github/lib/ helpers so it sits with the four scripts that source it, each
-# of which reaches it by a path relative to its own location. The leading
+# .github/lib/ helpers so it sits with the scripts that source it, each of
+# which reaches it by a path relative to its own location. The leading
 # underscore marks it as not-an-action, matching the _ci-gradle.yml
 # convention.
 #
-# Sourced, not executed: defines mod_info_require_file,
-# mod_info_require_fields, mod_info_derive_mod_folder_name,
-# mod_info_derive_zip_name, mod_info_has_dependency and
-# mod_info_read_dependency_version. The two checks report through the
-# sourcing script's own SCRIPT_NAME, so a message still names the step a
-# reader saw fail.
+# Sourced, not executed: defines the mod_info_* functions below. The checks
+# report through the sourcing script's own SCRIPT_NAME, so a message still
+# names the step a reader saw fail.
 
 # Read by the scripts that source this file, which shellcheck cannot see when
 # it checks this one on its own.
@@ -30,7 +24,17 @@
 # crash under `set -u` at the moment it is trying to report a real failure.
 SCRIPT_NAME="${SCRIPT_NAME:-mod_info}"
 
-MOD_INFO_FILE="mod_info.json"
+# The file the launcher reads, and the committed file it is generated from by
+# a mod keeping its launcher text per locale. That mod's mod_info.json is a
+# build output on the default locale, so the base is what states the id, the
+# version and the jars - and the pipeline reads it before anything is built.
+MOD_INFO_LAUNCHER_FILE="mod_info.json"
+MOD_INFO_BASE_FILE="mod_info.base.json"
+
+# Set by mod_info_locate_file to whichever of the two above holds the mod's
+# metadata, and read by every helper below. Empty until then, so a helper
+# called before it fails on the missing file rather than reading one guessed.
+MOD_INFO_FILE=""
 
 # Plain SemVer, digits only. The digits-only part is not decoration: the
 # game's own parser splits a version on the letter "a" as well as ".", and
@@ -41,6 +45,12 @@ SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
 
 JAR_EXTENSION=".jar"
 ZIP_EXTENSION=".zip"
+VERSION_FILE_EXTENSION=".version"
+
+# Joins a locale tag onto a release file name. A tag is lowercased BCP 47
+# (en, zh-hans), which carries hyphens of its own, so a reader splits a name on
+# the version rather than on this.
+LOCALE_SEPARATOR="-"
 
 # KMLib's mod id, as it appears both as .id in KMLib's own mod_info.json and
 # as a dependency entry's .id in every consumer's. One string here because
@@ -49,11 +59,22 @@ ZIP_EXTENSION=".zip"
 # reached only one of them would leave the pipeline quietly half-right.
 KMLIB_MOD_ID="kmlib"
 
-# Fails the run unless mod_info.json is in the working directory, which is
-# the caller's checkout root when a composite action invokes these scripts.
-mod_info_require_file() {
-  if [[ ! -f "${MOD_INFO_FILE}" ]]; then
-    echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} not found in ${PWD}" >&2
+# Points MOD_INFO_FILE at the file holding the mod's metadata in the working
+# directory, which is the caller's checkout root when a composite action
+# invokes these scripts: the committed base when there is one, else
+# mod_info.json. Fails the run when neither is there.
+#
+# The base wins whenever it is present, because beside it mod_info.json is
+# generated - absent on a fresh checkout, and on whichever locale was last
+# built otherwise. The two differ only in text a locale translates, and the
+# base's is the text every locale falls back to.
+mod_info_locate_file() {
+  if [[ -f "${MOD_INFO_BASE_FILE}" ]]; then
+    MOD_INFO_FILE="${MOD_INFO_BASE_FILE}"
+  elif [[ -f "${MOD_INFO_LAUNCHER_FILE}" ]]; then
+    MOD_INFO_FILE="${MOD_INFO_LAUNCHER_FILE}"
+  else
+    echo "${SCRIPT_NAME}: neither ${MOD_INFO_BASE_FILE} nor ${MOD_INFO_LAUNCHER_FILE} found in ${PWD}" >&2
     exit 1
   fi
 }
@@ -93,18 +114,46 @@ mod_info_derive_mod_folder_name() {
   basename "${jarSource}" "${JAR_EXTENSION}"
 }
 
-# Emits the release zip name for a jars[0] value and a version.
+# Emits the release zip name for a jars[0] value, a version and, for a mod
+# releasing per locale, the locale's tag.
 #
-# Here rather than in one script because two of them need this string and
-# neither may guess it: the release pipeline names the asset it uploads,
-# and the version file's directDownloadURL points at that asset. A rule
-# stated twice would give a working download link and a 404 the same
-# spelling, and only a player following the link would find out.
+# Here rather than in one script because several need this string and none
+# may guess it: the release pipeline names the asset it uploads, the version
+# file's directDownloadURL points at that asset, and the release body names
+# it to a reader. A rule stated twice would give a working download link and
+# a 404 the same spelling, and only a player following the link would find
+# out.
 mod_info_derive_zip_name() {
-  local jarSource="${1}" version="${2}"
-  local modFolderName
+  local jarSource="${1}" version="${2}" localeTag="${3:-}"
+  local modFolderName localeSuffix
   modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
-  printf '%s\n' "${modFolderName}-${version}${ZIP_EXTENSION}"
+  localeSuffix=$(mod_info_format_locale_suffix "${localeTag}")
+  printf '%s\n' "${modFolderName}-${version}${localeSuffix}${ZIP_EXTENSION}"
+}
+
+# Emits the VersionChecker file name for a mod id and, for a mod releasing
+# per locale, the locale's tag.
+#
+# Named after the mod id rather than the jar, unlike the zip: VersionChecker
+# locates the file through data/config/version/version_files.csv, which a
+# mod writes by hand, and the mod id is the string a mod author has in front
+# of them. With no tag this is that file's own name, which is also what a
+# localised zip carries it under, since the CSV is one file for every locale;
+# with a tag it names that locale's copy served as a release asset.
+mod_info_derive_version_file_name() {
+  local modId="${1}" localeTag="${2:-}"
+  local localeSuffix
+  localeSuffix=$(mod_info_format_locale_suffix "${localeTag}")
+  printf '%s\n' "${modId}${localeSuffix}${VERSION_FILE_EXTENSION}"
+}
+
+# Emits the suffix a locale's release files carry, or nothing for no tag -
+# which is what a mod keeping no locales releases under.
+mod_info_format_locale_suffix() {
+  local localeTag="${1:-}"
+  if [[ -n "${localeTag}" ]]; then
+    printf '%s' "${LOCALE_SEPARATOR}${localeTag}"
+  fi
 }
 
 # Echoes "true" when mod_info.json declares a dependency with the given id,

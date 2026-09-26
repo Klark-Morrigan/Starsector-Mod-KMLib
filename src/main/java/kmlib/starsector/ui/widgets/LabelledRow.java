@@ -77,6 +77,21 @@ public record LabelledRow(
     }
 
     /**
+     * Builds the same bare content over a label already composed as runs - for a caller holding a whole
+     * sentence, which would otherwise open on the first run and continue with each of the rest, copying
+     * the label once per run.
+     *
+     * @param labelRuns the label's runs in reading order; never empty
+     * @return the bare content
+     */
+    public static LabelledRow createRow(List<LabelRun> labelRuns) {
+        return new LabelledRow(
+            RowSlot.EMPTY,
+            labelRuns,
+            RowSlot.EMPTY);
+    }
+
+    /**
      * Returns a copy leading with {@code leadingRowSlot} - the image, tick, or other small element
      * drawn in the column before the label.
      *

@@ -1,0 +1,48 @@
+// Reads a mod's launcher metadata - its id, version, jars and dependencies - from
+// whichever file holds it, so every build script asks one place rather than each
+// parsing mod_info.json itself.
+//
+// A mod keeping its launcher text per locale commits mod_info.base.json and has
+// mod_info.json generated from it by writeLocaleFiles. That generated file is
+// absent on a fresh checkout and holds whichever locale was last built, and this
+// runs while the build configures - before any task could write it - so the base
+// is read wherever one is committed and mod_info.json only where it is not. The
+// release pipeline's scripts read by the same rule.
+//
+// Read as the game reads it, through the shipped JSON reader: the launcher parses
+// mod_info.json with the game's own parser, so a build reading it any other way
+// could refuse a file the launcher loads or act on one it refuses. That makes the
+// game's json.jar a requirement of configuring the build, which is where a missing
+// install is now reported.
+//
+// Input, read from the applying project:
+//   ext.shippedJson - the reader shipped-json-reader.gradle publishes.
+//
+// Published back to it:
+//   ext.modInfoFile - the applying project's metadata file, as located below.
+//   ext.modInfo     - its content, read once, for every script needing a field.
+//   ext.readModInfo(File modRoot) - another checkout's content, by the same rule.
+
+def modInfoFileName = 'mod_info.json'
+def modInfoBaseFileName = 'mod_info.base.json'
+
+def locateModInfoFile = { File modRoot ->
+
+    def modInfoBaseFile = new File(modRoot, modInfoBaseFileName)
+
+    if (modInfoBaseFile.isFile()) {
+        return modInfoBaseFile
+    }
+    def modInfoFile = new File(modRoot, modInfoFileName)
+
+    if (!modInfoFile.isFile()) {
+        throw new GradleException("Neither ${modInfoBaseFileName} nor ${modInfoFileName} found in ${modRoot}")
+    }
+    return modInfoFile
+}
+
+def projectModInfoFile = locateModInfoFile(projectDir)
+
+ext.modInfoFile = projectModInfoFile
+ext.modInfo = shippedJson.readObjectFile(projectModInfoFile)
+ext.readModInfo = { File modRoot -> shippedJson.readObjectFile(locateModInfoFile(modRoot)) }

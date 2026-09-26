@@ -11,11 +11,8 @@
 //
 // Applied from the Starsector conventions rather than by a mod directly, so every
 // consumer picks the task up from one place; kmlibCheckoutDirectory is the
-// extension those conventions publish for locating the shared shell scripts.
-
-import groovy.json.JsonSlurper
-
-def modInfo = new JsonSlurper().parse(file('mod_info.json'))
+// extension those conventions publish for locating the shared shell scripts, and
+// modInfo and modInfoFile are the metadata they read once for every task script.
 
 def versionFileName = "${modInfo.id}.version"
 def versionFileTemplateName = "${versionFileName}.template"
@@ -33,7 +30,7 @@ if (file(versionFileTemplateName).isFile()) {
     def fillVersionFileScript = new File(actionsDirectory,
         'fill-version-file-template/scripts/fill_version_file_template.sh')
 
-    // Sourced by the script above for the shared mod_info.json helpers, so it is as
+    // Sourced by the script above for the shared metadata helpers, so it is as
     // much an input as the script is: undeclared, an edit to the helpers would leave
     // the task up to date over a file the new code writes differently.
     def modInfoLibraryScript = new File(actionsDirectory, '_lib/mod_info.sh')
@@ -44,7 +41,7 @@ if (file(versionFileTemplateName).isFile()) {
 
     // Two things the generated file's download URL is built from - the release
     // zip's name and the publishing <owner>/<repo> - are derived by the script
-    // rather than restated here: it derives the zip name from mod_info.json's
+    // rather than restated here: it derives the zip name from the metadata's
     // jars[0] when given none, and reads the repository from the checkout's own
     // origin remote when GITHUB_REPOSITORY is absent, which outside Actions it
     // always is. Both rules therefore have one implementation, under bats, rather
@@ -119,14 +116,18 @@ if (file(versionFileTemplateName).isFile()) {
         description = ("Fills ${versionFileName} from ${versionFileTemplateName}, so a checkout "
             + 'used as a dev install reports its version to VersionChecker.')
 
-        // The script reads mod_info.json and the template from its mod-root
+        // The script reads the metadata and the template from its mod-root
         // argument, which defaults to the working directory, and resolves the output
         // path from where the caller stands. Standing in the project directory is
         // what makes the plain names below - no mod-root argument, an output path of
         // one filename - land on the consumer's own checkout.
         workingDir projectDir
 
-        inputs.file "${projectDir}/mod_info.json"
+        // The file the script reads the metadata from, which for a mod keeping
+        // locales is the committed base: the generated mod_info.json is another
+        // task's output, and declaring it here too would leave Gradle two tasks
+        // writing and reading one file with no order between them.
+        inputs.file modInfoFile
         inputs.file "${projectDir}/${versionFileTemplateName}"
         inputs.file fillVersionFileScript
         inputs.file modInfoLibraryScript

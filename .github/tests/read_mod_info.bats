@@ -207,11 +207,25 @@ EOF
     grep -qx "kmlib-dependency-version=1.0.0" "$GITHUB_OUTPUT"
 }
 
-@test "fails when mod_info.json is absent" {
+@test "reads the base over a generated mod_info.json" {
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    cat > "$WORK_DIR/mod_info.base.json" <<EOF
+{ "id": "kmu", "version": "0.2.0", "jars": ["jars/KMU.jar"] }
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # The generated copy lags whatever the base now says until the next
+    # build, and the release reads before it builds.
+    grep -qx "version=0.2.0"                     "$GITHUB_OUTPUT"
+    grep -qx "zip-name=KMU-0.2.0.zip"            "$GITHUB_OUTPUT"
+}
+
+@test "fails when no metadata file is present" {
     cd "$WORK_DIR"
     run bash "$SCRIPT"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"mod_info.json not found"* ]]
+    [[ "$output" == *"neither mod_info.base.json nor mod_info.json found"* ]]
 }
 
 @test "fails when .id is missing" {

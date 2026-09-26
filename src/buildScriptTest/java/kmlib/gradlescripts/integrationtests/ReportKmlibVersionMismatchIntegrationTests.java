@@ -27,20 +27,36 @@ final class ReportKmlibVersionMismatchIntegrationTests {
     private static final String REPORT_SCRIPT =
         new File("gradle/tasks/checks/report-kmlib-version-mismatch.gradle").getAbsolutePath();
 
+    private static final String SHIPPED_JSON_READER_SCRIPT =
+        new File("gradle/shipped-json-reader.gradle").getAbsolutePath();
+
+    private static final String MOD_INFO_READER_SCRIPT =
+        new File("gradle/mod-info-reader.gradle").getAbsolutePath();
+
+    // Handed over by the build running this suite: a throwaway build is a process of its own and
+    // cannot locate an install.
+    private static final String GAME_JSON_JAR_FILE = System.getProperty("kmlib.gameJsonJarFile");
+
+    private static final String MOD_INFO_FILE_NAME = "mod_info.json";
+
+    private static final String MOD_INFO_BASE_FILE_NAME = "mod_info.base.json";
+
     /**
      * Stands up a consumer whose manifest declares the given KMLib dependency, beside a KMLib
-     * checkout built at the given version. The dependency clause is passed as written so a case can
-     * pose a declaration with no version at all, which is a shape of its own.
+     * checkout whose manifest is the given file holding the given version. The dependency clause is
+     * passed as written so a case can pose a declaration with no version at all, which is a shape of
+     * its own.
      */
     private static Path writeConsumerProject(
             Path workspace,
             String declaredDependency,
+            String kmlibManifestFileName,
             String builtKmlibVersion) throws IOException {
 
         var kmlibCheckout = Files.createDirectories(workspace.resolve("kmlib"));
 
         Files.writeString(
-            kmlibCheckout.resolve("mod_info.json"),
+            kmlibCheckout.resolve(kmlibManifestFileName),
             "{\"id\":\"kmlib\",\"version\":\"" + builtKmlibVersion + "\"}");
 
         var projectDirectory = Files.createDirectories(workspace.resolve("consumer"));
@@ -50,20 +66,29 @@ final class ReportKmlibVersionMismatchIntegrationTests {
             "rootProject.name = 'kmu'");
 
         Files.writeString(
-            projectDirectory.resolve("mod_info.json"),
+            projectDirectory.resolve(MOD_INFO_FILE_NAME),
             "{\"id\":\"kmu\",\"version\":\"1.0.0\",\"dependencies\":[" + declaredDependency + "]}");
 
         Files.writeString(
             projectDirectory.resolve("build.gradle"),
             String.join(
                 "\n",
-                "ext.kmlibCheckoutDirectory = file('"
-                    + kmlibCheckout.toString().replace('\\', '/')
-                    + "')",
-            "apply from: '"
-                + REPORT_SCRIPT.replace('\\', '/') + "'"));
+                "ext.gameJsonJarFile = file('" + GAME_JSON_JAR_FILE.replace('\\', '/') + "')",
+                "apply from: '" + SHIPPED_JSON_READER_SCRIPT.replace('\\', '/') + "'",
+                "apply from: '" + MOD_INFO_READER_SCRIPT.replace('\\', '/') + "'",
+                "ext.kmlibCheckoutDirectory = file('" + kmlibCheckout.toString().replace('\\', '/') + "')",
+                "apply from: '" + REPORT_SCRIPT.replace('\\', '/') + "'"));
 
         return projectDirectory;
+    }
+
+    /** A consumer beside a KMLib checkout keeping the plain launcher file. */
+    private static Path writeConsumerProject(
+            Path workspace,
+            String declaredDependency,
+            String builtKmlibVersion) throws IOException {
+
+        return writeConsumerProject(workspace, declaredDependency, MOD_INFO_FILE_NAME, builtKmlibVersion);
     }
 
     private static String runReport(Path projectDirectory) {
@@ -128,6 +153,25 @@ final class ReportKmlibVersionMismatchIntegrationTests {
 
             Path projectDirectory =
                 writeConsumerProject(workspace, "{\"id\":\"kmlib\",\"version\":\"0.1.0\"}", "0.2.0");
+
+            assertThat(runReport(projectDirectory))
+                .contains("Warning:")
+                .contains("would not be able to enable");
+        }
+
+        /**
+         * A KMLib keeping its launcher text per locale states its version in the base, and a fresh
+         * checkout of it holds no generated launcher file at all.
+         */
+        @Test
+        void reportsABlockedModReadingKmlibsVersionFromItsBase(
+                @TempDir Path workspace) throws IOException {
+
+            Path projectDirectory = writeConsumerProject(
+                workspace,
+                "{\"id\":\"kmlib\",\"version\":\"0.1.0\"}",
+                MOD_INFO_BASE_FILE_NAME,
+                "0.2.0");
 
             assertThat(runReport(projectDirectory))
                 .contains("Warning:")
