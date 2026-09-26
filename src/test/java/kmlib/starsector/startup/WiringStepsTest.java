@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -27,6 +28,10 @@ import static org.mockito.Mockito.verify;
  * throw out would take down every mod loading behind it over one registration, and so would a guard
  * whose own reporting threw - which is the likelier of the two, the report being composed from
  * wording that may not have loaded at the moment everything else is already going wrong.
+ *
+ * <p>Both ends of what is caught are pinned, because both are decisions. A step that cannot link
+ * what it binds to is caught and reported, that being how a third party's changed contract arrives
+ * and the one failure an integration guard exists for; a failure of the process itself is not.
  */
 final class WiringStepsTest {
 
@@ -68,6 +73,38 @@ final class WiringStepsTest {
 
             verify(stepLogMock)
                 .error(FAILURE_MESSAGE, stepFailure);
+        }
+
+        @Test
+        void logsAStepThatCouldNotLinkWhatItBindsToRatherThanPropagatingIt() {
+            // The failure a guard in front of an integration exists for, and the one a
+            // RuntimeException-only guard misses. A third party that moved a class or changed a
+            // signature is met where the step first reaches it, which is inside this guard, and
+            // arrives as an Error rather than an exception.
+            var linkFailure = buildLinkFailure();
+
+            assertThatCode(() -> wiringSteps.runGuardedStep(
+                    () -> {
+                        throw linkFailure;
+                    },
+                    FAILURE_MESSAGE))
+                .doesNotThrowAnyException();
+
+            verify(stepLogMock)
+                .error(FAILURE_MESSAGE, linkFailure);
+        }
+
+        @Test
+        void letsAFailureOfTheProcessItselfThrough() {
+            // The limit on the breadth above. An exhausted heap is not this step's to answer for,
+            // and a guard that swallowed one would leave a game that cannot run reporting that it
+            // wired.
+            assertThatExceptionOfType(OutOfMemoryError.class)
+                .isThrownBy(() -> wiringSteps.runGuardedStep(
+                    () -> {
+                        throw new OutOfMemoryError("Java heap space");
+                    },
+                    FAILURE_MESSAGE));
         }
 
         @Test
@@ -120,6 +157,29 @@ final class WiringStepsTest {
                 .isEqualTo("installing the integration at start-up");
             assertThat(failureRecord.takeNextUnreported())
                 .isNull();
+        }
+
+        @Test
+        void reportsAnIntegrationThatCouldNotLinkTheModItBindsTo() {
+            // The whole point of widening the guard: a third party that changed its contract is
+            // exactly the case a player is entitled to be told about, and it never arrives as an
+            // exception. What was thrown is carried as the failure's cause, so the log block beside
+            // the notice renders a trace of the link that failed.
+            var linkFailure = buildLinkFailure();
+
+            wiringSteps.runGuardedStep(
+                () -> {
+                    throw linkFailure;
+                },
+                FAILURE_MESSAGE,
+                () -> INTEGRATION);
+
+            var failure = failureRecord.takeNextUnreported();
+
+            assertThat(failure.cause())
+                .isSameAs(linkFailure);
+            assertThat(failure.breakage().brokenDetail())
+                .contains("NoSuchMethodError");
         }
 
         @Test
@@ -204,6 +264,13 @@ final class WiringStepsTest {
         return () -> {
             throw new IllegalStateException("routes already registered");
         };
+    }
+
+    // What a step meets where a third party moved or changed what it binds to, as the cases about
+    // a changed contract arrange it. An Error rather than an exception, which is the whole point.
+    private static NoSuchMethodError buildLinkFailure() {
+
+        return new NoSuchMethodError("the mod moved what the step binds to");
     }
 
     private static ModIntegration countAndDescribe(AtomicInteger describeCount) {
