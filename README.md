@@ -710,6 +710,12 @@ No Starsector API on the signature.
   Every read answers nothing rather than throwing wherever there is nothing to ask,
   a caller wanting a mod's name or version being one composing a report -
   and a report that threw while naming who it was about would lose the report.
+- [`starsector/spreadsheets/`](src/main/java/kmlib/starsector/spreadsheets/) -
+  the rows of a spreadsheet the game has merged:
+  the data rows, with the blank-ID spacers and `#` comments the merger hands back left out,
+  and a list-valued cell split into its entries.
+  Takes the rows rather than opening the file,
+  since whether a failed read is fatal is the caller's to decide.
 - [`starsector/startup/`](src/main/java/kmlib/starsector/startup/) -
   running one step of a mod's start-up wiring behind its own failure boundary,
   so a step that throws costs its own registration rather than every step after it

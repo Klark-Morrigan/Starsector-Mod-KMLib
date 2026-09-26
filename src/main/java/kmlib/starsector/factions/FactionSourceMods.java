@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 
 import kmlib.starsector.settings.modmanager.ModSource;
+import kmlib.starsector.spreadsheets.SpreadsheetRows;
 import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
@@ -92,13 +93,8 @@ public final class FactionSourceMods {
         var modsByDirectory = readModsByDirectory(settings);
         var sources = new HashMap<String, ModSource>();
 
-        for (var rowIndex = 0; rowIndex < declarationRows.length(); rowIndex++) {
+        for (var declarationRow : SpreadsheetRows.readDataRows(declarationRows, FACTION_FILE_COLUMN)) {
 
-            var declarationRow = declarationRows.optJSONObject(rowIndex);
-
-            if (declarationRow == null) {
-                continue;
-            }
             var factionId = readDeclaredFactionIdOf(settings, declarationRow);
 
             if (factionId != null) {
@@ -126,17 +122,13 @@ public final class FactionSourceMods {
             new ModSource(sourceDirectory, null));
     }
 
-    // The ID the row's faction file declares, or null where the row names no file or the file will
-    // not open. A file that will not open here did not become a faction either - the loader reads
-    // it the same way, from the same merge - so such a row has no faction to attribute rather than
-    // a faction whose attribution was lost.
+    // The ID the row's faction file declares, or null where the file will not open. A file that
+    // will not open here did not become a faction either - the loader reads it the same way, from
+    // the same merge - so such a row has no faction to attribute rather than a faction whose
+    // attribution was lost.
     private static String readDeclaredFactionIdOf(SettingsAPI settings, JSONObject declarationRow) {
 
         var factionFilePath = declarationRow.optString(FACTION_FILE_COLUMN, "");
-
-        if (factionFilePath.isEmpty()) {
-            return null;
-        }
 
         try {
             var factionFile = settings.getMergedJSON(factionFilePath);
