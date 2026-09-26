@@ -1,0 +1,60 @@
+# Packages a built mod into its release assets: one zip per locale it releases
+# in, each with its own VersionChecker file inside, and those files again as
+# release assets beside the zips - or, for a mod keeping no locales, the single
+# unsuffixed zip and version file it has always released.
+#
+# An action rather than `run:` steps in the release workflow because the work is
+# a loop over locales, and a workflow cannot loop a `uses:` step - so the
+# per-locale version file would otherwise have to be filled by a second copy of
+# the script that fills it. Here the loop calls that script by its path beside
+# this one, and the whole of it is unit-tested with bats.
+name: Package release
+description: >-
+  Writes each locale into the checkout, assembles the runtime payload, fills
+  its VersionChecker file and zips it, collecting every zip and version file
+  into one output directory. Expects the jar to be built already.
+
+inputs:
+  mod-root:
+    description: >-
+      Directory holding the checkout. Set it when the checkout is not the
+      working directory: Actions permits no working-directory on a `uses:`
+      step.
+    required: false
+    default: '.'
+  output-dir:
+    description: >-
+      Where the zips and version files land, relative to the job's working
+      directory rather than to mod-root. Created if absent.
+    required: true
+  locales:
+    description: >-
+      The read-locales action's locales output. Empty or [] packages the
+      single unsuffixed release of a mod keeping no locales.
+    required: false
+    default: '[]'
+  default-locale:
+    description: >-
+      The read-locales action's default-locale output, whose version file is
+      also published under the unsuffixed name older installs poll.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - id: package
+      shell: bash
+      # Passed as environment variables rather than interpolated into the run
+      # body: the locales come from a consumer repo's manifest, and a value
+      # expanded into the command itself would be that repo's chance to run
+      # shell on the runner - which for this action is the mod's own
+      # self-hosted one.
+      env:
+        MOD_ROOT: ${{ inputs.mod-root }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+        LOCALES: ${{ inputs.locales }}
+        DEFAULT_LOCALE: ${{ inputs.default-locale }}
+      # GITHUB_ACTION_PATH points at this action's directory regardless of
+      # the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/package_release.sh"

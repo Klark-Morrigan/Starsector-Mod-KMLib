@@ -11,11 +11,8 @@
 //
 // Applied from the Starsector conventions rather than by a mod directly, so every
 // consumer picks the task up from one place; kmlibCheckoutDirectory is the
-// extension those conventions publish for locating the shared shell scripts.
-
-import groovy.json.JsonSlurper
-
-def modInfo = new JsonSlurper().parse(file('mod_info.json'))
+// extension those conventions publish for locating the shared shell scripts, and
+// modInfo and modInfoFile are the metadata they read once for every task script.
 
 def versionFileName = "${modInfo.id}.version"
 def versionFileTemplateName = "${versionFileName}.template"
@@ -126,7 +123,11 @@ if (file(versionFileTemplateName).isFile()) {
         // one filename - land on the consumer's own checkout.
         workingDir projectDir
 
-        inputs.file "${projectDir}/mod_info.json"
+        // The file the script reads the metadata from, which for a mod keeping
+        // locales is the committed base: the generated mod_info.json is another
+        // task's output, and declaring it here too would leave Gradle two tasks
+        // writing and reading one file with no order between them.
+        inputs.file modInfoFile
         inputs.file "${projectDir}/${versionFileTemplateName}"
         inputs.file fillVersionFileScript
         inputs.file modInfoLibraryScript

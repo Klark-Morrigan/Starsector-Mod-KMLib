@@ -136,7 +136,7 @@ Build:
 - [`gradle/starsector-mod.gradle`](gradle/starsector-mod.gradle) -
   the Starsector build conventions every KM mod applies by path:
   the game's API jars on the compile and test classpath,
-  `mod_info.json` as the version source,
+  the mod's metadata as the version source,
   the jar output location the launcher expects,
   and the two facts about the game every mod would otherwise restate -
   which namespace the game's type names are not promised in,
@@ -161,6 +161,11 @@ Build:
   for the task scripts that act on one:
   the build-time counterpart of the fixtures' `ShippedJson`,
   over the same `json.jar`.
+  Applied by the conventions script.
+- [`gradle/mod-info-reader.gradle`](gradle/mod-info-reader.gradle) -
+  reads a mod's metadata once while the build configures,
+  from `mod_info.base.json` where one is committed and `mod_info.json` otherwise,
+  and publishes it to the task scripts.
   Applied by the conventions script.
 - [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle) -
   KMLib's own,
@@ -225,7 +230,9 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   version,
   runner label,
   dist dir,
-  zip name and jar source from a caller's `mod_info.json`.
+  zip name and jar source from a caller's metadata.
+- [`actions/read-locales/`](.github/actions/read-locales/) -
+  reads the locales a caller releases in from its `localisation/manifest.json`.
 - [`actions/check-version/`](.github/actions/check-version/) -
   reports whether a git tag already names the version being released,
   gating the pipeline.
@@ -241,12 +248,20 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   and emits that release's URL.
 - [`actions/compose-dependency-note/`](.github/actions/compose-dependency-note/) -
   composes the release-body line naming that dependency release and linking it.
+- [`actions/compose-locale-note/`](.github/actions/compose-locale-note/) -
+  composes the release-body line naming each locale's zip
+  and linking the core localisation a locale needs.
 - [`actions/fill-version-file-template/`](.github/actions/fill-version-file-template/) -
-  fills the caller's committed `<mod-id>.version.template` from `mod_info.json`,
+  fills the caller's committed `<mod-id>.version.template` from its metadata,
   producing the VersionChecker file for the release being cut.
+- [`actions/package-release/`](.github/actions/package-release/) -
+  packages a built mod into its release assets,
+  one zip and one version file per locale.
 - [`actions/_lib/mod_info.sh`](.github/actions/_lib/mod_info.sh) -
-  what `mod_info.json` contains and what shape its fields take;
-  sourced by the four scripts above.
+  which file holds a mod's metadata,
+  what it contains and what shape its fields take,
+  and the release file names that follow from it;
+  sourced by the scripts reading that metadata.
 - [`tests/`](.github/tests/) -
   bats-core tests for the action scripts.
 
@@ -1029,8 +1044,10 @@ and a key present in only one costs a consumer a blank string rather than an err
 The Gradle build is gated separately in [ci-gradle.yml](.github/workflows/ci-gradle.yml),
 which needs Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 
-**[read-mod-info](.github/actions/read-mod-info/action.yml)** reads the caller's `mod_info.json`
-and emits what every other workflow derives from it by convention -
+**[read-mod-info](.github/actions/read-mod-info/action.yml)** reads the caller's metadata -
+`mod_info.base.json` where one is committed,
+`mod_info.json` otherwise -
+and emits what every other workflow derives from it by convention;
 its `outputs:` block is the statement of that convention:
 
 - The mod ID and version verbatim,
@@ -1052,6 +1069,23 @@ its `outputs:` block is the statement of that convention:
   where that KMLib is published.
   The latter is emitted from the same constant the sibling checkout set is built from,
   so the release a pin is checked against is the repository the build compiles it against.
+
+**[read-locales](.github/actions/read-locales/action.yml)** reads the caller's `localisation/manifest.json`
+and emits its `locales` -
+tag,
+display name and core localisation,
+the default first -
+and its `default-locale`.
+A caller committing no manifest gets an empty list,
+which the rest of the pipeline reads as "release the one unsuffixed zip",
+so a mod adopts per-locale releases by committing the manifest and nothing else.
+It checks only what packaging acts on:
+each tag is lowercased BCP 47,
+since it becomes part of a file name,
+and the default is among them,
+since its version file is what older installs poll.
+It reads with `jq`, as every action here does,
+so the manifest must be plain JSON here even though the build would accept a `#` comment in it.
 
 **[check-version](.github/actions/check-version/action.yml)** takes a `version`,
 looks for a git tag naming it in the caller checkout,
@@ -1101,6 +1135,42 @@ which is the case for KMLib releasing itself,
 and an absent URL emits no line either,
 a dropped line beating one whose link goes nowhere.
 
+**[compose-locale-note](.github/actions/compose-locale-note/action.yml)**
+takes read-locales' `locales`,
+a `jar-source` and a `version`,
+and emits the `note` naming each locale's zip by its display name,
+linking the core localisation a locale needs installed over `starsector-core`.
+That project has no mod ID,
+so the launcher cannot check for it and the release page is one of the few places a player can be told.
+The zip names come from the lib rule the packaging names them by.
+No locales,
+no line.
+
+**[package-release](.github/actions/package-release/action.yml)**
+takes read-locales' `locales` and `default-locale`,
+a `mod-root` and an `output-dir`,
+and turns a checkout whose jar is built into the release's assets.
+Per locale it runs `./gradlew writeLocaleFiles -Plocale=<tag>`,
+assembles the runtime payload into a fresh `dist/<folder>/`,
+fills the version file into it for that locale,
+and writes `<folder>-<version>-<tag>.zip` and `<mod-id>-<tag>.version` into the output directory.
+It then copies the default locale's version file to `<mod-id>.version`.
+With no locales it makes the one pass a mod keeping none has always made,
+writing no locale and suffixing nothing.
+
+- An action rather than steps in the workflow,
+  because the work is a loop and a workflow cannot loop a `uses:` step.
+  Here the loop calls the fill script by its path beside this one,
+  so every version file comes out of one implementation.
+- The jar is built once, before it runs:
+  it is identical across locales,
+  which is what makes this a loop rather than a matrix rebuilding it per locale on one runner.
+- Inside each zip the version file keeps the bare `<mod-id>.version`,
+  since the `version_files.csv` naming it is one file for every locale.
+  What differs is where it points:
+  at that locale's zip,
+  and at that locale's own copy as the master.
+
 **[fill-version-file-template](.github/actions/fill-version-file-template/action.yml)**
 takes an `output-path` and a `zip-name`
 and writes the mod's VersionChecker `.version` file there.
@@ -1110,7 +1180,7 @@ whose release-varying values are tokens -
 `{{major}}` / `{{minor}}` / `{{patch}}`,
 `{{starsectorVersion}}`,
 `{{directDownloadURL}}` -
-each substituted from `mod_info.json`,
+each substituted from the caller's metadata,
 so no version number is restated by hand outside that file.
 
 - `{{directDownloadURL}}` is the one token not read from there.
@@ -1120,9 +1190,16 @@ so no version number is restated by hand outside that file.
   Both of those have a fallback for callers outside Actions,
   which is what lets the local Gradle task run this same script
   rather than a second implementation:
-  an omitted `zip-name` is derived from `mod_info.json` `jars[0]`
+  an omitted `zip-name` is derived from the metadata's `jars[0]`
   by the same lib rule `read-mod-info` uses,
   and an absent `GITHUB_REPOSITORY` falls back to the checkout's `origin` remote.
+- An optional `locale` names the zip the file ships in.
+  Set, the derived zip name carries that locale's suffix,
+  and `masterVersionFile` has its last segment swapped for `<mod-id>-<locale>.version`,
+  so an install polls the copy whose download link leads back to its own language.
+  A template whose master address does not end in `<mod-id>.version`
+  names a place the release does not publish locale copies to,
+  and fails rather than point an install at nothing.
 - Substitution is by whole value,
   which is how the version components come out as JSON numbers rather than quoted digits.
   Every other key is carried through untouched,
@@ -1135,7 +1212,7 @@ so no version number is restated by hand outside that file.
   and under one name the committed file would hand VersionChecker quoted tokens
   where it expects numbers.
   The bare name exists only where something generated it.
-- `mod-root` says where to read `mod_info.json` and the template from,
+- `mod-root` says where to read the metadata and the template from,
   and defaults to the working directory -
   where a job with the mod checked out at the workspace root already stands.
   The release pipeline sets it
@@ -1146,19 +1223,26 @@ so no version number is restated by hand outside that file.
   so a caller writing into the checkout and one writing beside it
   each state the path they would state anyway.
 
-Four of the six read `mod_info.json`,
-so what that file contains and what shape its fields take live once in
+Five of the nine read the caller's metadata,
+so which file holds it and what shape its fields take live once in
 [_lib/mod_info.sh](.github/actions/_lib/mod_info.sh),
 which they source:
-the filename,
+the base-over-launcher-file rule,
 the SemVer shape,
 the "this field is present" check,
-and the names that follow from `jars[0]` -
-the shipped mod folder and the release zip.
+and the names that follow -
+the shipped mod folder,
+the release zip and the version file,
+each with or without a locale's suffix.
+The base wins wherever it is committed,
+because beside it `mod_info.json` is a build output -
+absent on a fresh checkout,
+and on whichever locale was last written otherwise.
 The zip name is there rather than in one script
-because two of them need it and neither may guess:
-the pipeline uploads an asset under that name
-while the version file points a download URL at it,
+because several of them need it and none may guess:
+the pipeline uploads an asset under that name,
+the version file points a download URL at it,
+and the release body tells a reader to download it,
 so a rule spelled twice would give a working link and a 404 the same spelling.
 The file sits under `actions/` rather than beside it
 so it is where the scripts sourcing it look,
@@ -1177,16 +1261,23 @@ a workflow always reaching its own repository.
 Cutting the release itself -
 extracting the `## [<version>]` section for the body and attaching the assets -
 is delegated to Common-Automation's stack-agnostic `create-github-release`;
-only the six actions above live in KMLib.
+only the nine actions above live in KMLib.
+The body is the changelog section,
+then the locale line and the dependency line,
+either left out when it has nothing to say.
 
-A release carries two assets.
-The mod zip is what a player downloads,
+A release carries one zip and one version file per locale,
+and the default locale's version file a second time under the bare name.
+A zip is what a player downloads,
 with the generated `.version` file riding inside it
 so an install knows which version it is.
 The same file is attached in its own right
 because that is the only form an update checker can reach:
-it polls `releases/latest/download/<mod-id>.version` without downloading the mod,
+it polls `releases/latest/download/<mod-id>-<locale>.version` without downloading the mod,
 and a copy sealed inside the zip answers nothing.
+The bare `<mod-id>.version` is what an install from before per-locale releases polls,
+so without it every such install's update check would 404, silently and for good.
+A mod keeping no locales releases one unsuffixed zip and one `<mod-id>.version`.
 GitHub excludes prereleases from `releases/latest`,
 so a mod marked prerelease would publish a URL resolving to an earlier release or to nothing -
 which is why nothing in this pipeline can mark one.
@@ -1237,11 +1328,11 @@ located on Windows from the git on `PATH`.
   the install picks up the new jar immediately,
   and a version file left behind would report a version that is no longer there.
 - Outside Actions there is no release to name the zip and no `GITHUB_REPOSITORY`,
-  so the script derives the zip name from `mod_info.json`
+  so the script derives the zip name from the metadata
   and reads the repository half of the download URL from the checkout's `origin` remote.
   A local build therefore cannot name a repository this clone does not push to,
   and the build restates neither rule.
-- `mod_info.json`,
+- The metadata file,
   the template and the script are its inputs,
   so it re-runs only when one of them -
   or the remote -
@@ -1275,6 +1366,8 @@ the manifest's `defaultLocale` is built.
   `name`, `description`, `author` and dependency names only,
   any other field refused -
   and the result is written to the repo root with its keys sorted.
+  Such a mod gitignores `mod_info.json` and edits the base,
+  which is also what every build script and the release pipeline read its metadata from.
 - The manifest and the fragments are read the way the game reads JSON,
   through [shipped-json-reader.gradle](gradle/shipped-json-reader.gradle):
   the same comment strip and the game's own `json.jar` the [test fixtures](#test-fixtures) use,
@@ -1286,6 +1379,18 @@ the manifest's `defaultLocale` is built.
   and CI runs `test` before `jar`.
   The requested locale is an input of its own,
   so switching it re-runs both rather than reporting either up to date.
+
+The mod's metadata is read once,
+while the build configures,
+by [mod-info-reader.gradle](gradle/mod-info-reader.gradle),
+and published to every script needing a field of it:
+`mod_info.base.json` where one is committed,
+`mod_info.json` otherwise -
+the rule the release pipeline's scripts read by.
+It goes through the shipped JSON reader,
+because the launcher parses that file with the game's own parser,
+so configuring the build needs the install's `json.jar`
+and a missing install is reported there.
 
 The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this folder

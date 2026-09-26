@@ -8,10 +8,11 @@
 # at release time keeps the number stated once, in the file the game itself
 # reads, instead of in three that drift apart the moment one is forgotten.
 #
-# Usage: fill_version_file_template.sh <output-path> [zip-name] [mod-root]
+# Usage: fill_version_file_template.sh <output-path> [zip-name] [mod-root] [locale]
 #
 # Reads from the mod root, which defaults to the working directory:
-#   mod_info.json              - .id, .name, .version, .gameVersion, and
+#   mod_info.base.json, else mod_info.json
+#                              - .id, .name, .version, .gameVersion, and
 #                                .jars[0] when no zip name is given
 #   <mod-id>.version.template  - the committed template
 #
@@ -78,6 +79,13 @@ ZIP_NAME="${2:-}"
 # exception: it checks the mod out one level down so the sibling repos can
 # sit beside it, and Actions permits no working-directory on a `uses:` step.
 MOD_ROOT="${3:-.}"
+# The locale tag of the build this file ships in, for a mod releasing one zip
+# per locale. Optional because a mod keeping no locales releases one zip under
+# no tag, and a local build fills the file for whichever locale it holds. Set,
+# it names that locale's zip in the download URL and that locale's copy of this
+# file as the master, so an install polls the copy whose download link leads
+# back to its own language.
+LOCALE_TAG="${4:-}"
 
 # Kept before the move below, so the output path resolves against the
 # directory the caller stated it from.
@@ -89,7 +97,7 @@ if [[ ! -d "${MOD_ROOT}" ]]; then
 fi
 cd "${MOD_ROOT}"
 
-mod_info_require_file
+mod_info_locate_file
 
 MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
 MOD_NAME=$(jq -r '.name' "${MOD_INFO_FILE}")
@@ -107,7 +115,7 @@ if [[ -z "${ZIP_NAME}" ]]; then
   # jar to work it out from, and refusing one for a field it never reads
   # would fail mods that publish no jar at all.
   mod_info_require_fields "jars[0]:${JAR_SOURCE}"
-  ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}")
+  ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${LOCALE_TAG}")
 fi
 
 # The template is named after the mod id, so no caller has to state a
@@ -160,6 +168,21 @@ if [[ -z "${MASTER_VERSION_FILE}" ]] || [[ "${MASTER_VERSION_FILE}" == "null" ]]
   exit 1
 fi
 
+# A localised release serves each locale's copy of this file as a release
+# asset beside the unlocalised one, so the template's address - written for the
+# unlocalised name - leads to a locale's copy by swapping its last segment. An
+# address ending in another name is a place this release does not publish
+# locale copies to, so the run fails rather than point an install at nothing.
+if [[ -n "${LOCALE_TAG}" ]]; then
+  UNLOCALISED_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
+  if [[ "${MASTER_VERSION_FILE##*/}" != "${UNLOCALISED_VERSION_FILE_NAME}" ]]; then
+    echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} masterVersionFile '${MASTER_VERSION_FILE}' does not end in" \
+         "${UNLOCALISED_VERSION_FILE_NAME}, so it names no copy for locale ${LOCALE_TAG}" >&2
+    exit 1
+  fi
+  MASTER_VERSION_FILE="${MASTER_VERSION_FILE%/*}/$(mod_info_derive_version_file_name "${MOD_ID}" "${LOCALE_TAG}")"
+fi
+
 if ! [[ "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
   echo "${SCRIPT_NAME}: version '${VERSION}' does not split into three numeric parts (MAJOR.MINOR.PATCH)" >&2
   exit 1
@@ -197,13 +220,17 @@ REPLACEMENTS=$(jq -n \
 # walk() reaches nested values (modVersion's components) without this script
 # knowing the template's shape, which is what keeps the shape the mod's
 # to state. The visited value is bound to $value first because the "." in a
-# piped expression would otherwise refer to $replacements, not to it.
+# piped expression would otherwise refer to $replacements, not to it. The
+# master address is written back as resolved above, which for an unlocalised
+# file is the template's own.
 GENERATED=$(jq --argjson replacements "${REPLACEMENTS}" \
+  --arg masterVersionFile "${MASTER_VERSION_FILE}" \
   'walk(. as $value
         | if ($value | type) == "string" and ($replacements | has($value))
           then $replacements[$value]
           else $value
-          end)' \
+          end)
+   | .masterVersionFile = $masterVersionFile' \
   "${TEMPLATE_FILE}")
 
 UNREPLACED=$(jq -r --arg tokenRegex "${TOKEN_REGEX}" \

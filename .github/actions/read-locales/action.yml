@@ -1,0 +1,32 @@
+# Reads the caller's localisation/manifest.json and emits the locales the mod
+# releases in, so the release pipeline packages one zip per locale and lists
+# them in the release body. A mod with no manifest gets no locales, which the
+# pipeline reads as "release the single unsuffixed zip".
+#
+# The action shells out to scripts/read_locales.sh so the logic is unit-
+# tested with bats. Composite actions themselves are not unit-testable.
+name: Read locales
+description: >-
+  Reads localisation/manifest.json from the caller checkout and emits its
+  locales - tag, display name and core localisation - and its default locale.
+  Emits an empty list for a mod committing no manifest.
+
+outputs:
+  locales:
+    description: >-
+      JSON array of { tag, displayName, coreLocalisation }, default locale
+      first. coreLocalisation is empty for a locale naming none; the array is
+      empty for a mod committing no manifest.
+    value: ${{ steps.read.outputs.locales }}
+  default-locale:
+    description: "The manifest's defaultLocale, or empty with no manifest."
+    value: ${{ steps.read.outputs.default-locale }}
+
+runs:
+  using: composite
+  steps:
+    - id: read
+      shell: bash
+      # GITHUB_ACTION_PATH points at this action's directory regardless of
+      # the caller's working directory, so the script path is stable.
+      run: "$GITHUB_ACTION_PATH/scripts/read_locales.sh"

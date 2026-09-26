@@ -247,12 +247,62 @@ EOF
     [[ "$output" == *"missing required field 'id'"* ]]
 }
 
-@test "fails when mod_info.json is absent" {
+@test "fails when no metadata file is present" {
     rm "$WORK_DIR/mod_info.json"
     cd "$WORK_DIR"
     run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"mod_info.json not found"* ]]
+    [[ "$output" == *"neither mod_info.base.json nor mod_info.json found"* ]]
+}
+
+@test "reads the version from the base over a generated mod_info.json" {
+    cat > "$WORK_DIR/mod_info.base.json" <<EOF
+{ "id": "kmu", "name": "Klark Morrigan's Universe", "version": "2.0.0", "gameVersion": "0.98a-RC8" }
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    [ "$status" -eq 0 ]
+    [ "$(read_generated '.modVersion.major')" = "2" ]
+}
+
+@test "names a locale's zip in the download URL when the name is derived" {
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "" "." "zh-hans"
+    [ "$status" -eq 0 ]
+    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3-zh-hans.zip"
+    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+}
+
+@test "names a locale's own copy as the master version file" {
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    [ "$status" -eq 0 ]
+    # An install of this locale polls the copy whose download link leads back
+    # to its own language, not the default locale's.
+    [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu-zh-hans.version" ]
+}
+
+@test "leaves the master version file as the template states it with no locale" {
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "." ""
+    [ "$status" -eq 0 ]
+    [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu.version" ]
+}
+
+@test "fails for a locale when the master version file names another file" {
+    cat > "$WORK_DIR/kmu.version.template" <<EOF
+{
+  "masterVersionFile": "https://example.invalid/master/elsewhere.json",
+  "modName": "{{modName}}"
+}
+EOF
+    cd "$WORK_DIR"
+    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "." "zh-hans"
+    # There is no locale copy to point at beside a file this release does not
+    # publish, and an install polling a guessed address would never update.
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"does not end in kmu.version, so it names no copy for locale zh-hans"* ]]
+    [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
 @test "fails when no output path is given" {

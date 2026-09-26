@@ -1,7 +1,8 @@
-# Reads the caller's mod_info.json and emits the derived values KMLib's
-# reusable CI and release workflows run on, so a consumer passes no inputs:
-# each value is either stated in that file or follows from it by a convention
-# stated in the outputs below.
+# Reads the caller's mod metadata - mod_info.base.json when committed, else
+# mod_info.json - and emits the derived values KMLib's reusable CI and release
+# workflows run on, so a consumer passes no inputs: each value is either
+# stated in that file or follows from it by a convention stated in the
+# outputs below.
 #
 # The action shells out to scripts/read_mod_info.sh so the logic is unit-
 # tested with bats. Composite actions themselves are not unit-testable.

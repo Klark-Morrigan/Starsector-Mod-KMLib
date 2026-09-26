@@ -25,6 +25,8 @@ ACTIONS_WITH_OUTPUTS=(
     check-dependency-release
     check-version
     compose-dependency-note
+    compose-locale-note
+    read-locales
     read-mod-info
 )
 

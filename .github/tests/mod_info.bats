@@ -4,7 +4,7 @@
 # Requires bats-core: https://github.com/bats-core/bats-core
 # Run from the KMLib repo root: bats .github/tests/mod_info.bats
 #
-# The lib is sourced by four action scripts, so its checks are tested here
+# The lib is sourced by several action scripts, so its checks are tested here
 # once rather than through each of them. The action suites still cover their
 # own use of it - what matters there is which fields a given script requires,
 # not that the check works.
@@ -32,31 +32,53 @@ run_in_lib() {
                  $*"
 }
 
-@test "mod_info_require_file passes when mod_info.json is present" {
+@test "mod_info_locate_file points at mod_info.json when it is the only file" {
     echo '{}' > "$WORK_DIR/mod_info.json"
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_require_file"
+    run_in_lib "read_mod_info" 'mod_info_locate_file; echo "${MOD_INFO_FILE}"'
     [ "$status" -eq 0 ]
+    [ "$output" = "mod_info.json" ]
 }
 
-@test "mod_info_require_file fails when mod_info.json is absent" {
+@test "mod_info_locate_file points at the base when one is committed" {
+    echo '{}' > "$WORK_DIR/mod_info.json"
+    echo '{}' > "$WORK_DIR/mod_info.base.json"
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_require_file"
+    run_in_lib "read_mod_info" 'mod_info_locate_file; echo "${MOD_INFO_FILE}"'
+    # Beside a base, mod_info.json is a build output on whichever locale was
+    # last written, so it is never the one read.
+    [ "$status" -eq 0 ]
+    [ "$output" = "mod_info.base.json" ]
+}
+
+@test "mod_info_locate_file points at the base on a checkout that has built nothing" {
+    echo '{}' > "$WORK_DIR/mod_info.base.json"
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" 'mod_info_locate_file; echo "${MOD_INFO_FILE}"'
+    # The release reads a fresh checkout, where the generated file does not
+    # exist yet.
+    [ "$status" -eq 0 ]
+    [ "$output" = "mod_info.base.json" ]
+}
+
+@test "mod_info_locate_file fails naming both files when neither is present" {
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_locate_file"
     [ "$status" -ne 0 ]
-    [[ "$output" == *"mod_info.json not found"* ]]
+    [[ "$output" == *"neither mod_info.base.json nor mod_info.json found"* ]]
 }
 
-@test "mod_info_require_file names the sourcing script in its message" {
+@test "mod_info_locate_file names the sourcing script in its message" {
     cd "$WORK_DIR"
-    run_in_lib "fill_version_file_template" "mod_info_require_file"
+    run_in_lib "fill_version_file_template" "mod_info_locate_file"
     # A shared lib reporting under its own name would tell a reader nothing
     # about which release step actually stopped.
     [[ "$output" == "fill_version_file_template: "* ]]
 }
 
-@test "mod_info_require_file falls back to a default name when unset" {
+@test "mod_info_locate_file falls back to a default name when unset" {
     cd "$WORK_DIR"
-    run bash -c "set -euo pipefail; source '$LIB'; mod_info_require_file"
+    run bash -c "set -euo pipefail; source '$LIB'; mod_info_locate_file"
     # Under set -u an unset SCRIPT_NAME would crash the reporting itself,
     # losing the real failure behind an unbound-variable error.
     [ "$status" -ne 0 ]
@@ -126,6 +148,31 @@ run_in_lib() {
     [ "$output" = "KMLib-0.1.0.zip" ]
 }
 
+@test "mod_info_derive_zip_name suffixes a locale's tag after the version" {
+    run_in_lib "read_mod_info" "mod_info_derive_zip_name 'jars/KMU.jar' '0.2.0' 'zh-hans'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "KMU-0.2.0-zh-hans.zip" ]
+}
+
+@test "mod_info_derive_version_file_name names the file after the mod id" {
+    run_in_lib "read_mod_info" "mod_info_derive_version_file_name 'kmu'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "kmu.version" ]
+}
+
+@test "mod_info_derive_version_file_name suffixes a locale's tag" {
+    run_in_lib "read_mod_info" "mod_info_derive_version_file_name 'kmu' 'zh-hans'"
+    [ "$status" -eq 0 ]
+    [ "$output" = "kmu-zh-hans.version" ]
+}
+
+@test "mod_info_format_locale_suffix emits nothing for no tag" {
+    run_in_lib "read_mod_info" "mod_info_format_locale_suffix ''"
+    # A mod keeping no locales releases under the names it always has.
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+}
+
 # Writes a mod_info.json whose dependencies array is the given raw JSON
 # fragment, so a case can state the entries it needs without templating jq
 # from inside bats. No argument writes a file carrying no dependencies key.
@@ -145,7 +192,7 @@ EOF
 @test "mod_info_has_dependency finds a declared dependency by id" {
     write_mod_info_with_dependencies '{ "id": "kmlib", "version": "1.0.0" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_has_dependency 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "true" ]
 }
@@ -153,7 +200,7 @@ EOF
 @test "mod_info_has_dependency reports false for an undeclared id" {
     write_mod_info_with_dependencies '{ "id": "lw_lazylib", "name": "LazyLib" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_has_dependency 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "false" ]
 }
@@ -164,7 +211,7 @@ EOF
     # the one release that legitimately declares no dependency.
     write_mod_info_with_dependencies
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_has_dependency 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "false" ]
 }
@@ -174,7 +221,7 @@ EOF
     # to read as present here, or that rule never fires.
     write_mod_info_with_dependencies '{ "id": "kmlib", "name": "KMLib" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_has_dependency 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_has_dependency 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "true" ]
 }
@@ -182,7 +229,7 @@ EOF
 @test "mod_info_read_dependency_version echoes the pinned version" {
     write_mod_info_with_dependencies '{ "id": "kmlib", "version": "1.0.0" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_read_dependency_version 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "1.0.0" ]
 }
@@ -192,7 +239,7 @@ EOF
         '{ "id": "lw_lazylib", "version": "2.9.0" },
          { "id": "kmlib", "version": "1.0.0" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_read_dependency_version 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "1.0.0" ]
 }
@@ -200,7 +247,7 @@ EOF
 @test "mod_info_read_dependency_version echoes nothing for an undeclared id" {
     write_mod_info_with_dependencies '{ "id": "lw_lazylib", "name": "LazyLib" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_read_dependency_version 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "" ]
 }
@@ -208,7 +255,7 @@ EOF
 @test "mod_info_read_dependency_version echoes nothing when there is no dependencies key" {
     write_mod_info_with_dependencies
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_read_dependency_version 'kmlib'"
     [ "$status" -eq 0 ]
     [ "$output" = "" ]
 }
@@ -216,7 +263,7 @@ EOF
 @test "mod_info_read_dependency_version echoes empty, not jq's null, for a versionless entry" {
     write_mod_info_with_dependencies '{ "id": "kmlib", "name": "KMLib" }'
     cd "$WORK_DIR"
-    run_in_lib "read_mod_info" "mod_info_read_dependency_version 'kmlib'"
+    run_in_lib "read_mod_info" "mod_info_locate_file; mod_info_read_dependency_version 'kmlib'"
     [ "$status" -eq 0 ]
     # "null" would sail through an emptiness check and reach the release body
     # as a version string, so the `// ""` fallback is the tested behaviour.

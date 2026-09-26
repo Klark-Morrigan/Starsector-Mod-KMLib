@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Reads mod_info.json from the caller checkout's working directory and emits
-# the values a mod's CI and release pipeline needs. Callers pass nothing:
-# whatever varies between mods is either stated in mod_info.json or follows
-# from it by a convention this script defines.
+# Reads the mod's metadata from the caller checkout's working directory -
+# mod_info.base.json when committed, else mod_info.json, by the shared lib's
+# rule - and emits the values a mod's CI and release pipeline needs. Callers
+# pass nothing: whatever varies between mods is either stated in that file or
+# follows from it by a convention this script defines.
 #
 # Emits the following keys to $GITHUB_OUTPUT (one "key=value" per line):
 #   mod-id             - .id verbatim
@@ -33,7 +34,6 @@ source "${LIB_DIR}/mod_info.sh"
 
 RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
-VERSION_FILE_EXTENSION=".version"
 
 # The repos hosting the shared Gradle scripts a mod's build applies. Both are
 # reached by a path relative to the checkout's parent, so they have to be
@@ -44,7 +44,7 @@ COMMON_JAVA_PATH="Common-Java"
 KMLIB_REPO="Klark-Morrigan/Starsector-Mod-KMLib"
 KMLIB_PATH="Starsector-Mod-KMLib"
 
-mod_info_require_file
+mod_info_locate_file
 
 MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
 VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
@@ -57,13 +57,9 @@ mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURC
 RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 
 # Named after the mod id rather than the jar, unlike the folder and zip
-# below: VersionChecker locates it through data/config/version/
-# version_files.csv, which a mod writes by hand, and the mod id is the string
-# a mod author has in front of them. The release pipeline names four things
-# with it - the file it generates, the artifact it passes between jobs, and
-# the release asset the masterVersionFile URL resolves to - so it is derived
-# once here rather than reassembled at each of them.
-VERSION_FILE_NAME="${MOD_ID}${VERSION_FILE_EXTENSION}"
+# below; the shared lib states why, since the release packaging names the
+# same file.
+VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
 
 # Both names follow from jars[0], and the rules for deriving them live in the
 # shared lib: the version file the release generates carries the zip name in

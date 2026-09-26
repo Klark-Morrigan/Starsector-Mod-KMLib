@@ -20,8 +20,10 @@
 #
 # Usage: validate_versioning.sh <version>
 #
-# Reads CHANGELOG.md and mod_info.json from the current directory. Exits
-# non-zero with a clear message on the first failed rule.
+# Reads CHANGELOG.md and the mod's metadata from the current directory - the
+# metadata from mod_info.base.json when committed, else mod_info.json, by the
+# shared lib's rule. Exits non-zero with a clear message on the first failed
+# rule.
 set -euo pipefail
 
 # Prefixes every message the shared lib reports, so a failure names the step
@@ -56,7 +58,7 @@ fi
 # Rule 2: mod_info.json .version must equal the input. Without this a
 # tag-only bump could publish a release that disagrees with the file the
 # game actually reads.
-mod_info_require_file
+mod_info_locate_file
 MOD_INFO_VERSION="$(jq -r '.version' "${MOD_INFO_FILE}")"
 if [[ "${MOD_INFO_VERSION}" != "${VERSION}" ]]; then
   echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} .version (${MOD_INFO_VERSION}) does not match released version (${VERSION})" >&2
