@@ -1,6 +1,7 @@
 package kmlib.math.geometry;
 
 import java.util.List;
+import java.util.function.ToDoubleFunction;
 
 /**
  * The axis-aligned box a set of points fits inside, stated as its two extreme corners.
@@ -35,24 +36,7 @@ public record Bounds(
      *         nothing to enclose)
      */
     public static Bounds computeEnclosingBounds(List<double[]> points) {
-
-        if (points.isEmpty()) {
-            throw new IllegalArgumentException("Cannot enclose no points");
-        }
-
-        var minX = Double.POSITIVE_INFINITY;
-        var minY = Double.POSITIVE_INFINITY;
-        var maxX = Double.NEGATIVE_INFINITY;
-        var maxY = Double.NEGATIVE_INFINITY;
-
-        for (var point : points) {
-
-            minX = Math.min(minX, point[0]);
-            minY = Math.min(minY, point[1]);
-            maxX = Math.max(maxX, point[0]);
-            maxY = Math.max(maxY, point[1]);
-        }
-        return new Bounds(minX, minY, maxX, maxY);
+        return computeEnclosingBounds(points, point -> point[0], point -> point[1]);
     }
 
     /**
@@ -71,5 +55,46 @@ public record Bounds(
             && other.minX() <= maxX
             && minY <= other.maxY()
             && other.minY() <= maxY;
+    }
+
+    /**
+     * Measures the box points of any type fit inside, reading each point's coordinates through
+     * the two accessors. The one min/max walk behind this record's factory and
+     * {@link Rectangle#computeEnclosingRectangle}, so neither copies its points into the other's
+     * type first.
+     *
+     * @param points the points to enclose; must be non-empty
+     * @param readX  reads a point's x
+     * @param readY  reads a point's y
+     * @param <P>    the point type
+     * @return the box they fall inside
+     * @throws IllegalArgumentException if {@code points} is empty (a box is undefined with
+     *         nothing to enclose)
+     */
+    static <P> Bounds computeEnclosingBounds(
+            List<P> points,
+            ToDoubleFunction<P> readX,
+            ToDoubleFunction<P> readY) {
+
+        if (points.isEmpty()) {
+            throw new IllegalArgumentException("Cannot enclose no points");
+        }
+
+        var minX = Double.POSITIVE_INFINITY;
+        var minY = Double.POSITIVE_INFINITY;
+        var maxX = Double.NEGATIVE_INFINITY;
+        var maxY = Double.NEGATIVE_INFINITY;
+
+        for (var point : points) {
+
+            var x = readX.applyAsDouble(point);
+            var y = readY.applyAsDouble(point);
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+        return new Bounds(minX, minY, maxX, maxY);
     }
 }
