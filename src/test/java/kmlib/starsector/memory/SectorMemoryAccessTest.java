@@ -27,30 +27,64 @@ class SectorMemoryAccessTest {
 
     @BeforeEach
     void setUp() {
+
         sectorMock = mock(SectorAPI.class);
         memoryMock = mock(MemoryAPI.class);
-        when(sectorMock.getMemoryWithoutUpdate()).thenReturn(memoryMock);
+
+        when(sectorMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryMock);
+
         globalMock = mockStatic(Global.class);
-        globalMock.when(Global::getSector).thenReturn(sectorMock);
+        globalMock
+            .when(Global::getSector)
+            .thenReturn(sectorMock);
     }
 
     @AfterEach
     void tearDown() {
+
         globalMock.close();
     }
 
     @Nested
     class ReadSectorMemory {
+
         @Test
         void returnsTheSectorMemoryWhenTheSectorExists() {
-            assertThat(SectorMemoryAccess.readSectorMemory()).isSameAs(memoryMock);
+
+            assertThat(SectorMemoryAccess.readSectorMemory())
+                .isSameAs(memoryMock);
         }
 
         @Test
         void returnsNullWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
 
-            assertThat(SectorMemoryAccess.readSectorMemory()).isNull();
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(null);
+
+            assertThat(SectorMemoryAccess.readSectorMemory())
+                .isNull();
+        }
+
+        @Test
+        void returnsTheHandedSectorsMemoryRatherThanTheRunningOnes() {
+
+            var handedSectorMock = mock(SectorAPI.class);
+            var handedMemoryMock = mock(MemoryAPI.class);
+
+            when(handedSectorMock.getMemoryWithoutUpdate())
+                .thenReturn(handedMemoryMock);
+
+            assertThat(SectorMemoryAccess.readSectorMemory(handedSectorMock))
+                .isSameAs(handedMemoryMock);
+        }
+
+        @Test
+        void returnsNullWhenTheHandedSectorIsMissing() {
+
+            assertThat(SectorMemoryAccess.readSectorMemory(null))
+                .isNull();
         }
     }
 }
