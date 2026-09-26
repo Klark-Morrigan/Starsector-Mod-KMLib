@@ -68,6 +68,9 @@ so a consumer can tell a real border from a seam between two pieces of the same 
 
 ## Polygon passes
 
+- **`PolygonShapes`** -
+  builds a ring from a description of its shape rather than reshaping one that exists:
+  a regular polygon from a centre, a radius, a side count and a start angle (`computeRegularVertices`).
 - **`PolygonOffsets`** -
   moves edges inward:
   per-edge segments (`offsetEdgesInward`),
@@ -355,3 +358,10 @@ a keep-out and the reach bound it was cut from land on the same chords when they
 and leave a seam when they do not.
 Holding the count with the centre
 and radius in one `Disk` means a caller cannot vary one between two calls it meant to keep aligned.
+
+The polygon itself comes from `PolygonShapes.computeRegularVertices`,
+the one walk that steps a vertex round a centre.
+A clip's seed starts on the positive x-axis;
+a caller drawing a regular shape that stands on a point instead,
+such as a pointy-top hexagon,
+passes its own start angle to the same walk.

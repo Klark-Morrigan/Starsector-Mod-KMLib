@@ -20,6 +20,10 @@ import java.util.List;
  */
 public final class LabelledPolygon {
 
+    // The seed's first vertex sits on the positive x-axis. Every seed of one disk shares it, so two
+    // clips carved from the same disk land on the same chords.
+    private static final double SEED_START_ANGLE = 0;
+
     private final List<LabelledVertex> vertices;
 
     private LabelledPolygon(List<LabelledVertex> vertices) {
@@ -38,19 +42,17 @@ public final class LabelledPolygon {
      */
     public static LabelledPolygon createRegularPolygon(Disk disk, int seedLabel) {
 
-        var segments = disk.segments();
-        var vertices = new ArrayList<LabelledVertex>(segments);
+        var corners = PolygonShapes.computeRegularVertices(
+            disk.centreX(),
+            disk.centreY(),
+            disk.radius(),
+            disk.segments(),
+            SEED_START_ANGLE);
 
-        for (var i = 0; i < segments; i++) {
+        var vertices = new ArrayList<LabelledVertex>(corners.size());
 
-            var angle = Angles.FULL_TURN * i / segments;
-
-            vertices.add(new LabelledVertex(
-                new double[] {
-                    disk.centreX() + disk.radius() * Math.cos(angle),
-                    disk.centreY() + disk.radius() * Math.sin(angle),
-                },
-                seedLabel));
+        for (var corner : corners) {
+            vertices.add(new LabelledVertex(corner, seedLabel));
         }
         return new LabelledPolygon(vertices);
     }
