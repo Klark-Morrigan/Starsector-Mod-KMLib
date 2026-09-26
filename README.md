@@ -1569,6 +1569,8 @@ builders for the values those ports report,
 the market and colony shapes a "who is here" read is posed against,
 a listener manager that records what an installer registered with it
 beside the narrow sector that answers for nothing but that manager,
+an intel manager that holds what is added to it by the game's own rules,
+so a subject that records an intel and then asks for it finds its own write,
 a `Global` stand-in that still answers every class its own logger -
 owed wherever `Global` is mocked,
 since a static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM -
