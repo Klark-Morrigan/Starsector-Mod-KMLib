@@ -33,6 +33,24 @@ public final class Points {
     }
 
     /**
+     * The mean position of a list of vectors - {@link #computeMean(List)} for points laid out in
+     * the float coordinates the game's UI works in.
+     *
+     * <p>Named apart from {@code computeMean} rather than overloading it: a {@code List<Vector2f>}
+     * and a {@code List<double[]>} erase to the same parameter type, so Java cannot hold both.
+     *
+     * @param points the points to average; must be non-empty
+     * @return the mean position
+     * @throws IllegalArgumentException if {@code points} is empty (a mean is undefined
+     *         with nothing to average)
+     */
+    public static Vector2f computeMeanOfVectors(List<Vector2f> points) {
+
+        var mean = computeMean(points, point -> point.x, point -> point.y);
+        return new Vector2f((float) mean[0], (float) mean[1]);
+    }
+
+    /**
      * The signed projection of {@code (x, y)} onto an axis - {@code point . axis}, how far
      * along that direction the point sits, measured from the origin.
      *

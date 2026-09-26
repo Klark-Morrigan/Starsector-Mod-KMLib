@@ -48,6 +48,24 @@ class PointsTest {
     }
 
     @Nested
+    class ComputeMeanOfVectors {
+        @Test
+        void computeMeanOfVectorsAveragesEachCoordinateOverEveryPoint() {
+            var mean = Points.computeMeanOfVectors(List.of(
+                new Vector2f(0, 0), new Vector2f(4, 0), new Vector2f(2, 6)));
+
+            assertThat(mean.x).isEqualTo(2f);
+            assertThat(mean.y).isEqualTo(2f);
+        }
+
+        @Test
+        void computeMeanOfVectorsThrowsForNoPoints() {
+            assertThatThrownBy(() -> Points.computeMeanOfVectors(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     class ComputeDistance {
         @Test
         void computeDistanceIsEuclidean() {
