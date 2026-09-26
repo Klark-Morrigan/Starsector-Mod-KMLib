@@ -62,6 +62,23 @@ public sealed interface TooltipRow {
     }
 
     /**
+     * Builds that same bare line over a label already composed as runs - for a caller holding a whole
+     * sentence, which would otherwise open on the first run and continue with each of the rest, copying
+     * the row once per run.
+     *
+     * @param labelRuns the label's runs in reading order; never empty
+     * @return the bare table row
+     */
+    static TableRow createRow(List<LabelRun> labelRuns) {
+        return new TableRow(
+            TableRow.DEFAULT_LINE_STYLE,
+            TableRow.DEFAULT_LABEL_PLACEMENT,
+            TableRow.NO_INDENT,
+            TableRow.NO_SUBORDINATION,
+            LabelledRow.createRow(labelRuns));
+    }
+
+    /**
      * Builds a line centred in the box's content region: a one-run label set between the content edges,
      * clear of every column the rows around it align to. For a title that names the whole box, or a lone
      * statement that speaks for it, rather than an entry in its table.

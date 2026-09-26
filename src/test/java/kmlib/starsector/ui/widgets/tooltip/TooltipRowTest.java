@@ -182,6 +182,19 @@ class TooltipRowTest {
             assertThat(buildBareRow().lineStyle())
                 .isEqualTo(TooltipLineStyle.PARAGRAPH);
         }
+
+        @Test
+        void createRowOverRunsBuildsTheLineItsRunsContinuedOneByOneWould() {
+            // The composed label is a shortcut to the same bare line, not a second shape of it: every
+            // row-level default a one-run line starts from holds for a line opened on a whole sentence.
+            var runs = List.<LabelRun>of(
+                new TextSpan(TEXT, Color.WHITE),
+                new TextSpan(RUN_TEXT, Color.YELLOW));
+
+            assertThat(TooltipRow.createRow(runs))
+                .usingRecursiveComparison()
+                .isEqualTo(buildBareRow().continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW)));
+        }
     }
 
     @Nested
