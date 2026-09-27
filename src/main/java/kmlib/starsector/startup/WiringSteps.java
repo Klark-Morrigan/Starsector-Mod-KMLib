@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * that it wired.
  *
  * <p>Logged as the mod that is wiring rather than as this package. The logger is the caller's,
- * because a level set through {@code KmLogging} scopes to a package subtree: a library logging a
+ * because a level set through {@code LunaLogLevelBinding} scopes to a package subtree: a library logging a
  * consuming mod's failed step under {@code kmlib} would put it outside the switch that mod's player
  * turns up, and beside lines about code they were not running.
  *
