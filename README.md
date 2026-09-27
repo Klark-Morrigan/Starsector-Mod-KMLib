@@ -690,6 +690,7 @@ No Starsector API on the signature.
   are offered their work through.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) -
   typed sector-memory accessors (flag, string),
+  the string's also taking the sector it acts on for code handed one rather than reading the running sector,
   each also in an *addressed* form that holds one value per point on an axis the consumer declares
   (`MemoryKeyAddress`) rather than once per save -
   the holder states its base key and names the address it means,

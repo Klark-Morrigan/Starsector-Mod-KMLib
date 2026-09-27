@@ -1,6 +1,7 @@
 package kmlib.starsector.memory;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
 /**
@@ -19,7 +20,17 @@ public final class SectorMemoryAccess {
      *         memory yet - the caller treats null as "no persisted state, use the default"
      */
     public static MemoryAPI readSectorMemory() {
-        var sector = Global.getSector();
+        return readSectorMemory(Global.getSector());
+    }
+
+    /**
+     * The same guard over a sector the caller already holds, for code handed its sector rather than
+     * reading the running one.
+     *
+     * @param sector the sector whose memory to read, or null where there is none yet
+     * @return that sector's memory, or null when there is no sector or it carries no memory yet
+     */
+    public static MemoryAPI readSectorMemory(SectorAPI sector) {
         if (sector == null) {
             return null;
         }
