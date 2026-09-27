@@ -5,6 +5,8 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiReachFailures;
+
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +33,9 @@ import static org.mockito.Mockito.when;
  * {@link VanillaIntelScreenView#warnOnceAboutUnreachableIntelPanel} and
  * {@link VanillaIntelScreenView#warnOnceAboutUnreadableCoreUi}, which decide when a panel the walk
  * did not reach is worth saying so about - and, between them, keep a walk that came back empty
- * apart from one that failed outright, the second being the only one with a cause to print.
+ * apart from one that failed outright, the second being the only one with a cause to print - and
+ * {@link VanillaIntelScreenView#readIntelSubtabBrightness}, which keeps a fader that no longer links
+ * from ending the frame.
  *
  * <p>{@link VanillaIntelScreenView#getMapVisorWidget} and
  * {@link VanillaIntelScreenView#isMapStarscapeModeOn} are not unit-tested: both name the obfuscated
@@ -280,6 +284,57 @@ class VanillaIntelScreenViewTest {
             verify(loggerMock, times(1))
                 .warn(any());
             verify(loggerMock, times(1))
+                .warn(any(), any(Throwable.class));
+        }
+    }
+
+    @Nested
+    class ReadIntelSubtabBrightness {
+
+        @Test
+        void answersTheFadersBrightness() {
+
+            assertThat(new VanillaIntelScreenView().readIntelSubtabBrightness(() -> 0.75))
+                .isEqualTo(0.75f);
+        }
+
+        @Test
+        void answersDarkWhereTheFaderNoLongerLinks() {
+            // Read from render passes with no catch of their own, so a renamed fader has to come
+            // back as an unlit visor rather than end the frame.
+            var intelScreen = new VanillaIntelScreenView();
+
+            assertThat(intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember))
+                .isZero();
+        }
+
+        @Test
+        void warnsOnceWithTheCauseWhileTheFaderKeepsFailingToLink() {
+
+            var intelScreen = new VanillaIntelScreenView();
+            var unlinkedFader = new NoSuchMethodError("getFader");
+
+            intelScreen.readIntelSubtabBrightness(() -> {
+                throw unlinkedFader;
+            });
+            intelScreen.readIntelSubtabBrightness(() -> {
+                throw unlinkedFader;
+            });
+
+            verify(loggerMock, times(1))
+                .warn(any(), eq(unlinkedFader));
+        }
+
+        @Test
+        void warnsSeparatelyFromTheWalksWarnings() {
+            // A different member from any the walk takes, so a walk already reported broken must
+            // not silence news of the fader.
+            var intelScreen = new VanillaIntelScreenView();
+
+            intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+            intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+
+            verify(loggerMock, times(2))
                 .warn(any(), any(Throwable.class));
         }
     }
