@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.map.probes;
+package kmlib.logging;
 
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
@@ -10,15 +10,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
- * Pins that gathering the probes' warnings buys the one thing it is for - letting them all speak
+ * Pins that gathering the class-wide warnings buys the one thing it is for - letting them all speak
  * again for a reader who arrives late - without costing the thing they were built for, which is that
  * each stays its own flag.
  *
- * <p>The registry is process-wide and the probes register at class-init, so these cases work through
- * warnings of their own rather than asserting on how many it holds: what the probes put there is not
+ * <p>The registry is process-wide and its owners register at class-init, so these cases work through
+ * warnings of their own rather than asserting on how many it holds: what the owners put there is not
  * this test's to know, and a count would break every time one is added.
  */
-class MapProbeWarningsTest {
+class RearmableWarningsTest {
 
     private static final String MESSAGE = "the widget tree could not be walked";
     private static final String OTHER_MESSAGE = "the surface could not be identified";
@@ -27,13 +27,13 @@ class MapProbeWarningsTest {
     class RearmAllWarnings {
 
         @Test
-        void rearmAllWarningsLetsAGatheredWarningBeSaidOnceMore() {
+        void letsAGatheredWarningBeSaidOnceMore() {
 
             var loggerMock = mock(Logger.class);
-            var warning = MapProbeWarnings.createSharedWarning(loggerMock);
+            var warning = RearmableWarnings.createRearmableWarning(loggerMock);
 
             warning.warnOnce(MESSAGE);
-            MapProbeWarnings.rearmAllWarnings();
+            RearmableWarnings.rearmAllWarnings();
             warning.warnOnce(MESSAGE);
 
             verify(loggerMock, times(2))
@@ -41,18 +41,18 @@ class MapProbeWarningsTest {
         }
 
         @Test
-        void rearmAllWarningsReachesEveryGatheredWarning() {
+        void reachesEveryGatheredWarning() {
             // The reason they are gathered at all. The reaches a trace is built from are spread over
-            // several probes, so re-arming only the one the trace is named after would leave the
+            // several owners, so re-arming only the one the trace is named after would leave the
             // reader met with silence from whichever of the others actually broke.
             var loggerMock = mock(Logger.class);
             var otherLoggerMock = mock(Logger.class);
-            var warning = MapProbeWarnings.createSharedWarning(loggerMock);
-            var otherWarning = MapProbeWarnings.createSharedWarning(otherLoggerMock);
+            var warning = RearmableWarnings.createRearmableWarning(loggerMock);
+            var otherWarning = RearmableWarnings.createRearmableWarning(otherLoggerMock);
 
             warning.warnOnce(MESSAGE);
             otherWarning.warnOnce(OTHER_MESSAGE);
-            MapProbeWarnings.rearmAllWarnings();
+            RearmableWarnings.rearmAllWarnings();
             warning.warnOnce(MESSAGE);
             otherWarning.warnOnce(OTHER_MESSAGE);
 
@@ -63,12 +63,12 @@ class MapProbeWarningsTest {
         }
 
         @Test
-        void rearmAllWarningsSaysNothingByItself() {
+        void saysNothingByItself() {
             // A switch flipped on a session where nothing broke must not manufacture a warning.
             var loggerMock = mock(Logger.class);
 
-            MapProbeWarnings.createSharedWarning(loggerMock);
-            MapProbeWarnings.rearmAllWarnings();
+            RearmableWarnings.createRearmableWarning(loggerMock);
+            RearmableWarnings.rearmAllWarnings();
 
             verify(loggerMock, times(0))
                 .warn(MESSAGE);
@@ -76,16 +76,16 @@ class MapProbeWarningsTest {
     }
 
     @Nested
-    class CreateSharedWarning {
+    class CreateRearmableWarning {
 
         @Test
-        void createSharedWarningKeepsEachWarningItsOwnFlag() {
-            // Gathering them must not pool them: one probe's broken read still cannot silence the
-            // news of another's, which is the whole reason these are per holder rather than static.
+        void keepsEachWarningItsOwnFlag() {
+            // Gathering them must not pool them: one reach's broken read still cannot silence the
+            // news of another's, which is the whole reason these are per holder rather than one.
             var loggerMock = mock(Logger.class);
             var otherLoggerMock = mock(Logger.class);
-            var warning = MapProbeWarnings.createSharedWarning(loggerMock);
-            var otherWarning = MapProbeWarnings.createSharedWarning(otherLoggerMock);
+            var warning = RearmableWarnings.createRearmableWarning(loggerMock);
+            var otherWarning = RearmableWarnings.createRearmableWarning(otherLoggerMock);
 
             warning.warnOnce(MESSAGE);
 
@@ -94,10 +94,10 @@ class MapProbeWarningsTest {
         }
 
         @Test
-        void createSharedWarningHandsBackAWarningThatStillSaysThingsOnlyOnce() {
+        void handsBackAWarningThatStillSaysThingsOnlyOnce() {
 
             var loggerMock = mock(Logger.class);
-            var warning = MapProbeWarnings.createSharedWarning(loggerMock);
+            var warning = RearmableWarnings.createRearmableWarning(loggerMock);
 
             warning.warnOnce(MESSAGE);
             warning.warnOnce(MESSAGE);

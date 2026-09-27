@@ -2,6 +2,7 @@ package kmlib.starsector.ui.map.probes;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 
@@ -48,7 +49,7 @@ public final class EmbeddedMapHostTrace {
 
     // Says once per session that this stopped working, since a caller handed null cannot tell an
     // empty tree from a reach that broke.
-    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
+    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     // Package prefixes that can never be the answer. The engine's own classes make up every host
     // that could hold a map, so reporting them would bury the one name that identifies an owner.

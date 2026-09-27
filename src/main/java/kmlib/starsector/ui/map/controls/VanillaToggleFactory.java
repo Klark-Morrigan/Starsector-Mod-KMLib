@@ -2,6 +2,7 @@ package kmlib.starsector.ui.map.controls;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CoreUiMethod;
 import kmlib.starsector.ui.coreui.CoreUiMethods;
@@ -89,7 +90,7 @@ final class VanillaToggleFactory {
     // same news - there is no button - so one of these covers both. Its own rather than shared with
     // the fitting above it, so the line names the half that refused: a row this cannot recognise and
     // a row with no room left are different findings, and a session can meet both.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     private VanillaToggleFactory() {
     }

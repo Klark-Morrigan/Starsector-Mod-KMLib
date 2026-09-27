@@ -3,6 +3,7 @@ package kmlib.starsector.ui.map.probes;
 import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiReachFailures;
 import kmlib.testfixtures.starsector.ui.intel.IntelScreenViewFake;
 
 import org.junit.jupiter.api.Nested;
@@ -17,6 +18,9 @@ import static org.mockito.Mockito.withSettings;
  * tab is unpublished-API reflection and only observable in a running game, but the choice made over
  * what it hands back is plain, and it is that choice - not the walk - that decides whether a rule
  * measures the map or some other screen's tab.
+ *
+ * <p>And that the showing read fails closed on every way the walk can fail, since what stands on it
+ * is a panel that has to come down with the screen.
  */
 class ShownMapTabTest {
 
@@ -92,6 +96,48 @@ class ShownMapTabTest {
 
             assertThat(ShownMapTab.resolveShownMapTab(mapWithoutLayoutMock, intelScreenFake))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class IsMapTabShowing {
+
+        @Test
+        void isTrueWhereTheReachAnswersATab() {
+
+            assertThat(ShownMapTab.isMapTabShowing(() -> mock(UIComponentAPI.class)))
+                .isTrue();
+        }
+
+        @Test
+        void isFalseWhereNoScreenShowsAMap() {
+            // The ordinary way out: the player left the map, so the reach answers rather than raises.
+            assertThat(ShownMapTab.isMapTabShowing(() -> null))
+                .isFalse();
+        }
+
+        @Test
+        void failsClosedWhereTheWidgetTreeCannotBeWalked() {
+            // The direction is what is pinned: a panel that cannot find the screen it stands over
+            // comes down rather than standing on one it can no longer see.
+            assertThat(ShownMapTab.isMapTabShowing(() -> {
+                throw new IllegalStateException("The widget tree could not be walked.");
+            }))
+                .isFalse();
+        }
+
+        @Test
+        void failsClosedWhereTheGamesOwnFailureComesBackChecked() {
+
+            assertThat(ShownMapTab.isMapTabShowing(CoreUiReachFailures::throwWrappedGameFailure))
+                .isFalse();
+        }
+
+        @Test
+        void failsClosedWhereAMemberNoLongerLinks() {
+
+            assertThat(ShownMapTab.isMapTabShowing(CoreUiReachFailures::throwUnlinkedMember))
+                .isFalse();
         }
     }
 }

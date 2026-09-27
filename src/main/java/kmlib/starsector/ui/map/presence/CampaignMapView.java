@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 
@@ -46,7 +47,7 @@ public final class CampaignMapView {
     // no longer carries what is read off it - a genuine anomaly (a wrapping mod, the class loaded
     // under a different classloader, or a game build that changed it) worth naming once, not per
     // render frame. One warning for both, being the same news: the map's state cannot be read.
-    private static final SessionWarning UNREADABLE_UI_DATA_WARNING = new SessionWarning(LOG);
+    private static final SessionWarning UNREADABLE_UI_DATA_WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     private CampaignMapView() {
     }
@@ -81,12 +82,12 @@ public final class CampaignMapView {
      * Every read fails closed by design, so when an overlay is unexpectedly hidden this is the
      * surface a consumer logs to see what is blocking it.
      *
-     * <p>The signals are re-read here rather than taken from the classified state, because the
-     * two say different things: the state is what the reads act on, while the raw signals name
-     * the tab and location the classification threw away - which is what turns "not showing"
-     * into a reason. Printing both is also what makes them checkable against each other, so a
-     * line reading {@code starscape=false} beside a state of {@code NOT_SHOWING} says plainly
-     * that the sub-view is what closed the gate and not the filter.
+     * <p>The raw signals are printed beside the state they classify to, because the two say
+     * different things: the state is what the reads act on, while the raw signals name the tab
+     * and location the classification threw away - which is what turns "not showing" into a
+     * reason. Both come off one read, so they are checkable against each other: a line reading
+     * {@code starscape=false} beside a state of {@code NOT_SHOWING} says plainly that the sub-view
+     * is what closed the gate and not the filter.
      *
      * @return the current view-state signals, or a short reason when they cannot be read
      */
@@ -102,18 +103,19 @@ public final class CampaignMapView {
             return "no campaign UI";
         }
 
+        var shownTab = CampaignScreenView.resolveShownCoreTab();
         var uiSignals = readMapUiSignals();
         var isStarscapeOn = uiSignals == null ? null : uiSignals.isStarscapeOn();
         var mapLocation = uiSignals == null ? null : uiSignals.mapLocation();
 
         return "tab="
-            + CampaignScreenView.resolveShownCoreTab()
+            + shownTab
             + " starscape="
             + (isStarscapeOn == null ? "unreadable" : isStarscapeOn)
             + " mapLocation="
             + describeLocation(mapLocation)
             + " state="
-            + resolveSectorMapState();
+            + classifySectorMapState(shownTab, uiSignals);
     }
 
     /**
@@ -137,18 +139,34 @@ public final class CampaignMapView {
             return SectorMapState.NOT_SHOWING;
         }
 
+        // The corrected tab read rather than the raw one, which goes on naming the map after the
+        // player closes it from an interaction dialog. It fails closed to no tab, so a campaign UI
+        // that is not up yet needs no test of its own.
+        var shownTab = CampaignScreenView.resolveShownCoreTab();
+
+        // The concrete read only where it can matter: every other screen is decided by the tab,
+        // and this is asked on every frame of a game.
+        var uiSignals = shownTab == CoreUITabId.MAP
+            ? readMapUiSignals()
+            : null;
+
+        return classifySectorMapState(shownTab, uiSignals);
+    }
+
+    /**
+     * The rule the live reads apply, over signals taken elsewhere.
+     *
+     * @param shownTab  the core tab that is up, or null where none could be read
+     * @param uiSignals what the campaign UI data says of the map, or null where it cannot be read
+     * @return the state the two classify to
+     */
+    static SectorMapState classifySectorMapState(CoreUITabId shownTab, MapUiSignals uiSignals) {
+
         // The shown tab being MAP is the whole "the map is the active view" signal. Do not also
         // gate on isShowingDialog(): the map is routinely viewed in a dialog-active context
         // (opened from an interaction), where that flag is true the entire time, so gating on it
-        // would hide the overlay on the very screen it belongs to. The corrected read is what
-        // makes that safe - the raw one goes on naming the map after the player closes it there.
-        // It fails closed to no tab, so a campaign UI that is not up yet needs no test of its own.
-        if (CampaignScreenView.resolveShownCoreTab() != CoreUITabId.MAP) {
-            return SectorMapState.NOT_SHOWING;
-        }
-
-        var uiSignals = readMapUiSignals();
-        if (uiSignals == null) {
+        // would hide the overlay on the very screen it belongs to.
+        if (shownTab != CoreUITabId.MAP || uiSignals == null) {
             return SectorMapState.NOT_SHOWING;
         }
         var mapLocation = uiSignals.mapLocation();
@@ -219,8 +237,8 @@ public final class CampaignMapView {
 
     // The two signals the concrete UI data carries, taken off it together so nothing past the one
     // read holds that class. A null filter state is the object answering none; a null location is
-    // a map not opened yet.
-    private record MapUiSignals(
+    // a map not opened yet. Package-private for the classification's own signature.
+    record MapUiSignals(
         LocationAPI mapLocation,
         Boolean isStarscapeOn) {
     }
