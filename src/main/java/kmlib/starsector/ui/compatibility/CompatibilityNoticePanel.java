@@ -19,6 +19,7 @@ import kmlib.starsector.ui.map.probes.ShownMapTab;
 import org.lwjgl.input.Keyboard;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -78,8 +79,8 @@ public final class CompatibilityNoticePanel {
     // after it.
     private final TraverseFraction fadeProgress = new TraverseFraction();
 
-    // Where a map was last found, so the panel comes down with the screen it was raised on.
-    private final Supplier<Object> resolveShownMapTab;
+    // Whether a map is still on screen, so the panel comes down with the screen it was raised on.
+    private final BooleanSupplier isMapTabShowing;
 
     // The screen-sized panel standing in the core UI, or null once it has come down.
     private CustomPanelAPI panel;
@@ -90,9 +91,9 @@ public final class CompatibilityNoticePanel {
     // Whether the notice holds the screen. Moves on the press, never on the fade.
     private boolean isRaised;
 
-    private CompatibilityNoticePanel(Supplier<Object> resolveShownMapTab) {
+    private CompatibilityNoticePanel(BooleanSupplier isMapTabShowing) {
 
-        this.resolveShownMapTab = resolveShownMapTab;
+        this.isMapTabShowing = isMapTabShowing;
     }
 
     /**
@@ -107,7 +108,7 @@ public final class CompatibilityNoticePanel {
      */
     public static CompatibilityNoticePanel raiseNoticeOnScreen() {
 
-        return raiseNoticeOnScreen(ShownMapTab::resolveShownMapTab);
+        return raiseNoticeOnScreen(ShownMapTab::isMapTabShowing);
     }
 
     /**
@@ -146,20 +147,20 @@ public final class CompatibilityNoticePanel {
     }
 
     /**
-     * The raise itself, over a reach for the screen its caller supplies. Package-private so the
-     * rule can be driven against a stood-up tree, the live reach being the half that needs a game.
+     * The raise itself, over a read of the screen its caller supplies. Package-private so the rule
+     * can be driven without a running game, the live read being the half that needs one.
      *
-     * @param resolveShownMapTab the reach for the map tab on screen: what says there is a screen to
-     *                           stand on at all, and what the panel then watches to know when that
-     *                           screen has gone. It reports a map screen it cannot find itself, so
-     *                           a raise that answers nothing has already said why
+     * @param isMapTabShowing whether a map is on screen: what says there is a screen to stand on at
+     *                        all, and what the panel then watches to know when that screen has gone.
+     *                        It fails closed, and reports a map screen it cannot find itself, so a
+     *                        raise that answers nothing has already said why
      * @return the panel, or null where none could be stood up
      */
-    static CompatibilityNoticePanel raiseNoticeOnScreen(Supplier<Object> resolveShownMapTab) {
+    static CompatibilityNoticePanel raiseNoticeOnScreen(BooleanSupplier isMapTabShowing) {
 
-        var notice = new CompatibilityNoticePanel(resolveShownMapTab);
+        var notice = new CompatibilityNoticePanel(isMapTabShowing);
 
-        if (!notice.isScreenShowing()) {
+        if (!isMapTabShowing.getAsBoolean()) {
             return null;
         }
 
@@ -221,20 +222,6 @@ public final class CompatibilityNoticePanel {
         return panel == null
             ? OverlayPresence.NONE
             : new OverlayPresence(isRaised, fadeProgress.getEasedValue());
-    }
-
-    // Fails closed, the opposite way round from the reads it goes through: a reach that raises
-    // means the widget tree cannot be walked at all, and a notice nobody can place should not be
-    // stood on a screen it cannot see. Over Throwable, as the reach asks of its callers: the game's
-    // own failure comes back checked and undeclared, and a changed member as a LinkageError.
-    private boolean isScreenShowing() {
-
-        try {
-            return resolveShownMapTab.get() != null;
-
-        } catch (Throwable exception) {
-            return false;
-        }
     }
 
     // Builds the box, measures what went into it, and centres it on the screen. Measured rather
@@ -304,7 +291,7 @@ public final class CompatibilityNoticePanel {
             // The panel hangs from the core UI, which outlives the screen the notice was raised on,
             // so leaving that screen has to be noticed rather than waited for. Down at once rather
             // than faded: there is no screen left under it to fade against.
-            if (!isScreenShowing()) {
+            if (!isMapTabShowing.getAsBoolean()) {
                 takePanelDown();
                 return;
             }

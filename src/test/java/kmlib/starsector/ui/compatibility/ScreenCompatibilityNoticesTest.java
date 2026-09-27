@@ -6,7 +6,7 @@ import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,14 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * modal entirely - the dialog would find nothing waiting when the player returned to the campaign,
  * and the only trace left would be the log.
  *
- * <p>The reach for a screen is supplied rather than taken live. The live one walks the game's own
+ * <p>The read of the screen is supplied rather than taken live. The live one walks the game's own
  * widget tree and reports a map screen it cannot find, and a case about the record either side of
- * a raise is not asking it to.
+ * a raise is not asking it to. A tree that cannot be walked reads as no screen, which that read
+ * pins for itself.
  */
 final class ScreenCompatibilityNoticesTest {
 
     // A screen that is not showing, which is every frame the player is not on a map.
-    private static final Supplier<Object> NO_SCREEN = () -> null;
+    private static final BooleanSupplier NO_SCREEN = () -> false;
 
     private final CompatibilityFailures failures = new CompatibilityFailures();
 
@@ -57,41 +58,24 @@ final class ScreenCompatibilityNoticesTest {
         }
 
         @Test
-        void leavesTheFailureOnTheRecordWhereTheScreenCannotBeReached() {
-
-            // A widget tree that cannot be walked is not a reason to lose a report, only a reason
-            // to show it the other way.
-            recordOneFailure();
-
-            var wasShown = ScreenCompatibilityNotices.showPendingFailureOnScreen(
-                failures,
-                ScreenCompatibilityNoticesTest::throwCannotWalkTree);
-
-            assertThat(wasShown)
-                .isFalse();
-            assertThat(failures.hasUnreported())
-                .isTrue();
-        }
-
-        @Test
         void reachesForNoScreenWhereNothingIsPending() {
 
             // The healthy path, taken on every frame of every session that has nothing wrong with
-            // it: one empty check on the record, and no walk of the widget tree at all. A reach
-            // that throws is what proves it was never made.
+            // it: one empty check on the record, and no walk of the widget tree at all. A read that
+            // throws is what proves it was never taken.
             var wasShown = ScreenCompatibilityNotices.showPendingFailureOnScreen(
                 failures,
-                ScreenCompatibilityNoticesTest::throwCannotWalkTree);
+                ScreenCompatibilityNoticesTest::throwIfAsked);
 
             assertThat(wasShown)
                 .isFalse();
         }
     }
 
-    // The reach into the widget tree as it behaves on a build that renamed what it walks through.
-    private static Object throwCannotWalkTree() {
+    // A read of the screen that must not be taken.
+    private static boolean throwIfAsked() {
 
-        throw new IllegalStateException("The widget tree could not be walked");
+        throw new IllegalStateException("The screen was read.");
     }
 
     // One failure waiting to be reported, which is what puts the reporter past its first check.
