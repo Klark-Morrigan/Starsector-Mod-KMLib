@@ -330,7 +330,8 @@ No Starsector API on the signature.
   which keyed positions moved between two observations,
   over a movement threshold.
 - [`math/random/`](src/main/java/kmlib/math/random/) -
-  bounded jitter around a value.
+  bounded jitter around a value,
+  drawn from the shared generator or from a caller's own source where the roll must replay from a seed.
 - [`math/ranges/`](src/main/java/kmlib/math/ranges/) -
   clamping to the unit range or into arbitrary bounds.
 - [`math/solving/`](src/main/java/kmlib/math/solving/) -
