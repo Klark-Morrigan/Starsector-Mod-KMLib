@@ -52,10 +52,14 @@ public final class GlLines {
 
         GL11.glBegin(GL11.GL_LINES);
 
-        for (var i = 0; i < segments.length; i += GlVertexRuns.FLOATS_PER_SEGMENT) {
-            emitDashes(segments, i, onWorldLength, periodWorldLength, worldToScreen);
+        // Ended in a finally block for the reason GlRuns ends its runs in one.
+        try {
+            for (var i = 0; i < segments.length; i += GlVertexRuns.FLOATS_PER_SEGMENT) {
+                emitDashes(segments, i, onWorldLength, periodWorldLength, worldToScreen);
+            }
+        } finally {
+            GL11.glEnd();
         }
-        GL11.glEnd();
     }
 
     /**
@@ -66,11 +70,7 @@ public final class GlLines {
      * @param vertices the polygon's corners, already scaled to draw coordinates
      */
     public static void strokeLoop(float[] vertices) {
-        GL11.glBegin(GL11.GL_LINE_LOOP);
-        for (var i = 0; i < vertices.length; i += GlVertexRuns.FLOATS_PER_VERTEX) {
-            GL11.glVertex2f(vertices[i], vertices[i + 1]);
-        }
-        GL11.glEnd();
+        GlRuns.draw(GL11.GL_LINE_LOOP, vertices);
     }
 
     // Emits the on-dash sub-segments of the segment at {@code index}, stepping
