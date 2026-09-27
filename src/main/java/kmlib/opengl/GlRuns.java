@@ -36,9 +36,15 @@ public final class GlRuns {
      */
     public static void drawScaled(int mode, float[] run, float factor) {
         GL11.glBegin(mode);
-        for (var v = 0; v < run.length; v += GlVertexRuns.FLOATS_PER_VERTEX) {
-            GL11.glVertex2f(run[v] * factor, run[v + 1] * factor);
+        // Ended in a finally block, since a run that faults mid-primitive (a null or odd-length one)
+        // would otherwise leave the pipeline inside glBegin: every state call after it is refused
+        // there, the attribute restore of the pass around this among them.
+        try {
+            for (var v = 0; v < run.length; v += GlVertexRuns.FLOATS_PER_VERTEX) {
+                GL11.glVertex2f(run[v] * factor, run[v + 1] * factor);
+            }
+        } finally {
+            GL11.glEnd();
         }
-        GL11.glEnd();
     }
 }

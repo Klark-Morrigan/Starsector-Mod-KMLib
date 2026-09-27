@@ -22,10 +22,6 @@ public final class GlQuads {
      * @param vertices the four corners, already scaled to draw coordinates
      */
     public static void fillQuad(float[] vertices) {
-        GL11.glBegin(GL11.GL_QUADS);
-        for (var i = 0; i < vertices.length; i += GlVertexRuns.FLOATS_PER_VERTEX) {
-            GL11.glVertex2f(vertices[i], vertices[i + 1]);
-        }
-        GL11.glEnd();
+        GlRuns.draw(GL11.GL_QUADS, vertices);
     }
 }

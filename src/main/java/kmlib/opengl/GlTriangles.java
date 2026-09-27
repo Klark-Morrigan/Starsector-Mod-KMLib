@@ -21,10 +21,6 @@ public final class GlTriangles {
      * @param vertices the three corners, already scaled to draw coordinates
      */
     public static void fillTriangle(float[] vertices) {
-        GL11.glBegin(GL11.GL_TRIANGLES);
-        for (var i = 0; i < vertices.length; i += GlVertexRuns.FLOATS_PER_VERTEX) {
-            GL11.glVertex2f(vertices[i], vertices[i + 1]);
-        }
-        GL11.glEnd();
+        GlRuns.draw(GL11.GL_TRIANGLES, vertices);
     }
 }
