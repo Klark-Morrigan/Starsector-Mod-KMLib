@@ -1,35 +1,20 @@
 package kmlib.logging;
 
-import kmlib.logging.KmLogging.LunaLogBinding;
-import kmlib.testfixtures.logging.LogAppenderFake;
-
-import lunalib.lunaSettings.LunaSettings;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mockStatic;
 
 /**
- * Pins the contract of {@link KmLogging}.
+ * Pins what setting a level through {@link KmLogging} does to log4j: a named level reaches the
+ * whole subtree through inheritance, whitespace is tolerated, null and unrecognised names fall back
+ * to the library default, and loggers outside the subtree are left alone.
  *
- * Two seams are exercised directly:
- *  - {@link KmLogging#applyLevel} - the log4j core: a named level reaches the
- *    whole subtree through inheritance, whitespace is tolerated, null and
- *    unrecognised names fall back, and loggers outside the subtree are left
- *    alone.
- *  - {@link LunaLogBinding#settingsChanged} - the change filter: a notification
- *    for another mod's settings is ignored; and a level that fails to apply is
- *    logged at error rather than thrown into LunaLib's loop.
- *
- * The matching-id read path is not unit-tested here: it calls
- * {@code LunaSettings.getString}, which loads game-backed settings, so it
- * belongs to in-game/integration coverage; only its failure is stood in. Uses the
- * real log4j {@link Logger} hierarchy (no mock), since that inheritance is
- * exactly what the helper relies on; each test uses a distinct logger-root
- * name because log4j loggers are process-global.
+ * <p>Uses the real log4j {@link Logger} hierarchy (no mock), since that inheritance is exactly what
+ * the helper relies on; each case uses a distinct logger-root name because log4j loggers are
+ * process-global.
  */
 final class KmLoggingTest {
 
@@ -41,7 +26,7 @@ final class KmLoggingTest {
 
             var descendant = Logger.getLogger("kmlibtest_named.child.grandchild");
 
-            KmLogging.applyLevel("kmlibtest_named", "DEBUG", Level.INFO);
+            KmLogging.applyLevel("kmlibtest_named", "DEBUG");
 
             assertThat(descendant.getEffectiveLevel())
                 .isEqualTo(Level.DEBUG);
@@ -52,32 +37,34 @@ final class KmLoggingTest {
 
             var descendant = Logger.getLogger("kmlibtest_pad.child");
 
-            KmLogging.applyLevel("kmlibtest_pad", "  WARN  ", Level.INFO);
+            KmLogging.applyLevel("kmlibtest_pad", "  ERROR  ");
 
             assertThat(descendant.getEffectiveLevel())
+                .isEqualTo(Level.ERROR);
+        }
+
+        @Test
+        void nullNameFallsBackToTheLibraryDefault() {
+            // The root's own level rather than a descendant's effective one, which a root left unset
+            // would take from whatever the JVM's root logger happens to stand at.
+            var root = Logger.getLogger("kmlibtest_null");
+
+            KmLogging.applyLevel("kmlibtest_null", null);
+
+            assertThat(root.getLevel())
                 .isEqualTo(Level.WARN);
         }
 
         @Test
-        void nullNameFallsBackToTheDefault() {
+        void unrecognisedNameFallsBackToTheLibraryDefault() {
+            // The root's own level rather than a descendant's effective one, which a root left unset
+            // would take from whatever the JVM's root logger happens to stand at.
+            var root = Logger.getLogger("kmlibtest_bad");
 
-            var descendant = Logger.getLogger("kmlibtest_null.child");
+            KmLogging.applyLevel("kmlibtest_bad", "nonsense");
 
-            KmLogging.applyLevel("kmlibtest_null", null, Level.ERROR);
-
-            assertThat(descendant.getEffectiveLevel())
-                .isEqualTo(Level.ERROR);
-        }
-
-        @Test
-        void unrecognisedNameFallsBackToTheDefault() {
-
-            var descendant = Logger.getLogger("kmlibtest_bad.child");
-
-            KmLogging.applyLevel("kmlibtest_bad", "nonsense", Level.ERROR);
-
-            assertThat(descendant.getEffectiveLevel())
-                .isEqualTo(Level.ERROR);
+            assertThat(root.getLevel())
+                .isEqualTo(Level.WARN);
         }
 
         @Test
@@ -86,7 +73,7 @@ final class KmLoggingTest {
             var sibling = Logger.getLogger("kmlibtest_sibling_outside");
             var siblingBefore = sibling.getEffectiveLevel();
 
-            KmLogging.applyLevel("kmlibtest_subtree", "OFF", Level.INFO);
+            KmLogging.applyLevel("kmlibtest_subtree", "OFF");
 
             assertThat(sibling.getEffectiveLevel())
                 .isEqualTo(siblingBefore);
@@ -98,52 +85,10 @@ final class KmLoggingTest {
 
         @Test
         void libraryDefaultLevelIsWarn() {
-            // Pins the shared fallback used by the no-default bindToLunaSetting
-            // overload, so mods do not restate a default of their own.
+            // Pins the shared fallback every binding applies where no level is set, so mods do not
+            // restate a default of their own.
             assertThat(KmLogging.DEFAULT_LEVEL)
                 .isEqualTo(Level.WARN);
-        }
-    }
-
-    @Nested
-    class SettingsChanged {
-
-        @Test
-        void bindingIgnoresChangesToOtherModsSettings() {
-            // A change notification carrying a different mod ID must not retune
-            // this binding's logger subtree, so its explicit level stays unset.
-            var root = Logger.getLogger("kmlibtest_filter_root");
-            var binding =
-                new LunaLogBinding("kmlibtest_filter", "kmlibtest_filter_root", "f", Level.DEBUG);
-
-            binding.settingsChanged("some_other_mod");
-
-            assertThat(root.getLevel())
-                .isNull();
-        }
-
-        @Test
-        void logsALevelThatFailedToApplyAtErrorWithItsTrace() {
-            // LunaLib's own catch says a failed listener only at debug and drops the trace, which is
-            // below what a player's log keeps.
-            var failure = new IllegalStateException("settings store not loaded");
-            var binding =
-                new LunaLogBinding("kmlibtest_failing", "kmlibtest_failing_root", "f", Level.DEBUG);
-
-            try (var lunaSettingsMock = mockStatic(LunaSettings.class)) {
-                lunaSettingsMock
-                    .when(() -> LunaSettings.getString("kmlibtest_failing", "f"))
-                    .thenThrow(failure);
-
-                var capture = LogAppenderFake.captureLogOf(
-                    KmLogging.class,
-                    () -> binding.settingsChanged("kmlibtest_failing"));
-
-                assertThat(capture.getMessages())
-                    .containsExactly("Applying the log level setting of mod 'kmlibtest_failing' failed.");
-                assertThat(capture.getEvents().get(0).getThrowableInformation().getThrowable())
-                    .isSameAs(failure);
-            }
         }
     }
 }

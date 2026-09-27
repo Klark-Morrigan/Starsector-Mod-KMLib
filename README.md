@@ -44,7 +44,7 @@ Hard dependencies:
   [UI primitives](src/main/java/kmlib/starsector/ui/README.md).
 - **LunaLib** -
   backs in-game mod settings,
-  including the log-verbosity binding registered through `KmLogging` and KMLib's own
+  including the log-verbosity binding registered through `LunaLogLevelBinding` and KMLib's own
   (`kmlib_logLevel`, on its Dev tab).
   The library needs a switch of its own because log4j scopes a level to a package subtree:
   a mod's verbosity governs that mod's lines and cannot reach `kmlib` beneath them,

@@ -1,18 +1,10 @@
 package kmlib.logging;
 
-import lunalib.lunaSettings.LunaSettings;
-import lunalib.lunaSettings.LunaSettingsListener;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
- * Binds a mod's log verbosity to its LunaLib setting, live.
- *
- * <p>A mod ships a LunaLib level-name dropdown (OFF/ERROR/WARN/INFO/DEBUG/
- * ALL) and calls {@link #bindToLunaSetting} once at load. After that the
- * player retunes the mod's logging from LunaLib's in-game settings screen
- * with no reload: the registered listener re-reads and re-applies the level
- * whenever that mod's settings change.
+ * Sets a mod's log verbosity, scoped to that mod and nothing else.
  *
  * <p>What this hides is the non-obvious part. Starsector names every logger
  * after its class's fully qualified name ({@code Global.getLogger(c)} is
@@ -26,27 +18,22 @@ import org.apache.log4j.Logger;
  * <p>Scoped to the mod and no further. A level set here does not reach KMLib's
  * own {@code kmlib} loggers, which sit under no mod's package - deliberately, so
  * that one mod's verbosity cannot retune a shared library for every other mod in
- * the same game. The library binds itself through here like any other mod, from
- * its own setting; and library output written <em>for</em> one mod is handed
- * back for that mod to log as its own rather than logged here at all, so a
- * player chasing their own mod's behaviour does not have to know which library
- * the code sits in. See {@code KmlibLunaSettings} and {@code MapTabWidgetTrace}
- * for the two halves of that.
+ * the same game. The library sets its own level like any other mod, from its own
+ * setting; and library output written <em>for</em> one mod is handed back for
+ * that mod to log as its own rather than logged here at all, so a player chasing
+ * their own mod's behaviour does not have to know which library the code sits in.
+ * See {@code KmlibLunaSettings} and {@code MapTabWidgetTrace} for the two halves
+ * of that.
  *
- * <p>LunaLib is a declared KMLib dependency, so these methods are safe to call
- * from any mod that depends on KMLib - it is present whenever KMLib is.
+ * <p>Which level to set is the caller's: {@code LunaLogLevelBinding} reads it
+ * from a mod's LunaLib dropdown and sets it again on every change.
  */
 public final class KmLogging {
-
-    // Asked of log4j directly, as every logger this class governs is: the same logger under the
-    // same name, without reaching for the game's static entry point.
-    private static final Logger LOG = Logger.getLogger(KmLogging.class);
-
     /**
-     * Library-wide fallback verbosity, used when a caller does not specify one
-     * and the LunaLib value is unavailable. WARN keeps warnings and errors
-     * while dropping routine INFO and diagnostic DEBUG lines as normal-play
-     * noise. Defined once here so no mod has to restate its default.
+     * Library-wide fallback verbosity, used where no level name is given or the
+     * one given is not a level. WARN keeps warnings and errors while dropping
+     * routine INFO and diagnostic DEBUG lines as normal-play noise. Defined once
+     * here so no mod has to restate its default.
      */
     public static final Level DEFAULT_LEVEL = Level.WARN;
 
@@ -54,112 +41,30 @@ public final class KmLogging {
     }
 
     /**
-     * Registers a live binding using the library default level
-     * ({@link #DEFAULT_LEVEL}) as the fallback. Preferred entry point: a mod
-     * states only its own ID, package, and field, never a default level.
+     * Sets the named level on the {@code loggerRoot} subtree.
      *
-     * @param modId      the mod's LunaLib settings ID; also the filter that
-     *                   restricts the binding to this mod's own changes
-     * @param loggerRoot the mod's top package (e.g. {@code "kmu"})
-     * @param fieldId    the LunaSettings field holding the level name
-     */
-    public static void bindToLunaSetting(
-            String modId,
-            String loggerRoot,
-            String fieldId) {
-
-        bindToLunaSetting(modId, loggerRoot, fieldId, DEFAULT_LEVEL);
-    }
-
-    /**
-     * Registers a live binding from a LunaLib level-name field to the
-     * {@code loggerRoot} logger subtree, and applies the current value once.
-     * Takes an explicit fallback for the rare mod that wants a default other
-     * than {@link #DEFAULT_LEVEL}.
-     *
-     * @param modId      the mod's LunaLib settings ID; also the filter that
-     *                   restricts the binding to this mod's own changes
      * @param loggerRoot the mod's top package (e.g. {@code "kmu"}); its logger
      *                   and, by inheritance, every logger beneath it take the
      *                   level, and nothing outside it does
-     * @param fieldId    the LunaSettings field holding the level name
-     * @param fallback   level used when the field is null, blank, or invalid
+     * @param levelName  a log4j level name, surrounding whitespace allowed;
+     *                   {@link #DEFAULT_LEVEL} where it is null or not a level
      */
-    public static void bindToLunaSetting(
-            String modId,
-            String loggerRoot,
-            String fieldId,
-            Level fallback) {
-
-        var binding = new LunaLogBinding(modId, loggerRoot, fieldId, fallback);
-
-        LunaSettings.addSettingsListener(binding);
-        binding.applyConfiguredLevel();
-    }
-
-    // Sets the resolved level on the loggerRoot subtree. Package-private so what
-    // applying a level does to log4j stays separable from the LunaLib binding
-    // that decides which level it is.
-    static void applyLevel(String loggerRoot, String levelName, Level fallback) {
+    public static void applyLevel(String loggerRoot, String levelName) {
 
         Logger
             .getLogger(loggerRoot)
-            .setLevel(resolveLevel(levelName, fallback));
+            .setLevel(resolveLevel(levelName));
     }
 
     // Null-safe, whitespace-tolerant log4j level-name parse, so a value read
     // from a settings dropdown survives any padding around the stored entry.
-    private static Level resolveLevel(String levelName, Level fallback) {
+    private static Level resolveLevel(String levelName) {
 
         if (levelName == null) {
-            return fallback;
+            return DEFAULT_LEVEL;
         }
         return Level.toLevel(
             levelName.trim(),
-            fallback);
-    }
-
-    // Live binding: re-reads and re-applies the level whenever the player
-    // changes this mod's LunaLib settings.
-    static final class LunaLogBinding implements LunaSettingsListener {
-        private final String modId;
-        private final String loggerRoot;
-        private final String fieldId;
-        private final Level fallback;
-
-        LunaLogBinding(String modId, String loggerRoot, String fieldId, Level fallback) {
-
-            this.modId = modId;
-            this.loggerRoot = loggerRoot;
-            this.fieldId = fieldId;
-            this.fallback = fallback;
-        }
-
-        @Override
-        public void settingsChanged(String changedModId) {
-
-            // LunaLib notifies every listener for every mod's change; retune
-            // only when this mod's own settings changed.
-            if (!modId.equals(changedModId)) {
-                return;
-            }
-            // LunaLib runs each listener behind a catch of its own, but says a
-            // failure only at debug and without its trace, so a level that
-            // failed to apply would leave no line at all. Caught here to be
-            // said at error, trace and all; the next change tries again.
-            try {
-                applyConfiguredLevel();
-            } catch (LinkageError | RuntimeException failure) {
-                LOG.error("Applying the log level setting of mod '" + modId + "' failed.", failure);
-            }
-        }
-
-        void applyConfiguredLevel() {
-
-            applyLevel(
-                loggerRoot,
-                LunaSettings.getString(modId, fieldId),
-                fallback);
-        }
+            DEFAULT_LEVEL);
     }
 }

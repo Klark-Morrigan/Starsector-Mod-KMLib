@@ -108,6 +108,25 @@ public final class LogAppenderFake extends AppenderSkeleton {
         return messages;
     }
 
+    /**
+     * @return what was logged with a throwable, in order - the reading for a
+     *         caller asking whether a failure was logged with its trace; an
+     *         entry that carried none adds nothing
+     */
+    public List<Throwable> getThrowables() {
+
+        var throwables = new ArrayList<Throwable>();
+
+        for (var event : events) {
+            var throwableInformation = event.getThrowableInformation();
+
+            if (throwableInformation != null) {
+                throwables.add(throwableInformation.getThrowable());
+            }
+        }
+        return throwables;
+    }
+
     @Override
     protected void append(LoggingEvent event) {
         events.add(event);

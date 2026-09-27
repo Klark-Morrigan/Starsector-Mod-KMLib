@@ -9,18 +9,18 @@ import org.apache.log4j.Logger;
 /**
  * Reads a mod's LunaLib settings values, null-safely, and relays change events.
  *
- * <p>Centralises the {@code lunalib.*} coupling the same way
- * {@link kmlib.logging.KmLogging} does for the log-level binding: a KM mod asks
- * here for a typed setting, or to be told when its settings change, and never
- * imports LunaLib itself, so the mod's own classpath stays free of LunaLib and
- * the dependency lives in one place.
+ * <p>Centralises the {@code lunalib.*} reads: a KM mod asks here for a typed
+ * setting, or to be told when its settings change, and never imports LunaLib
+ * itself, so the mod's own classpath stays free of LunaLib and the dependency
+ * lives in one place. {@link LunaLogLevelBinding} is built on both halves.
  *
  * <p>LunaLib is a declared KMLib dependency, so these methods are safe to call
  * from any mod that depends on KMLib - it is present whenever KMLib is.
  *
  * <p>Thin passthrough to {@code LunaSettings}, which answers only in-engine
  * (like {@link kmlib.opengl.GlColour}'s GL passthrough): there is no logic here
- * beyond the fallbacks and the mod-id filtering.
+ * beyond the fallbacks, the mod-id filtering, and the log line for a change
+ * callback that throws.
  *
  * <p>Two fallbacks rather than one, because there are two ways a read can find
  * nothing. LunaLib answers null for a field it has no value for, which is the
@@ -128,6 +128,9 @@ public final class LunaSettingsReader {
      * <p>Register once (e.g. at application load): every call adds another
      * listener.
      *
+     * <p>A callback that throws is logged at error with its trace and run again
+     * on the next change: what failed may be that change's own state.
+     *
      * @param modId    the mod whose settings changes to listen for
      * @param onChange run on each change to that mod's settings
      */
@@ -152,11 +155,11 @@ public final class LunaSettingsReader {
 
     // Relays LunaLib's change event to a plain Runnable, filtered to one mod so
     // a caller never sees other mods' settings changes.
-    static final class ChangeRelay implements LunaSettingsListener {
+    private static final class ChangeRelay implements LunaSettingsListener {
         private final String modId;
         private final Runnable onChange;
 
-        ChangeRelay(String modId, Runnable onChange) {
+        private ChangeRelay(String modId, Runnable onChange) {
             this.modId = modId;
             this.onChange = onChange;
         }
