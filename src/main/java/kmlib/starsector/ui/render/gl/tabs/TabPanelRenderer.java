@@ -1,10 +1,10 @@
 package kmlib.starsector.ui.render.gl.tabs;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.opengl.GlPasses;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
-import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiScissor;
 import kmlib.starsector.ui.render.gl.UiSprite;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
@@ -49,7 +49,7 @@ import kmlib.starsector.ui.widgets.tabs.TabPanelPlacement;
  * reachable even once the body has wiped away to the rail.
  *
  * <p>The header control draws its own immediate-mode GL, so it is bracketed in a {@link
- * GlStateGuard#bracket} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body
+ * GlPasses#runWithSavedState} state save like {@link PanelRenderer} brackets its own draw. Drawn after the body
  * so the row sits over the frame's top border rather than under it. GL passthrough run only in-engine like
  * the other draw helpers.
  */
@@ -157,7 +157,7 @@ public final class TabPanelRenderer {
         // narrowing band.
         UiScissor.runClippedTo(
             computeBandClip(placement, style),
-            () -> GlStateGuard.bracket(() -> {
+            () -> GlPasses.runWithSavedState(() -> {
 
                 drawBandControl(
                     placement.tabsHeader(),

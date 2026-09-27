@@ -1,9 +1,9 @@
 package kmlib.starsector.ui.render.gl.panel;
 
+import kmlib.opengl.GlPasses;
 import kmlib.starsector.ui.controls.BodyInteractionSources;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.ControlInteractionSources;
-import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiScissor;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
@@ -22,7 +22,7 @@ import kmlib.starsector.ui.widgets.scroll.PanelScrollbars;
  * rides on a {@link WidgetStyle}; the per-frame border width and alpha are parameters. A {@link
  * TabPanelRenderer} reuses this for the body and overlays a tabs header on the top band.
  *
- * <p>Brackets the draw in one {@link GlStateGuard#bracket} state save - the map chrome and tooltips draw
+ * <p>Brackets the draw in one {@link GlPasses#runWithSavedState} state save - the map chrome and tooltips draw
  * after a UI-overlay pass, so any enable / colour / blend state the panel touches must be restored - and
  * the whole draw shares that one save. A control the layout marked scrolled ({@link
  * kmlib.starsector.ui.controls.Control#isScrolled()}) draws clipped to its viewport, so the rows that
@@ -61,7 +61,7 @@ public final class PanelRenderer {
             PanelAlpha alpha) {
         // Belt-and-suspenders around the raw GL: the map chrome and tooltips draw after a UI-overlay
         // pass, so any state the panel touches must be restored. The whole draw shares this one save.
-        GlStateGuard.bracket(() -> {
+        GlPasses.runWithSavedState(() -> {
             // The frame strokes in the style's own border colour rather than its accent, so a host whose
             // surrounding chrome is a different colour can match it without dragging its controls along.
             BorderedBoxRenderer.render(

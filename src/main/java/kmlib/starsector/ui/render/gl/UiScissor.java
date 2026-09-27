@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.opengl.GlPasses;
 import kmlib.starsector.ui.screen.ScreenAxis;
 import kmlib.starsector.ui.screen.VanillaScreen;
 
@@ -40,7 +41,7 @@ public final class UiScissor {
      * <p>The bracket form rather than a paired {@link #push} / {@link #pop} wherever the clip covers one
      * call, because the two failure modes are not comparable: a leaked state save shows up as the next
      * pass drawing wrong, where a leaked clip shows up as later passes not drawing at all, in a place
-     * with no clue pointing back here. Mirrors {@link GlStateGuard#bracket}, which brackets the other
+     * with no clue pointing back here. Mirrors {@link GlPasses#runWithSavedState}, which brackets the other
      * piece of state a UI draw borrows.
      *
      * @param uiRegion the clip rectangle, in UI coordinates
