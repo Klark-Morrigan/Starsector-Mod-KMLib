@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.DoubleSupplier;
 
 /**
  * {@link IntelScreenView} binding backed by the live campaign UI. The tab-open read is the
@@ -53,7 +54,8 @@ import java.util.List;
  * those two are distinguishable, because the tab-open read does not go through the walk at all. The
  * third is a walk that fails outright rather than coming back empty, which is a broken reach on any
  * screen and the only one carrying a cause worth printing. Each of the two that count as news warns
- * once per session, separately, so neither can silence the other.
+ * once per session, separately, so neither can silence the other - as does the panel's fader
+ * failing to link, the one member read off the panel by a direct call.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
 
@@ -81,6 +83,10 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // that wraps it in a holder, and the bound itself keeps a malformed tree from a runaway walk.
     private static final int MAX_PANEL_SEARCH_DEPTH = 3;
 
+    // What a fader that cannot be read reports: a panel fully dark, which is below any threshold a
+    // lit visor has to clear.
+    private static final float UNREADABLE_BRIGHTNESS = 0f;
+
     // One-shot: the intel tab being up while its panel cannot be reached is a genuine anomaly worth
     // naming once, not on every frame a visor read is attempted.
     private final SessionWarning unreachablePanelWarning = new SessionWarning(LOG);
@@ -89,6 +95,10 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // that comes back empty are different news: the empty one is read against which screen is up,
     // while a reach that fails outright is broken on every screen and carries a cause to print.
     private final SessionWarning unreadableCoreUiWarning = new SessionWarning(LOG);
+
+    // A third, for the panel's fader failing to link: a different member from any the walk takes,
+    // so neither of the walk's warnings says it.
+    private final SessionWarning unlinkedFaderWarning = new SessionWarning(LOG);
 
     @Override
     public boolean isIntelTabOpen() {
@@ -212,6 +222,29 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             unreadableTree);
     }
 
+    // The events panel's brightness, or dark where the panel's fader no longer links.
+    //
+    // The one direct call into the game's own panel, and read from render passes with no catch of
+    // their own: a game build that renamed the fader would otherwise end the frame rather than leave
+    // the visor unlit. Dark is the fail-closed answer, the same "no visor" every other broken hop
+    // here resolves to. Said once, apart from the walk's warnings, since it is a different member
+    // that broke and the walk reaching the panel says nothing about it.
+    float readIntelSubtabBrightness(DoubleSupplier readFaderBrightness) {
+
+        try {
+            return (float) readFaderBrightness.getAsDouble();
+
+        } catch (LinkageError linkageError) {
+
+            unlinkedFaderWarning.warnOnce(
+                "The intel screen's events panel no longer carries the fader its visor reads are "
+                    + "gated on; intel-screen visor reads answer 'no visor' while that is so.",
+                linkageError);
+
+            return UNREADABLE_BRIGHTNESS;
+        }
+    }
+
     // Walks the live core UI to the intel screen's events panel: campaign UI -> core -> current tab,
     // then that tab's subtree. Answers null off the intel tab, since the tab that is up then holds
     // no such panel, which is what leaves every caller inert on the other screens.
@@ -285,8 +318,11 @@ public final class VanillaIntelScreenView implements IntelScreenView {
 
         // The fader is read directly where the map is not: its type is a do-not-obfuscate one, so
         // the call's descriptor reads the same in every build, which is the whole of what decides
-        // whether a hop may be taken as a plain call.
-        if (!isMapVisorLit(intelPanel.getFader().getBrightness(), mapWidget.getOpacity())) {
+        // whether a hop may be taken as a plain call. Handed over as a read rather than taken here,
+        // so a build that dropped the member fails inside the boundary that contains it.
+        var intelSubtabBrightness = readIntelSubtabBrightness(() -> intelPanel.getFader().getBrightness());
+
+        if (!isMapVisorLit(intelSubtabBrightness, mapWidget.getOpacity())) {
             return null;
         }
 

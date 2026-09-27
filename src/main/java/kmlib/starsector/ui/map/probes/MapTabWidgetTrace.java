@@ -3,6 +3,7 @@ package kmlib.starsector.ui.map.probes;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.logging.TracedLine;
 import kmlib.math.geometry.Rectangle;
@@ -68,7 +69,7 @@ public final class MapTabWidgetTrace {
 
     // Says once per session that this stopped working, since a caller handed null cannot tell a
     // screen with no tab from a reach that broke.
-    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
+    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     private MapTabWidgetTrace() {
     }

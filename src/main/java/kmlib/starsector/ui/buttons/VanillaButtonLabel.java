@@ -3,6 +3,7 @@ package kmlib.starsector.ui.buttons;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.LabelAPI;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.coreui.CoreUiMethod;
@@ -45,7 +46,7 @@ public final class VanillaButtonLabel {
 
     // Says once per session that a button's words could not be reached, rather than on every attempt
     // - a caller redecorating a rebuilt widget asks again on every open of the screen carrying it.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     // The two hops the game itself takes to a button's words, both of them names the game leaves
     // unobfuscated because they are part of what a widget publishes.

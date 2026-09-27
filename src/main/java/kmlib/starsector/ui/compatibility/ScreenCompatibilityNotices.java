@@ -7,7 +7,7 @@ import kmlib.starsector.ui.map.probes.ShownMapTab;
 
 import org.apache.log4j.Logger;
 
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * Reporting a compatibility failure on the screen it was found on, where that screen can hold a
@@ -48,28 +48,28 @@ public final class ScreenCompatibilityNotices {
      */
     public static boolean showPendingFailureOnScreen(CompatibilityFailures failureRecord) {
 
-        return showPendingFailureOnScreen(failureRecord, ShownMapTab::resolveShownMapTab);
+        return showPendingFailureOnScreen(failureRecord, ShownMapTab::isMapTabShowing);
     }
 
     /**
-     * The reporting rule, over a reach for the screen its caller supplies. Package-private so the
+     * The reporting rule, over a read of the screen its caller supplies. Package-private so the
      * decision either side of the raise can be driven without walking a live widget tree - that
      * walk reports a screen it cannot find, and a caller exercising this rule is not asking it to.
      *
-     * @param failureRecord      the record to report from
-     * @param resolveShownMapTab the reach for the screen to stand a notice on
+     * @param failureRecord   the record to report from
+     * @param isMapTabShowing whether there is a screen to stand a notice on
      * @return whether a notice was stood up
      */
     static boolean showPendingFailureOnScreen(
             CompatibilityFailures failureRecord,
-            Supplier<Object> resolveShownMapTab) {
+            BooleanSupplier isMapTabShowing) {
 
         // The healthy path, and the one a per-frame caller pays: one empty check on the record.
         if (!failureRecord.hasUnreported() || isNoticeAlreadyRaised()) {
             return false;
         }
 
-        var notice = CompatibilityNoticePanel.raiseNoticeOnScreen(resolveShownMapTab);
+        var notice = CompatibilityNoticePanel.raiseNoticeOnScreen(isMapTabShowing);
         if (notice == null) {
             return false;
         }

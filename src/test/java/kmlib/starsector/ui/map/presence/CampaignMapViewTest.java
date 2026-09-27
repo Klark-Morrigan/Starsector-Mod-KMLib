@@ -368,6 +368,36 @@ class CampaignMapViewTest {
     }
 
     @Nested
+    class ClassifySectorMapState {
+
+        @Test
+        void isNotShowingOffTheMapTabWhateverTheSignalsSay() {
+
+            var uiSignals = new CampaignMapView.MapUiSignals(null, true);
+
+            assertThat(CampaignMapView.classifySectorMapState(CoreUITabId.FLEET, uiSignals))
+                .isEqualTo(SectorMapState.NOT_SHOWING);
+        }
+
+        @Test
+        void isNotShowingWhereTheSignalsCannotBeRead() {
+
+            assertThat(CampaignMapView.classifySectorMapState(CoreUITabId.MAP, null))
+                .isEqualTo(SectorMapState.NOT_SHOWING);
+        }
+
+        @Test
+        void isShowingWithAnUnreadableFilterWhereTheUiDataAnswersNoFilter() {
+            // The map is on screen and the sub-view is known; only the filter is not, so the
+            // showing read holds while neither mode read does.
+            var uiSignals = new CampaignMapView.MapUiSignals(null, null);
+
+            assertThat(CampaignMapView.classifySectorMapState(CoreUITabId.MAP, uiSignals))
+                .isEqualTo(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER);
+        }
+    }
+
+    @Nested
     class DescribeViewState {
         @Test
         void reportsAMissingSector() {

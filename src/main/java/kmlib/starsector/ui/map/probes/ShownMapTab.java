@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 import kmlib.starsector.ui.coreui.CoreUiTree;
@@ -12,6 +13,8 @@ import kmlib.starsector.ui.intel.IntelScreenView;
 import kmlib.starsector.ui.intel.VanillaIntelScreenView;
 
 import org.apache.log4j.Logger;
+
+import java.util.function.Supplier;
 
 /**
  * The map widget on screen, wherever the game is showing one: the {@code M} screen's own core tab,
@@ -49,7 +52,7 @@ public final class ShownMapTab {
 
     // Says once per session that this recognition no longer fits, rather than on every frame a
     // caller asks.
-    private static final SessionWarning WARNING = MapProbeWarnings.createSharedWarning(LOG);
+    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     private ShownMapTab() {
     }
@@ -68,6 +71,38 @@ public final class ShownMapTab {
             warnOnceIfTheMapScreenIsUpAnyway();
         }
         return mapTab;
+    }
+
+    /**
+     * Whether a map is on screen, for something that stands over one and has to come down with it.
+     *
+     * <p>Fails closed, the opposite way round from {@link #resolveShownMapTab()}'s own callers that
+     * refine a hover: a reach that cannot be taken means the widget tree cannot be walked at all, and
+     * a panel nobody can place should come down rather than stand over a screen it cannot see.
+     *
+     * @return whether the {@code M} screen's map tab or the intel screen's lit visor is showing, and
+     *         false where the reach to either fails
+     */
+    public static boolean isMapTabShowing() {
+        return isMapTabShowing(ShownMapTab::resolveShownMapTab);
+    }
+
+    /**
+     * The fail-closed rule, over a reach supplied elsewhere.
+     *
+     * @param resolveShownMapTab the reach for the map tab on screen, which answers null where none
+     *                           is and raises where the tree cannot be walked
+     * @return whether the reach answered a tab, false where it raised
+     */
+    static boolean isMapTabShowing(Supplier<UIComponentAPI> resolveShownMapTab) {
+
+        // Over Throwable, as CoreUiTree asks of the callers of its reach.
+        try {
+            return resolveShownMapTab.get() != null;
+
+        } catch (Throwable unreachableMapTab) {
+            return false;
+        }
     }
 
     /**

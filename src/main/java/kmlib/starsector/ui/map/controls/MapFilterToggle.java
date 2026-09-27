@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
+import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.buttons.VanillaButtonLabel;
@@ -64,16 +65,16 @@ public final class MapFilterToggle {
     // frame a caller reattaches. One holder for the refusals made here, those being one piece of news
     // to whoever asked - there is no button - so the first of them to happen is the one worth the
     // line. The build below keeps its own, a row it cannot recognise being news of a different kind.
-    private static final SessionWarning WARNING = new SessionWarning(LOG);
+    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     // The tooltip's own holder. A control that ended up without its hover is news of a different
     // kind from a row that would take no control at all: there is still a working box on the row,
     // and the player is short a sentence rather than a switch.
-    private static final SessionWarning TOOLTIP_WARNING = new SessionWarning(LOG);
+    private static final SessionWarning TOOLTIP_WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     // The key announcement's own holder, for the same reason: a control answering a key it does not
     // say is still a working control, and is news of a different kind from one that never went up.
-    private static final SessionWarning SHORTCUT_WARNING = new SessionWarning(LOG);
+    private static final SessionWarning SHORTCUT_WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
     private final MapFilterRow row;
 
