@@ -129,7 +129,7 @@ public final class CoreUiTree {
             }
             return invokeNoArg(instance, methodName);
 
-        } catch (Throwable cannotReadHop) {
+        } catch (Throwable exception) {
             return null;
         }
     }

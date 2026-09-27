@@ -232,7 +232,7 @@ public final class CompatibilityNoticePanel {
         try {
             return resolveShownMapTab.get() != null;
 
-        } catch (Throwable cannotReachScreen) {
+        } catch (Throwable exception) {
             return false;
         }
     }
