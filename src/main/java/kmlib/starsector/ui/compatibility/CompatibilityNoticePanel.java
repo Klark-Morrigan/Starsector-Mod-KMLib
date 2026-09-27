@@ -225,13 +225,14 @@ public final class CompatibilityNoticePanel {
 
     // Fails closed, the opposite way round from the reads it goes through: a reach that raises
     // means the widget tree cannot be walked at all, and a notice nobody can place should not be
-    // stood on a screen it cannot see.
+    // stood on a screen it cannot see. Over Throwable, as the reach asks of its callers: the game's
+    // own failure comes back checked and undeclared, and a changed member as a LinkageError.
     private boolean isScreenShowing() {
 
         try {
             return resolveShownMapTab.get() != null;
 
-        } catch (RuntimeException cannotReachScreen) {
+        } catch (Throwable cannotReachScreen) {
             return false;
         }
     }
