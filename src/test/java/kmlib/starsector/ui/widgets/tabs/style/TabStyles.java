@@ -2,6 +2,7 @@ package kmlib.starsector.ui.widgets.tabs.style;
 
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.testfixtures.starsector.ui.font.FaceLineHeightReaderFake;
 
 import java.awt.Color;
 
@@ -43,9 +44,9 @@ public final class TabStyles {
 
     // The face the vanilla map tabs read in, at its own atlas size - a real face rather than an invented
     // one, so a test that does measure text measures against a size a host actually asks for.
-    private static final TextFace STAND_IN_FACE = new TextFace(
+    private static final TextFace STAND_IN_FACE = TextFace.createNativeFace(
         StarsectorFont.VANILLA_ORBITRON_20AA,
-        StarsectorFont.VANILLA_ORBITRON_20AA.getNativeSize());
+        FaceLineHeightReaderFake.createVanillaLineHeights());
 
     private TabStyles() {
     }
