@@ -1,6 +1,5 @@
 package kmlib.settings;
 
-import kmlib.logging.KmLogging;
 import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
 
 import org.junit.jupiter.api.Nested;
@@ -67,7 +66,7 @@ class LunaSettingsCsvIntegrationTest {
             // who opens it and changes nothing gets another.
             assertThat(SETTINGS_TABLE.readDefaultValue(LOG_LEVEL_FIELD, RADIO_FIELD_TYPE))
                 .as("default of %s in %s", LOG_LEVEL_FIELD, SETTINGS_CSV)
-                .isEqualTo(KmLogging.DEFAULT_LEVEL.toString());
+                .isEqualTo(LunaLogLevelBinding.DEFAULT_LEVEL.toString());
         }
 
         @Test

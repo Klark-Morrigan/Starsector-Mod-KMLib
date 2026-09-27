@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Pins which report a failed LunaLib binding files under: the library's own, and another mod's.
  *
- * <p>The installation itself binds through {@code KmLogging} and is pinned there.
+ * <p>The installation itself binds through {@code LunaLogLevelBinding} and is pinned there.
  */
 final class KmlibLunaSettingsTest {
 

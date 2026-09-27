@@ -26,9 +26,9 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the sector-map gates across each way they can fail closed - no sector, no campaign UI, a
- * non-map tab, a map screen a dialog has closed but goes on naming, a star-system sub-view, or
- * UI-data that is not the game's concrete
- * campaign-UI-data class - and how each weighs the Starscape filter: the "is showing" read
+ * non-map tab, a map screen a dialog has closed but goes on naming, a star-system sub-view,
+ * UI-data that is not the game's concrete campaign-UI-data class, or a concrete class a game
+ * build has changed - and how each weighs the Starscape filter: the "is showing" read
  * ignores it, while the two mode reads split the sector sub-view of the map tab between them.
  * The concrete UI-data object is the real
  * class, constructed directly: its field initializers are pure data, the live filter object
@@ -45,44 +45,65 @@ class CampaignMapViewTest {
 
     @BeforeEach
     void setUp() {
+
         sectorMock = mock(SectorAPI.class);
         campaignUiMock = mock(CampaignUIAPI.class);
+
         globalMock = mockStatic(Global.class);
-        globalMock.when(Global::getSector).thenReturn(sectorMock);
+        globalMock
+            .when(Global::getSector)
+            .thenReturn(sectorMock);
+
         // The class logs a one-shot warning on an unexpected UI-data type; give it a logger
         // so that static field init and that warn path do not dereference null under the mock.
         StubbedGlobalLogger.answerLoggersOn(globalMock);
-        when(sectorMock.getCampaignUI()).thenReturn(campaignUiMock);
+
+        when(sectorMock.getCampaignUI())
+            .thenReturn(campaignUiMock);
+
         // The map tab is the active core tab by default; each test relaxes one condition.
-        when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.MAP);
+        when(campaignUiMock.getCurrentCoreTab())
+            .thenReturn(CoreUITabId.MAP);
     }
 
     @AfterEach
     void tearDown() {
+
         globalMock.close();
     }
 
     @Nested
     class IsSectorMapShowing {
+
         @Test
         void isFalseWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheCampaignUiIsMissing() {
-            when(sectorMock.getCampaignUI()).thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheActiveTabIsNotTheMap() {
-            when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.FLEET);
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.FLEET);
+
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
         }
 
         @Test
@@ -94,9 +115,11 @@ class CampaignMapViewTest {
             when(campaignUiMock.getCurrentInteractionDialog())
                 .thenReturn(CoreHostingDialogFake
                     .createHosting(CoreUiFake.createDismissed(new CoreUiComponentFake())));
+
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
         }
 
         @Test
@@ -107,16 +130,20 @@ class CampaignMapViewTest {
             when(campaignUiMock.getCurrentInteractionDialog())
                 .thenReturn(CoreHostingDialogFake
                     .createHosting(new CoreUiFake(new CoreUiComponentFake())));
+
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isTrue();
         }
 
         @Test
         void isTrueWithTheStarscapeFilterOff() {
+
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isTrue();
         }
 
         @Test
@@ -125,66 +152,99 @@ class CampaignMapViewTest {
             // what separates this from the mode reads.
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isTrue();
         }
 
         @Test
         void treatsANullMapLocationAsTheSectorSubView() {
+
             stubUiDataWithStarscape(false, null);
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isTrue();
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isTrue();
         }
 
         @Test
         void isFalseWhenTheSubViewIsAStarSystem() {
+
             stubUiDataWithStarscape(false, buildSystemLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheUiDataIsNotTheGameConcreteType() {
-            when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
 
-            assertThat(CampaignMapView.isSectorMapShowing()).isFalse();
+            when(sectorMock.getUIData())
+                .thenReturn(mock(PersistentUIDataAPI.class));
+
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
+        }
+
+        @Test
+        void isFalseWhenTheUiDataNoLongerLinks() {
+            // A game build that changed the concrete class fails on the read itself, from render
+            // passes with no catch of their own - so it has to come back as the map not showing
+            // rather than end the frame.
+            stubUiDataFailingToLink();
+
+            assertThat(CampaignMapView.isSectorMapShowing())
+                .isFalse();
         }
     }
 
     @Nested
     class IsSectorMapInStarscapeMode {
+
         @Test
         void isFalseWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheActiveTabIsNotTheMap() {
-            when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.FLEET);
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.FLEET);
+
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isFalse();
         }
 
         @Test
         void isTrueOnTheSectorSubViewWithStarscapeOn() {
+
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isTrue();
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isTrue();
         }
 
         @Test
         void isFalseWhenTheStarscapeFilterIsOff() {
+
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isFalse();
         }
 
         @Test
         void treatsANullMapLocationAsTheSectorSubView() {
+
             stubUiDataWithStarscape(true, null);
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isTrue();
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isTrue();
         }
 
         @Test
@@ -193,7 +253,8 @@ class CampaignMapViewTest {
             // declines it exactly as the showing read does.
             stubUiDataWithStarscape(true, buildSystemLocation());
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isFalse();
         }
 
         @Test
@@ -201,68 +262,108 @@ class CampaignMapViewTest {
             // An unreadable filter is neither on nor off, so this read fails closed too.
             when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode()).isFalse();
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isFalse();
+        }
+
+        @Test
+        void isFalseWhenTheUiDataNoLongerLinks() {
+
+            stubUiDataFailingToLink();
+
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+                .isFalse();
         }
     }
 
     @Nested
     class IsSectorMapWithStarscapeOff {
+
         @Test
         void isFalseWhenTheSectorIsMissing() {
-            globalMock.when(Global::getSector).thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheCampaignUiIsMissing() {
-            when(sectorMock.getCampaignUI()).thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheActiveTabIsNotTheMap() {
-            when(campaignUiMock.getCurrentCoreTab()).thenReturn(CoreUITabId.FLEET);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.FLEET);
+
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheStarscapeFilterIsOn() {
+
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
         }
 
         @Test
         void isTrueOnTheSectorSubViewWithStarscapeOff() {
+
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isTrue();
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isTrue();
         }
 
         @Test
         void treatsANullMapLocationAsTheSectorSubView() {
+
             stubUiDataWithStarscape(false, null);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isTrue();
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isTrue();
         }
 
         @Test
         void isFalseWhenTheSubViewIsAStarSystem() {
+
             stubUiDataWithStarscape(false, buildSystemLocation());
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
         }
 
         @Test
         void isFalseWhenTheUiDataIsNotTheGameConcreteType() {
             // A UI-data object of any other type carries no readable sub-view or filter
             // state, so the gate fails closed.
-            when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
+            when(sectorMock.getUIData())
+                .thenReturn(mock(PersistentUIDataAPI.class));
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff()).isFalse();
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
+        }
+
+        @Test
+        void isFalseWhenTheUiDataNoLongerLinks() {
+
+            stubUiDataFailingToLink();
+
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+                .isFalse();
         }
     }
 
@@ -270,32 +371,51 @@ class CampaignMapViewTest {
     class DescribeViewState {
         @Test
         void reportsAMissingSector() {
-            globalMock.when(Global::getSector).thenReturn(null);
 
-            assertThat(CampaignMapView.describeViewState()).isEqualTo("no sector");
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.describeViewState())
+                .isEqualTo("no sector");
         }
 
         @Test
         void reportsAMissingCampaignUi() {
-            when(sectorMock.getCampaignUI()).thenReturn(null);
 
-            assertThat(CampaignMapView.describeViewState()).isEqualTo("no campaign UI");
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
+
+            assertThat(CampaignMapView.describeViewState())
+                .isEqualTo("no campaign UI");
         }
 
         @Test
         void composesTheSignalsAndTheStateTheyClassifyTo() {
+
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.describeViewState()).isEqualTo(
-                "tab=MAP starscape=true mapLocation=hyperspace"
-                    + " state=SHOWING_IN_STARSCAPE_MODE");
+            assertThat(CampaignMapView.describeViewState())
+                .isEqualTo(
+                    "tab=MAP starscape=true mapLocation=hyperspace"
+                        + " state=SHOWING_IN_STARSCAPE_MODE");
         }
 
         @Test
         void reportsUnreadableSignalsAndANeverOpenedMap() {
             // A UI-data object of another type makes the filter unreadable; the missing
             // location folds into the same "null" print as a map that was never opened.
-            when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
+            when(sectorMock.getUIData())
+                .thenReturn(mock(PersistentUIDataAPI.class));
+
+            assertThat(CampaignMapView.describeViewState())
+                .isEqualTo("tab=MAP starscape=unreadable mapLocation=null state=NOT_SHOWING");
+        }
+
+        @Test
+        void reportsUnreadableSignalsWhenTheUiDataNoLongerLinks() {
+
+            stubUiDataFailingToLink();
 
             assertThat(CampaignMapView.describeViewState())
                 .isEqualTo("tab=MAP starscape=unreadable mapLocation=null state=NOT_SHOWING");
@@ -306,12 +426,17 @@ class CampaignMapViewTest {
             // The pairing that makes the line diagnostic: the filter reads off, yet the state is
             // not showing, so the sub-view is visibly what closed the gate.
             var locationMock = mock(LocationAPI.class);
-            when(locationMock.isHyperspace()).thenReturn(false);
-            when(locationMock.getId()).thenReturn("system_corvus");
+
+            when(locationMock.isHyperspace())
+                .thenReturn(false);
+            when(locationMock.getId())
+                .thenReturn("system_corvus");
+
             stubUiDataWithStarscape(false, locationMock);
 
-            assertThat(CampaignMapView.describeViewState()).isEqualTo(
-                "tab=MAP starscape=false mapLocation=system_corvus state=NOT_SHOWING");
+            assertThat(CampaignMapView.describeViewState())
+                .isEqualTo(
+                    "tab=MAP starscape=false mapLocation=system_corvus state=NOT_SHOWING");
         }
     }
 
@@ -320,21 +445,42 @@ class CampaignMapViewTest {
     // whose null default doubles as the never-opened-map state. Named for the flag it carries
     // so each call site says which filter position it is setting up.
     private void stubUiDataWithStarscape(boolean isStarscapeOn, LocationAPI mapLocation) {
+
         var uiData = new CampaignUIPersistentData();
+
         uiData.getMapFilterData().starscape = isStarscapeOn;
         uiData.setCampaignMapLocation(mapLocation);
-        when(sectorMock.getUIData()).thenReturn(uiData);
+
+        when(sectorMock.getUIData())
+            .thenReturn(uiData);
+    }
+
+    // The concrete class cannot be stood in for (see the class doc), so the failure is raised by
+    // the UI-data read that opens the same boundary - the first step of the read that a changed
+    // class breaks, and inside the catch that has to contain it.
+    private void stubUiDataFailingToLink() {
+
+        when(sectorMock.getUIData())
+            .thenThrow(new NoSuchFieldError("starscape"));
     }
 
     private LocationAPI buildHyperspaceLocation() {
+
         var locationMock = mock(LocationAPI.class);
-        when(locationMock.isHyperspace()).thenReturn(true);
+
+        when(locationMock.isHyperspace())
+            .thenReturn(true);
+
         return locationMock;
     }
 
     private LocationAPI buildSystemLocation() {
+
         var locationMock = mock(LocationAPI.class);
-        when(locationMock.isHyperspace()).thenReturn(false);
+
+        when(locationMock.isHyperspace())
+            .thenReturn(false);
+
         return locationMock;
     }
 }

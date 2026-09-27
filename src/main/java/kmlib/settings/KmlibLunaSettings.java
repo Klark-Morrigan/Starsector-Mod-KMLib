@@ -1,7 +1,6 @@
 package kmlib.settings;
 
 import kmlib.KmlibMod;
-import kmlib.logging.KmLogging;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.starsector.strings.KmlibStringKeys;
@@ -84,6 +83,6 @@ public final class KmlibLunaSettings {
      * load, by which point LunaLib - a declared dependency - has loaded.
      */
     public static void installBindings() {
-        KmLogging.bindToLunaSetting(KmlibMod.MOD_ID, LOGGER_ROOT, LOG_LEVEL_FIELD);
+        LunaLogLevelBinding.bindLogLevel(KmlibMod.MOD_ID, LOGGER_ROOT, LOG_LEVEL_FIELD);
     }
 }

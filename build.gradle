@@ -118,8 +118,8 @@ apply from: "${rootDir}/gradle/package-layering.gradle"
 // same reason and on the same terms.
 apply from: "${rootDir}/gradle/referenced-types.gradle"
 
-// LunaLib backs KmLogging's in-game log-level binding. compileOnly, and
-// declared in mod_info.json so a consumer can call into kmlib.logging and
+// LunaLib backs kmlib.settings' reads and the log-level binding built on
+// them. compileOnly, and declared in mod_info.json so a consumer can call into
 // kmlib.settings unconditionally; the game classloader provides the jar at
 // runtime. testRuntimeOnly so classes implementing LunaLib's listener interface
 // can be loaded and verified under test.

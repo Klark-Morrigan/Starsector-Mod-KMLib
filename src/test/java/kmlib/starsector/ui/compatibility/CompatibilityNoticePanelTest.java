@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.compatibility;
 
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiReachFailures;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +43,22 @@ final class CompatibilityNoticePanelTest {
             assertThatCode(() ->
                     CompatibilityNoticePanel.raiseNoticeOnScreen(ScreenReaches::throwCannotWalkTree))
                 .doesNotThrowAnyException();
+        }
+
+        @Test
+        void standsNoNoticeWhereTheGamesOwnFailureComesBackChecked() {
+            // How the reach hands on a game method that threw: wrapped, checked and undeclared, so a
+            // gate catching unchecked failures alone would let it out of the frame.
+            assertThat(CompatibilityNoticePanel.raiseNoticeOnScreen(
+                    CoreUiReachFailures::throwWrappedGameFailure))
+                .isNull();
+        }
+
+        @Test
+        void standsNoNoticeWhereAMemberNoLongerLinks() {
+
+            assertThat(CompatibilityNoticePanel.raiseNoticeOnScreen(CoreUiReachFailures::throwUnlinkedMember))
+                .isNull();
         }
     }
 

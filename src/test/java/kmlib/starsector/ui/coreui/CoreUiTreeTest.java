@@ -153,6 +153,20 @@ class CoreUiTreeTest {
             assertThat(CoreUiTree.readHopIfOffered(new RefusingTargetFake(), "getChildrenCopy"))
                 .isNull();
         }
+
+        @Test
+        void readHopIfOfferedIsNullWhenAskingForTheNameThrows() {
+            // The lookup goes through the same reach as the call, so a reach that cannot be stood
+            // up fails on the lookup first - and is as much a failed hop as a call that threw.
+            try (var reflectedMembersMock = mockStatic(ReflectedMembers.class)) {
+                reflectedMembersMock
+                    .when(() -> ReflectedMembers.hasMethodNamed(CoreUiComponentFake.class, "getChildrenCopy"))
+                    .thenThrow(new NoClassDefFoundError("The reach could not be stood up."));
+
+                assertThat(CoreUiTree.readHopIfOffered(new CoreUiComponentFake(), "getChildrenCopy"))
+                    .isNull();
+            }
+        }
     }
 
     @Nested

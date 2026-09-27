@@ -17,7 +17,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * logger's level, its additivity and its appenders all outlive the call, so a capture that failed
  * to take one would read the wrong thing and one that failed to give it back would leave the next
  * suite reading the wrong thing. What the capture then hands over is read by every suite that uses
- * it, which is where the rest of its behaviour is covered.
+ * it, which is where the rest of its behaviour is covered - but for the throwables, whose reading
+ * leaves entries out and so is pinned here.
  *
  * <p>The level is what made this worth pinning. A class guarding a line behind
  * {@code isDebugEnabled} wrote nothing under a capture that never raised the level, and every case
@@ -131,4 +132,26 @@ final class LogAppenderFakeTest {
         }
     }
 
+    @Nested
+    class GetThrowables {
+
+        @Test
+        void answersEachLoggedThrowableInOrderAndLeavesOutEntriesCarryingNone() {
+            // The one reading that chooses what to hand over: a line logged without a trace has no
+            // throwable to answer, and a null in its place would read as a trace that was lost.
+            var firstFailure = new IllegalStateException(FIRST_LINE);
+            var secondFailure = new IllegalArgumentException(SECOND_LINE);
+
+            var appenderFake = LogAppenderFake.captureLogOf(
+                LogAppenderFakeTest.class,
+                () -> {
+                    log.error(FIRST_LINE, firstFailure);
+                    log.warn("no trace");
+                    log.error(SECOND_LINE, secondFailure);
+                });
+
+            assertThat(appenderFake.getThrowables())
+                .containsExactly(firstFailure, secondFailure);
+        }
+    }
 }
