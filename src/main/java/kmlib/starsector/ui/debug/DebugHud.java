@@ -1,12 +1,12 @@
 package kmlib.starsector.ui.debug;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.opengl.GlPasses;
 import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.LazyFontMeasurer;
 import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
-import kmlib.starsector.ui.render.gl.GlStateGuard;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
@@ -131,7 +131,7 @@ public final class DebugHud {
     private void drawAndClear(Function<DebugQuadrant, List<DebugHudLine>> layout) {
         var face = LazyFontCache.loadByFace(FONT);
         var measurer = face == null ? null : new LazyFontMeasurer(face);
-        GlStateGuard.bracket(() -> {
+        GlPasses.runWithSavedState(() -> {
             for (var quadrant : DebugQuadrant.values()) {
                 var entries = entriesByQuadrant.get(quadrant);
                 if (entries == null || entries.isEmpty()) {

@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.coreui;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.render.gl.GlStateGuard;
+import kmlib.opengl.GlPasses;
 import kmlib.starsector.ui.render.gl.UiScissor;
 
 /**
@@ -47,7 +47,7 @@ public enum ReflectiveCoreUiComponentRepainter implements CoreUiComponentRepaint
         // is what stops those reaching the rest of the pass drawing around this call. Inside the
         // clip rather than around it, so a scissor enable the component flips is restored before the
         // clip itself is lifted.
-        UiScissor.runClippedTo(uiRegion, () -> GlStateGuard.bracket(
+        UiScissor.runClippedTo(uiRegion, () -> GlPasses.runWithSavedState(
             () -> CoreUiTree.invokeWithArgs(component, RENDER_METHOD, FULL_OPACITY)));
     }
 }
