@@ -26,6 +26,7 @@ class StarsectorFontTest {
                 case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
                 case VANILLA_ORBITRON_12_CONDENSED -> "graphics/fonts/orbitron12condensed.fnt";
                 case VANILLA_VICTOR_10 -> "graphics/fonts/victor10.fnt";
+                case VANILLA_INSIGNIA_25 -> "graphics/fonts/insignia25LTaa.fnt";
                 case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
             };
 
@@ -70,6 +71,7 @@ class StarsectorFontTest {
                     VANILLA_ORBITRON_12_CONDENSED -> AtlasSmoothing.PIXEL_EXACT;
                 case VANILLA_INSIGNIA_15,
                     VANILLA_ORBITRON_20AA,
+                    VANILLA_INSIGNIA_25,
                     VANILLA_INSIGNIA_42 -> AtlasSmoothing.SMOOTHED;
             };
 

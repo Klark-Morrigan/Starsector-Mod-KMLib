@@ -69,6 +69,13 @@ public enum StarsectorFont {
     VANILLA_VICTOR_10("victor10", AtlasSmoothing.PIXEL_EXACT),
 
     /**
+     * The body face's larger cut, and the largest atlas a core localisation replaces with one holding
+     * its script. Where a text needs glyphs the high-resolution atlas below lacks, this is the largest
+     * face that can still draw it - blockier when stretched, but readable.
+     */
+    VANILLA_INSIGNIA_25("insignia25LTaa", AtlasSmoothing.SMOOTHED),
+
+    /**
      * The highest-resolution antialiased atlas the game ships, and so the only one that stays clean
      * when text is magnified far past its native size.
      */
@@ -86,6 +93,17 @@ public enum StarsectorFont {
     StarsectorFont(String basename, AtlasSmoothing smoothing) {
         this.basename = basename;
         this.smoothing = smoothing;
+    }
+
+    /**
+     * The atlas's file name under {@code graphics/fonts}, without its extension - the one spelling of a
+     * face a player sees, since a settings Radio offering faces lists them by it. An identifier rather
+     * than a caption, so it is the same in every locale and a stored choice survives a locale switch.
+     *
+     * @return the atlas's basename, such as {@code insignia15LTaa}
+     */
+    public String getBasename() {
+        return basename;
     }
 
     /**

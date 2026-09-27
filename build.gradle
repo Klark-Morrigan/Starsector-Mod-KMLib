@@ -57,6 +57,13 @@ def testBuildScripts = tasks.register('testBuildScripts', Test) {
 
 reportTestOutcomesOf(testBuildScripts.get())
 
+// The install the build located, for the suite that holds every face KM text may draw in to the
+// descriptor actually installed under its basename. A property rather than a path the suite works out,
+// so the suite and the build agree on which install that is; the suite skips where none is present.
+tasks.named('test') {
+    systemProperty 'kmlib.starsectorRoot', starsectorRoot
+}
+
 tasks.named('check') {
     dependsOn testBuildScripts
 }

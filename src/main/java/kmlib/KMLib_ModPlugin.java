@@ -12,14 +12,15 @@ import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
 import kmlib.starsector.scripts.SectorScripts;
 import kmlib.starsector.startup.WiringSteps;
+import kmlib.starsector.ui.font.InstalledFaceCheck;
 
 import org.apache.log4j.Logger;
 
 /**
  * KMLib's entry point, for the little the library has to do on its own behalf rather than on a
- * consuming mod's: applying its own log verbosity from its own setting, standing up the adapters
- * for whichever optional mods this install has, and telling the player when a binding it holds to
- * third-party code has stopped holding.
+ * consuming mod's: applying its own log verbosity from its own setting, loading the font faces every
+ * mod drawing KM text shares, standing up the adapters for whichever optional mods this install has,
+ * and telling the player when a binding it holds to third-party code has stopped holding.
  *
  * <p>Everything else here is called into by whichever mod wants it. Those are the exceptions
  * because no consuming mod can do them for it: a level has to be applied to the {@code kmlib}
@@ -51,6 +52,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             "Failed to install KMLib LunaLib settings bindings",
             KmlibLunaSettings::describeLunaLibIntegration);
         logActiveRenderer();
+        loadInstalledFaces();
         installOptionalModIntegrations();
     }
 
@@ -102,6 +104,19 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes,
             "Failed to install KMLib Random Assortment of Things system access routes",
             RandomAssortmentOfThingsIntegration::describeIntegration);
+    }
+
+    // Loads every face KM text may draw in before any consumer settles a face on one, so a face the
+    // install cannot load is found here and never chosen. The library's to do rather than a consumer's:
+    // the faces and the cache are shared by every mod drawing KM text, and one load serves them all.
+    //
+    // Guarded without an integration named: LazyLib is a declared dependency, not an optional mod, so a
+    // failure here is logged for whoever reads the log rather than reported as a mod that did not
+    // integrate.
+    private static void loadInstalledFaces() {
+        WIRING_STEPS.runGuardedStep(
+            InstalledFaceCheck::loadEveryFace,
+            "Failed to load the installed font faces");
     }
 
     // Which GL implementation every KM draw call reaches, stated once at load. It changes what a
