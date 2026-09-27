@@ -20,6 +20,7 @@ what it holds is the channel a binding reports through.
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
 - [Threads](#threads)
+- [Failures no boundary reaches](#failures-no-boundary-reaches)
 - [What is not here](#what-is-not-here)
 
 ## Record, then report
@@ -379,6 +380,27 @@ and the latch is taken under one lock, held for a lookup and an append:
 whether a sentence is new under its key and which position it takes there are one decision,
 so one of the two wins it, and the other's description is never built.
 The notice runs on the campaign thread alone.
+
+## Failures no boundary reaches
+
+Two ways a binding can stop holding are left without a boundary, on purpose.
+
+- **A declared dependency changing its API.**
+  `mod_info.json` names LazyLib and LunaLib without a version,
+  so the launcher refuses a game where either is missing and checks nothing further;
+  a version declared there would refuse only a different major and warn on a lesser change.
+  A release that drops a member KMLib calls surfaces at that call.
+  The registrations that bind LunaLib at load run behind the guard in [`starsector/startup/`](../startup/)
+  and are reported under LunaLib;
+  every other call into either library is left bare,
+  since a boundary at each would spread through the codebase for a break that needs a KMLib release to mend either way.
+- **A third party's interface gaining a method.**
+  An implementation of a third party's listener is called from that party's code.
+  A release adding an abstract method the implementation lacks
+  makes that call throw `AbstractMethodError` in the third party's own frame,
+  before any of the implementer's code runs,
+  so no boundary on the implementer's side reaches it.
+  What prevents it is the third party giving a new method a default, which is its decision to make.
 
 ## What is not here
 
