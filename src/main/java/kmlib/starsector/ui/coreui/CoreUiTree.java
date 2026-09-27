@@ -121,11 +121,12 @@ public final class CoreUiTree {
      */
     public static Object readHopIfOffered(Object instance, String methodName) {
 
-        if (!hasMethodNamed(instance, methodName)) {
-            return null;
-        }
-
+        // The name is asked inside the swallow too: the lookup goes through the same reach as the
+        // call, and a reach that cannot be stood up at all fails here first.
         try {
+            if (!hasMethodNamed(instance, methodName)) {
+                return null;
+            }
             return invokeNoArg(instance, methodName);
 
         } catch (Throwable cannotReadHop) {
