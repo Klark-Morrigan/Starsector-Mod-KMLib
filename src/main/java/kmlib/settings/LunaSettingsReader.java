@@ -33,11 +33,6 @@ import lunalib.lunaSettings.LunaSettingsListener;
  */
 public final class LunaSettingsReader {
 
-    // LunaLib's own mod ID, asked of the game's mod set to establish that both it and the settings
-    // behind it are up. Its own, rather than the calling mod's: what a read needs is the library
-    // that answers it, and a mod may legitimately read a setting belonging to another.
-    private static final String LUNALIB_MOD_ID = "lunalib";
-
     private LunaSettingsReader() {
     }
 
@@ -143,8 +138,11 @@ public final class LunaSettingsReader {
     // Deliberately not asked of the listener registration below, which only puts a callback on a
     // list: refusing to register outside a running game would drop a subscription taken at
     // application load, before the settings it waits on exist.
+    //
+    // LunaLib's own ID rather than the calling mod's: what a read needs is the library that answers
+    // it, and a mod may legitimately read a setting belonging to another.
     private static boolean isSettingsLibraryUp() {
-        return ModPresence.isModEnabled(LUNALIB_MOD_ID);
+        return ModPresence.isModEnabled(KmlibLunaSettings.LUNALIB_MOD_ID);
     }
 
     // Relays LunaLib's change event to a plain Runnable, filtered to one mod so
