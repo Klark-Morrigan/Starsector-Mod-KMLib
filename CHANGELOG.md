@@ -21,6 +21,7 @@ The reusable release workflow extracts the section matching the released version
 - **A stood-down lift is tried again on the next map open.** The attempt bound abandons a lift for the rest of the open rather than for the session: the next open is a fresh widget with a fresh seeding, and a stand-down that outlived its cause read, from outside, as the lever having stopped working.
 - **`GlRuns`, `GlLines`, `GlQuads` and `GlTriangles` close the primitive they open when a draw throws.** A run that faulted part-way left the pipeline inside `glBegin`, where every later state call is refused, the attribute restore of a `GlPasses` pass around it among them, so one failed draw spoiled the state of everything drawn after it. `glEnd` now runs in a `finally` block.
 - **A settings change that fails to apply is logged.** LunaLib contains a listener that throws but says so only at debug and without the trace, below what a player's log keeps, so a callback given to `LunaSettingsReader.runOnSettingsChange` that failed left no line at all. It is logged at error with its trace, and the next change is tried as usual. The log-level binding is built on the same relay.
+- **A failed reach into the game's own screens stays inside its boundary.** `CoreUiTree` hands on the game's own failure wrapped in a checked exception and thrown undeclared, and a member a new game build dropped as a `LinkageError`, and either one escaping ends the frame. `CompatibilityNoticePanel`'s screen check caught `RuntimeException` alone and catches both. `CoreUiTree.readHopIfOffered` asks for the method name inside the catch that makes it answer null. `CampaignMapView` catches a `LinkageError` from the game's campaign-UI-data class, whose reads run from render passes with no catch of their own, and answers the map as not showing, with one warning.
 
 ### Added
 
@@ -115,6 +116,7 @@ The build and release half of the per-locale bundles described under Test fixtur
 
 ### Test fixtures
 
+- **`CoreUiReachFailures`**: the two ways a reach through `CoreUiTree` fails on a game build it does not recognise - the game's own failure wrapped in a checked exception and thrown undeclared, and a member that no longer links - each answering any type, so it stands in for a reach taken as a supplier. A case throwing the unchecked exception that is easiest to write passes against a boundary that catches too little.
 - **`LogAppenderFake.getThrowables()`**: what a capture's entries were logged with, in order, leaving out an entry that carried none - the reading for a case asking whether a failure was logged with its trace.
 - **List widget fixtures**: `Anomaly` and `AnomalySortMode`, a picker row and a sort vocabulary declared outside the list package, and `ListPickerBlockReads`, which reaches into a built picker block for the columns selector, the sort row, the sort selector or the item list. The block's order lives there rather than in each suite that tests a list, so a row inserted into it breaks one file.
 - **`MemoryKeyAddresses`**: two stand-in addresses, for suites storing a value at one point on an axis without being about what the axis is.
