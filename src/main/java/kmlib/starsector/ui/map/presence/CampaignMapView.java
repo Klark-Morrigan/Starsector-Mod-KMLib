@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.LocationAPI;
 import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
+import kmlib.logging.SessionWarning;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 
 import org.apache.log4j.Logger;
@@ -34,17 +35,18 @@ import org.apache.log4j.Logger;
  * directly - the game's script classloader denies {@code java.lang.reflect} to mod code, so
  * a reflective read is impossible, while loading core classes is permitted and the class is
  * marked do-not-obfuscate, keeping its name stable across game builds. A UI-data object of
- * any other type resolves to "not the sector map", so an unreadable signal hides the overlay
- * rather than misplacing it.
+ * any other type resolves to "not the sector map", and so does one of that type whose members a
+ * game build has changed, so an unreadable signal hides the overlay rather than misplacing it.
  */
 public final class CampaignMapView {
 
     private static final Logger LOG = Global.getLogger(CampaignMapView.class);
 
-    // One-shot: getUIData() returning a type other than CampaignUIPersistentData means the
-    // cast the whole port relies on cannot land - a genuine anomaly (a wrapping mod, or the
-    // class loaded under a different classloader) worth naming once, not per render frame.
-    private static boolean hasLoggedUnexpectedUiDataType;
+    // Once per session: the cast the whole port relies on cannot land, or lands on a class that
+    // no longer carries what is read off it - a genuine anomaly (a wrapping mod, the class loaded
+    // under a different classloader, or a game build that changed it) worth naming once, not per
+    // render frame. One warning for both, being the same news: the map's state cannot be read.
+    private static final SessionWarning UNREADABLE_UI_DATA_WARNING = new SessionWarning(LOG);
 
     private CampaignMapView() {
     }
@@ -100,14 +102,14 @@ public final class CampaignMapView {
             return "no campaign UI";
         }
 
-        var uiData = readConcreteUiData();
-        var filterData = uiData == null ? null : uiData.getMapFilterData();
-        var mapLocation = uiData == null ? null : uiData.getCampaignMapLocation();
+        var uiSignals = readMapUiSignals();
+        var isStarscapeOn = uiSignals == null ? null : uiSignals.isStarscapeOn();
+        var mapLocation = uiSignals == null ? null : uiSignals.mapLocation();
 
         return "tab="
             + CampaignScreenView.resolveShownCoreTab()
             + " starscape="
-            + (filterData == null ? "unreadable" : filterData.starscape)
+            + (isStarscapeOn == null ? "unreadable" : isStarscapeOn)
             + " mapLocation="
             + describeLocation(mapLocation)
             + " state="
@@ -145,11 +147,11 @@ public final class CampaignMapView {
             return SectorMapState.NOT_SHOWING;
         }
 
-        var uiData = readConcreteUiData();
-        if (uiData == null) {
+        var uiSignals = readMapUiSignals();
+        if (uiSignals == null) {
             return SectorMapState.NOT_SHOWING;
         }
-        var mapLocation = uiData.getCampaignMapLocation();
+        var mapLocation = uiSignals.mapLocation();
 
         // A null location means the map has not recorded a sub-view yet; it opens on the
         // player's current location, so read it as the Sector view until proven a system.
@@ -158,32 +160,51 @@ public final class CampaignMapView {
             return SectorMapState.NOT_SHOWING;
         }
 
-        var filterData = uiData.getMapFilterData();
-        if (filterData == null) {
+        if (uiSignals.isStarscapeOn() == null) {
             return SectorMapState.SHOWING_WITH_UNREADABLE_FILTER;
         }
 
-        return filterData.starscape
+        return uiSignals.isStarscapeOn()
             ? SectorMapState.SHOWING_IN_STARSCAPE_MODE
             : SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     // The one place the concrete-class coupling lives: null when the game hands back some
-    // other UI-data type, which downstream reads as unreadable signals. A non-null value of
-    // an unexpected type is named once in the log, since that is the failure mode that
-    // silently hides every map-gated overlay and the actual class is what diagnoses it.
-    private static CampaignUIPersistentData readConcreteUiData() {
-        var uiData = Global.getSector().getUIData();
-        if (uiData instanceof CampaignUIPersistentData concreteUiData) {
-            return concreteUiData;
+    // other UI-data type, or a build whose class no longer carries what is read off it -
+    // either of which downstream reads as unreadable signals. Named once in the log, since
+    // that is the failure mode that silently hides every map-gated overlay, and the actual
+    // class or missing member is what diagnoses it.
+    //
+    // The LinkageError is caught here rather than left to the callers, because they are render
+    // passes and per-frame reads with no catch of their own: a member this build dropped would
+    // otherwise end the frame rather than hide the overlay.
+    private static MapUiSignals readMapUiSignals() {
+
+        try {
+            var uiData = Global.getSector().getUIData();
+
+            if (uiData instanceof CampaignUIPersistentData concreteUiData) {
+                var filterData = concreteUiData.getMapFilterData();
+
+                return new MapUiSignals(
+                    concreteUiData.getCampaignMapLocation(),
+                    filterData == null ? null : filterData.starscape);
+            }
+            if (uiData != null) {
+                UNREADABLE_UI_DATA_WARNING.warnOnce("Campaign UI data is a "
+                    + uiData.getClass().getName()
+                    + ", not CampaignUIPersistentData; map-gated overlays stay hidden");
+            }
+            return null;
+
+        } catch (LinkageError linkageError) {
+
+            UNREADABLE_UI_DATA_WARNING.warnOnce(
+                "CampaignUIPersistentData no longer carries what the map's state is read from; "
+                    + "map-gated overlays stay hidden",
+                linkageError);
+            return null;
         }
-        if (uiData != null && !hasLoggedUnexpectedUiDataType) {
-            hasLoggedUnexpectedUiDataType = true;
-            LOG.warn("Campaign UI data is a "
-                + uiData.getClass().getName()
-                + ", not CampaignUIPersistentData; map-gated overlays stay hidden");
-        }
-        return null;
     }
 
     // A null location is a real state (map not opened yet), so it prints as "null" rather
@@ -194,5 +215,13 @@ public final class CampaignMapView {
             return "null";
         }
         return location.isHyperspace() ? "hyperspace" : location.getId();
+    }
+
+    // The two signals the concrete UI data carries, taken off it together so nothing past the one
+    // read holds that class. A null filter state is the object answering none; a null location is
+    // a map not opened yet.
+    private record MapUiSignals(
+        LocationAPI mapLocation,
+        Boolean isStarscapeOn) {
     }
 }
