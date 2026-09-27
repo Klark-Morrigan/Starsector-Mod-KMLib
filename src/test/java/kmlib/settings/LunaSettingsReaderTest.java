@@ -1,9 +1,13 @@
 package kmlib.settings;
 
+import kmlib.settings.LunaSettingsReader.ChangeRelay;
+import kmlib.testfixtures.logging.LogAppenderFake;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,6 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>What the reader does once LunaLib can answer is not pinned here and cannot be: the value comes
  * out of LunaLib's own store, which is stood up by a running game rather than by a fixture.
+ *
+ * <p>The change relay is posed directly, without LunaLib's listener list: which of its notices reach
+ * the callback, and what becomes of a callback that throws.
  */
 class LunaSettingsReaderTest {
 
@@ -94,6 +101,76 @@ class LunaSettingsReaderTest {
             ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(LunaSettingsReader.getString(MOD_ID, FIELD_ID, "unset"))
                     .isEqualTo("unset"));
+        }
+    }
+
+    @Nested
+    class SettingsChanged {
+
+        @Test
+        void logsAChangeThatFailedToApplyAtErrorWithItsTrace() {
+            // LunaLib's own catch says a failed listener only at debug and drops the trace, which is
+            // below what a player's log keeps.
+            var failure = new IllegalStateException("switched feature half torn down");
+            var relay = new ChangeRelay(MOD_ID, () -> {
+                throw failure;
+            });
+
+            var capture = LogAppenderFake.captureLogOf(
+                LunaSettingsReader.class,
+                () -> relay.settingsChanged(MOD_ID));
+
+            assertThat(capture.getMessages())
+                .containsExactly("Applying the changed settings of mod 'some_mod' failed.");
+            assertThat(capture.getEvents().get(0).getThrowableInformation().getThrowable())
+                .isSameAs(failure);
+        }
+
+        @Test
+        void containsACallbackThatFailsToLink() {
+            // A callback reaching a class that no longer links throws an error rather than an
+            // exception, and is as much the change failing to apply.
+            var relay = new ChangeRelay(MOD_ID, () -> {
+                throw new NoClassDefFoundError("a class the callback names");
+            });
+
+            var capture = LogAppenderFake.captureLogOf(
+                LunaSettingsReader.class,
+                () -> relay.settingsChanged(MOD_ID));
+
+            assertThat(capture.getMessages())
+                .hasSize(1);
+        }
+
+        @Test
+        void appliesTheNextChangeAfterOneFailed() {
+            // Not latched: what failed may have been that change's own state.
+            var applyCount = new AtomicInteger();
+            var relay = new ChangeRelay(MOD_ID, () -> {
+                if (applyCount.incrementAndGet() == 1) {
+                    throw new IllegalStateException("first change fails");
+                }
+            });
+
+            LogAppenderFake.captureLogOf(
+                LunaSettingsReader.class,
+                () -> relay.settingsChanged(MOD_ID));
+            relay.settingsChanged(MOD_ID);
+
+            assertThat(applyCount)
+                .hasValue(2);
+        }
+
+        @Test
+        void ignoresChangesToOtherModsSettings() {
+
+            var applyCount = new AtomicInteger();
+            var relay = new ChangeRelay(MOD_ID, applyCount::incrementAndGet);
+
+            relay.settingsChanged("some_other_mod");
+
+            assertThat(applyCount)
+                .hasValue(0);
         }
     }
 }

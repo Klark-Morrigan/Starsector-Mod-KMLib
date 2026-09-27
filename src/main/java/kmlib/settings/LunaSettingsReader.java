@@ -4,6 +4,7 @@ import kmlib.starsector.settings.modmanager.ModPresence;
 
 import lunalib.lunaSettings.LunaSettings;
 import lunalib.lunaSettings.LunaSettingsListener;
+import org.apache.log4j.Logger;
 
 /**
  * Reads a mod's LunaLib settings values, null-safely, and relays change events.
@@ -32,6 +33,10 @@ import lunalib.lunaSettings.LunaSettingsListener;
  * cadence - and none of them is asking to be told the game is not up.
  */
 public final class LunaSettingsReader {
+
+    // Asked of log4j directly, as the writer's is: the same logger under the same name, without
+    // reaching for the game's static entry point.
+    private static final Logger LOG = Logger.getLogger(LunaSettingsReader.class);
 
     private LunaSettingsReader() {
     }
@@ -147,19 +152,29 @@ public final class LunaSettingsReader {
 
     // Relays LunaLib's change event to a plain Runnable, filtered to one mod so
     // a caller never sees other mods' settings changes.
-    private static final class ChangeRelay implements LunaSettingsListener {
+    static final class ChangeRelay implements LunaSettingsListener {
         private final String modId;
         private final Runnable onChange;
 
-        private ChangeRelay(String modId, Runnable onChange) {
+        ChangeRelay(String modId, Runnable onChange) {
             this.modId = modId;
             this.onChange = onChange;
         }
 
         @Override
         public void settingsChanged(String changedModId) {
-            if (modId.equals(changedModId)) {
+
+            if (!modId.equals(changedModId)) {
+                return;
+            }
+            // LunaLib runs each listener behind a catch of its own, but says a failure only at debug
+            // and without its trace - below what a player's log keeps - so a change that failed to
+            // apply would leave no line at all. Caught here to be said at error, trace and all. Not
+            // latched: a change is the player's own rare act, and the next one may apply cleanly.
+            try {
                 onChange.run();
+            } catch (LinkageError | RuntimeException failure) {
+                LOG.error("Applying the changed settings of mod '" + modId + "' failed.", failure);
             }
         }
     }

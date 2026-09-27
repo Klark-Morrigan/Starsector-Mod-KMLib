@@ -37,6 +37,11 @@ import org.apache.log4j.Logger;
  * from any mod that depends on KMLib - it is present whenever KMLib is.
  */
 public final class KmLogging {
+
+    // Asked of log4j directly, as every logger this class governs is: the same logger under the
+    // same name, without reaching for the game's static entry point.
+    private static final Logger LOG = Logger.getLogger(KmLogging.class);
+
     /**
      * Library-wide fallback verbosity, used when a caller does not specify one
      * and the LunaLib value is unavailable. WARN keeps warnings and errors
@@ -135,8 +140,17 @@ public final class KmLogging {
 
             // LunaLib notifies every listener for every mod's change; retune
             // only when this mod's own settings changed.
-            if (modId.equals(changedModId)) {
+            if (!modId.equals(changedModId)) {
+                return;
+            }
+            // LunaLib runs each listener behind a catch of its own, but says a
+            // failure only at debug and without its trace, so a level that
+            // failed to apply would leave no line at all. Caught here to be
+            // said at error, trace and all; the next change tries again.
+            try {
                 applyConfiguredLevel();
+            } catch (LinkageError | RuntimeException failure) {
+                LOG.error("Applying the log level setting of mod '" + modId + "' failed.", failure);
             }
         }
 

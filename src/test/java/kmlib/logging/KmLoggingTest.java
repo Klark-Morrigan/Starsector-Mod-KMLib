@@ -1,13 +1,16 @@
 package kmlib.logging;
 
 import kmlib.logging.KmLogging.LunaLogBinding;
+import kmlib.testfixtures.logging.LogAppenderFake;
 
+import lunalib.lunaSettings.LunaSettings;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Pins the contract of {@link KmLogging}.
@@ -18,11 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  *    unrecognised names fall back, and loggers outside the subtree are left
  *    alone.
  *  - {@link LunaLogBinding#settingsChanged} - the change filter: a notification
- *    for another mod's settings is ignored.
+ *    for another mod's settings is ignored; and a level that fails to apply is
+ *    logged at error rather than thrown into LunaLib's loop.
  *
  * The matching-id read path is not unit-tested here: it calls
  * {@code LunaSettings.getString}, which loads game-backed settings, so it
- * belongs to in-game/integration coverage rather than a static mock. Uses the
+ * belongs to in-game/integration coverage; only its failure is stood in. Uses the
  * real log4j {@link Logger} hierarchy (no mock), since that inheritance is
  * exactly what the helper relies on; each test uses a distinct logger-root
  * name because log4j loggers are process-global.
@@ -116,6 +120,30 @@ final class KmLoggingTest {
 
             assertThat(root.getLevel())
                 .isNull();
+        }
+
+        @Test
+        void logsALevelThatFailedToApplyAtErrorWithItsTrace() {
+            // LunaLib's own catch says a failed listener only at debug and drops the trace, which is
+            // below what a player's log keeps.
+            var failure = new IllegalStateException("settings store not loaded");
+            var binding =
+                new LunaLogBinding("kmlibtest_failing", "kmlibtest_failing_root", "f", Level.DEBUG);
+
+            try (var lunaSettingsMock = mockStatic(LunaSettings.class)) {
+                lunaSettingsMock
+                    .when(() -> LunaSettings.getString("kmlibtest_failing", "f"))
+                    .thenThrow(failure);
+
+                var capture = LogAppenderFake.captureLogOf(
+                    KmLogging.class,
+                    () -> binding.settingsChanged("kmlibtest_failing"));
+
+                assertThat(capture.getMessages())
+                    .containsExactly("Applying the log level setting of mod 'kmlibtest_failing' failed.");
+                assertThat(capture.getEvents().get(0).getThrowableInformation().getThrowable())
+                    .isSameAs(failure);
+            }
         }
     }
 }
