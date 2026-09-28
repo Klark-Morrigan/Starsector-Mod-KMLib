@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiReachFailures;
 
 import org.apache.log4j.Logger;
@@ -52,6 +53,8 @@ class VanillaIntelScreenViewTest {
     // whole class, cleared per test, is what makes the warning assertions see what was written.
     private static final Logger loggerMock = mock(Logger.class);
 
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
     private MockedStatic<Global> globalMock;
     private SectorAPI sectorMock;
     private CampaignUIAPI campaignUiMock;
@@ -92,7 +95,7 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
                 .isTrue();
         }
 
@@ -102,7 +105,7 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
                 .isFalse();
         }
 
@@ -112,7 +115,7 @@ class VanillaIntelScreenViewTest {
             globalMock.when(Global::getSector)
                 .thenReturn(null);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
                 .isFalse();
         }
 
@@ -121,7 +124,7 @@ class VanillaIntelScreenViewTest {
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
 
-            assertThat(new VanillaIntelScreenView().isIntelTabOpen())
+            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
                 .isFalse();
         }
     }
@@ -189,7 +192,7 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            new VanillaIntelScreenView().warnOnceAboutUnreachableIntelPanel();
+            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
 
             verify(loggerMock)
                 .warn(any());
@@ -202,7 +205,7 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            new VanillaIntelScreenView().warnOnceAboutUnreachableIntelPanel();
+            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
 
             verify(loggerMock, never())
                 .warn(any());
@@ -215,12 +218,36 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            var intelScreen = new VanillaIntelScreenView();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             intelScreen.warnOnceAboutUnreachableIntelPanel();
             intelScreen.warnOnceAboutUnreachableIntelPanel();
 
             verify(loggerMock, times(1))
                 .warn(any());
+        }
+
+        @Test
+        void filesThePanelMissingWhereTheIntelTabIsOpen() {
+            // An open intel tab always holds the panel, so not finding it is never ordinary.
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.INTEL);
+
+            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
+
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("EventsPanel below the intel tab");
+        }
+
+        @Test
+        void filesNothingWhereAnotherTabIsShowing() {
+
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.MAP);
+
+            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
         }
     }
 
@@ -234,7 +261,7 @@ class VanillaIntelScreenViewTest {
             // panel. It is carried into the line because nothing else in the class records it.
             var unreadableTree = new IllegalStateException("A hop the core UI no longer offers.");
 
-            new VanillaIntelScreenView().warnOnceAboutUnreadableCoreUi(unreadableTree);
+            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreadableCoreUi(unreadableTree);
 
             verify(loggerMock)
                 .warn(any(), eq(unreadableTree));
@@ -249,7 +276,7 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            new VanillaIntelScreenView()
+            new VanillaIntelScreenView(reachRecord.getReporter())
                 .warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
 
             verify(loggerMock)
@@ -260,7 +287,7 @@ class VanillaIntelScreenViewTest {
         void warnsOnlyOnceWhileTheWalkKeepsFailing() {
             // The walk runs per frame, so a reach that stopped working would otherwise write the
             // same line, stack and all, sixty times a second.
-            var intelScreen = new VanillaIntelScreenView();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
             intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
             intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
@@ -277,7 +304,7 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            var intelScreen = new VanillaIntelScreenView();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             intelScreen.warnOnceAboutUnreachableIntelPanel();
             intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
 
@@ -285,6 +312,17 @@ class VanillaIntelScreenViewTest {
                 .warn(any());
             verify(loggerMock, times(1))
                 .warn(any(), any(Throwable.class));
+        }
+
+        @Test
+        void filesTheWalkWithTheCauseThatBrokeIt() {
+
+            var unreadableTree = new IllegalStateException("A hop the core UI no longer offers.");
+
+            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreadableCoreUi(unreadableTree);
+
+            assertThat(reachRecord.takeReportedFailure().cause())
+                .isSameAs(unreadableTree);
         }
     }
 
@@ -294,7 +332,7 @@ class VanillaIntelScreenViewTest {
         @Test
         void answersTheFadersBrightness() {
 
-            assertThat(new VanillaIntelScreenView().readIntelSubtabBrightness(() -> 0.75))
+            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).readIntelSubtabBrightness(() -> 0.75))
                 .isEqualTo(0.75f);
         }
 
@@ -302,7 +340,7 @@ class VanillaIntelScreenViewTest {
         void answersDarkWhereTheFaderNoLongerLinks() {
             // Read from render passes with no catch of their own, so a renamed fader has to come
             // back as an unlit visor rather than end the frame.
-            var intelScreen = new VanillaIntelScreenView();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
             assertThat(intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember))
                 .isZero();
@@ -311,7 +349,7 @@ class VanillaIntelScreenViewTest {
         @Test
         void warnsOnceWithTheCauseWhileTheFaderKeepsFailingToLink() {
 
-            var intelScreen = new VanillaIntelScreenView();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             var unlinkedFader = new NoSuchMethodError("getFader");
 
             intelScreen.readIntelSubtabBrightness(() -> {
@@ -329,13 +367,32 @@ class VanillaIntelScreenViewTest {
         void warnsSeparatelyFromTheWalksWarnings() {
             // A different member from any the walk takes, so a walk already reported broken must
             // not silence news of the fader.
-            var intelScreen = new VanillaIntelScreenView();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
             intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
             intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
 
             verify(loggerMock, times(2))
                 .warn(any(), any(Throwable.class));
+        }
+
+        @Test
+        void filesTheFaderThatNoLongerLinks() {
+
+            new VanillaIntelScreenView(reachRecord.getReporter())
+                .readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("EventsPanel.getFader");
+        }
+
+        @Test
+        void filesNothingForAFaderThatReads() {
+
+            new VanillaIntelScreenView(reachRecord.getReporter()).readIntelSubtabBrightness(() -> 0.75);
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
         }
     }
 }

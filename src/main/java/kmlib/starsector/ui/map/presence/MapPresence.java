@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.map.presence;
 
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.intel.IntelScreenView;
 import kmlib.starsector.ui.intel.MapVisorState;
 import kmlib.starsector.ui.intel.VanillaIntelScreenView;
@@ -47,9 +48,15 @@ public final class MapPresence {
     private final IntelScreenView intelScreen;
     private final Supplier<SectorMapState> readSectorMapState;
 
-    /** Reads the live sector map and the live intel screen - the pairing a running game gets. */
-    public MapPresence() {
-        this(CampaignMapView::resolveSectorMapState, new VanillaIntelScreenView());
+    /**
+     * Reads the live sector map and the live intel screen - the pairing a running game gets.
+     *
+     * @param reporter where a failed read of either host is filed, for the mod gating on the answers.
+     *                 One for both: a host that cannot be read costs that mod its map on that host,
+     *                 which is one loss whichever host it was
+     */
+    public MapPresence(GameReachReporter reporter) {
+        this(() -> CampaignMapView.resolveSectorMapState(reporter), new VanillaIntelScreenView(reporter));
     }
 
     MapPresence(Supplier<SectorMapState> readSectorMapState, IntelScreenView intelScreen) {

@@ -6,6 +6,8 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.compatibility.GameReachReporter;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterActionListenerFake;
@@ -78,6 +80,10 @@ class MapFilterToggleTest {
     // what matters is that the one handed to the words is the one the palette answered with.
     private static final Color SHORTCUT_COLOUR = new Color(255, 200, 100);
 
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
+    private final GameReachReporter reporter = reachRecord.getReporter();
+
     @Nested
     class AppendToRow {
 
@@ -88,7 +94,7 @@ class MapFilterToggleTest {
             var rowFake = MapFilterRowFake.createMapScreenStrip(
                 "Starscape", "Fuel range", "Exploration");
 
-            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             var appendedButton = (MapFilterButtonFake) rowFake.getChildrenCopy().get(3);
 
@@ -105,7 +111,7 @@ class MapFilterToggleTest {
             // that recomputed the layout would agree with a layout that had gone wrong.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
 
-            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             var appendedButton = (MapFilterButtonFake) rowFake.getChildrenCopy().get(2);
 
@@ -123,7 +129,7 @@ class MapFilterToggleTest {
                 MAP_SCREEN_BUTTON_WIDTH,
                 "Starscape");
 
-            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             var appendedButton = (MapFilterButtonFake) rowFake.getChildrenCopy().get(1);
 
@@ -138,7 +144,7 @@ class MapFilterToggleTest {
             // control laid at the other screen's numbers would be plainly wrong on it.
             var rowFake = MapFilterRowFake.createIntelVisorBand("Starscape", "Show fuel range");
 
-            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             var appendedButton = (MapFilterButtonFake) rowFake.getChildrenCopy().get(2);
 
@@ -160,7 +166,7 @@ class MapFilterToggleTest {
                 "Starscape",
                 "Fuel range");
 
-            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING))
+            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter))
                 .isNull();
             assertThat(rowFake.getChildrenCopy())
                 .hasSize(2);
@@ -177,7 +183,7 @@ class MapFilterToggleTest {
                 "Starscape",
                 "Fuel range");
 
-            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING))
+            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter))
                 .isNotNull();
         }
 
@@ -188,7 +194,7 @@ class MapFilterToggleTest {
             assertThat(MapFilterToggle.appendToRow(
                     new MapFilterRow(MapFilterRowFake.createMapScreenStrip()),
                     LABEL,
-                    DOES_NOTHING))
+                    DOES_NOTHING, reporter))
                 .isNull();
         }
 
@@ -199,7 +205,7 @@ class MapFilterToggleTest {
             assertThat(MapFilterToggle.appendToRow(
                     new MapFilterRow(new UnplacedButtonRowFake()),
                     LABEL,
-                    DOES_NOTHING))
+                    DOES_NOTHING, reporter))
                 .isNull();
         }
 
@@ -211,7 +217,7 @@ class MapFilterToggleTest {
             assertThat(MapFilterToggle.appendToRow(
                     new MapFilterRow(new UnplacedRowFake()),
                     LABEL,
-                    DOES_NOTHING))
+                    DOES_NOTHING, reporter))
                 .isNull();
         }
 
@@ -222,7 +228,7 @@ class MapFilterToggleTest {
             var rowFake = MapFilterRowFake.createRowOfSize(
                 new Rectangle(0f, 0f, 0f, 0f), 0f, "Starscape");
 
-            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING))
+            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter))
                 .isNull();
         }
 
@@ -237,10 +243,50 @@ class MapFilterToggleTest {
             // would pass while proving nothing about the branch it was written for.
             var rowFake = new UncheckableButtonRowFake();
 
-            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING))
+            assertThat(MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter))
                 .isNull();
             assertThat(rowFake.countButtonsAppended())
                 .isEqualTo(1);
+        }
+
+        @Test
+        void filesARowWhoseButtonsCarryNoCheckedState() {
+            // The game's own row builds buttons whose state it reads itself, so one that cannot be
+            // read is a build that changed the row.
+            var rowFake = new UncheckableButtonRowFake();
+
+            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
+
+            assertThat(reachRecord.takeReportedFailure().breakage().failureSite())
+                .isEqualTo("standing a control on the map's filter row");
+        }
+
+        @Test
+        void filesNothingForARowWithNoRoomLeft() {
+            // Another mod arriving first, which says nothing about the game.
+            var rowFake = MapFilterRowFake.createRowOfSize(
+                new Rectangle(0f, 0f, 243f, MAP_SCREEN_BUTTON_HEIGHT),
+                MAP_SCREEN_BUTTON_WIDTH,
+                "Starscape",
+                "Fuel range");
+
+            MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
+
+        @Test
+        void filesNothingForARowHoldingNothingToMeasureAgainst() {
+            // A layout still settling, which the caller asks again about on the next frame.
+            MapFilterToggle.appendToRow(
+                new MapFilterRow(MapFilterRowFake.createMapScreenStrip()),
+                LABEL,
+                DOES_NOTHING,
+                reporter);
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
         }
     }
 
@@ -253,7 +299,7 @@ class MapFilterToggleTest {
             // this handle appended. Nothing is registered anywhere, so nothing has to be taken away
             // when the screen that carries the button goes.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
 
@@ -265,7 +311,7 @@ class MapFilterToggleTest {
         void bindShortcutLeavesTheButtonWithNoKeyForAClearedBinding() {
 
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             toggle.bindShortcut(NO_KEY);
 
@@ -286,7 +332,7 @@ class MapFilterToggleTest {
             // game will not apply it to: the occurrence is lit rather than repeated. "Map layers"
             // bound to M lights the M it already starts with.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
 
@@ -304,7 +350,7 @@ class MapFilterToggleTest {
             // substring of what is drawn, so a key named "L" against words holding "l" is lit as
             // the lower-case "l" the words actually carry.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             toggle.bindShortcut(Keyboard.KEY_L);
 
@@ -317,7 +363,7 @@ class MapFilterToggleTest {
             // The other half of the same rule, and the one the row's own six take: a key the words
             // do not contain is written after them in a bracket, and that bracket is what is lit.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             toggle.bindShortcut(Keyboard.KEY_Q);
 
@@ -334,7 +380,7 @@ class MapFilterToggleTest {
             // A run named without a colour draws in whatever the last caller left behind, so the
             // two travel together or the announcement reads differently from screen to screen.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
 
@@ -348,7 +394,7 @@ class MapFilterToggleTest {
             // key rather than to bind it. So a control whose announcement fails is a control that
             // still answers its key, rather than one that never got keyed.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             toggle.bindShortcut(A_BOUND_KEY);
 
@@ -361,7 +407,7 @@ class MapFilterToggleTest {
             // The row is asked for nothing it cannot do. Were it asked, it would print nothing today
             // and a second bracket beside ours on any build that could name a bare code.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             bindShortcutUnderThePalette(toggle, A_BOUND_KEY);
 
@@ -379,7 +425,7 @@ class MapFilterToggleTest {
             // reporting the click, so the handle is what says which way it went rather than
             // anything the caller has to track alongside it.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             ((MapFilterButtonFake) rowFake.getChildrenCopy().get(1)).click();
 
@@ -396,7 +442,7 @@ class MapFilterToggleTest {
             // The common case each frame: the row on screen is the row this stands on, and there is
             // nothing to do.
             var row = new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape"));
-            var toggle = MapFilterToggle.appendToRow(row, LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(row, LABEL, DOES_NOTHING, reporter);
 
             assertThat(toggle.isStillAttachedTo(row))
                 .isTrue();
@@ -410,7 +456,7 @@ class MapFilterToggleTest {
             var toggle = MapFilterToggle.appendToRow(
                 new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape")),
                 LABEL,
-                DOES_NOTHING);
+                DOES_NOTHING, reporter);
 
             assertThat(toggle.isStillAttachedTo(
                 new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape"))))
@@ -424,7 +470,7 @@ class MapFilterToggleTest {
             var toggle = MapFilterToggle.appendToRow(
                 new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape")),
                 LABEL,
-                DOES_NOTHING);
+                DOES_NOTHING, reporter);
 
             assertThat(toggle.isStillAttachedTo(null))
                 .isFalse();
@@ -441,7 +487,7 @@ class MapFilterToggleTest {
             // handle appended rather than as any component, the handle being the only thing that
             // knows which of the row's children is ours.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
             var elementMock = mock(TooltipMakerAPI.class);
 
             StarsectorSettingsFake.buildSettings()
@@ -469,7 +515,7 @@ class MapFilterToggleTest {
             // alone. Thrown at the caller instead, it would read as a control that never went up,
             // and the next frame would append a second one beside the first.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             toggle.attachTooltip(TOOLTIP_WIDTH, tt -> {
                 /* never reached - there is no surface to open it on */ });
@@ -490,7 +536,7 @@ class MapFilterToggleTest {
             // not a click, so it must not travel back out as one - a control that reported its own
             // seeding would rewrite the state it was seeded from on every open of the screen.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
-            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING);
+            var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
 
             toggle.setChecked(true);
 

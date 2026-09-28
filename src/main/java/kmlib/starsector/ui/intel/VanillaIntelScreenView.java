@@ -7,6 +7,7 @@ import com.fs.starfarer.campaign.comms.v2.EventsPanel;
 
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.layout.VanillaPositions;
@@ -56,6 +57,10 @@ import java.util.function.DoubleSupplier;
  * screen and the only one carrying a cause worth printing. Each of the two that count as news warns
  * once per session, separately, so neither can silence the other - as does the panel's fader
  * failing to link, the one member read off the panel by a direct call.
+ *
+ * <p>The same three are filed through the reporter of the mod reading the intel screen, as the loss
+ * of that mod's feature there. None is a state the intel screen is ordinarily in - the empty walk
+ * counting only while the intel tab reads as open - so a report never stands for another screen.
  */
 public final class VanillaIntelScreenView implements IntelScreenView {
 
@@ -87,6 +92,11 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // lit visor has to clear.
     private static final float UNREADABLE_BRIGHTNESS = 0f;
 
+    // What a failed read of the intel screen is reported as having been doing.
+    private static final String FAILURE_SITE = "reading the intel screen's map";
+
+    private final GameReachReporter reporter;
+
     // One-shot: the intel tab being up while its panel cannot be reached is a genuine anomaly worth
     // naming once, not on every frame a visor read is attempted.
     private final SessionWarning unreachablePanelWarning = new SessionWarning(LOG);
@@ -99,6 +109,14 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // A third, for the panel's fader failing to link: a different member from any the walk takes,
     // so neither of the walk's warnings says it.
     private final SessionWarning unlinkedFaderWarning = new SessionWarning(LOG);
+
+    /**
+     * @param reporter where a failed read is filed, for the mod reading the intel screen, or
+     *                 {@link GameReachReporter#UNREPORTED} where no player would miss the answer
+     */
+    public VanillaIntelScreenView(GameReachReporter reporter) {
+        this.reporter = reporter;
+    }
 
     @Override
     public boolean isIntelTabOpen() {
@@ -203,6 +221,8 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         unreachablePanelWarning.warnOnce(
             "The intel tab is open but no EventsPanel was found below the core UI's current "
                 + "tab; intel-screen visor reads answer 'no visor' while that is so.");
+
+        reporter.recordReachFailure(FAILURE_SITE, "EventsPanel below the intel tab");
     }
 
     // Names a walk that failed outright, as against one that simply found nothing. Not read against
@@ -214,12 +234,14 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     // records it - the visor reads answer null either way, which is what a screen with no intel
     // panel on it looks like, so without this a broken reach is indistinguishable from an ordinary
     // frame. One line per session, the failing walk running per frame.
-    void warnOnceAboutUnreadableCoreUi(Throwable unreadableTree) {
+    void warnOnceAboutUnreadableCoreUi(Throwable exception) {
 
         unreadableCoreUiWarning.warnOnce(
             "The live core UI could not be walked to the tab that is up; intel-screen visor reads "
                 + "answer 'no visor' while that is so.",
-            unreadableTree);
+            exception);
+
+        reporter.recordReachFailure(FAILURE_SITE, "the core UI's hops down to the tab that is up", exception);
     }
 
     // The events panel's brightness, or dark where the panel's fader no longer links.
@@ -241,6 +263,7 @@ public final class VanillaIntelScreenView implements IntelScreenView {
                     + "gated on; intel-screen visor reads answer 'no visor' while that is so.",
                 linkageError);
 
+            reporter.recordReachFailure(FAILURE_SITE, "EventsPanel.getFader", linkageError);
             return UNREADABLE_BRIGHTNESS;
         }
     }
@@ -251,18 +274,20 @@ public final class VanillaIntelScreenView implements IntelScreenView {
     private EventsPanel resolveIntelPanel() {
 
         EventsPanel intelPanel;
+
         try {
             intelPanel = findEventsPanelIn(CoreUiTree.resolveCurrentTab(), MAX_PANEL_SEARCH_DEPTH);
 
-        } catch (Throwable unreadableTree) {
+        } catch (Throwable exception) {
             // A hop that is absent or throws outright leaves the panel unreached, which is the same
             // outcome for a caller as a tab that holds no panel. Swallowed rather than raised: a
             // caller is in the middle of a render pass, and a read that cannot answer must not take
             // down the frame it was meant to refine - but it is said once, since nothing else in
             // this class can tell that the walk broke rather than found nothing.
-            warnOnceAboutUnreadableCoreUi(unreadableTree);
+            warnOnceAboutUnreadableCoreUi(exception);
             return null;
         }
+
         if (intelPanel == null) {
             warnOnceAboutUnreachableIntelPanel();
         }

@@ -50,8 +50,16 @@ import java.util.function.Predicate;
  * <p>Every way this can fail resolves to no button and one line in the log, on the reasoning that a
  * decoration appended to somebody else's widget must not be able to take anything down with it. A
  * caller therefore reads back either a button it can drive or nothing, and has one case to handle.
+ * Each is also filed through the caller's reporter: none is something a row the game built as it
+ * always has would do.
  */
 final class VanillaToggleFactory {
+
+    /**
+     * What a row no longer the game's usual shape is reported as having been doing. Shared with the
+     * toggle that adopts the button, a button it cannot drive being the same attempt failing later.
+     */
+    static final String FAILURE_SITE = "standing a control on the map's filter row";
 
     private static final Logger LOG = Global.getLogger(VanillaToggleFactory.class);
 
@@ -100,52 +108,64 @@ final class VanillaToggleFactory {
      * stands it at the end of the row.
      *
      * @param row        the row to append to
-     * @param label      the words on the button
      * @param buttonSize how big to lay it, which a caller measures off the row rather than states
-     * @param onToggled  what to run when it is clicked, which is called after the button has already
-     *                   flipped its own state, so a caller reads that state rather than tracking it
+     * @param request    the words, the click and the reporter; every refusal here is filed through
+     *                   the reporter, each being a game build that changed the row rather than
+     *                   anything ordinary
      * @return the button, for a caller that goes on to drive it, or null when the row is not a shape
      *         this understands or the write into it failed - which is logged once and is not an
      *         error, the row being somebody else's
      */
-    static Object appendToggle(
-            MapFilterRow row,
-            String label,
-            ButtonSize buttonSize,
-            Runnable onToggled) {
+    static Object appendToggle(MapFilterRow row, ButtonSize buttonSize, FilterToggleRequest request) {
+
+        var reporter = request.reporter();
 
         try {
             var rowWidget = row.getRowWidget();
 
+            // Which member failed to match is already named in the log by the match itself.
             var rowShape = matchRowShape(rowWidget.getClass());
             if (rowShape == null) {
+
+                reporter.recordReachFailure(
+                    FAILURE_SITE,
+                    "the filter row's button factory, appender or listener setter");
+
                 return null;
             }
 
-            var button = rowShape.buttonFactory().invokeOn(rowWidget, label, NO_SHORTCUT);
+            var button = rowShape.buttonFactory().invokeOn(rowWidget, request.label(), NO_SHORTCUT);
             if (button == null) {
+
                 WARNING.warnOnce(
                     "The map's filter row built no button when asked for one; no control is "
                         + "appended to it.");
+
+                reporter.recordReachFailure(FAILURE_SITE, "the filter row's button factory");
                 return null;
             }
 
             // Before the append, so the button is never on screen while still reporting to the row.
             var listener = rowShape.listener();
-            listener.setter().invokeOn(button, createListener(listener, onToggled));
 
-            rowShape.rowAppender().invokeOn(
-                rowWidget, button, buttonSize.width(), buttonSize.height());
+            listener
+                .setter()
+                .invokeOn(button, createListener(listener, request.onToggled()));
+
+            rowShape
+                .rowAppender()
+                .invokeOn(rowWidget, button, buttonSize.width(), buttonSize.height());
 
             return button;
 
-        } catch (Throwable cannotAppendToggle) {
+        } catch (Throwable exception) {
 
             WARNING.warnOnce(
                 "Appending a control to the map's filter row failed; the row is left as the game "
                     + "built it.",
-                cannotAppendToggle);
+                exception);
 
+            reporter.recordReachFailure(FAILURE_SITE, "the filter row's members", exception);
             return null;
         }
     }
@@ -156,7 +176,6 @@ final class VanillaToggleFactory {
     private static RowShape matchRowShape(Class<?> rowShape) {
 
         var rowMethods = CoreUiMethods.readDeclaredMethodsOf(rowShape);
-
         var buttonFactory = matchSoleMethod(
             rowMethods,
             VanillaToggleFactory::isButtonFactory,
@@ -194,7 +213,8 @@ final class VanillaToggleFactory {
     private static ListenerBinding matchListenerBinding(Class<?> buttonShape) {
 
         var buttonMethods = CoreUiMethods.readPublicMethodsOf(buttonShape);
-        var namedSetters = buttonMethods.stream()
+        var namedSetters = buttonMethods
+            .stream()
             .filter(buttonMethod -> SET_LISTENER_METHOD.equals(buttonMethod.getName()))
             .filter(VanillaToggleFactory::isListenerSetter)
             .toList();
@@ -210,7 +230,10 @@ final class VanillaToggleFactory {
             return null;
         }
 
-        var listenerShape = listenerSetter.getParameterTypes().get(LISTENER_PARAMETER);
+        var listenerShape = listenerSetter
+            .getParameterTypes()
+            .get(LISTENER_PARAMETER);
+
         var listenerCallback = matchSoleMethod(
             CoreUiMethods.readPublicMethodsOf(listenerShape),
             "the callback a filter button's listener hears a click through");
@@ -218,7 +241,9 @@ final class VanillaToggleFactory {
         return listenerCallback == null
             ? null
             : new ListenerBinding(
-                listenerSetter, listenerShape, listenerCallback.getParameterTypes());
+                listenerSetter,
+                listenerShape,
+                listenerCallback.getParameterTypes());
     }
 
     // The members of a shape that fit, where there has to be exactly one of them.
@@ -228,7 +253,8 @@ final class VanillaToggleFactory {
             String whatWasWanted) {
 
         return matchSoleMethod(
-            methods.stream()
+            methods
+                .stream()
                 .filter(isMatch)
                 .toList(),
             whatWasWanted);
@@ -302,7 +328,8 @@ final class VanillaToggleFactory {
     private static Object createListener(ListenerBinding listener, Runnable onToggled)
         throws Throwable {
 
-        var onToggledHandle = MethodHandles.lookup()
+        var onToggledHandle = MethodHandles
+            .lookup()
             .findVirtual(Runnable.class, CALLBACK_METHOD, MethodType.methodType(void.class))
             .bindTo(onToggled);
 
@@ -315,9 +342,9 @@ final class VanillaToggleFactory {
     // one before it: a half-matched row is not something to hold, and carrying the parts separately
     // would let a caller pair a button factory with the appender of some other row.
     private record RowShape(
-            CoreUiMethod buttonFactory,
-            CoreUiMethod rowAppender,
-            ListenerBinding listener) {
+        CoreUiMethod buttonFactory,
+        CoreUiMethod rowAppender,
+        ListenerBinding listener) {
     }
 
     // The listener half of that, kept together for the same reason and apart from the rest because
@@ -325,8 +352,8 @@ final class VanillaToggleFactory {
     // both read off the setter, and a caller holding the setter alone would have to read them again
     // to use it.
     private record ListenerBinding(
-            CoreUiMethod setter,
-            Class<?> shape,
-            List<Class<?>> callbackParameterTypes) {
+        CoreUiMethod setter,
+        Class<?> shape,
+        List<Class<?>> callbackParameterTypes) {
     }
 }

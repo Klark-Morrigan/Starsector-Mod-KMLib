@@ -1,6 +1,9 @@
 package kmlib.starsector.ui.map.controls;
 
 import kmlib.starsector.ui.map.probes.EmbeddedMap;
+import kmlib.starsector.ui.map.probes.ShownMapTab;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiReachFailures;
 import kmlib.testfixtures.starsector.ui.map.controls.FilteredMapWidgetFake;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterRowFake;
 import kmlib.testfixtures.starsector.ui.map.probes.SectorMapWidgetFake;
@@ -11,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Pins what the reach to a map's filter row answers, and - just as much - what it answers when there
@@ -22,6 +27,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MapFilterRowsTest {
 
     private static final List<Object> NO_ANCESTORS = List.of();
+
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
+    @Nested
+    class ResolveShownMapFilterRow {
+
+        @Test
+        void filesAReachThatFailsAndPassesItOn() {
+            // Filed here, where the failure is known to be the game's reach, and passed on, the
+            // caller's policy for a broken reach being its own.
+            try (var shownMapTabMock = mockStatic(ShownMapTab.class)) {
+
+                shownMapTabMock
+                    .when(ShownMapTab::resolveShownMapTab)
+                    .thenAnswer(invocation -> CoreUiReachFailures.throwUnlinkedMember());
+
+                assertThatThrownBy(() -> MapFilterRows.resolveShownMapFilterRow(reachRecord.getReporter()))
+                    .isInstanceOf(NoSuchMethodError.class);
+                assertThat(reachRecord.takeReportedFailure().cause())
+                    .isInstanceOf(NoSuchMethodError.class);
+            }
+        }
+
+        @Test
+        void filesNothingWhileNoMapIsOnScreen() {
+
+            try (var shownMapTabMock = mockStatic(ShownMapTab.class)) {
+
+                shownMapTabMock
+                    .when(ShownMapTab::resolveShownMapTab)
+                    .thenReturn(null);
+
+                assertThat(MapFilterRows.resolveShownMapFilterRow(reachRecord.getReporter()))
+                    .isNull();
+                assertThat(reachRecord.hasReported())
+                    .isFalse();
+            }
+        }
+    }
 
     @Nested
     class ResolveMapFilterRowOf {

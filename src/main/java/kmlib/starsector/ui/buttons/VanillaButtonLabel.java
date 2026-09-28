@@ -5,6 +5,7 @@ import com.fs.starfarer.api.ui.LabelAPI;
 
 import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.coreui.CoreUiMethod;
 import kmlib.starsector.ui.coreui.CoreUiMethods;
@@ -68,6 +69,9 @@ public final class VanillaButtonLabel {
     // How the game's own buttons wear a key their words do not already contain - "Starscape [1]".
     private static final String SHORTCUT_SUFFIX = " [%s]";
 
+    // What words that cannot be reached are reported as having been sought for.
+    private static final String FAILURE_SITE = "finding the words on a button the game built";
+
     private final LabelAPI label;
 
     private VanillaButtonLabel(LabelAPI label) {
@@ -87,10 +91,17 @@ public final class VanillaButtonLabel {
      *                      drawn by the caller
      * @param expectedWords what the button was built reading, which is how its own label is told
      *                      from every other label beneath it
+     * @param reporter      where words that cannot be reached are filed, for the mod speaking in
+     *                      them. Both ways of failing are filed: a button the game built just now
+     *                      always wears the words it was built with, so not finding them is never
+     *                      ordinary
      * @return its words as something that can be read and written, or null where they cannot be
      *         reached - logged once, and never an error, the widget being somebody else's
      */
-    public static VanillaButtonLabel resolveLabelOf(Object button, String expectedWords) {
+    public static VanillaButtonLabel resolveLabelOf(
+            Object button,
+            String expectedWords,
+            GameReachReporter reporter) {
 
         if (!KmlibStrings.hasText(expectedWords)) {
             return null;
@@ -103,13 +114,19 @@ public final class VanillaButtonLabel {
                 LabelSearch.forWords(expectedWords));
 
             if (label == null) {
+
                 WARNING.warnOnce(
                     "No label reading \"" + expectedWords + "\" was found under the button the game "
                         + "built for it, so nothing can be said in its words.");
-            }
-            return label == null ? null : new VanillaButtonLabel(label);
 
-        } catch (Throwable failure) {
+                reporter.recordReachFailure(FAILURE_SITE, "the label under the button");
+            }
+
+            return label == null
+                ? null
+                : new VanillaButtonLabel(label);
+
+        } catch (Throwable exception) {
 
             // Throwable rather than Exception: reading a member resolves every type in its
             // signature, so a shape that has moved arrives as an Error, and the bypass the reads go
@@ -117,7 +134,9 @@ public final class VanillaButtonLabel {
             WARNING.warnOnce(
                 "A button the game built could not be read for its words, so nothing can be said in "
                     + "them.",
-                failure);
+                exception);
+
+            reporter.recordReachFailure(FAILURE_SITE, "the button's renderer or title", exception);
             return null;
         }
     }
@@ -196,7 +215,9 @@ public final class VanillaButtonLabel {
             return title;
         }
 
-        return search.hasHopsLeft() ? findLabelBelow(node, search) : null;
+        return search.hasHopsLeft()
+            ? findLabelBelow(node, search)
+            : null;
     }
 
     // One level down, through everything the node holds, first match winning.
@@ -224,7 +245,9 @@ public final class VanillaButtonLabel {
 
         try {
             return method.invokeOn(node);
+
         } catch (Throwable failure) {
+
             return null;
         }
     }
@@ -239,7 +262,8 @@ public final class VanillaButtonLabel {
             return null;
         }
 
-        return CoreUiMethods.readPublicMethodsOf(instance.getClass())
+        return CoreUiMethods
+            .readPublicMethodsOf(instance.getClass())
             .stream()
             .filter(method -> accessor.equals(method.getName()))
             .filter(method -> method.getParameterTypes().isEmpty())

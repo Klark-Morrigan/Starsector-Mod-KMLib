@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.coreui.ModalDialogFake;
@@ -195,6 +196,8 @@ class CoreUiDialogViewTest {
     @Nested
     class IsModalDialogShowing {
 
+        private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
         private MockedStatic<Global> globalMock;
         private SectorAPI sectorMock;
 
@@ -223,7 +226,7 @@ class CoreUiDialogViewTest {
             when(sectorMock.getCampaignUI())
                 .thenReturn(campaignUiMock);
 
-            assertThat(CoreUiDialogView.isModalDialogShowing())
+            assertThat(CoreUiDialogView.isModalDialogShowing(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -234,7 +237,7 @@ class CoreUiDialogViewTest {
                 .when(Global::getSector)
                 .thenReturn(null);
 
-            assertThat(CoreUiDialogView.isModalDialogShowing())
+            assertThat(CoreUiDialogView.isModalDialogShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -244,7 +247,7 @@ class CoreUiDialogViewTest {
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
 
-            assertThat(CoreUiDialogView.isModalDialogShowing())
+            assertThat(CoreUiDialogView.isModalDialogShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -256,7 +259,78 @@ class CoreUiDialogViewTest {
             when(sectorMock.getCampaignUI())
                 .thenReturn(mock(CampaignUIAPI.class));
 
-            assertThat(CoreUiDialogView.isModalDialogShowing())
+            assertThat(CoreUiDialogView.isModalDialogShowing(reachRecord.getReporter()))
+                .isFalse();
+        }
+
+        @Test
+        void filesAReachIntoTheCoreUiThatFails() {
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(mock(CampaignUIAPI.class));
+
+            CoreUiDialogView.isModalDialogShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.takeReportedFailure().breakage().failureSite())
+                .isEqualTo("looking for a modal dialog over the core UI");
+        }
+
+        @Test
+        void filesNothingBeforeThereIsACampaignUi() {
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
+
+            CoreUiDialogView.isModalDialogShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class ResolveModalPresence {
+
+        private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
+        private MockedStatic<Global> globalMock;
+        private SectorAPI sectorMock;
+
+        @BeforeEach
+        void setUp() {
+            sectorMock = mock(SectorAPI.class);
+            globalMock = mockStatic(Global.class);
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(sectorMock);
+        }
+
+        @AfterEach
+        void tearDown() {
+            globalMock.close();
+        }
+
+        @Test
+        void answersNoModalAndFilesAReachIntoTheCoreUiThatFails() {
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(mock(CampaignUIAPI.class));
+
+            assertThat(CoreUiDialogView.resolveModalPresence(reachRecord.getReporter()))
+                .isEqualTo(OverlayPresence.NONE);
+            assertThat(reachRecord.takeReportedFailure().breakage().failureSite())
+                .isEqualTo("looking for a modal dialog over the core UI");
+        }
+
+        @Test
+        void filesNothingBeforeThereIsACampaignUi() {
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
+
+            CoreUiDialogView.resolveModalPresence(reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
                 .isFalse();
         }
     }

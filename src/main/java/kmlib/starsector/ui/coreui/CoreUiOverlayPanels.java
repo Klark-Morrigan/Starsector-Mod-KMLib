@@ -4,6 +4,8 @@ import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.api.ui.UIPanelAPI;
 
+import kmlib.starsector.compatibility.GameReachReporter;
+
 /**
  * Standing a panel of one's own in the core UI's own widget tree, and taking it off again.
  *
@@ -38,26 +40,43 @@ import com.fs.starfarer.api.ui.UIPanelAPI;
  */
 public final class CoreUiOverlayPanels {
 
+    // What a core UI that will not take a panel is reported as having been doing.
+    private static final String FAILURE_SITE = "standing a panel over a core screen";
+
     private CoreUiOverlayPanels() {
     }
 
     /**
      * Stands {@code panel} in the core UI in force and raises it above the screen's own widgets.
      *
-     * @param panel the panel to stand up, typically from {@code SettingsAPI.createCustom}
+     * <p>A reach that fails, and a core UI that is no longer a panel taking children, are filed
+     * through the reporter as the caller's loss. No core UI at all is not: there is none between
+     * screens, and a caller asking then has simply asked early.
+     *
+     * @param panel    the panel to stand up, typically from {@code SettingsAPI.createCustom}
+     * @param reporter where a core UI that will not take a panel is filed, for the mod standing it,
+     *                 or {@link GameReachReporter#UNREPORTED} for a panel with a fallback of its own
      * @return where the layout will place it, for the caller to position - or null when there is no
      *         core UI, when it is not a panel that takes children, or when the reach into it failed,
      *         all of which leave the screen exactly as it was
      */
-    public static PositionAPI attachOverlayPanel(UIComponentAPI panel) {
+    public static PositionAPI attachOverlayPanel(UIComponentAPI panel, GameReachReporter reporter) {
 
         try {
-            return attachOverlayPanelTo(CoreUiTree.resolveActiveCoreUi(), panel);
+            var coreUi = CoreUiTree.resolveActiveCoreUi();
+            if (coreUi != null && !(coreUi instanceof UIPanelAPI)) {
 
-        } catch (Throwable cannotReachCoreUi) {
+                reporter.recordReachFailure(
+                    FAILURE_SITE,
+                    "the core UI, a " + coreUi.getClass().getName() + " and not a UIPanelAPI");
+            }
+            return attachOverlayPanelTo(coreUi, panel);
+
+        } catch (Throwable exception) {
 
             // The reach raises on a hop that is absent rather than empty. Nothing was added, so the
             // caller's own answer - no panel is up - is already the truthful one.
+            reporter.recordReachFailure(FAILURE_SITE, "the core UI's hops", exception);
             return null;
         }
     }
@@ -76,7 +95,7 @@ public final class CoreUiOverlayPanels {
         try {
             detachOverlayPanelFrom(CoreUiTree.resolveActiveCoreUi(), panel);
 
-        } catch (Throwable cannotReachCoreUi) {
+        } catch (Throwable swallowedException) {
             // Nothing to undo and nothing to report: see above.
         }
     }

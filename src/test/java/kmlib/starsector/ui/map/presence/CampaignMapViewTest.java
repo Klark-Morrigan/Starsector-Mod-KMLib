@@ -9,6 +9,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
@@ -38,6 +39,8 @@ import static org.mockito.Mockito.when;
  * only pass under the game's non-verifying JVM.
  */
 class CampaignMapViewTest {
+
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
 
     private MockedStatic<Global> globalMock;
     private SectorAPI sectorMock;
@@ -82,7 +85,7 @@ class CampaignMapViewTest {
                 .when(Global::getSector)
                 .thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -92,7 +95,7 @@ class CampaignMapViewTest {
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -102,7 +105,7 @@ class CampaignMapViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.FLEET);
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -118,7 +121,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -133,7 +136,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -142,7 +145,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -152,7 +155,7 @@ class CampaignMapViewTest {
             // what separates this from the mode reads.
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -161,7 +164,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, null);
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -170,7 +173,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildSystemLocation());
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -180,7 +183,7 @@ class CampaignMapViewTest {
             when(sectorMock.getUIData())
                 .thenReturn(mock(PersistentUIDataAPI.class));
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -191,7 +194,56 @@ class CampaignMapViewTest {
             // rather than end the frame.
             stubUiDataFailingToLink();
 
-            assertThat(CampaignMapView.isSectorMapShowing())
+            assertThat(CampaignMapView.isSectorMapShowing(reachRecord.getReporter()))
+                .isFalse();
+        }
+
+        @Test
+        void filesUiDataOfAnotherTypeAsABrokenReach() {
+
+            when(sectorMock.getUIData())
+                .thenReturn(mock(PersistentUIDataAPI.class));
+
+            CampaignMapView.isSectorMapShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.takeReportedFailure().breakage().failureSite())
+                .isEqualTo("reading the sector map's view state");
+        }
+
+        @Test
+        void filesUiDataThatNoLongerLinksWithWhatWasThrown() {
+
+            stubUiDataFailingToLink();
+
+            CampaignMapView.isSectorMapShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.takeReportedFailure().cause())
+                .isInstanceOf(NoSuchFieldError.class);
+        }
+
+        @Test
+        void filesNothingOffTheMapTab() {
+            // The concrete read is not taken off the map tab at all, so UI data it could not read
+            // there is never met.
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.FLEET);
+            when(sectorMock.getUIData())
+                .thenReturn(mock(PersistentUIDataAPI.class));
+
+            CampaignMapView.isSectorMapShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
+
+        @Test
+        void filesNothingForASystemSubView() {
+            // Not showing, and ordinarily so: a map on a star system is a map read correctly.
+            stubUiDataWithStarscape(false, buildSystemLocation());
+
+            CampaignMapView.isSectorMapShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
                 .isFalse();
         }
     }
@@ -206,7 +258,7 @@ class CampaignMapViewTest {
                 .when(Global::getSector)
                 .thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -216,7 +268,7 @@ class CampaignMapViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.FLEET);
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -225,7 +277,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -234,7 +286,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -243,7 +295,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(true, null);
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -253,7 +305,7 @@ class CampaignMapViewTest {
             // declines it exactly as the showing read does.
             stubUiDataWithStarscape(true, buildSystemLocation());
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -262,7 +314,7 @@ class CampaignMapViewTest {
             // An unreadable filter is neither on nor off, so this read fails closed too.
             when(sectorMock.getUIData()).thenReturn(mock(PersistentUIDataAPI.class));
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -271,7 +323,7 @@ class CampaignMapViewTest {
 
             stubUiDataFailingToLink();
 
-            assertThat(CampaignMapView.isSectorMapInStarscapeMode())
+            assertThat(CampaignMapView.isSectorMapInStarscapeMode(reachRecord.getReporter()))
                 .isFalse();
         }
     }
@@ -286,7 +338,7 @@ class CampaignMapViewTest {
                 .when(Global::getSector)
                 .thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -296,7 +348,7 @@ class CampaignMapViewTest {
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -306,7 +358,7 @@ class CampaignMapViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.FLEET);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -315,7 +367,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(true, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -324,7 +376,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildHyperspaceLocation());
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -333,7 +385,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, null);
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isTrue();
         }
 
@@ -342,7 +394,7 @@ class CampaignMapViewTest {
 
             stubUiDataWithStarscape(false, buildSystemLocation());
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -353,7 +405,7 @@ class CampaignMapViewTest {
             when(sectorMock.getUIData())
                 .thenReturn(mock(PersistentUIDataAPI.class));
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
 
@@ -362,7 +414,7 @@ class CampaignMapViewTest {
 
             stubUiDataFailingToLink();
 
-            assertThat(CampaignMapView.isSectorMapWithStarscapeOff())
+            assertThat(CampaignMapView.isSectorMapWithStarscapeOff(reachRecord.getReporter()))
                 .isFalse();
         }
     }

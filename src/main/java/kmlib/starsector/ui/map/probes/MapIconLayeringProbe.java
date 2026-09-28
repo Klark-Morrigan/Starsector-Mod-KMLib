@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.CampaignTerrainAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.terrain.NebulaTerrainPlugin;
 
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.map.MapIconLayering;
 
 import java.util.Map;
@@ -38,12 +39,17 @@ public final class MapIconLayeringProbe {
      * <p>Costs a walk down the widget tree and a pass over the icon map, so a caller on a per-frame
      * path should ask only while it would act on the answer.
      *
-     * @param entity the entity whose icon to place; null answers
-     *        {@link MapIconLayering#UNREADABLE}
+     * @param entity   the entity whose icon to place; null answers
+     *                 {@link MapIconLayering#UNREADABLE}
+     * @param reporter where an order that cannot be read is filed, for the mod acting on the answer
      * @return whether that icon clears the map's nebulae, is buried under them, or cannot be placed
      */
-    public static MapIconLayering readLayeringOf(SectorEntityToken entity) {
-        var icons = entity == null ? null : MapWidgetIcons.readIconMapOfShownMap();
+    public static MapIconLayering readLayeringOf(SectorEntityToken entity, GameReachReporter reporter) {
+
+        var icons = entity == null
+            ? null
+            : MapWidgetIcons.readIconMapOfShownMap(reporter);
+
         return icons == null
             ? MapIconLayering.UNREADABLE
             : readLayeringIn(icons, entity);
@@ -61,12 +67,16 @@ public final class MapIconLayeringProbe {
      * @return that entity's layering within this map
      */
     static MapIconLayering readLayeringIn(Map<?, ?> icons, SectorEntityToken entity) {
+
         var entityPosition = -1;
         var lastNebulaPosition = -1;
         var position = 0;
+
         for (var iconKey : icons.keySet()) {
+
             if (iconKey == entity) {
                 entityPosition = position;
+
             } else if (isNebulaIcon(iconKey)) {
                 lastNebulaPosition = position;
             }
@@ -83,6 +93,7 @@ public final class MapIconLayeringProbe {
     }
 
     private static boolean isNebulaIcon(Object iconKey) {
+
         return iconKey instanceof CampaignTerrainAPI terrain
             && terrain.getPlugin() instanceof NebulaTerrainPlugin;
     }

@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.coreui;
 
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * accessor, are in-game facts.
  */
 class CodexViewTest {
+
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
 
     @Nested
     class IsCodexShowingOn {
@@ -73,7 +77,16 @@ class CodexViewTest {
         @Test
         void isCodexShowingIsFalseBeforeTheGameHasStoodUpAState() {
 
-            assertThat(CodexView.isCodexShowing())
+            assertThat(CodexView.isCodexShowing(reachRecord.getReporter()))
+                .isFalse();
+        }
+
+        @Test
+        void filesNothingBeforeTheGameHasStoodUpAState() {
+            // A game still starting has no state to ask, which is no broken reach.
+            CodexView.isCodexShowing(reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
                 .isFalse();
         }
     }

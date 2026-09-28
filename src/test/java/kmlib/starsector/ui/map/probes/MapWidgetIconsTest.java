@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.map.probes;
 
+import kmlib.starsector.compatibility.GameReachReporter;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.map.probes.MapIconOrderWidgetFake;
 
@@ -24,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MapWidgetIconsTest {
 
     private static final Object NO_MAP_TAB = null;
+
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
 
     @Nested
     class ReadIconMapUnder {
@@ -58,7 +62,7 @@ class MapWidgetIconsTest {
         @Test
         void answersNothingWhileNoMapScreenIsUp() {
             // The ordinary state on every screen but the map ones, which is nearly all of them.
-            assertThat(MapWidgetIcons.readIconMapUnder(NO_MAP_TAB))
+            assertThat(MapWidgetIcons.readIconMapUnder(NO_MAP_TAB, reachRecord.getReporter()))
                 .isNull();
         }
 
@@ -69,8 +73,28 @@ class MapWidgetIconsTest {
             // are told apart in the log rather than in what comes back.
             var mapTabFake = new CoreUiComponentFake(new CoreUiComponentFake());
 
-            assertThat(MapWidgetIcons.readIconMapUnder(mapTabFake))
+            assertThat(MapWidgetIcons.readIconMapUnder(mapTabFake, reachRecord.getReporter()))
                 .isNull();
+        }
+
+        @Test
+        void filesATabWithNoComponentCarryingTheAccessor() {
+            // Every map tab holds the widget, so a tab holding none is a build that renamed it.
+            MapWidgetIcons.readIconMapUnder(
+                new CoreUiComponentFake(new CoreUiComponentFake()),
+                reachRecord.getReporter());
+
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("the map widget's getIcons");
+        }
+
+        @Test
+        void filesNothingWhileNoMapScreenIsUp() {
+
+            MapWidgetIcons.readIconMapUnder(NO_MAP_TAB, reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
         }
     }
 
@@ -78,6 +102,6 @@ class MapWidgetIconsTest {
     // that is what the assertions are about; the icons themselves are never read, here or anywhere
     // else - every rule over this map is about its keys and their order.
     private static List<Object> readIconKeysUnder(Object mapTab) {
-        return new ArrayList<>(MapWidgetIcons.readIconMapUnder(mapTab).keySet());
+        return new ArrayList<>(MapWidgetIcons.readIconMapUnder(mapTab, GameReachReporter.UNREPORTED).keySet());
     }
 }

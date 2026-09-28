@@ -7,6 +7,7 @@ import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.intel.IntelScreenView;
@@ -48,7 +49,10 @@ public final class ShownMapTab {
     // The live intel screen, since the visor is reached by walking the running game's widget tree.
     // Held here rather than taken per call so a caller in a render pass supplies nothing; the
     // package-private read below is the seam a caller with a view of its own uses instead.
-    private static final IntelScreenView INTEL_SCREEN = new VanillaIntelScreenView();
+    //
+    // Files nothing: this answers for whichever caller asks, so it knows no mod to file under, and a
+    // mod whose feature rests on the intel screen reads it through a view holding its own reporter.
+    private static final IntelScreenView INTEL_SCREEN = new VanillaIntelScreenView(GameReachReporter.UNREPORTED);
 
     // Says once per session that this recognition no longer fits, rather than on every frame a
     // caller asks.

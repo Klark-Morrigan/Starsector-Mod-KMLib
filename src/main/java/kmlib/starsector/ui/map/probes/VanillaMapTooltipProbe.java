@@ -3,6 +3,7 @@ package kmlib.starsector.ui.map.probes;
 import com.fs.starfarer.api.Global;
 
 import kmlib.logging.SessionWarning;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;
@@ -58,7 +59,8 @@ import java.util.function.Supplier;
  *
  * <p>An instance rather than a static holder so a caller can put its own probe in place: whether
  * the map is drawing its own tooltip decides whether that caller draws at all, which is too much
- * to hang on a reach nothing can substitute.
+ * to hang on a reach nothing can substitute. It is also what lets each consumer's probe file a
+ * broken read through that consumer's own reporter.
  */
 public final class VanillaMapTooltipProbe {
 
@@ -85,22 +87,34 @@ public final class VanillaMapTooltipProbe {
     // broken read silence the news of another's.
     private final SessionWarning warning = new SessionWarning(LOG);
 
+    // Where a read that fails outright is filed. A read finding no tooltip is not filed, that being
+    // what every frame without one finds.
+    private final GameReachReporter reporter;
+
     // The last diagnostic line logged, so the probe narrates only when its outcome changes rather
     // than every frame the map is up.
     private String lastLoggedOutcome;
 
-    /** Searches the core tab the player has open - the root a caller reading a vanilla host wants. */
-    public VanillaMapTooltipProbe() {
-        this(CoreUiTree::resolveCurrentTab);
+    /**
+     * Searches the core tab the player has open - the root a caller reading a vanilla host wants.
+     *
+     * @param reporter where a read that fails outright is filed, for the mod standing aside for the
+     *                 tooltip
+     */
+    public VanillaMapTooltipProbe(GameReachReporter reporter) {
+        this(CoreUiTree::resolveCurrentTab, reporter);
     }
 
     /**
      * @param readSearchRoot the widget whose subtree holds the map surface being reasoned about, and
      *                       null on a frame that shows none; it may raise, which counts as a failed
      *                       read like any other hop into the live tree
+     * @param reporter       where a read that fails outright is filed, for the mod standing aside
+     *                       for the tooltip
      */
-    public VanillaMapTooltipProbe(Supplier<Object> readSearchRoot) {
+    public VanillaMapTooltipProbe(Supplier<Object> readSearchRoot, GameReachReporter reporter) {
         this.readSearchRoot = readSearchRoot;
+        this.reporter = reporter;
     }
 
     /**
@@ -109,12 +123,11 @@ public final class VanillaMapTooltipProbe {
      *         falls back to its own drawing rather than acting on a broken read
      */
     public Object findShownTooltip() {
+
         try {
-
             var searchRoot = readSearchRoot.get();
-
             if (searchRoot == null) {
-                reportReachFailure("no search root");
+                narrateUnreachedRoot("no search root");
                 return null;
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
@@ -124,14 +137,20 @@ public final class VanillaMapTooltipProbe {
                 : null;
 
             var tooltip = SubtreeSearch.findFirstUnder(
-                searchRoot, component -> readShownTooltipOf(component, trace));
+                searchRoot,
+                component -> readShownTooltipOf(component, trace));
 
-            reportWalkOutcome(tooltip != null, trace);
+            narrateWalkOutcome(tooltip != null, trace);
             return tooltip;
 
-        } catch (Throwable failure) {
+        } catch (Throwable exception) {
 
-            warnOnce(failure);
+            warnOnce(exception);
+            reporter.recordReachFailure(
+                "looking for the game's own tooltip on the map",
+                "the map's tooltip hosts",
+                exception);
+
             return null;
         }
     }
@@ -162,6 +181,7 @@ public final class VanillaMapTooltipProbe {
     // reads as faded out and so does not suppress our overlay. Any unreadable fader returns false, so an
     // uncertain read leaves our overlay drawing (fail-open) rather than hiding it on a guess.
     static boolean isTooltipVisible(Object tooltip) {
+
         try {
             var fader = CoreUiTree.invokeNoArg(tooltip, GET_FADER_METHOD);
 
@@ -169,7 +189,8 @@ public final class VanillaMapTooltipProbe {
                 && CoreUiTree.invokeNoArg(fader, IS_FADED_OUT_METHOD) instanceof Boolean fadedOut
                 && !fadedOut;
 
-        } catch (Throwable cannotReadFader) {
+        } catch (Throwable exception) {
+
             return false;
         }
     }
@@ -203,7 +224,6 @@ public final class VanillaMapTooltipProbe {
         }
 
         var tooltip = findTooltipShownBy(component);
-
         if (tooltip == null || !isStandardTooltip(tooltip)) {
             return null;
         }
@@ -228,20 +248,22 @@ public final class VanillaMapTooltipProbe {
     // The walk never started: the root to search under answered nothing, so there is no verdict to
     // explain beyond why. Separate from the outcome below because the two say different things with
     // different material - one names a hop, the other describes a completed walk - and a single
-    // reporter taking both would take one of them as null at each of its call sites.
-    private void reportReachFailure(String reachFailure) {
+    // narration taking both would take one of them as null at each of its call sites. A DEBUG line
+    // only: an empty root is what every frame showing no map surface gives, and files nothing.
+    private void narrateUnreachedRoot(String unreachedRoot) {
 
         // Guarded before the line is composed rather than inside the emit, because this runs per frame
-        // and the composition is the only cost either reporter has when nobody is listening.
+        // and the composition is the only cost either narration has when nobody is listening.
         if (LOG.isDebugEnabled()) {
-            logOutcomeChange("verdict=false (" + reachFailure + ")");
+            logOutcomeChange("verdict=false (" + unreachedRoot + ")");
         }
     }
 
     // The walk ran: the verdict, and what it saw on the way when the trace was built.
-    private void reportWalkOutcome(boolean verdict, WalkTrace trace) {
+    private void narrateWalkOutcome(boolean verdict, WalkTrace trace) {
 
         if (LOG.isDebugEnabled()) {
+
             logOutcomeChange("verdict=" + verdict
                 + " " + (trace == null ? "" : trace.describeWalk()));
         }
@@ -260,6 +282,7 @@ public final class VanillaMapTooltipProbe {
     }
 
     private void warnOnce(Throwable failure) {
+
         warning.warnOnce(
             "Could not read the vanilla map tooltip state by reflection; "
                 + "the overlay tooltip will not suppress for it. "
@@ -292,6 +315,7 @@ public final class VanillaMapTooltipProbe {
         }
 
         private String describeWalk() {
+
             return "root=" + rootClassName
                 + " visited=" + nodesVisited
                 + " shownTooltips=" + shownTooltips;

@@ -7,6 +7,7 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.buttons.VanillaButtonLabel;
 import kmlib.starsector.ui.tooltip.Tooltips;
 import kmlib.text.KmlibStrings;
@@ -41,6 +42,12 @@ import java.util.function.Consumer;
  * and a caller with one case to handle. A control appended to another party's widget must not be
  * able to take anything down with it, and that includes being unable to take down the row it could
  * not get onto.
+ *
+ * <p>The refusals that say the row is no longer the shape the game used to build are filed through
+ * the reporter of the mod standing the toggle, as that mod's loss: a row this cannot build on, a
+ * button whose state cannot be read, and words a key cannot be written into. A row with no room, or
+ * one not measured yet, is not filed - another mod arriving first and a layout still settling are
+ * ordinary, and say nothing about the game.
  */
 public final class MapFilterToggle {
 
@@ -80,15 +87,16 @@ public final class MapFilterToggle {
 
     private final ButtonAPI button;
 
-    // What the button was built reading. Kept because the button will not answer for its own words -
-    // the published text accessors serve a different kind of button than a filter row holds - so
-    // this is the only handle on which of the labels beneath it is the one that draws them.
-    private final String label;
+    // What the button was built from, held past the append for the key announcement. Its words
+    // because the button will not answer for its own - the published text accessors serve a
+    // different kind of button than a filter row holds - so they are the only handle on which of the
+    // labels beneath it draws them; its reporter because that reach under the button can fail too.
+    private final FilterToggleRequest request;
 
-    private MapFilterToggle(MapFilterRow row, ButtonAPI button, String label) {
+    private MapFilterToggle(MapFilterRow row, ButtonAPI button, FilterToggleRequest request) {
         this.row = row;
         this.button = button;
-        this.label = label;
+        this.request = request;
     }
 
     /**
@@ -99,20 +107,27 @@ public final class MapFilterToggle {
      * @param onToggled what to run when it is clicked, which is called after the button has already
      *                  flipped its own state - so a caller reads that state back off the handle
      *                  returned here rather than tracking it
+     * @param reporter  where a row no longer the game's usual shape is filed, for the mod standing
+     *                  the toggle
      * @return the handle to drive it by, or null when the row cannot be measured, has no room left,
      *         or is not a shape a button can be built on - each of which is logged once and none of
      *         which is an error, the row being somebody else's
      */
-    public static MapFilterToggle appendToRow(MapFilterRow row, String label, Runnable onToggled) {
+    public static MapFilterToggle appendToRow(
+            MapFilterRow row,
+            String label,
+            Runnable onToggled,
+            GameReachReporter reporter) {
 
         var buttonSize = measureButtonFor(row);
         if (buttonSize == null) {
             return null;
         }
 
-        var appendedButton = VanillaToggleFactory.appendToggle(row, label, buttonSize, onToggled);
+        var request = new FilterToggleRequest(label, onToggled, reporter);
+        var appendedButton = VanillaToggleFactory.appendToggle(row, buttonSize, request);
 
-        return adoptAppendedButton(row, appendedButton, label);
+        return adoptAppendedButton(row, appendedButton, request);
     }
 
     /**
@@ -145,12 +160,12 @@ public final class MapFilterToggle {
                 width,
                 body);
 
-        } catch (RuntimeException failure) {
+        } catch (RuntimeException exception) {
 
             TOOLTIP_WARNING.warnOnce(
                 "The control appended to the map's filter row could not be given a hover tooltip; "
                     + "it is left standing without one.",
-                failure);
+                exception);
         }
     }
 
@@ -183,7 +198,6 @@ public final class MapFilterToggle {
         }
 
         button.setShortcut(keycode, IS_SHORTCUT_SPELLED_OUT);
-
         announceShortcutInLabel(keycode);
     }
 
@@ -245,7 +259,7 @@ public final class MapFilterToggle {
             return;
         }
 
-        var buttonLabel = VanillaButtonLabel.resolveLabelOf(button, label);
+        var buttonLabel = VanillaButtonLabel.resolveLabelOf(button, request.label(), request.reporter());
 
         // Already said where it happened. The key is bound either way, so what is lost is the
         // telling rather than the control.
@@ -256,14 +270,14 @@ public final class MapFilterToggle {
         try {
             buttonLabel.announceShortcut(keyName);
 
-        } catch (RuntimeException failure) {
+        } catch (RuntimeException exception) {
 
             // Saying it reads the palette a key is drawn in, which is one more thing that can be
             // unavailable. The binding is already made, so this costs the words and not the key.
             SHORTCUT_WARNING.warnOnce(
                 "The key bound to the control on the map's filter row could not be written into its "
                     + "words; it is left answering a key it does not announce.",
-                failure);
+                exception);
         }
     }
 
@@ -272,7 +286,9 @@ public final class MapFilterToggle {
     // not starting at zero in it.
     private static float computeFreeWidthOf(Rectangle rowBox, Rectangle lastButtonBox) {
 
-        var usedWidth = lastButtonBox.x() + lastButtonBox.width() - rowBox.x();
+        var usedWidth = lastButtonBox.x()
+            + lastButtonBox.width()
+            - rowBox.x();
 
         return rowBox.width() - usedWidth;
     }
@@ -290,23 +306,29 @@ public final class MapFilterToggle {
         // nothing to match, and a button laid at a guess would be the one thing on the row that did
         // not look like its neighbours.
         if (rowBox == null || lastButtonBox == null) {
+
             WARNING.warnOnce(
                 "The map's filter row could not be measured, so no control is appended to it.");
+
             return null;
         }
 
         var buttonSize = new ButtonSize(lastButtonBox.width(), rowBox.height());
 
         if (buttonSize.width() <= 0f || buttonSize.height() <= 0f) {
+
             WARNING.warnOnce(
                 "The map's filter row measures to nothing, so no control is appended to it.");
+
             return null;
         }
 
         if (computeFreeWidthOf(rowBox, lastButtonBox) < BUTTON_GAP + buttonSize.width()) {
+
             WARNING.warnOnce(
                 "The map's filter row has no room left for another control; it is left as it was "
                     + "found.");
+
             return null;
         }
 
@@ -323,18 +345,25 @@ public final class MapFilterToggle {
     private static MapFilterToggle adoptAppendedButton(
             MapFilterRow row,
             Object appendedButton,
-            String label) {
+            FilterToggleRequest request) {
 
         if (appendedButton instanceof ButtonAPI button) {
-            return new MapFilterToggle(row, button, label);
+            return new MapFilterToggle(row, button, request);
         }
 
-        // Null is the build's own refusal, already logged where it happened. Anything else is a
-        // button of a kind this cannot drive, which is news of its own.
+        // Null is the build's own refusal, already logged and filed where it happened. Anything else
+        // is a button of a kind this cannot drive, which is news of its own.
         if (appendedButton != null) {
+
             WARNING.warnOnce(
                 "The map's filter row builds buttons whose state cannot be read, so the control "
                     + "appended to it cannot be driven.");
+
+            request.reporter().recordReachFailure(
+                VanillaToggleFactory.FAILURE_SITE,
+                "the filter row's buttons, a "
+                    + appendedButton.getClass().getName()
+                    + " and not a ButtonAPI");
         }
 
         return null;

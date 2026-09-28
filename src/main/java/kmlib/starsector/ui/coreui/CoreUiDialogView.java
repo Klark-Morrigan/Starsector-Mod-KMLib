@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.coreui;
 
+import kmlib.starsector.compatibility.GameReachReporter;
+
 /**
  * Whether a modal dialog is raised over the core UI right now - a confirmation prompt, a picker, or
  * anything else a core screen stands up in front of itself and takes the whole screen for - and, for
@@ -51,15 +53,22 @@ public final class CoreUiDialogView {
     // keeps a caller fading on it from being left drawn over a dialog it cannot measure.
     private static final float FULLY_RAISED = 1f;
 
+    // What a failed walk is reported as, whichever read took it. Only a walk that throws is filed:
+    // finding no modal is what nearly every frame finds.
+    private static final String FAILURE_SITE = "looking for a modal dialog over the core UI";
+    private static final String BROKEN_REACH = "the core UI's hops";
+
     private CoreUiDialogView() {
     }
 
     /**
+     * @param reporter where a reach that fails outright is filed, for the mod standing aside for a
+     *                 modal
      * @return whether a modal dialog stands over the core UI this frame, and {@code false} whenever
      *         that cannot be established - there being no campaign yet, no core UI in force, or the
      *         reach into it having failed outright
      */
-    public static boolean isModalDialogShowing() {
+    public static boolean isModalDialogShowing(GameReachReporter reporter) {
 
         // This library's own overlays first: a flag read over a holder, which is cheaper than the
         // walk, and an overlay of ours holds the screen exactly as the game's modal does.
@@ -70,10 +79,11 @@ public final class CoreUiDialogView {
         try {
             return isModalDialogShowingUnder(CoreUiTree.resolveActiveCoreUi());
 
-        } catch (Throwable cannotReachCoreUi) {
+        } catch (Throwable exception) {
 
             // The reach raises on a hop that is absent rather than empty, leaving each caller to
             // apply its own policy. This one's is the fail-open answer above.
+            reporter.recordReachFailure(FAILURE_SITE, BROKEN_REACH, exception);
             return false;
         }
     }
@@ -88,10 +98,12 @@ public final class CoreUiDialogView {
      * <p>A modal reads as raised until its fade has fully run out, which is how long the game keeps it in
      * the tree intercepting - so the flag covers the dismissal as well as the arrival.
      *
+     * @param reporter where a reach that fails outright is filed, for the mod standing aside for a
+     *                 modal
      * @return what the modal over the core UI is doing, and {@link OverlayPresence#NONE} whenever there
      *         is none or the reach fails
      */
-    public static OverlayPresence resolveModalPresence() {
+    public static OverlayPresence resolveModalPresence(GameReachReporter reporter) {
 
         // This library's own overlays first, for the reason the presence read above gives. Answered
         // while one is still fading as well as while it holds the screen, so that whatever rides
@@ -104,7 +116,9 @@ public final class CoreUiDialogView {
         try {
             return resolveModalPresenceUnder(CoreUiTree.resolveActiveCoreUi());
 
-        } catch (Throwable cannotReachCoreUi) {
+        } catch (Throwable exception) {
+
+            reporter.recordReachFailure(FAILURE_SITE, BROKEN_REACH, exception);
             return OverlayPresence.NONE;
         }
     }
