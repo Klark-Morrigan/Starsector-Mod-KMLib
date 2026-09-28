@@ -80,6 +80,32 @@ public final class ModStateScopes {
     }
 
     /**
+     * Runs body with one mod installed declaring the game version it was made for, and the settings
+     * answering the version of the game running - the two a report about a reach into the game
+     * states against each other. The mod is named after its ID, a name being what makes the game
+     * list a spec at all; every other mod ID reports no spec.
+     *
+     * @param modId               the mod the body's subject asks about
+     * @param targetedGameVersion the game version that mod's spec declares, or null for none
+     * @param runningGameVersion  the version the game reports for itself, or null for none
+     * @param body                the case to run inside the scope
+     */
+    public static void runWithGameVersions(
+            String modId,
+            String targetedGameVersion,
+            String runningGameVersion,
+            Runnable body) {
+
+        runWithSettingsInstalled(
+            () -> StarsectorSettingsFake.buildSettings()
+                .answerModNames(askedModId -> modId.equals(askedModId) ? modId : null)
+                .answerModGameVersions(askedModId -> modId.equals(askedModId) ? targetedGameVersion : null)
+                .answerGameVersion(runningGameVersion)
+                .installSettings(),
+            body);
+    }
+
+    /**
      * Runs body with settings up but no mod manager on them - the half-built state between a game
      * that is up and one that is not, and the one a guard is easiest to leave out of.
      *
