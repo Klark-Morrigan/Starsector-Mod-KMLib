@@ -121,6 +121,7 @@ The build and release half of the per-locale bundles described under Test fixtur
 
 ### Test fixtures
 
+- **Test JVMs open what the game's JVM opens**: the shared Starsector conventions open `java.util`, `java.lang.reflect`, `java.text` and `java.awt.font` to unnamed modules on every test task, as the game's own `vmparams` does. XStream 1.4.10 cannot be constructed under a modern JDK without them, and a suite gains nothing the running game does not have.
 - **`CoreUiReachFailures`**: the two ways a reach through `CoreUiTree` fails on a game build it does not recognise - the game's own failure wrapped in a checked exception and thrown undeclared, and a member that no longer links - each answering any type, so it stands in for a reach taken as a supplier. A case throwing the unchecked exception that is easiest to write passes against a boundary that catches too little.
 - **`StarsectorSettingsFake` answers game versions**: `answerGameVersion()` for the running game's and `answerModGameVersions()` for the one each mod declares, with `ModStateScopes.runWithGameVersions()` standing both up for one mod.
 - **`GameReachRecordFixture`**: a reporter for a reach into the game filing into a record of the case's own, and that record read back, so whether a probe filed does not depend on which suites ran before it.
