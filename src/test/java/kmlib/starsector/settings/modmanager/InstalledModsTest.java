@@ -117,4 +117,42 @@ final class InstalledModsTest {
                     .isNull());
         }
     }
+
+    @Nested
+    class ReadModGameVersion {
+
+        private static final String GAME_VERSION = "0.98a-RC8";
+
+        @Test
+        void answersTheGameVersionThatModDeclares() {
+
+            ModStateScopes.runWithGameVersions(MOD_ID, GAME_VERSION, null, () ->
+                assertThat(InstalledMods.readModGameVersion(MOD_ID))
+                    .isEqualTo(GAME_VERSION));
+        }
+
+        @Test
+        void answersNothingForAModTheGameListsNoSpecFor() {
+
+            ModStateScopes.runWithGameVersions(MOD_ID, GAME_VERSION, null, () ->
+                assertThat(InstalledMods.readModGameVersion("a_mod_this_install_does_not_have"))
+                    .isNull());
+        }
+
+        @Test
+        void answersNothingForASpecDeclaringNoGameVersion() {
+
+            ModStateScopes.runWithModNamed(MOD_ID, MOD_NAME, () ->
+                assertThat(InstalledMods.readModGameVersion(MOD_ID))
+                    .isNull());
+        }
+
+        @Test
+        void answersNothingBeforeTheGameSettingsAreUp() {
+
+            ModStateScopes.runWithoutGameSettings(() ->
+                assertThat(InstalledMods.readModGameVersion(MOD_ID))
+                    .isNull());
+        }
+    }
 }
