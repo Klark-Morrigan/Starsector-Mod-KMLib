@@ -5,7 +5,7 @@ import com.fs.starfarer.api.ModSpecAPI;
 
 /**
  * What the game knows about an installed mod beyond whether it is enabled: the name it shows for
- * one, and the version that mod declares.
+ * one, the version that mod declares, and the game version it declares it was made for.
  *
  * <p>Beside {@link ModPresence} and guarded the same way, for the same reason: the two states along
  * the way where there is nothing to ask - settings not stood up yet, and settings carrying no mod
@@ -34,7 +34,9 @@ public final class InstalledMods {
 
         var modSpec = readModSpec(modId);
 
-        return modSpec == null ? null : modSpec.getName();
+        return modSpec == null
+            ? null
+            : modSpec.getName();
     }
 
     /**
@@ -53,7 +55,29 @@ public final class InstalledMods {
 
         var modSpec = readModSpec(modId);
 
-        return modSpec == null ? null : modSpec.getVersion();
+        return modSpec == null
+            ? null
+            : modSpec.getVersion();
+    }
+
+    /**
+     * The game version that mod declares it was made for.
+     *
+     * <p>What a report about a reach into the game itself states the running version against: the
+     * mod's code was written for this release, so a game reporting another is the likeliest reason a
+     * reach that held stopped holding.
+     *
+     * @param modId the mod's own ID, as its {@code mod_info.json} declares it; null yields null
+     * @return the declared game version, or null where the game is not up far enough to answer,
+     *         lists no such mod, or holds a spec that states none
+     */
+    public static String readModGameVersion(String modId) {
+
+        var modSpec = readModSpec(modId);
+
+        return modSpec == null
+            ? null
+            : modSpec.getGameVersion();
     }
 
     // The hop down to one mod's spec, and the three states along the way where there is nothing to
@@ -71,6 +95,8 @@ public final class InstalledMods {
         if (settings == null || settings.getModManager() == null) {
             return null;
         }
-        return settings.getModManager().getModSpec(modId);
+        return settings
+            .getModManager()
+            .getModSpec(modId);
     }
 }
