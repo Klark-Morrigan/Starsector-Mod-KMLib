@@ -149,7 +149,21 @@ dependencies {
 plugins.withId('java-test-fixtures') {
     dependencies {
         testFixturesCompileOnly sharedGameJars
+        // The game's save serialiser, which a save-format fixture drives. Compile only: the fixture keeps its types
+        // off its surface, so a consuming suite needs the jar at run time alone, where starsectorCoreJars puts it.
+        testFixturesCompileOnly findCoreJars(['xstream-*.jar'])
     }
+}
+
+// The JDK packages the game's own vmparams open to unnamed modules, opened for every test JVM too. XStream 1.4.10, the
+// game's save serialiser, reflects into their internals while it registers its converters and cannot be constructed
+// at all under a modern JDK without them; opening the set the game opens keeps a save-format suite serialising under
+// the access rules a running game grants, and grants a suite nothing the game itself does not have.
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-opens=java.base/java.util=ALL-UNNAMED',
+        '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+        '--add-opens=java.base/java.text=ALL-UNNAMED',
+        '--add-opens=java.desktop/java.awt.font=ALL-UNNAMED'
 }
 
 tasks.withType(JavaCompile).configureEach {
