@@ -10,8 +10,8 @@ import org.apache.log4j.Logger;
  * so KM's last resort is whatever vanilla text on the same install is drawn in.
  *
  * <p>Read the way vanilla's own {@code Fonts.DEFAULT_SMALL} is: through the settings' {@code getString}.
- * No mod can set the key - the game refuses it from a mod's settings - so only a core overwrite of
- * {@code starsector-core} could move it, and then it names whatever file that overwrite chose. KM only
+ * Any mod can set the key through its own settings, which the game merges, and so can a core overwrite
+ * of {@code starsector-core}; either way it names whatever file that source chose. KM only
  * draws in faces {@link StarsectorFont} names, so a setting naming a face the enum does not know is read
  * as {@link StarsectorFont#VANILLA_INSIGNIA_15}, the face vanilla names, and logged, since a default KM
  * cannot draw in is no default at all. A caller reads it when it settles its faces, not per frame, so
