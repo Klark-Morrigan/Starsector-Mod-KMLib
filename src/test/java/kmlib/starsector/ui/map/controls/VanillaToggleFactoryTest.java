@@ -173,6 +173,15 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
+        void answersNothingAndFilesARowWhoseMembersFailWhenCalled() {
+
+            assertThat(appendToggleTo(new ThrowingFactoryRowFake(), DOES_NOTHING))
+                .isNull();
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("the filter row's members");
+        }
+
+        @Test
         void filesNothingForARowOfTheShapeTheGameBuilds() {
 
             appendToggleTo(MapFilterRowFake.createMapScreenStrip("Starscape"), DOES_NOTHING);
@@ -187,7 +196,9 @@ class VanillaToggleFactoryTest {
     private Object appendToggleTo(Object rowFake, Runnable onToggled) {
 
         return VanillaToggleFactory.appendToggle(
-            new MapFilterRow(rowFake), LABEL, BUTTON_SIZE, onToggled, reachRecord.getReporter());
+            new MapFilterRow(rowFake),
+            BUTTON_SIZE,
+            new FilterToggleRequest(LABEL, onToggled, reachRecord.getReporter()));
     }
 
     /** A row offering nothing that looks like a way to build one of its buttons. */
@@ -244,6 +255,17 @@ class VanillaToggleFactoryTest {
 
         private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
             return null;
+        }
+
+        private void o00001(MapFilterButtonFake button, float width, float height) {
+        }
+    }
+
+    /** A row of the right shape whose button factory fails outright when called. */
+    private static final class ThrowingFactoryRowFake {
+
+        private MapFilterButtonFake o00000(String buttonLabel, Object shortcut) {
+            throw new IllegalStateException("A factory the game changed underneath.");
         }
 
         private void o00001(MapFilterButtonFake button, float width, float height) {

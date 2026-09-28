@@ -127,7 +127,7 @@ public final class VanillaMapTooltipProbe {
         try {
             var searchRoot = readSearchRoot.get();
             if (searchRoot == null) {
-                reportReachFailure("no search root");
+                narrateUnreachedRoot("no search root");
                 return null;
             }
             // Build the diagnostic trace only when DEBUG is on, so a normal frame is a bare tree walk
@@ -140,7 +140,7 @@ public final class VanillaMapTooltipProbe {
                 searchRoot,
                 component -> readShownTooltipOf(component, trace));
 
-            reportWalkOutcome(tooltip != null, trace);
+            narrateWalkOutcome(tooltip != null, trace);
             return tooltip;
 
         } catch (Throwable exception) {
@@ -248,18 +248,19 @@ public final class VanillaMapTooltipProbe {
     // The walk never started: the root to search under answered nothing, so there is no verdict to
     // explain beyond why. Separate from the outcome below because the two say different things with
     // different material - one names a hop, the other describes a completed walk - and a single
-    // reporter taking both would take one of them as null at each of its call sites.
-    private void reportReachFailure(String reachFailure) {
+    // narration taking both would take one of them as null at each of its call sites. A DEBUG line
+    // only: an empty root is what every frame showing no map surface gives, and files nothing.
+    private void narrateUnreachedRoot(String unreachedRoot) {
 
         // Guarded before the line is composed rather than inside the emit, because this runs per frame
-        // and the composition is the only cost either reporter has when nobody is listening.
+        // and the composition is the only cost either narration has when nobody is listening.
         if (LOG.isDebugEnabled()) {
-            logOutcomeChange("verdict=false (" + reachFailure + ")");
+            logOutcomeChange("verdict=false (" + unreachedRoot + ")");
         }
     }
 
     // The walk ran: the verdict, and what it saw on the way when the trace was built.
-    private void reportWalkOutcome(boolean verdict, WalkTrace trace) {
+    private void narrateWalkOutcome(boolean verdict, WalkTrace trace) {
 
         if (LOG.isDebugEnabled()) {
 

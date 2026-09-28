@@ -87,19 +87,16 @@ public final class MapFilterToggle {
 
     private final ButtonAPI button;
 
-    // What the button was built reading. Kept because the button will not answer for its own words -
-    // the published text accessors serve a different kind of button than a filter row holds - so
-    // this is the only handle on which of the labels beneath it is the one that draws them.
-    private final String label;
+    // What the button was built from, held past the append for the key announcement. Its words
+    // because the button will not answer for its own - the published text accessors serve a
+    // different kind of button than a filter row holds - so they are the only handle on which of the
+    // labels beneath it draws them; its reporter because that reach under the button can fail too.
+    private final FilterToggleRequest request;
 
-    // Held past the append for the key announcement, which reaches under the button later.
-    private final GameReachReporter reporter;
-
-    private MapFilterToggle(MapFilterRow row, ButtonAPI button, String label, GameReachReporter reporter) {
+    private MapFilterToggle(MapFilterRow row, ButtonAPI button, FilterToggleRequest request) {
         this.row = row;
         this.button = button;
-        this.label = label;
-        this.reporter = reporter;
+        this.request = request;
     }
 
     /**
@@ -127,9 +124,10 @@ public final class MapFilterToggle {
             return null;
         }
 
-        var appendedButton = VanillaToggleFactory.appendToggle(row, label, buttonSize, onToggled, reporter);
+        var request = new FilterToggleRequest(label, onToggled, reporter);
+        var appendedButton = VanillaToggleFactory.appendToggle(row, buttonSize, request);
 
-        return adoptAppendedButton(row, appendedButton, label, reporter);
+        return adoptAppendedButton(row, appendedButton, request);
     }
 
     /**
@@ -261,7 +259,7 @@ public final class MapFilterToggle {
             return;
         }
 
-        var buttonLabel = VanillaButtonLabel.resolveLabelOf(button, label, reporter);
+        var buttonLabel = VanillaButtonLabel.resolveLabelOf(button, request.label(), request.reporter());
 
         // Already said where it happened. The key is bound either way, so what is lost is the
         // telling rather than the control.
@@ -347,11 +345,10 @@ public final class MapFilterToggle {
     private static MapFilterToggle adoptAppendedButton(
             MapFilterRow row,
             Object appendedButton,
-            String label,
-            GameReachReporter reporter) {
+            FilterToggleRequest request) {
 
         if (appendedButton instanceof ButtonAPI button) {
-            return new MapFilterToggle(row, button, label, reporter);
+            return new MapFilterToggle(row, button, request);
         }
 
         // Null is the build's own refusal, already logged and filed where it happened. Anything else
@@ -362,7 +359,7 @@ public final class MapFilterToggle {
                 "The map's filter row builds buttons whose state cannot be read, so the control "
                     + "appended to it cannot be driven.");
 
-            reporter.recordReachFailure(
+            request.reporter().recordReachFailure(
                 VanillaToggleFactory.FAILURE_SITE,
                 "the filter row's buttons, a "
                     + appendedButton.getClass().getName()

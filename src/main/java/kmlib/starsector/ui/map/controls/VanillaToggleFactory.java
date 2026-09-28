@@ -4,7 +4,6 @@ import com.fs.starfarer.api.Global;
 
 import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
-import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CoreUiMethod;
 import kmlib.starsector.ui.coreui.CoreUiMethods;
 
@@ -109,22 +108,17 @@ final class VanillaToggleFactory {
      * stands it at the end of the row.
      *
      * @param row        the row to append to
-     * @param label      the words on the button
      * @param buttonSize how big to lay it, which a caller measures off the row rather than states
-     * @param onToggled  what to run when it is clicked, which is called after the button has already
-     *                   flipped its own state, so a caller reads that state rather than tracking it
-     * @param reporter   where a row this no longer understands is filed, every such refusal being
-     *                   a game build that changed the row rather than anything ordinary
+     * @param request    the words, the click and the reporter; every refusal here is filed through
+     *                   the reporter, each being a game build that changed the row rather than
+     *                   anything ordinary
      * @return the button, for a caller that goes on to drive it, or null when the row is not a shape
      *         this understands or the write into it failed - which is logged once and is not an
      *         error, the row being somebody else's
      */
-    static Object appendToggle(
-            MapFilterRow row,
-            String label,
-            ButtonSize buttonSize,
-            Runnable onToggled,
-            GameReachReporter reporter) {
+    static Object appendToggle(MapFilterRow row, ButtonSize buttonSize, FilterToggleRequest request) {
+
+        var reporter = request.reporter();
 
         try {
             var rowWidget = row.getRowWidget();
@@ -140,7 +134,7 @@ final class VanillaToggleFactory {
                 return null;
             }
 
-            var button = rowShape.buttonFactory().invokeOn(rowWidget, label, NO_SHORTCUT);
+            var button = rowShape.buttonFactory().invokeOn(rowWidget, request.label(), NO_SHORTCUT);
             if (button == null) {
 
                 WARNING.warnOnce(
@@ -156,7 +150,7 @@ final class VanillaToggleFactory {
 
             listener
                 .setter()
-                .invokeOn(button, createListener(listener, onToggled));
+                .invokeOn(button, createListener(listener, request.onToggled()));
 
             rowShape
                 .rowAppender()

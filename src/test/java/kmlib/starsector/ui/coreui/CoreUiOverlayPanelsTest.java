@@ -1,15 +1,26 @@
 package kmlib.starsector.ui.coreui;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CampaignUIAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
+import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
+import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiPanelFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Pins what a caller raising a panel of its own over a core screen depends on, none of it visible from
@@ -28,6 +39,71 @@ import static org.mockito.Mockito.mock;
  * case rather than an error.
  */
 class CoreUiOverlayPanelsTest {
+
+    @Nested
+    class AttachOverlayPanel {
+
+        private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
+        private final UIComponentAPI overlayPanelMock = mock(UIComponentAPI.class);
+
+        private MockedStatic<Global> globalMock;
+        private CampaignUIAPI campaignUiMock;
+
+        @BeforeEach
+        void setUp() {
+            var sectorMock = mock(SectorAPI.class);
+            campaignUiMock = mock(CampaignUIAPI.class);
+
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(sectorMock);
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(campaignUiMock);
+        }
+
+        @AfterEach
+        void tearDown() {
+            globalMock.close();
+        }
+
+        @Test
+        void answersNothingAndFilesACoreUiThatIsNotAPanel() {
+            // A core UI that no longer answers the published panel interface is a build that
+            // reworked it, never an ordinary screen.
+            when(campaignUiMock.getCurrentInteractionDialog())
+                .thenReturn(CoreHostingDialogFake.createHosting(new CoreUiFake(new CoreUiComponentFake())));
+
+            assertThat(CoreUiOverlayPanels.attachOverlayPanel(overlayPanelMock, reachRecord.getReporter()))
+                .isNull();
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .startsWith("the core UI, a ");
+        }
+
+        @Test
+        void answersNothingAndFilesAReachThatFails() {
+            // A campaign UI offering none of the hops to its core, as a renamed accessor leaves it.
+            assertThat(CoreUiOverlayPanels.attachOverlayPanel(overlayPanelMock, reachRecord.getReporter()))
+                .isNull();
+            assertThat(reachRecord.takeReportedFailure().cause())
+                .isNotNull();
+        }
+
+        @Test
+        void filesNothingBeforeThereIsACampaignUi() {
+            // Between screens there is no core UI, and a caller asking then has only asked early.
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(null);
+
+            CoreUiOverlayPanels.attachOverlayPanel(overlayPanelMock, reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
+    }
 
     @Nested
     class AttachOverlayPanelTo {

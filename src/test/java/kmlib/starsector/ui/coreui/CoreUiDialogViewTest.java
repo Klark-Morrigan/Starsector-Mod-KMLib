@@ -288,6 +288,53 @@ class CoreUiDialogViewTest {
         }
     }
 
+    @Nested
+    class ResolveModalPresence {
+
+        private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
+        private MockedStatic<Global> globalMock;
+        private SectorAPI sectorMock;
+
+        @BeforeEach
+        void setUp() {
+            sectorMock = mock(SectorAPI.class);
+            globalMock = mockStatic(Global.class);
+            globalMock
+                .when(Global::getSector)
+                .thenReturn(sectorMock);
+        }
+
+        @AfterEach
+        void tearDown() {
+            globalMock.close();
+        }
+
+        @Test
+        void answersNoModalAndFilesAReachIntoTheCoreUiThatFails() {
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(mock(CampaignUIAPI.class));
+
+            assertThat(CoreUiDialogView.resolveModalPresence(reachRecord.getReporter()))
+                .isEqualTo(OverlayPresence.NONE);
+            assertThat(reachRecord.takeReportedFailure().breakage().failureSite())
+                .isEqualTo("looking for a modal dialog over the core UI");
+        }
+
+        @Test
+        void filesNothingBeforeThereIsACampaignUi() {
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(null);
+
+            CoreUiDialogView.resolveModalPresence(reachRecord.getReporter());
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
+    }
+
     // Stands for the core UI panel itself: a parent that carries the modal marker, which is the one
     // shape the rule has to look past. Local rather than a shipped fixture because a consuming mod
     // stands up dialogs and components, never a second core UI root.
