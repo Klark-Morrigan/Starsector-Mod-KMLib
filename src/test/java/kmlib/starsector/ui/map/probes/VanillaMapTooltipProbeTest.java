@@ -1,9 +1,12 @@
 package kmlib.starsector.ui.map.probes;
 
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class VanillaMapTooltipProbeTest {
 
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
     @Nested
     class FindShownTooltip {
 
@@ -35,7 +40,7 @@ class VanillaMapTooltipProbeTest {
             // which is the same answer as a surface genuinely showing none.
             var rootFake = new CoreUiComponentFake();
 
-            new VanillaMapTooltipProbe(() -> rootFake).findShownTooltip();
+            createProbeOver(() -> rootFake).findShownTooltip();
 
             assertThat(rootFake.countChildrenReads())
                 .isEqualTo(1);
@@ -44,7 +49,7 @@ class VanillaMapTooltipProbeTest {
         @Test
         void findShownTooltipAnswersNothingWithNoRootToSearch() {
             // The ordinary state on every frame showing no map surface at all.
-            assertThat(new VanillaMapTooltipProbe(() -> null).findShownTooltip())
+            assertThat(createProbeOver(() -> null).findShownTooltip())
                 .isNull();
         }
 
@@ -53,12 +58,41 @@ class VanillaMapTooltipProbeTest {
             // Fail-open, and the direction matters: a root read that broke on some game build leaves
             // the overlay drawing over a possible second box, where the opposite would blank it for
             // the rest of the session.
-            assertThat(new VanillaMapTooltipProbe(() -> {
-                    throw new IllegalStateException("A reach that no longer resolves.");
-                })
+            assertThat(createProbeOver(VanillaMapTooltipProbeTest::throwUnreadableRoot)
                 .findShownTooltip())
                 .isNull();
         }
+
+        @Test
+        void filesARootThatCannotBeRead() {
+
+            createProbeOver(VanillaMapTooltipProbeTest::throwUnreadableRoot)
+                .findShownTooltip();
+
+            assertThat(reachRecord.takeReportedFailure().cause())
+                .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        void filesNothingWithNoRootToSearch() {
+
+            createProbeOver(() -> null).findShownTooltip();
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
+    }
+
+    // A probe over the given root, filing into this case's own record.
+    private VanillaMapTooltipProbe createProbeOver(Supplier<Object> readSearchRoot) {
+
+        return new VanillaMapTooltipProbe(readSearchRoot, reachRecord.getReporter());
+    }
+
+    // A root read that broke on some game build.
+    private static Object throwUnreadableRoot() {
+
+        throw new IllegalStateException("A reach that no longer resolves.");
     }
 
     @Nested

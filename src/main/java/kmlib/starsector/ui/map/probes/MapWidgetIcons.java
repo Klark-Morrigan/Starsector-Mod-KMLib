@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 
 import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 
 import org.apache.log4j.Logger;
@@ -42,6 +43,9 @@ final class MapWidgetIcons {
     // silenced separately.
     private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
+    // What a failed read of the order is reported as having been doing.
+    private static final String FAILURE_SITE = "reading the order the map draws its icons in";
+
     private MapWidgetIcons() {
     }
 
@@ -53,16 +57,24 @@ final class MapWidgetIcons {
      * lives here rather than in each of them. It also means the walk and the reporting of the walk
      * are one thing to keep working, not one plus a copy per caller.
      *
+     * @param reporter where a reach that fails is filed, for the mod acting on the order
      * @return the widget's live icon map, or null when no map is on screen or the reach failed
      */
-    static Map<?, ?> readIconMapOfShownMap() {
-        try {
-            return readIconMapUnder(ShownMapTab.resolveShownMapTab());
+    static Map<?, ?> readIconMapOfShownMap(GameReachReporter reporter) {
 
-        } catch (Throwable failure) {
+        try {
+            return readIconMapUnder(ShownMapTab.resolveShownMapTab(), reporter);
+
+        } catch (Throwable exception) {
+
             // Swallowed rather than raised: callers ask this from inside a render pass or a
             // campaign frame, and a reach that cannot read the tree must not take either down.
-            warnOnce("the map widget's icon map could not be read by reflection", failure);
+            warnOnce("the map widget's icon map could not be read by reflection", exception);
+            reporter.recordReachFailure(
+                FAILURE_SITE,
+                "the core UI's hops down to the map",
+                exception);
+
             return null;
         }
     }
@@ -74,20 +86,23 @@ final class MapWidgetIcons {
      * <p>Left unguarded: it is the tab resolution above that decides what a failed walk means, and a
      * second policy here would have to agree with that one forever.
      *
-     * @param mapTab the tab to search below, or null when no map screen is up
+     * @param mapTab   the tab to search below, or null when no map screen is up
+     * @param reporter where a tab holding no icon map is filed, which no map tab ever is
      * @return the widget's live icon map, or null when there is no tab or nothing under it answers
      */
-    static Map<?, ?> readIconMapUnder(Object mapTab) {
+    static Map<?, ?> readIconMapUnder(Object mapTab, GameReachReporter reporter) {
 
         // Null off the map screens, and quietly so: a screen showing no map is the ordinary state
         // rather than a reach that stopped working.
         if (mapTab == null) {
             return null;
         }
-        var icons = SubtreeSearch.findFirstUnder(mapTab, MapWidgetIcons::readIconMapOf);
 
+        var icons = SubtreeSearch.findFirstUnder(mapTab, MapWidgetIcons::readIconMapOf);
         if (icons == null) {
+
             warnOnce("no component under the map tab answers " + GET_ICONS_METHOD, null);
+            reporter.recordReachFailure(FAILURE_SITE, "the map widget's " + GET_ICONS_METHOD);
         }
         return icons;
     }
@@ -96,6 +111,7 @@ final class MapWidgetIcons {
     // news rather than the consuming mod's. The consequence is worded for the reach rather than for
     // any one caller's use of it, both callers losing the same thing.
     private static void warnOnce(String reason, Throwable failure) {
+
         WARNING.warnOnce(
             "Could not read the map widget's icon order: " + reason
                 + ". Nothing that depends on where an icon sits will work this session.",
@@ -105,11 +121,14 @@ final class MapWidgetIcons {
     // What the search above tries on each component: only the map widget defines the accessor, so
     // the first component that answers is the widget and there is nothing else it could find first.
     private static Map<?, ?> readIconMapOf(Object component) {
+
         try {
             return CoreUiTree.invokeNoArg(component, GET_ICONS_METHOD) instanceof Map<?, ?> icons
                 ? icons
                 : null;
-        } catch (Throwable notTheMapWidget) {
+
+        } catch (Throwable exception) {
+
             // Every component but one is expected to fail this, so an absent accessor is how the
             // walk moves on rather than something to report.
             return null;

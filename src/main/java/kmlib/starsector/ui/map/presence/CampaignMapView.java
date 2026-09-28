@@ -8,6 +8,7 @@ import com.fs.starfarer.campaign.CampaignUIPersistentData;
 
 import kmlib.logging.RearmableWarnings;
 import kmlib.logging.SessionWarning;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CampaignScreenView;
 
 import org.apache.log4j.Logger;
@@ -38,6 +39,10 @@ import org.apache.log4j.Logger;
  * marked do-not-obfuscate, keeping its name stable across game builds. A UI-data object of
  * any other type resolves to "not the sector map", and so does one of that type whose members a
  * game build has changed, so an unreadable signal hides the overlay rather than misplacing it.
+ *
+ * <p>Each read takes the reporter of the mod gating on it, and both ways the concrete read fails
+ * are filed through it: neither is a state any map screen is ordinarily in, so a report never stands
+ * for a screen that simply showed no map.
  */
 public final class CampaignMapView {
 
@@ -49,30 +54,36 @@ public final class CampaignMapView {
     // render frame. One warning for both, being the same news: the map's state cannot be read.
     private static final SessionWarning UNREADABLE_UI_DATA_WARNING = RearmableWarnings.createRearmableWarning(LOG);
 
+    // What a failed read of the map's state is reported as having been doing.
+    private static final String FAILURE_SITE = "reading the sector map's view state";
+
     private CampaignMapView() {
     }
 
     /**
+     * @param reporter where a failed read is filed, for the mod gating on the answer
      * @return whether the sector map is the active core tab and the Sector (not System) sub-view
      *         is showing, whichever way the Starscape filter is set
      */
-    public static boolean isSectorMapShowing() {
-        return resolveSectorMapState().isShowing();
+    public static boolean isSectorMapShowing(GameReachReporter reporter) {
+        return resolveSectorMapState(reporter).isShowing();
     }
 
     /**
+     * @param reporter where a failed read is filed, for the mod gating on the answer
      * @return whether the sector map is showing with the Starscape filter on, the state in which
      *         the game paints the stylised Starscape look in place of the ordinary map
      */
-    public static boolean isSectorMapInStarscapeMode() {
-        return resolveSectorMapState() == SectorMapState.SHOWING_IN_STARSCAPE_MODE;
+    public static boolean isSectorMapInStarscapeMode(GameReachReporter reporter) {
+        return resolveSectorMapState(reporter) == SectorMapState.SHOWING_IN_STARSCAPE_MODE;
     }
 
     /**
+     * @param reporter where a failed read is filed, for the mod gating on the answer
      * @return whether the sector map is showing with the Starscape filter off
      */
-    public static boolean isSectorMapWithStarscapeOff() {
-        return resolveSectorMapState() == SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
+    public static boolean isSectorMapWithStarscapeOff(GameReachReporter reporter) {
+        return resolveSectorMapState(reporter) == SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     /**
@@ -89,6 +100,9 @@ public final class CampaignMapView {
      * {@code starscape=false} beside a state of {@code NOT_SHOWING} says plainly that the sub-view
      * is what closed the gate and not the filter.
      *
+     * <p>Files nothing: a diagnostic line costs no player anything when it cannot be read, and the
+     * reads a mod gates on file the same failure under that mod.
+     *
      * @return the current view-state signals, or a short reason when they cannot be read
      */
     public static String describeViewState() {
@@ -104,18 +118,14 @@ public final class CampaignMapView {
         }
 
         var shownTab = CampaignScreenView.resolveShownCoreTab();
-        var uiSignals = readMapUiSignals();
+        var uiSignals = readMapUiSignals(GameReachReporter.UNREPORTED);
         var isStarscapeOn = uiSignals == null ? null : uiSignals.isStarscapeOn();
         var mapLocation = uiSignals == null ? null : uiSignals.mapLocation();
 
-        return "tab="
-            + shownTab
-            + " starscape="
-            + (isStarscapeOn == null ? "unreadable" : isStarscapeOn)
-            + " mapLocation="
-            + describeLocation(mapLocation)
-            + " state="
-            + classifySectorMapState(shownTab, uiSignals);
+        return "tab=" + shownTab
+            + " starscape=" + (isStarscapeOn == null ? "unreadable" : isStarscapeOn)
+            + " mapLocation=" + describeLocation(mapLocation)
+            + " state=" + classifySectorMapState(shownTab, uiSignals);
     }
 
     /**
@@ -129,10 +139,11 @@ public final class CampaignMapView {
      * keeping the same answer as booleans would take three of them and admit combinations no map is
      * ever in.
      *
+     * @param reporter where a failed read is filed, for the mod gating on the answer
      * @return the state the live signals classify to, or {@link SectorMapState#NOT_SHOWING} when
      *         any of them cannot be read
      */
-    public static SectorMapState resolveSectorMapState() {
+    public static SectorMapState resolveSectorMapState(GameReachReporter reporter) {
 
         var sector = Global.getSector();
         if (sector == null) {
@@ -147,7 +158,7 @@ public final class CampaignMapView {
         // The concrete read only where it can matter: every other screen is decided by the tab,
         // and this is asked on every frame of a game.
         var uiSignals = shownTab == CoreUITabId.MAP
-            ? readMapUiSignals()
+            ? readMapUiSignals(reporter)
             : null;
 
         return classifySectorMapState(shownTab, uiSignals);
@@ -196,12 +207,13 @@ public final class CampaignMapView {
     // The LinkageError is caught here rather than left to the callers, because they are render
     // passes and per-frame reads with no catch of their own: a member this build dropped would
     // otherwise end the frame rather than hide the overlay.
-    private static MapUiSignals readMapUiSignals() {
+    private static MapUiSignals readMapUiSignals(GameReachReporter reporter) {
 
         try {
             var uiData = Global.getSector().getUIData();
 
             if (uiData instanceof CampaignUIPersistentData concreteUiData) {
+
                 var filterData = concreteUiData.getMapFilterData();
 
                 return new MapUiSignals(
@@ -209,9 +221,16 @@ public final class CampaignMapView {
                     filterData == null ? null : filterData.starscape);
             }
             if (uiData != null) {
+
+                var uiDataType = uiData.getClass().getName();
+
                 UNREADABLE_UI_DATA_WARNING.warnOnce("Campaign UI data is a "
-                    + uiData.getClass().getName()
+                    + uiDataType
                     + ", not CampaignUIPersistentData; map-gated overlays stay hidden");
+
+                reporter.recordReachFailure(
+                    FAILURE_SITE,
+                    "the campaign UI data is a " + uiDataType + ", not CampaignUIPersistentData");
             }
             return null;
 
@@ -221,6 +240,12 @@ public final class CampaignMapView {
                 "CampaignUIPersistentData no longer carries what the map's state is read from; "
                     + "map-gated overlays stay hidden",
                 linkageError);
+
+            reporter.recordReachFailure(
+                FAILURE_SITE,
+                "CampaignUIPersistentData's map location or filter",
+                linkageError);
+
             return null;
         }
     }
@@ -232,7 +257,9 @@ public final class CampaignMapView {
         if (location == null) {
             return "null";
         }
-        return location.isHyperspace() ? "hyperspace" : location.getId();
+        return location.isHyperspace()
+            ? "hyperspace"
+            : location.getId();
     }
 
     // The two signals the concrete UI data carries, taken off it together so nothing past the one

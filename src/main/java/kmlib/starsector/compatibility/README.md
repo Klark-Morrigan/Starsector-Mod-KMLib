@@ -16,6 +16,7 @@ what it holds is the channel a binding reports through.
 - [A binding is a third party and a consumer](#a-binding-is-a-third-party-and-a-consumer)
 - [A feature key one mod reused](#a-feature-key-one-mod-reused)
 - [A step that integrates with another mod](#a-step-that-integrates-with-another-mod)
+- [A reach into the game itself](#a-reach-into-the-game-itself)
 - [One record per session](#one-record-per-session)
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
@@ -272,6 +273,43 @@ so a boundary logs one line and the reporter logs the trace only where no block 
 a report that could not be composed,
 and a failure the record dropped because the binding was already reported,
 whose block carries the first failure's trace rather than this one's.
+
+## A reach into the game itself
+
+The game's own code is the third party a mod binds to most:
+widgets walked by name, concrete classes the API does not publish,
+members matched by shape because the obfuscator renames them every build.
+Each such reach already degrades softly,
+and until it reports it degrades only to the log.
+The launcher does not stand in for a report:
+a game release differing in anything but its major is a warning there, and the mod runs.
+
+[`GameReachReporter`](GameReachReporter.java) files those failures with the game as the subject.
+Targeted is the game version the consuming mod declares,
+detected the version running,
+so the diagnosis advises moving the game against that mod's own release,
+or waiting for the mod.
+
+The reporter is the consumer's and is handed to the probe,
+the way a binding to a renderer takes its consumer at selection.
+A probe is shared by every mod reading the same widget,
+so only the reader knows what it loses;
+a probe read by nothing a player would miss - a diagnostic trace,
+or a surface with a fallback of its own - is handed `UNREPORTED`.
+The consumer arrives as a describer, composed on the first failure only,
+and the reporter latches then:
+a reach failing on every frame costs one flag read after its first,
+and no strings are read on a frame where the reach held.
+
+A reach that throws is filed.
+A reach that answers nothing is filed only where nothing is never an ordinary answer on that screen -
+an open intel tab holding no events panel, a map tab holding no icon map, a button missing the words it was just built with -
+since an empty answer that is also what an ordinary frame gives would report a break every time a screen simply showed nothing.
+
+Filed and not raised on screen.
+The screen notice stands in the widget tree these reaches walk,
+and this package sits below the interface packages that would raise it,
+so a report waits for the campaign's dialog.
 
 ## One record per session
 

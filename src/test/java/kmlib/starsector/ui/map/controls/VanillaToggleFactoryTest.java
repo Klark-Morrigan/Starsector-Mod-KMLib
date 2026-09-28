@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.map.controls;
 
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterActionListenerFake;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterButtonFake;
 import kmlib.testfixtures.starsector.ui.map.controls.MapFilterRowFake;
@@ -40,6 +41,8 @@ class VanillaToggleFactoryTest {
 
     private static final Runnable DOES_NOTHING = () -> {
     };
+
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
 
     @Nested
     class AppendToggle {
@@ -150,14 +153,41 @@ class VanillaToggleFactoryTest {
             assertThat(appendToggleTo(new ButtonlessRowFake(), DOES_NOTHING))
                 .isNull();
         }
+
+        @Test
+        void filesARowItNoLongerRecognises() {
+            // Every refusal here is a row the game no longer builds the way it did, so each is filed.
+            appendToggleTo(new BareRowFake(), DOES_NOTHING);
+
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("the filter row's button factory, appender or listener setter");
+        }
+
+        @Test
+        void filesARowThatBuildsNothingWhenAsked() {
+
+            appendToggleTo(new ButtonlessRowFake(), DOES_NOTHING);
+
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("the filter row's button factory");
+        }
+
+        @Test
+        void filesNothingForARowOfTheShapeTheGameBuilds() {
+
+            appendToggleTo(MapFilterRowFake.createMapScreenStrip("Starscape"), DOES_NOTHING);
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
+        }
     }
 
     // The one call under test, with the arguments that never vary between cases bound. What each
     // case is about is which row it is handed, so those are what a reader should have to compare.
-    private static Object appendToggleTo(Object rowFake, Runnable onToggled) {
+    private Object appendToggleTo(Object rowFake, Runnable onToggled) {
 
         return VanillaToggleFactory.appendToggle(
-            new MapFilterRow(rowFake), LABEL, BUTTON_SIZE, onToggled);
+            new MapFilterRow(rowFake), LABEL, BUTTON_SIZE, onToggled, reachRecord.getReporter());
     }
 
     /** A row offering nothing that looks like a way to build one of its buttons. */

@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.buttons;
 
+import kmlib.starsector.compatibility.GameReachReporter;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.ui.label.ButtonLabelFake;
 
@@ -47,6 +49,10 @@ class VanillaButtonLabelTest {
     // one handed to the words is the one the palette answered with.
     private static final Color SHORTCUT_COLOUR = new Color(255, 200, 100);
 
+    private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
+
+    private final GameReachReporter reporter = reachRecord.getReporter();
+
     @BeforeEach
     void installPalette() {
 
@@ -70,7 +76,7 @@ class VanillaButtonLabelTest {
             // carrying the words. Neither hop is optional, and the button itself answers nothing.
             var buttonFake = new ButtonFake(new ButtonLabelFake(LABEL));
 
-            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL))
+            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL, reporter))
                 .isNotNull();
         }
 
@@ -80,7 +86,7 @@ class VanillaButtonLabelTest {
             // writing into the wrong one changes nothing anyone can see and reports nothing.
             var buttonFake = new ButtonFake(new ButtonLabelFake("Starscape"));
 
-            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL))
+            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL, reporter))
                 .isNull();
         }
 
@@ -94,7 +100,7 @@ class VanillaButtonLabelTest {
                 new ButtonLabelFake(""),
                 new ButtonLabelFake(LABEL));
 
-            VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL).announceShortcut(CONTAINED_KEY);
+            VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL, reporter).announceShortcut(CONTAINED_KEY);
 
             assertThat(buttonFake.readLastLabel().readHighlightedRuns())
                 .containsExactly(CONTAINED_KEY);
@@ -104,7 +110,7 @@ class VanillaButtonLabelTest {
         void resolveLabelOfAnswersNothingForWordsNoLabelUnderItReads() {
             var buttonFake = new ButtonFake(new ButtonLabelFake(LABEL));
 
-            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, "Constellations"))
+            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, "Constellations", reporter))
                 .isNull();
         }
 
@@ -115,7 +121,7 @@ class VanillaButtonLabelTest {
             // avoid.
             var buttonFake = new ButtonFake(new ButtonLabelFake(LABEL));
 
-            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, " "))
+            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, " ", reporter))
                 .isNull();
         }
 
@@ -126,7 +132,7 @@ class VanillaButtonLabelTest {
             // is two hops away or nowhere at all.
             var buttonFake = new ButtonFake(new HolderFake(new ButtonLabelFake(LABEL)));
 
-            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL))
+            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL, reporter))
                 .isNull();
         }
 
@@ -136,7 +142,7 @@ class VanillaButtonLabelTest {
             // of the walk ending, not the walk failing - the words may still be down another.
             var buttonFake = new ButtonFake(new ThrowingHolderFake(), new ButtonLabelFake(LABEL));
 
-            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL))
+            assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, LABEL, reporter))
                 .isNotNull();
         }
 
@@ -144,8 +150,27 @@ class VanillaButtonLabelTest {
         void resolveLabelOfAnswersNothingForAWidgetWithNothingUnderIt() {
             // What a reworked game build looks like from here: a button that leads nowhere. Not an
             // error - the widget is somebody else's - so the caller gets one case to handle.
-            assertThat(VanillaButtonLabel.resolveLabelOf(new Object(), LABEL))
+            assertThat(VanillaButtonLabel.resolveLabelOf(new Object(), LABEL, reporter))
                 .isNull();
+        }
+
+        @Test
+        void filesWordsNoLabelUnderTheButtonReads() {
+            // A button the game built just now wears the words it was built with, so not finding
+            // them is a build that moved them.
+            VanillaButtonLabel.resolveLabelOf(new ButtonFake(new ButtonLabelFake("Starscape")), LABEL, reporter);
+
+            assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
+                .isEqualTo("the label under the button");
+        }
+
+        @Test
+        void filesNothingWhereTheWordsAreFound() {
+
+            VanillaButtonLabel.resolveLabelOf(new ButtonFake(new ButtonLabelFake(LABEL)), LABEL, reporter);
+
+            assertThat(reachRecord.hasReported())
+                .isFalse();
         }
     }
 
@@ -211,7 +236,9 @@ class VanillaButtonLabelTest {
 
         var labelFake = new ButtonLabelFake(words);
 
-        VanillaButtonLabel.resolveLabelOf(new ButtonFake(labelFake), words).announceShortcut(keyName);
+        VanillaButtonLabel
+            .resolveLabelOf(new ButtonFake(labelFake), words, GameReachReporter.UNREPORTED)
+            .announceShortcut(keyName);
 
         return labelFake;
     }

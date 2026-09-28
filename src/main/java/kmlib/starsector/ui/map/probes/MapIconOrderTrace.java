@@ -4,6 +4,8 @@ import com.fs.starfarer.api.campaign.CampaignTerrainAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.starsector.compatibility.GameReachReporter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,11 +61,15 @@ public final class MapIconOrderTrace {
      *         the widget tree failed - neither of which the caller can act on differently
      */
     public static String describeTerrainIconOrder() {
+
         // The guard, and the one warning when the reach stops working, belong to the read rather
         // than to either of the things that ask for it - so all this does with a failure is have
-        // nothing to describe.
-        var icons = MapWidgetIcons.readIconMapOfShownMap();
-        return icons == null ? null : describeTerrainIcons(readTerrainIcons(icons));
+        // nothing to describe. Files nothing, a diagnostic line costing no player anything.
+        var icons = MapWidgetIcons.readIconMapOfShownMap(GameReachReporter.UNREPORTED);
+
+        return icons == null
+            ? null
+            : describeTerrainIcons(readTerrainIcons(icons));
     }
 
     /**
@@ -76,9 +82,11 @@ public final class MapIconOrderTrace {
      * @return a one-line description, naming at most the shared cap of them
      */
     static String describeTerrainIcons(List<TerrainIconReading> terrainIcons) {
+
         return "terrainIcons=" + terrainIcons.size()
             + " order=" + ProbeDescriptions.describeUpToCap(
-                terrainIcons, MapIconOrderTrace::describeTerrainIcon);
+                terrainIcons,
+                MapIconOrderTrace::describeTerrainIcon);
     }
 
     /**
@@ -96,9 +104,12 @@ public final class MapIconOrderTrace {
      * @return one reading per terrain-tagged key, in the map's own order
      */
     static List<TerrainIconReading> readTerrainIcons(Map<?, ?> icons) {
+
         var terrainIcons = new ArrayList<TerrainIconReading>();
         var position = 0;
+
         for (var iconKey : icons.keySet()) {
+
             if (iconKey instanceof SectorEntityToken entity && entity.hasTag(Tags.TERRAIN)) {
                 terrainIcons.add(readTerrainIcon(position, entity));
             }
@@ -108,21 +119,27 @@ public final class MapIconOrderTrace {
     }
 
     private static String describeTerrainIcon(TerrainIconReading icon) {
-        return "[" + icon.position() + "] " + icon.terrainType() + " " + icon.pluginTypeName();
+
+        return "[" + icon.position() + "] "
+            + icon.terrainType() + " "
+            + icon.pluginTypeName();
     }
 
     // The tag is what the widget itself sorts on, so an entity carrying it is reported whether or
     // not it turns out to be a terrain - the tag going one way and the type the other is a state
     // worth seeing rather than one to filter out.
     private static TerrainIconReading readTerrainIcon(int position, SectorEntityToken entity) {
+
         if (!(entity instanceof CampaignTerrainAPI terrain)) {
             return new TerrainIconReading(position, UNTYPED_TERRAIN, NO_PLUGIN);
         }
         var plugin = terrain.getPlugin();
+
         return new TerrainIconReading(
             position,
             terrain.getType(),
-            plugin == null ? NO_PLUGIN : plugin.getClass().getSimpleName());
+            plugin == null
+                ? NO_PLUGIN
+                : plugin.getClass().getSimpleName());
     }
-
 }

@@ -1,5 +1,6 @@
 package kmlib.starsector.ui.map.controls;
 
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.ui.coreui.CoreUiTree;
 import kmlib.starsector.ui.map.probes.EmbeddedMap;
 import kmlib.starsector.ui.map.probes.ShownMapTab;
@@ -36,15 +37,35 @@ public final class MapFilterRows {
     /**
      * The filter row of the map the player is looking at.
      *
+     * <p>A reach that fails outright is filed through the reporter and then passed on. Filed here
+     * because only here is the failure known to be the game's reach rather than the caller's own
+     * work; passed on because the caller's policy for a broken reach is still its own. A row that is
+     * simply not there is not filed: a map whose layout has not placed its row yet answers the same.
+     *
+     * @param reporter where a reach that fails outright is filed, for the mod standing a control on
+     *                 the row
      * @return the row of the {@code M} screen's map tab or of the intel screen's lit map visor, or
      *         null when no screen is showing a map or the map on screen has no row to offer
      * @throws RuntimeException when the reach to the current tab is absent or fails outright, which
      *                          is the map read's own contract and is left standing here so a caller
      *                          applies one policy to a broken reach rather than two
      */
-    public static MapFilterRow resolveShownMapFilterRow() {
+    public static MapFilterRow resolveShownMapFilterRow(GameReachReporter reporter) {
 
-        return resolveMapFilterRowOf(ShownMapTab.resolveShownMapTab());
+        try {
+            return resolveMapFilterRowOf(ShownMapTab.resolveShownMapTab());
+
+        } catch (Throwable exception) {
+
+            // Over Throwable, as CoreUiTree asks of the callers of its reach, and rethrown as caught:
+            // nothing in the try declares a checked throw, so the rethrow declares none either.
+            reporter.recordReachFailure(
+                "finding the filter row of the map on screen",
+                "the core UI's hops down to the map",
+                exception);
+
+            throw exception;
+        }
     }
 
     /**

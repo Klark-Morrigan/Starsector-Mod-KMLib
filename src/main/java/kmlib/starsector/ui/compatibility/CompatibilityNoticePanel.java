@@ -9,6 +9,7 @@ import com.fs.starfarer.api.ui.PositionAPI;
 import kmlib.animation.TraverseDurations;
 import kmlib.animation.TraverseFraction;
 import kmlib.starsector.compatibility.CompatibilityFailure;
+import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.coreui.CoreUiOverlayPanels;
@@ -169,6 +170,9 @@ public final class CompatibilityNoticePanel {
 
     // Stands the screen-sized panel in the core UI. Answers false without leaving anything behind
     // where the core UI could not be reached.
+    //
+    // Files nothing where it cannot: a notice this cannot stand is left on the record for the
+    // campaign's dialog, so no report is lost by it.
     private boolean standPanelUp() {
 
         var settings = Global.getSettings();
@@ -177,7 +181,7 @@ public final class CompatibilityNoticePanel {
             settings.getScreenHeight(),
             new NoticePanelPlugin());
 
-        var placement = CoreUiOverlayPanels.attachOverlayPanel(newPanel);
+        var placement = CoreUiOverlayPanels.attachOverlayPanel(newPanel, GameReachReporter.UNREPORTED);
         if (placement == null) {
             return false;
         }

@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.coreui;
 
+import kmlib.starsector.compatibility.GameReachReporter;
+
 import com.fs.state.AppDriver;
 
 /**
@@ -54,12 +56,15 @@ public final class CodexView {
     }
 
     /**
+     * @param reporter where an app state that cannot be read is filed, for the mod standing aside for
+     *                 the codex. A state answering nothing for a codex is not filed: a state that
+     *                 cannot raise one answers the same
      * @return whether the codex stands over the screen this frame, and {@code false} whenever that
      *         cannot be established - there being no app state stood up yet, or the state in force
      *         not answering for a codex at all
      */
-    public static boolean isCodexShowing() {
-        return isCodexShowingOn(readCurrentAppState());
+    public static boolean isCodexShowing(GameReachReporter reporter) {
+        return isCodexShowingOn(readCurrentAppState(reporter));
     }
 
     /**
@@ -87,12 +92,22 @@ public final class CodexView {
     // provides rather than one this library ships: a build that no longer offers it fails on
     // resolution rather than on the call, which is an error and not an exception, and this is read
     // from a render pass every frame.
-    private static Object readCurrentAppState() {
+    private static Object readCurrentAppState(GameReachReporter reporter) {
 
         try {
-            return AppDriver.getInstance().getCurrentState();
+            // No driver yet is the game still starting rather than a broken reach, and is not filed.
+            var appDriver = AppDriver.getInstance();
 
-        } catch (Throwable cannotReadAppState) {
+            return appDriver == null
+                ? null
+                : appDriver.getCurrentState();
+
+        } catch (Throwable exception) {
+
+            reporter.recordReachFailure(
+                "looking for the codex over the screen",
+                "AppDriver.getCurrentState",
+                exception);
             return null;
         }
     }
