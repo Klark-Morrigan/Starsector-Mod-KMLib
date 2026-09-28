@@ -31,8 +31,11 @@ import java.util.Optional;
  * design is the nearest face to the one asked for, and a core localisation replaces the smaller cuts
  * with atlases holding its script while leaving the largest untouched. A face with no such cut names
  * none, and falls straight to the game's own default face.
+ *
+ * <p>A {@link FontAtlas}, the faces KM chooses among the two kinds it can draw in; the other is the
+ * one face the game's own settings declare, which KM reaches without having chosen it.
  */
-public enum StarsectorFont {
+public enum StarsectorFont implements FontAtlas {
 
     /**
      * The game's {@code defaultFont} on a vanilla install, which carries vanilla's paragraph text, and
@@ -150,9 +153,9 @@ public enum StarsectorFont {
 
     /**
      * @return whether this atlas's glyphs want interpolating when drawn, as its descriptor's
-     *         {@code smooth} states - what a draw pass reads to pick the filter it binds the atlas
-     *         under
+     *         {@code aa} states - what a draw pass reads to pick the filter it binds the atlas under
      */
+    @Override
     public AtlasSmoothing getSmoothing() {
         return smoothing;
     }
@@ -161,6 +164,7 @@ public enum StarsectorFont {
      * @return the loadable {@code .fnt} path under {@code graphics/fonts}, the form both LazyLib's
      *         font loader and vanilla's {@code setParaFont} / {@code setTitleFont} take
      */
+    @Override
     public String resolvePath() {
         return FONT_DIR + basename + FONT_EXTENSION;
     }

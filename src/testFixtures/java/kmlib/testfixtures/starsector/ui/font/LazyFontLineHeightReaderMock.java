@@ -1,7 +1,7 @@
 package kmlib.testfixtures.starsector.ui.font;
 
+import kmlib.starsector.ui.font.FontAtlas;
 import kmlib.starsector.ui.font.LazyFontLineHeightReader;
-import kmlib.starsector.ui.font.StarsectorFont;
 
 import org.mockito.MockedStatic;
 
@@ -36,7 +36,7 @@ public final class LazyFontLineHeightReaderMock implements AutoCloseable {
         var readerStaticMock = mockStatic(LazyFontLineHeightReader.class);
 
         readerStaticMock
-            .when(() -> LazyFontLineHeightReader.readLineHeight(any(StarsectorFont.class)))
+            .when(() -> LazyFontLineHeightReader.readLineHeight(any(FontAtlas.class)))
             .thenAnswer(call -> lineHeightsFake.readLineHeight(call.getArgument(0)));
 
         return new LazyFontLineHeightReaderMock(readerStaticMock);

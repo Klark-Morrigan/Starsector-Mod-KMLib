@@ -1,9 +1,9 @@
 package kmlib.testfixtures.starsector.ui.font;
 
+import kmlib.starsector.ui.font.FontAtlas;
 import kmlib.starsector.ui.font.GlyphCoverageReader;
-import kmlib.starsector.ui.font.StarsectorFont;
 
-import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -21,38 +21,37 @@ public final class GlyphCoverageReaderFake implements GlyphCoverageReader {
     // The last code point of Latin-1, the range every vanilla atlas draws.
     private static final int LAST_LATIN_1_CODE_POINT = 0xFF;
 
-    private final Set<StarsectorFont> fullyCoveringFonts;
+    private final Set<FontAtlas> fullyCoveringAtlases;
 
-    private GlyphCoverageReaderFake(Set<StarsectorFont> fullyCoveringFonts) {
-        this.fullyCoveringFonts = fullyCoveringFonts;
+    private GlyphCoverageReaderFake(Set<FontAtlas> fullyCoveringAtlases) {
+        this.fullyCoveringAtlases = fullyCoveringAtlases;
     }
 
     /**
      * @return a reader under which every face draws Latin-1 and nothing beyond it
      */
     public static GlyphCoverageReaderFake createLatinOnlyCoverage() {
-        return new GlyphCoverageReaderFake(EnumSet.noneOf(StarsectorFont.class));
+        return new GlyphCoverageReaderFake(Set.of());
     }
 
     /**
-     * Returns a copy of this reader under which {@code font} draws every character.
+     * Returns a copy of this reader under which {@code atlas} draws every character.
      *
-     * @param font the face whose installed atlas holds everything a suite poses
+     * @param atlas the face whose installed atlas holds everything a suite poses
      * @return an otherwise-identical reader
      */
-    public GlyphCoverageReaderFake coveringEveryCharacter(StarsectorFont font) {
+    public GlyphCoverageReaderFake coveringEveryCharacter(FontAtlas atlas) {
 
-        var fullyCoveringFonts = EnumSet.noneOf(StarsectorFont.class);
+        var fullyCoveringAtlases = new HashSet<>(this.fullyCoveringAtlases);
 
-        fullyCoveringFonts.addAll(this.fullyCoveringFonts);
-        fullyCoveringFonts.add(font);
+        fullyCoveringAtlases.add(atlas);
 
-        return new GlyphCoverageReaderFake(fullyCoveringFonts);
+        return new GlyphCoverageReaderFake(fullyCoveringAtlases);
     }
 
     @Override
-    public boolean coversText(StarsectorFont font, String text) {
-        return fullyCoveringFonts.contains(font)
+    public boolean coversText(FontAtlas atlas, String text) {
+        return fullyCoveringAtlases.contains(atlas)
             || text.codePoints()
                 .filter(codePoint -> !Character.isWhitespace(codePoint))
                 .allMatch(codePoint -> codePoint <= LAST_LATIN_1_CODE_POINT);

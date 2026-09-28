@@ -76,7 +76,7 @@ class TextStyleTest {
             // be scaled to.
             var style = buildBaselineStyle();
 
-            assertThat(style.face().font())
+            assertThat(style.face().atlas())
                 .isEqualTo(FACE);
             assertThat(style.face().size())
                 .isCloseTo(17d, within(TOLERANCE));
@@ -122,7 +122,7 @@ class TextStyleTest {
 
             assertThat(style.face().size())
                 .isCloseTo(OVERRIDE_SIZE, within(TOLERANCE));
-            assertThat(style.face().font())
+            assertThat(style.face().atlas())
                 .isEqualTo(FACE);
             assertThat(style.colour())
                 .isEqualTo(BODY_TEXT_COLOUR);

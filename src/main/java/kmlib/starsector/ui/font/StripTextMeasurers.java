@@ -33,7 +33,7 @@ public record StripTextMeasurers(
      */
     public static StripTextMeasurers loadFaceMeasurers(TextFace tabFace, StarsectorFont bodyFont) {
 
-        var tabAtlas = LazyFontCache.loadByFace(tabFace.font());
+        var tabAtlas = LazyFontCache.loadByFace(tabFace.atlas());
         var bodyAtlas = LazyFontCache.loadByFace(bodyFont);
 
         if (tabAtlas == null || bodyAtlas == null) {

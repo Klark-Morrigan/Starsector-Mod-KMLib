@@ -61,7 +61,7 @@ public final class TooltipLeaderLineRenderer {
         }
         // Without the face there is no band to sit on, and a rule placed off a guessed one would cut
         // through the very words it is meant to run between.
-        var font = LazyFontCache.loadByFace(face.font());
+        var font = LazyFontCache.loadByFace(face.atlas());
         if (font == null) {
             return;
         }

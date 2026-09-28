@@ -1,5 +1,7 @@
 package kmlib.starsector.ui.font;
 
+import java.util.regex.Pattern;
+
 /**
  * Whether a font atlas wants its glyphs interpolated when they are drawn. The distinction is not cosmetic -
  * a face of single-pixel strokes drawn through an interpolating filter loses part of every stroke, because
@@ -26,5 +28,31 @@ public enum AtlasSmoothing {
      * A pixel face: its glyphs are hard-edged by design and each pixel of them is meant to land on one
      * pixel of screen, so nothing should be blended between them.
      */
-    PIXEL_EXACT
+    PIXEL_EXACT;
+
+    // The info line's sample count, a whole word so a longer key ending in "aa" is never read for it.
+    private static final Pattern SAMPLE_COUNT_FIELD = Pattern.compile("\\baa=(\\d+)");
+
+    // The sample count of an atlas rasterised with no antialiasing at all.
+    private static final int SINGLE_SAMPLE = 1;
+
+    /**
+     * Reads an atlas's smoothing off its descriptor's first line, the {@code info} line carrying
+     * {@code aa=}: a single sample is a pixel face, and more is an antialiased one. A line stating no
+     * sample count reads as antialiased, the kind every face but a deliberate pixel face is.
+     *
+     * @param infoLine the descriptor's first line, may be {@code null}
+     * @return the smoothing the line states
+     */
+    public static AtlasSmoothing resolveFromInfoLine(String infoLine) {
+
+        if (infoLine == null) {
+            return SMOOTHED;
+        }
+        var sampleCountMatch = SAMPLE_COUNT_FIELD.matcher(infoLine);
+
+        return sampleCountMatch.find() && Integer.parseInt(sampleCountMatch.group(1)) == SINGLE_SAMPLE
+            ? PIXEL_EXACT
+            : SMOOTHED;
+    }
 }

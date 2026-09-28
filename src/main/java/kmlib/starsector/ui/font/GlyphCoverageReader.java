@@ -14,12 +14,12 @@ package kmlib.starsector.ui.font;
 public interface GlyphCoverageReader {
 
     /**
-     * Whether {@code font}'s installed atlas draws every character of {@code text} as itself.
+     * Whether {@code atlas}'s installed atlas draws every character of {@code text} as itself.
      * Whitespace is not asked about: a face draws it as space whether or not its atlas holds a glyph.
      *
-     * @param font the face whose installed atlas is read
-     * @param text the text the face would draw
+     * @param atlas the face whose installed atlas is read
+     * @param text  the text the face would draw
      * @return whether no character of the text would fall back; false for a face that cannot load
      */
-    boolean coversText(StarsectorFont font, String text);
+    boolean coversText(FontAtlas atlas, String text);
 }

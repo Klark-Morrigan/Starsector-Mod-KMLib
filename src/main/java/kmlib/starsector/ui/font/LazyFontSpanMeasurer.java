@@ -28,7 +28,7 @@ public final class LazyFontSpanMeasurer {
      */
     public static double measureSpanWidth(TextFace face, String span) {
 
-        var font = LazyFontCache.loadByFace(face.font());
+        var font = LazyFontCache.loadByFace(face.atlas());
         if (font == null) {
             return NO_WIDTH;
         }

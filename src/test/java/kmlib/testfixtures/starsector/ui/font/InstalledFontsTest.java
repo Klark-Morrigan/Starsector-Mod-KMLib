@@ -1,5 +1,7 @@
 package kmlib.testfixtures.starsector.ui.font;
 
+import kmlib.starsector.ui.font.AtlasSmoothing;
+import kmlib.starsector.ui.font.DeclaredFontAtlas;
 import kmlib.starsector.ui.font.StarsectorFont;
 
 import org.junit.jupiter.api.Nested;
@@ -57,12 +59,26 @@ class InstalledFontsTest {
         51,
         GlyphIdRanges.createFromIds(IntStream.of(32, 38, 72, 20027, 38712)));
 
+    // A language pack's own face, as a mod pointing the game's defaultFont at it would name it.
+    private static final String PACK_FONT_PATH = "graphics/fonts/pack_script15.fnt";
+
     private static InstalledFonts createZongyiFonts() {
         return new InstalledFonts(
             "font-zongyi",
             Optional.of("2026.09.04"),
             StarsectorFont.VANILLA_INSIGNIA_15,
-            Map.of(StarsectorFont.VANILLA_INSIGNIA_25, LOCALISED_FACE));
+            Map.of(StarsectorFont.VANILLA_INSIGNIA_25, LOCALISED_FACE),
+            Optional.empty());
+    }
+
+    // An install whose settings a language pack has pointed at a face it carries under starsector-core.
+    private static InstalledFonts createPackDeclaredFonts() {
+        return new InstalledFonts(
+            "vanilla",
+            Optional.empty(),
+            new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED),
+            Map.of(),
+            Optional.of(LOCALISED_FACE));
     }
 
     @Nested
@@ -120,15 +136,46 @@ class InstalledFontsTest {
                 }
                 """);
 
-            assertThat(InstalledFonts.readInstall(starsectorRoot).defaultFont())
+            assertThat(InstalledFonts.readInstall(starsectorRoot).defaultAtlas())
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
         }
 
         @Test
         void readInstallReadsAnInstallWithNoSettingsAsVanillasDefault(@TempDir Path starsectorRoot) {
 
-            assertThat(InstalledFonts.readInstall(starsectorRoot).defaultFont())
+            assertThat(InstalledFonts.readInstall(starsectorRoot).defaultAtlas())
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
+        }
+
+        @Test
+        void readInstallReadsADeclaredDefaultTheEnumDoesNotNameWithTheDescriptorTheInstallCarries(
+                @TempDir Path starsectorRoot) throws IOException {
+            // The pack's face is read by its own descriptor, smoothing included, so a walk over this reading
+            // reaches it as the running game on the install would.
+            writeFile(
+                starsectorRoot.resolve("starsector-core/data/config/settings.json"),
+                "{\"defaultFont\":\"" + PACK_FONT_PATH + "\"}");
+            writeFile(starsectorRoot.resolve("starsector-core/" + PACK_FONT_PATH), LOCALISED_DESCRIPTOR);
+
+            var fonts = InstalledFonts.readInstall(starsectorRoot);
+
+            assertThat(fonts.defaultAtlas())
+                .isEqualTo(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED));
+            assertThat(fonts.declaredDefaultFace())
+                .contains(LOCALISED_FACE);
+        }
+
+        @Test
+        void readInstallReadsADeclaredDefaultTheInstallDoesNotCarryAsNoFace(@TempDir Path starsectorRoot)
+                throws IOException {
+            // A mod's own file lives in the mod's folder, out of this reading's reach: it reads as a face that
+            // will not load, which a walk passes over.
+            writeFile(
+                starsectorRoot.resolve("starsector-core/data/config/settings.json"),
+                "{\"defaultFont\":\"" + PACK_FONT_PATH + "\"}");
+
+            assertThat(InstalledFonts.readInstall(starsectorRoot).declaredDefaultFace())
+                .isEmpty();
         }
     }
 
@@ -136,16 +183,20 @@ class InstalledFontsTest {
     class CreateFaceResolver {
 
         @Test
-        void createFaceResolverEndsEveryWalkAtTheInstallsDefault() {
+        void createFaceResolverTriesTheInstallsDeclaredDefaultBeforeTheLastResort() {
 
             var zongyiWithAnotherDefault = new InstalledFonts(
                 "font-zongyi",
                 Optional.of("2026.09.04"),
                 StarsectorFont.VANILLA_ORBITRON_20AA,
-                Map.of());
+                Map.of(),
+                Optional.empty());
 
             assertThat(zongyiWithAnotherDefault.createFaceResolver().listFallbackWalk(StarsectorFont.VANILLA_VICTOR_10))
-                .containsExactly(StarsectorFont.VANILLA_VICTOR_10, StarsectorFont.VANILLA_ORBITRON_20AA);
+                .containsExactly(
+                    StarsectorFont.VANILLA_VICTOR_10,
+                    StarsectorFont.VANILLA_ORBITRON_20AA,
+                    StarsectorFont.VANILLA_INSIGNIA_15);
         }
     }
 
@@ -166,7 +217,8 @@ class InstalledFontsTest {
                 "vanilla",
                 Optional.empty(),
                 StarsectorFont.VANILLA_INSIGNIA_15,
-                Map.of());
+                Map.of(),
+                Optional.empty());
 
             assertThat(vanillaFonts.describeEdition())
                 .isEqualTo("vanilla");
@@ -190,6 +242,14 @@ class InstalledFontsTest {
             assertThat(createZongyiFonts().createLineHeightReader()
                     .readLineHeight(StarsectorFont.VANILLA_INSIGNIA_42))
                 .isZero();
+        }
+
+        @Test
+        void createLineHeightReaderAnswersTheDeclaredDefaultsInstalledLineHeight() {
+
+            assertThat(createPackDeclaredFonts().createLineHeightReader()
+                    .readLineHeight(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED)))
+                .isEqualTo(21d);
         }
     }
 
@@ -218,6 +278,14 @@ class InstalledFontsTest {
             assertThat(createZongyiFonts().createGlyphCoverageReader()
                     .coversText(StarsectorFont.VANILLA_INSIGNIA_42, "H"))
                 .isFalse();
+        }
+
+        @Test
+        void createGlyphCoverageReaderReadsTheDeclaredDefaultsInstalledGlyphs() {
+
+            assertThat(createPackDeclaredFonts().createGlyphCoverageReader()
+                    .coversText(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED), LOCALISED_NAME))
+                .isTrue();
         }
     }
 

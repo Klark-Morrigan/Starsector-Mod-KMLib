@@ -11,9 +11,9 @@ import java.util.StringJoiner;
  * holds under each.
  *
  * <p>At start rather than on first draw, so a face the install cannot load is found - and logged once,
- * by {@link LazyFontCache} - before any category settles on it: {@link FaceResolver} then reads it as
- * absent and no category resolves to it. Every face the enum names is loaded, since the enum is the set
- * any category may offer.
+ * by {@link LazyFontCache} - before any text settles on it: {@link FaceResolver} then reads it as absent
+ * and no walk stops at it. Every face the enum names is loaded, and so is the face the game's settings
+ * declare as its default, which a walk may reach without the enum naming it.
  *
  * <p>The line the check leaves is the one reading of which atlases a session drew with. A localised
  * install replaces several of them under the same basenames, and its editions differ in line height, so
@@ -34,8 +34,8 @@ public final class InstalledFaceCheck {
     }
 
     /**
-     * Loads every face through the shared cache and logs each one's installed line height, or that it
-     * would not load.
+     * Loads every face and the game's declared default through the shared cache, and logs each one's
+     * installed line height, or that it would not load.
      */
     public static void loadEveryFace() {
 
@@ -46,7 +46,11 @@ public final class InstalledFaceCheck {
             faceReadings.add(font.getBasename() + "="
                 + formatLineHeightReading(LazyFontLineHeightReader.readLineHeight(font)));
         }
-        LOG.info("Installed font faces loaded; lineHeight by face: " + faceReadings);
+        var declaredDefaultAtlas = GameDefaultFontReader.readDefaultFont();
+
+        LOG.info("Installed font faces loaded; lineHeight by face: " + faceReadings
+            + "; defaultFont " + declaredDefaultAtlas.resolvePath() + "="
+            + formatLineHeightReading(LazyFontLineHeightReader.readLineHeight(declaredDefaultAtlas)));
     }
 
     // A line height as the whole number a descriptor states it as, or the word for a face that will not

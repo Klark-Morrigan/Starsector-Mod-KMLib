@@ -385,7 +385,7 @@ class TooltipStyleTest {
             assertThat(buildShrinkingStyle()
                     .resolveStyleFor(TooltipLineStyle.HEADER, ONE_STEP_UNDER)
                     .face()
-                    .font())
+                    .atlas())
                 .isEqualTo(StarsectorFont.VANILLA_ORBITRON_20AA);
         }
 

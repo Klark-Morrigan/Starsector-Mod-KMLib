@@ -16,11 +16,11 @@ package kmlib.starsector.ui.font;
 public interface FaceLineHeightReader {
 
     /**
-     * The line height of the atlas installed under {@code font}'s basename, in the units a text size
-     * is stated in.
+     * The line height of the atlas installed at {@code atlas}'s path, in the units a text size is stated
+     * in.
      *
-     * @param font the face whose installed atlas is read
+     * @param atlas the face whose installed atlas is read
      * @return the atlas's line height, or zero when the face cannot load
      */
-    double readLineHeight(StarsectorFont font);
+    double readLineHeight(FontAtlas atlas);
 }

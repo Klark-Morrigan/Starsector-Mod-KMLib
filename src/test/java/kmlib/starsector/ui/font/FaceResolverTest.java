@@ -12,7 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins how a face is settled from the face asked for and the install: kept where it loads and holds the
- * text, walked down its family to the first cut that does, and ended at the default face either way.
+ * text, walked down its family, then to the game's declared default, and ended at KMLib's own last resort
+ * whatever the settings say.
  *
  * <p>The install is posed as vanilla or as a localised one: vanilla atlases hold Latin-1 alone, while a
  * localised install replaces the smaller insignia cuts with ones holding its script and leaves the
@@ -26,8 +27,13 @@ class FaceResolverTest {
     // What the reader states for a face the install cannot load.
     private static final double UNLOADABLE = 0d;
 
-    // The game's own default face on a vanilla install.
-    private static final StarsectorFont DEFAULT_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
+    // The game's own declared default on a vanilla install, which the enum names.
+    private static final StarsectorFont VANILLA_DECLARED_DEFAULT = StarsectorFont.VANILLA_INSIGNIA_15;
+
+    // A face a language pack declares as the game's default, one the enum does not name.
+    private static final DeclaredFontAtlas PACK_DECLARED_DEFAULT = new DeclaredFontAtlas(
+        "graphics/fonts/pack_script15.fnt",
+        AtlasSmoothing.SMOOTHED);
 
     private static GlyphCoverageReaderFake createLocalisedCoverage() {
         return GlyphCoverageReaderFake.createLatinOnlyCoverage()
@@ -36,15 +42,11 @@ class FaceResolverTest {
             .coveringEveryCharacter(StarsectorFont.VANILLA_INSIGNIA_15);
     }
 
-    private static FaceResolver createResolver(
-            FaceLineHeightReaderFake lineHeightsFake,
-            GlyphCoverageReaderFake coverageFake) {
-
-        return new FaceResolver(lineHeightsFake, coverageFake, DEFAULT_FONT);
-    }
-
     private static FaceResolver createLocalisedResolver() {
-        return createResolver(FaceLineHeightReaderFake.createVanillaLineHeights(), createLocalisedCoverage());
+        return new FaceResolver(
+            FaceLineHeightReaderFake.createVanillaLineHeights(),
+            createLocalisedCoverage(),
+            VANILLA_DECLARED_DEFAULT);
     }
 
     private static FaceResolver createLocalisedResolverWithUnloadable(StarsectorFont... unloadableFonts) {
@@ -53,7 +55,17 @@ class FaceResolverTest {
         for (var unloadableFont : unloadableFonts) {
             lineHeightsFake = lineHeightsFake.answeringLineHeight(unloadableFont, UNLOADABLE);
         }
-        return createResolver(lineHeightsFake, createLocalisedCoverage());
+        return new FaceResolver(lineHeightsFake, createLocalisedCoverage(), VANILLA_DECLARED_DEFAULT);
+    }
+
+    // A vanilla install whose settings a language pack has pointed at its own face, which holds the pack's
+    // script where no vanilla atlas does.
+    private static FaceResolver createPackDeclaredResolver(double packLineHeight) {
+        return new FaceResolver(
+            FaceLineHeightReaderFake.createVanillaLineHeights()
+                .answeringLineHeight(PACK_DECLARED_DEFAULT, packLineHeight),
+            GlyphCoverageReaderFake.createLatinOnlyCoverage().coveringEveryCharacter(PACK_DECLARED_DEFAULT),
+            PACK_DECLARED_DEFAULT);
     }
 
     @Nested
@@ -106,29 +118,49 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontFallsToTheDefaultFromAFaceWithNoSmallerCut() {
-            // A pixel face lacking the script has no smaller cut of its own design to try, so the default
-            // is next.
+        void resolveFontFallsToTheDeclaredDefaultFromAFaceWithNoSmallerCut() {
+            // A pixel face lacking the script has no smaller cut of its own design to try.
             assertThat(createLocalisedResolver().resolveFont(StarsectorFont.VANILLA_VICTOR_10, List.of(LOCALISED_NAME)))
-                .isEqualTo(DEFAULT_FONT);
+                .isEqualTo(VANILLA_DECLARED_DEFAULT);
         }
 
         @Test
-        void resolveFontAnswersTheDefaultWhereNoFaceOnTheWalkHoldsTheText() {
-            // A localised build on a vanilla install: no atlas holds the script, and the game's own face
-            // is the last any text can have.
-            var resolver = createResolver(
-                FaceLineHeightReaderFake.createVanillaLineHeights(),
-                GlyphCoverageReaderFake.createLatinOnlyCoverage());
+        void resolveFontReachesADeclaredDefaultTheEnumDoesNotNameWhereItHoldsTheText() {
+            // The language pack's case: no vanilla atlas holds the script, and the face the pack declared is
+            // the one that does - reached by its path, since the enum has never heard of it.
+            assertThat(createPackDeclaredResolver(16d).resolveFont(
+                    StarsectorFont.VANILLA_INSIGNIA_42,
+                    List.of(LOCALISED_NAME)))
+                .isEqualTo(PACK_DECLARED_DEFAULT);
+        }
+
+        @Test
+        void resolveFontAnswersTheLastResortWhereTheDeclaredDefaultWillNotLoad() {
+            // A setting naming a broken or missing file is passed over, and the walk ends on KMLib's own face.
+            assertThat(createPackDeclaredResolver(UNLOADABLE).resolveFont(
+                    StarsectorFont.VANILLA_INSIGNIA_42,
+                    List.of(LOCALISED_NAME)))
+                .isEqualTo(FaceResolver.LAST_RESORT_FONT);
+        }
+
+        @Test
+        void resolveFontAnswersTheLastResortRatherThanTheDeclaredDefaultWhereNothingHoldsTheText() {
+            // A localised build on a vanilla install with a mod's declared default lacking the script too:
+            // nothing on the walk draws it, and the answer is KMLib's own face, never the setting's.
+            var resolver = new FaceResolver(
+                FaceLineHeightReaderFake.createVanillaLineHeights()
+                    .answeringLineHeight(PACK_DECLARED_DEFAULT, 16d),
+                GlyphCoverageReaderFake.createLatinOnlyCoverage(),
+                PACK_DECLARED_DEFAULT);
 
             assertThat(resolver.resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of(LOCALISED_NAME)))
-                .isEqualTo(DEFAULT_FONT);
+                .isEqualTo(FaceResolver.LAST_RESORT_FONT);
         }
 
         @Test
-        void resolveFontAnswersTheDefaultWhereNoFaceOnTheWalkLoads() {
-            // Never no face: the default is answered even where it will not load itself, drawing nothing -
-            // as the face asked for would have.
+        void resolveFontAnswersTheLastResortWhereNoFaceOnTheWalkLoads() {
+            // Never no face: the last resort is answered even where it will not load itself, drawing nothing
+            // - as the face asked for would have.
             var resolver = createLocalisedResolverWithUnloadable(
                 StarsectorFont.VANILLA_INSIGNIA_42,
                 StarsectorFont.VANILLA_INSIGNIA_25,
@@ -136,7 +168,7 @@ class FaceResolverTest {
                 StarsectorFont.VANILLA_INSIGNIA_15);
 
             assertThat(resolver.resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of("Hegemony")))
-                .isEqualTo(DEFAULT_FONT);
+                .isEqualTo(FaceResolver.LAST_RESORT_FONT);
         }
     }
 
@@ -144,8 +176,9 @@ class FaceResolverTest {
     class ListFallbackWalk {
 
         @Test
-        void listFallbackWalkStepsDownTheFamilyAndEndsAtTheDefaultOnce() {
-            // The family's smallest cut is the default here, so it is tried once, not twice.
+        void listFallbackWalkStepsDownTheFamilyAndTriesEachFaceOnce() {
+            // The family's smallest cut is both the vanilla declared default and the last resort here, so it
+            // is tried once, not three times.
             assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_42))
                 .containsExactly(
                     StarsectorFont.VANILLA_INSIGNIA_42,
@@ -155,30 +188,25 @@ class FaceResolverTest {
         }
 
         @Test
-        void listFallbackWalkGoesStraightToTheDefaultFromAFaceWithNoSmallerCut() {
+        void listFallbackWalkGoesStraightToTheDefaultsFromAFaceWithNoSmallerCut() {
 
             assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_ORBITRON_20AA))
                 .containsExactly(StarsectorFont.VANILLA_ORBITRON_20AA, StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void listFallbackWalkEndsAtADefaultOutsideTheFamily() {
-            // A core overwrite naming another face as the game's default moves the end of every walk.
-            var resolver = new FaceResolver(
-                FaceLineHeightReaderFake.createVanillaLineHeights(),
-                createLocalisedCoverage(),
-                StarsectorFont.VANILLA_ORBITRON_20AA);
-
-            assertThat(resolver.listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_25))
+        void listFallbackWalkTriesTheDeclaredDefaultBeforeTheLastResort() {
+            // The declared face is the install's choice and is tried as such; KMLib's own face comes after it
+            // whatever the setting names.
+            assertThat(createPackDeclaredResolver(16d).listFallbackWalk(StarsectorFont.VANILLA_VICTOR_10))
                 .containsExactly(
-                    StarsectorFont.VANILLA_INSIGNIA_25,
-                    StarsectorFont.VANILLA_INSIGNIA_21,
-                    StarsectorFont.VANILLA_INSIGNIA_15,
-                    StarsectorFont.VANILLA_ORBITRON_20AA);
+                    StarsectorFont.VANILLA_VICTOR_10,
+                    PACK_DECLARED_DEFAULT,
+                    FaceResolver.LAST_RESORT_FONT);
         }
 
         @Test
-        void listFallbackWalkIsTheDefaultAloneWhereTheDefaultIsAskedFor() {
+        void listFallbackWalkIsTheLastResortAloneWhereItIsAskedFor() {
 
             assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_15))
                 .containsExactly(StarsectorFont.VANILLA_INSIGNIA_15);

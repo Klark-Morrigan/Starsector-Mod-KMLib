@@ -19,15 +19,15 @@ public final class LazyFontLineHeightReader {
     }
 
     /**
-     * The line height of the atlas installed under {@code font}'s basename, or zero when that face
-     * cannot load.
+     * The line height of the atlas installed at {@code atlas}'s path, or zero when that face cannot
+     * load.
      *
-     * @param font the face whose installed atlas is read
+     * @param atlas the face whose installed atlas is read
      * @return the atlas's line height
      */
-    public static double readLineHeight(StarsectorFont font) {
+    public static double readLineHeight(FontAtlas atlas) {
 
-        var loaded = LazyFontCache.loadByFace(font);
+        var loaded = LazyFontCache.loadByFace(atlas);
         if (loaded == null) {
             return NO_HEIGHT;
         }

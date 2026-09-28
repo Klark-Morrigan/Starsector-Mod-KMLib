@@ -29,16 +29,16 @@ public final class LazyFontGlyphCoverageReader {
     }
 
     /**
-     * Whether {@code font}'s installed atlas draws every character of {@code text} as itself, or false
+     * Whether {@code atlas}'s installed atlas draws every character of {@code text} as itself, or false
      * when that face cannot load.
      *
-     * @param font the face whose installed atlas is read
-     * @param text the text the face would draw
+     * @param atlas the face whose installed atlas is read
+     * @param text  the text the face would draw
      * @return whether no character of the text would fall back
      */
-    public static boolean coversText(StarsectorFont font, String text) {
+    public static boolean coversText(FontAtlas atlas, String text) {
 
-        var loaded = LazyFontCache.loadByFace(font);
+        var loaded = LazyFontCache.loadByFace(atlas);
         if (loaded == null) {
             return false;
         }

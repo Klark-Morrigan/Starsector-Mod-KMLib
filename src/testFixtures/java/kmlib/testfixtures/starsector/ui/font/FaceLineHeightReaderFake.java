@@ -1,9 +1,10 @@
 package kmlib.testfixtures.starsector.ui.font;
 
 import kmlib.starsector.ui.font.FaceLineHeightReader;
+import kmlib.starsector.ui.font.FontAtlas;
 import kmlib.starsector.ui.font.StarsectorFont;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -30,10 +31,10 @@ public final class FaceLineHeightReaderFake implements FaceLineHeightReader {
     // What a face missing from the table reads as - the port's own answer for a face that will not load.
     private static final double NO_HEIGHT = 0d;
 
-    private final Map<StarsectorFont, Double> lineHeightByFont;
+    private final Map<FontAtlas, Double> lineHeightByAtlas;
 
-    private FaceLineHeightReaderFake(Map<StarsectorFont, Double> lineHeightByFont) {
-        this.lineHeightByFont = lineHeightByFont;
+    private FaceLineHeightReaderFake(Map<FontAtlas, Double> lineHeightByAtlas) {
+        this.lineHeightByAtlas = lineHeightByAtlas;
     }
 
     /**
@@ -41,40 +42,40 @@ public final class FaceLineHeightReaderFake implements FaceLineHeightReader {
      */
     public static FaceLineHeightReaderFake createVanillaLineHeights() {
 
-        var lineHeightByFont = new EnumMap<StarsectorFont, Double>(StarsectorFont.class);
+        var lineHeightByAtlas = new HashMap<FontAtlas, Double>();
 
-        lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_15, VANILLA_INSIGNIA_15_LINE_HEIGHT);
-        lineHeightByFont.put(StarsectorFont.VANILLA_ORBITRON_20AA, VANILLA_ORBITRON_20AA_LINE_HEIGHT);
-        lineHeightByFont.put(
+        lineHeightByAtlas.put(StarsectorFont.VANILLA_INSIGNIA_15, VANILLA_INSIGNIA_15_LINE_HEIGHT);
+        lineHeightByAtlas.put(StarsectorFont.VANILLA_ORBITRON_20AA, VANILLA_ORBITRON_20AA_LINE_HEIGHT);
+        lineHeightByAtlas.put(
             StarsectorFont.VANILLA_ORBITRON_12_CONDENSED,
             VANILLA_ORBITRON_12_CONDENSED_LINE_HEIGHT);
-        lineHeightByFont.put(StarsectorFont.VANILLA_VICTOR_10, VANILLA_VICTOR_10_LINE_HEIGHT);
-        lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_21, VANILLA_INSIGNIA_21_LINE_HEIGHT);
-        lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_25, VANILLA_INSIGNIA_25_LINE_HEIGHT);
-        lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_42, VANILLA_INSIGNIA_42_LINE_HEIGHT);
+        lineHeightByAtlas.put(StarsectorFont.VANILLA_VICTOR_10, VANILLA_VICTOR_10_LINE_HEIGHT);
+        lineHeightByAtlas.put(StarsectorFont.VANILLA_INSIGNIA_21, VANILLA_INSIGNIA_21_LINE_HEIGHT);
+        lineHeightByAtlas.put(StarsectorFont.VANILLA_INSIGNIA_25, VANILLA_INSIGNIA_25_LINE_HEIGHT);
+        lineHeightByAtlas.put(StarsectorFont.VANILLA_INSIGNIA_42, VANILLA_INSIGNIA_42_LINE_HEIGHT);
 
-        return new FaceLineHeightReaderFake(lineHeightByFont);
+        return new FaceLineHeightReaderFake(lineHeightByAtlas);
     }
 
     /**
-     * Returns a copy of this reader answering {@code font} with {@code lineHeight} - an install whose
-     * atlas under that basename is not vanilla's.
+     * Returns a copy of this reader answering {@code atlas} with {@code lineHeight} - an install whose
+     * atlas at that path is not vanilla's, or a face the game's settings declare that vanilla does not ship.
      *
-     * @param font       the face whose installed atlas differs
+     * @param atlas      the face whose installed atlas differs
      * @param lineHeight the line height that atlas states
      * @return an otherwise-identical reader
      */
-    public FaceLineHeightReaderFake answeringLineHeight(StarsectorFont font, double lineHeight) {
+    public FaceLineHeightReaderFake answeringLineHeight(FontAtlas atlas, double lineHeight) {
 
-        var lineHeightByFont = new EnumMap<>(this.lineHeightByFont);
+        var lineHeightByAtlas = new HashMap<>(this.lineHeightByAtlas);
 
-        lineHeightByFont.put(font, lineHeight);
+        lineHeightByAtlas.put(atlas, lineHeight);
 
-        return new FaceLineHeightReaderFake(lineHeightByFont);
+        return new FaceLineHeightReaderFake(lineHeightByAtlas);
     }
 
     @Override
-    public double readLineHeight(StarsectorFont font) {
-        return lineHeightByFont.getOrDefault(font, NO_HEIGHT);
+    public double readLineHeight(FontAtlas atlas) {
+        return lineHeightByAtlas.getOrDefault(atlas, NO_HEIGHT);
     }
 }

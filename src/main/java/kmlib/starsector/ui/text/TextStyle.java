@@ -70,7 +70,7 @@ public record TextStyle(
      * @return an otherwise-identical style at that size
      */
     public TextStyle sizedAt(double size) {
-        return new TextStyle(new TextFace(face.font(), size), colour, alignment, isUpperCased);
+        return new TextStyle(new TextFace(face.atlas(), size), colour, alignment, isUpperCased);
     }
 
     /**

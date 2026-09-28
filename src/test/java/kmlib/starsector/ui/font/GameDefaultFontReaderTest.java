@@ -9,15 +9,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins how the game's default face is read: the face its settings name, and vanilla's where they name a
- * face KM does not draw in.
+ * Pins how the game's declared default face is read: the enum's face where the setting names one, the
+ * declared file by its path otherwise - smoothing and all - and vanilla's face where it names nothing.
  */
 class GameDefaultFontReaderTest {
+
+    // A language pack's own face, as a mod pointing the game's defaultFont at it would name it.
+    private static final String PACK_FONT_PATH = "graphics/fonts/pack_script15.fnt";
 
     @AfterEach
     void clearSettings() {
@@ -28,35 +35,55 @@ class GameDefaultFontReaderTest {
     class ReadDefaultFont {
 
         @Test
-        void readDefaultFontAnswersTheFaceTheGamesSettingsName() {
-            // A core overwrite naming another face the enum knows moves KM's last resort with it.
-            installDefaultFont("graphics/fonts/insignia25LTaa.fnt");
+        void readDefaultFontAnswersTheEnumsFaceWhereTheSettingNamesOne() throws IOException {
+
+            installDefaultFont("graphics/fonts/insignia25LTaa.fnt", null);
 
             assertThat(GameDefaultFontReader.readDefaultFont())
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
         }
 
         @Test
-        void readDefaultFontAnswersVanillasFaceWhereTheSettingsNameOneKmDoesNotKnow() {
-            // KM draws only in faces the enum names, so a default it cannot draw in is no default.
-            installDefaultFont("graphics/fonts/arial12.fnt");
+        void readDefaultFontAnswersADeclaredFileTheEnumDoesNotNameByItsPath() throws IOException {
+            // A language pack's face is the one that may hold its script, so it is reached as named.
+            installDefaultFont(PACK_FONT_PATH, "info face=\"Pack\" size=15 smooth=1 aa=4");
 
             assertThat(GameDefaultFontReader.readDefaultFont())
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
+                .isEqualTo(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED));
         }
 
         @Test
-        void readDefaultFontLogsTheFaceItCouldNotUse() {
+        void readDefaultFontReadsADeclaredPixelFaceAsPixelExact() throws IOException {
+            // The declared file's own descriptor decides, KM having no table of a face it did not ship.
+            installDefaultFont(PACK_FONT_PATH, "info face=\"Pack\" size=-10 smooth=1 aa=1");
 
-            installDefaultFont("graphics/fonts/arial12.fnt");
+            assertThat(GameDefaultFontReader.readDefaultFont())
+                .isEqualTo(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.PIXEL_EXACT));
+        }
+
+        @Test
+        void readDefaultFontReadsADeclaredFileItCannotOpenAsAntialiasedAndLogsIt() throws IOException {
+            // Unreadable means unloadable too, so every walk passes over it whatever is answered; the line
+            // is what tells a reader the setting names a file that is not there.
+            installDefaultFont(PACK_FONT_PATH, null);
 
             var logFake = LogAppenderFake.captureLogOf(
                 GameDefaultFontReader.class,
-                GameDefaultFontReader::readDefaultFont);
+                () -> assertThat(GameDefaultFontReader.readDefaultFont())
+                    .isEqualTo(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED)));
 
             assertThat(logFake.getMessages())
-                .containsExactly("The game's defaultFont 'graphics/fonts/arial12.fnt' is no face KM draws in; "
-                    + "falling back to insignia15LTaa");
+                .containsExactly("The game's defaultFont 'graphics/fonts/pack_script15.fnt' could not be read; "
+                    + "taking it as antialiased");
+        }
+
+        @Test
+        void readDefaultFontAnswersVanillasFaceWhereTheSettingNamesNothing() throws IOException {
+
+            installDefaultFont(null, null);
+
+            assertThat(GameDefaultFontReader.readDefaultFont())
+                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
         }
     }
 
@@ -66,25 +93,46 @@ class GameDefaultFontReaderTest {
         @Test
         void resolveDefaultFontAnswersTheFaceThePathNames() {
 
-            assertThat(GameDefaultFontReader.resolveDefaultFont("graphics/fonts/insignia15LTaa.fnt"))
+            assertThat(GameDefaultFontReader.resolveDefaultFont(
+                    "graphics/fonts/insignia15LTaa.fnt",
+                    declaredPath -> AtlasSmoothing.PIXEL_EXACT))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void resolveDefaultFontAnswersVanillasFaceForNoPath() {
-            // A settings file with no such key reads as vanilla's, the face its settings would name.
-            assertThat(GameDefaultFontReader.resolveDefaultFont(null))
+        void resolveDefaultFontAsksTheReaderForTheSmoothingOfADeclaredFile() {
+
+            assertThat(GameDefaultFontReader.resolveDefaultFont(
+                    PACK_FONT_PATH,
+                    declaredPath -> AtlasSmoothing.PIXEL_EXACT))
+                .isEqualTo(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.PIXEL_EXACT));
+        }
+
+        @Test
+        void resolveDefaultFontAnswersVanillasFaceForABlankSetting() {
+
+            assertThat(GameDefaultFontReader.resolveDefaultFont(" ", declaredPath -> AtlasSmoothing.PIXEL_EXACT))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
         }
     }
 
-    private static void installDefaultFont(String defaultFontPath) {
+    // A settings stand-in naming the given default and serving the given descriptor first line for it, or
+    // refusing to open it where there is none.
+    private static void installDefaultFont(String defaultFontPath, String descriptorInfoLine) throws IOException {
 
         var settingsMock = mock(SettingsAPI.class);
 
         when(settingsMock.getString("defaultFont"))
             .thenReturn(defaultFontPath);
 
+        if (descriptorInfoLine == null) {
+            when(settingsMock.openStream(defaultFontPath))
+                .thenThrow(new IOException("no such file"));
+        } else {
+            when(settingsMock.openStream(defaultFontPath))
+                .thenReturn(new ByteArrayInputStream(
+                    (descriptorInfoLine + "\n").getBytes(StandardCharsets.ISO_8859_1)));
+        }
         Global.setSettings(settingsMock);
     }
 }

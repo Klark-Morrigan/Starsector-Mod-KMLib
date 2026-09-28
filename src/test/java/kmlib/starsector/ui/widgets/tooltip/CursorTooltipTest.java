@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.widgets.tooltip;
 
 import kmlib.math.geometry.Rectangle;
+import kmlib.starsector.ui.font.FontAtlas;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.font.TextSpanMeasurer;
@@ -118,7 +119,7 @@ class CursorTooltipTest {
 
     private static double measureSpanWidth(TextFace face, String span) {
 
-        var widthPerCharacter = resolveWidthPerCharacter(face.font());
+        var widthPerCharacter = resolveWidthPerCharacter(face.atlas());
         var characterCost = 0d;
 
         for (var character : span.toCharArray()) {
@@ -129,7 +130,7 @@ class CursorTooltipTest {
 
     // What one glyph of a face costs. Switched over the faces rather than tested against one, so a third
     // stand-in face is priced here alone and no case below has to say which branch it fell down.
-    private static double resolveWidthPerCharacter(StarsectorFont font) {
+    private static double resolveWidthPerCharacter(FontAtlas font) {
 
         if (font == HEADING_FONT) {
             return HEADING_WIDTH_PER_CHARACTER;

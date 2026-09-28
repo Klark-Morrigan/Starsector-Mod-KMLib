@@ -10,12 +10,20 @@ import java.util.List;
  * same rules.
  *
  * <p>The face asked for is kept where its installed atlas loads and draws every character of the text.
- * Where it does not, the resolver walks down the face's family - each cut naming the
- * {@linkplain StarsectorFont#resolveLowerResolutionFont() next cut below it} - and takes the first that
- * does, a smaller cut of the same design being the nearest face to the one asked for. Past the family's
- * smallest cut comes the game's own default face, and where nothing before it draws the text, the default
- * is answered regardless: it is what vanilla text on the same install is drawn in, so it is the last
- * face any text can have.
+ * Where it does not, the resolver walks on and takes the first face that does:
+ *
+ * <ol>
+ *   <li>the face asked for;</li>
+ *   <li>each smaller cut of its family, each cut naming the
+ *       {@linkplain StarsectorFont#resolveLowerResolutionFont() next cut below it} - a smaller cut of the
+ *       same design being the nearest face to the one asked for;</li>
+ *   <li>the face the game's own settings declare as its default, whatever file that is - which a language
+ *       pack may point at an atlas holding its script;</li>
+ *   <li>{@link #LAST_RESORT_FONT}, named here.</li>
+ * </ol>
+ *
+ * <p>Each face is tried once. Where nothing on the walk draws the text, the last resort is answered: a face
+ * KMLib names itself, so no setting can make a broken or missing file the last word.
  *
  * <p>It reads the text, never a locale. An English build on a localised install keeps the face it asks
  * for wherever that face holds the text; the same build drawing localised faction names in an atlas no
@@ -26,33 +34,40 @@ import java.util.List;
  */
 public final class FaceResolver {
 
+    /**
+     * The last face any text can have, answered where nothing on its walk draws it: the face vanilla's own
+     * settings name for paragraph text, and one every install carries.
+     */
+    public static final StarsectorFont LAST_RESORT_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
+
     // The line height the reader states for a face that will not load, and so the floor a loadable face
     // stands above.
     private static final double NO_LINE_HEIGHT = 0d;
 
-    private final StarsectorFont defaultFont;
+    private final FontAtlas declaredDefaultAtlas;
     private final GlyphCoverageReader glyphCoverage;
     private final FaceLineHeightReader lineHeights;
 
     /**
-     * @param lineHeights   where an installed atlas's line height is read, which says whether the face
-     *                      loads at all
-     * @param glyphCoverage where an installed atlas's coverage of a text is read
-     * @param defaultFont   the face every walk ends at - the game's own default on a running game
+     * @param lineHeights          where an installed atlas's line height is read, which says whether the
+     *                             face loads at all
+     * @param glyphCoverage        where an installed atlas's coverage of a text is read
+     * @param declaredDefaultAtlas the face the game's settings declare as its default, tried after a face's
+     *                             family and before the last resort
      */
     public FaceResolver(
             FaceLineHeightReader lineHeights,
             GlyphCoverageReader glyphCoverage,
-            StarsectorFont defaultFont) {
+            FontAtlas declaredDefaultAtlas) {
 
         this.lineHeights = lineHeights;
         this.glyphCoverage = glyphCoverage;
-        this.defaultFont = defaultFont;
+        this.declaredDefaultAtlas = declaredDefaultAtlas;
     }
 
     /**
-     * @return a resolver reading the running game's installed atlases through LazyLib, ending every walk
-     *         at the face the game's settings name as its default
+     * @return a resolver reading the running game's installed atlases through LazyLib, trying the face the
+     *         game's settings declare as its default before the last resort
      */
     public static FaceResolver createInstalledFaceResolver() {
 
@@ -67,41 +82,48 @@ public final class FaceResolver {
      *
      * @param requestedFont the face the caller would draw in, installs permitting
      * @param probeTexts    the text it draws, which the face has to hold
-     * @return the first face down the walk that loads and holds the text, or the default face
+     * @return the first face on the walk that loads and holds the text, or the last resort
      */
-    public StarsectorFont resolveFont(StarsectorFont requestedFont, Collection<String> probeTexts) {
+    public FontAtlas resolveFont(StarsectorFont requestedFont, Collection<String> probeTexts) {
 
-        for (var candidateFont : listFallbackWalk(requestedFont)) {
-            if (isFontDrawingEveryText(candidateFont, probeTexts)) {
-                return candidateFont;
+        for (var candidateAtlas : listFallbackWalk(requestedFont)) {
+            if (isAtlasDrawingEveryText(candidateAtlas, probeTexts)) {
+                return candidateAtlas;
             }
         }
-        return defaultFont;
+        return LAST_RESORT_FONT;
     }
 
     /**
      * The faces a text asking for {@code requestedFont} is tried in, in order: the face itself, each
-     * smaller cut of its family, and the default face last, once.
+     * smaller cut of its family, the game's declared default, and the last resort - each once.
      *
      * @param requestedFont the face asked for
      * @return the walk
      */
-    public List<StarsectorFont> listFallbackWalk(StarsectorFont requestedFont) {
+    public List<FontAtlas> listFallbackWalk(StarsectorFont requestedFont) {
 
-        var walk = new ArrayList<StarsectorFont>();
+        var walk = new ArrayList<FontAtlas>();
 
         for (var font = requestedFont; font != null; font = font.resolveLowerResolutionFont().orElse(null)) {
             walk.add(font);
         }
-        if (!walk.contains(defaultFont)) {
-            walk.add(defaultFont);
-        }
+        addIfAbsent(walk, declaredDefaultAtlas);
+        addIfAbsent(walk, LAST_RESORT_FONT);
+
         return List.copyOf(walk);
     }
 
+    // Appends a face the walk has not reached already, so no face is tried twice.
+    private static void addIfAbsent(List<FontAtlas> walk, FontAtlas atlas) {
+        if (!walk.contains(atlas)) {
+            walk.add(atlas);
+        }
+    }
+
     // Whether a face loads and draws every character of every text asked about.
-    private boolean isFontDrawingEveryText(StarsectorFont font, Collection<String> probeTexts) {
-        return lineHeights.readLineHeight(font) > NO_LINE_HEIGHT
-            && probeTexts.stream().allMatch(probeText -> glyphCoverage.coversText(font, probeText));
+    private boolean isAtlasDrawingEveryText(FontAtlas atlas, Collection<String> probeTexts) {
+        return lineHeights.readLineHeight(atlas) > NO_LINE_HEIGHT
+            && probeTexts.stream().allMatch(probeText -> glyphCoverage.coversText(atlas, probeText));
     }
 }

@@ -105,11 +105,11 @@ class InstalledFontsIntegrationTest {
                 var coverage = installedFonts.createGlyphCoverageReader();
 
                 for (var font : StarsectorFont.values()) {
-                    var settledFont = resolver.resolveFont(font, List.of(LOCALISED_NAME));
+                    var settledAtlas = resolver.resolveFont(font, List.of(LOCALISED_NAME));
 
-                    assertThat(coverage.coversText(settledFont, LOCALISED_NAME))
+                    assertThat(coverage.coversText(settledAtlas, LOCALISED_NAME))
                         .as("%s, which %s settles on for a localised name on %s, holds the name",
-                            settledFont.getBasename(), font.getBasename(), installedFonts.describeEdition())
+                            settledAtlas.resolvePath(), font.getBasename(), installedFonts.describeEdition())
                         .isTrue();
                 }
             }
