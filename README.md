@@ -1349,6 +1349,28 @@ located on Windows from the git on `PATH`.
   or the remote -
   changes.
 
+The font suites check the atlases of every install the build is handed:
+the one it located,
+and any others `-PfontInstallRoots` names.
+The core Chinese localisation replaces several atlases under the same basenames,
+each of its editions with others of its own line heights and glyph sets,
+so a machine holding those editions hands them in:
+
+```powershell
+./gradlew test "-PfontInstallRoots=<root>;<root>"
+```
+
+- The atlases are read where they are installed,
+  never recorded:
+  a recording goes on passing after the localisation publishes a pack that no longer matches it,
+  so it would report an edition as checked when it was not.
+- A CI runner carries the game's JARs and no fonts,
+  so the font suites skip there:
+  every install they check is on a machine holding the full game.
+  No CI leg exists per edition either -
+  none changes what the jar is compiled against.
+  The workspace menu's Chinese section hands the editions in.
+
 A mod keeping its player-facing files per language,
 one bundle per locale under `localisation/<locale>/` beside a `localisation/manifest.json`,
 gets `writeLocaleFiles`,
@@ -1648,6 +1670,17 @@ a place in hyperspace,
 and the centre and anchor that tell two systems sharing an ID apart -
 with identity and placement as separate calls,
 so a read over IDs needs no coordinates invented for it.
+[`starsector/ui/font/`](src/testFixtures/java/kmlib/testfixtures/starsector/ui/font/)
+stands in for the atlases an install holds -
+their line heights and which characters they draw,
+posed or read off a real install -
+and reads a font descriptor's header and glyph IDs the way LazyLib does.
+[`starsector/save/`](src/testFixtures/java/kmlib/testfixtures/starsector/save/)
+drives a mod's persisted objects through the game's own save serialiser,
+listing the element paths a graph writes and reading it back as a load does,
+so a suite can hold a save format still against a checked-in list.
+The shared conventions open the JDK packages the serialiser reflects into on every test task,
+the same set the game's own JVM opens.
 
 They are a source set of their own,
 published as a variant beside the jar.

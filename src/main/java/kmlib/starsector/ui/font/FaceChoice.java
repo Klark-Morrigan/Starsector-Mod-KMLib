@@ -3,6 +3,8 @@ package kmlib.starsector.ui.font;
 import kmlib.settings.LabeledChoice;
 import kmlib.settings.LabeledChoices;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -36,6 +38,19 @@ public sealed interface FaceChoice
      */
     static FaceChoice fromLabel(String label) {
         return LabeledChoices.fromLabel(listEveryChoice(), label, AUTO_FACE);
+    }
+
+    /**
+     * The labels a Radio choosing a face lists, in order: the automatic choice, then every face the enum
+     * names by basename. The one statement of the options, the same for every category, so a settings
+     * table can be held to it.
+     *
+     * @return the Radio's option labels
+     */
+    static List<String> listChoiceLabels() {
+        return Arrays.stream(listEveryChoice())
+            .map(FaceChoice::getLabel)
+            .toList();
     }
 
     /**

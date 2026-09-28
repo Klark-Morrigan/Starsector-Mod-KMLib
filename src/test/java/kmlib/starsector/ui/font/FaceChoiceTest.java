@@ -41,6 +41,25 @@ class FaceChoiceTest {
     }
 
     @Nested
+    class ListChoiceLabels {
+
+        @Test
+        void listChoiceLabelsListsTheAutomaticChoiceFirstThenEveryFaceByBasename() {
+            // The options every font Radio carries, and the values it stores: spelt out, so a face added
+            // to the enum shows here as a new option every settings table has to take.
+            assertThat(FaceChoice.listChoiceLabels())
+                .containsExactly(
+                    "Auto",
+                    "insignia15LTaa",
+                    "orbitron20aa",
+                    "orbitron12condensed",
+                    "victor10",
+                    "insignia25LTaa",
+                    "insignia42LTaa");
+        }
+    }
+
+    @Nested
     class GetLabel {
 
         @Test

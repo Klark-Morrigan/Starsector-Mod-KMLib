@@ -57,11 +57,15 @@ def testBuildScripts = tasks.register('testBuildScripts', Test) {
 
 reportTestOutcomesOf(testBuildScripts.get())
 
-// The install the build located, for the suite that holds every face KM text may draw in to the
-// descriptor actually installed under its basename. A property rather than a path the suite works out,
-// so the suite and the build agree on which install that is; the suite skips where none is present.
+// The installs the font suites hold every face KM text may draw in to: the one the build located, and
+// any others -PfontInstallRoots names, separated by the platform's path separator. The others are how a
+// machine holding a core localisation's editions checks them - there is no CI leg per edition, since
+// none changes what the jar is compiled against, so they are checked wherever they are installed rather
+// than recorded and trusted elsewhere. Properties rather than paths the suites work out, so the suites
+// and the build agree on which installs those are; the suites skip where none is present.
 tasks.named('test') {
     systemProperty 'kmlib.starsectorRoot', starsectorRoot
+    systemProperty 'kmlib.fontInstallRoots', findProperty('fontInstallRoots') ?: ''
 }
 
 tasks.named('check') {

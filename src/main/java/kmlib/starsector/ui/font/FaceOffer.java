@@ -1,83 +1,54 @@
 package kmlib.starsector.ui.font;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Optional;
 
 /**
- * The faces one category of text may draw in: the face it prefers, and the curated alternatives a
- * player may pick or the automatic choice may fall to. Curated per category rather than every atlas the
- * install holds, because each category has a job - a label stretched across a map wants a
- * high-resolution atlas, a compact row wants a face that fits its box - and a face wrong for the job is
- * no answer even where it holds every glyph.
+ * The faces the automatic choice for one category of text may land on: the face it prefers, and the one
+ * face it falls back to where the text needs a glyph the preferred face's installed atlas lacks.
  *
- * <p>The preferred face is its own component rather than one member of a list, so an offer cannot prefer
- * a face it does not offer.
+ * <p>What a player may pick is not part of an offer. Every face the enum names is offered to every
+ * category's Radio, since a player choosing a face picks it knowing what it looks like, and
+ * {@link FaceChoice#listChoiceLabels()} states those options once. What is per category is where the
+ * automatic choice goes, because it goes there unasked: a face stretched across a map and a face set in a
+ * fixed button box want different answers, and only the category knows which.
  *
- * @param preferredFont    the face the category draws in whenever it can
- * @param alternativeFonts the other faces offered, in the order a Radio lists them; neither repeating
- *                         one another nor the preferred face
+ * <p>One fallback rather than a list, because a second would only answer the first also lacking the
+ * text, and the resolver already answers that - by keeping the preferred face. A category with no
+ * fallback keeps its preferred face whatever the text, which is the right answer wherever the preferred
+ * atlas is one a core localisation replaces with one holding its script.
+ *
+ * @param preferredFont the face the category draws in whenever it can
+ * @param fallbackFont  the face it draws in where the preferred face's atlas lacks a glyph of the text,
+ *                      if it has one; never the preferred face itself
  */
 public record FaceOffer(
     StarsectorFont preferredFont,
-    List<StarsectorFont> alternativeFonts) {
+    Optional<StarsectorFont> fallbackFont) {
 
     /**
-     * Copies the alternatives and refuses a face offered twice, which a Radio would list twice under one
-     * stored label.
+     * Refuses a fallback naming the preferred face, which would fall back to the face that just failed.
      */
     public FaceOffer {
-
-        alternativeFonts = List.copyOf(alternativeFonts);
-
-        var offeredFonts = new HashSet<StarsectorFont>();
-        offeredFonts.add(preferredFont);
-
-        for (var alternativeFont : alternativeFonts) {
-
-            if (!offeredFonts.add(alternativeFont)) {
-
-                throw new IllegalArgumentException(
-                    "Face offered twice: " + alternativeFont.getBasename());
-            }
+        if (fallbackFont.filter(font -> font == preferredFont).isPresent()) {
+            throw new IllegalArgumentException(
+                "Face falls back to itself: " + preferredFont.getBasename());
         }
     }
 
     /**
-     * @return every face offered, the preferred one first
+     * @param preferredFont the face the category always draws in
+     * @return an offer with no fallback
      */
-    public List<StarsectorFont> listOfferedFonts() {
-
-        var offeredFonts = new ArrayList<StarsectorFont>(alternativeFonts.size() + 1);
-
-        offeredFonts.add(preferredFont);
-        offeredFonts.addAll(alternativeFonts);
-
-        return List.copyOf(offeredFonts);
+    public static FaceOffer createOfferWithoutFallback(StarsectorFont preferredFont) {
+        return new FaceOffer(preferredFont, Optional.empty());
     }
 
     /**
-     * The labels a Radio offering this category lists, in order: the automatic choice, then each offered
-     * face by basename. The one statement of the options, so a settings table can be held to it.
-     *
-     * @return the Radio's option labels
+     * @param preferredFont the face the category draws in whenever it can
+     * @param fallbackFont  the face it draws in where the text needs a glyph the preferred face lacks
+     * @return an offer falling back to that face
      */
-    public List<String> listChoiceLabels() {
-
-        var choiceLabels = new ArrayList<String>();
-        choiceLabels.add(FaceChoice.AUTO_FACE.getLabel());
-
-        for (var offeredFont : listOfferedFonts()) {
-            choiceLabels.add(new FaceChoice.NamedFace(offeredFont).getLabel());
-        }
-        return List.copyOf(choiceLabels);
-    }
-
-    /**
-     * @param font a face
-     * @return whether this offer lists it
-     */
-    public boolean isFontOffered(StarsectorFont font) {
-        return preferredFont == font || alternativeFonts.contains(font);
+    public static FaceOffer createOfferFallingBackTo(StarsectorFont preferredFont, StarsectorFont fallbackFont) {
+        return new FaceOffer(preferredFont, Optional.of(fallbackFont));
     }
 }
