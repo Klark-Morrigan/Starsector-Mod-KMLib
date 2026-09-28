@@ -74,6 +74,30 @@ final class SegmentTest {
     }
 
     @Nested
+    class JoinPoints {
+
+        @Test
+        void theSegmentRunsFromTheFirstPointToTheSecond() {
+
+            assertThat(Segment.joinPoints(new double[] {0, 0}, new double[] {10, 0}))
+                .isEqualTo(EASTWARD);
+        }
+
+        @Test
+        void laterChangesToThePointsDoNotMoveTheSegment() {
+            // A record of four doubles holds values, so a caller reusing its arrays as scratch
+            // space after the call leaves the segment where it was laid.
+            var start = new double[] {0, 0};
+            var segment = Segment.joinPoints(start, new double[] {10, 0});
+
+            start[0] = 5;
+
+            assertThat(segment)
+                .isEqualTo(EASTWARD);
+        }
+    }
+
+    @Nested
     class ReadEnd {
 
         @Test

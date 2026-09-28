@@ -21,6 +21,20 @@ public record Segment(
     double endY) {
 
     /**
+     * The segment from one point to another.
+     *
+     * <p>The way in from point arithmetic, as {@link #readStart} and {@link #readEnd} are the
+     * way out, so no caller spells the four coordinates out of two arrays for itself.
+     *
+     * @param start where the segment starts, as {@code {x, y}}
+     * @param end   where it ends
+     * @return the segment, holding copies of the coordinates rather than the arrays
+     */
+    public static Segment joinPoints(double[] start, double[] end) {
+        return new Segment(start[0], start[1], end[0], end[1]);
+    }
+
+    /**
      * The four corners of the band this segment is the centreline of - the rectangle
      * {@code thickness} wide, half of it either side, running the segment's whole length.
      *
