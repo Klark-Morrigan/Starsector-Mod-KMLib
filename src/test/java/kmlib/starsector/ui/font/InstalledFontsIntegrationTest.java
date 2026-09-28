@@ -2,6 +2,7 @@ package kmlib.starsector.ui.font;
 
 import kmlib.testfixtures.starsector.ui.font.FontDescriptorHeader;
 import kmlib.testfixtures.starsector.ui.font.InstalledFonts;
+import kmlib.testfixtures.starsector.ui.font.InstalledFontsReader;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,8 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
  * there: every install it checks is one holding the full game.
  *
  * <p>Two things are asked of every install, over the faces KM draws in and the cuts they fall back to -
- * the enum, which names both. That each is present in a shape LazyLib and the game both load. And that
+ * the enum, which names both. That each is present in a shape LazyLib and the game both load, with the
+ * smoothing the enum states for it. And that
  * every face KM may ask for settles, walking down its family to the install's own default, on one that
  * draws a localised faction name - which is the row of question marks the walk exists to end, settled
  * here against real atlases rather than posed ones.
@@ -71,6 +73,12 @@ class InstalledFontsIntegrationTest {
                     assertThat(face.lineHeight())
                         .as("line height of %s on %s", font.getBasename(), edition)
                         .isPositive();
+
+                    // The enum states each face's smoothing rather than reading it, so an edition turning
+                    // a face pixel-exact, or the reverse, would draw it through the wrong filter unseen.
+                    assertThat(face.smoothing())
+                        .as("smoothing of %s on %s", font.getBasename(), edition)
+                        .isEqualTo(font.getSmoothing());
                 }
             }
         }
@@ -159,7 +167,7 @@ class InstalledFontsIntegrationTest {
         assumeFalse(installRoots.isEmpty(), "No install carrying the game's fonts was handed");
 
         return installRoots.stream()
-            .map(InstalledFonts::readInstall)
+            .map(InstalledFontsReader::readInstall)
             .toList();
     }
 }

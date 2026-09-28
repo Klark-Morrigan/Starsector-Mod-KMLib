@@ -31,7 +31,7 @@ public record StripTextMeasurers(
      * @param bodyFont the atlas every other control letters in
      * @return the pair bound to those faces, or null when either will not load
      */
-    public static StripTextMeasurers loadFaceMeasurers(TextFace tabFace, StarsectorFont bodyFont) {
+    public static StripTextMeasurers loadFaceMeasurers(TextFace tabFace, FontAtlas bodyFont) {
 
         var tabAtlas = LazyFontCache.loadByFace(tabFace.atlas());
         var bodyAtlas = LazyFontCache.loadByFace(bodyFont);

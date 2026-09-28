@@ -32,9 +32,6 @@ public final class GameDefaultFontReader {
     // The settings key the game names its paragraph face under.
     private static final String DEFAULT_FONT_KEY = "defaultFont";
 
-    // The face vanilla's settings name, answered where the setting names nothing at all.
-    private static final StarsectorFont VANILLA_DEFAULT_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
-
     // Reads only; never instantiated.
     private GameDefaultFontReader() {
     }
@@ -63,8 +60,9 @@ public final class GameDefaultFontReader {
             String defaultFontPath,
             Function<String, AtlasSmoothing> declaredSmoothingReader) {
 
+        // The last resort is the face vanilla's settings name, so a setting naming nothing reads as vanilla's.
         if (defaultFontPath == null || defaultFontPath.isBlank()) {
-            return VANILLA_DEFAULT_FONT;
+            return FaceResolver.LAST_RESORT_FONT;
         }
 
         var knownFont = StarsectorFont.findFontByPath(defaultFontPath);

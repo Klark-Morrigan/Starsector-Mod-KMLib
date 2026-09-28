@@ -1,10 +1,5 @@
 package kmlib.testfixtures.starsector.ui.font;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -13,11 +8,6 @@ import java.util.regex.Pattern;
  * lines joined by a space and split into tokens on {@code =} and on whitespace outside quotes. What a
  * suite holds an installed face to - LazyLib refuses a header of any token count but one, the game's own
  * loader misreads any page count but one, and the line height is the size the atlas draws 1:1 at.
- *
- * <p>Read byte for byte as Latin-1 rather than as UTF-8. A localised atlas names its face in the
- * localisation's own script, and a byte never splits a token here: no byte of a multi-byte UTF-8
- * sequence is an equals sign, a quote or whitespace, so the token count comes out as LazyLib's does
- * whatever encoding the file is in, and a file in some other encoding still reads.
  *
  * @param tokenCount  how many tokens the header splits into
  * @param lineHeight  the {@code lineHeight} the header states
@@ -42,39 +32,33 @@ public record FontDescriptorHeader(
     private static final String PAGE_COUNT_KEY = "pages";
 
     /**
-     * Reads the header of the descriptor at {@code descriptorFile}.
+     * Reads the header off a descriptor's lines.
      *
-     * @param descriptorFile a {@code .fnt} file
+     * @param descriptorLines every line of a {@code .fnt} file
      * @return its header's token count, line height and page count
      */
-    public static FontDescriptorHeader readDescriptorHeader(Path descriptorFile) {
+    public static FontDescriptorHeader readDescriptorHeader(List<String> descriptorLines) {
 
-        List<String> lines;
-        try {
-            lines = Files.readAllLines(descriptorFile, StandardCharsets.ISO_8859_1);
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Could not read " + descriptorFile, exception);
-        }
-        if (lines.size() < HEADER_LINE_COUNT) {
-            throw new IllegalArgumentException(descriptorFile + " holds no three-line header");
+        if (descriptorLines.size() < HEADER_LINE_COUNT) {
+            throw new IllegalArgumentException("The descriptor holds no three-line header");
         }
         // Split with Java's trailing-empty drop, which is LazyLib's dropLastWhile over Kotlin's split.
-        var tokens = HEADER_TOKEN_SEPARATOR.split(String.join(" ", lines.subList(0, HEADER_LINE_COUNT)));
+        var tokens = HEADER_TOKEN_SEPARATOR.split(String.join(" ", descriptorLines.subList(0, HEADER_LINE_COUNT)));
 
         return new FontDescriptorHeader(
             tokens.length,
-            Double.parseDouble(readValueAfterKey(tokens, LINE_HEIGHT_KEY, descriptorFile)),
-            Integer.parseInt(readValueAfterKey(tokens, PAGE_COUNT_KEY, descriptorFile)));
+            Double.parseDouble(readValueAfterKey(tokens, LINE_HEIGHT_KEY)),
+            Integer.parseInt(readValueAfterKey(tokens, PAGE_COUNT_KEY)));
     }
 
     // The token a key is followed by, the split having parted each key from its value at the equals.
-    private static String readValueAfterKey(String[] tokens, String key, Path descriptorFile) {
+    private static String readValueAfterKey(String[] tokens, String key) {
 
         for (var index = 0; index < tokens.length - 1; index++) {
             if (tokens[index].equals(key)) {
                 return tokens[index + 1];
             }
         }
-        throw new IllegalArgumentException(descriptorFile + " states no " + key);
+        throw new IllegalArgumentException("The descriptor states no " + key);
     }
 }

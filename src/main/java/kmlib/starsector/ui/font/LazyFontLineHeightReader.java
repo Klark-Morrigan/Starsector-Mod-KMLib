@@ -11,16 +11,13 @@ package kmlib.starsector.ui.font;
  */
 public final class LazyFontLineHeightReader {
 
-    // What a face that will not load reads as: no height, since no glyphs of it will be painted either.
-    private static final double NO_HEIGHT = 0d;
-
     // Reads only; never instantiated.
     private LazyFontLineHeightReader() {
     }
 
     /**
-     * The line height of the atlas installed at {@code atlas}'s path, or zero when that face cannot
-     * load.
+     * The line height of the atlas installed at {@code atlas}'s path, or
+     * {@link FaceLineHeightReader#NO_LINE_HEIGHT} when that face cannot load.
      *
      * @param atlas the face whose installed atlas is read
      * @return the atlas's line height
@@ -29,7 +26,7 @@ public final class LazyFontLineHeightReader {
 
         var loaded = LazyFontCache.loadByFace(atlas);
         if (loaded == null) {
-            return NO_HEIGHT;
+            return FaceLineHeightReader.NO_LINE_HEIGHT;
         }
         // LazyLib names it the base height; it is the descriptor's lineHeight field by token position,
         // which is the number its own glyph placement scales every requested size against.

@@ -26,9 +26,6 @@ public final class InstalledFaceCheck {
     // What a face that will not load is reported as, in place of a line height.
     private static final String UNAVAILABLE_READING = "unavailable";
 
-    // The line height the reader states for a face that will not load.
-    private static final double NO_LINE_HEIGHT = 0d;
-
     // Checks only; never instantiated.
     private InstalledFaceCheck() {
     }
@@ -57,8 +54,8 @@ public final class InstalledFaceCheck {
     // load, since a zero would read as an atlas of no height rather than as no atlas.
     private static String formatLineHeightReading(double lineHeight) {
 
-        return lineHeight > NO_LINE_HEIGHT
-            ? Long.toString(Math.round(lineHeight))
+        return FaceLineHeightReader.isFaceLoadable(lineHeight)
+            ?Long.toString(Math.round(lineHeight))
             : UNAVAILABLE_READING;
     }
 }

@@ -1,19 +1,12 @@
 package kmlib.testfixtures.starsector.ui.font;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
  * The glyph IDs a bitmap font descriptor ({@code .fnt}) declares, read off its {@code char} lines the way
  * LazyLib picks them out: a line starting {@code char } followed by a space, which leaves out the
  * {@code chars count=} line above them.
- *
- * <p>Read byte for byte as Latin-1, for the reason {@link FontDescriptorHeader} is: every character that
- * matters here is ASCII, and a localised face name elsewhere in the file must not fail the read.
  */
 public final class FontDescriptorGlyphs {
 
@@ -29,28 +22,22 @@ public final class FontDescriptorGlyphs {
     }
 
     /**
-     * Reads the glyph IDs the descriptor at {@code descriptorFile} declares.
+     * Reads the glyph IDs a descriptor's lines declare.
      *
-     * @param descriptorFile a {@code .fnt} file
+     * @param descriptorLines every line of a {@code .fnt} file
      * @return its declared glyph IDs
      */
-    public static GlyphIdRanges readGlyphIds(Path descriptorFile) {
-        try (var lines = Files.lines(descriptorFile, StandardCharsets.ISO_8859_1)) {
-
-            return GlyphIdRanges.createFromIds(lines
-                .filter(line -> line.startsWith(GLYPH_LINE_PREFIX))
-                .mapToInt(line -> readGlyphId(line, descriptorFile)));
-
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Could not read " + descriptorFile, exception);
-        }
+    public static GlyphIdRanges readGlyphIds(List<String> descriptorLines) {
+        return GlyphIdRanges.createFromIds(descriptorLines.stream()
+            .filter(line -> line.startsWith(GLYPH_LINE_PREFIX))
+            .mapToInt(FontDescriptorGlyphs::readGlyphId));
     }
 
-    private static int readGlyphId(String glyphLine, Path descriptorFile) {
+    private static int readGlyphId(String glyphLine) {
 
         var idMatch = GLYPH_ID_FIELD.matcher(glyphLine);
         if (!idMatch.find()) {
-            throw new IllegalArgumentException(descriptorFile + " holds a glyph line with no id: " + glyphLine);
+            throw new IllegalArgumentException("The descriptor holds a glyph line with no id: " + glyphLine);
         }
         return Integer.parseInt(idMatch.group(1));
     }

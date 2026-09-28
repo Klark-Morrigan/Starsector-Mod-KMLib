@@ -4,12 +4,6 @@ import kmlib.testfixtures.starsector.ui.font.GlyphIdRanges.GlyphIdRange;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,13 +28,10 @@ class FontDescriptorGlyphsTest {
     class ReadGlyphIds {
 
         @Test
-        void readGlyphIdsReadsEveryGlyphLineAndNothingElse(@TempDir Path directory) throws IOException {
+        void readGlyphIdsReadsEveryGlyphLineAndNothingElse() {
             // The count line starts "chars", and a reader matching "char" alone would read its 4 as a
             // glyph; the kerning line names two IDs that are no glyphs of their own.
-            var descriptorFile = directory.resolve("face.fnt");
-            Files.writeString(descriptorFile, DESCRIPTOR, StandardCharsets.UTF_8);
-
-            assertThat(FontDescriptorGlyphs.readGlyphIds(descriptorFile).idRanges())
+            assertThat(FontDescriptorGlyphs.readGlyphIds(DESCRIPTOR.lines().toList()).idRanges())
                 .containsExactly(new GlyphIdRange(32, 34), new GlyphIdRange(19968, 19968));
         }
     }

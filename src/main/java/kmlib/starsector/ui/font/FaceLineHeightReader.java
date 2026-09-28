@@ -16,11 +16,27 @@ package kmlib.starsector.ui.font;
 public interface FaceLineHeightReader {
 
     /**
+     * What a reader answers for a face that will not load: no height, since no glyphs of it will be painted
+     * either. Every loadable atlas states a height above it.
+     */
+    double NO_LINE_HEIGHT = 0d;
+
+    /**
+     * Whether a reading is of a face that loads.
+     *
+     * @param lineHeight a line height a reader answered
+     * @return true when the reading is above {@link #NO_LINE_HEIGHT}
+     */
+    static boolean isFaceLoadable(double lineHeight) {
+        return lineHeight > NO_LINE_HEIGHT;
+    }
+
+    /**
      * The line height of the atlas installed at {@code atlas}'s path, in the units a text size is stated
      * in.
      *
      * @param atlas the face whose installed atlas is read
-     * @return the atlas's line height, or zero when the face cannot load
+     * @return the atlas's line height, or {@link #NO_LINE_HEIGHT} when the face cannot load
      */
     double readLineHeight(FontAtlas atlas);
 }

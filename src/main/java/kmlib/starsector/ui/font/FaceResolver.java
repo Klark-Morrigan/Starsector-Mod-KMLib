@@ -40,10 +40,6 @@ public final class FaceResolver {
      */
     public static final StarsectorFont LAST_RESORT_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
 
-    // The line height the reader states for a face that will not load, and so the floor a loadable face
-    // stands above.
-    private static final double NO_LINE_HEIGHT = 0d;
-
     private final FontAtlas declaredDefaultAtlas;
     private final GlyphCoverageReader glyphCoverage;
     private final FaceLineHeightReader lineHeights;
@@ -123,7 +119,7 @@ public final class FaceResolver {
 
     // Whether a face loads and draws every character of every text asked about.
     private boolean isAtlasDrawingEveryText(FontAtlas atlas, Collection<String> probeTexts) {
-        return lineHeights.readLineHeight(atlas) > NO_LINE_HEIGHT
-            && probeTexts.stream().allMatch(probeText -> glyphCoverage.coversText(atlas, probeText));
+        return FaceLineHeightReader.isFaceLoadable(lineHeights.readLineHeight(atlas))
+            &&probeTexts.stream().allMatch(probeText -> glyphCoverage.coversText(atlas, probeText));
     }
 }

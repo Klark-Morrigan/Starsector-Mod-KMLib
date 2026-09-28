@@ -2,12 +2,8 @@ package kmlib.testfixtures.starsector.ui.font;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,18 +29,18 @@ class FontDescriptorHeaderTest {
     class ReadDescriptorHeader {
 
         @Test
-        void readDescriptorHeaderCountsTheTokensAsLazyLibSplitsThem(@TempDir Path directory) throws IOException {
+        void readDescriptorHeaderCountsTheTokensAsLazyLibSplitsThem() {
 
-            var header = FontDescriptorHeader.readDescriptorHeader(writeDescriptor(directory, VANILLA_HEADER));
+            var header = FontDescriptorHeader.readDescriptorHeader(VANILLA_HEADER.lines().toList());
 
             assertThat(header.tokenCount())
                 .isEqualTo(51);
         }
 
         @Test
-        void readDescriptorHeaderReadsTheLineHeightAndThePageCount(@TempDir Path directory) throws IOException {
+        void readDescriptorHeaderReadsTheLineHeightAndThePageCount() {
 
-            var header = FontDescriptorHeader.readDescriptorHeader(writeDescriptor(directory, VANILLA_HEADER));
+            var header = FontDescriptorHeader.readDescriptorHeader(VANILLA_HEADER.lines().toList());
 
             assertThat(header.lineHeight())
                 .isEqualTo(15d);
@@ -53,47 +49,34 @@ class FontDescriptorHeaderTest {
         }
 
         @Test
-        void readDescriptorHeaderKeepsAQuotedFaceNameWholeWhateverScriptItIsIn(@TempDir Path directory)
-                throws IOException {
-            // A localised atlas names its face in its own script, written as UTF-8: the count has to come
-            // out as LazyLib's does, or a face it loads would be reported as one it refuses.
+        void readDescriptorHeaderKeepsAQuotedFaceNameWholeWhateverScriptItIsIn() {
+            // A localised atlas names its face in its own script: the count has to come out as LazyLib's
+            // does, or a face it loads would be reported as one it refuses.
             var localisedHeader = VANILLA_HEADER.replace("InsigniaLT", LOCALISED_FACE_NAME);
 
-            var header = FontDescriptorHeader.readDescriptorHeader(writeDescriptor(directory, localisedHeader));
+            var header = FontDescriptorHeader.readDescriptorHeader(localisedHeader.lines().toList());
 
             assertThat(header.tokenCount())
                 .isEqualTo(51);
         }
 
         @Test
-        void readDescriptorHeaderCountsAnUnquotedSpaceAsTheExtraTokenLazyLibRefuses(@TempDir Path directory)
-                throws IOException {
+        void readDescriptorHeaderCountsAnUnquotedSpaceAsTheExtraTokenLazyLibRefuses() {
             // The brittleness the count exists to catch: a face name that loses its quotes splits in two.
             var brokenHeader = VANILLA_HEADER.replace("\"InsigniaLT\"", "Insignia LT");
 
-            var header = FontDescriptorHeader.readDescriptorHeader(writeDescriptor(directory, brokenHeader));
+            var header = FontDescriptorHeader.readDescriptorHeader(brokenHeader.lines().toList());
 
             assertThat(header.tokenCount())
                 .isEqualTo(52);
         }
 
         @Test
-        void readDescriptorHeaderRefusesAFileShorterThanTheHeader(@TempDir Path directory) throws IOException {
+        void readDescriptorHeaderRefusesLinesShorterThanTheHeader() {
 
-            var descriptorFile = writeDescriptor(directory, "info face=\"x\"\n");
-
-            assertThatThrownBy(() -> FontDescriptorHeader.readDescriptorHeader(descriptorFile))
+            assertThatThrownBy(() -> FontDescriptorHeader.readDescriptorHeader(List.of("info face=\"x\"")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("three-line header");
         }
-    }
-
-    private static Path writeDescriptor(Path directory, String content) throws IOException {
-
-        var descriptorFile = directory.resolve("face.fnt");
-
-        Files.writeString(descriptorFile, content, StandardCharsets.UTF_8);
-
-        return descriptorFile;
     }
 }
