@@ -100,6 +100,20 @@ public final class StarsectorSettingsFake {
     public static final ModVersionsSource NO_MOD_VERSIONS = modId -> null;
 
     /**
+     * Pluggable adapter for {@link com.fs.starfarer.api.ModSpecAPI#getGameVersion()}, for a test
+     * whose subject states a mismatch between the game a mod was made for and the one running.
+     * Implementations answer for the mod IDs they know and null for the rest, which is what a spec
+     * declaring no game version answers.
+     */
+    @FunctionalInterface
+    public interface ModGameVersionsSource {
+        String gameVersionOf(String modId);
+    }
+
+    /** {@link ModGameVersionsSource} for specs that state no game version at all. */
+    public static final ModGameVersionsSource NO_MOD_GAME_VERSIONS = modId -> null;
+
+    /**
      * Pluggable adapter for the element a panel built through {@link SettingsAPI#createCustom}
      * hands back from {@code createUIElement}, for a test whose subject makes a tooltip surface of
      * its own rather than being handed one. That surface never reaches the caller, so the element
@@ -180,6 +194,9 @@ public final class StarsectorSettingsFake {
             if ("createCustom".equals(method.getName())) {
                 return customPanel(answers.uiElementSource);
             }
+            if ("getGameVersion".equals(method.getName())) {
+                return answers.gameVersion;
+            }
             return resolveDefaultValue(method.getReturnType());
         });
     }
@@ -230,6 +247,9 @@ public final class StarsectorSettingsFake {
             if ("getVersion".equals(method.getName())) {
                 return answers.resolveModVersions().versionOf(modId);
             }
+            if ("getGameVersion".equals(method.getName())) {
+                return answers.resolveModGameVersions().gameVersionOf(modId);
+            }
             return resolveDefaultValue(method.getReturnType());
         });
     }
@@ -276,7 +296,7 @@ public final class StarsectorSettingsFake {
      * which a lambda does not carry.
      *
      * <p>An adapter left unnamed answers the default beside its interface, and a mod manager is
-     * present only where one of the three mod adapters was named - a settings object whose
+     * present only where one of the mod adapters was named - a settings object whose
      * {@code getModManager} answers null is the state a read taken before the game is fully up
      * meets, and a fixture that always supplied one could not stand for it.
      */
@@ -291,10 +311,26 @@ public final class StarsectorSettingsFake {
         private EnabledModsSource enabledModsSource;
         private ModNamesSource modNamesSource;
         private ModVersionsSource modVersionsSource;
+        private ModGameVersionsSource modGameVersionsSource;
 
         private UiElementSource uiElementSource = NO_UI_ELEMENTS;
 
+        // Null rather than a stand-in release: a game reporting no version is what a report falls
+        // back to its unknown wording on, and a default version would hide that branch.
+        private String gameVersion;
+
         private SettingsBuilder() {
+        }
+
+        /**
+         * @param gameVersion what the settings answer for the running game's version. Name it where
+         *                    the subject states a mismatch against the game itself
+         * @return this builder
+         */
+        public SettingsBuilder answerGameVersion(String gameVersion) {
+
+            this.gameVersion = gameVersion;
+            return this;
         }
 
         /**
@@ -318,6 +354,18 @@ public final class StarsectorSettingsFake {
         public SettingsBuilder answerEnabledMods(EnabledModsSource enabledModsSource) {
 
             this.enabledModsSource = enabledModsSource;
+            return this;
+        }
+
+        /**
+         * @param modGameVersionsSource what those specs answer for the game version each mod
+         *                              declares it was made for. Name it where the subject states a
+         *                              mismatch between that and the game running
+         * @return this builder
+         */
+        public SettingsBuilder answerModGameVersions(ModGameVersionsSource modGameVersionsSource) {
+
+            this.modGameVersionsSource = modGameVersionsSource;
             return this;
         }
 
@@ -376,12 +424,15 @@ public final class StarsectorSettingsFake {
             Global.setSettings(settings(this));
         }
 
-        // Whether the settings object carries a mod manager at all. Any of the three mod adapters
-        // implies one: a caller naming what specs answer has plainly not asked for the state where
-        // there is nothing to ask.
+        // Whether the settings object carries a mod manager at all. Any of the mod adapters implies
+        // one: a caller naming what specs answer has plainly not asked for the state where there is
+        // nothing to ask.
         private boolean hasModManager() {
 
-            return enabledModsSource != null || modNamesSource != null || modVersionsSource != null;
+            return enabledModsSource != null
+                || modNamesSource != null
+                || modVersionsSource != null
+                || modGameVersionsSource != null;
         }
 
         // Enablement where only the specs were named: a mod the manager lists is a mod it has. The
@@ -402,6 +453,11 @@ public final class StarsectorSettingsFake {
         private ModVersionsSource resolveModVersions() {
 
             return modVersionsSource == null ? NO_MOD_VERSIONS : modVersionsSource;
+        }
+
+        private ModGameVersionsSource resolveModGameVersions() {
+
+            return modGameVersionsSource == null ? NO_MOD_GAME_VERSIONS : modGameVersionsSource;
         }
     }
 }
