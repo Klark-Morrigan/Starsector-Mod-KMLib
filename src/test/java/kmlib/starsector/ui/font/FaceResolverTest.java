@@ -11,13 +11,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins how a category's face is settled from the player's pick and the install: the automatic choice
- * keeping the preferred face until the text needs a glyph it lacks, taking the one fallback where that
- * face holds the text, and never landing on a face that will not load while one that does is offered.
+ * Pins how a face is settled from the face asked for and the install: kept where it loads and holds the
+ * text, walked down its family to the first cut that does, and ended at the default face either way.
  *
  * <p>The install is posed as vanilla or as a localised one: vanilla atlases hold Latin-1 alone, while a
- * localised install replaces the two smaller insignia atlases with ones holding its script and leaves the
- * high-resolution one untouched - the arrangement that drew KMU's map labels as question marks.
+ * localised install replaces the smaller insignia cuts with ones holding its script and leaves the
+ * high-resolution cut untouched - the arrangement that drew KMU's map labels as question marks.
  */
 class FaceResolverTest {
 
@@ -27,144 +26,162 @@ class FaceResolverTest {
     // What the reader states for a face the install cannot load.
     private static final double UNLOADABLE = 0d;
 
-    // A map label's offer: the high-resolution atlas preferred, the larger insignia cut behind it.
-    private static final FaceOffer LABEL_OFFER = FaceOffer.createOfferFallingBackTo(
-        StarsectorFont.VANILLA_INSIGNIA_42,
-        StarsectorFont.VANILLA_INSIGNIA_25);
-
-    // A category with no fallback, whose preferred face is one a localised install replaces.
-    private static final FaceOffer BODY_OFFER = FaceOffer.createOfferWithoutFallback(
-        StarsectorFont.VANILLA_INSIGNIA_15);
+    // The game's own default face on a vanilla install.
+    private static final StarsectorFont DEFAULT_FONT = StarsectorFont.VANILLA_INSIGNIA_15;
 
     private static GlyphCoverageReaderFake createLocalisedCoverage() {
         return GlyphCoverageReaderFake.createLatinOnlyCoverage()
             .coveringEveryCharacter(StarsectorFont.VANILLA_INSIGNIA_25)
+            .coveringEveryCharacter(StarsectorFont.VANILLA_INSIGNIA_21)
             .coveringEveryCharacter(StarsectorFont.VANILLA_INSIGNIA_15);
     }
 
-    private static FaceResolver createLocalisedResolver() {
-        return new FaceResolver(FaceLineHeightReaderFake.createVanillaLineHeights(), createLocalisedCoverage());
+    private static FaceResolver createResolver(
+            FaceLineHeightReaderFake lineHeightsFake,
+            GlyphCoverageReaderFake coverageFake) {
+
+        return new FaceResolver(lineHeightsFake, coverageFake, DEFAULT_FONT);
     }
 
-    private static FaceResolver createResolverWithUnloadable(StarsectorFont... unloadableFonts) {
+    private static FaceResolver createLocalisedResolver() {
+        return createResolver(FaceLineHeightReaderFake.createVanillaLineHeights(), createLocalisedCoverage());
+    }
+
+    private static FaceResolver createLocalisedResolverWithUnloadable(StarsectorFont... unloadableFonts) {
 
         var lineHeightsFake = FaceLineHeightReaderFake.createVanillaLineHeights();
         for (var unloadableFont : unloadableFonts) {
             lineHeightsFake = lineHeightsFake.answeringLineHeight(unloadableFont, UNLOADABLE);
         }
-        return new FaceResolver(lineHeightsFake, createLocalisedCoverage());
+        return createResolver(lineHeightsFake, createLocalisedCoverage());
     }
 
     @Nested
     class ResolveFont {
 
         @Test
-        void resolveFontKeepsThePreferredFaceWhenItsAtlasCoversTheText() {
+        void resolveFontKeepsTheFaceAskedForWhereItsAtlasHoldsTheText() {
             // An English build's names on a localised install: the high-resolution atlas holds them, so
-            // nothing moves the category off it.
-            assertThat(createLocalisedResolver().resolveFont(LABEL_OFFER, FaceChoice.AUTO_FACE, List.of("Hegemony")))
+            // nothing moves the text off it.
+            assertThat(createLocalisedResolver().resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of("Hegemony")))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_42);
         }
 
         @Test
-        void resolveFontTakesTheFallbackWhenThePreferredAtlasLacksAGlyphTheFallbackHolds() {
-            // The row of question marks, answered.
+        void resolveFontStepsDownToTheLargestCutThatHoldsTheText() {
+            // The row of question marks, answered: the next cut down holds the script, so the walk stops
+            // there rather than dropping further than it has to.
             assertThat(createLocalisedResolver().resolveFont(
-                    LABEL_OFFER,
-                    FaceChoice.AUTO_FACE,
+                    StarsectorFont.VANILLA_INSIGNIA_42,
                     List.of(LOCALISED_NAME)))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
         }
 
         @Test
-        void resolveFontFallsWhenAnyOneOfTheTextsNeedsAGlyphThePreferredAtlasLacks() {
-            // A category draws every name at once, so one localised name among Latin ones moves them all.
+        void resolveFontStepsDownWhenAnyOneOfTheTextsNeedsAGlyphTheFaceLacks() {
+            // A caller settles one face for everything it draws, so one localised name among Latin ones
+            // moves them all.
             assertThat(createLocalisedResolver().resolveFont(
-                    LABEL_OFFER,
-                    FaceChoice.AUTO_FACE,
+                    StarsectorFont.VANILLA_INSIGNIA_42,
                     List.of("Hegemony", LOCALISED_NAME)))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
         }
 
         @Test
-        void resolveFontKeepsThePreferredFaceWhenTheFallbackLacksTheTextToo() {
-            // A localised build on a vanilla install: no atlas holds the script, and gaps in the face
-            // meant for the job read no worse than the same gaps in another.
-            var resolver = new FaceResolver(
-                FaceLineHeightReaderFake.createVanillaLineHeights(),
-                GlyphCoverageReaderFake.createLatinOnlyCoverage());
+        void resolveFontPassesOverACutThatWillNotLoad() {
 
-            assertThat(resolver.resolveFont(LABEL_OFFER, FaceChoice.AUTO_FACE, List.of(LOCALISED_NAME)))
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_42);
+            var resolver = createLocalisedResolverWithUnloadable(StarsectorFont.VANILLA_INSIGNIA_25);
+
+            assertThat(resolver.resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of(LOCALISED_NAME)))
+                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_21);
         }
 
         @Test
-        void resolveFontKeepsThePreferredFaceOfACategoryWithNoFallback() {
-
-            var resolver = new FaceResolver(
-                FaceLineHeightReaderFake.createVanillaLineHeights(),
-                GlyphCoverageReaderFake.createLatinOnlyCoverage());
-
-            assertThat(resolver.resolveFont(BODY_OFFER, FaceChoice.AUTO_FACE, List.of(LOCALISED_NAME)))
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
-        }
-
-        @Test
-        void resolveFontPassesOverACoveringFallbackThatWillNotLoad() {
-
-            var resolver = createResolverWithUnloadable(StarsectorFont.VANILLA_INSIGNIA_25);
-
-            assertThat(resolver.resolveFont(LABEL_OFFER, FaceChoice.AUTO_FACE, List.of(LOCALISED_NAME)))
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_42);
-        }
-
-        @Test
-        void resolveFontTakesTheFallbackWhenThePreferredFaceWillNotLoadEvenForTextItWouldCover() {
+        void resolveFontStepsDownWhenTheFaceAskedForWillNotLoadEvenForTextItWouldHold() {
             // A face that will not load draws nothing, however little it would have had to draw.
-            var resolver = createResolverWithUnloadable(StarsectorFont.VANILLA_INSIGNIA_42);
+            var resolver = createLocalisedResolverWithUnloadable(StarsectorFont.VANILLA_INSIGNIA_42);
 
-            assertThat(resolver.resolveFont(LABEL_OFFER, FaceChoice.AUTO_FACE, List.of("Hegemony")))
+            assertThat(resolver.resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of("Hegemony")))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
         }
 
         @Test
-        void resolveFontAnswersThePreferredFaceWhenNeitherFaceLoads() {
-            // Never no face: the category keeps drawing in what it always drew in, which draws nothing -
-            // as it did before any of this was read.
-            var resolver = createResolverWithUnloadable(
+        void resolveFontFallsToTheDefaultFromAFaceWithNoSmallerCut() {
+            // A pixel face lacking the script has no smaller cut of its own design to try, so the default
+            // is next.
+            assertThat(createLocalisedResolver().resolveFont(StarsectorFont.VANILLA_VICTOR_10, List.of(LOCALISED_NAME)))
+                .isEqualTo(DEFAULT_FONT);
+        }
+
+        @Test
+        void resolveFontAnswersTheDefaultWhereNoFaceOnTheWalkHoldsTheText() {
+            // A localised build on a vanilla install: no atlas holds the script, and the game's own face
+            // is the last any text can have.
+            var resolver = createResolver(
+                FaceLineHeightReaderFake.createVanillaLineHeights(),
+                GlyphCoverageReaderFake.createLatinOnlyCoverage());
+
+            assertThat(resolver.resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of(LOCALISED_NAME)))
+                .isEqualTo(DEFAULT_FONT);
+        }
+
+        @Test
+        void resolveFontAnswersTheDefaultWhereNoFaceOnTheWalkLoads() {
+            // Never no face: the default is answered even where it will not load itself, drawing nothing -
+            // as the face asked for would have.
+            var resolver = createLocalisedResolverWithUnloadable(
                 StarsectorFont.VANILLA_INSIGNIA_42,
-                StarsectorFont.VANILLA_INSIGNIA_25);
+                StarsectorFont.VANILLA_INSIGNIA_25,
+                StarsectorFont.VANILLA_INSIGNIA_21,
+                StarsectorFont.VANILLA_INSIGNIA_15);
 
-            assertThat(resolver.resolveFont(LABEL_OFFER, FaceChoice.AUTO_FACE, List.of("Hegemony")))
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_42);
+            assertThat(resolver.resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of("Hegemony")))
+                .isEqualTo(DEFAULT_FONT);
+        }
+    }
+
+    @Nested
+    class ListFallbackWalk {
+
+        @Test
+        void listFallbackWalkStepsDownTheFamilyAndEndsAtTheDefaultOnce() {
+            // The family's smallest cut is the default here, so it is tried once, not twice.
+            assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_42))
+                .containsExactly(
+                    StarsectorFont.VANILLA_INSIGNIA_42,
+                    StarsectorFont.VANILLA_INSIGNIA_25,
+                    StarsectorFont.VANILLA_INSIGNIA_21,
+                    StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void resolveFontHonoursANamedFaceEvenWhereItsAtlasLacksAGlyph() {
-            // The player's pick is theirs: the probe steers only the automatic choice.
-            var namedChoice = new FaceChoice.NamedFace(StarsectorFont.VANILLA_INSIGNIA_42);
+        void listFallbackWalkGoesStraightToTheDefaultFromAFaceWithNoSmallerCut() {
 
-            assertThat(createLocalisedResolver().resolveFont(LABEL_OFFER, namedChoice, List.of(LOCALISED_NAME)))
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_42);
+            assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_ORBITRON_20AA))
+                .containsExactly(StarsectorFont.VANILLA_ORBITRON_20AA, StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void resolveFontHonoursANamedFaceOutsideTheCategorysOffer() {
-            // Every face is on every Radio, so a pick is not held to where the automatic choice may go.
-            var namedChoice = new FaceChoice.NamedFace(StarsectorFont.VANILLA_VICTOR_10);
+        void listFallbackWalkEndsAtADefaultOutsideTheFamily() {
+            // A core overwrite naming another face as the game's default moves the end of every walk.
+            var resolver = new FaceResolver(
+                FaceLineHeightReaderFake.createVanillaLineHeights(),
+                createLocalisedCoverage(),
+                StarsectorFont.VANILLA_ORBITRON_20AA);
 
-            assertThat(createLocalisedResolver().resolveFont(LABEL_OFFER, namedChoice, List.of("Hegemony")))
-                .isEqualTo(StarsectorFont.VANILLA_VICTOR_10);
+            assertThat(resolver.listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_25))
+                .containsExactly(
+                    StarsectorFont.VANILLA_INSIGNIA_25,
+                    StarsectorFont.VANILLA_INSIGNIA_21,
+                    StarsectorFont.VANILLA_INSIGNIA_15,
+                    StarsectorFont.VANILLA_ORBITRON_20AA);
         }
 
         @Test
-        void resolveFontResolvesANamedFaceThatWillNotLoadAsTheAutomaticChoice() {
+        void listFallbackWalkIsTheDefaultAloneWhereTheDefaultIsAskedFor() {
 
-            var resolver = createResolverWithUnloadable(StarsectorFont.VANILLA_VICTOR_10);
-            var namedChoice = new FaceChoice.NamedFace(StarsectorFont.VANILLA_VICTOR_10);
-
-            assertThat(resolver.resolveFont(LABEL_OFFER, namedChoice, List.of(LOCALISED_NAME)))
-                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
+            assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_15))
+                .containsExactly(StarsectorFont.VANILLA_INSIGNIA_15);
         }
     }
 }

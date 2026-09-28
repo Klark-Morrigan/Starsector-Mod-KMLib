@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +27,7 @@ class StarsectorFontTest {
                 case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
                 case VANILLA_ORBITRON_12_CONDENSED -> "graphics/fonts/orbitron12condensed.fnt";
                 case VANILLA_VICTOR_10 -> "graphics/fonts/victor10.fnt";
+                case VANILLA_INSIGNIA_21 -> "graphics/fonts/insignia21LTaa.fnt";
                 case VANILLA_INSIGNIA_25 -> "graphics/fonts/insignia25LTaa.fnt";
                 case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
             };
@@ -71,12 +73,64 @@ class StarsectorFontTest {
                     VANILLA_ORBITRON_12_CONDENSED -> AtlasSmoothing.PIXEL_EXACT;
                 case VANILLA_INSIGNIA_15,
                     VANILLA_ORBITRON_20AA,
+                    VANILLA_INSIGNIA_21,
                     VANILLA_INSIGNIA_25,
                     VANILLA_INSIGNIA_42 -> AtlasSmoothing.SMOOTHED;
             };
 
             assertThat(font.getSmoothing())
                 .isEqualTo(expected);
+        }
+    }
+
+    @Nested
+    class ResolveLowerResolutionFont {
+
+        // The next cut down each face falls to. The insignia cuts step down through the family to its
+        // smallest; every other face has no smaller cut of its own design holding what it lacks, so it
+        // names none and falls straight to the game's default. Spelt out per face, so a chain rewired
+        // in passing - a cut skipped, or two cuts pointing at each other - fails here.
+        @ParameterizedTest
+        @EnumSource(StarsectorFont.class)
+        void resolveLowerResolutionFontNamesTheNextCutDownInTheFacesFamily(StarsectorFont font) {
+
+            var expected = switch (font) {
+                case VANILLA_INSIGNIA_42 -> StarsectorFont.VANILLA_INSIGNIA_25;
+                case VANILLA_INSIGNIA_25 -> StarsectorFont.VANILLA_INSIGNIA_21;
+                case VANILLA_INSIGNIA_21 -> StarsectorFont.VANILLA_INSIGNIA_15;
+                case VANILLA_INSIGNIA_15,
+                    VANILLA_ORBITRON_20AA,
+                    VANILLA_ORBITRON_12_CONDENSED,
+                    VANILLA_VICTOR_10 -> null;
+            };
+
+            assertThat(font.resolveLowerResolutionFont())
+                .isEqualTo(Optional.ofNullable(expected));
+        }
+    }
+
+    @Nested
+    class FindFontByPath {
+
+        @Test
+        void findFontByPathFindsTheFaceTheGamesSettingsName() {
+            // The spelling vanilla's settings.json names its defaultFont in.
+            assertThat(StarsectorFont.findFontByPath("graphics/fonts/insignia15LTaa.fnt"))
+                .contains(StarsectorFont.VANILLA_INSIGNIA_15);
+        }
+
+        @Test
+        void findFontByPathFindsNothingForAFaceTheEnumDoesNotName() {
+
+            assertThat(StarsectorFont.findFontByPath("graphics/fonts/arial12.fnt"))
+                .isEmpty();
+        }
+
+        @Test
+        void findFontByPathFindsNothingForNoPath() {
+
+            assertThat(StarsectorFont.findFontByPath(null))
+                .isEmpty();
         }
     }
 }

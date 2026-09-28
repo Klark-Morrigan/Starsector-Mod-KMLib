@@ -38,17 +38,6 @@ class GlyphIdRangesTest {
     }
 
     @Nested
-    class FormatRanges {
-
-        @Test
-        void formatRangesSpellsARunByItsEndsAndALoneIdAsItself() {
-
-            assertThat(createRunAndLoneId().formatRanges())
-                .isEqualTo("32-34,40");
-        }
-    }
-
-    @Nested
     class ContainsId {
 
         @Test
@@ -61,35 +50,17 @@ class GlyphIdRangesTest {
         }
 
         @Test
+        void containsIdIsTrueForALoneId() {
+
+            assertThat(createRunAndLoneId().containsId(40))
+                .isTrue();
+        }
+
+        @Test
         void containsIdIsFalseBetweenRanges() {
 
             assertThat(createRunAndLoneId().containsId(35))
                 .isFalse();
-        }
-    }
-
-    @Nested
-    class CountIds {
-
-        @Test
-        void countIdsCountsEveryIdEachRangeHolds() {
-
-            assertThat(createRunAndLoneId().countIds())
-                .isEqualTo(4);
-        }
-    }
-
-    @Nested
-    class ListIdsMissingFrom {
-
-        @Test
-        void listIdsMissingFromNamesTheIdsTheOtherDeclaresAndTheseDoNot() {
-
-            var theseRanges = GlyphIdRanges.createFromIds(IntStream.of(32, 33, 34));
-            var otherRanges = GlyphIdRanges.createFromIds(IntStream.of(33, 34, 35, 36, 956));
-
-            assertThat(theseRanges.listIdsMissingFrom(otherRanges).idRanges())
-                .containsExactly(new GlyphIdRange(35, 36), new GlyphIdRange(956, 956));
         }
     }
 }

@@ -18,19 +18,18 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 /**
  * Holds every install this machine was handed to what KM text needs of its atlases: the build's own, and
  * any others {@code -PfontInstallRoots} names - which is how a machine holding the core localisation's
- * editions checks each of them. They are checked where they are installed rather than recorded and
- * checked elsewhere, since a recording goes on passing after the localisation publishes a pack that no
- * longer matches it. A CI runner carries the game's JARs and no fonts, so this suite skips there: every
- * install it checks is on a machine holding the full game.
+ * editions checks each of them. A CI runner carries the game's JARs and no fonts, so this suite skips
+ * there: every install it checks is one holding the full game.
  *
- * <p>Two things are asked of every install. That each face KM text may draw in is present in a shape
- * LazyLib and the game both load. And that a map label - the one category whose preferred atlas no
- * edition replaces - lands on a face that draws a localised faction name, which is the row of question
- * marks the automatic choice exists to end, settled here against real atlases rather than posed ones.
+ * <p>Two things are asked of every install, over the faces KM draws in and the cuts they fall back to -
+ * the enum, which names both. That each is present in a shape LazyLib and the game both load. And that
+ * every face KM may ask for settles, walking down its family to the install's own default, on one that
+ * draws a localised faction name - which is the row of question marks the walk exists to end, settled
+ * here against real atlases rather than posed ones.
  *
  * <p>Walks the enum, never the fonts folder: an install running a localisation's dynamic-font pipeline
  * writes generated descriptors and a subfolder of its own into that folder, and a listing would take them
- * for faces KM offers.
+ * for faces KM draws in.
  *
  * <p>Skips where it was handed no install carrying the game's fonts.
  */
@@ -47,15 +46,6 @@ class InstalledFontsIntegrationTest {
 
     // "Hegemony" (U+9738 U+4E3B), a faction name as a localised install draws it.
     private static final String LOCALISED_NAME = "霸主";
-
-    // The first code point of the CJK blocks, from the radicals supplement up. Below it are the Latin,
-    // Greek and symbol ranges a localisation leaves to the game's own glyphs.
-    private static final int FIRST_CJK_CODE_POINT = 0x2E80;
-
-    // A map label's offer: the high-resolution atlas preferred, the larger insignia cut behind it.
-    private static final FaceOffer MAP_LABEL_OFFER = FaceOffer.createOfferFallingBackTo(
-        StarsectorFont.VANILLA_INSIGNIA_42,
-        StarsectorFont.VANILLA_INSIGNIA_25);
 
     @Nested
     class ReadInstall {
@@ -84,65 +74,75 @@ class InstalledFontsIntegrationTest {
                 }
             }
         }
-
-        @Test
-        void readInstallFindsTheLargerInsigniaHoldingEveryCjkGlyphTheBodyInsigniaHolds() {
-            // What makes the larger cut a sound fallback for text the body face draws. Not every glyph:
-            // on several editions it lacks a Greek mu and the euro sign the body cut carries, both below
-            // the CJK blocks and neither drawn in a faction name.
-            for (var installedFonts : readEveryHandedInstall()) {
-
-                var largerGlyphIds = installedFonts.faceByFont().get(StarsectorFont.VANILLA_INSIGNIA_25).glyphIds();
-                var bodyGlyphIds = installedFonts.faceByFont().get(StarsectorFont.VANILLA_INSIGNIA_15).glyphIds();
-                var missingGlyphIds = largerGlyphIds.listIdsMissingFrom(bodyGlyphIds);
-
-                assertThat(missingGlyphIds.idRanges())
-                    .as("glyphs %s's insignia15LTaa holds and insignia25LTaa lacks: %s",
-                        installedFonts.describeEdition(), missingGlyphIds.formatRanges())
-                    .allSatisfy(idRange -> assertThat(idRange.lastId()).isLessThan(FIRST_CJK_CODE_POINT));
-            }
-        }
     }
 
     @Nested
     class ResolveFont {
 
         @Test
-        void resolveFontKeepsTheHighResolutionAtlasForALatinNameOnEveryInstall() {
+        void resolveFontKeepsEveryFaceForALatinNameOnEveryInstall() {
+            // Nothing a Latin name needs is missing from any face on any install, so no walk moves.
             for (var installedFonts : readEveryHandedInstall()) {
 
-                assertThat(createResolverOver(installedFonts)
-                        .resolveFont(MAP_LABEL_OFFER, FaceChoice.AUTO_FACE, List.of("Hegemony")))
-                    .as("the map label face for a Latin name on %s", installedFonts.describeEdition())
-                    .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_42);
+                var resolver = installedFonts.createFaceResolver();
+
+                for (var font : StarsectorFont.values()) {
+                    assertThat(resolver.resolveFont(font, List.of("Hegemony")))
+                        .as("the face %s settles on for a Latin name on %s",
+                            font.getBasename(), installedFonts.describeEdition())
+                        .isEqualTo(font);
+                }
             }
         }
 
         @Test
-        void resolveFontFallsToTheLargerInsigniaForALocalisedNameOnEveryLocalisedInstall() {
-            // The high-resolution atlas is the one no edition replaces, so it draws the name as question
-            // marks; the larger insignia cut holds the name on every edition.
-            var localisedInstalls = readEveryHandedInstall().stream()
-                .filter(installedFonts -> !installedFonts.edition().equals(InstalledFonts.VANILLA_EDITION))
-                .toList();
-            assumeFalse(localisedInstalls.isEmpty(), "No localised install was handed");
+        void resolveFontSettlesEveryFaceOnOneDrawingALocalisedNameOnEveryLocalisedInstall() {
+            // Wherever the walk ends, the face it ends on has to hold the name: a walk running out onto a
+            // default that lacks it would draw the same question marks it set out to avoid.
+            for (var installedFonts : readEveryLocalisedInstall()) {
 
-            for (var installedFonts : localisedInstalls) {
+                var resolver = installedFonts.createFaceResolver();
+                var coverage = installedFonts.createGlyphCoverageReader();
 
-                assertThat(createResolverOver(installedFonts)
-                        .resolveFont(MAP_LABEL_OFFER, FaceChoice.AUTO_FACE, List.of(LOCALISED_NAME)))
-                    .as("the map label face for a localised name on %s", installedFonts.describeEdition())
+                for (var font : StarsectorFont.values()) {
+                    var settledFont = resolver.resolveFont(font, List.of(LOCALISED_NAME));
+
+                    assertThat(coverage.coversText(settledFont, LOCALISED_NAME))
+                        .as("%s, which %s settles on for a localised name on %s, holds the name",
+                            settledFont.getBasename(), font.getBasename(), installedFonts.describeEdition())
+                        .isTrue();
+                }
+            }
+        }
+
+        @Test
+        void resolveFontStepsTheHighResolutionAtlasDownOneCutForALocalisedNameOnEveryLocalisedInstall() {
+            // The one face no edition replaces, and the case the walk exists for: the next cut down holds
+            // the script on every edition, so a map label drops no further than it has to.
+            for (var installedFonts : readEveryLocalisedInstall()) {
+
+                assertThat(installedFonts.createFaceResolver()
+                        .resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of(LOCALISED_NAME)))
+                    .as("the face insignia42LTaa settles on for a localised name on %s",
+                        installedFonts.describeEdition())
                     .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
             }
         }
     }
 
-    private static FaceResolver createResolverOver(InstalledFonts installedFonts) {
-        return new FaceResolver(installedFonts.createLineHeightReader(), installedFonts.createGlyphCoverageReader());
+    // Every handed install a core localisation has been laid over - or a skip where there is none.
+    private static List<InstalledFonts> readEveryLocalisedInstall() {
+
+        var localisedInstalls = readEveryHandedInstall().stream()
+            .filter(installedFonts -> !installedFonts.edition().equals(InstalledFonts.VANILLA_EDITION))
+            .toList();
+        assumeFalse(localisedInstalls.isEmpty(), "No localised install was handed");
+
+        return localisedInstalls;
     }
 
-    // Every install handed, the build's own first, each once and each actually holding an install - or a
-    // skip where there is none.
+    // Every install handed, the build's own first, each once and each actually carrying the game's fonts -
+    // or a skip where there is none.
     private static List<InstalledFonts> readEveryHandedInstall() {
 
         var namedRoots = new ArrayList<String>();

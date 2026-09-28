@@ -1,5 +1,8 @@
 package kmlib.starsector.ui.font;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * The {@code graphics/fonts} atlases KM UI text draws in, one value per atlas. It is the single
  * door to the game's faces, the way {@code StarsectorUiColour} is to its colours: a face is named
@@ -22,12 +25,18 @@ package kmlib.starsector.ui.font;
  * every one of its single-pixel strokes is an edge and loses part of itself, so the text arrives
  * dimmer than the colour it was set in. That flag holds across every install known to replace these
  * files, which keep each face's antialiasing as vanilla ships it.
+ *
+ * <p>A cut of a family with a lower-resolution cut below it names that cut, which is where
+ * {@link FaceResolver} falls when the installed atlas cannot draw a text: a smaller cut of the same
+ * design is the nearest face to the one asked for, and a core localisation replaces the smaller cuts
+ * with atlases holding its script while leaving the largest untouched. A face with no such cut names
+ * none, and falls straight to the game's own default face.
  */
 public enum StarsectorFont {
 
     /**
-     * The game's {@code defaultFont} (from {@code settings.json}), which carries vanilla's
-     * paragraph text.
+     * The game's {@code defaultFont} on a vanilla install, which carries vanilla's paragraph text, and
+     * the smallest cut of its family.
      */
     VANILLA_INSIGNIA_15("insignia15LTaa", AtlasSmoothing.SMOOTHED),
 
@@ -69,17 +78,22 @@ public enum StarsectorFont {
     VANILLA_VICTOR_10("victor10", AtlasSmoothing.PIXEL_EXACT),
 
     /**
+     * The body face's middle cut, between the paragraph face and the larger cut above it.
+     */
+    VANILLA_INSIGNIA_21("insignia21LTaa", AtlasSmoothing.SMOOTHED, VANILLA_INSIGNIA_15),
+
+    /**
      * The body face's larger cut, and the largest atlas a core localisation replaces with one holding
-     * its script. Where a text needs glyphs the high-resolution atlas below lacks, this is the largest
+     * its script. Where a text needs glyphs the high-resolution atlas above lacks, this is the largest
      * face that can still draw it - blockier when stretched, but readable.
      */
-    VANILLA_INSIGNIA_25("insignia25LTaa", AtlasSmoothing.SMOOTHED),
+    VANILLA_INSIGNIA_25("insignia25LTaa", AtlasSmoothing.SMOOTHED, VANILLA_INSIGNIA_21),
 
     /**
      * The highest-resolution antialiased atlas the game ships, and so the only one that stays clean
      * when text is magnified far past its native size.
      */
-    VANILLA_INSIGNIA_42("insignia42LTaa", AtlasSmoothing.SMOOTHED);
+    VANILLA_INSIGNIA_42("insignia42LTaa", AtlasSmoothing.SMOOTHED, VANILLA_INSIGNIA_25);
 
     // The game's bitmap fonts all live under graphics/fonts with a .fnt extension, so a basename
     // resolves to a loadable path by wrapping. Held here rather than at the loader, so the one
@@ -90,20 +104,48 @@ public enum StarsectorFont {
     private final AtlasSmoothing smoothing;
     private final String basename;
 
+    // The next cut down in this face's family, or null for a face with none. Null rather than an
+    // Optional because an enum constructor takes it positionally; the accessor answers the Optional.
+    private final StarsectorFont lowerResolutionFont;
+
     StarsectorFont(String basename, AtlasSmoothing smoothing) {
+        this(basename, smoothing, null);
+    }
+
+    StarsectorFont(String basename, AtlasSmoothing smoothing, StarsectorFont lowerResolutionFont) {
         this.basename = basename;
         this.smoothing = smoothing;
+        this.lowerResolutionFont = lowerResolutionFont;
     }
 
     /**
-     * The atlas's file name under {@code graphics/fonts}, without its extension - the one spelling of a
-     * face a player sees, since a settings Radio offering faces lists them by it. An identifier rather
-     * than a caption, so it is the same in every locale and a stored choice survives a locale switch.
+     * The face whose loadable path is {@code path}, the form the game's own settings name a face in.
+     *
+     * @param path a path such as {@code graphics/fonts/insignia15LTaa.fnt}, may be {@code null}
+     * @return the face at that path, or empty where the enum names no face there
+     */
+    public static Optional<StarsectorFont> findFontByPath(String path) {
+        return Arrays.stream(values())
+            .filter(font -> font.resolvePath().equals(path))
+            .findFirst();
+    }
+
+    /**
+     * The atlas's file name under {@code graphics/fonts}, without its extension - how a log line or a
+     * failure names a face.
      *
      * @return the atlas's basename, such as {@code insignia15LTaa}
      */
     public String getBasename() {
         return basename;
+    }
+
+    /**
+     * @return the next cut down in this face's family - where the face falls when its installed atlas
+     *         cannot draw a text - or empty for a face with no smaller cut
+     */
+    public Optional<StarsectorFont> resolveLowerResolutionFont() {
+        return Optional.ofNullable(lowerResolutionFont);
     }
 
     /**

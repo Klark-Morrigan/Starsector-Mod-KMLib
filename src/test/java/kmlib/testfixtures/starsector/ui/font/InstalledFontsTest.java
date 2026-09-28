@@ -61,6 +61,7 @@ class InstalledFontsTest {
         return new InstalledFonts(
             "font-zongyi",
             Optional.of("2026.09.04"),
+            StarsectorFont.VANILLA_INSIGNIA_15,
             Map.of(StarsectorFont.VANILLA_INSIGNIA_25, LOCALISED_FACE));
     }
 
@@ -104,6 +105,48 @@ class InstalledFontsTest {
             assertThat(InstalledFonts.readInstall(starsectorRoot).faceByFont())
                 .containsExactlyEntriesOf(Map.of(StarsectorFont.VANILLA_INSIGNIA_25, LOCALISED_FACE));
         }
+
+        @Test
+        void readInstallReadsTheDefaultFaceTheInstallsSettingsName(@TempDir Path starsectorRoot)
+                throws IOException {
+            // Settings as the game ships them: a comment, and the key among others.
+            writeFile(
+                starsectorRoot.resolve("starsector-core/data/config/settings.json"),
+                """
+                {
+                    # the face vanilla text is set in
+                    "defaultFont":"graphics/fonts/insignia25LTaa.fnt",
+                    "otherKey":1,
+                }
+                """);
+
+            assertThat(InstalledFonts.readInstall(starsectorRoot).defaultFont())
+                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
+        }
+
+        @Test
+        void readInstallReadsAnInstallWithNoSettingsAsVanillasDefault(@TempDir Path starsectorRoot) {
+
+            assertThat(InstalledFonts.readInstall(starsectorRoot).defaultFont())
+                .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
+        }
+    }
+
+    @Nested
+    class CreateFaceResolver {
+
+        @Test
+        void createFaceResolverEndsEveryWalkAtTheInstallsDefault() {
+
+            var zongyiWithAnotherDefault = new InstalledFonts(
+                "font-zongyi",
+                Optional.of("2026.09.04"),
+                StarsectorFont.VANILLA_ORBITRON_20AA,
+                Map.of());
+
+            assertThat(zongyiWithAnotherDefault.createFaceResolver().listFallbackWalk(StarsectorFont.VANILLA_VICTOR_10))
+                .containsExactly(StarsectorFont.VANILLA_VICTOR_10, StarsectorFont.VANILLA_ORBITRON_20AA);
+        }
     }
 
     @Nested
@@ -119,7 +162,13 @@ class InstalledFontsTest {
         @Test
         void describeEditionNamesTheGamesOwnAtlasesByTheEditionAlone() {
 
-            assertThat(new InstalledFonts("vanilla", Optional.empty(), Map.of()).describeEdition())
+            var vanillaFonts = new InstalledFonts(
+                "vanilla",
+                Optional.empty(),
+                StarsectorFont.VANILLA_INSIGNIA_15,
+                Map.of());
+
+            assertThat(vanillaFonts.describeEdition())
                 .isEqualTo("vanilla");
         }
     }

@@ -1,6 +1,8 @@
 package kmlib.testfixtures.starsector.ui.font;
 
 import kmlib.starsector.ui.font.FaceLineHeightReader;
+import kmlib.starsector.ui.font.FaceResolver;
+import kmlib.starsector.ui.font.GameDefaultFontReader;
 import kmlib.starsector.ui.font.GlyphCoverageReader;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.testfixtures.starsector.json.ShippedJson;
@@ -24,17 +26,20 @@ import java.util.Optional;
  * edition, and has no pack version. Both only name the install in a failure.
  *
  * <p>A reading answers {@link FaceLineHeightReader} and {@link GlyphCoverageReader} the way the running
- * game on that install would, so a face can be settled against a real edition's atlases with no game
- * running. Its coverage is the declared glyph IDs: a character is covered when its code point is one of
- * them, whitespace never being asked about.
+ * game on that install would, and names the default face its settings declare, so a face can be settled
+ * against a real edition's atlases with no game running. Its coverage is the declared glyph IDs: a
+ * character is covered when its code point is one of them, whitespace never being asked about.
  *
  * @param edition      which edition of the game's fonts the install carries
  * @param packVersion  the core localisation's version, absent for the game's own atlases
+ * @param defaultFont  the face the install's settings name as the game's default, by the rule the running
+ *                     game's is read by
  * @param faceByFont   what the install states for each face it carries
  */
 public record InstalledFonts(
     String edition,
     Optional<String> packVersion,
+    StarsectorFont defaultFont,
     Map<StarsectorFont, InstalledFace> faceByFont) {
 
     /** The edition of an install carrying the game's own atlases. */
@@ -47,6 +52,10 @@ public record InstalledFonts(
 
     // Where a face's descriptor path resolves from under the install root.
     private static final String CORE_DIRECTORY = "starsector-core";
+
+    // The game's own settings under the install root, and the key it names its default face under.
+    private static final String SETTINGS_PATH = "starsector-core/data/config/settings.json";
+    private static final String DEFAULT_FONT_KEY = "defaultFont";
 
     // What the readers answer for a face the install does not carry: the ports' own answers for a face
     // that will not load.
@@ -65,9 +74,11 @@ public record InstalledFonts(
     }
 
     /**
-     * Reads the install at {@code starsectorRoot}: its edition, and every face KM text may draw in that it
-     * carries a descriptor for. A face it lacks is left out rather than read as empty, which is how a
-     * missing atlas is told from one declaring no glyphs.
+     * Reads the install at {@code starsectorRoot}: its edition, the default face its settings name, and
+     * every face KM text may draw in that it carries a descriptor for. A face it lacks is left out rather
+     * than read as empty, which is how a missing atlas is told from one declaring no glyphs. Settings
+     * naming no default - or no settings file at all - read as vanilla's default, as the running game's
+     * would.
      *
      * @param starsectorRoot the install's root, the folder holding {@code starsector-core}
      * @return the reading
@@ -97,7 +108,15 @@ public record InstalledFonts(
                 faceByFont.put(font, InstalledFace.readDescriptor(descriptorFile));
             }
         }
-        return new InstalledFonts(edition, packVersion, faceByFont);
+        return new InstalledFonts(edition, packVersion, readDefaultFont(starsectorRoot), faceByFont);
+    }
+
+    /**
+     * @return a resolver settling faces as the running game on this install would: over its atlases, and
+     *         ending every walk at the default face its settings name
+     */
+    public FaceResolver createFaceResolver() {
+        return new FaceResolver(createLineHeightReader(), createGlyphCoverageReader(), defaultFont);
     }
 
     /**
@@ -127,5 +146,22 @@ public record InstalledFonts(
                 .filter(codePoint -> !Character.isWhitespace(codePoint))
                 .allMatch(codePoint -> face.glyphIds().containsId(codePoint)))
             .orElse(false);
+    }
+
+    // The default face the install's settings name, read through the game's own parser and mapped by the
+    // rule the running game's setting is, so a check settles faces against the same last resort.
+    private static StarsectorFont readDefaultFont(Path starsectorRoot) {
+
+        var settingsFile = starsectorRoot.resolve(SETTINGS_PATH);
+        if (!Files.isRegularFile(settingsFile)) {
+            return GameDefaultFontReader.resolveDefaultFont(null);
+        }
+        var defaultFontValue = ShippedJson.readObjectFile(settingsFile).get(DEFAULT_FONT_KEY);
+
+        return GameDefaultFontReader.resolveDefaultFont(defaultFontValue == null
+            ? null
+            : ShippedJson.requireString(
+                defaultFontValue,
+                ShippedJson.locateMember(settingsFile.toString(), DEFAULT_FONT_KEY)));
     }
 }

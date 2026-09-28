@@ -1,5 +1,7 @@
 package kmlib.testfixtures.starsector.ui.font;
 
+import kmlib.testfixtures.starsector.ui.font.GlyphIdRanges.GlyphIdRange;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,8 +40,8 @@ class FontDescriptorGlyphsTest {
             var descriptorFile = directory.resolve("face.fnt");
             Files.writeString(descriptorFile, DESCRIPTOR, StandardCharsets.UTF_8);
 
-            assertThat(FontDescriptorGlyphs.readGlyphIds(descriptorFile).formatRanges())
-                .isEqualTo("32-34,19968");
+            assertThat(FontDescriptorGlyphs.readGlyphIds(descriptorFile).idRanges())
+                .containsExactly(new GlyphIdRange(32, 34), new GlyphIdRange(19968, 19968));
         }
     }
 }

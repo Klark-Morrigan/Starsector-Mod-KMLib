@@ -23,6 +23,7 @@ public final class FaceLineHeightReaderFake implements FaceLineHeightReader {
     private static final double VANILLA_ORBITRON_20AA_LINE_HEIGHT = 20d;
     private static final double VANILLA_ORBITRON_12_CONDENSED_LINE_HEIGHT = 15d;
     private static final double VANILLA_VICTOR_10_LINE_HEIGHT = 9d;
+    private static final double VANILLA_INSIGNIA_21_LINE_HEIGHT = 21d;
     private static final double VANILLA_INSIGNIA_25_LINE_HEIGHT = 24d;
     private static final double VANILLA_INSIGNIA_42_LINE_HEIGHT = 42d;
 
@@ -48,6 +49,7 @@ public final class FaceLineHeightReaderFake implements FaceLineHeightReader {
             StarsectorFont.VANILLA_ORBITRON_12_CONDENSED,
             VANILLA_ORBITRON_12_CONDENSED_LINE_HEIGHT);
         lineHeightByFont.put(StarsectorFont.VANILLA_VICTOR_10, VANILLA_VICTOR_10_LINE_HEIGHT);
+        lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_21, VANILLA_INSIGNIA_21_LINE_HEIGHT);
         lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_25, VANILLA_INSIGNIA_25_LINE_HEIGHT);
         lineHeightByFont.put(StarsectorFont.VANILLA_INSIGNIA_42, VANILLA_INSIGNIA_42_LINE_HEIGHT);
 

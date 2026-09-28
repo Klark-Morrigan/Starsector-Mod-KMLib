@@ -30,7 +30,7 @@ class InstalledFaceCheckTest {
 
                 assertThat(logFake.getMessages())
                     .containsExactly("Installed font faces loaded; lineHeight by face: insignia15LTaa=17, "
-                        + "orbitron20aa=20, orbitron12condensed=15, victor10=9, insignia25LTaa=24, "
+                        + "orbitron20aa=20, orbitron12condensed=15, victor10=9, insignia21LTaa=21, insignia25LTaa=24, "
                         + "insignia42LTaa=unavailable");
             }
         }
