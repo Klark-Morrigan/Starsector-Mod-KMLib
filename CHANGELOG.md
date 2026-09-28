@@ -120,6 +120,7 @@ The build and release half of the per-locale bundles described under Test fixtur
 ### Test fixtures
 
 - **`CoreUiReachFailures`**: the two ways a reach through `CoreUiTree` fails on a game build it does not recognise - the game's own failure wrapped in a checked exception and thrown undeclared, and a member that no longer links - each answering any type, so it stands in for a reach taken as a supplier. A case throwing the unchecked exception that is easiest to write passes against a boundary that catches too little.
+- **`StarsectorSettingsFake` answers game versions**: `answerGameVersion()` for the running game's and `answerModGameVersions()` for the one each mod declares, with `ModStateScopes.runWithGameVersions()` standing both up for one mod.
 - **`LogAppenderFake.getThrowables()`**: what a capture's entries were logged with, in order, leaving out an entry that carried none - the reading for a case asking whether a failure was logged with its trace.
 - **List widget fixtures**: `Anomaly` and `AnomalySortMode`, a picker row and a sort vocabulary declared outside the list package, and `ListPickerBlockReads`, which reaches into a built picker block for the columns selector, the sort row, the sort selector or the item list. The block's order lives there rather than in each suite that tests a list, so a row inserted into it breaks one file.
 - **`MemoryKeyAddresses`**: two stand-in addresses, for suites storing a value at one point on an axis without being about what the axis is.
