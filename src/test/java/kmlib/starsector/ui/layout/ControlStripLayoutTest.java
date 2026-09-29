@@ -13,7 +13,7 @@ import kmlib.starsector.ui.controls.specs.SideBySideSpec;
 import kmlib.starsector.ui.controls.specs.TabsSpec;
 import kmlib.starsector.ui.controls.specs.VerticalRadioSpec;
 import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
-import kmlib.starsector.ui.font.StripTextMeasurers;
+import kmlib.starsector.ui.font.measure.StripTextMeasurers;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.TextSpan;
@@ -22,7 +22,7 @@ import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.starsector.ui.widgets.RowSlot;
 import kmlib.starsector.ui.widgets.TriangleDirection;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

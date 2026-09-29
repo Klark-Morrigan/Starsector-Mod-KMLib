@@ -12,7 +12,7 @@ import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
 import kmlib.starsector.scripts.SectorScripts;
 import kmlib.starsector.startup.WiringSteps;
-import kmlib.starsector.ui.font.InstalledFaceCheck;
+import kmlib.starsector.ui.font.installed.InstalledFaceCheck;
 
 import org.apache.log4j.Logger;
 

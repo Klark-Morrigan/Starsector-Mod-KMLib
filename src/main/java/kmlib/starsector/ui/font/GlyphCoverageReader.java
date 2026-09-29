@@ -8,7 +8,7 @@ package kmlib.starsector.ui.font;
  * face's. No vanilla atlas carries a CJK glyph, a core localisation replaces some of them with atlases
  * that do, and its editions disagree on how many characters each holds - so what renders on one install
  * draws a row of question marks on another, and only the loaded face can say which. Loading one needs
- * a running game. {@link LazyFontGlyphCoverageReader} is the LazyLib-backed adapter.
+ * a running game, so the LazyLib-backed adapter sits with the other readers of the installed atlases.
  */
 @FunctionalInterface
 public interface GlyphCoverageReader {

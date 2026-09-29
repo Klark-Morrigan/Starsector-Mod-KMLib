@@ -9,8 +9,8 @@ package kmlib.starsector.ui.font;
  * not the face's: a core localisation replaces several of the game's atlases with larger ones under
  * the same basenames, and each of its editions moves the line height differently. Only the loaded
  * face knows which atlas it is, and loading one needs a running game, so a style composed away from
- * one is handed the reading rather than performing it. {@link LazyFontLineHeightReader} is the
- * LazyLib-backed adapter.
+ * one is handed the reading rather than performing it. The LazyLib-backed adapter sits with the other
+ * readers of the installed atlases.
  */
 @FunctionalInterface
 public interface FaceLineHeightReader {

@@ -4,7 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
-import kmlib.starsector.ui.font.StripTextMeasurers;
+import kmlib.starsector.ui.font.measure.StripTextMeasurers;
 import kmlib.starsector.ui.layout.ControlStripLayout.StripMeasurement;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
 

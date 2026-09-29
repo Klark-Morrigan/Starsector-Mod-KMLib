@@ -62,18 +62,6 @@ public final class FaceResolver {
     }
 
     /**
-     * @return a resolver reading the running game's installed atlases through LazyLib, trying the face the
-     *         game's settings declare as its default before the last resort
-     */
-    public static FaceResolver createInstalledFaceResolver() {
-
-        return new FaceResolver(
-            LazyFontLineHeightReader::readLineHeight,
-            LazyFontGlyphCoverageReader::coversText,
-            GameDefaultFontReader.readDefaultFont());
-    }
-
-    /**
      * The face a text draws in.
      *
      * @param requestedFont the face the caller would draw in, installs permitting

@@ -29,16 +29,4 @@ public record TextFace(
     public static TextFace createNativeFace(FontAtlas atlas, FaceLineHeightReader lineHeights) {
         return new TextFace(atlas, lineHeights.readLineHeight(atlas));
     }
-
-    /**
-     * Builds {@code atlas} at its native size as the running game's install states it, read through
-     * LazyLib - the one spelling a style composed in a running game takes, so no two styles read the size
-     * two ways.
-     *
-     * @param atlas the atlas the text draws in
-     * @return the face at its installed native size
-     */
-    public static TextFace createInstalledNativeFace(FontAtlas atlas) {
-        return createNativeFace(atlas, LazyFontLineHeightReader::readLineHeight);
-    }
 }

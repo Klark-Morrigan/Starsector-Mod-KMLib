@@ -8,13 +8,13 @@ import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.controls.specs.HorizontalRadioSpec;
 import kmlib.starsector.ui.controls.specs.ReselectBehaviour;
 import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
-import kmlib.starsector.ui.font.StripTextMeasurers;
+import kmlib.starsector.ui.font.measure.StripTextMeasurers;
 import kmlib.starsector.ui.widgets.BoxBorder;
 import kmlib.starsector.ui.widgets.PanelChrome;
 import kmlib.starsector.ui.widgets.PanelPlacement;
 import kmlib.starsector.ui.widgets.RowColumnSpec;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -4,7 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.font.FontAtlas;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
-import kmlib.starsector.ui.font.TextSpanMeasurer;
+import kmlib.starsector.ui.font.measure.TextSpanMeasurer;
 import kmlib.starsector.ui.text.ImageSpan;
 import kmlib.starsector.ui.text.TextAlignment;
 import kmlib.starsector.ui.text.TextSpan;

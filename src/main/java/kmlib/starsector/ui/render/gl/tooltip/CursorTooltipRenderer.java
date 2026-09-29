@@ -2,8 +2,8 @@ package kmlib.starsector.ui.render.gl.tooltip;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.opengl.GlPasses;
-import kmlib.starsector.ui.font.LazyFontCache;
-import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
+import kmlib.starsector.ui.font.installed.LazyFontCache;
+import kmlib.starsector.ui.font.measure.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;

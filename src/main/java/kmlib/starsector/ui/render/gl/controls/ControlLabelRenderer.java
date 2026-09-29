@@ -2,7 +2,7 @@ package kmlib.starsector.ui.render.gl.controls;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
-import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
+import kmlib.starsector.ui.font.measure.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;

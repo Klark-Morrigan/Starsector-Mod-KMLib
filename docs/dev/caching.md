@@ -57,8 +57,8 @@ That is the whole reason these caches need no invalidation and hold no revision 
 
 | Cache | Keyed on | Lives for | Miss costs |
 | --- | --- | --- | --- |
-| [`LazyFontCache`](../../src/main/java/kmlib/starsector/ui/font/LazyFontCache.java) | the `.fnt` path | the process | a descriptor parse + atlas upload |
-| [`DrawableStringCache`](../../src/main/java/kmlib/starsector/ui/font/DrawableStringCache.java) | `(face, size, text)` | the process | a GL vertex buffer mint |
+| [`LazyFontCache`](../../src/main/java/kmlib/starsector/ui/font/installed/LazyFontCache.java) | the `.fnt` path | the process | a descriptor parse + atlas upload |
+| [`DrawableStringCache`](../../src/main/java/kmlib/starsector/ui/font/installed/DrawableStringCache.java) | `(face, size, text)` | the process | a GL vertex buffer mint |
 | [`FontLabelLengthEstimator`](../../src/main/java/kmlib/starsector/ui/label/FontLabelLengthEstimator.java) | a line count | its own instance | an exhaustive wrap search |
 
 ### Font faces

@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.text;
 
-import kmlib.starsector.ui.font.TextSpanMeasurer;
+import kmlib.starsector.ui.font.measure.TextSpanMeasurer;
 
 /**
  * The rendered width of one {@link TextSpan} in a look that is already settled - the face, the size,

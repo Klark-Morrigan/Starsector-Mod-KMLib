@@ -2,9 +2,9 @@ package kmlib.starsector.ui.render.gl.tooltip;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
-import kmlib.starsector.ui.font.LazyFontCache;
-import kmlib.starsector.ui.font.LazyFontMeasurer;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.font.installed.LazyFontCache;
+import kmlib.starsector.ui.font.measure.LazyFontMeasurer;
 import kmlib.starsector.ui.render.gl.UiElementPaint;
 import kmlib.starsector.ui.render.gl.UiFill;
 import kmlib.starsector.ui.widgets.tooltip.TooltipLeaderLine;
