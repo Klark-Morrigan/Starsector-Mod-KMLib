@@ -64,6 +64,7 @@ The reusable release workflow extracts the section matching the released version
 - **`AllianceSource`**: the port those records arrive through, so whatever folds or weighs them runs with no game around it. A port rather than a snapshot, alliances forming and dissolving in play.
 - **`NexerelinAllianceSource`**: Nexerelin's live alliances as those records, behind the presence gate. The only code naming `exerelin.*` for them sits in a class of its own that the gate defers, not even reached by a method signature, so an install without the mod never seeks a Nexerelin class - and a consumer folds records without learning which mod produced them.
 - **`FactionNames`** and **`FactionNameForm`**: a faction's authored names read in one place. `resolveName` reads the short or the long one as authored, null for an absent faction; `resolveFullestName` reads the long one, the short one where the long is blank, trimmed and never blank. `FactionListingReport` reads its long name through it.
+- **`StarsectorFactionColours.findPalette()`**: a faction's bright and dark pair with no grey fallback, null where the sector or the faction is absent - for a caller that draws nothing for a faction it cannot name. `resolvePalette` falls back through it.
 
 #### Geometry
 

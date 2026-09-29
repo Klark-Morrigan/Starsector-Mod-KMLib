@@ -54,15 +54,31 @@ public final class StarsectorFactionColours {
      *         sector or the faction is absent
      */
     public static FactionPalette resolvePalette(SectorAPI sector, String factionId) {
-        if (sector == null) {
-            return new FactionPalette(NEUTRAL_FALLBACK_COLOUR, NEUTRAL_FALLBACK_COLOUR);
-        }
-        var faction = sector.getFaction(factionId);
-        if (faction == null) {
-            return new FactionPalette(NEUTRAL_FALLBACK_COLOUR, NEUTRAL_FALLBACK_COLOUR);
-        }
-        return new FactionPalette(
-            faction.getBrightUIColor(),
-            faction.getDarkUIColor());
+
+        var palette = findPalette(sector, factionId);
+        return palette == null
+            ? new FactionPalette(NEUTRAL_FALLBACK_COLOUR, NEUTRAL_FALLBACK_COLOUR)
+            : palette;
+    }
+
+    /**
+     * The same pair with no fallback, for a caller whose answer to an absent faction is to draw
+     * nothing rather than to draw it grey - a faction gone from the sector is one such a caller
+     * cannot name, and a stand-in shade would put colour on the screen for it.
+     *
+     * @param sector    the sector to read; null yields null
+     * @param factionId the faction to read
+     * @return the faction's (primary, secondary) shade pair, or null when the sector or the faction
+     *         is absent
+     */
+    public static FactionPalette findPalette(SectorAPI sector, String factionId) {
+
+        var faction = sector == null
+            ? null
+            : sector.getFaction(factionId);
+
+        return faction == null
+            ? null
+            : new FactionPalette(faction.getBrightUIColor(), faction.getDarkUIColor());
     }
 }
