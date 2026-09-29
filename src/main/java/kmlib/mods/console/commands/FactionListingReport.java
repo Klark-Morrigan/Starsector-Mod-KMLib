@@ -4,6 +4,8 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.starsector.factions.FactionFlags;
+import kmlib.starsector.factions.FactionNameForm;
+import kmlib.starsector.factions.FactionNames;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.factions.relation.StarsectorPlayerRelations;
 import kmlib.starsector.factions.relation.StarsectorRelationFormatter;
@@ -268,7 +270,7 @@ final class FactionListingReport {
         // known, at the cost of repeating it on a faction whose display name is itself one of the
         // placeholders.
         var shortName = StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId());
-        var longName = faction.getDisplayNameLong();
+        var longName = FactionNames.resolveName(faction, FactionNameForm.LONG);
 
         var identity = new StringBuilder()
             .append('[')
