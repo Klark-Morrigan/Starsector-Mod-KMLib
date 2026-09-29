@@ -5,10 +5,11 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.CoreUITabId;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.logging.LogAppenderFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiReachFailures;
 
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -16,14 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -48,11 +42,6 @@ import static org.mockito.Mockito.when;
  */
 class VanillaIntelScreenViewTest {
 
-    // The class caches its logger in a static field on first load, so a fresh per-test mock would be
-    // handed to the class only in whichever test happened to load it first. One instance for the
-    // whole class, cleared per test, is what makes the warning assertions see what was written.
-    private static final Logger loggerMock = mock(Logger.class);
-
     private final GameReachRecordFixture reachRecord = new GameReachRecordFixture();
 
     private MockedStatic<Global> globalMock;
@@ -61,22 +50,14 @@ class VanillaIntelScreenViewTest {
 
     @BeforeEach
     void setUp() {
-        reset(loggerMock);
 
         sectorMock = mock(SectorAPI.class);
         campaignUiMock = mock(CampaignUIAPI.class);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
-
-        // The class logs a one-shot warning when the intel tab is up but its panel is unreachable;
-        // give it a logger so that static field init and that warn path do not dereference null
-        // under the mock.
-        globalMock
-            .when(() -> Global.getLogger(any(Class.class)))
-            .thenReturn(loggerMock);
 
         when(sectorMock.getCampaignUI())
             .thenReturn(campaignUiMock);
@@ -192,10 +173,12 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel());
 
-            verify(loggerMock)
-                .warn(any());
+            assertThat(capture.getMessages())
+                .hasSize(1);
         }
 
         @Test
@@ -205,10 +188,12 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel());
 
-            verify(loggerMock, never())
-                .warn(any());
+            assertThat(capture.getMessages())
+                .isEmpty();
         }
 
         @Test
@@ -219,11 +204,14 @@ class VanillaIntelScreenViewTest {
                 .thenReturn(CoreUITabId.INTEL);
 
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
-            intelScreen.warnOnceAboutUnreachableIntelPanel();
-            intelScreen.warnOnceAboutUnreachableIntelPanel();
 
-            verify(loggerMock, times(1))
-                .warn(any());
+            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
+                intelScreen.warnOnceAboutUnreachableIntelPanel();
+                intelScreen.warnOnceAboutUnreachableIntelPanel();
+            });
+
+            assertThat(capture.getMessages())
+                .hasSize(1);
         }
 
         @Test
@@ -261,10 +249,13 @@ class VanillaIntelScreenViewTest {
             // panel. It is carried into the line because nothing else in the class records it.
             var unreadableTree = new IllegalStateException("A hop the core UI no longer offers.");
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreadableCoreUi(unreadableTree);
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> new VanillaIntelScreenView(reachRecord.getReporter())
+                    .warnOnceAboutUnreadableCoreUi(unreadableTree));
 
-            verify(loggerMock)
-                .warn(any(), eq(unreadableTree));
+            assertThat(capture.getThrowables())
+                .containsExactly(unreadableTree);
         }
 
         @Test
@@ -276,11 +267,13 @@ class VanillaIntelScreenViewTest {
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            new VanillaIntelScreenView(reachRecord.getReporter())
-                .warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> new VanillaIntelScreenView(reachRecord.getReporter())
+                    .warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach.")));
 
-            verify(loggerMock)
-                .warn(any(), any(Throwable.class));
+            assertThat(capture.getThrowables())
+                .hasSize(1);
         }
 
         @Test
@@ -289,11 +282,13 @@ class VanillaIntelScreenViewTest {
             // same line, stack and all, sixty times a second.
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
-            intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
+                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+            });
 
-            verify(loggerMock, times(1))
-                .warn(any(), any(Throwable.class));
+            assertThat(capture.getThrowables())
+                .hasSize(1);
         }
 
         @Test
@@ -305,13 +300,17 @@ class VanillaIntelScreenViewTest {
                 .thenReturn(CoreUITabId.INTEL);
 
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
-            intelScreen.warnOnceAboutUnreachableIntelPanel();
-            intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
 
-            verify(loggerMock, times(1))
-                .warn(any());
-            verify(loggerMock, times(1))
-                .warn(any(), any(Throwable.class));
+            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
+                intelScreen.warnOnceAboutUnreachableIntelPanel();
+                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+            });
+
+            // Two lines, one of them carrying the walk's cause and the other none.
+            assertThat(capture.getMessages())
+                .hasSize(2);
+            assertThat(capture.getThrowables())
+                .hasSize(1);
         }
 
         @Test
@@ -352,15 +351,17 @@ class VanillaIntelScreenViewTest {
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             var unlinkedFader = new NoSuchMethodError("getFader");
 
-            intelScreen.readIntelSubtabBrightness(() -> {
-                throw unlinkedFader;
-            });
-            intelScreen.readIntelSubtabBrightness(() -> {
-                throw unlinkedFader;
+            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
+                intelScreen.readIntelSubtabBrightness(() -> {
+                    throw unlinkedFader;
+                });
+                intelScreen.readIntelSubtabBrightness(() -> {
+                    throw unlinkedFader;
+                });
             });
 
-            verify(loggerMock, times(1))
-                .warn(any(), eq(unlinkedFader));
+            assertThat(capture.getThrowables())
+                .containsExactly(unlinkedFader);
         }
 
         @Test
@@ -369,11 +370,13 @@ class VanillaIntelScreenViewTest {
             // not silence news of the fader.
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
-            intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
+                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+                intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+            });
 
-            verify(loggerMock, times(2))
-                .warn(any(), any(Throwable.class));
+            assertThat(capture.getThrowables())
+                .hasSize(2);
         }
 
         @Test

@@ -22,7 +22,6 @@ import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -52,14 +51,10 @@ class CampaignMapViewTest {
         sectorMock = mock(SectorAPI.class);
         campaignUiMock = mock(CampaignUIAPI.class);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
-
-        // The class logs a one-shot warning on an unexpected UI-data type; give it a logger
-        // so that static field init and that warn path do not dereference null under the mock.
-        StubbedGlobalLogger.answerLoggersOn(globalMock);
 
         when(sectorMock.getCampaignUI())
             .thenReturn(campaignUiMock);

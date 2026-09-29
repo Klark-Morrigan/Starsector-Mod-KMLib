@@ -120,6 +120,35 @@ final class LogAppenderFakeTest {
         }
 
         @Test
+        void dropsALineBelowTheLevelTheCaptureWasToldToHold() {
+            // The case the stated level exists for: a guarded trace that must cost nothing while
+            // its level is off, which a capture holding every level could never show.
+            var appenderFake = LogAppenderFake.captureLogOf(
+                LogAppenderFakeTest.class,
+                ABOVE_DEBUG,
+                () -> {
+                    if (log.isDebugEnabled()) {
+                        log.debug(FIRST_LINE);
+                    }
+                    log.warn(SECOND_LINE);
+                });
+
+            assertThat(appenderFake.getMessages())
+                .containsExactly(SECOND_LINE);
+        }
+
+        @Test
+        void putsTheLoggersOwnLevelBackAfterACaptureAtAStatedLevel() {
+
+            log.setLevel(Level.ERROR);
+
+            LogAppenderFake.captureLogOf(LogAppenderFakeTest.class, ABOVE_DEBUG, () -> { });
+
+            assertThat(log.getLevel())
+                .isEqualTo(Level.ERROR);
+        }
+
+        @Test
         void collectsNothingWrittenAfterTheCaptureCloses() {
 
             var appenderFake =

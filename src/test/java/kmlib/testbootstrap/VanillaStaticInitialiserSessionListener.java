@@ -3,13 +3,14 @@ package kmlib.testbootstrap;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 /**
  * Initialises the vanilla API classes that read game settings while being initialised, once, before
@@ -48,8 +49,10 @@ public final class VanillaStaticInitialiserSessionListener implements LauncherSe
     @Override
     public void launcherSessionOpened(LauncherSession session) {
         // The stub is thread-local and the initialisation below runs on this thread, so it is in
-        // force exactly where it is needed and nowhere else.
-        try (var globalMock = mockStatic(Global.class)) {
+        // force exactly where it is needed and nowhere else. It answers loggers as well: this runs
+        // before any suite, so a logger an initialiser resolved as null here would be null for
+        // every suite after.
+        try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers()) {
 
             globalMock
                 .when(Global::getSettings)

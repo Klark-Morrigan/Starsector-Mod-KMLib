@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.comm.IntelManagerAPI;
 
 import kmlib.starsector.time.StarsectorClock;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +19,6 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +41,7 @@ class BaseExpiringIntelPluginTest {
         when(sectorMock.getIntelManager()).thenReturn(intelManagerMock);
         when(clockMock.getTimestamp()).thenReturn(CREATED_AT);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock.when(Global::getSector).thenReturn(sectorMock);
     }
 

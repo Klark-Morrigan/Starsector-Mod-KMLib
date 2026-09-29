@@ -9,7 +9,6 @@ import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import org.mockito.MockedStatic;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -30,7 +29,7 @@ import static org.mockito.Mockito.when;
  * open, the stand-in outlives its case and the next one reaches this sector instead of posing its own.
  *
  * <p>That stand-in answers the logger as well as the sector, because a static logger field resolved
- * while it is open keeps its answer for the rest of the JVM - see the constructor.
+ * while it is open keeps its answer for the rest of the JVM - see {@link StubbedGlobalLogger}.
  */
 public final class SectorMemoryFake implements AutoCloseable {
 
@@ -48,14 +47,10 @@ public final class SectorMemoryFake implements AutoCloseable {
         when(sectorMock.getMemoryWithoutUpdate())
             .thenReturn(storedMemory.getMemory());
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
-
-        // Not optional: a class whose static LOG field is first resolved while this stand-in is
-        // open keeps whatever it was handed for the rest of the JVM. StubbedGlobalLogger says why.
-        StubbedGlobalLogger.answerLoggersOn(globalMock);
     }
 
     @Override

@@ -5,6 +5,8 @@ import com.fs.starfarer.api.campaign.CampaignFleetAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -15,7 +17,6 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 /**
  * Pins the proximity helper's contract:
@@ -38,7 +39,7 @@ class StarsectorPlayerFleetProximityTest {
     @BeforeEach
     void setUp() {
         sectorMock = mock(SectorAPI.class);
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock.when(Global::getSector).thenReturn(sectorMock);
     }
 

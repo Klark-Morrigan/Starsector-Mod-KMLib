@@ -1575,7 +1575,12 @@ an intel manager that holds what is added to it by the game's own rules,
 so a subject that records an intel and then asks for it finds its own write,
 a `Global` stand-in that still answers every class its own logger -
 owed wherever `Global` is mocked,
-since a static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM -
+since a static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM,
+and held there by the shared conventions,
+which fail a build opening `Global` any other way -
+[`statics/`](src/testFixtures/java/kmlib/testfixtures/statics/)'s
+registry of the static seams one arrangement has standing,
+closed innermost first on the way out,
 and
 [`starsector/settings/`](src/testFixtures/java/kmlib/testfixtures/starsector/settings/)'s
 no-op `SettingsAPI` proxy,

@@ -17,12 +17,15 @@ import static org.mockito.Mockito.mockStatic;
  * JVM; left as the mock's unstubbed null, every later suite that logs through that class faults on
  * a line it never wrote - a failure that reads as belonging to whichever suite happened to run
  * after, and that comes and goes with the order they run in. Which classes those are is decided by
- * load order rather than by the suite, so the stub is owed regardless of what is under test.
+ * load order rather than by the suite, so the stub is owed regardless of what is under test. The
+ * Starsector conventions' restricted-call gate holds it: {@code mockStatic(Global.class)} is made
+ * here and nowhere else.
  *
  * <p>Answered the way the real call answers - the class's own log4j logger - rather than with a mock
  * or one logger named for this fixture. A recording appender attached to a production class's
- * logger then sees what that class wrote, and a suite that needs a mock logger to verify against
- * stubs its own in place of this.
+ * logger then sees what that class wrote, which is how a suite reads a class's log - through
+ * {@code LogAppenderFake} - rather than through a mock logger that only reaches the class if it
+ * happened to be first loaded under this suite's stand-in.
  *
  * <p>Final class with a private constructor: fixture of static wiring, no instances.
  */
@@ -33,8 +36,11 @@ public final class StubbedGlobalLogger {
     }
 
     /**
-     * Opens a stand-in for {@code Global} that answers only the logger, for a suite that needs
-     * nothing else of it.
+     * Opens a stand-in for {@code Global} that answers the logger. A suite that needs the sector or
+     * the settings as well stubs them on the stand-in this returns.
+     *
+     * <p>An arrangement holding several seams in a {@code StaticSeams} hands it this one to hold,
+     * rather than opening {@code Global} there bare.
      *
      * @return the open stand-in, which the caller closes - as a try-with-resources, or from the
      *         teardown matching the setup it was made in
@@ -43,20 +49,9 @@ public final class StubbedGlobalLogger {
 
         var globalMock = mockStatic(Global.class);
 
-        answerLoggersOn(globalMock);
-        return globalMock;
-    }
-
-    /**
-     * Makes an already open stand-in answer the logger, for a suite that opened one to stub the
-     * sector or the settings.
-     *
-     * @param globalMock the open stand-in the caller owns and closes
-     */
-    public static void answerLoggersOn(MockedStatic<Global> globalMock) {
-
         globalMock
             .when(() -> Global.getLogger(any(Class.class)))
             .thenAnswer(call -> Logger.getLogger(call.<Class<?>>getArgument(0)));
+        return globalMock;
     }
 }

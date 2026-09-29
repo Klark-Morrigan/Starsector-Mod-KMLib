@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
@@ -21,7 +22,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -204,7 +204,7 @@ class CoreUiDialogViewTest {
         @BeforeEach
         void setUp() {
             sectorMock = mock(SectorAPI.class);
-            globalMock = mockStatic(Global.class);
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sectorMock);
@@ -299,7 +299,7 @@ class CoreUiDialogViewTest {
         @BeforeEach
         void setUp() {
             sectorMock = mock(SectorAPI.class);
-            globalMock = mockStatic(Global.class);
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sectorMock);

@@ -10,6 +10,7 @@ import kmlib.mods.console.commands.targets.MarketTargetRequirement;
 import kmlib.mods.console.commands.targets.UnresolvedTarget;
 import kmlib.starsector.markets.colonisation.MarketColoniser;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +68,7 @@ final class ColoniseCommandTest {
         when(marketMock.getName())
             .thenReturn(COLONY_NAME);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
