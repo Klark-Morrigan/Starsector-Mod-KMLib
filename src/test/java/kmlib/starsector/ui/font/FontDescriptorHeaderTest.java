@@ -1,4 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.starsector.ui.font;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

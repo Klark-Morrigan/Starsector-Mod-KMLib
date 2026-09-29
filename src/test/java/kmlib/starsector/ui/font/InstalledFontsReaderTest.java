@@ -1,8 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
-
-import kmlib.starsector.ui.font.AtlasSmoothing;
-import kmlib.starsector.ui.font.DeclaredFontAtlas;
-import kmlib.starsector.ui.font.StarsectorFont;
+package kmlib.starsector.ui.font;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

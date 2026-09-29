@@ -1,4 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.starsector.ui.font;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -13,13 +13,13 @@ import java.util.regex.Pattern;
  * @param lineHeight  the {@code lineHeight} the header states
  * @param pageCount   the {@code pages} the header states
  */
-public record FontDescriptorHeader(
+record FontDescriptorHeader(
     int tokenCount,
     double lineHeight,
     int pageCount) {
 
     /** The token count LazyLib requires of a header, refusing to load a face whose header has another. */
-    public static final int LAZYFONT_HEADER_TOKEN_COUNT = 51;
+    static final int LAZYFONT_HEADER_TOKEN_COUNT = 51;
 
     // LazyLib's own split, copied character for character: an equals sign, or a run of whitespace with
     // an even number of quotes after it - so a quoted face name keeps its spaces.
@@ -37,7 +37,7 @@ public record FontDescriptorHeader(
      * @param descriptorLines every line of a {@code .fnt} file
      * @return its header's token count, line height and page count
      */
-    public static FontDescriptorHeader readDescriptorHeader(List<String> descriptorLines) {
+    static FontDescriptorHeader readDescriptorHeader(List<String> descriptorLines) {
 
         if (descriptorLines.size() < HEADER_LINE_COUNT) {
             throw new IllegalArgumentException("The descriptor holds no three-line header");

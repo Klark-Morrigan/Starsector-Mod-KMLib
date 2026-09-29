@@ -1,9 +1,5 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.starsector.ui.font;
 
-import kmlib.starsector.ui.font.AtlasSmoothing;
-import kmlib.starsector.ui.font.FontAtlas;
-import kmlib.starsector.ui.font.GameDefaultFontReader;
-import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.testfixtures.starsector.json.ShippedJson;
 
 import java.nio.file.Files;
@@ -24,7 +20,7 @@ import java.util.Optional;
  * {@code starsector-core}. One a mod ships sits in that mod's folder, which is the game's to merge and not
  * this reading's to find, so it reads as a face that will not load - which every walk passes over.
  */
-public final class InstalledFontsReader {
+final class InstalledFontsReader {
 
     // Where a core localisation records itself, under the install root, and the two fields read from it.
     private static final String MARKER_PATH = "starsector-core/localization_version.json";
@@ -52,7 +48,7 @@ public final class InstalledFontsReader {
      * @param starsectorRoot the install's root, the folder holding {@code starsector-core}
      * @return the reading
      */
-    public static InstalledFonts readInstall(Path starsectorRoot) {
+    static InstalledFonts readInstall(Path starsectorRoot) {
 
         var markerFile = starsectorRoot.resolve(MARKER_PATH);
         var edition = InstalledFonts.VANILLA_EDITION;

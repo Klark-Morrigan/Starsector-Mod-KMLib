@@ -1671,10 +1671,8 @@ and the centre and anchor that tell two systems sharing an ID apart -
 with identity and placement as separate calls,
 so a read over IDs needs no coordinates invented for it.
 [`starsector/ui/font/`](src/testFixtures/java/kmlib/testfixtures/starsector/ui/font/)
-stands in for the atlases an install holds -
-their line heights and which characters they draw,
-posed or read off a real install -
-and reads a font descriptor's header and glyph IDs the way LazyLib does.
+stands in for the atlases an install holds:
+their line heights and which characters they draw.
 [`starsector/save/`](src/testFixtures/java/kmlib/testfixtures/starsector/save/)
 drives a mod's persisted objects through the game's own save serialiser,
 listing the element paths a graph writes and reading it back as a load does,

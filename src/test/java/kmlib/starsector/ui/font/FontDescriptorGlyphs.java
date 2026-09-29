@@ -1,4 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.starsector.ui.font;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
  * LazyLib picks them out: a line starting {@code char } followed by a space, which leaves out the
  * {@code chars count=} line above them.
  */
-public final class FontDescriptorGlyphs {
+final class FontDescriptorGlyphs {
 
     // What LazyLib starts a glyph line with, the trailing space parting it from the count line.
     private static final String GLYPH_LINE_PREFIX = "char ";
@@ -27,7 +27,7 @@ public final class FontDescriptorGlyphs {
      * @param descriptorLines every line of a {@code .fnt} file
      * @return its declared glyph IDs
      */
-    public static GlyphIdRanges readGlyphIds(List<String> descriptorLines) {
+    static GlyphIdRanges readGlyphIds(List<String> descriptorLines) {
         return GlyphIdRanges.createFromIds(descriptorLines.stream()
             .filter(line -> line.startsWith(GLYPH_LINE_PREFIX))
             .mapToInt(FontDescriptorGlyphs::readGlyphId));

@@ -1,6 +1,6 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.starsector.ui.font;
 
-import kmlib.testfixtures.starsector.ui.font.GlyphIdRanges.GlyphIdRange;
+import kmlib.starsector.ui.font.GlyphIdRanges.GlyphIdRange;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

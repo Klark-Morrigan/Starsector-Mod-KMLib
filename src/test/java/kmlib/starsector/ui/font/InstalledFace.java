@@ -1,6 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
-
-import kmlib.starsector.ui.font.AtlasSmoothing;
+package kmlib.starsector.ui.font;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,7 +16,7 @@ import java.nio.file.Path;
  * @param smoothing         whether the atlas wants its glyphs interpolated, by the {@code aa} it states
  * @param glyphIds          the glyph IDs it declares
  */
-public record InstalledFace(
+record InstalledFace(
     double lineHeight,
     int pageCount,
     int headerTokenCount,
@@ -37,7 +35,7 @@ public record InstalledFace(
      * @param descriptorFile a {@code .fnt} file
      * @return what it states
      */
-    public static InstalledFace readDescriptor(Path descriptorFile) {
+    static InstalledFace readDescriptor(Path descriptorFile) {
 
         try {
             var descriptorLines = Files.readAllLines(descriptorFile, StandardCharsets.ISO_8859_1);

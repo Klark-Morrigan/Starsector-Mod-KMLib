@@ -1,10 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
-
-import kmlib.starsector.ui.font.FaceLineHeightReader;
-import kmlib.starsector.ui.font.FaceResolver;
-import kmlib.starsector.ui.font.FontAtlas;
-import kmlib.starsector.ui.font.GlyphCoverageReader;
-import kmlib.starsector.ui.font.StarsectorFont;
+package kmlib.starsector.ui.font;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -31,7 +25,7 @@ import java.util.Optional;
  * @param declaredDefaultFace  what the install states for a declared default the enum does not name, where
  *                             it carries one
  */
-public record InstalledFonts(
+record InstalledFonts(
     String edition,
     Optional<String> packVersion,
     FontAtlas defaultAtlas,
@@ -39,12 +33,12 @@ public record InstalledFonts(
     Optional<InstalledFace> declaredDefaultFace) {
 
     /** The edition of an install carrying the game's own atlases. */
-    public static final String VANILLA_EDITION = "vanilla";
+    static final String VANILLA_EDITION = "vanilla";
 
     /**
      * Copies the faces into enum order, the order a walk over them takes.
      */
-    public InstalledFonts {
+    InstalledFonts {
 
         var orderedFaceByFont = new EnumMap<StarsectorFont, InstalledFace>(StarsectorFont.class);
 
@@ -57,14 +51,14 @@ public record InstalledFonts(
      * @return a resolver settling faces as the running game on this install would: over its atlases, walking
      *         a face's family, then the default its settings declare, then the last resort
      */
-    public FaceResolver createFaceResolver() {
+    FaceResolver createFaceResolver() {
         return new FaceResolver(createLineHeightReader(), createGlyphCoverageReader(), defaultAtlas);
     }
 
     /**
      * @return the edition and, where there is one, the pack version - how a failure names the install
      */
-    public String describeEdition() {
+    String describeEdition() {
         return edition + packVersion.map(version -> " " + version).orElse("");
     }
 
@@ -72,7 +66,7 @@ public record InstalledFonts(
      * @return a reader answering each face's line height as this install states it, and
      *         {@link FaceLineHeightReader#NO_LINE_HEIGHT} for a face it does not carry
      */
-    public FaceLineHeightReader createLineHeightReader() {
+    FaceLineHeightReader createLineHeightReader() {
         return atlas -> findInstalledFace(atlas)
             .map(InstalledFace::lineHeight)
             .orElse(FaceLineHeightReader.NO_LINE_HEIGHT);
@@ -82,7 +76,7 @@ public record InstalledFonts(
      * @return a reader answering whether this install's atlas for a face declares every character of a
      *         text, and false for a face it does not carry
      */
-    public GlyphCoverageReader createGlyphCoverageReader() {
+    GlyphCoverageReader createGlyphCoverageReader() {
         return (atlas, text) -> findInstalledFace(atlas)
             .map(face -> text.codePoints()
                 .filter(codePoint -> !Character.isWhitespace(codePoint))

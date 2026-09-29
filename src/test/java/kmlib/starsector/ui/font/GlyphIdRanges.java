@@ -1,4 +1,4 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.starsector.ui.font;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +11,13 @@ import java.util.stream.IntStream;
  *
  * @param idRanges the ranges, ascending, neither overlapping nor touching one another
  */
-public record GlyphIdRanges(
+record GlyphIdRanges(
     List<GlyphIdRange> idRanges) {
 
     /**
      * Copies the ranges, which a caller builds through {@link #createFromIds}.
      */
-    public GlyphIdRanges {
+    GlyphIdRanges {
         idRanges = List.copyOf(idRanges);
     }
 
@@ -27,7 +27,7 @@ public record GlyphIdRanges(
      * @param ids the IDs an atlas declares
      * @return those IDs as ranges
      */
-    public static GlyphIdRanges createFromIds(IntStream ids) {
+    static GlyphIdRanges createFromIds(IntStream ids) {
 
         var sortedIds = ids.sorted().distinct().toArray();
         var idRanges = new ArrayList<GlyphIdRange>();
@@ -52,7 +52,7 @@ public record GlyphIdRanges(
      * @param id a glyph ID, which for a descriptor is the character's code point
      * @return whether the atlas declares it
      */
-    public boolean containsId(int id) {
+    boolean containsId(int id) {
         return idRanges.stream()
             .anyMatch(idRange -> idRange.firstId() <= id && id <= idRange.lastId());
     }
@@ -63,7 +63,7 @@ public record GlyphIdRanges(
      * @param firstId the run's first ID
      * @param lastId  the run's last ID, inclusive
      */
-    public record GlyphIdRange(
+    record GlyphIdRange(
         int firstId,
         int lastId) {
     }

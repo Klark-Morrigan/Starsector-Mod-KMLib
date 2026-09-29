@@ -1,9 +1,5 @@
 package kmlib.starsector.ui.font;
 
-import kmlib.testfixtures.starsector.ui.font.FontDescriptorHeader;
-import kmlib.testfixtures.starsector.ui.font.InstalledFonts;
-import kmlib.testfixtures.starsector.ui.font.InstalledFontsReader;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
