@@ -1548,7 +1548,7 @@ Downstream mods declare KMLib as a hard dependency in `mod_info.json`:
 ```json
 {
   "dependencies": [
-    { "id": "kmlib", "name": "Klark Morrigan's Library", "version": "0.1.0" }
+    { "id": "kmlib", "name": "Klark Morrigan's Library (KMLib)", "version": "0.1.0" }
   ]
 }
 ```
