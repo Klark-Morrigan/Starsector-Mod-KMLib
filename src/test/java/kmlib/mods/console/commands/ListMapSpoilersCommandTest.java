@@ -13,6 +13,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -240,7 +240,7 @@ final class ListMapSpoilersCommandTest {
             when(sectorMock.getStarSystems())
                 .thenReturn(new ArrayList<>());
 
-            globalMock = mockStatic(Global.class);
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sectorMock);

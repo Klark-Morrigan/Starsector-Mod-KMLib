@@ -13,6 +13,7 @@ import kmlib.starsector.WalkCountCapture;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,7 +128,7 @@ final class ListSystemEntitiesCommandTest {
             var gate = buildEntity("gate1", "Gate", 100f, 0f, star, 180f, true);
             var systemMock = buildSystem(star, List.of(star, gate), List.of());
 
-            globalMock = mockStatic(Global.class);
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(mock(SectorAPI.class));

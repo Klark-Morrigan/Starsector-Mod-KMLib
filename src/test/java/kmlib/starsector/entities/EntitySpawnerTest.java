@@ -10,6 +10,8 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,7 +48,7 @@ final class EntitySpawnerTest {
 
         factoryMock = mock(FactoryAPI.class);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getFactory)
             .thenReturn(factoryMock);

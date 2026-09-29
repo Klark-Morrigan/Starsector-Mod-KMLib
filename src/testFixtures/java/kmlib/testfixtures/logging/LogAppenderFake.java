@@ -41,14 +41,32 @@ public final class LogAppenderFake extends AppenderSkeleton {
      * <p>Everything the class writes is collected, whatever level it wrote at:
      * what a caller is asking is what the code said, and a level is the running
      * game's answer to how much of that a player wants rather than part of the
-     * contract. A case about the level itself states it inside {@code work},
-     * which then holds for the rest of the capture.
+     * contract. A case about the level itself states it through
+     * {@link #captureLogOf(Class, Level, Runnable)}.
      *
      * @param loggingClass the class whose logger is being listened to
      * @param work         what to run while listening
      * @return the appender, holding the entries that arrived
      */
     public static LogAppenderFake captureLogOf(Class<?> loggingClass, Runnable work) {
+        return captureLogOf(loggingClass, Level.ALL, work);
+    }
+
+    /**
+     * Runs {@code work} with this appender attached and the logger held at
+     * {@code capturedLevel}, and hands back what it collected - for a case about
+     * what a level lets through, such as a trace that must cost nothing while
+     * its level is off.
+     *
+     * @param loggingClass  the class whose logger is being listened to
+     * @param capturedLevel the level the logger is held at while listening
+     * @param work          what to run while listening
+     * @return the appender, holding the entries that arrived
+     */
+    public static LogAppenderFake captureLogOf(
+            Class<?> loggingClass,
+            Level capturedLevel,
+            Runnable work) {
 
         var appenderFake = new LogAppenderFake();
         var logger = Logger.getLogger(loggingClass);
@@ -59,7 +77,7 @@ public final class LogAppenderFake extends AppenderSkeleton {
         var levelBeforeCapture = logger.getLevel();
         var wasAdditive = logger.getAdditivity();
 
-        logger.setLevel(Level.ALL);
+        logger.setLevel(capturedLevel);
 
         // Off the root appenders for the length of the capture, so lines planted
         // here do not land in the run's console output beside the test results.

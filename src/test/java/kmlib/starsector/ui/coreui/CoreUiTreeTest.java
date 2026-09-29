@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI;
 import com.fs.starfarer.api.campaign.InteractionDialogAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.ui.coreui.CoreHostingDialogFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiComponentFake;
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiFake;
@@ -336,7 +337,7 @@ class CoreUiTreeTest {
         @BeforeEach
         void setUp() {
             sectorMock = mock(SectorAPI.class);
-            globalMock = mockStatic(Global.class);
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sectorMock);

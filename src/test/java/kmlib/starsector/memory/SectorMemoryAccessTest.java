@@ -4,6 +4,8 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -12,7 +14,6 @@ import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -34,7 +35,7 @@ class SectorMemoryAccessTest {
         when(sectorMock.getMemoryWithoutUpdate())
             .thenReturn(memoryMock);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);

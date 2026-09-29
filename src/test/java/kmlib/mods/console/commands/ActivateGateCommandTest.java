@@ -10,6 +10,7 @@ import kmlib.starsector.entities.Gates;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +63,7 @@ final class ActivateGateCommandTest {
         when(systemMock.getName())
             .thenReturn("Test System");
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);

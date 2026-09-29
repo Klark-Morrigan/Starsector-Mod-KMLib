@@ -16,7 +16,6 @@ import static kmlib.testfixtures.starsector.settings.StubbedModIds.CONSOLE_COMMA
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -110,9 +109,7 @@ final class ConsoleCommandsOverlayTest {
             var presenceFake = new ConsoleOverlayPresenceFake();
             presenceFake.openConsole();
 
-            try (var globalMock = mockStatic(Global.class)) {
-
-                stubLogger(globalMock);
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers()) {
 
                 globalMock
                     .when(Global::getSettings)
@@ -146,7 +143,7 @@ final class ConsoleCommandsOverlayTest {
 
             var presenceFake = new ConsoleOverlayPresenceFake();
 
-            try (var globalMock = mockStatic(Global.class)) {
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers()) {
 
                 var modManagerMock = stubGlobalWithTheModEnabled(globalMock);
                 var consoleOverlay = new ConsoleCommandsOverlay(presenceFake);
@@ -166,8 +163,6 @@ final class ConsoleCommandsOverlayTest {
     // cannot answer - every other case here says "the mod is enabled" through the shipped scope.
     private static ModManagerAPI stubGlobalWithTheModEnabled(MockedStatic<Global> globalMock) {
 
-        stubLogger(globalMock);
-
         var settingsMock = mock(SettingsAPI.class);
         var modManagerMock = mock(ModManagerAPI.class);
 
@@ -182,12 +177,6 @@ final class ConsoleCommandsOverlayTest {
             .thenReturn(true);
 
         return modManagerMock;
-    }
-
-    // The gate holds a static logger, resolved when its class is first loaded - which happens
-    // inside one of these mocked scopes, so Global must be able to hand one back.
-    private static void stubLogger(MockedStatic<Global> globalMock) {
-        StubbedGlobalLogger.answerLoggersOn(globalMock);
     }
 
     // A console whose panel class or accessor is gone: what an install running a Console Commands

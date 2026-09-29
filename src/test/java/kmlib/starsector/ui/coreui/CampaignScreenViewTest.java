@@ -19,7 +19,6 @@ import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -54,13 +53,10 @@ class CampaignScreenViewTest {
         campaignUiMock = mock(CampaignUIAPI.class);
         sectorMock = mock(SectorAPI.class);
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
-
-        // Owed even though this class holds no logger: StubbedGlobalLogger says why.
-        StubbedGlobalLogger.answerLoggersOn(globalMock);
 
         when(sectorMock.getCampaignUI())
             .thenReturn(campaignUiMock);

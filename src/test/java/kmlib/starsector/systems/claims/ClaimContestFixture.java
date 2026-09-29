@@ -14,6 +14,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 
 import kmlib.starsector.factions.FactionCustomFixture;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.mockito.MockedStatic;
@@ -23,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -64,7 +64,7 @@ final class ClaimContestFixture implements AutoCloseable {
         // before Global is stood in for and before any read loads the class.
         StarsectorSettingsFake.installSettings();
 
-        globalMock = mockStatic(Global.class);
+        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);

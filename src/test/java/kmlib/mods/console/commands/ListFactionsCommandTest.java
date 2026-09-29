@@ -18,7 +18,6 @@ import org.lazywizard.console.BaseCommand.CommandResult;
 import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mockStatic;
 
 /**
  * Pins what the command does with the words the player typed: prints the listing, accepts one
@@ -45,15 +44,10 @@ final class ListFactionsCommandTest {
             // so the two do not nest into an unfinished-stubbing error.
             var sector = new FactionListingFixture().getSector();
 
-            globalMock = mockStatic(Global.class);
+            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sector);
-
-            // Owed because the run reaches the source read, whose logger is resolved once for the
-            // JVM - left as the stand-in's null, every later suite logging through that class
-            // faults on a line it never wrote.
-            StubbedGlobalLogger.answerLoggersOn(globalMock);
 
             outputFake = new CommandOutputFake();
             command = new ListFactionsCommand(outputFake);

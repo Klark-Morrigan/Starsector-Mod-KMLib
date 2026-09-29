@@ -30,6 +30,12 @@ apply from: new File(buildscript.sourceFile.parentFile, 'starsector-install-loca
 // is declared here - the Starsector layer - rather than in the gate itself.
 docLinkScanExcludedDirectoryNames << 'graphify-out'
 
+// The KM family's root packages, one per library or mod. A new mod is added
+// here, once, for every consumer of this script - and it has to be: the import
+// groups and the stand-in rule below are both stated over this list, so a mod
+// missing from it sorts its own imports below java.* and is held to neither.
+def kmPackageRoots = ['kmlib', 'kmo', 'kmp', 'kmu']
+
 // The blocks a mod's imports are sorted into, in the order they appear: the
 // game's own API, then the KM libraries and mods, then third-party jars a mod
 // may compile against, then the JDK. Declared here - the Starsector layer -
@@ -39,13 +45,34 @@ docLinkScanExcludedDirectoryNames << 'graphify-out'
 //
 // The family is listed one mod per group rather than as a single pattern, since
 // a mod importing a KM library keeps that library's imports in a block of their
-// own. A new mod is added here, once, for every consumer of this script - and it
-// has to be: an import matching no group is sorted after every named one, which
-// puts a mod's own package below java.* until someone works out why.
-def starsectorImportGroups = 'com.fs.starfarer,kmlib,kmo,kmp,kmu,/^(org|lunalib)\\./,java'
+// own.
+def starsectorImportGroups = (['com.fs.starfarer'] + kmPackageRoots + ['/^(org|lunalib)\\./', 'java'])
+    .join(',')
 
 checkstyle.configProperties.importGroups = starsectorImportGroups
 checkstyle.configProperties.staticImportGroups = starsectorImportGroups
+
+// A stand-in for Global is opened through KMLib's fixture and nowhere else.
+// A class whose static logger is first resolved inside a bare one keeps its null
+// for the rest of the JVM, and a later suite logging through it fails on a line
+// it never wrote - an order-dependent failure no suite can defend against from
+// the inside. The second rule closes the generic seam registry to Global for
+// the same reason, since it opens whatever class it is handed. Here rather than
+// in each mod because Global is the game's: every KM suite meets it alike.
+//
+// Matched as Java spells the call. A Kotlin suite spells it Global::class.java
+// and is not held; those are being rewritten, and their Java replacements are.
+enforceRestrictedCalls {
+    kmPackageRoots.each { packageRoot ->
+        restrictCall call: 'mockStatic(Global.class',
+            under: packageRoot,
+            toTypes: ['StubbedGlobalLogger'],
+            instead: 'StubbedGlobalLogger.openGlobalAnsweringLoggers()'
+        restrictCall call: 'openSeam(Global.class',
+            under: packageRoot,
+            instead: 'holdSeam(StubbedGlobalLogger.openGlobalAnsweringLoggers())'
+    }
+}
 
 // Which of the game's type names a compiled mod may carry, as far as this is a
 // fact about the game rather than about any one mod.

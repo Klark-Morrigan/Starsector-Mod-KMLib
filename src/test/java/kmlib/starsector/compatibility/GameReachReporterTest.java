@@ -2,6 +2,7 @@ package kmlib.starsector.compatibility;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.settings.ModStateScopes;
 
@@ -12,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.Mockito.mockStatic;
 
 /**
  * Pins what a failed reach into the game files: one report per reporter, under the game as the
@@ -126,7 +126,13 @@ final class GameReachReporterTest {
                 },
                 failureRecord);
 
-            try (var globalMock = mockStatic(Global.class)) {
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers()) {
+
+                // Silenced for the reporter alone: any other class resolving its logger here keeps
+                // a real one.
+                globalMock
+                    .when(() -> Global.getLogger(GameReachReporter.class))
+                    .thenReturn(null);
 
                 assertThatCode(() -> reporter.recordReachFailure(FAILURE_SITE, BROKEN_REACH))
                     .doesNotThrowAnyException();
