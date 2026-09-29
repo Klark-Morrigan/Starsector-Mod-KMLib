@@ -3,6 +3,7 @@ package kmlib.starsector.ui.text;
 import com.fs.starfarer.api.util.Misc;
 
 import kmlib.starsector.ui.font.StarsectorFont;
+import kmlib.starsector.ui.font.TextFace;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
@@ -26,6 +27,11 @@ import static org.assertj.core.api.Assertions.within;
 class TextStyleTest {
 
     private static final StarsectorFont FACE = StarsectorFont.VANILLA_INSIGNIA_15;
+
+    // The size the baseline is built at. Not vanilla's 15 for this face, so a style that ignored the face
+    // it was handed for a size of its own could not pass by coincidence.
+    private static final double BASELINE_SIZE = 17d;
+
     private static final Color BODY_TEXT_COLOUR = new Color(11, 22, 33);
     private static final Color OVERRIDE_COLOUR = new Color(200, 150, 50);
     private static final double OVERRIDE_SIZE = 24d;
@@ -37,7 +43,7 @@ class TextStyleTest {
     private MockedStatic<Misc> miscMock;
 
     private static TextStyle buildBaselineStyle() {
-        return TextStyle.createStyle(FACE);
+        return TextStyle.createStyle(new TextFace(FACE, BASELINE_SIZE));
     }
 
     @BeforeEach
@@ -64,15 +70,16 @@ class TextStyleTest {
     class CreateStyle {
 
         @Test
-        void createStyleDrawsTheFaceAtItsNativeSize() {
-            // A bitmap atlas is crisp at exactly one size, so naming a face alone has to land on that
-            // size rather than on some style-local default the atlas would be scaled to.
+        void createStyleDrawsInTheFaceItIsHandedAtTheSizeItIsHanded() {
+            // The native size is read off the install by whoever builds the face, so the style has to
+            // keep the size it was handed rather than settle on some style-local default the atlas would
+            // be scaled to.
             var style = buildBaselineStyle();
 
-            assertThat(style.face().font())
+            assertThat(style.face().atlas())
                 .isEqualTo(FACE);
             assertThat(style.face().size())
-                .isCloseTo(FACE.getNativeSize(), within(TOLERANCE));
+                .isCloseTo(17d, within(TOLERANCE));
         }
 
         @Test
@@ -115,7 +122,7 @@ class TextStyleTest {
 
             assertThat(style.face().size())
                 .isCloseTo(OVERRIDE_SIZE, within(TOLERANCE));
-            assertThat(style.face().font())
+            assertThat(style.face().atlas())
                 .isEqualTo(FACE);
             assertThat(style.colour())
                 .isEqualTo(BODY_TEXT_COLOUR);

@@ -2,12 +2,12 @@ package kmlib.starsector.ui.layout;
 
 import kmlib.starsector.ui.controls.specs.ControlAction;
 import kmlib.starsector.ui.controls.specs.TabsSpec;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.tabs.style.TabBox;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

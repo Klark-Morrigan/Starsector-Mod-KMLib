@@ -4,6 +4,7 @@ import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 import kmlib.starsector.ui.text.TextAlignment;
 import kmlib.starsector.ui.text.TextStyle;
+import kmlib.testfixtures.starsector.ui.font.FaceLineHeightReaderFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ class TooltipStyleTest {
 
     private static TextStyle createStyleIn(StarsectorFont font) {
         return new TextStyle(
-            new TextFace(font, font.getNativeSize()),
+            TextFace.createNativeFace(font, FaceLineHeightReaderFake.createVanillaLineHeights()),
             Color.WHITE,
             TextAlignment.TOP_LEFT,
             false);
@@ -384,7 +385,7 @@ class TooltipStyleTest {
             assertThat(buildShrinkingStyle()
                     .resolveStyleFor(TooltipLineStyle.HEADER, ONE_STEP_UNDER)
                     .face()
-                    .font())
+                    .atlas())
                 .isEqualTo(StarsectorFont.VANILLA_ORBITRON_20AA);
         }
 

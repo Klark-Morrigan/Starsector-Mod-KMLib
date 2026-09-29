@@ -4,7 +4,7 @@ import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.Control;
 import kmlib.starsector.ui.controls.specs.SegmentSizing;
 import kmlib.starsector.ui.controls.specs.TabsSpec;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabContent;
 import kmlib.starsector.ui.widgets.tabs.VanillaTabStrip;

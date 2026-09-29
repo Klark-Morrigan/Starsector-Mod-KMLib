@@ -2,11 +2,11 @@ package kmlib.starsector.ui.debug;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.opengl.GlPasses;
-import kmlib.starsector.ui.font.LazyFontCache;
-import kmlib.starsector.ui.font.LazyFontMeasurer;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
 import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.font.installed.LazyFontCache;
+import kmlib.starsector.ui.font.measure.LazyFontMeasurer;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
 import kmlib.starsector.ui.render.gl.UiElementPaint;

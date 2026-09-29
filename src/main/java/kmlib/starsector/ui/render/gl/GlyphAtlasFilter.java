@@ -3,8 +3,8 @@ package kmlib.starsector.ui.render.gl;
 import kmlib.math.ranges.Ranges;
 import kmlib.opengl.GlTextureFilter;
 import kmlib.starsector.ui.font.AtlasSmoothing;
-import kmlib.starsector.ui.font.LazyFontCache;
 import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.font.installed.LazyFontCache;
 
 /**
  * Draws a run of text under the sampling its atlas asks for, and hands the atlas back the way it found it.
@@ -58,9 +58,9 @@ public final class GlyphAtlasFilter {
      */
     public static void drawUnderAtlasFilter(TextFace face, float sharpness, GlyphPass drawRuns) {
 
-        var font = LazyFontCache.loadByFace(face.font());
+        var font = LazyFontCache.loadByFace(face.atlas());
 
-        if (font == null || face.font().getSmoothing() == AtlasSmoothing.SMOOTHED) {
+        if (font == null || face.atlas().getSmoothing() == AtlasSmoothing.SMOOTHED) {
             drawRuns.drawAt(FULL_PASS);
             return;
         }

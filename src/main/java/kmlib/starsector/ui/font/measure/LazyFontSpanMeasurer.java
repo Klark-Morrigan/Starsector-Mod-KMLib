@@ -1,4 +1,7 @@
-package kmlib.starsector.ui.font;
+package kmlib.starsector.ui.font.measure;
+
+import kmlib.starsector.ui.font.TextFace;
+import kmlib.starsector.ui.font.installed.LazyFontCache;
 
 /**
  * The LazyLib-backed {@link TextSpanMeasurer}: it resolves each face through {@link LazyFontCache} as it
@@ -28,7 +31,7 @@ public final class LazyFontSpanMeasurer {
      */
     public static double measureSpanWidth(TextFace face, String span) {
 
-        var font = LazyFontCache.loadByFace(face.font());
+        var font = LazyFontCache.loadByFace(face.atlas());
         if (font == null) {
             return NO_WIDTH;
         }

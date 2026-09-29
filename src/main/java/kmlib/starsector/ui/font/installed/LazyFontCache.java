@@ -1,6 +1,8 @@
-package kmlib.starsector.ui.font;
+package kmlib.starsector.ui.font.installed;
 
 import com.fs.starfarer.api.Global;
+
+import kmlib.starsector.ui.font.FontAtlas;
 
 import org.apache.log4j.Logger;
 import org.lazywizard.lazylib.ui.FontException;
@@ -39,15 +41,14 @@ public final class LazyFontCache {
     }
 
     /**
-     * The loaded, cached face for one of the game's atlases, or null when that face cannot
-     * load (a missing or malformed {@code .fnt}). A face known to have failed returns null
-     * without retrying.
+     * The loaded, cached face for an atlas, or null when that face cannot load (a missing or
+     * malformed {@code .fnt}). A face known to have failed returns null without retrying.
      *
-     * @param font the atlas to load; the enum names its own loadable path
+     * @param atlas the atlas to load, which names its own loadable path
      * @return the cached face, or null when it will not load
      */
-    public static LazyFont loadByFace(StarsectorFont font) {
-        return getFont(font.resolvePath());
+    public static LazyFont loadByFace(FontAtlas atlas) {
+        return getFont(atlas.resolvePath());
     }
 
     // Loads one face and caches it by path. A face known to have failed returns null

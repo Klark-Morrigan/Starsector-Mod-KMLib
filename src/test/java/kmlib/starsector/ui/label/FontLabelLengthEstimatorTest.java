@@ -1,6 +1,6 @@
 package kmlib.starsector.ui.label;
 
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

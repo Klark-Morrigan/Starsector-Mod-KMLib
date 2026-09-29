@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.font;
+package kmlib.starsector.ui.font.measure;
 
 /**
  * Measures how wide one line of text renders at a given font size, in the font's own

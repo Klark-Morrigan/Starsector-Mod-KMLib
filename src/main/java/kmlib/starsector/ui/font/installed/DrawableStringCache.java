@@ -1,4 +1,6 @@
-package kmlib.starsector.ui.font;
+package kmlib.starsector.ui.font.installed;
+
+import kmlib.starsector.ui.font.TextFace;
 
 import org.lazywizard.lazylib.ui.LazyFont.DrawableString;
 
@@ -47,11 +49,14 @@ public final class DrawableStringCache {
         if (cached != null) {
             return cached;
         }
-        var font = LazyFontCache.loadByFace(face.font());
+
+        var font = LazyFontCache.loadByFace(face.atlas());
         if (font == null) {
             return null;
         }
+
         var drawable = font.createText(text, MINTING_COLOUR, (float) face.size());
+
         RUN_BY_TEXT.put(run, drawable);
         return drawable;
     }

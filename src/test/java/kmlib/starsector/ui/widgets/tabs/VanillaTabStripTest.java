@@ -2,9 +2,9 @@ package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.controls.specs.SegmentSizing;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

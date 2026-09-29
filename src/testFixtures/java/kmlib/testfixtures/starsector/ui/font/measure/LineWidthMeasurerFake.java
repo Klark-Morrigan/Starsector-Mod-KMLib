@@ -1,6 +1,6 @@
-package kmlib.testfixtures.starsector.ui.font;
+package kmlib.testfixtures.starsector.ui.font.measure;
 
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 
 /**
  * A {@link LineWidthMeasurer} that reports a width proportional to the character count, so

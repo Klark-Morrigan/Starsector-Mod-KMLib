@@ -77,6 +77,9 @@ enforcePackageLayering {
                  of: ['kmlib.starsector.markets.colonies',
                       'kmlib.starsector.markets.colonisation']
 
+    forbidImport under: 'kmlib.starsector.ui.font.installed',
+                 of: 'kmlib.starsector.ui.font.measure'
+
     // Exact bans:
 
     forbidImport exactly: 'kmlib.profiling',
@@ -92,4 +95,8 @@ enforcePackageLayering {
 
     forbidImport exactly: 'kmlib.starsector.settings',
                  of: 'kmlib.starsector.settings.modmanager'
+
+    forbidImport exactly: 'kmlib.starsector.ui.font',
+                 of: ['kmlib.starsector.ui.font.installed',
+                      'kmlib.starsector.ui.font.measure']
 }

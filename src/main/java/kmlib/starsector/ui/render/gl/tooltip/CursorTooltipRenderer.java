@@ -2,8 +2,8 @@ package kmlib.starsector.ui.render.gl.tooltip;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.opengl.GlPasses;
-import kmlib.starsector.ui.font.LazyFontCache;
-import kmlib.starsector.ui.font.LazyFontSpanMeasurer;
+import kmlib.starsector.ui.font.installed.LazyFontCache;
+import kmlib.starsector.ui.font.measure.LazyFontSpanMeasurer;
 import kmlib.starsector.ui.input.UiCursor;
 import kmlib.starsector.ui.render.gl.LabelRenderer;
 import kmlib.starsector.ui.render.gl.LabelStyle;
@@ -72,7 +72,7 @@ public final class CursorTooltipRenderer {
         // The body face carries all but a handful of a tooltip's lines, so a box that cannot load it has
         // effectively nothing to say and is dropped whole rather than framed empty. Every other face is
         // left to degrade per line: the measurement charges it no width and the draw skips it.
-        if (LazyFontCache.loadByFace(style.typography().paragraphStyle().face().font()) == null) {
+        if (LazyFontCache.loadByFace(style.typography().paragraphStyle().face().atlas()) == null) {
             return;
         }
         var layout = CursorTooltip.layOut(

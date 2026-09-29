@@ -7,7 +7,7 @@ import kmlib.starsector.ui.controls.ControlInteractionSources;
 import kmlib.starsector.ui.controls.ControlSpecSamples;
 import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.font.StarsectorFont;
-import kmlib.starsector.ui.font.StripTextMeasurers;
+import kmlib.starsector.ui.font.measure.StripTextMeasurers;
 import kmlib.starsector.ui.layout.ControlStripLayout;
 import kmlib.starsector.ui.render.gl.TriangleRenderer;
 import kmlib.starsector.ui.render.gl.style.BoxColours;
@@ -20,7 +20,7 @@ import kmlib.starsector.ui.render.gl.tabs.VanillaTabStripRenderer;
 import kmlib.starsector.ui.sound.UiSoundScheme;
 import kmlib.starsector.ui.widgets.PanelAlpha;
 import kmlib.starsector.ui.widgets.tabs.style.TabStyles;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

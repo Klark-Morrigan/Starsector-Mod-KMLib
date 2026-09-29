@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl.style;
 
 import kmlib.starsector.ui.colour.AccentColours;
-import kmlib.starsector.ui.font.StarsectorFont;
+import kmlib.starsector.ui.font.FontAtlas;
 import kmlib.starsector.ui.render.gl.controls.ControlRenderer;
 import kmlib.starsector.ui.render.gl.panel.PanelRenderer;
 import kmlib.starsector.ui.sound.UiSoundScheme;
@@ -52,7 +52,7 @@ public record WidgetStyle(
     AccentColours accentColours,
     ControlHoverWash controlHoverWash,
     ControlPressLight controlPressLight,
-    StarsectorFont bodyFont,
+    FontAtlas bodyFont,
     TabStyle tabStyle,
     NotchColours notchColours,
     UiSoundScheme soundScheme) {

@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +27,8 @@ class StarsectorFontTest {
                 case VANILLA_ORBITRON_20AA -> "graphics/fonts/orbitron20aa.fnt";
                 case VANILLA_ORBITRON_12_CONDENSED -> "graphics/fonts/orbitron12condensed.fnt";
                 case VANILLA_VICTOR_10 -> "graphics/fonts/victor10.fnt";
+                case VANILLA_INSIGNIA_21 -> "graphics/fonts/insignia21LTaa.fnt";
+                case VANILLA_INSIGNIA_25 -> "graphics/fonts/insignia25LTaa.fnt";
                 case VANILLA_INSIGNIA_42 -> "graphics/fonts/insignia42LTaa.fnt";
             };
 
@@ -51,9 +54,9 @@ class StarsectorFontTest {
 
         // Whether each atlas wants interpolating, read off the "aa" count in its .fnt descriptor under
         // starsector-core/graphics/fonts - how many samples a glyph was rasterised from, so aa=1 carries
-        // no soft edge of its own and aa=4 does. Restated here rather than parsed for the reason the
-        // native size is: a unit test has no install to read, and what is worth pinning is that a value's
-        // declared smoothing still matches the atlas its path names.
+        // no soft edge of its own and aa=4 does. Restated here rather than parsed: a unit test has no
+        // install to read, and what is worth pinning is that a value's declared smoothing still matches
+        // the atlas its path names.
         //
         // The neighbouring "smooth" flag is not the test, and the two disagree in both directions across
         // these five: orbitron20aa is antialiased at smooth=0, orbitron12condensed hard-edged at
@@ -70,6 +73,8 @@ class StarsectorFontTest {
                     VANILLA_ORBITRON_12_CONDENSED -> AtlasSmoothing.PIXEL_EXACT;
                 case VANILLA_INSIGNIA_15,
                     VANILLA_ORBITRON_20AA,
+                    VANILLA_INSIGNIA_21,
+                    VANILLA_INSIGNIA_25,
                     VANILLA_INSIGNIA_42 -> AtlasSmoothing.SMOOTHED;
             };
 
@@ -79,33 +84,53 @@ class StarsectorFontTest {
     }
 
     @Nested
-    class GetNativeSize {
+    class ResolveLowerResolutionFont {
 
-        // The size each atlas draws 1:1 at, read off the "lineHeight" in its .fnt descriptor under
-        // starsector-core/graphics/fonts - the number the font loader scales a request against.
-        // Restated here rather than parsed from the descriptor: a unit test has no game install to
-        // read, and the point of the check is that a value's declared native size still matches the
-        // atlas its path names.
+        // The next cut down each face falls to. The insignia cuts step down through the family to its
+        // smallest; every other face has no smaller cut of its own design holding what it lacks, so it
+        // names none and falls straight to the game's default. Spelt out per face, so a chain rewired
+        // in passing - a cut skipped, or two cuts pointing at each other - fails here.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
-        void getNativeSizeReportsTheSizeItsAtlasDrawsOneToOneAt(StarsectorFont font) {
+        void resolveLowerResolutionFontNamesTheNextCutDownInTheFacesFamily(StarsectorFont font) {
 
             var expected = switch (font) {
-                case VANILLA_INSIGNIA_15 -> 15;
-                case VANILLA_ORBITRON_20AA -> 20;
-                // Another face whose name is not its size: "size=-12" is the character height it was
-                // matched at, where the descriptor's line height - the number a request is scaled
-                // against - is 15.
-                case VANILLA_ORBITRON_12_CONDENSED -> 15;
-                // The descriptor spells "size=-10" - BMFont writes the character height it matched as a
-                // negative - but states "lineHeight=9", and the line height is what a request is scaled
-                // against. So the pixel face is asked for at 9 and the 10 in its name is not a size at all.
-                case VANILLA_VICTOR_10 -> 9;
-                case VANILLA_INSIGNIA_42 -> 42;
+                case VANILLA_INSIGNIA_42 -> StarsectorFont.VANILLA_INSIGNIA_25;
+                case VANILLA_INSIGNIA_25 -> StarsectorFont.VANILLA_INSIGNIA_21;
+                case VANILLA_INSIGNIA_21 -> StarsectorFont.VANILLA_INSIGNIA_15;
+                case VANILLA_INSIGNIA_15,
+                    VANILLA_ORBITRON_20AA,
+                    VANILLA_ORBITRON_12_CONDENSED,
+                    VANILLA_VICTOR_10 -> null;
             };
 
-            assertThat(font.getNativeSize())
-                .isEqualTo(expected);
+            assertThat(font.resolveLowerResolutionFont())
+                .isEqualTo(Optional.ofNullable(expected));
+        }
+    }
+
+    @Nested
+    class FindFontByPath {
+
+        @Test
+        void findFontByPathFindsTheFaceTheGamesSettingsName() {
+            // The spelling vanilla's settings.json names its defaultFont in.
+            assertThat(StarsectorFont.findFontByPath("graphics/fonts/insignia15LTaa.fnt"))
+                .contains(StarsectorFont.VANILLA_INSIGNIA_15);
+        }
+
+        @Test
+        void findFontByPathFindsNothingForAFaceTheEnumDoesNotName() {
+
+            assertThat(StarsectorFont.findFontByPath("graphics/fonts/arial12.fnt"))
+                .isEmpty();
+        }
+
+        @Test
+        void findFontByPathFindsNothingForNoPath() {
+
+            assertThat(StarsectorFont.findFontByPath(null))
+                .isEmpty();
         }
     }
 }

@@ -6,8 +6,8 @@ import kmlib.starsector.ui.controls.ControlSpecSamples;
 import kmlib.starsector.ui.controls.specs.ControlSpec;
 import kmlib.starsector.ui.controls.specs.DividerSpec;
 import kmlib.starsector.ui.controls.specs.InteractiveSpec;
-import kmlib.starsector.ui.font.StripTextMeasurers;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.starsector.ui.font.measure.StripTextMeasurers;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

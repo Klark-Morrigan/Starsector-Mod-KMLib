@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets.tabs;
 
 import kmlib.math.geometry.Rectangles;
-import kmlib.starsector.ui.font.LineWidthMeasurer;
+import kmlib.starsector.ui.font.measure.LineWidthMeasurer;
 import kmlib.starsector.ui.widgets.segments.HorizontalSegments;
 import kmlib.starsector.ui.widgets.segments.SegmentSpec;
 

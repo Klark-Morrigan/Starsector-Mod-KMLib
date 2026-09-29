@@ -10,11 +10,11 @@ import kmlib.starsector.ui.controls.specs.DividerSpec;
 import kmlib.starsector.ui.controls.specs.ScrollingSectionSpec;
 import kmlib.starsector.ui.controls.specs.SideBySideSpec;
 import kmlib.starsector.ui.controls.specs.VerticalTableSpec;
-import kmlib.starsector.ui.font.StripTextMeasurers;
+import kmlib.starsector.ui.font.measure.StripTextMeasurers;
 import kmlib.starsector.ui.layout.CappedStripLayout.CappedStripPlacement;
 import kmlib.starsector.ui.layout.CappedStripLayout.MeasuredStrip;
 import kmlib.starsector.ui.widgets.scroll.ScrollbarThickness;
-import kmlib.testfixtures.starsector.ui.font.LineWidthMeasurerFake;
+import kmlib.testfixtures.starsector.ui.font.measure.LineWidthMeasurerFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

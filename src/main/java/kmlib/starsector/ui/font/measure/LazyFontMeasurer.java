@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.font;
+package kmlib.starsector.ui.font.measure;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 

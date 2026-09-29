@@ -1,7 +1,6 @@
 package kmlib.starsector.ui.text;
 
 import kmlib.starsector.ui.colour.StarsectorUiColour;
-import kmlib.starsector.ui.font.StarsectorFont;
 import kmlib.starsector.ui.font.TextFace;
 
 import java.awt.Color;
@@ -45,20 +44,19 @@ public record TextStyle(
     private static final boolean IS_UPPER_CASED = true;
 
     /**
-     * Builds the plainest style there is: {@code font} at the size its atlas was rasterised at, in the
-     * palette's body-text colour. Every other part is layered on with a refinement below, so a caller
-     * states only what differs from the baseline.
+     * Builds the plainest style there is: {@code face} in the palette's body-text colour. Every other
+     * part is layered on with a refinement below, so a caller states only what differs from the
+     * baseline.
      *
-     * <p>The size comes from the face rather than from the caller because a bitmap atlas is crisp at
-     * exactly one size, so a caller with no size of its own wants that one - and naming the face alone
-     * is then a complete style rather than half of one.
+     * <p>A caller with no size of its own passes {@link TextFace#createNativeFace}, since a bitmap atlas
+     * is crisp at exactly one size and that size is read off the install rather than known here.
      *
-     * @param font the atlas the text draws in
+     * @param face the atlas the text draws in and the size it draws at
      * @return the baseline style for that face
      */
-    public static TextStyle createStyle(StarsectorFont font) {
+    public static TextStyle createStyle(TextFace face) {
         return new TextStyle(
-            new TextFace(font, font.getNativeSize()),
+            face,
             DEFAULT_COLOUR.resolve(),
             DEFAULT_ALIGNMENT,
             IS_NOT_UPPER_CASED);
@@ -72,7 +70,7 @@ public record TextStyle(
      * @return an otherwise-identical style at that size
      */
     public TextStyle sizedAt(double size) {
-        return new TextStyle(new TextFace(face.font(), size), colour, alignment, isUpperCased);
+        return new TextStyle(new TextFace(face.atlas(), size), colour, alignment, isUpperCased);
     }
 
     /**

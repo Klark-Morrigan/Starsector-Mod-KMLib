@@ -1,4 +1,6 @@
-package kmlib.starsector.ui.font;
+package kmlib.starsector.ui.font.measure;
+
+import kmlib.starsector.ui.font.TextFace;
 
 /**
  * Measures how wide one span of text renders in a given {@link TextFace} - the atlas and the size

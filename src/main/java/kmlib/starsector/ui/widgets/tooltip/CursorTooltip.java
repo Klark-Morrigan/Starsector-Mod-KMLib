@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.widgets.tooltip;
 
 import kmlib.math.geometry.Rectangle;
-import kmlib.starsector.ui.font.TextSpanMeasurer;
+import kmlib.starsector.ui.font.measure.TextSpanMeasurer;
 import kmlib.starsector.ui.layout.TooltipBoxLayout;
 import kmlib.starsector.ui.text.LabelRuns;
 import kmlib.starsector.ui.text.LabelRuns.LabelRunOffsets;

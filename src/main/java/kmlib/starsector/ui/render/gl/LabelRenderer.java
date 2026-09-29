@@ -1,7 +1,7 @@
 package kmlib.starsector.ui.render.gl;
 
 import kmlib.colour.Colours;
-import kmlib.starsector.ui.font.DrawableStringCache;
+import kmlib.starsector.ui.font.installed.DrawableStringCache;
 
 import org.lazywizard.lazylib.ui.LazyFont;
 
