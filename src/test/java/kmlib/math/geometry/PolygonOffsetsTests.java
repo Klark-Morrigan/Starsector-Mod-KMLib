@@ -612,6 +612,76 @@ final class PolygonOffsetsTests {
                 .containsExactlyElementsOf(clockwise);
         }
 
+        // A lopsided bowtie: the same crossing, but the lower lobe is four times the upper
+        // one, so the ring's net area winds clockwise while its upper lobe winds the other
+        // way. The lobes meet at (200, 200).
+        private List<double[]> buildLopsidedBowtieRing() {
+            return Arrays.asList(
+                new double[] {0, 0},
+                new double[] {300, 300},
+                new double[] {0, 300},
+                new double[] {600, 0});
+        }
+
+        @Test
+        void removalKeepsTheLoopsWoundAsAskedRatherThanAsTheNetArea() {
+            // Asked for the counter-clockwise remainder, it keeps the small upper lobe
+            // although the ring as a whole winds the other way - which is what tells an inset
+            // that consumed a ring from one that only consumed its ends.
+            var cleaned = PolygonOffsets.removeReversedLoops(buildLopsidedBowtieRing(), true, 0);
+
+            assertThat(computeSignedArea(cleaned))
+                .isCloseTo(15000.0, buildAssertionSlack());
+            assertThat(cleaned)
+                .hasSize(3);
+        }
+
+        @Test
+        void removalSplicesAFoldStraddlingTheRingsStart() {
+            // The same bowtie begun one corner later, so the reversed lobe runs through the
+            // ring's start and is the loop AROUND the crossing rather than the one between
+            // its two edges. Where the ring begins is an accident, and the answer is the same.
+            var begunLater = Arrays.asList(
+                new double[] {600, 0},
+                new double[] {0, 0},
+                new double[] {300, 300},
+                new double[] {0, 300});
+
+            var cleaned = PolygonOffsets.removeReversedLoops(begunLater, true, 0);
+
+            assertThat(computeSignedArea(cleaned))
+                .isCloseTo(15000.0, buildAssertionSlack());
+            assertThat(cleaned)
+                .hasSize(3);
+        }
+
+        @Test
+        void removalTakesTheInnermostFoldFirstWhereARingFoldsAtBothEnds() {
+            // A body 20 by 10 between x = 40 and 60, twisted into a fold at each end that is
+            // larger than the body, so the ring nets clockwise. At either crossing the ring
+            // cuts into that end's fold and everything else - and everything else, the body
+            // with the other fold still in it, nets clockwise too. Splicing that would keep a
+            // fold and lose the body; taking only the simple loop keeps the body, which comes
+            // back with the two crossings as its end corners: 200 plus two triangles of
+            // 26.67 by 10 over 2.
+            var twistedAtBothEnds = Arrays.asList(
+                new double[] {40, 0},
+                new double[] {60, 0},
+                new double[] {140, 15},
+                new double[] {140, -5},
+                new double[] {60, 10},
+                new double[] {40, 10},
+                new double[] {-40, -5},
+                new double[] {-40, 15});
+
+            var cleaned = PolygonOffsets.removeReversedLoops(twistedAtBothEnds, true, 0);
+
+            assertThat(cleaned)
+                .hasSize(6);
+            assertThat(computeSignedArea(cleaned))
+                .isCloseTo(1400.0 / 3, buildAssertionSlack());
+        }
+
         @Test
         void removalReturnsTheInputBelowThreeVertices() {
 
