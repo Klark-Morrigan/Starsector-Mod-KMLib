@@ -1,0 +1,33 @@
+{
+    "repository": "https://github.com/TruthOriginem/Starsector-Localization-CN.git",
+    "fontsPath": "localization/graphics/fonts",
+    "editions": {
+        "startup-optimization": {
+            "insignia15LTaa": "f147f69aaee3db1064c0852d137faefd01d508d1",
+            "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",
+            "orbitron12condensed": "d485711f866f5aa8c0522f4924bc9e990323b86c",
+            "victor10": "9b42778547098e3ed147e21059e9fbb8c26c8b89",
+            "insignia21LTaa": "5a970e0630c7be67f65e2db1b9dd3bca43cfc859",
+            "insignia25LTaa": "0373ac7c03e406413f6f9b94fce0e666fbe3455f",
+            "insignia42LTaa": null
+        },
+        "font-simsong": {
+            "insignia15LTaa": "11f41f08a2cf71299c435d045725b7854b6b187e",
+            "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",
+            "orbitron12condensed": "d485711f866f5aa8c0522f4924bc9e990323b86c",
+            "victor10": "9b42778547098e3ed147e21059e9fbb8c26c8b89",
+            "insignia21LTaa": "45739bf4128d213b2fba37b54bc4076d2f8084d8",
+            "insignia25LTaa": "dc844a110a0e4542ec71c129e700b2f43c24d33a",
+            "insignia42LTaa": null
+        },
+        "font-zongyi": {
+            "insignia15LTaa": "e768b66837c4a9b030762802d4bc837491eb662f",
+            "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",
+            "orbitron12condensed": "d485711f866f5aa8c0522f4924bc9e990323b86c",
+            "victor10": "9b42778547098e3ed147e21059e9fbb8c26c8b89",
+            "insignia21LTaa": "f53c67666416a9482f57ac8b9a0c495682666a8f",
+            "insignia25LTaa": "262654fd9609b7a8630055615aa0e717e7c15f09",
+            "insignia42LTaa": null
+        }
+    }
+}

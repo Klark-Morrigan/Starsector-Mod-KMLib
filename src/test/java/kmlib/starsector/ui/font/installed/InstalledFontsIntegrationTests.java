@@ -6,19 +6,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
- * Holds every install this machine was handed to what KM text needs of its atlases: the build's own, and
- * any others {@code -PfontInstallRoots} names - which is how a machine holding the core localisation's
- * editions checks each of them. A CI runner carries the game's JARs and no fonts, so this suite skips
- * there: every install it checks is one holding the full game.
+ * Holds every install the build hands it to what KM text needs of its atlases: the build's own, each core
+ * localisation edition the build laid over it at the descriptors its lock pins, and any others
+ * {@code -PfontInstallRoots} names - which is how a machine holding the editions installed checks them as
+ * installed.
  *
  * <p>Two things are asked of every install, over the faces KM draws in and the cuts they fall back to -
  * the enum, which names both. That each is present in a shape LazyLib and the game both load, with the
@@ -31,18 +29,14 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
  * writes generated descriptors and a subfolder of its own into that folder, and a listing would take them
  * for faces KM draws in.
  *
- * <p>Skips where it was handed no install carrying the game's fonts.
+ * <p>Fails rather than skipping where a handed root carries no fonts, or no localised root is handed: a
+ * skipped check reads as a passed one.
  */
 class InstalledFontsIntegrationTests {
 
     // The installs to check, as the build hands them.
     private static final String STARSECTOR_ROOT_PROPERTY = "kmlib.starsectorRoot";
     private static final String INSTALL_ROOTS_PROPERTY = "kmlib.fontInstallRoots";
-
-    // Where an install's font descriptors live, whose presence is what makes a root one this suite can
-    // check. The core folder alone is not enough: a CI runner carries the game's JARs under it and nothing
-    // else, and a suite taking that for an install would fail on every face it lacks.
-    private static final String FONTS_DIRECTORY = "starsector-core/graphics/fonts";
 
     // "Hegemony" (U+9738 U+4E3B), a faction name as a localised install draws it.
     private static final String LOCALISED_NAME = "霸主";
@@ -136,19 +130,22 @@ class InstalledFontsIntegrationTests {
         }
     }
 
-    // Every handed install a core localisation has been laid over - or a skip where there is none.
+    // Every handed install a core localisation has been laid over, of which the build always hands some.
     private static List<InstalledFonts> readEveryLocalisedInstall() {
 
         var localisedInstalls = readEveryHandedInstall().stream()
             .filter(installedFonts -> !installedFonts.edition().equals(InstalledFonts.VANILLA_EDITION))
             .toList();
-        assumeFalse(localisedInstalls.isEmpty(), "No localised install was handed");
+
+        assertThat(localisedInstalls)
+            .as("the localised installs the build handed")
+            .isNotEmpty();
 
         return localisedInstalls;
     }
 
-    // Every install handed, the build's own first, each once and each actually carrying the game's fonts -
-    // or a skip where there is none.
+    // Every install handed, the build's own first, each once. A root carrying no fonts is read as one
+    // lacking every face, which fails on the first face asked for.
     private static List<InstalledFonts> readEveryHandedInstall() {
 
         var namedRoots = new ArrayList<String>();
@@ -159,10 +156,12 @@ class InstalledFontsIntegrationTests {
         var installRoots = namedRoots.stream()
             .filter(root -> !root.isBlank())
             .map(root -> Path.of(root).toAbsolutePath().normalize())
-            .filter(root -> Files.isDirectory(root.resolve(FONTS_DIRECTORY)))
             .distinct()
             .toList();
-        assumeFalse(installRoots.isEmpty(), "No install carrying the game's fonts was handed");
+
+        assertThat(installRoots)
+            .as("the installs the build handed")
+            .isNotEmpty();
 
         return installRoots.stream()
             .map(InstalledFontsReader::readInstall)
