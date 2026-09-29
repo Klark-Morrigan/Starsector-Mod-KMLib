@@ -41,14 +41,14 @@ final class WidgetStyleTest {
     class WithTabStyle {
 
         @Test
-        void withTabStyleDrawsTabsInTheGivenStyle() {
+        void drawsTabsInTheGivenStyle() {
 
             assertThat(STYLE.withTabStyle(OTHER_TAB_STYLE).tabStyle())
                 .isEqualTo(OTHER_TAB_STYLE);
         }
 
         @Test
-        void withTabStyleCarriesEverythingElseOver() {
+        void carriesEverythingElseOver() {
             // What a panel drawing two tab-shaped things relies on: its band button is drawn through this
             // one look with only the tab style swapped, so anything else moving here would pitch the button
             // apart from the panel it belongs to.
@@ -59,7 +59,7 @@ final class WidgetStyleTest {
         }
 
         @Test
-        void withTabStyleLeavesTheStyleItWasAskedOfUntouched() {
+        void leavesTheStyleItWasAskedOfUntouched() {
             // A look is handed around a frame and read by several passes, so a refinement that edited in
             // place would change what every one of them was already holding.
             STYLE.withTabStyle(OTHER_TAB_STYLE);

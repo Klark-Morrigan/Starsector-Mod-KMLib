@@ -20,13 +20,13 @@ final class TabShortcutTextTest {
     class ResolveRuns {
 
         @Test
-        void resolveRunsReadsAsTheBareLabelWhenTheTabHasNoKey() {
+        void readsAsTheBareLabelWhenTheTabHasNoKey() {
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent(LABEL, null)))
                 .containsExactly(new TabTextRun(LABEL, TabTextRun.Role.LABEL));
         }
 
         @Test
-        void resolveRunsReadsAsTheBareLabelWhenTheKeyIsBlank() {
+        void readsAsTheBareLabelWhenTheKeyIsBlank() {
             // An unbound key arrives as blank rather than absent from some callers; both mean the tab has
             // nothing to say about a binding.
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent(LABEL, "  ")))
@@ -34,7 +34,7 @@ final class TabShortcutTextTest {
         }
 
         @Test
-        void resolveRunsLightsTheKeysLetterWhereItStandsInTheLabel() {
+        void lightsTheKeysLetterWhereItStandsInTheLabel() {
             // "Political Map" bound to M lights the M of "Map" - the tab gains no width and reads as its
             // own name rather than as a name with a key stapled to it.
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent(LABEL, "M")))
@@ -45,7 +45,7 @@ final class TabShortcutTextTest {
         }
 
         @Test
-        void resolveRunsLightsTheLabelsOwnLetterWhateverCaseTheKeyIsReportedIn() {
+        void lightsTheLabelsOwnLetterWhateverCaseTheKeyIsReportedIn() {
             // The lit run holds the label's capital, not the key name's lower case: what lights is a
             // letter of the name, not a copy of the key laid over it.
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent("Sector", "s")))
@@ -55,7 +55,7 @@ final class TabShortcutTextTest {
         }
 
         @Test
-        void resolveRunsLightsTheFirstOccurrenceWhenTheLetterRepeats() {
+        void lightsTheFirstOccurrenceWhenTheLetterRepeats() {
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent("Alliances", "A")))
                 .containsExactly(
                     new TabTextRun("A", TabTextRun.Role.KEY),
@@ -63,7 +63,7 @@ final class TabShortcutTextTest {
         }
 
         @Test
-        void resolveRunsSpellsTheKeyOutWhenTheLabelDoesNotContainIt() {
+        void spellsTheKeyOutWhenTheLabelDoesNotContainIt() {
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent(LABEL, "Z")))
                 .containsExactly(
                     new TabTextRun(LABEL, TabTextRun.Role.LABEL),
@@ -74,7 +74,7 @@ final class TabShortcutTextTest {
         }
 
         @Test
-        void resolveRunsSpellsAMultiGlyphKeyOutEvenWhereItsLettersOccur() {
+        void spellsAMultiGlyphKeyOutEvenWhereItsLettersOccur() {
             // "Fleet" bound to F1 must not light its F: the key is not that letter, and no single glyph in
             // the name stands for it.
             assertThat(TabShortcutText.resolveRuns(new VanillaTabContent("Fleet", "F1")))
@@ -87,14 +87,14 @@ final class TabShortcutTextTest {
     class ComposeDisplayText {
 
         @Test
-        void composeDisplayTextReadsAsTheLabelAloneWhenTheKeyLightsInPlace() {
+        void readsAsTheLabelAloneWhenTheKeyLightsInPlace() {
             // The whole point of the width: a lit letter costs a tab nothing to show.
             assertThat(TabShortcutText.composeDisplayText(new VanillaTabContent(LABEL, "M")))
                 .isEqualTo(LABEL);
         }
 
         @Test
-        void composeDisplayTextBracketsASpeltOutKeyAfterTheLabel() {
+        void bracketsASpeltOutKeyAfterTheLabel() {
             // The delimiter is the vanilla-parity contract - a spelt-out hotkey reads "[Z]", not "(Z)",
             // matching the engine's own tabs - so pin the string lest it silently regress.
             assertThat(TabShortcutText.composeDisplayText(new VanillaTabContent(LABEL, "Z")))
@@ -102,7 +102,7 @@ final class TabShortcutTextTest {
         }
 
         @Test
-        void composeDisplayTextReadsAsTheLabelAloneWhenTheTabHasNoKey() {
+        void readsAsTheLabelAloneWhenTheTabHasNoKey() {
             assertThat(TabShortcutText.composeDisplayText(new VanillaTabContent(LABEL, null)))
                 .isEqualTo(LABEL);
         }

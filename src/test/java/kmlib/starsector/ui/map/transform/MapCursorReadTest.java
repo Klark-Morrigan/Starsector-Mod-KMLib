@@ -80,7 +80,7 @@ class MapCursorReadTest {
     class DescribeRead {
 
         @Test
-        void describeReadWordsThePixelTheSnapshotAndThePointItLandedOn() {
+        void wordsThePixelTheSnapshotAndThePointItLandedOn() {
             // Asserted whole because the fields are only diagnostic together: the pixel is what the
             // player pointed at, the viewport and modelview are what it was mapped through, and the
             // world point is what came out. Read apart, none of them says which was wrong.
@@ -101,7 +101,7 @@ class MapCursorReadTest {
     class DescribeReadUnderRenderer {
 
         @Test
-        void describeReadUnderRendererReportsAClipThatHoldsTheCursor() {
+        void reportsAClipThatHoldsTheCursor() {
             // The pass may paint where the pointer is, so its answer about what is under the cursor
             // can be the frame's.
             stubScissorBoxAt(CLIP_AROUND_THE_CURSOR);
@@ -112,7 +112,7 @@ class MapCursorReadTest {
         }
 
         @Test
-        void describeReadUnderRendererReportsAClipThatDoesNotHoldTheCursor() {
+        void reportsAClipThatDoesNotHoldTheCursor() {
             // The reading that names a foreign pass: it resolved a point for a pixel it is not
             // permitted to paint, so whatever it says is under the cursor is not the map's answer.
             stubScissorBoxAt(CLIP_AWAY_FROM_THE_CURSOR);
@@ -123,7 +123,7 @@ class MapCursorReadTest {
         }
 
         @Test
-        void describeReadUnderRendererLeavesTheClipUnreadUnderFastRendering() {
+        void leavesTheClipUnreadUnderFastRendering() {
             // A clip is stubbed to make the absence of the read the only reason the line cannot
             // report it: a description that reached GL here would word this box instead.
             stubScissorBoxAt(CLIP_AROUND_THE_CURSOR);
@@ -136,7 +136,7 @@ class MapCursorReadTest {
         }
 
         @Test
-        void describeReadUnderRendererTouchesNoGlStateUnderFastRendering() {
+        void touchesNoGlStateUnderFastRendering() {
             // The line's wording is not the point of the gate - the stall is. Fast Rendering counts
             // frames a caller stalled on and throws once it reaches thirty of sixty, so neither
             // half of the clip read may be reached, including the enable flag it is safe to ask for.

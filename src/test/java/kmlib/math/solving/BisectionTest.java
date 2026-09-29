@@ -21,7 +21,7 @@ final class BisectionTest {
     @Nested
     class CountStepsForTolerance {
         @Test
-        void countStepsForToleranceCountsTheHalvingsThatCloseTheIntervalToTheTolerance() {
+        void countsTheHalvingsThatCloseTheIntervalToTheTolerance() {
             // A 1000-wide interval halves to under 1 after 10 steps (1000/2^10 is 0.98)
             // and not after 9 (1.95), so the count is the first halving that gets there.
             var steps = Bisection.countStepsForTolerance(0.0, 1000.0, 1.0);
@@ -31,7 +31,7 @@ final class BisectionTest {
         }
 
         @Test
-        void countStepsForToleranceCountsFewerHalvingsForACoarserTolerance() {
+        void countsFewerHalvingsForACoarserTolerance() {
             // The same interval to within 100 needs only 4 halvings (1000/2^4 is 62.5),
             // which is the saving a caller buys by asking for a precision it can use
             // rather than the finest the interval allows.
@@ -42,7 +42,7 @@ final class BisectionTest {
         }
 
         @Test
-        void countStepsForToleranceCountsNoHalvingsWhenTheIntervalIsAlreadyWithinTolerance() {
+        void countsNoHalvingsWhenTheIntervalIsAlreadyWithinTolerance() {
             // Any point of a 10-wide interval is already within 50 of the crossing, so
             // the search has nothing to narrow and the caller pays for no measurements.
             var steps = Bisection.countStepsForTolerance(0.0, 10.0, 50.0);
@@ -52,7 +52,7 @@ final class BisectionTest {
         }
 
         @Test
-        void countStepsForToleranceRejectsANonPositiveTolerance() {
+        void rejectsANonPositiveTolerance() {
             // Halving closes an interval towards zero without ever reaching it, so a
             // tolerance of zero names a precision no step count delivers - caught here
             // rather than as a search that never terminates for a reason it cannot state.
@@ -61,7 +61,7 @@ final class BisectionTest {
         }
 
         @Test
-        void countStepsForToleranceRejectsAToleranceThatIsNotANumber() {
+        void rejectsAToleranceThatIsNotANumber() {
             // A tolerance that is not a number compares false against every bound, so a
             // count derived from it would come back as whatever ceil() makes of NaN rather
             // than as a precision. Rejected by the same guard, and named here because it
@@ -74,7 +74,7 @@ final class BisectionTest {
     @Nested
     class FindLargestPassing {
         @Test
-        void findLargestPassingLandsOnTheCrossingWithinTheHalvedInterval() {
+        void landsOnTheCrossingWithinTheHalvedInterval() {
             // Holds for x <= 42 across [0, 100]; 30 halvings pin the crossing to well
             // under a thousandth of the interval.
             var crossing = Bisection.findLargestPassing(0.0, 100.0, 30, x -> x <= 42.0);
@@ -84,7 +84,7 @@ final class BisectionTest {
         }
 
         @Test
-        void findLargestPassingReturnsTheHighEndWhenItHoldsThere() {
+        void returnsTheHighEndWhenItHoldsThere() {
             // The predicate holds across the whole interval, so the widest value wins
             // outright with no halving.
             var largest = Bisection.findLargestPassing(0.0, 100.0, 30, x -> x <= 200.0);
@@ -94,7 +94,7 @@ final class BisectionTest {
         }
 
         @Test
-        void findLargestPassingReturnsTheLowEndWhenNoStepsAreAllowed() {
+        void returnsTheLowEndWhenNoStepsAreAllowed() {
             // With the high end failing and no halving budget, the largest known-true
             // point is the low end the caller vouched for.
             var largest = Bisection.findLargestPassing(0.0, 100.0, 0, x -> x <= 42.0);
@@ -104,7 +104,7 @@ final class BisectionTest {
         }
 
         @Test
-        void findLargestPassingLeavesTheLowEndWhenThePredicateFailsThere() {
+        void leavesTheLowEndWhenThePredicateFailsThere() {
             // A predicate false even at the low end never advances, so the low end comes
             // back - the caller reads that as nothing in the interval fits.
             var largest = Bisection.findLargestPassing(10.0, 100.0, 30, x -> x <= 5.0);

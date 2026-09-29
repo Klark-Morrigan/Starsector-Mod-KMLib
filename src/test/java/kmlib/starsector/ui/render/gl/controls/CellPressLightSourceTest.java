@@ -47,7 +47,7 @@ final class CellPressLightSourceTest {
     class CreatePressLitLightSource {
 
         @Test
-        void createPressLitLightSourceLightsEachCellAtItsOwnLiftsPoint() {
+        void lightsEachCellAtItsOwnLiftsPoint() {
 
             var lights = CellPressLightSource.createPressLitLightSource(LIGHT, PRESSES, FULLY_OPAQUE);
 
@@ -58,7 +58,7 @@ final class CellPressLightSourceTest {
         }
 
         @Test
-        void createPressLitLightSourceHidesTheLightOfACellNothingHasPressed() {
+        void hidesTheLightOfACellNothingHasPressed() {
             // A renderer lights every cell it lays and lets the hidden ones fall away, so a cell with no lift
             // running has to answer a paint the fill skips rather than one it composites at nothing.
             var lights = CellPressLightSource.createPressLitLightSource(LIGHT, PRESSES, FULLY_OPAQUE);
@@ -68,7 +68,7 @@ final class CellPressLightSourceTest {
         }
 
         @Test
-        void createPressLitLightSourceFadesEveryCellWithThePanelsOpacity() {
+        void fadesEveryCellWithThePanelsOpacity() {
 
             var lights = CellPressLightSource.createPressLitLightSource(LIGHT, PRESSES, 0.5f);
 
@@ -81,7 +81,7 @@ final class CellPressLightSourceTest {
     class ResolveSingleCellLightPaint {
 
         @Test
-        void resolveSingleCellLightPaintAnswersTheCellAWholeRowControlIsNumberedBy() {
+        void answersTheCellAWholeRowControlIsNumberedBy() {
             // The whole point of the default: a tick box and a toggle have one hit target, numbered zero by
             // the hit resolver, and a widget spelling that out for itself is a widget that has to know the
             // resolver's numbering to paint.

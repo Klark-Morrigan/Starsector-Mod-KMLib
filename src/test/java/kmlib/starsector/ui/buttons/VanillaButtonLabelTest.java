@@ -71,7 +71,7 @@ class VanillaButtonLabelTest {
     class ResolveLabelOf {
 
         @Test
-        void resolveLabelOfReachesTheWordsTwoHopsBelowTheButton() {
+        void reachesTheWordsTwoHopsBelowTheButton() {
             // The shape the game builds: the button holds a renderer, the renderer holds the piece
             // carrying the words. Neither hop is optional, and the button itself answers nothing.
             var buttonFake = new ButtonFake(new ButtonLabelFake(LABEL));
@@ -81,7 +81,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfRefusesALabelReadingSomethingElse() {
+        void refusesALabelReadingSomethingElse() {
             // The one that fails silently if it is not refused: a widget holds several labels, and
             // writing into the wrong one changes nothing anyone can see and reports nothing.
             var buttonFake = new ButtonFake(new ButtonLabelFake("Starscape"));
@@ -91,7 +91,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfTakesTheLabelReadingTheWordsFromAmongSeveral() {
+        void takesTheLabelReadingTheWordsFromAmongSeveral() {
             // The same widget holding chrome and an empty label beside the one that draws its words.
             // Order is not the discriminator - what the label says is - so the wanted one is put
             // last, where a search taking the first it met would already have answered.
@@ -107,7 +107,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfAnswersNothingForWordsNoLabelUnderItReads() {
+        void answersNothingForWordsNoLabelUnderItReads() {
             var buttonFake = new ButtonFake(new ButtonLabelFake(LABEL));
 
             assertThat(VanillaButtonLabel.resolveLabelOf(buttonFake, "Constellations", reporter))
@@ -115,7 +115,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfAnswersNothingWhenTheCallerNamesNoWords() {
+        void answersNothingWhenTheCallerNamesNoWords() {
             // A caller with nothing to match on cannot be given an answer worth having: every label
             // under the button would be as good as every other, which is the state this exists to
             // avoid.
@@ -126,7 +126,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfStopsBeforeWordsBuriedDeeperThanTheGamePutsThem() {
+        void stopsBeforeWordsBuriedDeeperThanTheGamePutsThem() {
             // A widget tree is walked to the depth the game uses and no further. Left open, a search
             // over a live tree would call its way across half the screen looking for something that
             // is two hops away or nowhere at all.
@@ -137,7 +137,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfTreatsAnAccessorThatThrowsAsADeadEndRatherThanAFailure() {
+        void treatsAnAccessorThatThrowsAsADeadEndRatherThanAFailure() {
             // A widget asked a question it does not care for answers by throwing. That is one branch
             // of the walk ending, not the walk failing - the words may still be down another.
             var buttonFake = new ButtonFake(new ThrowingHolderFake(), new ButtonLabelFake(LABEL));
@@ -147,7 +147,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void resolveLabelOfAnswersNothingForAWidgetWithNothingUnderIt() {
+        void answersNothingForAWidgetWithNothingUnderIt() {
             // What a reworked game build looks like from here: a button that leads nowhere. Not an
             // error - the widget is somebody else's - so the caller gets one case to handle.
             assertThat(VanillaButtonLabel.resolveLabelOf(new Object(), LABEL, reporter))
@@ -178,7 +178,7 @@ class VanillaButtonLabelTest {
     class AnnounceShortcut {
 
         @Test
-        void announceShortcutLightsTheKeyWhereTheWordsAlreadyHoldIt() {
+        void lightsTheKeyWhereTheWordsAlreadyHoldIt() {
             // The game's rule for a key its button's words already contain: the occurrence is lit
             // rather than repeated, so the words are not lengthened to say what they already say.
             var labelFake = announceOn(LABEL, CONTAINED_KEY);
@@ -190,7 +190,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void announceShortcutLightsTheOccurrenceAsItIsWrittenRatherThanAsTheKeyIsNamed() {
+        void lightsTheOccurrenceAsItIsWrittenRatherThanAsTheKeyIsNamed() {
             // The match ignores case and the lighting cannot: a run handed over has to be a substring
             // of what is drawn, so a key named "L" against words holding "l" lights the "l".
             assertThat(announceOn(LABEL, "L").readHighlightedRuns())
@@ -198,7 +198,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void announceShortcutWritesTheKeyAfterTheWordsWhereTheyDoNotHoldIt() {
+        void writesTheKeyAfterTheWordsWhereTheyDoNotHoldIt() {
             // The other half of the same rule, and the one the game's own filter row takes: a key the
             // words do not contain is spelled out after them, and that is what is lit.
             var labelFake = announceOn(LABEL, ABSENT_KEY);
@@ -210,7 +210,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void announceShortcutLightsWhatItSaysInTheColourTheGameLightsAKeyIn() {
+        void lightsWhatItSaysInTheColourTheGameLightsAKeyIn() {
             // A run lit without a colour draws in whatever the last caller left behind, so the two
             // travel together or the announcement reads differently from screen to screen.
             assertThat(announceOn(LABEL, CONTAINED_KEY).readHighlightColours())
@@ -218,7 +218,7 @@ class VanillaButtonLabelTest {
         }
 
         @Test
-        void announceShortcutSaysNothingForAKeyWithNoName() {
+        void saysNothingForAKeyWithNoName() {
             // A code the key table does not cover. A bracket around nothing would read as a control
             // whose key had gone missing rather than one whose key cannot be written down.
             var labelFake = announceOn(LABEL, " ");

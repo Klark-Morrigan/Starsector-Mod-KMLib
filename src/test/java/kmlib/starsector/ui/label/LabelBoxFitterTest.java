@@ -33,7 +33,7 @@ final class LabelBoxFitterTest {
     @Nested
     class FitLargestBox {
         @Test
-        void fitLargestBoxCapsTheGirthAtTheRegionSoTheBandStaysInside() {
+        void capsTheGirthAtTheRegionSoTheBandStaysInside() {
             // A slab 2000 wide, 700 tall, a fat label (aspect 1) that wants all the girth
             // it can get: the band cannot exceed the 700 the region allows, so the fit caps
             // it just under 700 and the whole band, centred at y=350, stays within y 0..700.
@@ -55,7 +55,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxStacksASquareLabelIntoTwoLines() {
+        void stacksASquareLabelIntoTwoLines() {
             // In a 1700-square region text six times as long as it is tall runs strictly
             // taller on two lines than one - half the length each line needs, spent against
             // the spare girth - and taller than three, which the girth cannot make taller
@@ -72,7 +72,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxKeepsOneLineWhenStackingBuysNoTallerFont() {
+        void keepsOneLineWhenStackingBuysNoTallerFont() {
             // In the wide slab the single line is not length-limited (aspect 4 at the
             // girth-capped font still fits), so two lines - feasible, but girth-halved to
             // a smaller font - lose to it: a block goes multi-line only when stacking
@@ -91,7 +91,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxStacksWhenTheSingleLineCannotHoldTheTextAtTheMinimumFont() {
+        void stacksWhenTheSingleLineCannotHoldTheTextAtTheMinimumFont() {
             // At the 340 floor a one-line label (aspect 10) needs 3400 - more than the slab
             // holds - but two lines halve that to 1700 and their 680 girth still fits the
             // 700 the region allows: wrapping rescues text the single line cannot carry
@@ -108,7 +108,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxReturnsNullWhenTheMinimumFontFitsNoLineCount() {
+        void returnsNullWhenTheMinimumFontFitsNoLineCount() {
             // A 360 floor: one line needs 3600 of length (more than the slab), two lines
             // need 720 of girth (more than the 700 the region allows) - every count fails
             // at the readability floor, so no box at all.
@@ -122,7 +122,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxKeepsOneLineWhenTheLineCapIsOne() {
+        void keepsOneLineWhenTheLineCapIsOne() {
             // The square that would prefer two lines is held to one when the line cap is
             // one, so the text stays a single line at the smaller font the cap forces.
             var box = buildFitter(6.0, 100.0, 1700.0, 1, 1.15)
@@ -137,7 +137,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxKeepsTheBoxClearOfAKeepOutPoint() {
+        void keepsTheBoxClearOfAKeepOutPoint() {
             // The slab's chord runs from t=-1000 to t=1000 about the through-point at
             // x=1000. A keep-out at x=1200 with clearance 400 blocks t in [-200, 600],
             // so the roomier survivor is the left stretch [-1000, -200] - x 0 to 800 -
@@ -158,7 +158,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxProjectsTheKeepOutsOnceForTheWholeSizing() {
+        void projectsTheKeepOutsOnceForTheWholeSizing() {
             // The keep-out projection reads the chord's line and the clearance, never a
             // band's thickness, so it is invariant across the many bands one sizing
             // measures. Iterating the keep-outs once - while the band-fit count shows
@@ -183,7 +183,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxSpendsOneBandPerHalvingTheFontToleranceCallsFor() {
+        void spendsOneBandPerHalvingTheFontToleranceCallsFor() {
             // The font clamp spans 1900, so landing within 1 takes 11 halvings and within
             // 100 takes 5 - and every halving is a band measured against the rings and the
             // keep-outs. On top of each sit the three bands the sizing spends regardless:
@@ -204,7 +204,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxLandsWithinTheFontToleranceOfTheTallestFittingFont() {
+        void landsWithinTheFontToleranceOfTheTallestFittingFont() {
             // The slab's 700 girth is what caps this fit, so the tallest font that fits is
             // 700 and a search stopped at a tolerance of 100 has to come back within that
             // of it. Buying fewer measurements costs accepted font height and nothing else:
@@ -221,7 +221,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitLargestBoxReturnsNullWhenTheMinimumBandCannotFit() {
+        void returnsNullWhenTheMinimumBandCannotFit() {
             // A minimum font taller than the 1700 the square holds cannot sit anywhere,
             // so the fit finds no box at all.
             var box = buildFitter(6.0, 3000.0, 4000.0, 1, 1.0)
@@ -237,7 +237,7 @@ final class LabelBoxFitterTest {
     @Nested
     class FitBand {
         @Test
-        void fitBandReportsTheStretchOfTheLineTheBandKeepsInsideTheRegion() {
+        void reportsTheStretchOfTheLineTheBandKeepsInsideTheRegion() {
             // A band 200 thick about y=350 clears the slab's 700 girth everywhere, so
             // the whole crossing survives: the chord runs from the left edge at
             // t=-1000 to the right edge at t=1000 about the through-point at x=1000.
@@ -253,7 +253,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitBandReportsNoSpanWhenTheBandIsFatterThanTheRegion() {
+        void reportsNoSpanWhenTheBandIsFatterThanTheRegion() {
             // An 800-thick band cannot sit inside the slab's 700 girth anywhere along
             // the line, so not even the near-miss diagnostic has a span to show.
             var band = buildFitter(1.0, 100.0, 2000.0, 1, 1.0)
@@ -268,7 +268,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void fitBandReportsNoSpanForALineWithNoDirection() {
+        void reportsNoSpanForALineWithNoDirection() {
             // A degenerate line defines no frame to measure a span in, so the single
             // measurement reports nothing rather than a span in an undefined frame.
             var band = buildFitter(1.0, 100.0, 2000.0, 1, 1.0)
@@ -290,7 +290,7 @@ final class LabelBoxFitterTest {
     class GetBandFitCount {
 
         @Test
-        void getBandFitCountStartsAtNothingBeforeAnyFit() {
+        void startsAtNothingBeforeAnyFit() {
             // A fresh fitter has measured nothing, so a caller summing the count over
             // several fitters starts each from zero rather than from a shared running total.
             assertThat(buildFitter(1.0, 100.0, 2000.0, 1, 1.0)
@@ -299,7 +299,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void getBandFitCountCountsEveryBandTheSizingMeasured() {
+        void countsEveryBandTheSizingMeasured() {
             // One sizing pass is many band fits, not one: the minimum-font probe, a band per
             // font-height search step, and the accepted span's read-back. The count is what
             // the sizing actually spent, which is why it is measured rather than derived
@@ -315,7 +315,7 @@ final class LabelBoxFitterTest {
         }
 
         @Test
-        void getBandFitCountCountsTheProbeOfASizingThatFitsNothing() {
+        void countsTheProbeOfASizingThatFitsNothing() {
             // A sizing that fails at the readability floor still walked the rings and the
             // keep-outs to find that out, so its probe is counted: a fit that found no box
             // is cheap, never free.

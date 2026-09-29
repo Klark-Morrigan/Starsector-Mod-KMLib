@@ -46,7 +46,7 @@ final class ControlHitResolverTest {
     class ResolveHitBodyCell {
 
         @Test
-        void resolveHitBodyCellReportsTheHitControlWithoutFiringItsAction() {
+        void reportsTheHitControlWithoutFiringItsAction() {
 
             var fired = new boolean[1];
 
@@ -67,7 +67,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitBodyCellReportsTheLitSegmentOfAnInertRowLikeAnyOther() {
+        void reportsTheLitSegmentOfAnInertRowLikeAnyOther() {
 
             // The contract line at the level a hover reads: an INERT row swallows a press on its lit
             // segment, and the segment is still what the point is over. Pinned on the walk as well as on the
@@ -89,7 +89,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitBodyCellRejectsAScrollingListRowScrolledOutOfItsViewport() {
+        void rejectsAScrollingListRowScrolledOutOfItsViewport() {
 
             // The clip, stated where a hover will read it: the row's segment sits at ROW and the viewport is
             // a strip well above it, as if the row had scrolled up under a pinned control, so a point over
@@ -107,7 +107,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitBodyCellReachesTheControlDrawnOverAScrolledAwayRow() {
+        void reachesTheControlDrawnOverAScrolledAwayRow() {
 
             // Why the clip has to live in the walk rather than beside it. Both controls are laid at ROW -
             // the list's row having scrolled up to where the pinned checkbox is drawn - so the point is over
@@ -128,7 +128,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitBodyCellReportsTheSlotTheHitControlOccupiesInTheStrip() {
+        void reportsTheSlotTheHitControlOccupiesInTheStrip() {
 
             // Where a hit landed, not only what it landed on: a hover is held against the slot, so a walk
             // that reported the second control with the first one's position would light a control the
@@ -148,7 +148,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitBodyCellReportsNoControlForAPointOutsideTheBoxTheBodyIsDrawnIn() {
+        void reportsNoControlForAPointOutsideTheBoxTheBodyIsDrawnIn() {
 
             // The fold, reaching the body the way it actually reaches it. A collapsing panel narrows the box
             // and clips the body to it while every control keeps the position the layout gave it, so this
@@ -167,7 +167,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitBodyCellReportsNoControlForAPointOnBlankBody() {
+        void reportsNoControlForAPointOnBlankBody() {
 
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
             var resolvedCell = ControlHitResolver.resolveHitBodyCell(
@@ -184,7 +184,7 @@ final class ControlHitResolverTest {
     class ResolveHitCell {
 
         @Test
-        void resolveHitCellReportsTheHitCellWithoutFiringItsAction() {
+        void reportsTheHitCellWithoutFiringItsAction() {
 
             var fired = new boolean[1];
 
@@ -207,7 +207,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitCellRejectsAScrollingListOptionScrolledOutOfItsViewport() {
+        void rejectsAScrollingListOptionScrolledOutOfItsViewport() {
 
             var list = buildScrollingListAtRow(ControlAction.NONE);
 
@@ -225,7 +225,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitCellIgnoresTheViewportForANonScrollingControl() {
+        void ignoresTheViewportForANonScrollingControl() {
 
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
 
@@ -244,7 +244,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitCellReportsTheLitSegmentOfADeselectableRadio() {
+        void reportsTheLitSegmentOfADeselectableRadio() {
 
             var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
                     List.of("Factions", "Alliances"),
@@ -262,7 +262,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitCellReportsTheLitSegmentOfAnInertRadioToo() {
+        void reportsTheLitSegmentOfAnInertRadioToo() {
 
             // The line this resolver is drawn along: an INERT row swallows a press on its lit segment, and
             // the segment is still what the point is over. Pinned beside the deselectable case above, which
@@ -284,7 +284,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void resolveHitCellReportsTheLitTabOfAnAlwaysInertTabsRow() {
+        void reportsTheLitTabOfAnAlwaysInertTabsRow() {
 
             // The case the sidebar's look rests on: a tabs row fires nothing on the tab it is already
             // showing, and that tab still has to light under the pointer - the resting and the selected tab
@@ -353,7 +353,7 @@ final class ControlHitResolverTest {
     class IsSegmentedControl {
 
         @Test
-        void isSegmentedControlIsTrueForARowOfOptionSegments() {
+        void isTrueForARowOfOptionSegments() {
             // The rule the hit-test turns on, and the one a hover reads to say what kind of thing it
             // reached: a control whose cells are laid side by side is a row of things alike.
             var radio = buildTwoSegmentHorizontalRadioAtRow(HorizontalRadioSpec.of(
@@ -366,7 +366,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void isSegmentedControlIsFalseForAWholeRowCheckbox() {
+        void isFalseForAWholeRowCheckbox() {
             // Hit anywhere on its bounds rather than by segment, which is the other side of the same rule.
             assertThat(ControlHitResolver.isSegmentedControl(
                     buildCheckboxControl("Muted", ControlAction.NONE)))
@@ -374,7 +374,7 @@ final class ControlHitResolverTest {
         }
 
         @Test
-        void isSegmentedControlIsFalseForChrome() {
+        void isFalseForChrome() {
             // A caption has no cells at all, so nothing about it is one of many alike. Nothing resolves a
             // cell on one today, which is why the answer is stated here rather than left to whichever
             // reader first asks it of something that was never a hit target.

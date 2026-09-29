@@ -98,7 +98,7 @@ final class BandButtonPlacementTest {
     class ResolveIconTint {
 
         @Test
-        void resolveIconTintLeavesTheMarkOnTheSettledShadeUnhovered() {
+        void leavesTheMarkOnTheSettledShadeUnhovered() {
             // The resting shade rather than the shown one: the button states no selection, so a mark that
             // read it as the lit cell would stand permanently lit beside tabs it is not one of.
             assertThat(buildPlacement(MEETING_SHADE_PALETTE, UNTINTED_ICON).resolveIconTint(UNHOVERED))
@@ -106,7 +106,7 @@ final class BandButtonPlacementTest {
         }
 
         @Test
-        void resolveIconTintLightsTheMarkByTheLiftTheFillUnderItWouldHaveShown() {
+        void lightsTheMarkByTheLiftTheFillUnderItWouldHaveShown() {
             // The strip parts a resting tab from a pointed-at one by brightening the fill and swapping the
             // label's role. A mark covers the fill, so it takes that lift itself and stays on its own
             // channel: 200 = 60 + (150 - 10), and never the blue the label would have swapped to.
@@ -115,7 +115,7 @@ final class BandButtonPlacementTest {
         }
 
         @Test
-        void resolveIconTintLightsTheMarkOnAPaletteThatGlowsRatherThanTravels() {
+        void lightsTheMarkOnAPaletteThatGlowsRatherThanTravels() {
             // The rule the intel screen's buttons answer by. It leaves the settled look exactly where it
             // stood and reports its light separately, so a mark reading the look alone would be a button
             // that never lights on half the panels this is drawn on. 100 = 0 + 200 * 0.5.
@@ -124,14 +124,14 @@ final class BandButtonPlacementTest {
         }
 
         @Test
-        void resolveIconTintLeavesAGlowingPalettesMarkAloneUnhovered() {
+        void leavesAGlowingPalettesMarkAloneUnhovered() {
 
             assertThat(buildPlacement(ADDED_GLOW_PALETTE, UNTINTED_ICON).resolveIconTint(UNHOVERED))
                 .isEqualTo(new Color(0, 0, 100));
         }
 
         @Test
-        void resolveIconTintWashesAnImageStatingItsOwnColourRatherThanRepaintingIt() {
+        void washesAnImageStatingItsOwnColourRatherThanRepaintingIt() {
             // An asset authored in its own colours is dimmed and lit through them rather than replaced by
             // the shade, so a crest under this stays a crest. 100 = 200 * 128/255.
             var tintedIcon = new ImageSpan("graphics/icons/x.png", new Color(128, 128, 128));

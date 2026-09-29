@@ -53,7 +53,7 @@ final class AddressedMemoryFlagTest {
     class IsSet {
 
         @Test
-        void isSetReadsTheValueStoredAtTheAddressComposedKey() {
+        void readsTheValueStoredAtTheAddressComposedKey() {
 
             sectorMemoryFake.storeValue(KEY, false);
 
@@ -62,7 +62,7 @@ final class AddressedMemoryFlagTest {
         }
 
         @Test
-        void isSetReadsEachAddressApart() {
+        void readsEachAddressApart() {
             // The whole point of the type: one flag, one base key, and as many slots as there are
             // addresses - so a value stored at one is invisible at another.
             sectorMemoryFake.storeValue(KEY, false);
@@ -74,7 +74,7 @@ final class AddressedMemoryFlagTest {
         }
 
         @Test
-        void isSetIsTheDeclaredDefaultWhileTheAddressHoldsNothing() {
+        void isTheDeclaredDefaultWhileTheAddressHoldsNothing() {
             // Absence is not false: the declared default is what a slot that was never written reads
             // as, which is the distinction a bare memory read cannot make.
             assertThat(FLAG_DEFAULTING_ON.isSet(ADDRESS))
@@ -82,7 +82,7 @@ final class AddressedMemoryFlagTest {
         }
 
         @Test
-        void isSetIsTheDeclaredDefaultBeforeTheSectorExists() {
+        void isTheDeclaredDefaultBeforeTheSectorExists() {
             // No sector means no save to read, which reads as the same untouched state.
             sectorMemoryFake.removeSector();
 
@@ -95,7 +95,7 @@ final class AddressedMemoryFlagTest {
     class Set {
 
         @Test
-        void setStoresTheValueAtTheAddressComposedKeyAndReportsTheWrite() {
+        void storesTheValueAtTheAddressComposedKeyAndReportsTheWrite() {
 
             assertThat(FLAG_DEFAULTING_ON.set(ADDRESS, false))
                 .isTrue();
@@ -104,7 +104,7 @@ final class AddressedMemoryFlagTest {
         }
 
         @Test
-        void setLeavesEveryOtherAddressUntouched() {
+        void leavesEveryOtherAddressUntouched() {
 
             FLAG_DEFAULTING_ON.set(ADDRESS, false);
 
@@ -113,7 +113,7 @@ final class AddressedMemoryFlagTest {
         }
 
         @Test
-        void setReportsNoWriteBeforeTheSectorExists() {
+        void reportsNoWriteBeforeTheSectorExists() {
             // The report is what a caller gates its repaint on, so "nothing landed" has to be
             // distinguishable from a write of the same value.
             sectorMemoryFake.removeSector();

@@ -380,7 +380,7 @@ final class SpansTest {
     class IntersectSpans {
 
         @Test
-        void intersectSpansYieldsTheSharedIntervalOfTwoOverlappingSpans() {
+        void yieldsTheSharedIntervalOfTwoOverlappingSpans() {
             // [0, 6] and [4, 10] overlap on [4, 6].
             var overlap = Spans.intersectSpans(
                 List.of(new double[] {0, 6}),
@@ -396,7 +396,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersectSpansReportsOneOverlapPerSpanAWideSpanMeets() {
+        void reportsOneOverlapPerSpanAWideSpanMeets() {
             // A single [0, 20] span meets two on the other side, [2, 6] and [10, 14],
             // so two overlaps come back - the shape of a band rail split by a notch
             // meeting a whole centreline span.
@@ -418,7 +418,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersectSpansYieldsNothingWhenSpansOnlyTouch() {
+        void yieldsNothingWhenSpansOnlyTouch() {
             // [0, 5] and [5, 10] share only the endpoint t=5: a zero-length touch is
             // no usable interval.
             assertThat(Spans.intersectSpans(
@@ -428,7 +428,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersectSpansYieldsNothingWhenSpansMiss() {
+        void yieldsNothingWhenSpansMiss() {
 
             assertThat(Spans.intersectSpans(
                     List.of(new double[] {0, 4}),
@@ -437,7 +437,7 @@ final class SpansTest {
         }
 
         @Test
-        void intersectSpansYieldsNothingWhenEitherSideIsEmpty() {
+        void yieldsNothingWhenEitherSideIsEmpty() {
 
             assertThat(Spans.intersectSpans(List.of(), List.of(new double[] {0, 5})))
                 .isEmpty();

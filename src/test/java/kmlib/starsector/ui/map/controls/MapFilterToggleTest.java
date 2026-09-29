@@ -88,7 +88,7 @@ class MapFilterToggleTest {
     class AppendToRow {
 
         @Test
-        void appendToRowLaysTheToggleAtTheMetricsOfTheRowItStandsOn() {
+        void laysTheToggleAtTheMetricsOfTheRowItStandsOn() {
             // The whole point of measuring: the button comes out the size of the one beside it, and
             // as tall as the row itself, without either number being stated by the caller.
             var rowFake = MapFilterRowFake.createMapScreenStrip(
@@ -105,7 +105,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowStandsTheToggleOneGapPastTheLastButtonOnTheRow() {
+        void standsTheToggleOneGapPastTheLastButtonOnTheRow() {
             // Where the row put it: two 120-wide buttons and the 3-wide gaps between them, so the
             // third stands at 246. Stated rather than worked out from those numbers - an expectation
             // that recomputed the layout would agree with a layout that had gone wrong.
@@ -120,7 +120,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowStandsTheToggleRelativeToARowAwayFromTheOrigin() {
+        void standsTheToggleRelativeToARowAwayFromTheOrigin() {
             // The row is not at the screen's left edge on either screen, so what is free has to be
             // measured from the row's own left rather than from zero. A row standing at 500 with one
             // 120-wide button on it has its next button at 623, and has room for it.
@@ -138,7 +138,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowLaysTheToggleAtTheIntelBandsSmallerMetrics() {
+        void laysTheToggleAtTheIntelBandsSmallerMetrics() {
             // The second screen, from the same path and with no branch on which one is up. The
             // intel visor's band is both narrower and shorter than the M screen's strip, so a
             // control laid at the other screen's numbers would be plainly wrong on it.
@@ -155,7 +155,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowRefusesARowWithNoRoomLeftForAnotherButton() {
+        void refusesARowWithNoRoomLeftForAnotherButton() {
             // A row somebody else has already filled - two 120-wide buttons and the gap between
             // them, and nothing after. Refused rather than appended to, because the row does not
             // clip its children: the button would be built, laid past the end of the strip, and
@@ -173,7 +173,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowAppendsToARowWithRoomForExactlyOneMoreButton() {
+        void appendsToARowWithRoomForExactlyOneMoreButton() {
             // The other side of that boundary, at the width a third button and its gap exactly fill.
             // A row with just enough left is a row this may use, and refusing it would leave the
             // last of the space on both screens unusable.
@@ -188,7 +188,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowRefusesARowHoldingNothingToMeasureAgainst() {
+        void refusesARowHoldingNothingToMeasureAgainst() {
             // A row with no buttons on it offers no width to match, and a control laid at a guess
             // would be the one thing on the row that did not look like its neighbours.
             assertThat(MapFilterToggle.appendToRow(
@@ -199,7 +199,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowRefusesARowWhoseLastButtonWasNeverPlaced() {
+        void refusesARowWhoseLastButtonWasNeverPlaced() {
             // A button built and not yet laid out, which is the state the game's own is in between
             // the two. Nothing to measure, so nothing is appended.
             assertThat(MapFilterToggle.appendToRow(
@@ -210,7 +210,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowRefusesARowThatIsNotALaidOutComponent() {
+        void refusesARowThatIsNotALaidOutComponent() {
             // What a game build that reworked the row into something the layout does not place
             // looks like from here. Its height is what a button's height is taken from, so there is
             // no size to build one at.
@@ -222,7 +222,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowRefusesARowMeasuringToNothing() {
+        void refusesARowMeasuringToNothing() {
             // A row placed at no size at all. It would take a button of no size, which is a control
             // the player could neither see nor click.
             var rowFake = MapFilterRowFake.createRowOfSize(
@@ -233,7 +233,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void appendToRowRefusesARowWhoseButtonsCarryNoCheckedState() {
+        void refusesARowWhoseButtonsCarryNoCheckedState() {
             // The one refusal that comes after the button is built, the button not existing before
             // then. A control whose state cannot be read is one nothing could drive or seed, so it
             // is disowned rather than handed back half-usable.
@@ -294,7 +294,7 @@ class MapFilterToggleTest {
     class BindShortcut {
 
         @Test
-        void bindShortcutGivesTheButtonTheKeyItWasHandedTo() {
+        void givesTheButtonTheKeyItWasHandedTo() {
             // The whole of what a key costs: one call into the published interface, on the button
             // this handle appended. Nothing is registered anywhere, so nothing has to be taken away
             // when the screen that carries the button goes.
@@ -308,7 +308,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutLeavesTheButtonWithNoKeyForAClearedBinding() {
+        void leavesTheButtonWithNoKeyForAClearedBinding() {
 
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
             var toggle = MapFilterToggle.appendToRow(new MapFilterRow(rowFake), LABEL, DOES_NOTHING, reporter);
@@ -327,7 +327,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutLightsTheKeyWhereTheButtonsWordsAlreadyHoldIt() {
+        void lightsTheKeyWhereTheButtonsWordsAlreadyHoldIt() {
             // The game's rule for a key its button's words already contain, applied to a button the
             // game will not apply it to: the occurrence is lit rather than repeated. "Map layers"
             // bound to M lights the M it already starts with.
@@ -345,7 +345,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutLightsTheOccurrenceAsItIsWrittenRatherThanAsTheKeyIsNamed() {
+        void lightsTheOccurrenceAsItIsWrittenRatherThanAsTheKeyIsNamed() {
             // The match ignores case and the lighting cannot: a run handed over has to be a
             // substring of what is drawn, so a key named "L" against words holding "l" is lit as
             // the lower-case "l" the words actually carry.
@@ -359,7 +359,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutSpellsTheKeyOutWhereTheButtonsWordsDoNotHoldIt() {
+        void spellsTheKeyOutWhereTheButtonsWordsDoNotHoldIt() {
             // The other half of the same rule, and the one the row's own six take: a key the words
             // do not contain is written after them in a bracket, and that bracket is what is lit.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
@@ -376,7 +376,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutLightsWhatItSaysInTheColourTheGameLightsAKeyIn() {
+        void lightsWhatItSaysInTheColourTheGameLightsAKeyIn() {
             // A run named without a colour draws in whatever the last caller left behind, so the
             // two travel together or the announcement reads differently from screen to screen.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
@@ -389,7 +389,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutStillBindsTheKeyWhenThePaletteCannotBeRead() {
+        void stillBindsTheKeyWhenThePaletteCannotBeRead() {
             // The palette is one more thing that can be unavailable, and it is read only to say the
             // key rather than to bind it. So a control whose announcement fails is a control that
             // still answers its key, rather than one that never got keyed.
@@ -403,7 +403,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void bindShortcutDoesNotAskTheRowToSpellTheKeyOutAsWell() {
+        void doesNotAskTheRowToSpellTheKeyOutAsWell() {
             // The row is asked for nothing it cannot do. Were it asked, it would print nothing today
             // and a second bracket beside ours on any build that could name a bare code.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
@@ -420,7 +420,7 @@ class MapFilterToggleTest {
     class IsChecked {
 
         @Test
-        void isCheckedReportsTheStateTheButtonFlippedItselfTo() {
+        void reportsTheStateTheButtonFlippedItselfTo() {
             // What a caller reads when its callback fires. The button flips its own state before
             // reporting the click, so the handle is what says which way it went rather than
             // anything the caller has to track alongside it.
@@ -438,7 +438,7 @@ class MapFilterToggleTest {
     class IsStillAttachedTo {
 
         @Test
-        void isStillAttachedToAnswersYesForTheRowItWasAppendedTo() {
+        void answersYesForTheRowItWasAppendedTo() {
             // The common case each frame: the row on screen is the row this stands on, and there is
             // nothing to do.
             var row = new MapFilterRow(MapFilterRowFake.createMapScreenStrip("Starscape"));
@@ -449,7 +449,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void isStillAttachedToAnswersNoAfterTheScreenRebuiltItsRow() {
+        void answersNoAfterTheScreenRebuiltItsRow() {
             // Every open of the map screen builds a new row, and a toggle left on the old one draws
             // nowhere while the new row stands bare. Nothing about the handle says so, which is why
             // this is asked rather than assumed.
@@ -464,7 +464,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void isStillAttachedToAnswersNoWhileNoMapIsShowingARow() {
+        void answersNoWhileNoMapIsShowingARow() {
             // What a holder asks with while the player is looking at something else. Not attached
             // to anything, so nothing is reattached to a screen that is not up.
             var toggle = MapFilterToggle.appendToRow(
@@ -481,7 +481,7 @@ class MapFilterToggleTest {
     class AttachTooltip {
 
         @Test
-        void attachTooltipHangsTheTooltipAboveTheButtonItStoodOnTheRow() {
+        void hangsTheTooltipAboveTheButtonItStoodOnTheRow() {
             // Where the row's own tooltips sit, and the only place one can sit: the row runs along
             // the bottom of both screens it appears on. The target is pinned as the button this
             // handle appended rather than as any component, the handle being the only thing that
@@ -509,7 +509,7 @@ class MapFilterToggleTest {
         }
 
         @Test
-        void attachTooltipLeavesTheBoxWorkingWhenNoTooltipSurfaceCanBeMade() {
+        void leavesTheBoxWorkingWhenNoTooltipSurfaceCanBeMade() {
             // The box is already on the row by the time its hover is hung, and the row offers no
             // way to take one off again - so a surface that cannot be built has to cost the words
             // alone. Thrown at the caller instead, it would read as a control that never went up,
@@ -531,7 +531,7 @@ class MapFilterToggleTest {
     class SetChecked {
 
         @Test
-        void setCheckedShowsTheStateWithoutReportingAClick() {
+        void showsTheStateWithoutReportingAClick() {
             // How a freshly appended toggle is seeded from what the player left behind. Seeding is
             // not a click, so it must not travel back out as one - a control that reported its own
             // seeding would rewrite the state it was seeded from on every open of the screen.

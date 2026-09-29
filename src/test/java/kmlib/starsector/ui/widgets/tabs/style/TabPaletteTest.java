@@ -162,13 +162,13 @@ final class TabPaletteTest {
     class ResolveLook {
 
         @Test
-        void resolveLookReturnsTheRestingShadeWhenUnselected() {
+        void returnsTheRestingShadeWhenUnselected() {
             assertThat(PALETTE.resolveLook(TabLookState.UNSELECTED))
                 .isEqualTo(new TabLook(new Color(20, 20, 20), new Color(30, 30, 30)));
         }
 
         @Test
-        void resolveLookReturnsTheLitShadeWhenSelected() {
+        void returnsTheLitShadeWhenSelected() {
             assertThat(PALETTE.resolveLook(TabLookState.SELECTED))
                 .isEqualTo(new TabLook(new Color(40, 40, 40), new Color(50, 50, 50)));
         }
@@ -179,7 +179,7 @@ final class TabPaletteTest {
     class ResolveLookAtHoverFraction {
 
         @Test
-        void resolveLookAtHoverFractionReturnsTheSettledLookWhenFullyOffTheHover() {
+        void returnsTheSettledLookWhenFullyOffTheHover() {
             assertThat(PALETTE.resolveLookAtHoverFraction(UNSELECTED, 0f))
                 .isEqualTo(new TabLook(new Color(20, 20, 20), new Color(30, 30, 30)));
             assertThat(PALETTE.resolveLookAtHoverFraction(SELECTED, 0f))
@@ -187,7 +187,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void resolveLookAtHoverFractionBringsBothTabsToTheHoveredShadeWhenFullyOnIt() {
+        void bringsBothTabsToTheHoveredShadeWhenFullyOnIt() {
             // The resting and the lit tab meeting at one shade is what makes hovering a look rather than a
             // lift, so the two must arrive at the same value rather than merely both brightening.
             assertThat(PALETTE.resolveLookAtHoverFraction(UNSELECTED, 1f))
@@ -197,7 +197,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void resolveLookAtHoverFractionPlacesAPartWayTabBetweenItsOwnLookAndTheHoveredShade() {
+        void placesAPartWayTabBetweenItsOwnLookAndTheHoveredShade() {
             // Part-way is where the two tabs are still apart, so each has to travel from its own end
             // rather than from a shared one. A quarter of the way rather than half, so neither result
             // coincides with another role's shade and a look read off the wrong end shows as a wrong
@@ -213,7 +213,7 @@ final class TabPaletteTest {
     class ResolveMarkTintAtHoverFraction {
 
         @Test
-        void resolveMarkTintAtHoverFractionLightsTheMarkByTheLiftItsOwnFillWouldHaveTaken() {
+        void lightsTheMarkByTheLiftItsOwnFillWouldHaveTaken() {
             // The reading exists because a mark covers its fill: the brightening the eye was going to see
             // has to land on the mark itself. 110 = 30 + (90 - 10), on the label's own channel and nowhere
             // near the blue a word would have swapped into.
@@ -222,7 +222,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void resolveMarkTintAtHoverFractionMeasuresBothEndsOffTheLookTheMarkRestsIn() {
+        void measuresBothEndsOffTheLookTheMarkRestsIn() {
             // A shown cell rests brighter, so it is a shorter lift away from the same hovered shade - and
             // the light lands on its own label. 40 = 0 + (90 - 50), over a green the resting look has none
             // of, so a reading that took the resting end for both would show as a red.
@@ -231,7 +231,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void resolveMarkTintAtHoverFractionLeavesTheMarkOnItsSettledLabelWithNoPointerOnIt() {
+        void leavesTheMarkOnItsSettledLabelWithNoPointerOnIt() {
             // The near end has to be exactly the settled label, or every mark in a row at rest would sit a
             // shade off the palette it was built from.
             assertThat(MARK_PALETTE.resolveMarkTintAtHoverFraction(UNSELECTED, 0f))
@@ -239,7 +239,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void resolveMarkTintAtHoverFractionScalesTheLightByHowFarTheFadeHasRun() {
+        void scalesTheLightByHowFarTheFadeHasRun() {
             // Part-way in takes part of the light, so a mark travels onto its lit shade rather than
             // switching to it. 70 = 30 + (90 - 10) / 2.
             assertThat(MARK_PALETTE.resolveMarkTintAtHoverFraction(UNSELECTED, 0.5f))
@@ -251,7 +251,7 @@ final class TabPaletteTest {
     class ResolveWash {
 
         @Test
-        void resolveWashReturnsTheClickLiftWhenClicked() {
+        void returnsTheClickLiftWhenClicked() {
             // The lift channel's only role, so this pins that it answers off the wash rather than off one of
             // the looks the same palette carries - both being colours a lift could plausibly be built from.
             assertThat(PALETTE.resolveWash(TabWashState.CLICKED))
@@ -263,7 +263,7 @@ final class TabPaletteTest {
     class CreateMapTabPalette {
 
         @Test
-        void createMapTabPaletteRulesTheRowInTheAccentItIsHanded() {
+        void rulesTheRowInTheAccentItIsHanded() {
             // The one value with no vanilla counterpart to copy, so it comes from the panel the row
             // belongs to. Pinned because the factory reads the engine for everything else, and an accent
             // that quietly went back to reading it would look right on a stock install and wrong on any
@@ -273,7 +273,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteBacksTheRowWithTheSurfaceItsFillsWereCompositedOnto() {
+        void backsTheRowWithTheSurfaceItsFillsWereCompositedOnto() {
             // Black, and the same black the fills below were worked out over. A parted row paints this into
             // the channels between its tabs, so a backing that drifted from the surface the fills were
             // measured against would show in game as a strip of a shade no tab beside it stands on.
@@ -282,7 +282,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteCompositesTheRestingFillFromTheEnginesButtonFill() {
+        void compositesTheRestingFillFromTheEnginesButtonFill() {
             // The dark button fill (31, 94, 112 at alpha 175) laid over black - the shade a vanilla tab
             // rests at, taken from the engine's own colour rather than named here, so a restyled install
             // moves this strip exactly as it moves the tabs beside it.
@@ -291,7 +291,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteLightsTheSelectedFillAtTheShownTabsGlow() {
+        void lightsTheSelectedFillAtTheShownTabsGlow() {
             // The resting shade with the shown tab's glow on top: the label colour (180, 180, 180 here)
             // half way to white is (218, 218, 218), added at 0.45 * 0.5 * (175 + 50) / 255 = 0.1985 - so
             // (21, 65, 77) gains 43 on every channel. A selected tab that merely re-tinted its resting
@@ -301,7 +301,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteLightsTheHoveredFillAboveTheShownTabs() {
+        void lightsTheHoveredFillAboveTheShownTabs() {
             // The same shade at the pointer's amount (0.2868), which stands above the shown tab's - the
             // ordering a strip marking selection by fill alone rests on. Both tabs arrive at it, this
             // chrome's pointer rule being one shade they meet at.
@@ -316,7 +316,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteLeavesEveryFillOpaque() {
+        void leavesEveryFillOpaque() {
             // A tab is a surface, not a tint over one: a see-through fill would read as whatever the strip
             // happens to be drawn over, so the row would change shade with its surroundings and show the
             // map through itself wherever no panel sits beneath it.
@@ -332,7 +332,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteReadsAnUntouchedTabsLabelInTheButtonText() {
+        void readsAnUntouchedTabsLabelInTheButtonText() {
             // The blue every button's text is, which an untouched tab wears as it comes - and the reason a
             // deselected tab is the only state reading as plain blue in game.
             assertThat(buildMapTabPaletteUnderStubbedEngine().unselected().label())
@@ -340,7 +340,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteSwitchesALitTabsLabelToTheStandardText() {
+        void switchesALitTabsLabelToTheStandardText() {
             // The engine parts a lit tab's label from a resting one by colour, not by amount: the shown tab
             // reads in the grey the rest of the interface reads in. Measured off its own Sector/System
             // tabs, whose lit label cannot be reconciled with any lifted form of the button blue - which is
@@ -350,7 +350,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteAddsNoLightAtAll() {
+        void addsNoLightAtAll() {
             // A strip says everything about its pointer in the shade its tabs meet at, so it lays no light
             // over them - light on top of an arrived-at shade would carry it past the one it was aimed at.
             assertThat(buildMapTabPaletteUnderStubbedEngine().resolveLightAtHoverFraction(FULLY_HOVERED))
@@ -358,7 +358,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createMapTabPaletteReadsBothLitTabsLabelsAlike() {
+        void readsBothLitTabsLabelsAlike() {
             // The two lit states are told apart by their fills, which stand at different glows, rather than
             // by their text. Only the shown tab's label was measured, so the pointed-at one matching it is
             // the smaller claim - and pinning them equal is what makes a future divergence deliberate.
@@ -373,7 +373,7 @@ final class TabPaletteTest {
     class CreateRaisedButtonPalette {
 
         @Test
-        void createRaisedButtonPaletteRulesTheRowInTheDarkStepItIsHanded() {
+        void rulesTheRowInTheDarkStepItIsHanded() {
             // The engine frames its own buttons in the dark member of the accent it builds them from, so
             // this chrome's rule is that step rather than a shade chosen beside it - which is the whole of
             // why the frame stops moving with the fill.
@@ -382,7 +382,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteBacksTheRowWithTheSurfaceItsInteriorsWereCompositedOnto() {
+        void backsTheRowWithTheSurfaceItsInteriorsWereCompositedOnto() {
             // The same black the strip's rows stand on, and the same one the shown button's interior below
             // was composited over - a button's resting interior is unpainted, so the backing is literally
             // what shows through it.
@@ -391,7 +391,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteLeavesARestingButtonsInteriorUnpainted() {
+        void leavesARestingButtonsInteriorUnpainted() {
             // The departure from every other palette here, and the one the chrome reads as "draw nothing":
             // a button not being shown is the backing and the frame with no interior, stated as a fill at
             // zero alpha rather than as a state the paint pass tests for.
@@ -400,7 +400,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteFillsTheShownButtonWithTheDarkStepOverTheBacking() {
+        void fillsTheShownButtonWithTheDarkStepOverTheBacking() {
             // The dark step (31, 94, 112 at alpha 175) composited onto black - what the engine's own lit
             // buttons wear, taken from the accent handed in rather than named here.
             assertThat(buildRaisedButtonPalette().selected().fill())
@@ -408,7 +408,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteLightsAPointedButtonWithItsBaseStep() {
+        void lightsAPointedButtonWithItsBaseStep() {
             // 0.17 of the base accent as it comes, which is how a vanilla button brightens - the accent
             // itself rather than the white a tab's glow is whitened toward. It arrives as light to be added
             // over the finished button rather than as a shade, which is what lets it land the same on a lit
@@ -418,7 +418,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteKeepsAnUnshownButtonsHoverApartFromTheShownOnes() {
+        void keepsAnUnshownButtonsHoverApartFromTheShownOnes() {
             // Where a strip's two tabs meet under the pointer, a button row's do not: one light is added
             // over both, so the shown button and an unshown one stay exactly as far apart as their settled
             // shades left them. Neither surface moves at all - what the pointer changes is drawn on top of
@@ -432,7 +432,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteAddsNoLightToAButtonNobodyIsPointingAt() {
+        void addsNoLightToAButtonNobodyIsPointingAt() {
             // The near end of the same channel: a row at rest has to add nothing at all, or every button on
             // it would stand a step above the palette it was built from.
             assertThat(buildRaisedButtonPalette().resolveLightAtHoverFraction(0f).isLit())
@@ -440,14 +440,14 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteReadsAnUntouchedButtonsLabelInTheBaseStep() {
+        void readsAnUntouchedButtonsLabelInTheBaseStep() {
             // The colour the engine builds a button's text from, which an untouched one wears as it comes.
             assertThat(buildRaisedButtonPalette().unselected().label())
                 .isEqualTo(BUTTON_BASE_ACCENT);
         }
 
         @Test
-        void createRaisedButtonPaletteSwitchesALitButtonsLabelToTheBrighterStep() {
+        void switchesALitButtonsLabelToTheBrighterStep() {
             // The labels part by colour, as on the strip: an untouched button reads in the accent it was
             // built from and the shown one in the brighter step reserved for marks that have to stand
             // against it.
@@ -456,7 +456,7 @@ final class TabPaletteTest {
         }
 
         @Test
-        void createRaisedButtonPaletteAnswersAPressWithNoLiftAtAll() {
+        void answersAPressWithNoLiftAtAll() {
             // The engine's own intel buttons hold no shade while the pointer is down. Stated as a depth of
             // zero rather than as a wash the chrome declines to paint, so the pulse still runs and the
             // press still sounds - the palette says what a press looks like, not whether one happened.

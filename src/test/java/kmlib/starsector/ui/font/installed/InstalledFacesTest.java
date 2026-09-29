@@ -27,7 +27,7 @@ class InstalledFacesTest {
     class CreateNativeFace {
 
         @Test
-        void createNativeFaceDrawsTheFaceAtTheLineHeightTheLiveInstallStates() {
+        void drawsTheFaceAtTheLineHeightTheLiveInstallStates() {
             // The live reader stood in for a taller atlas than vanilla's, so the size can only have come
             // from the read.
             try (var lineHeightsMock = LazyFontLineHeightReaderMock.install(FaceLineHeightReaderFake
@@ -44,7 +44,7 @@ class InstalledFacesTest {
     class CreateFaceResolver {
 
         @Test
-        void createFaceResolverWalksToTheDefaultTheGamesSettingsDeclare() {
+        void walksToTheDefaultTheGamesSettingsDeclare() {
             // A default other than vanilla's, so a resolver built without reading the settings would walk
             // straight from the face to the last resort.
             var settingsMock = mock(SettingsAPI.class);

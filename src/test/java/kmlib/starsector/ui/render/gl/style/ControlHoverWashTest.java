@@ -36,14 +36,14 @@ final class ControlHoverWashTest {
     class ResolvePaintAtHoverFraction {
 
         @Test
-        void resolvePaintAtHoverFractionReachesTheStatedAlphaOnAFullHover() {
+        void reachesTheStatedAlphaOnAFullHover() {
 
             assertThat(WASH.resolvePaintAtHoverFraction(FULLY_HOVERED, FULLY_OPAQUE).alpha())
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
 
         @Test
-        void resolvePaintAtHoverFractionScalesTheAlphaByHowFarTheFadeHasRun() {
+        void scalesTheAlphaByHowFarTheFadeHasRun() {
             // A fraction rather than a flag is the whole point of the channel: a cell part-way onto its
             // hovered look washes part-way, so the lift eases in with the pointer rather than switching on.
             assertThat(WASH.resolvePaintAtHoverFraction(HALF_HOVERED, FULLY_OPAQUE).alpha())
@@ -51,7 +51,7 @@ final class ControlHoverWashTest {
         }
 
         @Test
-        void resolvePaintAtHoverFractionFadesTheWashWithThePanelsOwnOpacity() {
+        void fadesTheWashWithThePanelsOwnOpacity() {
             // The wash is part of the panel, so a panel drawn half faded washes half as hard - a lift that
             // ignored the opacity would be the one thing on a translucent panel painting at full strength.
             assertThat(WASH.resolvePaintAtHoverFraction(FULLY_HOVERED, 0.5f).alpha())
@@ -59,7 +59,7 @@ final class ControlHoverWashTest {
         }
 
         @Test
-        void resolvePaintAtHoverFractionHidesTheWashOfARestingCell() {
+        void hidesTheWashOfARestingCell() {
             // What keeps a resting strip free: a hidden paint is skipped by the fill primitives, so a
             // control nobody is pointing at emits nothing rather than compositing a run the blend discards.
             assertThat(WASH.resolvePaintAtHoverFraction(NOT_HOVERED, FULLY_OPAQUE).isHidden())
@@ -67,7 +67,7 @@ final class ControlHoverWashTest {
         }
 
         @Test
-        void resolvePaintAtHoverFractionKeepsTheWashsOwnColour() {
+        void keepsTheWashsOwnColour() {
             // Only the alpha answers to the fade: the shade is the look's, so a lift can never move a
             // control toward a colour the panel names nowhere.
             assertThat(WASH.resolvePaintAtHoverFraction(HALF_HOVERED, FULLY_OPAQUE).colour())
@@ -86,7 +86,7 @@ final class ControlHoverWashTest {
             new Color(220, 220, 220));
 
         @Test
-        void createAccentHoverWashWashesInTheAccentsBaseStep() {
+        void washesInTheAccentsBaseStep() {
             // The step every control on the panel already washes and strokes with: a hover is more of what
             // the control wears, not a second colour. The bright step is for marks that must read against
             // the base, which a wash laid under the chrome is not.
@@ -95,7 +95,7 @@ final class ControlHoverWashTest {
         }
 
         @Test
-        void createAccentHoverWashStandsBelowTheSelectedWashsOwnStrength() {
+        void standsBelowTheSelectedWashsOwnStrength() {
             // The ordering the treatment rests on: one colour at two amounts, so a hovered cell reads as
             // lit-without-being-picked and a hovered selected cell lifts past both. The selected wash sits
             // at 0.30, so this must stay under it.

@@ -22,7 +22,7 @@ final class UiSoundSchemeTest {
     class Constructor {
 
         @Test
-        void constructorTakesTheLibrarysOwnArrivalBalanceForALookThatStatesNone() {
+        void takesTheLibrarysOwnArrivalBalanceForALookThatStatesNone() {
             // Which balance the short form picks, not what its numbers are - a host saying nothing about
             // volume gets the library's tuning rather than silence or the engine's own level. The numbers
             // are pinned as literals where they are declared.
@@ -36,7 +36,7 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void constructorRejectsALookWithNoArrivalBalanceAtAll() {
+        void rejectsALookWithNoArrivalBalanceAtAll() {
             // A scheme naming a role it cannot resolve a level for is an omission rather than an intent -
             // silence is stated by naming no role - and one that would otherwise throw on the frame the
             // pointer first reached something rather than where the look was composed.
@@ -54,7 +54,7 @@ final class UiSoundSchemeTest {
     class CreateVanillaSoundScheme {
 
         @Test
-        void createVanillaSoundSchemeNamesTheEnginesOwnButtonRoles() {
+        void namesTheEnginesOwnButtonRoles() {
             // A vanilla-looking control that answered with samples of ours would stop matching the chrome
             // around it, whatever it was mixed at.
             var soundScheme = UiSoundScheme.createVanillaSoundScheme();
@@ -66,7 +66,7 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void createVanillaSoundSchemeLeavesThePressAtTheEnginesOwnLevel() {
+        void leavesThePressAtTheEnginesOwnLevel() {
             // The press is one act the player asked for, so nothing about a KM panel's density argues for
             // quietening it - the reason the arrivals are scaled does not reach this moment.
             assertThat(UiSoundScheme.createVanillaSoundScheme().pressCue().volume())
@@ -74,7 +74,7 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void createVanillaSoundSchemeNamesTheEnginesOwnScrollingRoleForAList() {
+        void namesTheEnginesOwnScrollingRoleForAList() {
             // The engine keeps several IDs over the one sample and this is the one named for scrolling, so
             // a list wearing vanilla's look takes it. A wrong ID is looked up by name at play time and
             // fails in silence, which is why the choice is pinned rather than left to the ear.
@@ -83,7 +83,7 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void createVanillaSoundSchemeQuietensTheWheelToAPanelsOwnDensity() {
+        void quietensTheWheelToAPanelsOwnDensity() {
             // The wheel lands among the panel's arrivals rather than on a screen of its own, so it is
             // scaled on the same argument they are - a list ticking at the engine's own level over a strip
             // whose every other moment was quietened reads as the one part that was missed.
@@ -92,7 +92,7 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void createVanillaSoundSchemeQuietensTheArrivalsToAPanelsOwnDensity() {
+        void quietensTheArrivalsToAPanelsOwnDensity() {
             // The reversal this scheme carries: vanilla's mouseover level is right for a screen with a
             // handful of hit targets and chatters across a column of them, so "looks vanilla" stops
             // meaning "mixed like vanilla" for the one moment a sweep repeats.
@@ -107,7 +107,7 @@ final class UiSoundSchemeTest {
     class CreateSilentSoundScheme {
 
         @Test
-        void createSilentSoundSchemeNamesNoCueAtAll() {
+        void namesNoCueAtAll() {
             // A null cue is what a consumer skips, so a "silent" scheme that named a cue anywhere would
             // be a panel that still answered where its look said it would not - and a cue at zero volume
             // would be exactly that, a sound played at nothing rather than a moment left quiet.
@@ -126,7 +126,7 @@ final class UiSoundSchemeTest {
     class ResolvePointerArrivalCueFor {
 
         @Test
-        void resolvePointerArrivalCueForPairsTheOneRoleWithTheKindsOwnLevel() {
+        void pairsTheOneRoleWithTheKindsOwnLevel() {
             // The join this type makes: one sample throughout, and the level the balance names for whatever
             // was reached. Distinct numbers per kind, so a scheme reaching past the kind it was asked about
             // is visible rather than hidden behind three equal defaults.
@@ -145,7 +145,7 @@ final class UiSoundSchemeTest {
         }
 
         @Test
-        void resolvePointerArrivalCueForAnswersNothingForALookThatStaysSilentUnderThePointer() {
+        void answersNothingForALookThatStaysSilentUnderThePointer() {
             // Silence is stated once, for the moment rather than per kind: a look with no arrival sound
             // has no kind of thing it would sound for, so every kind comes back empty and the caller's one
             // null check covers all three.

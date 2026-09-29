@@ -24,7 +24,7 @@ final class ScrollRegionTest {
     class ComputeContentHeight {
 
         @Test
-        void computeContentHeightIsTheViewportPlusItsOverflow() {
+        void isTheViewportPlusItsOverflow() {
             // The visible viewport (120) plus how far the content overruns it (80) is the full content.
             var region = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 80f);
 
@@ -33,7 +33,7 @@ final class ScrollRegionTest {
         }
 
         @Test
-        void computeContentHeightIsTheViewportWhenNothingOverflows() {
+        void isTheViewportWhenNothingOverflows() {
             // A content that fits is exactly its viewport tall.
             var region = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 0f);
 

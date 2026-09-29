@@ -25,7 +25,7 @@ final class TabHoverSourceTest {
     class CreateRestingHoverSource {
 
         @Test
-        void createRestingHoverSourceHoversNoTabInTheRow() {
+        void hoversNoTabInTheRow() {
 
             var hovers = TabHoverSource.createRestingHoverSource();
 
@@ -36,7 +36,7 @@ final class TabHoverSourceTest {
         }
 
         @Test
-        void createRestingHoverSourceAnswersForAnIndexOutsideTheRow() {
+        void answersForAnIndexOutsideTheRow() {
 
             var hovers = TabHoverSource.createRestingHoverSource();
 

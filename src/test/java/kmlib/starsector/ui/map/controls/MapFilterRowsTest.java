@@ -71,7 +71,7 @@ class MapFilterRowsTest {
     class ResolveMapFilterRowOf {
 
         @Test
-        void resolveMapFilterRowOfAnswersTheRowTheMapOffers() {
+        void answersTheRowTheMapOffers() {
             // The ordinary case on either screen: the game's map, holding the row it built.
             //
             // Checked against a second, identical row as well as against the right one, because the
@@ -91,7 +91,7 @@ class MapFilterRowsTest {
         }
 
         @Test
-        void resolveMapFilterRowOfAnswersNothingForAMapCarryingNoSuchAccessor() {
+        void answersNothingForAMapCarryingNoSuchAccessor() {
             // A map that is one by the published interface without being the game's own - which is
             // what a build that renamed the accessor would also look like from here. Either way
             // there is no row, and a caller has the same nothing to do about it.
@@ -100,7 +100,7 @@ class MapFilterRowsTest {
         }
 
         @Test
-        void resolveMapFilterRowOfAnswersNothingForAMapThatOffersNoRow() {
+        void answersNothingForAMapThatOffersNoRow() {
             // The accessor is there and answers with nothing, which is a different shape from the
             // case above and the same answer: a map with no row is nothing to append to.
             assertThat(MapFilterRows.resolveMapFilterRowOf(new FilteredMapWidgetFake(null)))
@@ -108,7 +108,7 @@ class MapFilterRowsTest {
         }
 
         @Test
-        void resolveMapFilterRowOfAnswersNothingWhenThereIsNoMap() {
+        void answersNothingWhenThereIsNoMap() {
             // Every screen showing no map, which is most of them. Not a failure, and the reason the
             // rule is asked before anything is reached for.
             assertThat(MapFilterRows.resolveMapFilterRowOf(null))
@@ -120,7 +120,7 @@ class MapFilterRowsTest {
     class ResolveEmbeddedMapFilterRow {
 
         @Test
-        void resolveEmbeddedMapFilterRowAnswersTheRowOfAMapInSomebodyElsesPanel() {
+        void answersTheRowOfAMapInSomebodyElsesPanel() {
             // A mod's composited map is a map like any other and builds its own row, so the same
             // hop reaches it - which is what lets one control serve a surface KMLib did not put on
             // screen.
@@ -139,7 +139,7 @@ class MapFilterRowsTest {
         }
 
         @Test
-        void resolveEmbeddedMapFilterRowAnswersNothingWhenNoMapWasFound() {
+        void answersNothingWhenNoMapWasFound() {
             // The state a caller is in on every install that composites no map at all, which must
             // not reach for a row on nothing.
             assertThat(MapFilterRows.resolveEmbeddedMapFilterRow(null))

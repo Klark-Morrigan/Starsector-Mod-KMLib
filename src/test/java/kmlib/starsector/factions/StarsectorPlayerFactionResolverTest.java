@@ -168,7 +168,7 @@ class StarsectorPlayerFactionResolverTest {
     @Nested
     class ResolveDisplayName {
         @Test
-        void resolveDisplayNameReturnsLiveNameForCustomisedFaction() {
+        void returnsLiveNameForCustomisedFaction() {
             var factionMock = Mockito.mock(FactionAPI.class);
             Mockito.when(factionMock.getDisplayName()).thenReturn("Hegemony");
 
@@ -179,7 +179,7 @@ class StarsectorPlayerFactionResolverTest {
         }
 
         @Test
-        void resolveDisplayNameFallsBackOnPlaceholderName() {
+        void fallsBackOnPlaceholderName() {
             var factionMock = Mockito.mock(FactionAPI.class);
             Mockito.when(factionMock.getDisplayName()).thenReturn("player");
 
@@ -190,7 +190,7 @@ class StarsectorPlayerFactionResolverTest {
         }
 
         @Test
-        void resolveDisplayNameFallsBackOnNullFaction() {
+        void fallsBackOnNullFaction() {
             var resolved = StarsectorPlayerFactionResolver.resolveDisplayName(
                 null, "faction leader");
 
@@ -198,7 +198,7 @@ class StarsectorPlayerFactionResolverTest {
         }
 
         @Test
-        void resolveDisplayNameFallsBackOnBlankDisplayName() {
+        void fallsBackOnBlankDisplayName() {
             var factionMock = Mockito.mock(FactionAPI.class);
             Mockito.when(factionMock.getDisplayName()).thenReturn("   ");
 

@@ -27,7 +27,7 @@ final class EasedFractionTest {
     class CreateAtValue {
 
         @Test
-        void createAtValueSeedsTheFractionSettledAtTheFullEnd() {
+        void seedsTheFractionSettledAtTheFullEnd() {
 
             var fraction = EasedFraction.createAtValue(1f);
 
@@ -38,7 +38,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void createAtValueSeedsTheFractionPartWayForAMidRangeValue() {
+        void seedsTheFractionPartWayForAMidRangeValue() {
             // A quarter of the way along, so the eased read is the smoothstep value of 0.25 rather than an
             // end - a seeded fraction is a position like any other, not only an end state.
             var fraction = EasedFraction.createAtValue(0.25f);
@@ -48,7 +48,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void createAtValueClampsASeedAboveTheRangeToTheFullEnd() {
+        void clampsASeedAboveTheRangeToTheFullEnd() {
 
             var fraction = EasedFraction.createAtValue(2f);
 
@@ -59,7 +59,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void createAtValueClampsASeedBelowTheRangeToTheEmptyEnd() {
+        void clampsASeedBelowTheRangeToTheEmptyEnd() {
 
             var fraction = EasedFraction.createAtValue(-1f);
 
@@ -74,7 +74,7 @@ final class EasedFractionTest {
     class AdvanceTowardTarget {
 
         @Test
-        void advanceTowardTargetReachesTheFullEndAfterAFullDuration() {
+        void reachesTheFullEndAfterAFullDuration() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, FULL_DURATION, DURATION);
@@ -84,7 +84,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetStopsOnTheTargetRatherThanOvershooting() {
+        void stopsOnTheTargetRatherThanOvershooting() {
 
             var fraction = new EasedFraction();
 
@@ -98,7 +98,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetStopsOnAMidRangeTarget() {
+        void stopsOnAMidRangeTarget() {
 
             var fraction = new EasedFraction();
 
@@ -113,7 +113,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetLeavesAFractionAlreadyAtItsTargetUnchanged() {
+        void leavesAFractionAlreadyAtItsTargetUnchanged() {
 
             var fraction = new EasedFraction();
 
@@ -128,7 +128,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetTravelsBackToTheEmptyEndFromTheFullOne() {
+        void travelsBackToTheEmptyEndFromTheFullOne() {
 
             var fraction = EasedFraction.createAtValue(1f);
             fraction.advanceTowardTarget(EMPTY_TARGET, FULL_DURATION, DURATION);
@@ -140,7 +140,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetCarriesOnFromTheCurrentPositionWhenRetargetedMidFlight() {
+        void carriesOnFromTheCurrentPositionWhenRetargetedMidFlight() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, HALF_DURATION, DURATION);
@@ -154,7 +154,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetAccumulatesManySmallStepsLikeOneBigStep() {
+        void accumulatesManySmallStepsLikeOneBigStep() {
 
             var fraction = new EasedFraction();
 
@@ -168,7 +168,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetPacesByTheRatioOfElapsedTimeToDuration() {
+        void pacesByTheRatioOfElapsedTimeToDuration() {
 
             var fraction = new EasedFraction();
 
@@ -181,7 +181,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetSnapsToTheTargetInOneStepWhenDurationIsZero() {
+        void snapsToTheTargetInOneStepWhenDurationIsZero() {
 
             var fraction = new EasedFraction();
 
@@ -196,7 +196,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetClampsATargetAboveTheRangeToTheFullEnd() {
+        void clampsATargetAboveTheRangeToTheFullEnd() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(2f, FULL_DURATION, DURATION);
@@ -208,7 +208,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void advanceTowardTargetClampsATargetBelowTheRangeToTheEmptyEnd() {
+        void clampsATargetBelowTheRangeToTheEmptyEnd() {
 
             var fraction = EasedFraction.createAtValue(1f);
             fraction.advanceTowardTarget(-1f, FULL_DURATION, DURATION);
@@ -224,13 +224,13 @@ final class EasedFractionTest {
     class GetEasedValue {
 
         @Test
-        void getEasedValueStartsAtTheEmptyEndForAFreshFraction() {
+        void startsAtTheEmptyEndForAFreshFraction() {
             assertThat(new EasedFraction().getEasedValue())
                 .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
-        void getEasedValueEasesTheHalfwayPositionToTheCurveMidpoint() {
+        void easesTheHalfwayPositionToTheCurveMidpoint() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, HALF_DURATION, DURATION);
@@ -242,7 +242,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void getEasedValueTrailsTheLinearPositionAQuarterOfTheWayIn() {
+        void trailsTheLinearPositionAQuarterOfTheWayIn() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, QUARTER_DURATION, DURATION);
@@ -253,7 +253,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void getEasedValueLeadsTheLinearPositionThreeQuartersOfTheWayIn() {
+        void leadsTheLinearPositionThreeQuartersOfTheWayIn() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, DURATION * 3f / 4f, DURATION);
@@ -269,13 +269,13 @@ final class EasedFractionTest {
     class HasReachedTarget {
 
         @Test
-        void hasReachedTargetIsTrueForAFreshFractionAtTheEmptyEnd() {
+        void isTrueForAFreshFractionAtTheEmptyEnd() {
             assertThat(new EasedFraction().hasReachedTarget(EMPTY_TARGET))
                 .isTrue();
         }
 
         @Test
-        void hasReachedTargetIsFalseAtEitherEndWhileMidFlight() {
+        void isFalseAtEitherEndWhileMidFlight() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, HALF_DURATION, DURATION);
@@ -287,7 +287,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void hasReachedTargetIsTrueOnceTheAdvanceSettlesOnIt() {
+        void isTrueOnceTheAdvanceSettlesOnIt() {
 
             var fraction = new EasedFraction();
             fraction.advanceTowardTarget(FULL_TARGET, FULL_DURATION, DURATION);
@@ -297,7 +297,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void hasReachedTargetClampsATargetAboveTheRange() {
+        void clampsATargetAboveTheRange() {
             // The advance confines an out-of-range target to the range, so the arrival test must confine it
             // the same way or a fraction settled at the full end would read as still travelling.
             assertThat(EasedFraction.createAtValue(1f).hasReachedTarget(2f))
@@ -305,7 +305,7 @@ final class EasedFractionTest {
         }
 
         @Test
-        void hasReachedTargetClampsATargetBelowTheRange() {
+        void clampsATargetBelowTheRange() {
             assertThat(new EasedFraction().hasReachedTarget(-1f))
                 .isTrue();
         }

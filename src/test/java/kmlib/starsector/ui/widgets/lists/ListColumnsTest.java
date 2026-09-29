@@ -16,7 +16,7 @@ final class ListColumnsTest {
     class PersistenceKey {
 
         @Test
-        void persistenceKeyIsTheFrozenKeyForEachChoice() {
+        void isTheFrozenKeyForEachChoice() {
             // Pinned as literals: renaming a key silently resets every save that stored that count
             // back to the default, so a change must break this test before it ships.
             assertThat(ListColumns.ONE.persistenceKey())
@@ -30,7 +30,7 @@ final class ListColumnsTest {
     class ResolveLabelText {
 
         @Test
-        void resolveLabelTextIsTheCountItself() {
+        void isTheCountItself() {
             // The segments carry the digits directly rather than a string ID a consumer resolves,
             // since a count standing for itself is not prose to translate.
             assertThat(ListColumns.ONE.resolveLabelText())
@@ -44,7 +44,7 @@ final class ListColumnsTest {
     class ColumnCount {
 
         @Test
-        void columnCountIsOneForTheSingleChoiceAndTwoForTheDoubleChoice() {
+        void isOneForTheSingleChoiceAndTwoForTheDoubleChoice() {
             assertThat(ListColumns.ONE.columnCount())
                 .isEqualTo(1);
             assertThat(ListColumns.TWO.columnCount())

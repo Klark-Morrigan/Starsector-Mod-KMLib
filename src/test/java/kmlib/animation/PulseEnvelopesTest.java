@@ -36,7 +36,7 @@ final class PulseEnvelopesTest {
     class AdvanceByElapsedTime {
 
         @Test
-        void advanceByElapsedTimeRaisesEveryRunningPulseByTheSameFrame() {
+        void raisesEveryRunningPulseByTheSameFrame() {
             // Two events landing on two elements run side by side: a pulse is an event on one element, so
             // one starting says nothing about the others - unlike a hover, which one element holds at a time.
             var pulses = new PulseEnvelopes<Integer>();
@@ -52,7 +52,7 @@ final class PulseEnvelopesTest {
         }
 
         @Test
-        void advanceByElapsedTimeRunsAPulseAllTheWayOutWithoutASecondTrigger() {
+        void runsAPulseAllTheWayOutWithoutASecondTrigger() {
 
             var pulses = new PulseEnvelopes<Integer>();
 
@@ -65,7 +65,7 @@ final class PulseEnvelopesTest {
         }
 
         @Test
-        void advanceByElapsedTimeLeavesASpentKeyTriggerableAgain() {
+        void leavesASpentKeyTriggerableAgain() {
             // A spent envelope is dropped from the set, so this is what proves the drop costs nothing: the
             // same key triggered afterwards rises exactly as it did the first time.
             var pulses = new PulseEnvelopes<Integer>();
@@ -82,7 +82,7 @@ final class PulseEnvelopesTest {
         }
 
         @Test
-        void advanceByElapsedTimeOnAnEmptySetLeavesEveryKeyAtRest() {
+        void onAnEmptySetLeavesEveryKeyAtRest() {
             // A render loop pumps the set every frame whether anything is running or not.
             var pulses = new PulseEnvelopes<Integer>();
             pulses.advanceByElapsedTime(FULL_DURATION, DURATIONS);
@@ -96,7 +96,7 @@ final class PulseEnvelopesTest {
     class ResetPulses {
 
         @Test
-        void resetPulsesDropsALiftLeftPartWayThroughItsCycle() {
+        void dropsALiftLeftPartWayThroughItsCycle() {
             // Otherwise the next session opens decaying from a peak the player never saw rise.
             var pulses = new PulseEnvelopes<Integer>();
 
@@ -113,7 +113,7 @@ final class PulseEnvelopesTest {
     class ResolvePulseFractionAt {
 
         @Test
-        void resolvePulseFractionAtReadsAtRestForAKeyWithNoPulse() {
+        void readsAtRestForAKeyWithNoPulse() {
             assertThat(new PulseEnvelopes<Integer>().resolvePulseFractionAt(UNTOUCHED_KEY))
                 .isCloseTo(0f, within(TOLERANCE));
         }
@@ -123,7 +123,7 @@ final class PulseEnvelopesTest {
     class StartPulseAt {
 
         @Test
-        void startPulseAtLiftsTheNamedKeyAndNoOther() {
+        void liftsTheNamedKeyAndNoOther() {
 
             var pulses = new PulseEnvelopes<Integer>();
 
@@ -137,7 +137,7 @@ final class PulseEnvelopesTest {
         }
 
         @Test
-        void startPulseAtRetriggersInPlaceRatherThanStackingASecondLift() {
+        void retriggersInPlaceRatherThanStackingASecondLift() {
             // Retriggered halfway down and stepped a quarter of a traverse, the lift stands three quarters
             // up - one envelope climbing again, not two summing past the peak.
             var pulses = new PulseEnvelopes<Integer>();
@@ -158,7 +158,7 @@ final class PulseEnvelopesTest {
     class StartHeldPulseAt {
 
         @Test
-        void startHeldPulseAtHoldsOnlyTheNamedKeyAtItsPeak() {
+        void holdsOnlyTheNamedKeyAtItsPeak() {
             // Aimed exactly as a plain trigger is - one element's act says nothing about the others - and
             // the hold is what parts them: the named key waits at the top while a neighbour's self-timed
             // lift has already run its course.
@@ -180,7 +180,7 @@ final class PulseEnvelopesTest {
     class ReleaseHeldPulses {
 
         @Test
-        void releaseHeldPulsesEndsAHoldWhicheverKeyItIsOn() {
+        void endsAHoldWhicheverKeyItIsOn() {
             // Unaimed, unlike the trigger: a pointer put down on one element is routinely lifted somewhere
             // else entirely, and the act it ends is still that element's. Released by where the pointer
             // finished, a lift the player dragged away from would stand at its peak indefinitely.
@@ -198,7 +198,7 @@ final class PulseEnvelopesTest {
         }
 
         @Test
-        void releaseHeldPulsesLeavesASetWithNoHoldsAlone() {
+        void leavesASetWithNoHoldsAlone() {
             // Every release is reported, most of them owed to nothing, so one arriving over a set of
             // self-timed lifts must not disturb their cycles.
             var pulses = new PulseEnvelopes<Integer>();

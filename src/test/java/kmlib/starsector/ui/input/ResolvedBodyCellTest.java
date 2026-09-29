@@ -40,7 +40,7 @@ final class ResolvedBodyCellTest {
     class ResolveArrivalTarget {
 
         @Test
-        void resolveArrivalTargetAnswersSingleOptionControlForAWholeRowCheckbox() {
+        void answersSingleOptionControlForAWholeRowCheckbox() {
             // Hit anywhere on its row and with one answer to give, so reaching it is the player having
             // aimed at it rather than having swept past it.
             assertThat(buildResolvedCell(buildCheckboxControl()).resolveArrivalTarget())
@@ -48,7 +48,7 @@ final class ResolvedBodyCellTest {
         }
 
         @Test
-        void resolveArrivalTargetAnswersListedItemForARowOfSegments() {
+        void answersListedItemForARowOfSegments() {
             // A radio's segments abut, so one sweep across the row crosses every one of them - the kind a
             // look quietens.
             assertThat(buildResolvedCell(buildHorizontalRadioControl()).resolveArrivalTarget())
@@ -56,7 +56,7 @@ final class ResolvedBodyCellTest {
         }
 
         @Test
-        void resolveArrivalTargetAnswersListedItemForAListsRows() {
+        void answersListedItemForAListsRows() {
             // A list's rows are laid as segments too, and a sweep down a column of them passes many. The
             // axis is what the player is doing rather than which widget drew it, so a table answers as a
             // radio does however differently the two are painted.
@@ -69,7 +69,7 @@ final class ResolvedBodyCellTest {
     class ResolveHoverReport {
 
         @Test
-        void resolveHoverReportAnswersTheChannelTheControlWasWiredWith() {
+        void answersTheChannelTheControlWasWiredWith() {
             // Read off the control while the walk still holds it, so what a frame's reading carries on is
             // the channel rather than the widget it came from - the spec being gone by the next rebuild.
             var reportedCells = new ArrayList<Integer>();
@@ -83,7 +83,7 @@ final class ResolvedBodyCellTest {
         }
 
         @Test
-        void resolveHoverReportAnswersNoneForAControlThatTakesNoReport() {
+        void answersNoneForAControlThatTakesNoReport() {
             // Most controls take none, so the walk answers a channel that drops what it is told rather than
             // a null the frame would have to check before every report.
             assertThat(buildResolvedCell(buildCheckboxControl()).resolveHoverReport())

@@ -17,7 +17,7 @@ final class AvalancheTest {
     class MixBits {
 
         @Test
-        void mixBitsKeepsDistinctInputsDistinct() {
+        void keepsDistinctInputsDistinct() {
             // The finalizer is bijective, so it must never collapse two different
             // inputs onto one output - that is the whole reason it is safe to fold
             // into a combine that must not lose changes.
@@ -25,7 +25,7 @@ final class AvalancheTest {
         }
 
         @Test
-        void mixBitsSpreadsASingleBitDifferenceAcrossTheWord() {
+        void spreadsASingleBitDifferenceAcrossTheWord() {
             // Inputs one bit apart must land far apart, not one bit apart, or a
             // combine of near-identical hashes would barely move. Require many bits
             // to differ between neighbours.
@@ -34,14 +34,14 @@ final class AvalancheTest {
         }
 
         @Test
-        void mixBitsMapsZeroToZero() {
+        void mapsZeroToZero() {
             // fmix32's lone fixed point, pinned so the caveat is a tested fact:
             // callers that must keep a 0 input observable have to seed before mixing.
             assertThat(Avalanche.mixBits(0)).isZero();
         }
 
         @Test
-        void mixBitsMovesANonZeroSeededZero() {
+        void movesANonZeroSeededZero() {
             // The seed workaround the class documents: XOR a non-zero seed into a 0
             // input and the fixed point no longer swallows it.
             assertThat(Avalanche.mixBits(0 ^ 0x9e3779b9)).isNotZero();

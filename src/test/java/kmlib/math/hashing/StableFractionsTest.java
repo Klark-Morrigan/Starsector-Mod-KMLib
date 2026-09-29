@@ -38,7 +38,7 @@ final class StableFractionsTest {
     class ResolveFraction {
 
         @Test
-        void resolveFractionHoldsAKeyToOneShareInEveryRun() {
+        void holdsAKeyToOneShareInEveryRun() {
             // The stability claim, stated as the values themselves: a caller derives an emitter's place in a
             // cycle from its ID and expects that place to survive a restart, a save load and a new machine.
             assertThat(StableFractions.resolveFraction(NEIGHBOURING_KEY))
@@ -49,7 +49,7 @@ final class StableFractionsTest {
         }
 
         @Test
-        void resolveFractionSeparatesKeysOneCharacterApart() {
+        void separatesKeysOneCharacterApart() {
             // IDs in a set differ by a digit far more often than they differ wholesale, so this is the case
             // that decides whether the spread works in practice rather than in principle.
             var separation = Math.abs(
@@ -61,7 +61,7 @@ final class StableFractionsTest {
         }
 
         @Test
-        void resolveFractionLandsEveryKeyInsideTheUnitRange() {
+        void landsEveryKeyInsideTheUnitRange() {
             // A share at or past a whole would send whatever it drives a full turn on, so the open upper end
             // is asserted rather than assumed from the bit width it is built out of.
             for (var index = 0; index < SWEPT_KEY_COUNT; index++) {
@@ -76,7 +76,7 @@ final class StableFractionsTest {
         }
 
         @Test
-        void resolveFractionStartsTheRangeForAnEmptyKey() {
+        void startsTheRangeForAnEmptyKey() {
             // The avalanche's fixed point at zero, pinned so the documented caveat is a fact: an unnamed
             // subject sits at the start of the range rather than anywhere unpredictable.
             assertThat(StableFractions.resolveFraction(""))

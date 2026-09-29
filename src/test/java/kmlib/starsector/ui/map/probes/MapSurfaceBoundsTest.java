@@ -70,7 +70,7 @@ class MapSurfaceBoundsTest {
     class SelectSurfaceArea {
 
         @Test
-        void selectSurfaceAreaPicksTheSurfaceOverEveryChromePiece() {
+        void picksTheSurfaceOverEveryChromePiece() {
             // The order is deliberately not surface-first: the rule has to hold on coverage, not on
             // whichever child the tab happens to list first.
             assertThat(MapSurfaceBounds.selectSurfaceArea(
@@ -85,7 +85,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaKeepsAChromePieceDrawnOverTheSurface() {
+        void keepsAChromePieceDrawnOverTheSurface() {
             // The intel screen's visor. Its surface is the whole tab, so the bar drawn across the
             // bottom of it is inside the surface rather than beside it - the case that a rule
             // returning the surface alone could not express, and the reason the chrome comes back.
@@ -96,7 +96,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaNarrowsAChromePieceOverTheSurfaceToWhatItDraws() {
+        void narrowsAChromePieceOverTheSurfaceToWhatItDraws() {
             // The visor's bar again, this time read one level deeper. The bar spans the map's whole
             // width while all it draws is buttons, so excluding its own box parks the hover over map
             // the player can plainly see between them. Two buttons rather than one, since the bar
@@ -115,7 +115,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaKeepsTheWholeBoxOfAChromePieceMerelyAbuttingTheSurface() {
+        void keepsTheWholeBoxOfAChromePieceMerelyAbuttingTheSurface() {
             // A chrome piece sharing an edge with the surface and no area. Narrowing it would let
             // the one line of pixels the two boxes share read as map, since a box contains its own
             // edges; keeping its own box leaves that line chrome, which is the same side of the
@@ -131,7 +131,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaKeepsTheWholeBoxOfAChromePieceBesideTheSurface() {
+        void keepsTheWholeBoxOfAChromePieceBesideTheSurface() {
             // The M map's tab strip, which holds controls of its own but is laid out clear of the
             // surface. Narrowing it there would be busywork at best and could only ever widen where
             // the hover reaches, since every point in it is outside the surface already.
@@ -144,7 +144,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaFindsNothingWhenOnlyChromeIsPresent() {
+        void findsNothingWhenOnlyChromeIsPresent() {
             // The loud-absence case. A build that reshapes the tab past this rule reports no
             // surface, so the caller falls back rather than accepting a tab strip as the map.
             assertThat(MapSurfaceBounds.selectSurfaceArea(
@@ -154,14 +154,14 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaFindsNothingWhenTheTabHasNoChildren() {
+        void findsNothingWhenTheTabHasNoChildren() {
 
             assertThat(MapSurfaceBounds.selectSurfaceArea(TAB_BOX, List.of()))
                 .isNull();
         }
 
         @Test
-        void selectSurfaceAreaFindsNothingWhenTheTabWasNeverPositioned() {
+        void findsNothingWhenTheTabWasNeverPositioned() {
 
             assertThat(MapSurfaceBounds.selectSurfaceArea(
                     null,
@@ -170,7 +170,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void selectSurfaceAreaConfinesAChildThatOverflowsTheTab() {
+        void confinesAChildThatOverflowsTheTab() {
             // The map's panned content is larger than the screen and hangs below the surface, so a
             // single-level scan does not reach it. Should a later build promote something that
             // overflows to a direct child, the accepted surface still stops at the tab's edge -
@@ -188,7 +188,7 @@ class MapSurfaceBoundsTest {
     class CollectDrawnBoxesOf {
 
         @Test
-        void collectDrawnBoxesOfReturnsEveryDrawnChildBoxInTheOrderGiven() {
+        void returnsEveryDrawnChildBoxInTheOrderGiven() {
 
             var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
             var tabStripWidgetFake = createDrawnWidgetFake(TAB_STRIP_BOX);
@@ -201,7 +201,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void collectDrawnBoxesOfReturnsTheBoxesAChildDrawsIn() {
+        void returnsTheBoxesAChildDrawsIn() {
             // The visor's band. Its own box is what a single-level read sees, and the button inside
             // it is what the expansion rule needs handed to it alongside.
             var buttonWidgetFake = createDrawnWidgetFake(VISOR_BAR_BUTTON_BOX);
@@ -213,7 +213,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void collectDrawnBoxesOfLeavesOutAChildsChildFadedToNothing() {
+        void leavesOutAChildsChildFadedToNothing() {
             // The same sifting one level down. A button faded out is one the player cannot aim at,
             // so leaving it in would suppress the hover over map that is plainly visible.
             var fadedButtonFake = createWidgetFake(VISOR_BAR_BUTTON_BOX, FADED_TO_NOTHING_OPACITY);
@@ -224,7 +224,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void collectDrawnBoxesOfLeavesOutAChildFadedToNothing() {
+        void leavesOutAChildFadedToNothing() {
             // A tab the player has switched away from keeps its box and its place in the tree while
             // it fades out. Were it still a candidate, it could out-cover the real surface and hand
             // the rule a box for a screen nobody is looking at.
@@ -237,7 +237,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void collectDrawnBoxesOfLeavesOutAChildTheLayoutNeverPositioned() {
+        void leavesOutAChildTheLayoutNeverPositioned() {
             // No position at all, so it occupies nothing and cannot be measured against the tab.
             var unpositionedWidgetFake = createWidgetFake(null, DRAWN_OPACITY);
             var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
@@ -248,7 +248,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void collectDrawnBoxesOfLeavesOutAChildThatIsNotAComponent() {
+        void leavesOutAChildThatIsNotAComponent() {
             // The children come back off an unpublished accessor as a bare list, so nothing
             // guarantees every entry is a component - and one that is not has no box to compare.
             var surfaceWidgetFake = createDrawnWidgetFake(SURFACE_BOX);
@@ -259,7 +259,7 @@ class MapSurfaceBoundsTest {
         }
 
         @Test
-        void collectDrawnBoxesOfReturnsNothingForATabWithNoChildren() {
+        void returnsNothingForATabWithNoChildren() {
 
             assertThat(MapSurfaceBounds.collectDrawnBoxesOf(List.of()))
                 .isEmpty();

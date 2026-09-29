@@ -46,7 +46,7 @@ final class RevisionMemoTest {
     class ResolveValue {
 
         @Test
-        void resolveValueWalksTheSupplierOnceThenServesTheMemoForTheSameInputs() {
+        void walksTheSupplierOnceThenServesTheMemoForTheSameInputs() {
 
             var supplierMock = supplierReturning(ANOMALIES);
 
@@ -65,7 +65,7 @@ final class RevisionMemoTest {
         }
 
         @Test
-        void resolveValueRecomputesWhenTheRevisionMoves() {
+        void recomputesWhenTheRevisionMoves() {
             // A moved revision is the caller saying something the value depends on changed, so the
             // memo is stale and must re-resolve.
             var supplierMock = supplierReturning(ANOMALIES);
@@ -79,7 +79,7 @@ final class RevisionMemoTest {
         }
 
         @Test
-        void resolveValueRecomputesForADifferentScope() {
+        void recomputesForADifferentScope() {
             // Two scopes hold different values, so a switch between them must re-resolve rather than
             // serve the scope the memo happens to hold.
             var supplierMock = supplierReturning(ANOMALIES);
@@ -97,7 +97,7 @@ final class RevisionMemoTest {
     class DiscardValue {
 
         @Test
-        void discardValueWalksTheSupplierAgainUnderTheKeyItHadServed() {
+        void walksTheSupplierAgainUnderTheKeyItHadServed() {
             // What a released holder's discard has to leave behind: nothing. The scope and the
             // revision are exactly as they were - a holder going away moves neither - so the walk
             // has to be forced by the discard or not at all.
@@ -113,7 +113,7 @@ final class RevisionMemoTest {
         }
 
         @Test
-        void discardValueServesTheFreshWalkAfterwards() {
+        void servesTheFreshWalkAfterwards() {
             // The memo stays usable after a discard rather than being spent: a consumer that
             // discards and then resolves reads the new walk's value, not an empty answer.
             var supplierMock = supplierReturning(ANOMALIES);

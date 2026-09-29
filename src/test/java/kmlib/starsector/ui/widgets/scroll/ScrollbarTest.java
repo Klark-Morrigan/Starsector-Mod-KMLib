@@ -41,7 +41,7 @@ final class ScrollbarTest {
     class ComputeTrack {
 
         @Test
-        void computeTrackSetsTheTrackInFromTheContainerRightEdge() {
+        void setsTheTrackInFromTheContainerRightEdge() {
 
             var track = track();
 
@@ -54,7 +54,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeTrackSpansTheViewportVertically() {
+        void spansTheViewportVertically() {
 
             var track = track();
 
@@ -65,7 +65,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeTrackDrawsTheTrackAtTheGivenThickness() {
+        void drawsTheTrackAtTheGivenThickness() {
 
             var track = Scrollbar.computeTrack(buildRegion(0f), new ScrollbarThickness(10f));
 
@@ -80,7 +80,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeTrackSpendsTheGutterItsThicknessStates() {
+        void spendsTheGutterItsThicknessStates() {
 
             var thickness = new ScrollbarThickness(10f);
             var track = Scrollbar.computeTrack(buildRegion(0f), thickness);
@@ -96,7 +96,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeTrackCollapsesTheTrackToNothingAtZeroThickness() {
+        void collapsesTheTrackToNothingAtZeroThickness() {
 
             var track = Scrollbar.computeTrack(buildRegion(0f), ScrollbarThickness.NONE);
             // Zero leaves a rectangle of no width parked at the margin; that it is not drawn at all is
@@ -113,7 +113,7 @@ final class ScrollbarTest {
     class ComputeThumb {
 
         @Test
-        void computeThumbSizesTheThumbToTheVisibleFractionOfTheContent() {
+        void sizesTheThumbToTheVisibleFractionOfTheContent() {
 
             var thumb = Scrollbar.computeThumb(buildRegion(0f), track());
 
@@ -127,7 +127,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeThumbHangsTheThumbFromTheTrackTopWhenScrolledToTheStart() {
+        void hangsTheThumbFromTheTrackTopWhenScrolledToTheStart() {
 
             var thumb = Scrollbar.computeThumb(buildRegion(0f), track());
 
@@ -137,7 +137,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeThumbDropsTheThumbToTheTrackBottomWhenFullyScrolled() {
+        void dropsTheThumbToTheTrackBottomWhenFullyScrolled() {
 
             var thumb = Scrollbar.computeThumb(buildRegion(OVERFLOW), track());
 
@@ -147,7 +147,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeThumbPlacesTheThumbMidTravelAtHalfTheOverflow() {
+        void placesTheThumbMidTravelAtHalfTheOverflow() {
 
             var thumb = Scrollbar.computeThumb(buildRegion(OVERFLOW / 2f), track());
 
@@ -158,7 +158,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeThumbFloorsTheThumbHeightForAVeryLongContent() {
+        void floorsTheThumbHeightForAVeryLongContent() {
             // A content far taller than the viewport would give a sub-minimum thumb; it floors at the
             // grabbable minimum so the thumb never shrinks to an unusable sliver.
             var longContent = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 100000f);
@@ -169,7 +169,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void computeThumbFillsTheTrackWhenTheContentFits() {
+        void fillsTheTrackWhenTheContentFits() {
             // No overflow (content no taller than the viewport) leaves nothing to scroll, so the thumb
             // fills the whole track.
             var fits = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 0f);
@@ -186,7 +186,7 @@ final class ScrollbarTest {
     class ComputeGrabColumn {
 
         @Test
-        void computeGrabColumnRunsTheGutterRightOfTheContentAtTheViewportHeight() {
+        void runsTheGutterRightOfTheContentAtTheViewportHeight() {
 
             var grab = Scrollbar.computeGrabColumn(buildRegion(0f));
 
@@ -211,7 +211,7 @@ final class ScrollbarTest {
     class ResolveOffsetForPointer {
 
         @Test
-        void resolveOffsetForPointerIsZeroAtTheTrackTop() {
+        void isZeroAtTheTrackTop() {
             // A pointer at the very top scrolls the content to its first row (offset 0).
             var offset = Scrollbar.resolveOffsetForPointer(
                 buildRegion(0f),
@@ -223,7 +223,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void resolveOffsetForPointerIsTheOverflowAtTheTrackBottom() {
+        void isTheOverflowAtTheTrackBottom() {
             // A pointer at the very bottom scrolls the content to its last row (the full overflow).
             var offset = Scrollbar.resolveOffsetForPointer(
                 buildRegion(0f),
@@ -236,7 +236,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void resolveOffsetForPointerClampsAPointerAboveTheTrack() {
+        void clampsAPointerAboveTheTrack() {
             // A pointer past the top stays at 0 rather than a negative offset.
             var offset = Scrollbar.resolveOffsetForPointer(
                 buildRegion(0f),
@@ -249,7 +249,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void resolveOffsetForPointerClampsAPointerBelowTheTrack() {
+        void clampsAPointerBelowTheTrack() {
 
             var offset = Scrollbar.resolveOffsetForPointer(
                 buildRegion(0f),
@@ -262,7 +262,7 @@ final class ScrollbarTest {
         }
 
         @Test
-        void resolveOffsetForPointerIsZeroWhenTheContentFits() {
+        void isZeroWhenTheContentFits() {
             // Nothing to scroll, so any pointer resolves to the top.
             var fits = new ScrollRegion(CONTAINER, VIEWPORT, 0f, 0f);
             var offset = Scrollbar.resolveOffsetForPointer(fits, track(), track().y());

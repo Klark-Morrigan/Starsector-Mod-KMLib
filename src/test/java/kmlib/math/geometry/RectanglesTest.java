@@ -53,13 +53,13 @@ class RectanglesTest {
     class Describe {
 
         @Test
-        void describeNamesThePositionAndSizeInOrder() {
+        void namesThePositionAndSizeInOrder() {
             assertThat(Rectangles.describe(new Rectangle(10f, 20f, 30f, 40f)))
                 .isEqualTo("x=10 y=20 w=30 h=40");
         }
 
         @Test
-        void describeRoundsToWholeUnits() {
+        void roundsToWholeUnits() {
             // Read off a log by eye against the game's own pixel grid, where a fractional coordinate
             // is noise rather than precision.
             assertThat(Rectangles.describe(new Rectangle(10.4f, 20.5f, 30.6f, 40.49f)))
@@ -67,7 +67,7 @@ class RectanglesTest {
         }
 
         @Test
-        void describeSaysThereWasNothingToMeasureForNoBox() {
+        void saysThereWasNothingToMeasureForNoBox() {
             // A caller with no box at all must not have that read as a box at the origin.
             assertThat(Rectangles.describe(null))
                 .isEqualTo("none");

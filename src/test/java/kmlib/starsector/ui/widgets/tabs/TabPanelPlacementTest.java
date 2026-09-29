@@ -68,13 +68,13 @@ final class TabPanelPlacementTest {
     class ContainsPoint {
 
         @Test
-        void containsPointAnswersYesInsideTheBody() {
+        void answersYesInsideTheBody() {
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPoint(INSIDE_BODY_X, INSIDE_BODY_Y))
                 .isTrue();
         }
 
         @Test
-        void containsPointAnswersYesOnTheTabRowAboveTheBox() {
+        void answersYesOnTheTabRowAboveTheBox() {
             // The row is drawn above the box, so a footprint that stopped at the box would leave the
             // surface behind the panel reading a pointer parked on the tabs.
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPoint(INSIDE_HEADER_X, INSIDE_HEADER_Y))
@@ -82,7 +82,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void containsPointAnswersYesOnTheBandButtonPastTheTabs() {
+        void answersYesOnTheBandButtonPastTheTabs() {
             // The button rides in the band the footprint already reads, so it is claimed with the tabs
             // rather than as a piece of its own - and the map under it stops answering the pointer.
             assertThat(placePanelWithBandButton()
@@ -91,7 +91,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void containsPointAnswersYesOnTheHandleOutsideTheBox() {
+        void answersYesOnTheHandleOutsideTheBox() {
             // The handle is the part still on screen once the body is docked, so a footprint that
             // stopped at the box would report a point on it as being off the panel.
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPoint(INSIDE_NOTCH_X, INSIDE_NOTCH_Y))
@@ -99,13 +99,13 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void containsPointAnswersNoOffAllThree() {
+        void answersNoOffAllThree() {
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPoint(OUTSIDE_X, OUTSIDE_Y))
                 .isFalse();
         }
 
         @Test
-        void containsPointAnswersNoWhereTheFoldHasWipedTheRow() {
+        void answersNoWhereTheFoldHasWipedTheRow() {
             // Mid-fold the drawn band is narrower than the row was laid out: the panel claims only what it
             // still paints, so the screen the tabs have wiped off goes back to whatever is behind.
             var wiped = new Rectangle(HEADER_BAND.x(), HEADER_BAND.y(), 10f, HEADER_BAND.height());
@@ -115,7 +115,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void containsPointAnswersForABodylessPanelByItsRowAlone() {
+        void answersForABodylessPanelByItsRowAlone() {
             // No box and no handle, so the row is the whole footprint - and it still is one, which is what
             // stops a tab row with nothing under it blocking nothing at all.
             var bodyless = placeBodylessPanel();
@@ -138,7 +138,7 @@ final class TabPanelPlacementTest {
     class ComputeOuterBound {
 
         @Test
-        void computeOuterBoundEnclosesTheRowTheBodyAndTheHandle() {
+        void enclosesTheRowTheBodyAndTheHandle() {
             // Left and bottom come from the box (x 100, y 200), the right edge from the handle
             // (x 400 + 20), the top from the row (y 600 + 20).
             assertThat(placePanel(NOTCH, HEADER_BAND).computeOuterBound())
@@ -146,7 +146,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void computeOuterBoundWidensToARowOverhangingTheBody() {
+        void widensToARowOverhangingTheBody() {
             // The row is not clipped to the body's span at rest, so a wider row pushes both side edges
             // of the bound out past the box - the piece that reaches furthest sets each edge.
             var wideBand = new Rectangle(80f, 600f, 400f, 20f);
@@ -156,7 +156,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void computeOuterBoundForABodylessPanelIsItsRow() {
+        void forABodylessPanelIsItsRow() {
             // The row is the whole of the bound: no handle to reach past, and the empty box standing for the
             // missing body is left out rather than dragging the bound to the outer edge it is parked on.
             assertThat(placeBodylessPanel().computeOuterBound())
@@ -164,7 +164,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void computeOuterBoundEnclosesEveryPointTheFootprintClaims() {
+        void enclosesEveryPointTheFootprintClaims() {
             // The invariant a clip taken from the bound rests on: nothing the panel draws, and so nothing
             // the pointer can be on, falls outside it. A bound missing a piece would clip a pass to a
             // region that stops short exactly where that piece is drawn.
@@ -183,13 +183,13 @@ final class TabPanelPlacementTest {
     class ContainsPointInNotch {
 
         @Test
-        void containsPointInNotchAnswersYesOnTheHandle() {
+        void answersYesOnTheHandle() {
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPointInNotch(INSIDE_NOTCH_X, INSIDE_NOTCH_Y))
                 .isTrue();
         }
 
         @Test
-        void containsPointInNotchAnswersNoOnTheBody() {
+        void answersNoOnTheBody() {
             // The two are disjoint: the handle rides the box's outer edge, so a body hit is never
             // also a handle hit and a press cannot fire both.
             assertThat(placePanel(NOTCH, HEADER_BAND).containsPointInNotch(INSIDE_BODY_X, INSIDE_BODY_Y))
@@ -197,7 +197,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void containsPointInNotchAnswersNoForABodylessPanelWithNoHandle() {
+        void answersNoForABodylessPanelWithNoHandle() {
             // With no rect to be over, no point is over it - the null a bodyless panel carries is
             // absorbed here rather than at each caller.
             assertThat(placeBodylessPanel().containsPointInNotch(INSIDE_NOTCH_X, INSIDE_NOTCH_Y))
@@ -209,13 +209,13 @@ final class TabPanelPlacementTest {
     class HasBody {
 
         @Test
-        void hasBodyAnswersYesWhenTheBodyCarriesControls() {
+        void answersYesWhenTheBodyCarriesControls() {
             assertThat(placePanel(NOTCH, HEADER_BAND).hasBody())
                 .isTrue();
         }
 
         @Test
-        void hasBodyAnswersNoForABodylessPanel() {
+        void answersNoForABodylessPanel() {
             // The row is the whole panel: nothing to frame, fold, or fill beneath it.
             assertThat(placeBodylessPanel().hasBody())
                 .isFalse();
@@ -226,14 +226,14 @@ final class TabPanelPlacementTest {
     class ContainsPointInBandButton {
 
         @Test
-        void containsPointInBandButtonAnswersYesOnTheButton() {
+        void answersYesOnTheButton() {
             assertThat(placePanelWithBandButton()
                     .containsPointInBandButton(INSIDE_BAND_BUTTON_X, INSIDE_HEADER_Y))
                 .isTrue();
         }
 
         @Test
-        void containsPointInBandButtonAnswersNoOnATabBesideIt() {
+        void answersNoOnATabBesideIt() {
             // The button and the tabs share a band and nothing else. Answering yes here would open the
             // panel's own dialog on a press meant for a tab.
             assertThat(placePanelWithBandButton()
@@ -242,7 +242,7 @@ final class TabPanelPlacementTest {
         }
 
         @Test
-        void containsPointInBandButtonAnswersNoWhereThePanelFliesNoButton() {
+        void answersNoWhereThePanelFliesNoButton() {
             // The absent button absorbs the point the way the absent handle does: with no rect to be over,
             // no point is over it, so a caller needs no null check of its own.
             assertThat(placePanel(NOTCH, HEADER_BAND)

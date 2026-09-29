@@ -25,7 +25,7 @@ class SessionWarningTest {
     class WarnOnce {
 
         @Test
-        void warnOnceWritesTheFirstMessageAtWarn() {
+        void writesTheFirstMessageAtWarn() {
 
             var loggerMock = mock(Logger.class);
 
@@ -36,7 +36,7 @@ class SessionWarningTest {
         }
 
         @Test
-        void warnOnceWritesTheFailureAlongsideTheMessageWhenOneIsGiven() {
+        void writesTheFailureAlongsideTheMessageWhenOneIsGiven() {
 
             var loggerMock = mock(Logger.class);
             var failure = new IllegalStateException("no such method");
@@ -48,7 +48,7 @@ class SessionWarningTest {
         }
 
         @Test
-        void warnOnceSaysNothingMoreAfterItHasSaidSomething() {
+        void saysNothingMoreAfterItHasSaidSomething() {
             // The second message is a different one on purpose: the first warning silences the
             // session, not just repeats of itself, because a probe with two ways to fail has
             // nothing new to add once it has reported that it cannot answer.
@@ -69,7 +69,7 @@ class SessionWarningTest {
     class HasWarnedThisSession {
 
         @Test
-        void hasWarnedThisSessionIsFalseUntilSomethingIsSaid() {
+        void isFalseUntilSomethingIsSaid() {
 
             var loggerMock = mock(Logger.class);
 
@@ -80,7 +80,7 @@ class SessionWarningTest {
         }
 
         @Test
-        void hasWarnedThisSessionIsTrueOnceSomethingHasBeenSaid() {
+        void isTrueOnceSomethingHasBeenSaid() {
 
             var warning = new SessionWarning(mock(Logger.class));
             warning.warnOnce(FIRST_MESSAGE);
@@ -94,7 +94,7 @@ class SessionWarningTest {
     class RearmWarning {
 
         @Test
-        void rearmWarningLetsASpentWarningBeSaidOnceMore() {
+        void letsASpentWarningBeSaidOnceMore() {
             // The case it exists for: a reach broke and said so while nobody was listening, and the
             // reader who then asks to be told would otherwise be met with silence.
             var loggerMock = mock(Logger.class);
@@ -109,7 +109,7 @@ class SessionWarningTest {
         }
 
         @Test
-        void rearmWarningRestoresTheOnceRatherThanLiftingIt() {
+        void restoresTheOnceRatherThanLiftingIt() {
             // Re-armed is not un-silenced. The reaches behind these fail identically every frame, so
             // anything that left the warning open would be writing it sixty times a second.
             var loggerMock = mock(Logger.class);
@@ -125,7 +125,7 @@ class SessionWarningTest {
         }
 
         @Test
-        void rearmWarningSaysNothingByItself() {
+        void saysNothingByItself() {
             // It changes what may be said, not what is: a switch flipped on a session where nothing
             // ever broke must not manufacture a warning.
             var loggerMock = mock(Logger.class);
@@ -136,7 +136,7 @@ class SessionWarningTest {
         }
 
         @Test
-        void rearmWarningLeavesAnUnspentWarningUnspent() {
+        void leavesAnUnspentWarningUnspent() {
 
             var warning = new SessionWarning(mock(Logger.class));
 

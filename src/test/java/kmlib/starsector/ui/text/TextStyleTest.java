@@ -70,7 +70,7 @@ class TextStyleTest {
     class CreateStyle {
 
         @Test
-        void createStyleDrawsInTheFaceItIsHandedAtTheSizeItIsHanded() {
+        void drawsInTheFaceItIsHandedAtTheSizeItIsHanded() {
             // The native size is read off the install by whoever builds the face, so the style has to
             // keep the size it was handed rather than settle on some style-local default the atlas would
             // be scaled to.
@@ -83,7 +83,7 @@ class TextStyleTest {
         }
 
         @Test
-        void createStyleTakesTheBaselineForEveryPartTheCallerDidNotState() {
+        void takesTheBaselineForEveryPartTheCallerDidNotState() {
 
             var style = buildBaselineStyle();
 
@@ -96,7 +96,7 @@ class TextStyleTest {
         }
 
         @Test
-        void createStyleResolvesTheColourFromTheLivePalette() {
+        void resolvesTheColourFromTheLivePalette() {
             // Styles are built per paint precisely so a palette change - a player faction's recolour, a
             // theme swap - reaches the next style built rather than being frozen at class-load.
             var beforeRecolour = buildBaselineStyle();
@@ -116,7 +116,7 @@ class TextStyleTest {
     class SizedAt {
 
         @Test
-        void sizedAtChangesOnlyTheSize() {
+        void changesOnlyTheSize() {
 
             var style = buildBaselineStyle().sizedAt(OVERRIDE_SIZE);
 
@@ -137,7 +137,7 @@ class TextStyleTest {
     class InColour {
 
         @Test
-        void inColourChangesOnlyTheColour() {
+        void changesOnlyTheColour() {
 
             var style = buildBaselineStyle().inColour(OVERRIDE_COLOUR);
 
@@ -156,7 +156,7 @@ class TextStyleTest {
     class AlignedTo {
 
         @Test
-        void alignedToChangesOnlyTheAlignment() {
+        void changesOnlyTheAlignment() {
 
             var style = buildBaselineStyle().alignedTo(TextAlignment.CENTER_RIGHT);
 
@@ -175,7 +175,7 @@ class TextStyleTest {
     class InUpperCase {
 
         @Test
-        void inUpperCaseChangesOnlyTheCasing() {
+        void changesOnlyTheCasing() {
 
             var style = buildBaselineStyle().inUpperCase();
 
@@ -190,7 +190,7 @@ class TextStyleTest {
         }
 
         @Test
-        void inUpperCaseKeepsTheRefinementsMadeBeforeIt() {
+        void keepsTheRefinementsMadeBeforeIt() {
             // The point of composing refinements: a heading built face-first cannot lose the size,
             // colour, and anchor it was already given by the one that shouts it.
             var style = buildBaselineStyle()
@@ -210,7 +210,7 @@ class TextStyleTest {
         }
 
         @Test
-        void inUpperCaseLeavesTheStyleItWasDerivedFromUnchanged() {
+        void leavesTheStyleItWasDerivedFromUnchanged() {
             // Role baselines are shared and derived from per call, so a caller that shouts one heading
             // must not have quietly shouted every other run built off the same baseline.
             var baseline = buildBaselineStyle();
@@ -226,14 +226,14 @@ class TextStyleTest {
     class ResolveDisplayText {
 
         @Test
-        void resolveDisplayTextReturnsTheTextAsAuthoredWhenNotUpperCased() {
+        void returnsTheTextAsAuthoredWhenNotUpperCased() {
 
             assertThat(buildBaselineStyle().resolveDisplayText("Contested by"))
                 .isEqualTo("Contested by");
         }
 
         @Test
-        void resolveDisplayTextShoutsWhenUpperCased() {
+        void shoutsWhenUpperCased() {
 
             assertThat(buildBaselineStyle().inUpperCase().resolveDisplayText("Contested by"))
                 .isEqualTo("CONTESTED BY");

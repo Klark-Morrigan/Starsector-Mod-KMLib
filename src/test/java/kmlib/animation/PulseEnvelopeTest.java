@@ -32,7 +32,7 @@ final class PulseEnvelopeTest {
     class AdvanceByElapsedTime {
 
         @Test
-        void advanceByElapsedTimeLeavesAnUntriggeredEnvelopeAtRest() {
+        void leavesAnUntriggeredEnvelopeAtRest() {
             // A render loop pumps every envelope it holds unconditionally, so one nothing has triggered must
             // sit still rather than drift up on its own.
             var envelope = new PulseEnvelope();
@@ -43,7 +43,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeReachesThePeakOneTraverseAfterATrigger() {
+        void reachesThePeakOneTraverseAfterATrigger() {
 
             var envelope = new PulseEnvelope();
 
@@ -55,7 +55,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeFallsBackToRestWithoutASecondTrigger() {
+        void fallsBackToRestWithoutASecondTrigger() {
             // The whole point of an envelope over a held fraction: the caller reports the event and nothing
             // else, and the lift finds its own way back down.
             var envelope = new PulseEnvelope();
@@ -69,7 +69,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeWaitsAtThePeakWhileTheLiftIsHeld() {
+        void waitsAtThePeakWhileTheLiftIsHeld() {
             // The whole of the held trigger: the act it reports has not ended, so the lift may not either,
             // however many traverses pass. A self-timed one would drop out from under it.
             var envelope = new PulseEnvelope();
@@ -84,7 +84,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeFallsBackToRestOnceAHeldLiftIsReleased() {
+        void fallsBackToRestOnceAHeldLiftIsReleased() {
             // The release only lets go; the turn is still the advance's, so the frame after it turns the
             // lift at the peak and the one after that runs it down.
             var envelope = new PulseEnvelope();
@@ -100,7 +100,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeFinishesTheClimbOfAHeldLiftReleasedOnTheWayUp() {
+        void finishesTheClimbOfAHeldLiftReleasedOnTheWayUp() {
             // A press over before the lift topped out still shows a whole cycle: the climb carries on to the
             // peak and turns there of its own accord, rather than being cut short at whatever height it had
             // reached, which would read as the lift being snatched away.
@@ -116,7 +116,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeStandsPartWayUpHalfATraverseIn() {
+        void standsPartWayUpHalfATraverseIn() {
 
             var envelope = new PulseEnvelope();
 
@@ -130,7 +130,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeHoldsAtThePeakForAFrameThatOverrunsTheRise() {
+        void holdsAtThePeakForAFrameThatOverrunsTheRise() {
 
             var envelope = new PulseEnvelope();
             envelope.startPulse();
@@ -144,7 +144,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeTimesTheFallApartFromTheRise() {
+        void timesTheFallApartFromTheRise() {
             // What the pair buys a lift: it can strike quickly and release slowly. The rise here takes half
             // a duration, so one half-step reaches the peak; the same step then spends only half of the
             // longer fall, leaving the lift at the curve's midpoint rather than back at rest.
@@ -164,7 +164,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void advanceByElapsedTimeSnapsToThePeakInOneStepWhenDurationIsZero() {
+        void snapsToThePeakInOneStepWhenDurationIsZero() {
 
             var envelope = new PulseEnvelope();
 
@@ -180,7 +180,7 @@ final class PulseEnvelopeTest {
     class GetPulseFraction {
 
         @Test
-        void getPulseFractionStartsAtRestForAFreshEnvelope() {
+        void startsAtRestForAFreshEnvelope() {
             // A fresh envelope has confirmed nothing, so its first painted frame must lift nothing.
             assertThat(new PulseEnvelope().getPulseFraction())
                 .isCloseTo(0f, within(TOLERANCE));
@@ -191,14 +191,14 @@ final class PulseEnvelopeTest {
     class HasSettled {
 
         @Test
-        void hasSettledIsTrueForAFreshEnvelope() {
+        void isTrueForAFreshEnvelope() {
             // Nothing has run on it, so an owner minting one and finding it spent has lost nothing.
             assertThat(new PulseEnvelope().hasSettled())
                 .isTrue();
         }
 
         @Test
-        void hasSettledIsFalseForATriggeredEnvelopeStillAtRest() {
+        void isFalseForATriggeredEnvelopeStillAtRest() {
             // The half that a fraction alone cannot answer: an envelope triggered but not yet stepped stands
             // at 0 like a spent one, and an owner pruning on the reading alone would drop it before it rose.
             var envelope = new PulseEnvelope();
@@ -209,7 +209,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void hasSettledIsFalseAtThePeak() {
+        void isFalseAtThePeak() {
 
             var envelope = new PulseEnvelope();
 
@@ -221,7 +221,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void hasSettledIsTrueOnceTheCycleHasRunOut() {
+        void isTrueOnceTheCycleHasRunOut() {
 
             var envelope = new PulseEnvelope();
 
@@ -234,7 +234,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void hasSettledIsFalseThroughoutAHeldLift() {
+        void isFalseThroughoutAHeldLift() {
             // A held lift is aimed at the peak for as long as it is held, so an owner pruning spent
             // envelopes cannot drop one out from under the pointer still holding it down.
             var envelope = new PulseEnvelope();
@@ -252,7 +252,7 @@ final class PulseEnvelopeTest {
     class StartPulse {
 
         @Test
-        void startPulseAimsAFreshEnvelopeAtItsPeak() {
+        void aimsAFreshEnvelopeAtItsPeak() {
 
             var envelope = new PulseEnvelope();
 
@@ -266,7 +266,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void startPulseClimbsAgainFromWhereAFallingLiftStands() {
+        void climbsAgainFromWhereAFallingLiftStands() {
 
             var envelope = new PulseEnvelope();
 
@@ -285,7 +285,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void startPulseCannotDriveALiftPastItsPeak() {
+        void cannotDriveALiftPastItsPeak() {
             // A repeated trigger restarts the curve rather than summing onto it, so a tab clicked twice in
             // a frame is no brighter than one clicked once.
             var envelope = new PulseEnvelope();
@@ -299,7 +299,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void startPulseDropsAHoldSoTheLiftTimesItsOwnFall() {
+        void dropsAHoldSoTheLiftTimesItsOwnFall() {
             // An envelope reused after a held lift must not inherit its hold: a self-timed trigger has no
             // release owed to it, so the lift would stand at the peak with nothing left to bring it down.
             var envelope = new PulseEnvelope();
@@ -318,7 +318,7 @@ final class PulseEnvelopeTest {
     class StartHeldPulse {
 
         @Test
-        void startHeldPulseAimsAFreshEnvelopeAtItsPeak() {
+        void aimsAFreshEnvelopeAtItsPeak() {
             // The rise is the plain trigger's; only the turn at the top differs, so a held lift arrives on
             // the same traverse.
             var envelope = new PulseEnvelope();
@@ -331,7 +331,7 @@ final class PulseEnvelopeTest {
         }
 
         @Test
-        void startHeldPulseTakesOverALiftAlreadyFallingRatherThanRunningASecond() {
+        void takesOverALiftAlreadyFallingRatherThanRunningASecond() {
             // A press landing on an element whose last lift is still decaying climbs from where that one
             // stands, so the two read as one lift the player drove back up.
             var envelope = new PulseEnvelope();
@@ -352,7 +352,7 @@ final class PulseEnvelopeTest {
     class ReleaseHeldPulse {
 
         @Test
-        void releaseHeldPulseLeavesAnUnheldLiftAlone() {
+        void leavesAnUnheldLiftAlone() {
             // A caller reporting every release need not track which lifts it started, so releasing one that
             // was never held is not allowed to disturb its cycle.
             var envelope = new PulseEnvelope();

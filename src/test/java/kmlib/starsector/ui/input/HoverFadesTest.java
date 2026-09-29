@@ -38,7 +38,7 @@ final class HoverFadesTest {
     class ResolveHoverFractionAt {
 
         @Test
-        void resolveHoverFractionAtAnswersFullyOffForAKeyNothingHasHovered() {
+        void answersFullyOffForAKeyNothingHasHovered() {
 
             var fades = new HoverFades<Integer>();
             fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
@@ -52,7 +52,7 @@ final class HoverFadesTest {
     class AdvanceTowardHoveredKey {
 
         @Test
-        void advanceTowardHoveredKeyMovesTheHoveredKeyOntoItsHoveredLook() {
+        void movesTheHoveredKeyOntoItsHoveredLook() {
 
             var fades = new HoverFades<Integer>();
             fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
@@ -62,7 +62,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyStartsTheNewlyHoveredKeyMovingInTheSamePass() {
+        void startsTheNewlyHoveredKeyMovingInTheSamePass() {
             // A key minted this frame is stepped this frame; standing still for one frame at zero would be
             // a visible stutter at the moment the pointer lands.
             var fades = new HoverFades<Integer>();
@@ -73,7 +73,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyWindsEveryOtherKeyBackDown() {
+        void windsEveryOtherKeyBackDown() {
             // The whole point of a keyed set: the pointer moving from one element to the next winds the
             // first one down without the caller naming it.
             var fades = new HoverFades<Integer>();
@@ -87,7 +87,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyWindsEveryKeyDownWhenThePointerIsOnNone() {
+        void windsEveryKeyDownWhenThePointerIsOnNone() {
 
             var fades = new HoverFades<Integer>();
             fades.advanceTowardHoveredKey(FIRST_KEY, FULL_STEP_SECONDS, DURATIONS);
@@ -98,7 +98,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyLeavesADepartedKeyPartWayDownRatherThanSnappingIt() {
+        void leavesADepartedKeyPartWayDownRatherThanSnappingIt() {
             // A key the pointer has left is still on screen while it falls, so it must read as part-way
             // rather than as either end.
             var fades = new HoverFades<Integer>();
@@ -110,7 +110,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyChargesTheArrivingKeyTheRiseAndTheDepartedKeyTheFall() {
+        void chargesTheArrivingKeyTheRiseAndTheDepartedKeyTheFall() {
             // The one frame where both paces are spent at once, which is what a row is for: the pointer
             // moves from one element to the next, so the arriving key travels at the rise pace and the
             // departing key at the fall pace in the same call. A set resolving the direction once - from
@@ -132,7 +132,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyKeepsARestedKeyReadingAsFullyOff() {
+        void keepsARestedKeyReadingAsFullyOff() {
             // A settled fade is dropped from the set; asking for it must still answer, since a consumer
             // walking a row cannot know which of its keys are still held.
             var fades = new HoverFades<Integer>();
@@ -145,7 +145,7 @@ final class HoverFadesTest {
         }
 
         @Test
-        void advanceTowardHoveredKeyRaisesAKeyHoveredAgainAfterItSettled() {
+        void raisesAKeyHoveredAgainAfterItSettled() {
             // The pruned key must be able to come back: a pointer returning to an element it left is the
             // ordinary case, not an edge one.
             var fades = new HoverFades<Integer>();
@@ -162,7 +162,7 @@ final class HoverFadesTest {
     class ResetFades {
 
         @Test
-        void resetFadesDropsAFadeLeftPartWayUp() {
+        void dropsAFadeLeftPartWayUp() {
 
             var fades = new HoverFades<Integer>();
             fades.advanceTowardHoveredKey(FIRST_KEY, HALF_STEP_SECONDS, DURATIONS);

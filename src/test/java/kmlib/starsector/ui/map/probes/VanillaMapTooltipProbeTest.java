@@ -34,7 +34,7 @@ class VanillaMapTooltipProbeTest {
     class FindShownTooltip {
 
         @Test
-        void findShownTooltipSearchesUnderTheRootItIsGiven() {
+        void searchesUnderTheRootItIsGiven() {
             // The whole of what this step moved. A probe searching some other subtree answers about
             // a surface the pointer is not over, and does it silently - it finds no tooltip there,
             // which is the same answer as a surface genuinely showing none.
@@ -47,14 +47,14 @@ class VanillaMapTooltipProbeTest {
         }
 
         @Test
-        void findShownTooltipAnswersNothingWithNoRootToSearch() {
+        void answersNothingWithNoRootToSearch() {
             // The ordinary state on every frame showing no map surface at all.
             assertThat(createProbeOver(() -> null).findShownTooltip())
                 .isNull();
         }
 
         @Test
-        void findShownTooltipAnswersNothingWhenTheRootCannotBeRead() {
+        void answersNothingWhenTheRootCannotBeRead() {
             // Fail-open, and the direction matters: a root read that broke on some game build leaves
             // the overlay drawing over a possible second box, where the opposite would blank it for
             // the rest of the session.
@@ -99,7 +99,7 @@ class VanillaMapTooltipProbeTest {
     class FindTooltipShownBy {
 
         @Test
-        void findTooltipShownByAnswersWhatAHostIsShowing() {
+        void answersWhatAHostIsShowing() {
 
             var tooltipFake = new Object();
 
@@ -108,7 +108,7 @@ class VanillaMapTooltipProbeTest {
         }
 
         @Test
-        void findTooltipShownByIsNullForAHostShowingNothing() {
+        void isNullForAHostShowingNothing() {
             // How a host says its tooltip has hidden: it clears the field rather than dropping the
             // accessor, so null here is the ordinary resting state and not a failed read.
             assertThat(VanillaMapTooltipProbe.findTooltipShownBy(new TooltipHostFake(null)))
@@ -116,7 +116,7 @@ class VanillaMapTooltipProbeTest {
         }
 
         @Test
-        void findTooltipShownByIsNullForAComponentThatHostsNoTooltip() {
+        void isNullForAComponentThatHostsNoTooltip() {
             // The common leaf. Most of the tree exposes no such accessor at all, and reading that as
             // a failure would abort the walk at its first ordinary component.
             assertThat(VanillaMapTooltipProbe.findTooltipShownBy(new Object()))
@@ -124,7 +124,7 @@ class VanillaMapTooltipProbeTest {
         }
 
         @Test
-        void findTooltipShownByStillReadsAHostWhoseAccessorThrewOnce() {
+        void stillReadsAHostWhoseAccessorThrewOnce() {
             // Nothing about a widget is remembered from a *failed call*, only from whether its shape
             // carries the name, and this is the case that distinguishes the two: a host that threw
             // from inside its own accessor is still a host. Were a failure enough to condemn it,
@@ -143,14 +143,14 @@ class VanillaMapTooltipProbeTest {
     class IsTooltipVisible {
 
         @Test
-        void isTooltipVisibleIsTrueForATooltipFadedIn() {
+        void isTrueForATooltipFadedIn() {
 
             assertThat(VanillaMapTooltipProbe.isTooltipVisible(new TooltipFake(new FaderFake(false))))
                 .isTrue();
         }
 
         @Test
-        void isTooltipVisibleIsFalseForATooltipFadedOut() {
+        void isFalseForATooltipFadedOut() {
             // A widget can hold a tooltip it has never shown, its fader idle at nothing. Reading that
             // as shown would stand the overlay aside for a box nobody can see.
             assertThat(VanillaMapTooltipProbe.isTooltipVisible(new TooltipFake(new FaderFake(true))))
@@ -158,14 +158,14 @@ class VanillaMapTooltipProbeTest {
         }
 
         @Test
-        void isTooltipVisibleIsFalseWhenThereIsNoFader() {
+        void isFalseWhenThereIsNoFader() {
 
             assertThat(VanillaMapTooltipProbe.isTooltipVisible(new TooltipFake(null)))
                 .isFalse();
         }
 
         @Test
-        void isTooltipVisibleIsFalseWhenTheFaderCannotBeRead() {
+        void isFalseWhenTheFaderCannotBeRead() {
             // Fail-open, and the direction matters: an unreadable fader leaves the overlay drawing,
             // where the opposite would hide it on every frame of a game build this cannot read.
             assertThat(VanillaMapTooltipProbe.isTooltipVisible(new Object()))
@@ -177,14 +177,14 @@ class VanillaMapTooltipProbeTest {
     class IsNamedInHierarchy {
 
         @Test
-        void isNamedInHierarchyIsTrueForTheClassItself() {
+        void isTrueForTheClassItself() {
 
             assertThat(VanillaMapTooltipProbe.isNamedInHierarchy(FaderFake.class, FaderFake.class.getName()))
                 .isTrue();
         }
 
         @Test
-        void isNamedInHierarchyIsTrueForASubclassOfTheNamedClass() {
+        void isTrueForASubclassOfTheNamedClass() {
             // The load-bearing case: what the map shows is an expandable subclass of the tooltip type,
             // so an exact-class test would never match the thing actually on screen.
             assertThat(VanillaMapTooltipProbe
@@ -193,14 +193,14 @@ class VanillaMapTooltipProbeTest {
         }
 
         @Test
-        void isNamedInHierarchyIsFalseForAnUnrelatedClass() {
+        void isFalseForAnUnrelatedClass() {
 
             assertThat(VanillaMapTooltipProbe.isNamedInHierarchy(FaderFake.class, BaseFake.class.getName()))
                 .isFalse();
         }
 
         @Test
-        void isNamedInHierarchyIsFalseForTheNameEveryClassWouldMatch() {
+        void isFalseForTheNameEveryClassWouldMatch() {
             // Object terminates the walk instead of being compared, since every class reaches it and
             // matching there would name every component in the tree as the type being looked for.
             assertThat(VanillaMapTooltipProbe.isNamedInHierarchy(SubclassFake.class, "java.lang.Object"))

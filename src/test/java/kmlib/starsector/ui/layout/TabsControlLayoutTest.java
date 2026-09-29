@@ -76,7 +76,7 @@ final class TabsControlLayoutTest {
     class BuildTabContents {
 
         @Test
-        void buildTabContentsPairsEachLabelWithItsOwnShortcut() {
+        void pairsEachLabelWithItsOwnShortcut() {
 
             var contents = TabsControlLayout.buildTabContents(TABS);
 
@@ -91,7 +91,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void buildTabContentsLeavesATabHintlessWhenTheShortcutListRunsShort() {
+        void leavesATabHintlessWhenTheShortcutListRunsShort() {
             // The shortcut list runs parallel to the labels rather than being required to match it, so a
             // strip written without hints - or with hints for its first tabs only - still builds.
             var contents = TabsControlLayout.buildTabContents(new TabsSpec(
@@ -109,7 +109,7 @@ final class TabsControlLayoutTest {
     class LayoutHeaderControl {
 
         @Test
-        void layoutHeaderControlHangsTheBandFromTheContentTopAtTheStyledHeight() {
+        void hangsTheBandFromTheContentTopAtTheStyledHeight() {
 
             var header = TabsControlLayout.layoutHeaderControl(
                 TABS,
@@ -129,7 +129,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlSnapsTheBandToItsTabsSideBySide() {
+        void snapsTheBandToItsTabsSideBySide() {
             // Both keys light a letter of their own label - the N of "No Layer", the P of "Political Map" -
             // so each tab shows its label and nothing more: 8 and 13 chars, each snapped to its width plus
             // the tab padding (both clear the minimum), and the band is the two side by side. A binding
@@ -149,7 +149,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlLaysEveryTabToItsStyledBoxWhateverItsLabel() {
+        void laysEveryTabToItsStyledBoxWhateverItsLabel() {
             // Vanilla's own box: two 130-wide tabs whatever their labels measure. The two labels differ by
             // 5 characters - 50 measured units apart under this fake - and the boxes do not differ at all,
             // which is the whole of what a fixed row claims over a snapped one.
@@ -167,7 +167,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlPartsNeighbouringTabsByTheStyledChannel() {
+        void partsNeighbouringTabsByTheStyledChannel() {
             // The leading tab flush at the row's left edge and the second one channel past its right, so
             // the pair matches the engine's own: 40 and 40 + 130 + 1. The channel is stepped over rather
             // than taken from either box, so neither tab narrows to pay for it.
@@ -188,7 +188,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlSpansTheBoxesAndTheChannelsBetweenThem() {
+        void spansTheBoxesAndTheChannelsBetweenThem() {
             // 130 + 1 + 130. The channel counts toward the row because it is room the tabs do not cover,
             // so a panel framing chrome around this row reserves the width the row actually occupies.
             var header = TabsControlLayout.layoutHeaderControl(
@@ -203,7 +203,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlStandsItsTabsShorterThanTheBandTheyHangIn() {
+        void standsItsTabsShorterThanTheBandTheyHangIn() {
             // An 18 tab in a 19 band, hanging from the band's top: the spare pixel falls below the tabs,
             // which is where the vanilla row keeps the line its tabs stand on. The band itself is still
             // the full 19, since that is the room the panel gave the row.
@@ -223,7 +223,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlSnapsItsTabsAtTheSizeItsStyleLettersThemIn() {
+        void snapsItsTabsAtTheSizeItsStyleLettersThemIn() {
             // A header wears its host's face, so a host on a smaller face would otherwise letter its
             // tabs into boxes cut for the baseline size - text adrift in a row measured for another
             // face. The same 8- and 13-character labels as above, measured at the style's size of 8
@@ -249,7 +249,7 @@ final class TabsControlLayoutTest {
         }
 
         @Test
-        void layoutHeaderControlSplitsEveryTabToTheStyledBandHeight() {
+        void splitsEveryTabToTheStyledBandHeight() {
             // The segments are the hit rects the renderer paints; if they kept a fixed height while the
             // band moved, a styled header would be clickable somewhere other than where it is drawn.
             var header = TabsControlLayout.layoutHeaderControl(

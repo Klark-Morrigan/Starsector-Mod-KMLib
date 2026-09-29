@@ -73,7 +73,7 @@ final class SortSelectorControlTest {
     class BuildSelector {
 
         @Test
-        void buildSelectorBuildsAVerticalReFiringRadio() {
+        void buildsAVerticalReFiringRadio() {
 
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
 
@@ -84,7 +84,7 @@ final class SortSelectorControlTest {
         }
 
         @Test
-        void buildSelectorLabelsARowPerModeInTheCallersOrder() {
+        void labelsARowPerModeInTheCallersOrder() {
 
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
 
@@ -93,7 +93,7 @@ final class SortSelectorControlTest {
         }
 
         @Test
-        void buildSelectorLightsTheActiveModesRow() {
+        void lightsTheActiveModesRow() {
 
             var selector = buildSelector(AnomalySortMode.RADIUS, SortDirection.DESCENDING);
 
@@ -102,7 +102,7 @@ final class SortSelectorControlTest {
         }
 
         @Test
-        void buildSelectorTrailsTheActiveRowWithItsLiveDirectionAndOthersWithTheirDefaults() {
+        void trailsTheActiveRowWithItsLiveDirectionAndOthersWithTheirDefaults() {
             // The lit row previews the direction the list is sorting in now (flipped to ascending,
             // an UP triangle); the other numeric row previews its own default descending DOWN
             // triangle, and the alpha row its default ascending UP triangle - so each row reads as
@@ -122,7 +122,7 @@ final class SortSelectorControlTest {
         }
 
         @Test
-        void buildSelectorLeavesEveryRowLeadingWithNothing() {
+        void leavesEveryRowLeadingWithNothing() {
             // The selector's rows carry no crest, so each leads with the empty slot rather than an
             // image - and the mode names still start where a crested list's names would.
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());
@@ -132,7 +132,7 @@ final class SortSelectorControlTest {
         }
 
         @Test
-        void buildSelectorLaysItsRowsInColumns() {
+        void laysItsRowsInColumns() {
             // The selector reads as the picker list's own table - names left, triangles flush right -
             // which it states rather than leaves to be inferred from rows that lead with nothing.
             var selector = buildSelector(DEFAULT_MODE, DEFAULT_MODE.defaultDirection());

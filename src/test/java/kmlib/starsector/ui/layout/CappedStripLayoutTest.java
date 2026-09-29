@@ -105,7 +105,7 @@ final class CappedStripLayoutTest {
     class FindScrollingIndex {
 
         @Test
-        void findScrollingIndexReturnsTheMarkedControlsIndex() {
+        void returnsTheMarkedControlsIndex() {
 
             var index = CappedStripLayout.findScrollingIndex(buildHeaderFlexFooterStrip());
 
@@ -114,7 +114,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void findScrollingIndexTakesTheFirstOfTwoSections() {
+        void takesTheFirstOfTwoSections() {
             // Two sections would each need the leftover height the other is claiming, so the first is the
             // flex region and the second lays out as an ordinary pinned run. Stated by the doc and pinned
             // here, since nothing stops a host writing two.
@@ -127,7 +127,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void findScrollingIndexFindsASectionThatIsTheWholeStrip() {
+        void findsASectionThatIsTheWholeStrip() {
             // A body that is nothing but its scrolling run: no header to hang the viewport below and no
             // footer to stop it above, which is the case the viewport edges fall back to the insets for.
             assertThat(CappedStripLayout.findScrollingIndex(
@@ -136,7 +136,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void findScrollingIndexReturnsNoFlexRegionWhenNoneScroll() {
+        void returnsNoFlexRegionWhenNoneScroll() {
 
             assertThat(CappedStripLayout.findScrollingIndex(buildPinnedOnlyStrip()))
                 .isEqualTo(CappedStripLayout.NO_FLEX_REGION);
@@ -147,7 +147,7 @@ final class CappedStripLayoutTest {
     class MeasureStrip {
 
         @Test
-        void measureStripPairsTheMeasurementWithTheStripItWasTakenOf() {
+        void pairsTheMeasurementWithTheStripItWasTakenOf() {
 
             var specs = buildHeaderFlexFooterStrip();
             var strip = CappedStripLayout.measureStrip(specs, measurersFake);
@@ -163,7 +163,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void measureStripReadsTheScrollingRegionOffTheSameSpecs() {
+        void readsTheScrollingRegionOffTheSameSpecs() {
 
             var strip = CappedStripLayout.measureStrip(buildHeaderFlexFooterStrip(), measurersFake);
 
@@ -174,7 +174,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void measureStripReportsNoScrollingRegionWhenNoneScroll() {
+        void reportsNoScrollingRegionWhenNoneScroll() {
 
             var strip = CappedStripLayout.measureStrip(buildPinnedOnlyStrip(), measurersFake);
 
@@ -187,7 +187,7 @@ final class CappedStripLayoutTest {
     class CapBodyHeight {
 
         @Test
-        void capBodyHeightKeepsTheNaturalHeightWhenTheStripFits() {
+        void keepsTheNaturalHeightWhenTheStripFits() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var natural = readNaturalHeight(strip);
@@ -198,7 +198,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void capBodyHeightKeepsTheNaturalHeightWhenNoControlScrolls() {
+        void keepsTheNaturalHeightWhenNoControlScrolls() {
 
             var strip = measure(buildPinnedOnlyStrip());
 
@@ -209,7 +209,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void capBodyHeightShrinksTheBodyToTheCapByTakingItFromTheList() {
+        void shrinksTheBodyToTheCapByTakingItFromTheList() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
 
@@ -222,7 +222,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void capBodyHeightFloorsTheShrinkAtOneListRow() {
+        void floorsTheShrinkAtOneListRow() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
 
@@ -238,7 +238,7 @@ final class CappedStripLayoutTest {
     class LayoutCappedControls {
 
         @Test
-        void layoutCappedControlsMatchesThePlainStackWhenNothingScrolls() {
+        void matchesThePlainStackWhenNothingScrolls() {
 
             var strip = measure(buildPinnedOnlyStrip());
             var body = buildFrameBody(readNaturalHeight(strip), readNaturalWidth(strip));
@@ -265,7 +265,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsLeavesNoOverflowWhenTheBodyIsNaturalHeight() {
+        void leavesNoOverflowWhenTheBodyIsNaturalHeight() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var capped = layoutControlsIn(buildBodyFor(strip, 0f), strip, 0f);
@@ -279,7 +279,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsPinsTheHeaderInPlaceWhenTheBodyIsCapped() {
+        void pinsTheHeaderInPlaceWhenTheBodyIsCapped() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var naturalHeader = readFirstControlBounds(strip, 0f);
@@ -294,7 +294,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsPinsTheFooterToTheBodyBottom() {
+        void pinsTheFooterToTheBodyBottom() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var body = buildBodyFor(strip, 40f);
@@ -311,7 +311,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsReportsTheOverflowTakenFromTheList() {
+        void reportsTheOverflowTakenFromTheList() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var capped = layoutControlsIn(buildBodyFor(strip, 40f), strip, 0f);
@@ -323,7 +323,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsClampsAScrollPastTheBottomToTheOverflow() {
+        void clampsAScrollPastTheBottomToTheOverflow() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
 
@@ -336,7 +336,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsClampsANegativeScrollToTheTop() {
+        void clampsANegativeScrollToTheTop() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var capped = layoutControlsIn(buildBodyFor(strip, 40f), strip, -50f);
@@ -346,7 +346,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsShiftsTheListUpAsItScrolls() {
+        void shiftsTheListUpAsItScrolls() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var body = buildBodyFor(strip, 40f);
@@ -365,7 +365,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsAlignsTheBottomRowToTheViewportWhenFullyScrolled() {
+        void alignsTheBottomRowToTheViewportWhenFullyScrolled() {
 
             var strip = measure(buildHeaderFlexFooterStrip());
             var capped = layoutControlsIn(buildBodyFor(strip, 40f), strip, 40f);
@@ -377,7 +377,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsFlattensAPinnedHeaderSideBySideIntoItsChildren() {
+        void flattensAPinnedHeaderSideBySideIntoItsChildren() {
             // A side-by-side group heads the block above the scrolling list - the political map's picker
             // shape, where a selector sits beside a related block over the list. The pinned header expands
             // the group into its two children (the left control, then the right), each side by side above
@@ -405,7 +405,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsPlacesAnEmptySectionWithoutPlacingAnything() {
+        void placesAnEmptySectionWithoutPlacingAnything() {
             // A host may state a section whose run is empty for a frame - a picker whose items have not
             // arrived yet. It contributes no controls and leaves the pinned rows where they were, rather
             // than dividing by a zero row count on the way.
@@ -423,7 +423,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsScrollsEveryControlInTheSectionTogether() {
+        void scrollsEveryControlInTheSectionTogether() {
             // The run is what a section buys over a flag on one control: a heading and the list under it
             // travel as a block, so both are laid inside the viewport and both are marked scrolled - the
             // one value the clipping renderer and the viewport-limited hit-test read.
@@ -453,7 +453,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsShiftsTheWholeSectionByTheScrollOffset() {
+        void shiftsTheWholeSectionByTheScrollOffset() {
             // Every control in the run moves by the same offset, so a heading scrolls away with the rows
             // it heads rather than staying put while they slide under it.
             var strip = measure(List.of(
@@ -479,7 +479,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsFillsTheFlexListToTheBodyContentWidth() {
+        void fillsTheFlexListToTheBodyContentWidth() {
             // A header wider than the list makes the body wider than the list's own rows. The flex list,
             // as the strip's main region, spreads to the body's content width rather than leaving a strip
             // of dead space between it and the scrollbar pinned at the body's right edge.
@@ -506,7 +506,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsSpansAPinnedHeaderDividerAcrossTheFullBody() {
+        void spansAPinnedHeaderDividerAcrossTheFullBody() {
             // A rule heads the block above the scrolling list - the political map's picker shape. The
             // pinned header divider spans the whole framed body (edge to edge inside the border inset),
             // not the padded content column, so the capped path spans dividers as the plain stack does.
@@ -524,7 +524,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutCappedControlsSpansAPinnedFooterDividerAcrossTheFullBody() {
+        void spansAPinnedFooterDividerAcrossTheFullBody() {
             // The footer run is placed through the same path as the header, so a rule pinned beneath the
             // list spans the framed body exactly as one above it does.
             var strip = measure(List.of(
@@ -546,7 +546,7 @@ final class CappedStripLayoutTest {
     class LayoutBodyStrip {
 
         @Test
-        void layoutBodyStripKeepsTheMeasuredWidthAtTheDefaultThickness() {
+        void keepsTheMeasuredWidthAtTheDefaultThickness() {
 
             var specs = buildHeaderFlexFooterStrip();
 
@@ -557,7 +557,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutBodyStripKeepsTheMeasuredWidthWhenThePaddingSwallowsTheBar() {
+        void keepsTheMeasuredWidthWhenThePaddingSwallowsTheBar() {
 
             var specs = buildHeaderFlexFooterStrip();
 
@@ -568,7 +568,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutBodyStripWidensTheBodyByWhatTheBarOverrunsThePadding() {
+        void widensTheBodyByWhatTheBarOverrunsThePadding() {
 
             var specs = buildHeaderFlexFooterStrip();
             var atDefault = layoutBodyStripAt(specs, ScrollbarThickness.DEFAULT).bounds();
@@ -583,7 +583,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutBodyStripLeavesTheListWidthAloneAsTheBarThickens() {
+        void leavesTheListWidthAloneAsTheBarThickens() {
 
             var specs = buildHeaderFlexFooterStrip();
             var atDefault = readFlexBounds(layoutBodyStripAt(specs, ScrollbarThickness.DEFAULT).placement());
@@ -598,7 +598,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutBodyStripLeavesThePinnedRowsAloneAsTheBarThickens() {
+        void leavesThePinnedRowsAloneAsTheBarThickens() {
 
             var specs = buildHeaderFlexFooterStrip();
             var atDefault = layoutBodyStripAt(specs, ScrollbarThickness.DEFAULT).placement().controls();
@@ -616,7 +616,7 @@ final class CappedStripLayoutTest {
         }
 
         @Test
-        void layoutBodyStripReservesNothingWhenNoControlScrolls() {
+        void reservesNothingWhenNoControlScrolls() {
 
             var specs = buildPinnedOnlyStrip();
 

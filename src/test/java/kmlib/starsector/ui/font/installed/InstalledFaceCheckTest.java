@@ -36,7 +36,7 @@ class InstalledFaceCheckTest {
     class LoadEveryFace {
 
         @Test
-        void loadEveryFaceStatesEachFacesInstalledLineHeightAndEachFaceThatWouldNotLoad() throws IOException {
+        void statesEachFacesInstalledLineHeightAndEachFaceThatWouldNotLoad() throws IOException {
             // The one reading of which atlases a session drew with, so it names every face: an edition's
             // taller body atlas and a face missing from the install both have to be readable off it.
             installDefaultFont("graphics/fonts/insignia15LTaa.fnt");
@@ -60,7 +60,7 @@ class InstalledFaceCheckTest {
         }
 
         @Test
-        void loadEveryFaceStatesTheLineHeightOfADeclaredDefaultTheEnumDoesNotName() throws IOException {
+        void statesTheLineHeightOfADeclaredDefaultTheEnumDoesNotName() throws IOException {
             // A face a mod declared is one a walk can reach, so whether it loads belongs in the same line.
             installDefaultFont(PACK_FONT_PATH);
 

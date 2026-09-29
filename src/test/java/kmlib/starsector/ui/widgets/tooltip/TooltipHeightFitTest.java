@@ -143,7 +143,7 @@ class TooltipHeightFitTest {
     class FitToHeight {
 
         @Test
-        void fitToHeightLeavesABoxThatFitsExactlyAsItStands() {
+        void leavesABoxThatFitsExactlyAsItStands() {
             // Nearly every box, and the reason the compression is an overflow response rather than a
             // look: it inverts how a listing reads, so a box that was never the problem must not pay for
             // it. The very typography handed in comes back, not a rebuilt copy of it.
@@ -155,7 +155,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightBringsAnOverBudgetBoxWithinItsBudget() {
+        void bringsAnOverBudgetBoxWithinItsBudget() {
             // The whole of what the pass is for: the box stands 88 tall as authored and is asked to fit
             // 70, and what comes back is a typography the same blocks stack inside that.
             assertThat(measureTieredBoxIn(fitTieredBoxTo(TIGHTER_BUDGET)))
@@ -163,7 +163,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightBringsABoxThatAlreadyDemotesItsLevelsWithinItsBudget() {
+        void bringsABoxThatAlreadyDemotesItsLevelsWithinItsBudget() {
             // The state a host actually reaches the fit in, and the one the solve's near end rests on: a
             // compression of nothing leaves every tier at its kind's own size, so it stands taller than
             // the authored box rather than shorter, and the end the search starts from is known to
@@ -178,7 +178,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightRaisesADemotedDeepestLineToItsKindsOwnSize() {
+        void raisesADemotedDeepestLineToItsKindsOwnSize() {
             // The inversion at its starkest: the authored ramp had the deepest line at 9, the smallest
             // in the box, and the fit hands it back at the body's own 15. It is what the reader asked
             // for, so it reads at the size that kind of line reads at whatever the ordinary ramp left it.
@@ -189,7 +189,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightHoldsTheDeepestShownLineAtItsKindsOwnSize() {
+        void holdsTheDeepestShownLineAtItsKindsOwnSize() {
             // What the compression is anchored on. The deepest line is what a reader who asked for that
             // depth is there to read, so it is the one thing the box does not give up - shrunk with the
             // rest, the fit would answer the request by quieting exactly what was asked for.
@@ -198,7 +198,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightShrinksTheTiersAboveTheDeepestLine() {
+        void shrinksTheTiersAboveTheDeepestLine() {
             // The other half of the anchoring, and the inversion it costs: the account a listing stands
             // under comes down to meet its deepest lines rather than the other way about, so a
             // compressed box reads quietest at the top.
@@ -209,7 +209,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightTightensTheRoomBetweenLinesWithTheGlyphs() {
+        void tightensTheRoomBetweenLinesWithTheGlyphs() {
             // Leading is most of what a row costs, so a compression spending only glyphs would give up
             // legibility for a fraction of the height it needs. The room comes down with the lines.
             assertThat(fitTieredBoxTo(TIGHTER_BUDGET).resolveLineGapAfter(IN_THE_BOXS_VOICE))
@@ -217,7 +217,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightCompressesNoFurtherThanTheBudgetAsks() {
+        void compressesNoFurtherThanTheBudgetAsks() {
             // The solve settles on the gentlest ramp that fits rather than on any that does: the faces
             // are atlases crisp at one size, so a box scaled further off its own than it had to be is
             // softer for nothing. The looser budget therefore leaves its tiers larger.
@@ -226,7 +226,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightStopsAtTheSmallestLegibleSizeWhereNoRampFits() {
+        void stopsAtTheSmallestLegibleSizeWhereNoRampFits() {
             // The terminal case, and the reason the solve is bounded at all: past the ramp that floors
             // the tiers above the anchor, no larger one changes anything. The box comes back as short as
             // this can make it and still too tall - what is left is content to be given up.
@@ -239,7 +239,7 @@ class TooltipHeightFitTest {
         }
 
         @Test
-        void fitToHeightLeavesABoxOfOneTierAsItStands() {
+        void leavesABoxOfOneTierAsItStands() {
             // Nothing stands above the deepest line, so the ramp reaches nothing however far it is
             // pushed. Handed back untouched rather than solved for pointlessly - the box overflows, and
             // only giving up content answers it.

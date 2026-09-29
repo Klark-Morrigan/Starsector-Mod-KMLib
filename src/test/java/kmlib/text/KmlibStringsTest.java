@@ -12,19 +12,19 @@ class KmlibStringsTest {
     class HasText {
 
         @Test
-        void hasTextIsFalseOnNull() {
+        void isFalseOnNull() {
             assertThat(KmlibStrings.hasText(null))
                 .isFalse();
         }
 
         @Test
-        void hasTextIsFalseOnEmpty() {
+        void isFalseOnEmpty() {
             assertThat(KmlibStrings.hasText(""))
                 .isFalse();
         }
 
         @Test
-        void hasTextIsFalseOnWhitespaceOnly() {
+        void isFalseOnWhitespaceOnly() {
             // Mix of space, tab, newline so the per-char loop runs over
             // each whitespace flavour the predicate is meant to dismiss.
             assertThat(KmlibStrings.hasText(" \t\n "))
@@ -32,13 +32,13 @@ class KmlibStringsTest {
         }
 
         @Test
-        void hasTextIsTrueOnPlainText() {
+        void isTrueOnPlainText() {
             assertThat(KmlibStrings.hasText("Independent"))
                 .isTrue();
         }
 
         @Test
-        void hasTextIsTrueOnLeadingAndTrailingWhitespace() {
+        void isTrueOnLeadingAndTrailingWhitespace() {
             // The predicate accepts any string containing at least one
             // non-whitespace character - it is not a "trim then check"
             // wrapper, so surrounding whitespace stays in the input.
@@ -51,13 +51,13 @@ class KmlibStringsTest {
     class RequireText {
 
         @Test
-        void requireTextReturnsTheValueItWasGiven() {
+        void returnsTheValueItWasGiven() {
             assertThat(KmlibStrings.requireText("Fast Rendering", "unused"))
                 .isEqualTo("Fast Rendering");
         }
 
         @Test
-        void requireTextRejectsABlankWithTheGivenMessage() {
+        void rejectsABlankWithTheGivenMessage() {
             // Blank rather than null: the case a null check lets through, and the reason the helper
             // exists beside Objects.requireNonNull.
             assertThatThrownBy(() -> KmlibStrings.requireText("   ", "A name with no text in it"))
@@ -70,13 +70,13 @@ class KmlibStringsTest {
     class SplitIntoWords {
 
         @Test
-        void splitIntoWordsPartsASentenceIntoItsWordsInOrder() {
+        void partsASentenceIntoItsWordsInOrder() {
             assertThat(KmlibStrings.splitIntoWords("Penelope's Star System"))
                 .containsExactly("Penelope's", "Star", "System");
         }
 
         @Test
-        void splitIntoWordsIgnoresSurroundingAndDoubledSpacing() {
+        void ignoresSurroundingAndDoubledSpacing() {
             // The reason the answer is words rather than pieces: a caller counting or walking
             // them means the words, so how the string happened to be spaced changes nothing.
             assertThat(KmlibStrings.splitIntoWords("  Penelope's   Star \t System \n"))
@@ -84,19 +84,19 @@ class KmlibStringsTest {
         }
 
         @Test
-        void splitIntoWordsPartsAWhitespaceFlavourOtherThanTheSpace() {
+        void partsAWhitespaceFlavourOtherThanTheSpace() {
             assertThat(KmlibStrings.splitIntoWords("first\tsecond\nthird"))
                 .containsExactly("first", "second", "third");
         }
 
         @Test
-        void splitIntoWordsAnswersOneWordForAStringWithoutSpacing() {
+        void answersOneWordForAStringWithoutSpacing() {
             assertThat(KmlibStrings.splitIntoWords("Galatia"))
                 .containsExactly("Galatia");
         }
 
         @Test
-        void splitIntoWordsIsEmptyOnWhitespaceOnly() {
+        void isEmptyOnWhitespaceOnly() {
             // No words were written, so none are reported - rather than the one empty piece a
             // bare split answers, which would count as a word everywhere the count is read.
             assertThat(KmlibStrings.splitIntoWords(" \t\n "))
@@ -104,13 +104,13 @@ class KmlibStringsTest {
         }
 
         @Test
-        void splitIntoWordsIsEmptyOnEmpty() {
+        void isEmptyOnEmpty() {
             assertThat(KmlibStrings.splitIntoWords(""))
                 .isEmpty();
         }
 
         @Test
-        void splitIntoWordsIsEmptyOnNull() {
+        void isEmptyOnNull() {
             assertThat(KmlibStrings.splitIntoWords(null))
                 .isEmpty();
         }
@@ -120,7 +120,7 @@ class KmlibStringsTest {
     class AbbreviateToInitials {
 
         @Test
-        void abbreviateToInitialsTakesTheInitialOfEveryWordIncludingTheSmallOnes() {
+        void takesTheInitialOfEveryWordIncludingTheSmallOnes() {
             // A reader matching the short form back counts its letters off against the words, so a
             // joining word quietly passed over would leave them one letter short of the name.
             assertThat(KmlibStrings.abbreviateToInitials("Church of Galactic Redemption"))
@@ -128,13 +128,13 @@ class KmlibStringsTest {
         }
 
         @Test
-        void abbreviateToInitialsRaisesALowerCaseInitial() {
+        void raisesALowerCaseInitial() {
             assertThat(KmlibStrings.abbreviateToInitials("church of redemption"))
                 .isEqualTo("C.O.R.");
         }
 
         @Test
-        void abbreviateToInitialsReadsAHyphenatedWordAsTheOneWordItIsWritten() {
+        void readsAHyphenatedWordAsTheOneWordItIsWritten() {
             // Whitespace is the only parting, so nothing here has to decide whether a hyphen joins
             // two names or spells one.
             assertThat(KmlibStrings.abbreviateToInitials("Tri-Tachyon Concord"))
@@ -142,19 +142,19 @@ class KmlibStringsTest {
         }
 
         @Test
-        void abbreviateToInitialsAnswersOneInitialForOneWord() {
+        void answersOneInitialForOneWord() {
             assertThat(KmlibStrings.abbreviateToInitials("Galatia"))
                 .isEqualTo("G.");
         }
 
         @Test
-        void abbreviateToInitialsIsEmptyForTextWithNoWordsInIt() {
+        void isEmptyForTextWithNoWordsInIt() {
             assertThat(KmlibStrings.abbreviateToInitials(" \t\n "))
                 .isEmpty();
         }
 
         @Test
-        void abbreviateToInitialsIsEmptyForNull() {
+        void isEmptyForNull() {
             assertThat(KmlibStrings.abbreviateToInitials(null))
                 .isEmpty();
         }
@@ -164,19 +164,19 @@ class KmlibStringsTest {
     class FindWholeWordIndex {
 
         @Test
-        void findWholeWordIndexAnswersWhereTheTextOpensOnTheWord() {
+        void answersWhereTheTextOpensOnTheWord() {
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Station", "abandoned"))
                 .isZero();
         }
 
         @Test
-        void findWholeWordIndexAnswersWhereTheWordSitsInTheMiddle() {
+        void answersWhereTheWordSitsInTheMiddle() {
             assertThat(KmlibStrings.findWholeWordIndex("Old Abandoned Yards", "abandoned"))
                 .isEqualTo(4);
         }
 
         @Test
-        void findWholeWordIndexTakesAHyphenAsPartingTwoWords() {
+        void takesAHyphenAsPartingTwoWords() {
             // Anything that is not a letter or a digit parts one word from another, so a hyphenated
             // name says the word as plainly as the spaced form does.
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned-Station", "abandoned"))
@@ -184,7 +184,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void findWholeWordIndexPassesOverAWordMerelyOpeningALongerOne() {
+        void passesOverAWordMerelyOpeningALongerOne() {
             // The whole reason this is not a containment: a caller picking a stretch out by the
             // answer would otherwise pick out the first nine characters of a word nobody wrote.
             assertThat(KmlibStrings.findWholeWordIndex("Abandonedium", "abandoned"))
@@ -192,19 +192,19 @@ class KmlibStringsTest {
         }
 
         @Test
-        void findWholeWordIndexPassesOverAWordMerelyClosingALongerOne() {
+        void passesOverAWordMerelyClosingALongerOne() {
             assertThat(KmlibStrings.findWholeWordIndex("Unabandoned", "abandoned"))
                 .isEqualTo(KmlibStrings.NO_WORD_MATCH);
         }
 
         @Test
-        void findWholeWordIndexAnswersTheFirstOfSeveralOccurrences() {
+        void answersTheFirstOfSeveralOccurrences() {
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Abandoned Yards", "abandoned"))
                 .isZero();
         }
 
         @Test
-        void findWholeWordIndexPassesOverAPartialMatchAheadOfAWholeOne() {
+        void passesOverAPartialMatchAheadOfAWholeOne() {
             // The search does not stop at the first place the characters appear: a longer word
             // carrying them is stepped over and the standalone one past it still answers.
             assertThat(KmlibStrings.findWholeWordIndex("Abandonedium Abandoned", "abandoned"))
@@ -212,7 +212,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void findWholeWordIndexAnswersTheTextsOwnPositionWhateverCaseEitherIsIn() {
+        void answersTheTextsOwnPositionWhateverCaseEitherIsIn() {
             // Matched against the text as it is spelled rather than a folded copy, so the position
             // indexes the string the caller holds.
             assertThat(KmlibStrings.findWholeWordIndex("ABANDONED STATION", "abandoned"))
@@ -220,19 +220,19 @@ class KmlibStringsTest {
         }
 
         @Test
-        void findWholeWordIndexAnswersAWordTheWholeTextConsistsOf() {
+        void answersAWordTheWholeTextConsistsOf() {
             assertThat(KmlibStrings.findWholeWordIndex("abandoned", "abandoned"))
                 .isZero();
         }
 
         @Test
-        void findWholeWordIndexSaysNothingIsFoundInAbsentText() {
+        void saysNothingIsFoundInAbsentText() {
             assertThat(KmlibStrings.findWholeWordIndex(null, "abandoned"))
                 .isEqualTo(KmlibStrings.NO_WORD_MATCH);
         }
 
         @Test
-        void findWholeWordIndexSaysAnAbsentWordIsSaidNowhere() {
+        void saysAnAbsentWordIsSaidNowhere() {
             // An empty word matches at every position of every string, which is an answer no caller
             // could act on - so it is refused rather than answered at nought.
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Station", ""))
@@ -249,7 +249,7 @@ class KmlibStringsTest {
         private static final int TWO_WORD_SUBJECT = 2;
 
         @Test
-        void dropAdjacentRepeatedWordsDropsAWordRepeatingTheOneBeforeIt() {
+        void dropsAWordRepeatingTheOneBeforeIt() {
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
                     "Penelope's Star Star System",
                     TWO_WORD_SUBJECT))
@@ -257,7 +257,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsKeepsARepeatInsideTheProtectedOpening() {
+        void keepsARepeatInsideTheProtectedOpening() {
             // The case the protection exists for: the repeat is the subject's own, so dropping it
             // would answer a name nobody has.
             assertThat(KmlibStrings.dropAdjacentRepeatedWords("Ko Ko Star System", TWO_WORD_SUBJECT))
@@ -265,7 +265,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsMatchesARepeatIgnoringCase() {
+        void matchesARepeatIgnoringCase() {
             // The two phrases were written apart, so the one that repeats need not be capitalised
             // as the word it repeats was.
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
@@ -275,7 +275,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsPutsEveryWordInReachOfAProtectionOfNone() {
+        void putsEveryWordInReachOfAProtectionOfNone() {
             // The hazard the count is required for, pinned rather than left to a caller to find:
             // unprotected, the walk eats the subject's own repetition too.
             assertThat(KmlibStrings.dropAdjacentRepeatedWords("Ko Ko Star System", 0))
@@ -283,7 +283,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsPutsEveryWordInReachOfANegativeProtection() {
+        void putsEveryWordInReachOfANegativeProtection() {
             // A count below zero protects no more than none does, rather than counting
             // back from the end - there is no "protect all but the last" reading here.
             assertThat(KmlibStrings.dropAdjacentRepeatedWords("Ko Ko Star System", -1))
@@ -291,7 +291,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsAnswersUnchangedTextAsTheVeryStringGiven() {
+        void answersUnchangedTextAsTheVeryStringGiven() {
             // A caller handing over something it must not see respaced gets it back untouched
             // wherever there was no stutter to drop.
             var text = "Galatia  Star System";
@@ -301,7 +301,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsRejoinsWhatIsLeftOnOneSpace() {
+        void rejoinsWhatIsLeftOnOneSpace() {
             // The other half of that rule: once a word goes, the text is being repaired rather than
             // preserved, so whatever spacing it was written with does not survive.
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
@@ -311,7 +311,7 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsDropsEveryWordOfARunPastTheProtection() {
+        void dropsEveryWordOfARunPastTheProtection() {
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
                     "Penelope's Star Star Star System",
                     TWO_WORD_SUBJECT))
@@ -319,13 +319,13 @@ class KmlibStringsTest {
         }
 
         @Test
-        void dropAdjacentRepeatedWordsAnswersBlankTextAsGiven() {
+        void answersBlankTextAsGiven() {
             assertThat(KmlibStrings.dropAdjacentRepeatedWords("  ", TWO_WORD_SUBJECT))
                 .isEqualTo("  ");
         }
 
         @Test
-        void dropAdjacentRepeatedWordsAnswersNullAsGiven() {
+        void answersNullAsGiven() {
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(null, TWO_WORD_SUBJECT))
                 .isNull();
         }

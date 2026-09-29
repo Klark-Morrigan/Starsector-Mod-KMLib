@@ -28,7 +28,7 @@ class FontDescriptorGlyphsTest {
     class ReadGlyphIds {
 
         @Test
-        void readGlyphIdsReadsEveryGlyphLineAndNothingElse() {
+        void readsEveryGlyphLineAndNothingElse() {
             // The count line starts "chars", and a reader matching "char" alone would read its 4 as a
             // glyph; the kerning line names two IDs that are no glyphs of their own.
             assertThat(FontDescriptorGlyphs.readGlyphIds(DESCRIPTOR.lines().toList()).idRanges())

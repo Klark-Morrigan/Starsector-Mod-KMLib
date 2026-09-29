@@ -21,7 +21,7 @@ class TooltipLeaderLineTest {
     class IsRuled {
 
         @Test
-        void isRuledIsTrueWhereTheRunHasLength() {
+        void isTrueWhereTheRunHasLength() {
 
             var leaderLine = new TooltipLeaderLine(120f, 180f);
 
@@ -30,14 +30,14 @@ class TooltipLeaderLineTest {
         }
 
         @Test
-        void isRuledIsFalseForTheStatedAbsence() {
+        void isFalseForTheStatedAbsence() {
 
             assertThat(TooltipLeaderLine.NONE.isRuled())
                 .isFalse();
         }
 
         @Test
-        void isRuledIsFalseWhereTheEndsMeet() {
+        void isFalseWhereTheEndsMeet() {
             // A row whose label stops exactly where its value starts has no run between them, and the
             // reading has to agree with the stated absence rather than treat a zero-length run as a mark.
             var closedUp = new TooltipLeaderLine(120f, 120f);
@@ -47,7 +47,7 @@ class TooltipLeaderLineTest {
         }
 
         @Test
-        void isRuledIsFalseWhereTheEndsCross() {
+        void isFalseWhereTheEndsCross() {
             // The end sitting before the start is what a value wide enough to reach back past its label
             // produces. Read as a run it would be negative, and a paint taking the difference on trust
             // would draw a quad running backwards out of the box.
@@ -62,7 +62,7 @@ class TooltipLeaderLineTest {
     class ComputeWidth {
 
         @Test
-        void computeWidthIsTheDistanceBetweenTheEnds() {
+        void isTheDistanceBetweenTheEnds() {
 
             var leaderLine = new TooltipLeaderLine(120f, 180f);
 
@@ -71,14 +71,14 @@ class TooltipLeaderLineTest {
         }
 
         @Test
-        void computeWidthIsNothingForTheStatedAbsence() {
+        void isNothingForTheStatedAbsence() {
 
             assertThat(TooltipLeaderLine.NONE.computeWidth())
                 .isEqualTo(0f);
         }
 
         @Test
-        void computeWidthIsNothingWhereTheEndsCross() {
+        void isNothingWhereTheEndsCross() {
             // Floored rather than answered as the negative it works out to, so the one value a paint
             // fills across can never be a width that runs the wrong way.
             var crossed = new TooltipLeaderLine(180f, 120f);

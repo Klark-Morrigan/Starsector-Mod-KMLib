@@ -28,7 +28,7 @@ class StarsectorFactionColoursTest {
     class ResolveNeutralColour {
 
         @Test
-        void resolveNeutralColourReturnsNeutralFactionBaseColour() {
+        void returnsNeutralFactionBaseColour() {
             var neutralMock = mock(FactionAPI.class);
             when(neutralMock.getBaseUIColor()).thenReturn(NEUTRAL_BASE);
             var sectorMock = mock(SectorAPI.class);
@@ -39,13 +39,13 @@ class StarsectorFactionColoursTest {
         }
 
         @Test
-        void resolveNeutralColourFallsBackToGrayForNullSector() {
+        void fallsBackToGrayForNullSector() {
             assertThat(StarsectorFactionColours.resolveNeutralColour(null))
                 .isEqualTo(Color.GRAY);
         }
 
         @Test
-        void resolveNeutralColourFallsBackToGrayWhenNeutralFactionAbsent() {
+        void fallsBackToGrayWhenNeutralFactionAbsent() {
             // A sector with no "neutral" faction (a bare double, or a stripped
             // modded launcher) must not NPE - the grey fallback stands in.
             var sectorMock = mock(SectorAPI.class);
@@ -60,7 +60,7 @@ class StarsectorFactionColoursTest {
     class ResolvePalette {
 
         @Test
-        void resolvePaletteReturnsTheFactionsBrightAndDarkColours() {
+        void returnsTheFactionsBrightAndDarkColours() {
             var factionMock = mock(FactionAPI.class);
             when(factionMock.getBrightUIColor()).thenReturn(new Color(10, 20, 30));
             when(factionMock.getDarkUIColor()).thenReturn(new Color(40, 50, 60));
@@ -72,13 +72,13 @@ class StarsectorFactionColoursTest {
         }
 
         @Test
-        void resolvePaletteFallsBackToGrayPairForNullSector() {
+        void fallsBackToGrayPairForNullSector() {
             assertThat(StarsectorFactionColours.resolvePalette(null, FACTION_ID))
                 .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
         }
 
         @Test
-        void resolvePaletteFallsBackToGrayPairWhenFactionAbsent() {
+        void fallsBackToGrayPairWhenFactionAbsent() {
             var sectorMock = mock(SectorAPI.class);
             when(sectorMock.getFaction(FACTION_ID)).thenReturn(null);
 

@@ -56,20 +56,20 @@ final class SystemClaimBreakdownTest {
     class IsSettledByDecree {
 
         @Test
-        void isSettledByDecreeIsTrueWhereTheMemoryFlagNamedAFaction() {
+        void isTrueWhereTheMemoryFlagNamedAFaction() {
             assertThat(new SystemClaimBreakdown("luddic_church", "luddic_church", null)
                     .isSettledByDecree())
                 .isTrue();
         }
 
         @Test
-        void isSettledByDecreeIsFalseWhereTheContestSettledTheSystem() {
+        void isFalseWhereTheContestSettledTheSystem() {
             assertThat(new SystemClaimBreakdown(null, "hegemony", null).isSettledByDecree())
                 .isFalse();
         }
 
         @Test
-        void isSettledByDecreeReadsAnEmptyOverrideAsNoDecreeAtAll() {
+        void readsAnEmptyOverrideAsNoDecreeAtAll() {
             // The reading the question is named for. A flag present but naming nobody imposes
             // nothing, and a reader testing the field for being set rather than for saying anything
             // would report a decree here while its neighbour reported none.
@@ -84,14 +84,14 @@ final class SystemClaimBreakdownTest {
     class IsClaimedByDecree {
 
         @Test
-        void isClaimedByDecreeIsTrueWhereTheClaimantIsTheDecreedFaction() {
+        void isTrueWhereTheClaimantIsTheDecreedFaction() {
             assertThat(new SystemClaimBreakdown("luddic_church", "luddic_church", null)
                     .isClaimedByDecree())
                 .isTrue();
         }
 
         @Test
-        void isClaimedByDecreeIsFalseWhereAnotherFactionIsNamedAsTheClaimant() {
+        void isFalseWhereAnotherFactionIsNamedAsTheClaimant() {
             // The narrowing this question exists for: a line naming the claimant may only mark it
             // as holding by decree where the decree is what put it there.
             assertThat(new SystemClaimBreakdown("luddic_church", "hegemony", null)
@@ -100,13 +100,13 @@ final class SystemClaimBreakdownTest {
         }
 
         @Test
-        void isClaimedByDecreeIsFalseWhereNobodyClaimsTheSystem() {
+        void isFalseWhereNobodyClaimsTheSystem() {
             assertThat(new SystemClaimBreakdown("luddic_church", null, null).isClaimedByDecree())
                 .isFalse();
         }
 
         @Test
-        void isClaimedByDecreeIsFalseWhereTheContestSettledTheSystem() {
+        void isFalseWhereTheContestSettledTheSystem() {
             assertThat(new SystemClaimBreakdown(null, "hegemony", null).isClaimedByDecree())
                 .isFalse();
         }

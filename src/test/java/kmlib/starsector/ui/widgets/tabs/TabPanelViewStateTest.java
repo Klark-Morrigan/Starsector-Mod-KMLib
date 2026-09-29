@@ -18,18 +18,18 @@ final class TabPanelViewStateTest {
     class CollapseFraction {
 
         @Test
-        void collapseFractionKeepsAFractionInsideTheUnitRange() {
+        void keepsAFractionInsideTheUnitRange() {
             assertThat(new TabPanelViewState(0f, 0.4f).collapseFraction())
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
 
         @Test
-        void collapseFractionClampsAnOvershootToFullyDocked() {
+        void clampsAnOvershootToFullyDocked() {
             assertThat(new TabPanelViewState(0f, 2f).collapseFraction()).isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
-        void collapseFractionClampsAnUndershootToFullyExpanded() {
+        void clampsAnUndershootToFullyExpanded() {
             assertThat(new TabPanelViewState(0f, -1f).collapseFraction()).isCloseTo(0f, within(TOLERANCE));
         }
     }
@@ -38,7 +38,7 @@ final class TabPanelViewStateTest {
     class RawScrollOffset {
 
         @Test
-        void rawScrollOffsetPassesThroughUnclamped() {
+        void passesThroughUnclamped() {
             // An offset past the list's end is not wrong yet - the overflow it must fit is only known once
             // the strip is laid out - so it survives to be settled there rather than being cut off here.
             assertThat(new TabPanelViewState(9000f, 0f).rawScrollOffset())
@@ -50,7 +50,7 @@ final class TabPanelViewStateTest {
     class Resting {
 
         @Test
-        void restingIsScrolledToTheTopAndFullyExpanded() {
+        void isScrolledToTheTopAndFullyExpanded() {
             assertThat(TabPanelViewState.RESTING.rawScrollOffset()).isCloseTo(0f, within(TOLERANCE));
             assertThat(TabPanelViewState.RESTING.collapseFraction()).isCloseTo(0f, within(TOLERANCE));
         }

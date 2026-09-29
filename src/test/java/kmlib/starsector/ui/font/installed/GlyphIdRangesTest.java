@@ -21,7 +21,7 @@ class GlyphIdRangesTest {
     class CreateFromIds {
 
         @Test
-        void createFromIdsFoldsConsecutiveIdsIntoRangesWhateverOrderTheyArriveIn() {
+        void foldsConsecutiveIdsIntoRangesWhateverOrderTheyArriveIn() {
 
             var ranges = GlyphIdRanges.createFromIds(IntStream.of(34, 32, 33, 33, 40, 50, 51));
 
@@ -30,7 +30,7 @@ class GlyphIdRangesTest {
         }
 
         @Test
-        void createFromIdsHoldsNoRangeForNoIds() {
+        void holdsNoRangeForNoIds() {
 
             assertThat(GlyphIdRanges.createFromIds(IntStream.empty()).idRanges())
                 .isEmpty();
@@ -41,7 +41,7 @@ class GlyphIdRangesTest {
     class ContainsId {
 
         @Test
-        void containsIdIsTrueAtARangesEndsAndInside() {
+        void isTrueAtARangesEndsAndInside() {
 
             var ranges = createRunAndLoneId();
 
@@ -50,14 +50,14 @@ class GlyphIdRangesTest {
         }
 
         @Test
-        void containsIdIsTrueForALoneId() {
+        void isTrueForALoneId() {
 
             assertThat(createRunAndLoneId().containsId(40))
                 .isTrue();
         }
 
         @Test
-        void containsIdIsFalseBetweenRanges() {
+        void isFalseBetweenRanges() {
 
             assertThat(createRunAndLoneId().containsId(35))
                 .isFalse();

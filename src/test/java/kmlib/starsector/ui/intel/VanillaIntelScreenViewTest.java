@@ -117,13 +117,13 @@ class VanillaIntelScreenViewTest {
         private static final float LIT = 1f;
 
         @Test
-        void isMapVisorLitIsTrueWhenTheIntelSubtabShowsAndThePreviewIsLit() {
+        void isTrueWhenTheIntelSubtabShowsAndThePreviewIsLit() {
             assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, LIT))
                 .isTrue();
         }
 
         @Test
-        void isMapVisorLitIsFalseWhenASiblingSubtabIsShowing() {
+        void isFalseWhenASiblingSubtabIsShowing() {
             // The Planets and Factions sub-tabs share the intel tab's container, and switching to one
             // only fades the events panel out - its map widget stays at full opacity behind them. Reading
             // that opacity alone therefore reports a visor that is not on screen, and the sidebar drew
@@ -133,7 +133,7 @@ class VanillaIntelScreenViewTest {
         }
 
         @Test
-        void isMapVisorLitIsFalseWhenThePreviewIsBlanked() {
+        void isFalseWhenThePreviewIsBlanked() {
             // The Intel sub-tab is showing, but a large-description item has blanked the preview, so
             // there is a lit panel with no lit canvas inside it.
             assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, DARK))
@@ -141,13 +141,13 @@ class VanillaIntelScreenViewTest {
         }
 
         @Test
-        void isMapVisorLitIsFalseWhenNeitherReadingIsLit() {
+        void isFalseWhenNeitherReadingIsLit() {
             assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, DARK))
                 .isFalse();
         }
 
         @Test
-        void isMapVisorLitPinsTheThresholdOfEachReading() {
+        void pinsTheThresholdOfEachReading() {
             // Nothing eases these readings today, so a mid value is only reachable if the game changes
             // to fade them. The two thresholds differ - a panel counts as showing from halfway, while
             // the preview has to be all but fully opaque - so each is pinned on its own, keeping a

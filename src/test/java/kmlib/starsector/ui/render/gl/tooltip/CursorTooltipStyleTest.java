@@ -77,7 +77,7 @@ class CursorTooltipStyleTest {
     class CreateStyle {
 
         @Test
-        void createStyleRulesItsLeadersAtTheStandardWeights() {
+        void rulesItsLeadersAtTheStandardWeights() {
             // The whole point of the factory: a host states its typography and its frame, and the rules
             // between label and value come out at the pair they read as greyed-out text at without it
             // having to know that pair exists.
@@ -86,7 +86,7 @@ class CursorTooltipStyleTest {
         }
 
         @Test
-        void createStyleRedactsAtTheStandardStrength() {
+        void redactsAtTheStandardStrength() {
             // The same reasoning as the leaders above, over the other solid mark a box draws among its
             // glyphs: a host states its typography and its frame, and a withheld name comes out at the
             // strength it reads level with its own line at.
@@ -95,7 +95,7 @@ class CursorTooltipStyleTest {
         }
 
         @Test
-        void createStyleKeepsWhatTheHostStated() {
+        void keepsWhatTheHostStated() {
 
             var style = createStyle();
 
@@ -114,7 +114,7 @@ class CursorTooltipStyleTest {
     class RuledBy {
 
         @Test
-        void ruledByRulesTheLeadersAtTheWeightsGiven() {
+        void rulesTheLeadersAtTheWeightsGiven() {
 
             var tuned = createStyle()
                 .ruledBy(new TooltipLeaderLineStyle(TUNED_THICKNESS, TUNED_ALPHA_MULT));
@@ -124,7 +124,7 @@ class CursorTooltipStyleTest {
         }
 
         @Test
-        void ruledByLeavesTheRestOfTheLookAsItWas() {
+        void leavesTheRestOfTheLookAsItWas() {
             // A refinement states one thing and carries the rest over. A host moving a slider must not
             // find its frame or its fade moved with it.
             var style = createStyle();
@@ -147,7 +147,7 @@ class CursorTooltipStyleTest {
     class RedactedAt {
 
         @Test
-        void redactedAtSinksWithheldNamesByTheStrengthGiven() {
+        void sinksWithheldNamesByTheStrengthGiven() {
 
             assertThat(createStyle()
                 .redactedAt(TUNED_DARKENING_STRENGTH)
@@ -156,7 +156,7 @@ class CursorTooltipStyleTest {
         }
 
         @Test
-        void redactedAtLeavesTheRestOfTheLookAsItWas() {
+        void leavesTheRestOfTheLookAsItWas() {
             // A refinement states one thing and carries the rest over - the leaders included, so the two
             // sliders a host may put on a box cannot overwrite one another.
             var style = createStyle();
@@ -181,7 +181,7 @@ class CursorTooltipStyleTest {
     class RestyledAs {
 
         @Test
-        void restyledAsSetsTheLookEveryLineIsDrawnFrom() {
+        void setsTheLookEveryLineIsDrawnFrom() {
             // The seam a fit is put back through: what a pass settling sizes and spacing hands back is a
             // typography, and this is how it reaches the box that will be drawn.
             var restyled = createStyle().restyledAs(createTightenedTypography());
@@ -191,7 +191,7 @@ class CursorTooltipStyleTest {
         }
 
         @Test
-        void restyledAsLeavesTheRestOfTheLookAsItWas() {
+        void leavesTheRestOfTheLookAsItWas() {
             // A refinement states one thing and carries the rest over. A box redrawn in another
             // typography is the same box: its frame, its fade, and both tuned weights come through.
             var style = createStyle().redactedAt(TUNED_DARKENING_STRENGTH);
@@ -216,7 +216,7 @@ class CursorTooltipStyleTest {
     class Construct {
 
         @Test
-        void constructRejectsAMissingLeaderLook() {
+        void rejectsAMissingLeaderLook() {
             // A box ruling no leaders states the weights at nothing rather than leaving them unstated,
             // so a null is a look built wrongly - and would otherwise surface inside a draw call, past
             // the point that could say which box was meant.

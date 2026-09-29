@@ -30,7 +30,7 @@ final class BodyInteractionSourcesTest {
     class ResolveControlInteractionSourcesAt {
 
         @Test
-        void resolveControlInteractionSourcesAtReadsEachChannelAtThePositionAskedFor() {
+        void readsEachChannelAtThePositionAskedFor() {
 
             var hoveredControl = INTERACTIONS.resolveControlInteractionSourcesAt(HOVERED_CONTROL_INDEX);
 
@@ -41,7 +41,7 @@ final class BodyInteractionSourcesTest {
         }
 
         @Test
-        void resolveControlInteractionSourcesAtCarriesAPressOnAControlNothingIsPointingAt() {
+        void carriesAPressOnAControlNothingIsPointingAt() {
             // The two channels are independent readings of one strip: a press falls on its own clock, so the
             // control still carrying one is often not the control the pointer has moved on to.
             var pressedControl = INTERACTIONS.resolveControlInteractionSourcesAt(PRESSED_CONTROL_INDEX);
@@ -57,7 +57,7 @@ final class BodyInteractionSourcesTest {
     class Resting {
 
         @Test
-        void restingHoversNoCellOfAnyControl() {
+        void hoversNoCellOfAnyControl() {
             assertThat(BodyInteractionSources.RESTING
                     .bodyHovers()
                     .resolveControlHoverSourceAt(HOVERED_CONTROL_INDEX)
@@ -66,7 +66,7 @@ final class BodyInteractionSourcesTest {
         }
 
         @Test
-        void restingLiftsNoCellOfAnyControl() {
+        void liftsNoCellOfAnyControl() {
             assertThat(BodyInteractionSources.RESTING
                     .bodyPresses()
                     .resolveControlPressSourceAt(PRESSED_CONTROL_INDEX)

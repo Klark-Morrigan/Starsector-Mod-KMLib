@@ -39,7 +39,7 @@ class ShownMapTabTest {
     class ResolveShownMapTab {
 
         @Test
-        void resolveShownMapTabReturnsTheCurrentTabWhenItIsItselfAMap() {
+        void returnsTheCurrentTabWhenItIsItselfAMap() {
             // The M screen, where the map widget is the core tab rather than something inside it.
             var mapTabMock = createMapWidgetMock();
 
@@ -48,7 +48,7 @@ class ShownMapTabTest {
         }
 
         @Test
-        void resolveShownMapTabPrefersTheCurrentTabOverALitVisor() {
+        void prefersTheCurrentTabOverALitVisor() {
             // The two are not guaranteed to exclude each other - they read different core UIs, so
             // an interaction dialog can have both answering at once. The current tab wins, because
             // it is the map the player is looking at while the visor is one on a screen behind it.
@@ -61,7 +61,7 @@ class ShownMapTabTest {
         }
 
         @Test
-        void resolveShownMapTabFallsBackToTheVisorWhenTheCurrentTabIsNotAMap() {
+        void fallsBackToTheVisorWhenTheCurrentTabIsNotAMap() {
             // The intel screen, whose core tab holds the map several levels down. The tab itself is
             // an ordinary component, so the fallback is what finds the map at all.
             var visorWidgetMock = mock(UIComponentAPI.class);
@@ -73,7 +73,7 @@ class ShownMapTabTest {
         }
 
         @Test
-        void resolveShownMapTabReturnsNothingWhenNoScreenShowsAMap() {
+        void returnsNothingWhenNoScreenShowsAMap() {
             // Every other screen. Not a failure, and deliberately not distinguished from one here:
             // a caller that finds no map tab has nothing to measure either way.
             assertThat(ShownMapTab.resolveShownMapTab(mock(UIComponentAPI.class), intelScreenFake))
@@ -81,7 +81,7 @@ class ShownMapTabTest {
         }
 
         @Test
-        void resolveShownMapTabReturnsNothingWhenThereIsNoTabToRead() {
+        void returnsNothingWhenThereIsNoTabToRead() {
             // The walk answers null before any campaign UI exists, which must not be mistaken for a
             // tab that failed the map test.
             assertThat(ShownMapTab.resolveShownMapTab(null, intelScreenFake))
@@ -89,7 +89,7 @@ class ShownMapTabTest {
         }
 
         @Test
-        void resolveShownMapTabIgnoresAMapThatIsNotALaidOutComponent() {
+        void ignoresAMapThatIsNotALaidOutComponent() {
             // Being a map is not enough: the rule rooted here measures boxes, and something the
             // published component interface cannot be asked about has none to measure.
             var mapWithoutLayoutMock = mock(SectorMapAPI.class);

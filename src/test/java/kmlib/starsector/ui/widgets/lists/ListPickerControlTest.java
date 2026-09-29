@@ -123,7 +123,7 @@ final class ListPickerControlTest {
     class BuildPicker {
 
         @Test
-        void buildPickerReturnsNothingWhenNoItemsAreSelectable() {
+        void returnsNothingWhenNoItemsAreSelectable() {
             // A caller with nothing to spotlight contributes no picker at all, so its body carries
             // no empty list widget.
             assertThat(build(List.of(), null, AnomalySortMode.ALPHA))
@@ -131,7 +131,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerHeadsWithADivider() {
+        void headsWithADivider() {
             // The section rule heads the block with no text, parting whatever sits above from the
             // picker below.
             var divider = build(ANOMALIES, null, AnomalySortMode.ALPHA)
@@ -142,7 +142,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerPlacesTheColumnsSelectorUnderTheDivider() {
+        void placesTheColumnsSelectorUnderTheDivider() {
             // The columns selector rides directly under the rule, so the column count is chosen for
             // the block as a whole: a two-segment horizontal radio under the caller's caption.
             var columnsSelector = build(ANOMALIES, null, AnomalySortMode.ALPHA)
@@ -157,7 +157,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerPairsTheSortSelectorBesideTheCallersTrailingControls() {
+        void pairsTheSortSelectorBesideTheCallersTrailingControls() {
             // The sort selector holds the row's left half (a vertical, re-firing radio lit on the
             // active mode's row) and whatever the caller handed over fills the right, so the metric
             // reads side by side with the caller's own knobs above the list.
@@ -182,7 +182,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerDrawsTheSortSelectorAloneWhenNothingIsPairedWithIt() {
+        void drawsTheSortSelectorAloneWhenNothingIsPairedWithIt() {
             // A caller with nothing to pair passes no trailing controls, which leaves the sort
             // selector alone on its row rather than forcing a stand-in widget into the right half.
             var pair = readSortRow(buildPicker(
@@ -199,7 +199,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerIsAFixedFourRowBlock() {
+        void isAFixedFourRowBlock() {
             // The rule, the columns selector, the paired sort row, and the scrolling section the
             // list sits in: four rows in that order, fixed regardless of whether anything is
             // spotlighted. Asserted by type rather than by count alone, because the order is what
@@ -217,7 +217,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerBuildsAVerticalDeselectableIconListOfTheItems() {
+        void buildsAVerticalDeselectableIconListOfTheItems() {
 
             var picker = readItemList(build(ANOMALIES, null, AnomalySortMode.ALPHA));
 
@@ -235,7 +235,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerRanksTheListByTheSortMode() {
+        void ranksTheListByTheSortMode() {
             // The list is ordered by the chosen metric, and the trailing value is that metric, so the
             // rows read as a table sorted by the number shown.
             //
@@ -254,7 +254,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerRanksTheListInTheGivenDirection() {
+        void ranksTheListInTheGivenDirection() {
             // The direction flows through to the ordering: radius ascending reverses the default
             // descending list. The trailing values still read the radius, only their order flips.
             var picker = readItemList(buildPicker(
@@ -271,7 +271,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLeavesTheValueSlotUnfilledUnderAModeThatShowsNone() {
+        void leavesTheValueSlotUnfilledUnderAModeThatShowsNone() {
             // A mode that answers no runs leaves every row's value column unfilled, so the list reads
             // as a plain one rather than a ranked table - and the absence is the empty slot rather
             // than a blank run, so nothing downstream has to read an empty string as "nothing here".
@@ -282,7 +282,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLeavesTheValueSlotUnfilledWhenTheModesRunsAllCameOutBlank() {
+        void leavesTheValueSlotUnfilledWhenTheModesRunsAllCameOutBlank() {
             // The other way a mode says nothing: it answers a run, and the run turns out to carry no
             // text. A consumer assembling a value from parts cannot tell that case from declaring no
             // value at all, so both reach the row as the one empty slot rather than as two spellings
@@ -294,7 +294,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerDrawsAMultiRunValueInTheModesOwnColours() {
+        void drawsAMultiRunValueInTheModesOwnColours() {
             // A mode whose value is picked out in shades of its own reaches the row as several runs,
             // each keeping the colour the mode gave it, while the run it left to the row takes the
             // row's tone - so one value can mix the two.
@@ -308,7 +308,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerRecedesAMultiRunValueOverTheModesOwnColoursKeepingItsSpacing() {
+        void recedesAMultiRunValueOverTheModesOwnColoursKeepingItsSpacing() {
             // The receded tone wins over a mode's own shades: a row that reads back cannot keep a
             // full-strength value beside its greyed name, which is the same rule its crest follows.
             // Each run's own spacing survives the re-colour, so a range that read as one word still
@@ -324,7 +324,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerDrawsAnOrdinaryRowAtFullStrength() {
+        void drawsAnOrdinaryRowAtFullStrength() {
             // The baseline the receded case is read against: an item that says nothing about reading
             // back takes the plain tone throughout and its crest draws in the colours it was authored
             // in, so nothing is tinted on speculation.
@@ -342,7 +342,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerRecedesADimmedRowsWordsAndCrestTogether() {
+        void recedesADimmedRowsWordsAndCrestTogether() {
             // A row the caller marked as reading back recedes as a whole: its name and its value take
             // the engine's gray and its crest is multiplied by the flat tint, so the row cannot draw
             // greyed words beside a full-strength badge - which reads as a rendering slip rather than
@@ -361,7 +361,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerRecedesOnlyTheRowsThatSayTheyDo() {
+        void recedesOnlyTheRowsThatSayTheyDo() {
             // The state is per row rather than per list, so a receded row and a full-strength one sit
             // in the same list without either taking the other's tone.
             var lapsed = new Anomaly("lapsed_1", "Lapsed", "crest_lapsed", 0, 0, true);
@@ -379,7 +379,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLabelsANamelessItemAsAnEmptyRow() {
+        void labelsANamelessItemAsAnEmptyRow() {
             // An item whose name did not resolve draws as an unlabelled row, not a null the width
             // measurer would choke on.
             var nameless = new Anomaly("ghost_1", null, null, 4, 4);
@@ -390,7 +390,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLightsTheSpotlightedItemsRow() {
+        void lightsTheSpotlightedItemsRow() {
             // The lit row is resolved by the selected ID, not by the label the row draws, so an ID
             // that matches no label still lights its own item's row wherever the ranking put it.
             var picker = readItemList(build(ANOMALIES, "storm_1", AnomalySortMode.ALPHA));
@@ -401,7 +401,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLightsNoRowWhenTheSelectedItemIsNotInTheList() {
+        void lightsNoRowWhenTheSelectedItemIsNotInTheList() {
             // A stale selected ID (the caller's heal has not run, or the item lapsed mid-session)
             // lights nothing, so the list still shows every real option to pick from.
             var picker = readItemList(build(ANOMALIES, "vanished", AnomalySortMode.ALPHA));
@@ -411,7 +411,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerLaysTheListAcrossTheChosenColumnCount() {
+        void laysTheListAcrossTheChosenColumnCount() {
             // The chosen column count reaches the list widget's geometry: a two-column choice builds
             // a two-column list, a single-column choice a one-column list, so the layout wraps the
             // rows exactly as the selector says.
@@ -436,7 +436,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerReportsAColumnsSegmentPickToTheStore() {
+        void reportsAColumnsSegmentPickToTheStore() {
             // The columns selector reports its pick rather than storing one, and the picker passes
             // that report straight through - a wiring that silently came undone would leave the
             // segment lighting up and the caller never told.
@@ -451,7 +451,7 @@ final class ListPickerControlTest {
         }
 
         @Test
-        void buildPickerReportsASortRowPickToTheStore() {
+        void reportsASortRowPickToTheStore() {
             // The same pass-through for the other selector: a click on an unlit mode's row reports
             // that mode in its own default direction.
             var sortSelector = readSortSelector(build(ANOMALIES, null, AnomalySortMode.ALPHA));

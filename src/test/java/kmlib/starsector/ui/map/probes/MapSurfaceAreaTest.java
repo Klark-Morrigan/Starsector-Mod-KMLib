@@ -28,21 +28,21 @@ class MapSurfaceAreaTest {
     class ContainsPoint {
 
         @Test
-        void containsPointIsTrueInsideTheSurfaceAndClearOfTheChrome() {
+        void isTrueInsideTheSurfaceAndClearOfTheChrome() {
 
             assertThat(VISOR_AREA.containsPoint(900f, 600f))
                 .isTrue();
         }
 
         @Test
-        void containsPointIsFalseOutsideTheSurface() {
+        void isFalseOutsideTheSurface() {
             // The intel list beside the visor. Nothing about it is chrome; it is simply not the map.
             assertThat(VISOR_AREA.containsPoint(200f, 600f))
                 .isFalse();
         }
 
         @Test
-        void containsPointIsFalseOverChromeDrawnAcrossTheSurface() {
+        void isFalseOverChromeDrawnAcrossTheSurface() {
             // The visor's own control bar, inside the surface box and drawn over it. This is the
             // case a surface-only rule got wrong: the cursor is inside the map's box while the
             // player is looking at a control.
@@ -51,7 +51,7 @@ class MapSurfaceAreaTest {
         }
 
         @Test
-        void containsPointIsTrueWhenTheTabDrawsNoChromeAtAll() {
+        void isTrueWhenTheTabDrawsNoChromeAtAll() {
 
             var bareArea = new MapSurfaceArea(SURFACE_BOX, List.of());
 
@@ -64,7 +64,7 @@ class MapSurfaceAreaTest {
     class Constructor {
 
         @Test
-        void constructorCopiesTheChromeBoxesItWasHandedAtConstruction() {
+        void copiesTheChromeBoxesItWasHandedAtConstruction() {
             // The live read builds the list while walking the tree and a caller holds the result
             // across frames, so a shared list would let a later measure edit an answer already
             // given out.

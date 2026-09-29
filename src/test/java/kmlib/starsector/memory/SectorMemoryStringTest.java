@@ -56,7 +56,7 @@ class SectorMemoryStringTest {
     class Get {
 
         @Test
-        void getReturnsTheStoredValueWhenTheKeyIsPresent() {
+        void returnsTheStoredValueWhenTheKeyIsPresent() {
 
             sectorMemoryFake.storeValue(KEY, VALUE);
 
@@ -65,14 +65,14 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void getReturnsNullWhenTheKeyIsAbsent() {
+        void returnsNullWhenTheKeyIsAbsent() {
 
             assertThat(value.get())
                 .isNull();
         }
 
         @Test
-        void getReturnsNullWhenTheSectorIsMissing() {
+        void returnsNullWhenTheSectorIsMissing() {
 
             sectorMemoryFake.removeSector();
 
@@ -81,7 +81,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void getReadsTheHandedSectorRatherThanTheRunningOne() {
+        void readsTheHandedSectorRatherThanTheRunningOne() {
 
             sectorMemoryFake.storeValue(KEY, VALUE);
             handedMemoryFake.storeValue(KEY, OTHER_VALUE);
@@ -91,7 +91,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void getReturnsNullWhenTheHandedSectorIsMissing() {
+        void returnsNullWhenTheHandedSectorIsMissing() {
 
             assertThat(value.get((SectorAPI) null))
                 .isNull();
@@ -102,7 +102,7 @@ class SectorMemoryStringTest {
     class IsSet {
 
         @Test
-        void isSetIsTrueWhenTheKeyIsPresent() {
+        void isTrueWhenTheKeyIsPresent() {
 
             sectorMemoryFake.storeValue(KEY, VALUE);
 
@@ -111,14 +111,14 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void isSetIsFalseWhenTheKeyIsAbsent() {
+        void isFalseWhenTheKeyIsAbsent() {
 
             assertThat(value.isSet())
                 .isFalse();
         }
 
         @Test
-        void isSetIsFalseWhenTheSectorIsMissing() {
+        void isFalseWhenTheSectorIsMissing() {
 
             sectorMemoryFake.removeSector();
 
@@ -127,7 +127,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void isSetReadsTheHandedSectorRatherThanTheRunningOne() {
+        void readsTheHandedSectorRatherThanTheRunningOne() {
 
             sectorMemoryFake.storeValue(KEY, VALUE);
 
@@ -140,7 +140,7 @@ class SectorMemoryStringTest {
     class Set {
 
         @Test
-        void setWritesTheValueToSectorMemoryAndReportsItLanded() {
+        void writesTheValueToSectorMemoryAndReportsItLanded() {
 
             assertThat(value.set(VALUE))
                 .isTrue();
@@ -150,7 +150,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void setDoesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
+        void doesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
 
             sectorMemoryFake.removeSector();
 
@@ -162,7 +162,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void setWritesToTheHandedSectorAndLeavesTheRunningOneAlone() {
+        void writesToTheHandedSectorAndLeavesTheRunningOneAlone() {
 
             assertThat(value.set(handedSectorMock, VALUE))
                 .isTrue();
@@ -178,7 +178,7 @@ class SectorMemoryStringTest {
     class Clear {
 
         @Test
-        void clearRemovesTheStoredValueAndReportsItRemoved() {
+        void removesTheStoredValueAndReportsItRemoved() {
 
             sectorMemoryFake.storeValue(KEY, VALUE);
 
@@ -190,7 +190,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void clearReportsNoRemovalAndLeavesMemoryAloneWhenTheKeyIsAbsent() {
+        void reportsNoRemovalAndLeavesMemoryAloneWhenTheKeyIsAbsent() {
 
             assertThat(value.clear())
                 .isFalse();
@@ -200,7 +200,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void clearDoesNothingAndReportsNoRemovalWhenTheSectorIsMissing() {
+        void doesNothingAndReportsNoRemovalWhenTheSectorIsMissing() {
 
             sectorMemoryFake.removeSector();
 
@@ -212,7 +212,7 @@ class SectorMemoryStringTest {
         }
 
         @Test
-        void clearRemovesFromTheHandedSectorAndLeavesTheRunningOneAlone() {
+        void removesFromTheHandedSectorAndLeavesTheRunningOneAlone() {
 
             sectorMemoryFake.storeValue(KEY, VALUE);
             handedMemoryFake.storeValue(KEY, OTHER_VALUE);

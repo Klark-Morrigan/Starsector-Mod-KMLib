@@ -20,7 +20,7 @@ class StarsectorFontTest {
         // and a misspelled basename is exactly the failure the enum exists to make impossible.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
-        void resolvePathNamesTheAtlasUnderTheGamesFontDirectory(StarsectorFont font) {
+        void namesTheAtlasUnderTheGamesFontDirectory(StarsectorFont font) {
 
             var expected = switch (font) {
                 case VANILLA_INSIGNIA_15 -> "graphics/fonts/insignia15LTaa.fnt";
@@ -37,7 +37,7 @@ class StarsectorFontTest {
         }
 
         @Test
-        void resolvePathIsDistinctForEveryFace() {
+        void isDistinctForEveryFace() {
             // The path is what the face cache keys on, so two values sharing one - the copy-paste that
             // adding a face invites - would silently serve one atlas under two names.
             var paths = Arrays.stream(StarsectorFont.values())
@@ -63,7 +63,7 @@ class StarsectorFontTest {
         // smooth=1. Reading the wrong one is what had the condensed face drawn interpolated.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
-        void getSmoothingReportsWhatItsAtlasAsksFor(StarsectorFont font) {
+        void reportsWhatItsAtlasAsksFor(StarsectorFont font) {
 
             var expected = switch (font) {
 
@@ -92,7 +92,7 @@ class StarsectorFontTest {
         // in passing - a cut skipped, or two cuts pointing at each other - fails here.
         @ParameterizedTest
         @EnumSource(StarsectorFont.class)
-        void resolveLowerResolutionFontNamesTheNextCutDownInTheFacesFamily(StarsectorFont font) {
+        void namesTheNextCutDownInTheFacesFamily(StarsectorFont font) {
 
             var expected = switch (font) {
                 case VANILLA_INSIGNIA_42 -> StarsectorFont.VANILLA_INSIGNIA_25;
@@ -113,21 +113,21 @@ class StarsectorFontTest {
     class FindFontByPath {
 
         @Test
-        void findFontByPathFindsTheFaceTheGamesSettingsName() {
+        void findsTheFaceTheGamesSettingsName() {
             // The spelling vanilla's settings.json names its defaultFont in.
             assertThat(StarsectorFont.findFontByPath("graphics/fonts/insignia15LTaa.fnt"))
                 .contains(StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void findFontByPathFindsNothingForAFaceTheEnumDoesNotName() {
+        void findsNothingForAFaceTheEnumDoesNotName() {
 
             assertThat(StarsectorFont.findFontByPath("graphics/fonts/arial12.fnt"))
                 .isEmpty();
         }
 
         @Test
-        void findFontByPathFindsNothingForNoPath() {
+        void findsNothingForNoPath() {
 
             assertThat(StarsectorFont.findFontByPath(null))
                 .isEmpty();

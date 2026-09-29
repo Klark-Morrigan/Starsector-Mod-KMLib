@@ -20,7 +20,7 @@ final class FactionCrestsTest {
     class ResolveCrestPath {
 
         @Test
-        void resolveCrestPathReturnsThePathForACrestedFaction() {
+        void returnsThePathForACrestedFaction() {
             var factionMock = mock(FactionAPI.class);
             when(factionMock.getCrest()).thenReturn("graphics/hegemony_crest.png");
 
@@ -29,12 +29,12 @@ final class FactionCrestsTest {
         }
 
         @Test
-        void resolveCrestPathIsNullForANullFaction() {
+        void isNullForANullFaction() {
             assertThat(FactionCrests.resolveCrestPath(null)).isNull();
         }
 
         @Test
-        void resolveCrestPathIsNullForANullCrest() {
+        void isNullForANullCrest() {
             var factionMock = mock(FactionAPI.class);
             when(factionMock.getCrest()).thenReturn(null);
 
@@ -42,7 +42,7 @@ final class FactionCrestsTest {
         }
 
         @Test
-        void resolveCrestPathIsNullForABlankCrest() {
+        void isNullForABlankCrest() {
             // An authored-but-empty crest string reads as no crest, so a whitespace path collapses to
             // null rather than pointing a caller at a missing sprite.
             var factionMock = mock(FactionAPI.class);

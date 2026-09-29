@@ -109,7 +109,7 @@ class CoreUiOverlayPanelsTest {
     class AttachOverlayPanelTo {
 
         @Test
-        void attachOverlayPanelToAddsThePanelToTheCoreUi() {
+        void addsThePanelToTheCoreUi() {
 
             var coreUiFake = new CoreUiPanelFake();
             var overlayPanelMock = mock(UIComponentAPI.class);
@@ -121,7 +121,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void attachOverlayPanelToRaisesThePanelAboveTheScreensOwnWidgets() {
+        void raisesThePanelAboveTheScreensOwnWidgets() {
 
             var coreUiFake = new CoreUiPanelFake();
             var overlayPanelMock = mock(UIComponentAPI.class);
@@ -133,7 +133,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void attachOverlayPanelToAnswersThePlacementTheCoreUiGaveThePanel() {
+        void answersThePlacementTheCoreUiGaveThePanel() {
 
             var coreUiFake = new CoreUiPanelFake();
             var overlayPanelMock = mock(UIComponentAPI.class);
@@ -144,7 +144,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void attachOverlayPanelToAnswersNothingWithNoCoreUiInForce() {
+        void answersNothingWithNoCoreUiInForce() {
 
             var overlayPanelMock = mock(UIComponentAPI.class);
 
@@ -153,7 +153,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void attachOverlayPanelToAnswersNothingForACoreUiThatTakesNoChildren() {
+        void answersNothingForACoreUiThatTakesNoChildren() {
             // The shape a game build that stopped answering the published panel interface would leave,
             // which has to read as "no room for a dialog" rather than as a cast that throws.
             var coreUiFake = new CoreUiComponentFake();
@@ -164,7 +164,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void attachOverlayPanelToAddsNothingForAPanelTheCallerNeverBuilt() {
+        void addsNothingForAPanelTheCallerNeverBuilt() {
 
             var coreUiFake = new CoreUiPanelFake();
 
@@ -179,7 +179,7 @@ class CoreUiOverlayPanelsTest {
     class DetachOverlayPanelFrom {
 
         @Test
-        void detachOverlayPanelFromTakesThePanelOffTheCoreUi() {
+        void takesThePanelOffTheCoreUi() {
 
             var coreUiFake = new CoreUiPanelFake();
             var overlayPanelMock = mock(UIComponentAPI.class);
@@ -192,7 +192,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void detachOverlayPanelFromLeavesACoreUiThatTakesNoChildrenAlone() {
+        void leavesACoreUiThatTakesNoChildrenAlone() {
 
             var coreUiFake = new CoreUiComponentFake();
             var overlayPanelMock = mock(UIComponentAPI.class);
@@ -203,7 +203,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void detachOverlayPanelFromRemovesNothingWithNoCoreUiInForce() {
+        void removesNothingWithNoCoreUiInForce() {
             // The rebuilt-root case: whatever discarded the old core UI discarded the panel with it.
             var overlayPanelMock = mock(UIComponentAPI.class);
 
@@ -211,7 +211,7 @@ class CoreUiOverlayPanelsTest {
         }
 
         @Test
-        void detachOverlayPanelFromRemovesNothingForAPanelTheCallerNeverHeld() {
+        void removesNothingForAPanelTheCallerNeverHeld() {
 
             var coreUiFake = new CoreUiPanelFake();
 

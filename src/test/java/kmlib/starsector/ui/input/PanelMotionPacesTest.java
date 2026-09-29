@@ -20,7 +20,7 @@ final class PanelMotionPacesTest {
     class DefaultDurations {
 
         @Test
-        void defaultDurationsTravelOutTwiceAsQuicklyAsBack() {
+        void travelOutTwiceAsQuicklyAsBack() {
             // Pinned as the pair rather than as a ratio, since it is the two values a player sees - and the
             // asymmetry is the point: equal halves make the whole motion read as the slower one.
             assertThat(PanelMotionPaces.DEFAULT_DURATIONS)

@@ -102,7 +102,7 @@ final class ControlSpecVerticalTableTest {
     class CreateColumnTable {
 
         @Test
-        void createColumnTableLaysItsRowsInColumns() {
+        void laysItsRowsInColumns() {
             // The geometry is what the table states about itself, so a picker's rows lay out as a table
             // whatever their slots hold - a stack whose rows all lead with nothing is a table still.
             var picker = VerticalTableSpec.createColumnTable(
@@ -115,7 +115,7 @@ final class ControlSpecVerticalTableTest {
         }
 
         @Test
-        void createColumnTableStandsInOneInertUnscrolledColumnUntilRefined() {
+        void standsInOneInertUnscrolledColumnUntilRefined() {
             // What a table holds before a host refines it: every row inert on a re-pick, one column, and
             // pinned - so a host states only the refinements its own list wants.
             var picker = VerticalTableSpec.createColumnTable(
@@ -132,7 +132,7 @@ final class ControlSpecVerticalTableTest {
         }
 
         @Test
-        void createColumnTableCarriesItsRowsWhateverTheirSlotsHold() {
+        void carriesItsRowsWhateverTheirSlotsHold() {
             // A row states what it leads and trails with itself, so a crested, valued row and a bare one
             // stack in one list rather than in a list per column that must stay index-aligned.
             var picker = VerticalTableSpec.createColumnTable(
@@ -156,7 +156,7 @@ final class ControlSpecVerticalTableTest {
         }
 
         @Test
-        void createColumnTableLightsTheSelectedRow() {
+        void lightsTheSelectedRow() {
 
             var picker = VerticalTableSpecs.buildIconList(
                 List.of("Hegemony", "Tri-Tachyon"),
@@ -169,7 +169,7 @@ final class ControlSpecVerticalTableTest {
         }
 
         @Test
-        void createColumnTableCarriesTheClickActionByRowIndex() {
+        void carriesTheClickActionByRowIndex() {
 
             var firedCell = new int[] {-99};
             var picker = VerticalTableSpecs.buildIconList(
@@ -189,7 +189,7 @@ final class ControlSpecVerticalTableTest {
     class CreateSegmentedList {
 
         @Test
-        void createSegmentedListLaysItsRowsAsUniformCells() {
+        void laysItsRowsAsUniformCells() {
             // The other geometry a stack can read as: equal cells with each name centred, rather than a
             // table of columns - stated by which factory a host reaches for.
             var list = VerticalTableSpec.createSegmentedList(
@@ -225,7 +225,7 @@ final class ControlSpecVerticalTableTest {
     class HandlesReselect {
 
         @Test
-        void handlesReselectCarriesTheChosenBehaviourAndLeavesTheRestAsItWas() {
+        void carriesTheChosenBehaviourAndLeavesTheRestAsItWas() {
             // A spotlight list clears on a re-pick of its lit row; the refinement changes that alone, so
             // everything the layout reads stays as the factory built it.
             var picker = VerticalTableSpec
@@ -250,7 +250,7 @@ final class ControlSpecVerticalTableTest {
     class ReportsHoverTo {
 
         @Test
-        void reportsHoverToCarriesTheChannelAndLeavesTheRestAsItWas() {
+        void carriesTheChannelAndLeavesTheRestAsItWas() {
             // A host answering a hover wires the channel onto a list built through the ordinary factory, so
             // the copy carries it while everything the layout and the press path read stays as it was.
             var reportedCells = new ArrayList<Integer>();
@@ -276,7 +276,7 @@ final class ControlSpecVerticalTableTest {
         }
 
         @Test
-        void reportsHoverToSurvivesTheRefinementsLayeredAfterIt() {
+        void survivesTheRefinementsLayeredAfterIt() {
             // The three refinements share one rebuild rather than each restating every component, which is
             // the fault this pins: a rebuild that dropped the channel would leave a list reporting nothing
             // for no reason its host could see.
@@ -296,7 +296,7 @@ final class ControlSpecVerticalTableTest {
         }
 
         @Test
-        void reportsHoverToLeavesTheOriginalReportingNowhere() {
+        void leavesTheOriginalReportingNowhere() {
             // The copy is a fresh spec, so the source the host still holds is untouched - only the one it
             // wired reports.
             var picker = VerticalTableSpecs.buildIconList(
@@ -317,7 +317,7 @@ final class ControlSpecVerticalTableTest {
     class SpreadsAcross {
 
         @Test
-        void spreadsAcrossFoldsTheRowsAcrossThatManyColumns() {
+        void foldsTheRowsAcrossThatManyColumns() {
             // The count rides on the spec so the layout and the renderer fold the rows the same way.
             var picker = VerticalTableSpec
                 .createColumnTable(

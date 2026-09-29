@@ -35,7 +35,7 @@ final class ColumnsSelectorControlTest {
     class BuildSelector {
 
         @Test
-        void buildSelectorBuildsATwoSegmentHorizontalRadio() {
+        void buildsATwoSegmentHorizontalRadio() {
             var selector = buildSelector(ListColumns.ONE);
 
             // A horizontal radio by type; its even-cell segments read the default UNIFORM sizing.
@@ -46,7 +46,7 @@ final class ColumnsSelectorControlTest {
         }
 
         @Test
-        void buildSelectorTrailsTheSegmentsWithTheCallersCaption() {
+        void trailsTheSegmentsWithTheCallersCaption() {
             // The caption is the caller's prose, handed over drawn - the segments themselves say
             // only "1" and "2", so without it the row does not say what the counts choose between.
             var selector = buildSelector(ListColumns.ONE);
@@ -58,7 +58,7 @@ final class ColumnsSelectorControlTest {
         }
 
         @Test
-        void buildSelectorLightsTheActiveChoicesSegment() {
+        void lightsTheActiveChoicesSegment() {
             var selector = buildSelector(ListColumns.TWO);
 
             assertThat(selector.selectedIndex())

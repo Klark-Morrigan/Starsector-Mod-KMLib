@@ -25,7 +25,7 @@ final class BodyHoverSourceTest {
     class CreateRestingHoverSource {
 
         @Test
-        void createRestingHoverSourceHoversNoCellOfAnyControl() {
+        void hoversNoCellOfAnyControl() {
 
             assertThat(BodyHoverSource.createRestingHoverSource()
                     .resolveControlHoverSourceAt(LATE_CONTROL_INDEX)
@@ -34,7 +34,7 @@ final class BodyHoverSourceTest {
         }
 
         @Test
-        void createRestingHoverSourceAnswersEveryControlWithASourceOfItsOwn() {
+        void answersEveryControlWithASourceOfItsOwn() {
             // A position answered with nothing is a null a paint pass reads through, so the resting source
             // has to hand one back for a strip position no control stands at as readily as for one that has.
             assertThat(BodyHoverSource.createRestingHoverSource()

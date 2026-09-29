@@ -28,7 +28,7 @@ class VanillaStaticInitialiserIntegrationTest {
     class LauncherSessionOpened {
 
         @Test
-        void launcherSessionOpenedLeavesMiscUsableWithNoStubInPlace() {
+        void leavesMiscUsableWithNoStubInPlace() {
             // Deliberately no mockStatic(Global) here - that absence is the condition under test.
             // Reading any member forces the class initialiser, so this passes only where it has
             // already run and succeeded.

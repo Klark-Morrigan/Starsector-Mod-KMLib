@@ -32,7 +32,7 @@ final class ActivePicksTest {
     class Constructor {
 
         @Test
-        void constructorAcceptsNoSpotlightedItem() {
+        void acceptsNoSpotlightedItem() {
             // Nothing spotlighted is an ordinary reading, not a half-built one: the list draws every
             // option with no row lit, which is what a cleared spotlight looks like.
             var picks = new ActivePicks<>(null, SORT, ListColumns.ONE);
@@ -42,7 +42,7 @@ final class ActivePicksTest {
         }
 
         @Test
-        void constructorRejectsAReadingWithNoSort() {
+        void rejectsAReadingWithNoSort() {
             // A list is always ordered somehow, so a missing sort is a reading that was never
             // finished - and one that would otherwise fail inside the frame that first ranks a list.
             assertThatThrownBy(() -> new ActivePicks<Anomaly>("storm_1", null, ListColumns.ONE))
@@ -51,7 +51,7 @@ final class ActivePicksTest {
         }
 
         @Test
-        void constructorRejectsAReadingWithNoColumnCount() {
+        void rejectsAReadingWithNoColumnCount() {
             // The same for the layout half: a list is always laid across some number of columns, so
             // this fails where it is assembled rather than where the rows are spread.
             assertThatThrownBy(() -> new ActivePicks<>("storm_1", SORT, null))

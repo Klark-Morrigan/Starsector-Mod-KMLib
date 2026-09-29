@@ -23,7 +23,7 @@ class TextSpanTest {
     class Constructor {
 
         @Test
-        void constructorKeepsTheTextAndColourItWasGiven() {
+        void keepsTheTextAndColourItWasGiven() {
 
             var span = new TextSpan("Contested by", SPAN_COLOUR);
 
@@ -34,7 +34,7 @@ class TextSpanTest {
         }
 
         @Test
-        void constructorRejectsNullText() {
+        void rejectsNullText() {
 
             assertThatThrownBy(() -> new TextSpan(null, SPAN_COLOUR))
                 .isInstanceOf(NullPointerException.class)
@@ -42,7 +42,7 @@ class TextSpanTest {
         }
 
         @Test
-        void constructorRejectsNullColour() {
+        void rejectsNullColour() {
 
             assertThatThrownBy(() -> new TextSpan("Contested by", null))
                 .isInstanceOf(NullPointerException.class)
@@ -50,7 +50,7 @@ class TextSpanTest {
         }
 
         @Test
-        void constructorBuildsAWordOfItsOwn() {
+        void buildsAWordOfItsOwn() {
             // The plain reading, and the one an author never has to ask for: a run built from words and
             // a colour stands a word space clear of whatever precedes it.
             assertThat(new TextSpan("Contested by", SPAN_COLOUR).isJoinedToPreviousRun())
@@ -62,14 +62,14 @@ class TextSpanTest {
     class JoinsPreviousRun {
 
         @Test
-        void joinsPreviousRunButtsTheSpanAgainstTheOneBeforeIt() {
+        void buttsTheSpanAgainstTheOneBeforeIt() {
 
             assertThat(new TextSpan("Station", SPAN_COLOUR).joinsPreviousRun().isJoinedToPreviousRun())
                 .isTrue();
         }
 
         @Test
-        void joinsPreviousRunKeepsTheWordsAndTheColour() {
+        void keepsTheWordsAndTheColour() {
             // The refinement says how the run sits beside its neighbour and nothing about the run, so
             // what it draws and the colour it draws in survive it untouched.
             var span = new TextSpan("Station", SPAN_COLOUR)
@@ -82,7 +82,7 @@ class TextSpanTest {
         }
 
         @Test
-        void joinsPreviousRunLeavesTheSpanItWasBuiltFromAWordOfItsOwn() {
+        void leavesTheSpanItWasBuiltFromAWordOfItsOwn() {
             // A refinement returns a new value, so a caller joining one run of a composed label cannot
             // reach into the span another caller is still holding.
             var separateSpan = new TextSpan("Station", SPAN_COLOUR);
@@ -97,7 +97,7 @@ class TextSpanTest {
     class CreateBlank {
 
         @Test
-        void createBlankCarriesNoText() {
+        void carriesNoText() {
 
             var span = TextSpan.createBlank(SPAN_COLOUR);
 
@@ -108,7 +108,7 @@ class TextSpanTest {
         }
 
         @Test
-        void createBlankKeepsTheColourItWouldHaveDrawnIn() {
+        void keepsTheColourItWouldHaveDrawnIn() {
             // The colour survives the absence precisely so nothing downstream has to branch on empty
             // before it can ask a span how it draws.
             assertThat(TextSpan.createBlank(SPAN_COLOUR).colour())
@@ -120,21 +120,21 @@ class TextSpanTest {
     class HasContent {
 
         @Test
-        void hasContentIsTrueForARunWithGlyphs() {
+        void isTrueForARunWithGlyphs() {
 
             assertThat(new TextSpan("Contested by", SPAN_COLOUR).hasContent())
                 .isTrue();
         }
 
         @Test
-        void hasContentIsFalseForAnEmptyRun() {
+        void isFalseForAnEmptyRun() {
 
             assertThat(new TextSpan("", SPAN_COLOUR).hasContent())
                 .isFalse();
         }
 
         @Test
-        void hasContentIsFalseForAWhitespaceOnlyRun() {
+        void isFalseForAWhitespaceOnlyRun() {
             // A run assembled from parts that all came up empty is still nothing to draw, however many
             // separators were joined between them.
             assertThat(new TextSpan("   ", SPAN_COLOUR).hasContent())
@@ -154,7 +154,7 @@ class TextSpanTest {
         private static final float LINE_HEIGHT = 20f;
 
         @Test
-        void computeWidthChargesTheRunsGlyphs() {
+        void chargesTheRunsGlyphs() {
 
             assertThat(new TextSpan("Hegemony", SPAN_COLOUR)
                     .computeWidth(LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
@@ -162,7 +162,7 @@ class TextSpanTest {
         }
 
         @Test
-        void computeWidthChargesABlankRunNothing() {
+        void chargesABlankRunNothing() {
             // The measurement is skipped rather than returning whatever a blank string measures, so a
             // run that came out empty holds no room open in the line it sits on.
             assertThat(TextSpan.createBlank(SPAN_COLOUR)
@@ -175,7 +175,7 @@ class TextSpanTest {
     class PaintRun {
 
         @Test
-        void paintRunHandsItselfToThePaintersTextMethod() {
+        void handsItselfToThePaintersTextMethod() {
             // A run that named no kind would compile and draw nothing, leaving a gap on the line the size
             // of the room the measurement charged for it.
             var textSpan = new TextSpan("Hegemony", SPAN_COLOUR);

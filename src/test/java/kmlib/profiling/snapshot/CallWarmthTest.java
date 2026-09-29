@@ -19,14 +19,14 @@ final class CallWarmthTest {
     class IsMeasured {
 
         @Test
-        void isMeasuredIsFalseForTheUnmeasuredCall() {
+        void isFalseForTheUnmeasuredCall() {
 
             assertThat(CallWarmth.UNMEASURED.isMeasured())
                 .isFalse();
         }
 
         @Test
-        void isMeasuredIsTrueForACallWhoseClockWasReadEvenWhereNothingCompiled() {
+        void isTrueForACallWhoseClockWasReadEvenWhereNothingCompiled() {
             // Zero compilation is a reading - the JVM was warm - and not the same fact as the
             // clock never having been looked at.
             assertThat(new CallWarmth(false, NO_JIT_MILLIS).isMeasured())
@@ -38,14 +38,14 @@ final class CallWarmthTest {
     class DescribeWarmth {
 
         @Test
-        void describeWarmthSaysNothingForTheUnmeasuredCall() {
+        void saysNothingForTheUnmeasuredCall() {
 
             assertThat(CallWarmth.UNMEASURED.describeWarmth())
                 .isEmpty();
         }
 
         @Test
-        void describeWarmthSaysNothingForAWarmCallThatWasNotItsRowsFirst() {
+        void saysNothingForAWarmCallThatWasNotItsRowsFirst() {
             // The plain call, which is nearly every call: a line that said "not first, nothing
             // compiled" on each of them would bury the ones that were.
             assertThat(new CallWarmth(false, NO_JIT_MILLIS).describeWarmth())
@@ -53,7 +53,7 @@ final class CallWarmthTest {
         }
 
         @Test
-        void describeWarmthMarksAFirstCallTheJvmWasWarmFor() {
+        void marksAFirstCallTheJvmWasWarmFor() {
             // What a capture cleared mid-session produces: every row's first call again, on a JVM
             // that compiled nothing under it - first, and not cold.
             assertThat(new CallWarmth(true, NO_JIT_MILLIS).describeWarmth())
@@ -61,14 +61,14 @@ final class CallWarmthTest {
         }
 
         @Test
-        void describeWarmthNamesWhatCompiledUnderACallThatWasNotFirst() {
+        void namesWhatCompiledUnderACallThatWasNotFirst() {
 
             assertThat(new CallWarmth(false, JIT_MILLIS).describeWarmth())
                 .isEqualTo("jitMs=412");
         }
 
         @Test
-        void describeWarmthWritesTheFirstCallMarkBeforeTheCompilation() {
+        void writesTheFirstCallMarkBeforeTheCompilation() {
             // The cold call proper: the two facts together, the mark first since it is the one
             // that says why the clock moved.
             assertThat(new CallWarmth(true, JIT_MILLIS).describeWarmth())

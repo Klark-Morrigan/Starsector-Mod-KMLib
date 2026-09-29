@@ -72,7 +72,7 @@ class CoreUiTreeTest {
     class ReadChildrenOf {
 
         @Test
-        void readChildrenOfReturnsWhatAParentHolds() {
+        void returnsWhatAParentHolds() {
 
             var childFake = new CoreUiComponentFake();
             var parentFake = new CoreUiComponentFake(childFake);
@@ -82,7 +82,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void readChildrenOfIsEmptyForAComponentThatExposesNoChildren() {
+        void isEmptyForAComponentThatExposesNoChildren() {
             // The common case: most components are leaves and answer no such method at all. Reading
             // that as a failure would end every walk at the first leaf it reached.
             assertThat(CoreUiTree.readChildrenOf(new Object()))
@@ -94,14 +94,14 @@ class CoreUiTreeTest {
     class HasMethodNamed {
 
         @Test
-        void hasMethodNamedIsTrueForAComponentCarryingTheName() {
+        void isTrueForAComponentCarryingTheName() {
 
             assertThat(CoreUiTree.hasMethodNamed(new CoreUiComponentFake(), "getChildrenCopy"))
                 .isTrue();
         }
 
         @Test
-        void hasMethodNamedIsFalseForAComponentCarryingNoSuchName() {
+        void isFalseForAComponentCarryingNoSuchName() {
             // The common leaf, and what this exists for: answered without invoking, so a per-frame
             // walk stays off the thrown-exception path at every ordinary component it meets.
             assertThat(CoreUiTree.hasMethodNamed(new Object(), "getChildrenCopy"))
@@ -109,7 +109,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void hasMethodNamedIsTrueWhateverArgumentsTheMethodTakes() {
+        void isTrueWhateverArgumentsTheMethodTakes() {
             // Names only, so this cannot stand in for a hop resolving: a caller asking about a name
             // it then invokes with arguments can still find that nothing takes them.
             assertThat(CoreUiTree.hasMethodNamed(new ArgumentTakingTargetFake(), "recordAlpha"))
@@ -117,7 +117,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void hasMethodNamedIsTrueForANameCarriedByASuperclass() {
+        void isTrueForANameCarriedByASuperclass() {
             // The core UI's shapes are deep hierarchies and the accessors a walk asks for are
             // declared well above the leaf classes it meets, so a check that saw only the runtime
             // class's own methods would call almost every real widget a leaf.
@@ -130,7 +130,7 @@ class CoreUiTreeTest {
     class ReadHopIfOffered {
 
         @Test
-        void readHopIfOfferedReturnsWhatTheNamedMethodAnswers() {
+        void returnsWhatTheNamedMethodAnswers() {
 
             var childFake = new CoreUiComponentFake();
 
@@ -140,14 +140,14 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void readHopIfOfferedIsNullForAShapeCarryingNoSuchName() {
+        void isNullForAShapeCarryingNoSuchName() {
 
             assertThat(CoreUiTree.readHopIfOffered(new Object(), "getChildrenCopy"))
                 .isNull();
         }
 
         @Test
-        void readHopIfOfferedIsNullWhenTheHopResolvesAndThenThrows() {
+        void isNullWhenTheHopResolvesAndThenThrows() {
             // The half that separates this from asking whether the name is carried: the name is
             // there, the call is the thing that failed, and a walk wants both answered the same way
             // so one misbehaving widget does not end it.
@@ -156,7 +156,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void readHopIfOfferedIsNullWhenAskingForTheNameThrows() {
+        void isNullWhenAskingForTheNameThrows() {
             // The lookup goes through the same reach as the call, so a reach that cannot be stood
             // up fails on the lookup first - and is as much a failed hop as a call that threw.
             try (var reflectedMembersMock = mockStatic(ReflectedMembers.class)) {
@@ -174,7 +174,7 @@ class CoreUiTreeTest {
     class InvokeNoArg {
 
         @Test
-        void invokeNoArgReturnsWhatTheNamedMethodAnswers() {
+        void returnsWhatTheNamedMethodAnswers() {
 
             var childFake = new CoreUiComponentFake();
 
@@ -183,7 +183,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void invokeNoArgThrowsWhenTheMethodIsAbsent() {
+        void throwsWhenTheMethodIsAbsent() {
             // Raised rather than swallowed, so a caller taking a hop this class does not name can
             // tell "no such method" apart from "the method answered nothing".
             assertThatThrownBy(() -> CoreUiTree.invokeNoArg(new Object(), "getChildrenCopy"))
@@ -195,7 +195,7 @@ class CoreUiTreeTest {
     class InvokeWithArgs {
 
         @Test
-        void invokeWithArgsPassesABoxedFloatToAPrimitiveParameter() {
+        void passesABoxedFloatToAPrimitiveParameter() {
             // The load-bearing case: the core UI's draw and input entry points declare primitive
             // float, and a caller can only hand in the boxed one. Were the argument's own class
             // used as the parameter type, no such method would ever be found.
@@ -208,7 +208,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void invokeWithArgsReturnsWhatTheNamedMethodAnswers() {
+        void returnsWhatTheNamedMethodAnswers() {
 
             assertThat(CoreUiTree
                 .invokeWithArgs(new ArgumentTakingTargetFake(), "recordAlpha", 0.75f))
@@ -216,7 +216,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void invokeWithArgsThrowsWhenNoMethodTakesThatArgumentShape() {
+        void throwsWhenNoMethodTakesThatArgumentShape() {
             // The arguments select the overload, so a name that exists but takes something else is
             // as unreachable as one that does not exist at all. Both are raised rather than
             // answered null, so a caller drawing through this class learns it drew nothing.
@@ -230,7 +230,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void invokeWithArgsThrowsWhenTheArgumentFitsMoreThanOneMethodOfThatName() {
+        void throwsWhenTheArgumentFitsMoreThanOneMethodOfThatName() {
             // The arguments are matched by assignment compatibility, not by identity, so one boxed
             // int fits both a (int) and a (float) overload and the name stops identifying a single
             // method. Nothing is picked in that case, which matters because the core UI's setters
@@ -242,7 +242,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void invokeWithArgsSurfacesTheTargetsOwnFailureWrapped() {
+        void surfacesTheTargetsOwnFailureWrapped() {
             // The other half of the failure contract, and the one a caller sees at runtime rather
             // than during development: a hop that resolves and then throws comes back as the
             // reflection wrapper, not as what the target actually threw. A caller logging the
@@ -259,14 +259,14 @@ class CoreUiTreeTest {
     class IsComponentShowing {
 
         @Test
-        void isComponentShowingIsTrueForAComponentThatIsNotFadedOut() {
+        void isTrueForAComponentThatIsNotFadedOut() {
 
             assertThat(CoreUiTree.isComponentShowing(new CoreUiFake(new CoreUiComponentFake())))
                 .isTrue();
         }
 
         @Test
-        void isComponentShowingIsFalseForAComponentFadedFullyOut() {
+        void isFalseForAComponentFadedFullyOut() {
             // The whole point of the read: a screen the player has closed is faded out and dropped
             // from its parent, while whoever handed the reference out goes on handing it out.
             assertThat(CoreUiTree
@@ -275,7 +275,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void isComponentShowingIsTrueForAShapeCarryingNoFader() {
+        void isTrueForAShapeCarryingNoFader() {
             // Failing open, unlike the reads either side of this one. A shape that answers no such
             // name leaves a caller doing what it did before rather than standing down on a screen
             // the player is looking at.
@@ -284,7 +284,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void isComponentShowingIsTrueWhenTheFadeStateCannotBeRead() {
+        void isTrueWhenTheFadeStateCannotBeRead() {
             // The same failing open one hop further in, which is the half a game build can break on
             // its own: the fader is there and answers nothing this can use.
             assertThat(CoreUiTree.isComponentShowing(new UnreadableFadeStateTargetFake()))
@@ -292,7 +292,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void isComponentShowingIsFalseWhenThereIsNoComponent() {
+        void isFalseWhenThereIsNoComponent() {
             // A caller with nothing in hand has nothing on screen, so the null case saves every one
             // of them a test of its own before asking.
             assertThat(CoreUiTree.isComponentShowing(null))
@@ -304,7 +304,7 @@ class CoreUiTreeTest {
     class ReadCoreUiOf {
 
         @Test
-        void readCoreUiOfReturnsWhatAHostingDialogStandsUp() {
+        void returnsWhatAHostingDialogStandsUp() {
 
             var coreFake = new CoreUiComponentFake();
 
@@ -313,7 +313,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void readCoreUiOfIsNullForADialogThatHostsNoCoreUi() {
+        void isNullForADialogThatHostsNoCoreUi() {
             // A scripted dialog exposes no such method at all. Reading that as a failure would take
             // down the walk for every screen opened while one is up, rather than sending it to the
             // campaign's own core, which is where those screens then live.
@@ -322,7 +322,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void readCoreUiOfIsNullWhenNoDialogIsUp() {
+        void isNullWhenNoDialogIsUp() {
             assertThat(CoreUiTree.readCoreUiOf(null))
                 .isNull();
         }
@@ -349,7 +349,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void resolveCurrentTabIsNullBeforeThereIsASector() {
+        void isNullBeforeThereIsASector() {
 
             globalMock
                 .when(Global::getSector)
@@ -360,7 +360,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void resolveCurrentTabIsNullBeforeThereIsACampaignUi() {
+        void isNullBeforeThereIsACampaignUi() {
 
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
@@ -370,7 +370,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void resolveCurrentTabThrowsWhenTheCampaignUiDoesNotAnswerTheCoreHop() {
+        void throwsWhenTheCampaignUiDoesNotAnswerTheCoreHop() {
             // An empty screen answers null; a campaign UI that does not expose the hop at all is a
             // broken reach, and the two are kept apart so a caller can treat them differently.
             when(sectorMock.getCampaignUI())
@@ -381,7 +381,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void resolveCurrentTabReadsTheDialogsCoreWhileADialogIsUp() {
+        void readsTheDialogsCoreWhileADialogIsUp() {
             // The screens a dialog opens are drawn from the core it stands up, while the campaign's
             // own goes on holding whatever tab it was left on. Reading the campaign's regardless
             // searches the wrong tree for the whole of a docked visit.
@@ -398,7 +398,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void resolveCurrentTabFallsThroughToTheCampaignsCoreOnceTheDialogsCoreIsDismissed() {
+        void fallsThroughToTheCampaignsCoreOnceTheDialogsCoreIsDismissed() {
             // A dialog keeps handing out the core UI of a screen the player has closed, and that
             // core goes on naming the tab it last showed - so a walk that took it on presence alone
             // would keep finding the closed screen's widgets for the rest of the docked visit.
@@ -417,7 +417,7 @@ class CoreUiTreeTest {
         }
 
         @Test
-        void resolveCurrentTabFallsThroughToTheCampaignsCoreForADialogHostingNone() {
+        void fallsThroughToTheCampaignsCoreForADialogHostingNone() {
             // A scripted dialog hosts no core UI, so the screens are still the campaign's. Reaching
             // the core hop is what proves the walk carried on rather than stopping at the dialog -
             // the bare campaign UI mock does not expose it, which is the exception raised here.

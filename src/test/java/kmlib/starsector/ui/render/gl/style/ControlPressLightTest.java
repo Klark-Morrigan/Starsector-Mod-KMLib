@@ -36,14 +36,14 @@ final class ControlPressLightTest {
     class ResolvePaintAtPressFraction {
 
         @Test
-        void resolvePaintAtPressFractionReachesTheStatedAlphaAtTheLiftsPeak() {
+        void reachesTheStatedAlphaAtTheLiftsPeak() {
 
             assertThat(LIGHT.resolvePaintAtPressFraction(AT_THE_PEAK, FULLY_OPAQUE).alpha())
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
 
         @Test
-        void resolvePaintAtPressFractionScalesTheAlphaByHowFarTheLiftHasRun() {
+        void scalesTheAlphaByHowFarTheLiftHasRun() {
             // A fraction rather than a flag is the whole point of the channel: a press falls away over its
             // own cycle, so the light has to come down with it rather than switch off at the end.
             assertThat(LIGHT.resolvePaintAtPressFraction(HALF_SPENT, FULLY_OPAQUE).alpha())
@@ -51,7 +51,7 @@ final class ControlPressLightTest {
         }
 
         @Test
-        void resolvePaintAtPressFractionFadesTheLightWithThePanelsOwnOpacity() {
+        void fadesTheLightWithThePanelsOwnOpacity() {
             // The light is part of the panel, so a panel drawn half faded flashes half as hard - a press that
             // ignored the opacity would be the one thing on a translucent panel painting at full strength.
             assertThat(LIGHT.resolvePaintAtPressFraction(AT_THE_PEAK, 0.5f).alpha())
@@ -59,7 +59,7 @@ final class ControlPressLightTest {
         }
 
         @Test
-        void resolvePaintAtPressFractionHidesTheLightOfACellNoPressIsRunningOn() {
+        void hidesTheLightOfACellNoPressIsRunningOn() {
             // What keeps a strip nobody is clicking free: a hidden paint is skipped by the fill primitives,
             // so a spent lift emits nothing rather than compositing a run the blend discards.
             assertThat(LIGHT.resolvePaintAtPressFraction(NOT_PRESSED, FULLY_OPAQUE).isHidden())
@@ -67,7 +67,7 @@ final class ControlPressLightTest {
         }
 
         @Test
-        void resolvePaintAtPressFractionKeepsTheLightsOwnColour() {
+        void keepsTheLightsOwnColour() {
             // Only the alpha answers to the lift: the shade is the look's, so a press can never move a
             // control toward a colour the panel names nowhere.
             assertThat(LIGHT.resolvePaintAtPressFraction(HALF_SPENT, FULLY_OPAQUE).colour())
@@ -86,7 +86,7 @@ final class ControlPressLightTest {
             new Color(220, 220, 220));
 
         @Test
-        void createAccentPressLightLightsInTheAccentsBrightStep() {
+        void lightsInTheAccentsBrightStep() {
             // The step reserved for what must read against the base, which is exactly this treatment's
             // problem: the cell it lands on is already washed in the base, so a light of that same step
             // would be a press into what the player is already looking at.
@@ -95,7 +95,7 @@ final class ControlPressLightTest {
         }
 
         @Test
-        void createAccentPressLightStandsAboveTheHoverWashsOwnStrength() {
+        void standsAboveTheHoverWashsOwnStrength() {
             // The ordering the treatment rests on: a press is made on a cell the pointer is already holding
             // fully washed, so its light has to reach past that wash. The hovered wash sits at 0.15.
             assertThat(ControlPressLight.createAccentPressLight(ACCENT).fullPressAlpha())

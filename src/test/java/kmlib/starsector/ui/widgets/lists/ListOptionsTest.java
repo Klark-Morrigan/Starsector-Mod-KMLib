@@ -23,7 +23,7 @@ final class ListOptionsTest {
     class IsOptionAt {
 
         @Test
-        void isOptionAtAnswersTrueForEveryOptionTheListWasLaidFrom() {
+        void answersTrueForEveryOptionTheListWasLaidFrom() {
             // Both ends included: the last option is as real as the first, and a bound off by one
             // would drop the row a list most often ends on.
             assertThat(ListOptions.isOptionAt(OPTIONS, 0))
@@ -33,7 +33,7 @@ final class ListOptionsTest {
         }
 
         @Test
-        void isOptionAtAnswersFalsePastTheLastOption() {
+        void answersFalsePastTheLastOption() {
             // The near miss and a far one alike: one past the end names no option, which is the read
             // that would run off the list.
             assertThat(ListOptions.isOptionAt(OPTIONS, OPTIONS.size()))
@@ -43,7 +43,7 @@ final class ListOptionsTest {
         }
 
         @Test
-        void isOptionAtAnswersFalseBelowTheFirstOption() {
+        void answersFalseBelowTheFirstOption() {
             // The other end, which a bounds test written against the list's length alone would let
             // through - a sentinel carried as a negative arrives here like any other index.
             assertThat(ListOptions.isOptionAt(OPTIONS, -1))
@@ -51,7 +51,7 @@ final class ListOptionsTest {
         }
 
         @Test
-        void isOptionAtAnswersFalseForAListWithNoOptions() {
+        void answersFalseForAListWithNoOptions() {
             // A control laid from nothing has no real options, so every reading against it is a miss
             // rather than a first row that happens to be absent.
             assertThat(ListOptions.isOptionAt(List.of(), 0))

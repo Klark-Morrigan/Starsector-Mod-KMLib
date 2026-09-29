@@ -30,7 +30,7 @@ final class NotchRendererTest {
     class ComputeChevronArms {
 
         @Test
-        void computeChevronArmsPointsTheApexLeftOfTheEndsWhenFullyExpanded() {
+        void pointsTheApexLeftOfTheEndsWhenFullyExpanded() {
 
             var arms = NotchRenderer.computeChevronArms(NOTCH, 0f);
             // Expanded, the glyph is the collapse cue "<": apex to the left, the arms opening to the right.
@@ -39,7 +39,7 @@ final class NotchRendererTest {
         }
 
         @Test
-        void computeChevronArmsStraightensToAVerticalLineAtTheMidpoint() {
+        void straightensToAVerticalLineAtTheMidpoint() {
 
             var arms = NotchRenderer.computeChevronArms(NOTCH, 0.5f);
 
@@ -51,7 +51,7 @@ final class NotchRendererTest {
         }
 
         @Test
-        void computeChevronArmsPointsTheApexRightOfTheEndsWhenFullyDocked() {
+        void pointsTheApexRightOfTheEndsWhenFullyDocked() {
 
             var arms = NotchRenderer.computeChevronArms(NOTCH, 1f);
 
@@ -61,7 +61,7 @@ final class NotchRendererTest {
         }
 
         @Test
-        void computeChevronArmsSwingsSymmetricallyAboutTheCentreAcrossTheCollapse() {
+        void swingsSymmetricallyAboutTheCentreAcrossTheCollapse() {
 
             var expanded = NotchRenderer.computeChevronArms(NOTCH, 0f);
             var docked = NotchRenderer.computeChevronArms(NOTCH, 1f);
@@ -75,7 +75,7 @@ final class NotchRendererTest {
         }
 
         @Test
-        void computeChevronArmsClampsAnOvershootingFractionToTheDockedGlyph() {
+        void clampsAnOvershootingFractionToTheDockedGlyph() {
 
             var docked = NotchRenderer.computeChevronArms(NOTCH, 1f);
             var overshoot = NotchRenderer.computeChevronArms(NOTCH, 2f);
@@ -89,7 +89,7 @@ final class NotchRendererTest {
         }
 
         @Test
-        void computeChevronArmsRunsTheApexMidwayBetweenTheArmEnds() {
+        void runsTheApexMidwayBetweenTheArmEnds() {
 
             var arms = NotchRenderer.computeChevronArms(NOTCH, 0f);
 
@@ -105,20 +105,20 @@ final class NotchRendererTest {
     class ComputeNotchBorder {
 
         @Test
-        void computeNotchBorderStrokesOnePixelThinnerThanTheFrame() {
+        void strokesOnePixelThinnerThanTheFrame() {
             assertThat(NotchRenderer.computeNotchBorder(3f))
                 .isCloseTo(2f, within(TOLERANCE));
         }
 
         @Test
-        void computeNotchBorderFloorsAtOnePixelForAHairlineFrame() {
+        void floorsAtOnePixelForAHairlineFrame() {
             // A one-pixel frame would leave a zero-width notch edge; the floor keeps an edge to trace.
             assertThat(NotchRenderer.computeNotchBorder(1f))
                 .isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
-        void computeNotchBorderFloorsAtOnePixelForABorderlessFrame() {
+        void floorsAtOnePixelForABorderlessFrame() {
             assertThat(NotchRenderer.computeNotchBorder(0f))
                 .isCloseTo(1f, within(TOLERANCE));
         }
@@ -128,7 +128,7 @@ final class NotchRendererTest {
     class ComputeHoverWashAlpha {
 
         @Test
-        void computeHoverWashAlphaWashesNothingWhileTheHandleIsUnlit() {
+        void washesNothingWhileTheHandleIsUnlit() {
             // A resting handle must contribute no wash at all, so the draw can be skipped rather than
             // blending a fully transparent quad over the notch's own face every frame.
             assertThat(NotchRenderer.computeHoverWashAlpha(FULL_OPACITY, 0f))
@@ -136,20 +136,20 @@ final class NotchRendererTest {
         }
 
         @Test
-        void computeHoverWashAlphaReachesTheWashPeakOnceTheHandleIsFullyLit() {
+        void reachesTheWashPeakOnceTheHandleIsFullyLit() {
             assertThat(NotchRenderer.computeHoverWashAlpha(FULL_OPACITY, 1f))
                 .isCloseTo(0.35f, within(TOLERANCE));
         }
 
         @Test
-        void computeHoverWashAlphaScalesWithTheHoverPartWayThroughTheTravel() {
+        void scalesWithTheHoverPartWayThroughTheTravel() {
             // The whole point of taking a fraction: the face lights gradually rather than switching on.
             assertThat(NotchRenderer.computeHoverWashAlpha(FULL_OPACITY, 0.5f))
                 .isCloseTo(0.175f, within(TOLERANCE));
         }
 
         @Test
-        void computeHoverWashAlphaFadesWithThePanelsOwnOpacity() {
+        void fadesWithThePanelsOwnOpacity() {
             // A lit handle on a half-faded panel washes at half its peak, so the handle keeps fading with
             // the panel rather than lighting to full strength over a translucent frame.
             assertThat(NotchRenderer.computeHoverWashAlpha(0.5f, 1f))

@@ -319,7 +319,7 @@ class MapIconReseatDecisionTest {
     class HasStoodDown {
 
         @Test
-        void hasStoodDownIsFalseWhileLiftsAreStillBeingAttempted() {
+        void isFalseWhileLiftsAreStillBeingAttempted() {
 
             var reseatDecision = new MapIconReseatDecision();
 
@@ -330,7 +330,7 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void hasStoodDownIsTrueOnceTheAttemptsAreSpent() {
+        void isTrueOnceTheAttemptsAreSpent() {
             // Published so the caller can say once that the layering is not coming right, which is
             // otherwise a state a player could only diagnose from the picture.
             var reseatDecision = new MapIconReseatDecision();
@@ -342,7 +342,7 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void hasStoodDownIsFalseAgainOnceTheMapHasClosed() {
+        void isFalseAgainOnceTheMapHasClosed() {
             // The stand-down is the open's, not the session's.
             var reseatDecision = new MapIconReseatDecision();
 
@@ -358,14 +358,14 @@ class MapIconReseatDecisionTest {
     class IsPutBackOwed {
 
         @Test
-        void isPutBackOwedIsFalseBeforeAnythingHasBeenTakenOut() {
+        void isFalseBeforeAnythingHasBeenTakenOut() {
 
             assertThat(new MapIconReseatDecision().isPutBackOwed())
                 .isFalse();
         }
 
         @Test
-        void isPutBackOwedIsTrueWhileTheEntityIsOutOfItsLocation() {
+        void isTrueWhileTheEntityIsOutOfItsLocation() {
             // What a caller holding the entity reads to tell the one advance it is meant to spend
             // out from an entity nothing is coming back for.
             var reseatDecision = new MapIconReseatDecision();
@@ -377,7 +377,7 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void isPutBackOwedIsFalseOnceTheAdvanceOwedThePutBackHasAsked() {
+        void isFalseOnceTheAdvanceOwedThePutBackHasAsked() {
             // Spent by the asking rather than by the move: a caller whose put-back faulted after
             // this point is holding an entity no later advance will order back, which is the whole
             // state this read exists to expose.
@@ -391,7 +391,7 @@ class MapIconReseatDecisionTest {
         }
 
         @Test
-        void isPutBackOwedStaysTrueWhileTheWidgetStillShowsTheIcon() {
+        void staysTrueWhileTheWidgetStillShowsTheIcon() {
             // A wait is a removal still in progress, so the caller holding the entity must keep
             // holding it rather than return it early and undo the lift.
             var reseatDecision = new MapIconReseatDecision();

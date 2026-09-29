@@ -16,7 +16,7 @@ final class FingerprintsTest {
     class Compute {
 
         @Test
-        void computeShiftsWhenAnySourceAdvances() {
+        void shiftsWhenAnySourceAdvances() {
             // The whole point: a consumer folding N counters must see the fold move when any one
             // advances, or a change would be missed and the cache never rebuilt.
             var before = Fingerprints.compute(() -> 3, () -> 7);
@@ -27,7 +27,7 @@ final class FingerprintsTest {
         }
 
         @Test
-        void computeIsOrderSensitive() {
+        void isOrderSensitive() {
             // Order matters, so two sources that swap values still fold apart rather than aliasing to
             // the same fingerprint.
             assertThat(Fingerprints.compute(() -> 3, () -> 7))
@@ -35,7 +35,7 @@ final class FingerprintsTest {
         }
 
         @Test
-        void computeReadsEachSourcesCurrentValue() {
+        void readsEachSourcesCurrentValue() {
             // The fold reads the live value at call time, so the same sources fold identically while
             // unchanged - a rebuild only when a counter actually moved, not on every call.
             var first = Fingerprints.compute(() -> 5, () -> 9);
@@ -44,7 +44,7 @@ final class FingerprintsTest {
         }
 
         @Test
-        void computeWithNoSourcesIsAStableConstant() {
+        void withNoSourcesIsAStableConstant() {
             // A static input passes no sources and must get one fixed value, so a view with no live
             // data never triggers a rebuild on its own.
             assertThat(Fingerprints.compute()).isEqualTo(Fingerprints.compute());

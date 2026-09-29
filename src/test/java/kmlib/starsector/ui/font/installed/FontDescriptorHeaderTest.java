@@ -29,7 +29,7 @@ class FontDescriptorHeaderTest {
     class ReadDescriptorHeader {
 
         @Test
-        void readDescriptorHeaderCountsTheTokensAsLazyLibSplitsThem() {
+        void countsTheTokensAsLazyLibSplitsThem() {
 
             var header = FontDescriptorHeader.readDescriptorHeader(VANILLA_HEADER.lines().toList());
 
@@ -38,7 +38,7 @@ class FontDescriptorHeaderTest {
         }
 
         @Test
-        void readDescriptorHeaderReadsTheLineHeightAndThePageCount() {
+        void readsTheLineHeightAndThePageCount() {
 
             var header = FontDescriptorHeader.readDescriptorHeader(VANILLA_HEADER.lines().toList());
 
@@ -49,7 +49,7 @@ class FontDescriptorHeaderTest {
         }
 
         @Test
-        void readDescriptorHeaderKeepsAQuotedFaceNameWholeWhateverScriptItIsIn() {
+        void keepsAQuotedFaceNameWholeWhateverScriptItIsIn() {
             // A localised atlas names its face in its own script: the count has to come out as LazyLib's
             // does, or a face it loads would be reported as one it refuses.
             var localisedHeader = VANILLA_HEADER.replace("InsigniaLT", LOCALISED_FACE_NAME);
@@ -61,7 +61,7 @@ class FontDescriptorHeaderTest {
         }
 
         @Test
-        void readDescriptorHeaderCountsAnUnquotedSpaceAsTheExtraTokenLazyLibRefuses() {
+        void countsAnUnquotedSpaceAsTheExtraTokenLazyLibRefuses() {
             // The brittleness the count exists to catch: a face name that loses its quotes splits in two.
             var brokenHeader = VANILLA_HEADER.replace("\"InsigniaLT\"", "Insignia LT");
 
@@ -72,7 +72,7 @@ class FontDescriptorHeaderTest {
         }
 
         @Test
-        void readDescriptorHeaderRefusesLinesShorterThanTheHeader() {
+        void refusesLinesShorterThanTheHeader() {
 
             assertThatThrownBy(() -> FontDescriptorHeader.readDescriptorHeader(List.of("info face=\"x\"")))
                 .isInstanceOf(IllegalArgumentException.class)

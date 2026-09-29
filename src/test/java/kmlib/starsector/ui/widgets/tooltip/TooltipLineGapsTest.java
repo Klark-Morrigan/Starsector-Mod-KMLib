@@ -63,7 +63,7 @@ class TooltipLineGapsTest {
     class CreateGaps {
 
         @Test
-        void createGapsHoldsEveryLineAtTheBaseGap() {
+        void holdsEveryLineAtTheBaseGap() {
 
             var gaps = buildFlatGaps();
 
@@ -74,7 +74,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void createGapsLeavesEveryTierResolvingTheSameGap() {
+        void leavesEveryTierResolvingTheSameGap() {
             // The baseline a box gets by saying nothing: a stack reads at one spacing however deep it
             // goes, so a box that lists nothing deep never has to name a tier.
             var gaps = buildFlatGaps();
@@ -90,7 +90,7 @@ class TooltipLineGapsTest {
     class Constructor {
 
         @Test
-        void constructorCopiesTheStatedTiersAwayFromTheCaller() {
+        void copiesTheStatedTiersAwayFromTheCaller() {
             // A caller building its tiers in a map it goes on to reuse must not be able to respace a box
             // already built from it, which is the whole of what the copy is for.
             var statedGaps = new HashMap<Integer, Float>();
@@ -109,7 +109,7 @@ class TooltipLineGapsTest {
     class GappedAtLevel {
 
         @Test
-        void gappedAtLevelHoldsThatTiersLinesAtItsOwnGap() {
+        void holdsThatTiersLinesAtItsOwnGap() {
             assertThat(buildFlatGaps()
                     .gappedAtLevel(TWO_STEPS_UNDER, FACTOR_GAP)
                     .resolveGapAfter(TWO_STEPS_UNDER))
@@ -117,7 +117,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void gappedAtLevelLeavesEveryOtherTierAsItWas() {
+        void leavesEveryOtherTierAsItWas() {
             // Each statement tightens one run and nothing else - a tier stated after another must not
             // carry its gap up or down the stack.
             var gaps = buildTieredGaps();
@@ -131,7 +131,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void gappedAtLevelLeavesTheGapsItWasBuiltFromUntouched() {
+        void leavesTheGapsItWasBuiltFromUntouched() {
             // The refinements are chained off one another, so a box holding an earlier spacing has to
             // keep answering as it did before the later one was layered on it.
             var flatGaps = buildFlatGaps();
@@ -142,7 +142,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void gappedAtLevelTakesTheLaterStatementOfATierStatedTwice() {
+        void takesTheLaterStatementOfATierStatedTwice() {
             // Layering a stated gap over a built-in one is naming a tier that was already named on
             // purpose, so the later statement wins rather than the pair being an error.
             assertThat(buildFlatGaps()
@@ -153,7 +153,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void gappedAtLevelReadsATierAboveTheBoxsVoiceAsTheBoxsOwn() {
+        void readsATierAboveTheBoxsVoiceAsTheBoxsOwn() {
             // Stated at a level no row can carry, the tier still has to be one the lookup reaches -
             // otherwise the statement lands in an entry nothing ever resolves.
             assertThat(buildFlatGaps()
@@ -167,7 +167,7 @@ class TooltipLineGapsTest {
     class TightenedBy {
 
         @Test
-        void tightenedByKeepsThatShareOfEveryGapItHolds() {
+        void keepsThatShareOfEveryGapItHolds() {
             // What a compressed box spends between its lines: the base gap and each stated tier alike
             // come down, or the tiers a box never named would be the only room it kept at full width.
             var tightenedGaps = buildTieredGaps().tightenedBy(HALF_THE_ROOM);
@@ -181,7 +181,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void tightenedByHoldsTheTiersInTheOrderTheyWereStatedIn() {
+        void holdsTheTiersInTheOrderTheyWereStatedIn() {
             // One share across the tiers rather than a share per tier: the tiers are a shape - a run a
             // box holds tighter than the rest is saying that run belongs together - and a compression
             // that flattened them would undo the statement at exactly the depth it was made.
@@ -194,7 +194,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void tightenedByLeavesTheGapsItWasBuiltFromUntouched() {
+        void leavesTheGapsItWasBuiltFromUntouched() {
             // A caller solving for how far it has to compress measures candidate after candidate off the
             // one spacing, so a tightening that reached back into it would compound with every probe.
             var tieredGaps = buildTieredGaps();
@@ -209,13 +209,13 @@ class TooltipLineGapsTest {
     class ResolveGapAfter {
 
         @Test
-        void resolveGapAfterReturnsTheGapStatedForThatTier() {
+        void returnsTheGapStatedForThatTier() {
             assertThat(buildTieredGaps().resolveGapAfter(THREE_STEPS_UNDER))
                 .isCloseTo(TIER_GAP, within(TOLERANCE));
         }
 
         @Test
-        void resolveGapAfterReturnsTheBaseGapForATierNothingWasStatedFor() {
+        void returnsTheBaseGapForATierNothingWasStatedFor() {
             // The tiers above a tightened run are the box's own voice and the lines just under it, which
             // nobody names - they have to keep the spacing they had before any run was tightened.
             var gaps = buildTieredGaps();
@@ -227,7 +227,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void resolveGapAfterTreatsALevelAboveTheBoxsVoiceAsSpeakingInIt() {
+        void treatsALevelAboveTheBoxsVoiceAsSpeakingInIt() {
             // A row floors its own level at zero, but the lookup is public and is handed whatever a
             // caller has, so a negative resolves what a line speaking for the box resolves.
             assertThat(buildFlatGaps()
@@ -237,7 +237,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void resolveGapAfterCarriesTheDeepestStatedTierDownToEveryTierUnderIt() {
+        void carriesTheDeepestStatedTierDownToEveryTierUnderIt() {
             // A listing is as deep as its subject matter, so a box resolves tiers past the last one it
             // named. Those are part of the deepest named run's account and read with it - given the base
             // gap instead, the innermost lines of a box would be the airiest thing in it, which is the
@@ -251,7 +251,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void resolveGapAfterCarriesAStatedTierOnlyDownwards() {
+        void carriesAStatedTierOnlyDownwards() {
             // The inheritance runs one way: a tier nested under a statement is part of that run, while
             // the lines a run hangs from are not - so a box tightening something deep never pulls the
             // lines above it together as a side effect.
@@ -264,7 +264,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void resolveGapAfterTakesTheNearestStatedTierAboveALevelRatherThanTheDeepestOne() {
+        void takesTheNearestStatedTierAboveALevelRatherThanTheDeepestOne() {
             // Which statement a level inherits, where a box states more than one: the nearest above it,
             // so each stated tier governs the run it opens and hands over at the next statement rather
             // than at whichever one happens to be deepest.
@@ -277,7 +277,7 @@ class TooltipLineGapsTest {
         }
 
         @Test
-        void resolveGapAfterAnswersTheSameForGapsBuiltDirectlyFromAMap() {
+        void answersTheSameForGapsBuiltDirectlyFromAMap() {
             // The canonical constructor is public, so tiers can arrive as a map rather than through the
             // refinement - both have to reach the same lookup.
             var gaps = new TooltipLineGaps(BASE_GAP, Map.of(TWO_STEPS_UNDER, FACTOR_GAP));

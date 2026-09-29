@@ -18,7 +18,7 @@ class StarsectorUiColourTest {
     @Nested
     class Resolve {
         @Test
-        void resolveReturnsStarsectorColourForVanillaEntry() {
+        void returnsStarsectorColourForVanillaEntry() {
             var expected = new Color(1, 2, 3);
 
             // Misc.<clinit> reads from Global.getSettings(), so a no-op
@@ -37,13 +37,13 @@ class StarsectorUiColourTest {
         }
 
         @Test
-        void resolveReturnsLiteralForCustomEntry() {
+        void returnsLiteralForCustomEntry() {
             assertThat(StarsectorUiColour.ORANGE.resolve())
                 .isEqualTo(new Color(255, 100, 0, 255));
         }
 
         @Test
-        void resolveRejectsNullFromStarsectorSupplier() {
+        void rejectsNullFromStarsectorSupplier() {
             // Misc returns null during early engine boot for some palette
             // accessors; surfacing that as an NPE with the enum name beats
             // letting a null Color propagate into UI code.

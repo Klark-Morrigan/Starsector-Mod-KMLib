@@ -77,7 +77,7 @@ class HighlightedParagraphTest {
     @Nested
     class GetHighlights {
         @Test
-        void getHighlightsReturnsADefensiveCopy() {
+        void returnsADefensiveCopy() {
             var original = new Highlight("token", Color.RED);
             var paragraph = new HighlightedParagraph("text", original);
 
@@ -134,7 +134,7 @@ class HighlightedParagraphTest {
     @Nested
     class AddToTooltip {
         @Test
-        void addToTooltipWithoutPadDefaultsToZero() {
+        void withoutPadDefaultsToZero() {
             var tooltipMock = mock(TooltipMakerAPI.class);
             when(tooltipMock.addPara(anyString(), any(Color.class), eq(0f))).thenReturn(labelMock);
             var paragraph = new HighlightedParagraph("text", Color.WHITE);
@@ -145,7 +145,7 @@ class HighlightedParagraphTest {
         }
 
         @Test
-        void addToTooltipDelegatesAddParaThenAppliesHighlightsToTheReturnedLabel() {
+        void delegatesAddParaThenAppliesHighlightsToTheReturnedLabel() {
             var tooltipMock = mock(TooltipMakerAPI.class);
             when(tooltipMock.addPara(anyString(), any(Color.class), eq(8f))).thenReturn(labelMock);
             var paragraph = new HighlightedParagraph(
@@ -172,7 +172,7 @@ class HighlightedParagraphTest {
     @Nested
     class ApplyTo {
         @Test
-        void applyToFansHighlightsIntoTheParallelLabelSetters() {
+        void fansHighlightsIntoTheParallelLabelSetters() {
             var paragraph = new HighlightedParagraph(
                 "text",
                 new Highlight("a", Color.RED),
@@ -190,7 +190,7 @@ class HighlightedParagraphTest {
         }
 
         @Test
-        void applyToIsANoopForAParagraphWithNoHighlights() {
+        void isANoopForAParagraphWithNoHighlights() {
             var paragraph = new HighlightedParagraph("text");
 
             paragraph.applyTo(labelMock);

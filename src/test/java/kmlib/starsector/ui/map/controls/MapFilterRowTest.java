@@ -35,7 +35,7 @@ class MapFilterRowTest {
     class IsSameRowAs {
 
         @Test
-        void isSameRowAsAnswersYesForTwoHandlesOnOneRow() {
+        void answersYesForTwoHandlesOnOneRow() {
             // The common case at rest: the screen was reopened onto the same row, and whatever is
             // attached to it is still attached to what the player is looking at.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
@@ -45,7 +45,7 @@ class MapFilterRowTest {
         }
 
         @Test
-        void isSameRowAsAnswersNoForARowThatWasRebuilt() {
+        void answersNoForARowThatWasRebuilt() {
             // Two rows built the same way are still two rows, which is why the question is asked by
             // identity: a rebuilt row carries the same buttons at the same sizes as the one it
             // replaced, so anything comparing their contents would call them one.
@@ -55,7 +55,7 @@ class MapFilterRowTest {
         }
 
         @Test
-        void isSameRowAsAnswersNoWhenThereIsNoRowToCompareAgainst() {
+        void answersNoWhenThereIsNoRowToCompareAgainst() {
             // What a caller holds while no map is on screen. Not the same row as anything, so a
             // control attached to this one is not left believing it is still where it was put.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape");
@@ -69,7 +69,7 @@ class MapFilterRowTest {
     class ReadBox {
 
         @Test
-        void readBoxAnswersWhereTheLayoutPutTheRow() {
+        void answersWhereTheLayoutPutTheRow() {
             // The row's own box is where a control's height comes from, and it is read live rather
             // than kept, a resized window moving the row it was measured against.
             var rowFake = MapFilterRowFake.createRowOfSize(ROW_BOX, 120f, "Starscape");
@@ -79,7 +79,7 @@ class MapFilterRowTest {
         }
 
         @Test
-        void readBoxAnswersNothingForAShapeTheLayoutNeverPlaced() {
+        void answersNothingForAShapeTheLayoutNeverPlaced() {
             // A shape carrying no box at all, which is what a game build that reworked the row into
             // something the layout does not place looks like from here. The same answer as a
             // component the layout has built and not yet positioned, and for the same reason: there
@@ -93,7 +93,7 @@ class MapFilterRowTest {
     class ReadLastButtonBox {
 
         @Test
-        void readLastButtonBoxAnswersTheRightmostButtonRatherThanTheFirst() {
+        void answersTheRightmostButtonRatherThanTheFirst() {
             // The row lays its children left to right off the one before, so the last child added is
             // the one furthest right - and its far edge is where the row has been filled to. A read
             // that answered the first would report a row as emptier than it is and append over a
@@ -111,7 +111,7 @@ class MapFilterRowTest {
         }
 
         @Test
-        void readLastButtonBoxAnswersNothingForARowHoldingNoButtons() {
+        void answersNothingForARowHoldingNoButtons() {
             // A row with nothing on it offers no width to match, so a control laid against it would
             // be sized at a guess.
             assertThat(new MapFilterRow(MapFilterRowFake.createMapScreenStrip()).readLastButtonBox())
@@ -119,7 +119,7 @@ class MapFilterRowTest {
         }
 
         @Test
-        void readLastButtonBoxAnswersNothingForALastButtonTheLayoutNeverPlaced() {
+        void answersNothingForALastButtonTheLayoutNeverPlaced() {
             // A button built and not yet laid out, which is the state the game's own is in between
             // the two.
             assertThat(new MapFilterRow(new UnplacedButtonRowFake()).readLastButtonBox())

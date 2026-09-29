@@ -776,7 +776,7 @@ final class VoronoiCellBuilderTest {
     class BuildCell {
 
         @Test
-        void buildCellMatchesTheSameSiteFromBuildCells() {
+        void matchesTheSameSiteFromBuildCells() {
 
             var sites = Arrays.asList(
                 new double[] {-300, -300},

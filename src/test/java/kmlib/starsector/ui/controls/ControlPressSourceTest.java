@@ -25,7 +25,7 @@ final class ControlPressSourceTest {
     class CreateRestingPressSource {
 
         @Test
-        void createRestingPressSourceLiftsNoCellOfTheControl() {
+        void liftsNoCellOfTheControl() {
 
             var presses = ControlPressSource.createRestingPressSource();
 

@@ -30,20 +30,20 @@ final class TooltipSectionTest {
     @Nested
     class Constructor {
         @Test
-        void constructorRejectsASectionWithNoLines() {
+        void rejectsASectionWithNoLines() {
             assertThatThrownBy(() -> TooltipSection.createSection(List.of()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("openingRows");
         }
 
         @Test
-        void constructorRejectsANullLineList() {
+        void rejectsANullLineList() {
             assertThatThrownBy(() -> TooltipSection.createSection(null))
                 .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        void constructorCopiesTheLinesItIsBuiltFrom() {
+        void copiesTheLinesItIsBuiltFrom() {
             // The block is a value, so a caller still holding the list it composed must not be able to
             // add a line to a block already handed to a layout - which would size a box for one set of
             // lines and then draw another.
@@ -59,7 +59,7 @@ final class TooltipSectionTest {
         }
 
         @Test
-        void constructorCopiesTheMembersItIsBuiltFrom() {
+        void copiesTheMembersItIsBuiltFrom() {
             var members = new ArrayList<TooltipSection>();
             members.add(TooltipSection.createSection(List.of(buildRow("Jangala"))));
 
@@ -78,7 +78,7 @@ final class TooltipSectionTest {
     class CreateSection {
 
         @Test
-        void createSectionNestsNothingInsideTheBlock() {
+        void nestsNothingInsideTheBlock() {
             // What most blocks are, and the state a caller gets without saying anything: a block that
             // groups something says so, rather than every other caller passing an empty list for it.
             assertThat(TooltipSection.createSection(List.of(buildRow("Claim:"))).members())
@@ -90,7 +90,7 @@ final class TooltipSectionTest {
     class Nesting {
 
         @Test
-        void nestingHoldsThoseBlocksInsideThisOne() {
+        void holdsThoseBlocksInsideThisOne() {
 
             var member = TooltipSection.createSection(List.of(buildRow("Jangala")));
             var section = TooltipSection
@@ -102,7 +102,7 @@ final class TooltipSectionTest {
         }
 
         @Test
-        void nestingLeavesTheBlocksOwnLinesAsTheyWere() {
+        void leavesTheBlocksOwnLinesAsTheyWere() {
 
             var openingRow = buildRow("The Hegemony");
             var section = TooltipSection
@@ -118,7 +118,7 @@ final class TooltipSectionTest {
     class CountLines {
 
         @Test
-        void countLinesCountsABlocksOwnLines() {
+        void countsABlocksOwnLines() {
             assertThat(TooltipSection
                     .createSection(List.of(buildRow("Claim:"), buildRow("The Hegemony")))
                     .countLines())
@@ -126,7 +126,7 @@ final class TooltipSectionTest {
         }
 
         @Test
-        void countLinesCountsEveryLineNestedBeneathIt() {
+        void countsEveryLineNestedBeneathIt() {
             // What the spacing rule reads, so it has to be the whole of what the block draws as: counted
             // one level down, a faction whose colonies each break down further would read as short and
             // the block after it would sit flush against its last term.
@@ -146,7 +146,7 @@ final class TooltipSectionTest {
     @Nested
     class ReadRowsInOrder {
         @Test
-        void readRowsInOrderFlattensTheBlocksIntoOneRunOfLines() {
+        void flattensTheBlocksIntoOneRunOfLines() {
             // The order a renderer paints in: blocks top to bottom, each block's own lines in the order
             // it holds them, with nothing of the grouping left in the result.
             var firstRow = buildRow("Claim:");
@@ -162,7 +162,7 @@ final class TooltipSectionTest {
         }
 
         @Test
-        void readRowsInOrderReadsANestedBlockUnderTheLinesThatOpenIt() {
+        void readsANestedBlockUnderTheLinesThatOpenIt() {
             // Depth first, which is where a reader looks for a breakdown - and the order the layout
             // walked to space the lines, so an anchor and the row it belongs to cannot slip apart.
             var headingRow = buildRow("Dominated by:");
@@ -183,7 +183,7 @@ final class TooltipSectionTest {
         }
 
         @Test
-        void readRowsInOrderReadsNoLinesFromNoBlocks() {
+        void readsNoLinesFromNoBlocks() {
             assertThat(TooltipSection.readRowsInOrder(List.of()))
                 .isEmpty();
         }

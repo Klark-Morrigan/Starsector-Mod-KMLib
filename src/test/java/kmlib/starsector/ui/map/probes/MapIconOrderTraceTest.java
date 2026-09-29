@@ -38,7 +38,7 @@ class MapIconOrderTraceTest {
     class ReadTerrainIcons {
 
         @Test
-        void readTerrainIconsReportsATerrainsTypeAndPlugin() {
+        void reportsATerrainsTypeAndPlugin() {
 
             var icons = buildIconMap(
                 buildTerrainMock("slipstream", new CampaignTerrainPluginFake()));
@@ -49,7 +49,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void readTerrainIconsCountsThePositionsOfIconsItDoesNotReport() {
+        void countsThePositionsOfIconsItDoesNotReport() {
             // The positions are the whole use of the reading - one map open's are compared against
             // another's to see whether an entity moved - so they have to index the widget's map
             // rather than this list. Counting only the terrain icons would renumber every one of
@@ -67,7 +67,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void readTerrainIconsCountsAKeyThatIsNotAnEntityAsHoldingItsSlot() {
+        void countsAKeyThatIsNotAnEntityAsHoldingItsSlot() {
             // The map is keyed by whatever the widget put in it, and a key this cannot read is
             // still a slot: skipping it would shift every position after it.
             var icons = buildIconMap(
@@ -80,7 +80,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void readTerrainIconsReportsATerrainTaggedEntityThatIsNoTerrain() {
+        void reportsATerrainTaggedEntityThatIsNoTerrain() {
             // The tag is what the widget sorts on, so an entity carrying it draws in the terrain
             // pass whatever else it is. Reporting it is what would show the tag and the type having
             // come apart, rather than leaving a slot in the order unaccounted for.
@@ -94,7 +94,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void readTerrainIconsReportsATerrainHoldingNoPlugin() {
+        void reportsATerrainHoldingNoPlugin() {
 
             assertThat(MapIconOrderTrace.readTerrainIcons(
                     buildIconMap(buildTerrainMock("slipstream", null))))
@@ -102,7 +102,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void readTerrainIconsReportsNothingForAMapHoldingNoIcons() {
+        void reportsNothingForAMapHoldingNoIcons() {
 
             assertThat(MapIconOrderTrace.readTerrainIcons(new LinkedHashMap<>()))
                 .isEmpty();
@@ -113,7 +113,7 @@ class MapIconOrderTraceTest {
     class DescribeTerrainIcons {
 
         @Test
-        void describeTerrainIconsKeepsTheOrderItWasGiven() {
+        void keepsTheOrderItWasGiven() {
             // The order is the whole subject: it is what decides which icon the map paints over
             // which, so a line that sorted or grouped them would describe a different map.
             var terrainIcons = List.of(
@@ -129,7 +129,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void describeTerrainIconsReportsAnEmptyOrderForAMapHoldingNoTerrainIcons() {
+        void reportsAnEmptyOrderForAMapHoldingNoTerrainIcons() {
             // A map with no terrain icons at all is a real answer rather than nothing to say: it
             // is what a layer that failed to install looks like from here.
             assertThat(MapIconOrderTrace.describeTerrainIcons(List.of()))
@@ -137,7 +137,7 @@ class MapIconOrderTraceTest {
         }
 
         @Test
-        void describeTerrainIconsNamesTheTotalWhenItNamesFewerIconsThanThat() {
+        void namesTheTotalWhenItNamesFewerIconsThanThat() {
             // The cap is what keeps one nebula-heavy sector from filling the log, and the total is
             // what stops the capped line from reading as the whole map.
             var description = MapIconOrderTrace.describeTerrainIcons(

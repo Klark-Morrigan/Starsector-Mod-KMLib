@@ -214,7 +214,7 @@ final class TabPanelControllerTest {
     class CreateStartingDocked {
 
         @Test
-        void createStartingDockedOpensFullyCollapsedAtTheDockedRail() {
+        void opensFullyCollapsedAtTheDockedRail() {
             assertThat(TabPanelController.createStartingDocked().getCollapseFraction())
                 .isCloseTo(1f, within(TOLERANCE));
         }
@@ -224,14 +224,14 @@ final class TabPanelControllerTest {
     class IsFullyExpanded {
 
         @Test
-        void isFullyExpandedIsTrueForTheExpandedDefault() {
+        void isTrueForTheExpandedDefault() {
             // The expanded default is idle at the open end, so a host's expanded-only hotkeys are live.
             assertThat(new TabPanelController().isFullyExpanded())
                 .isTrue();
         }
 
         @Test
-        void isFullyExpandedIsFalseForADockedStart() {
+        void isFalseForADockedStart() {
             // A panel opened docked is not expanded, so its hotkeys stay inert until it is animated open.
             assertThat(TabPanelController.createStartingDocked().isFullyExpanded())
                 .isFalse();
@@ -242,7 +242,7 @@ final class TabPanelControllerTest {
     class GetTabInteractionSources {
 
         @Test
-        void getTabInteractionSourcesHoversNoTabBeforeAnyFrameHasAdvanced() {
+        void hoversNoTabBeforeAnyFrameHasAdvanced() {
             // A freshly built panel has been pointed at nothing, so its first painted frame must show a
             // row at rest rather than a tab already part-way lit.
             assertThat(new TabPanelController()
@@ -253,7 +253,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getTabInteractionSourcesLiftsNoTabBeforeAnyClickHasLanded() {
+        void liftsNoTabBeforeAnyClickHasLanded() {
             // Nothing has been pressed, so the lift channel must read at rest - a tab brightening on the
             // first frame would mark a click the player never made.
             assertThat(new TabPanelController()
@@ -268,7 +268,7 @@ final class TabPanelControllerTest {
     class GetInteractionSources {
 
         @Test
-        void getInteractionSourcesCarriesTheLiveChannelsOfBothHalves() {
+        void carriesTheLiveChannelsOfBothHalves() {
             // The pair is what a consumer draws from, so what it hands over has to be the panel's live
             // state and not a resting stand-in: a half wired to a fresh source would paint a row and a
             // strip that disagree about where the pointer is, which is the whole reason they travel
@@ -291,7 +291,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getInteractionSourcesCarriesTheBodysPressChannelBesideItsHover() {
+        void carriesTheBodysPressChannelBesideItsHover() {
             // The channel a body widget paints its press from. Wired to a resting stand-in it would leave
             // every press invisible while the lift ran on unseen, which is the failure the whole second
             // channel exists to prevent.
@@ -310,7 +310,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getInteractionSourcesCarriesTheBandButtonsOwnHoverChannel() {
+        void carriesTheBandButtonsOwnHoverChannel() {
             // Its own channel rather than an entry in the row's, so the button lights while every tab beside
             // it stays at rest - which is what a fraction keyed into the row's own space could not say.
             var controller = new TabPanelController();
@@ -336,7 +336,7 @@ final class TabPanelControllerTest {
     class GetBodyHoverSource {
 
         @Test
-        void getBodyHoverSourceHoversNoCellBeforeAnyFrameHasAdvanced() {
+        void hoversNoCellBeforeAnyFrameHasAdvanced() {
             // A freshly built panel has been pointed at nothing, so its first painted frame must show a
             // strip at rest rather than a control already part-way lit.
             assertThat(new TabPanelController()
@@ -347,7 +347,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getBodyHoverSourceAnswersTheFadeHeldForThatSlot() {
+        void answersTheFadeHeldForThatSlot() {
             // The two halves of a slot arrive one at a time - the strip walk binds the control's place and
             // the widget passes the cell it is painting - so the pair the source puts back together has to
             // be the pair the fade is keyed by.
@@ -365,7 +365,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getBodyHoverSourceLeavesTheTransposedSlotUnlit() {
+        void leavesTheTransposedSlotUnlit() {
             // The guard the two-step seam exists for: a control's place and a cell of it are both ints, so
             // a binding that crossed them would light a cell of the wrong control - and would pass the case
             // above, which names a slot whose halves differ.
@@ -387,7 +387,7 @@ final class TabPanelControllerTest {
     class GetBodyPressSource {
 
         @Test
-        void getBodyPressSourceLiftsNoCellBeforeAnyPressHasLanded() {
+        void liftsNoCellBeforeAnyPressHasLanded() {
             // A freshly built panel has been pressed nowhere, so its first painted frame must show a strip
             // at rest rather than a control already carrying a lift.
             assertThat(new TabPanelController()
@@ -398,7 +398,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getBodyPressSourceAnswersTheLiftHeldForThatSlot() {
+        void answersTheLiftHeldForThatSlot() {
             // The two halves of a slot arrive one at a time - the strip walk binds the control's place and
             // the widget passes the cell it is painting - so the pair the source puts back together has to
             // be the pair the lift is keyed by.
@@ -416,7 +416,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void getBodyPressSourceLeavesACellOfAnotherControlUnlifted() {
+        void leavesACellOfAnotherControlUnlifted() {
             // The guard the two-step seam exists for: a control's place and a cell of it are both ints, so a
             // binding that crossed them would lift a cell of the wrong control while the pressed one showed
             // nothing.
@@ -438,7 +438,7 @@ final class TabPanelControllerTest {
     class GetNotchHoverFraction {
 
         @Test
-        void getNotchHoverFractionStartsFullyOffTheLitLook() {
+        void startsFullyOffTheLitLook() {
             // A freshly built panel has been pointed at nothing, so its first painted frame must show a
             // handle at rest rather than one already part-way lit.
             assertThat(new TabPanelController().getNotchHoverFraction())
@@ -450,13 +450,13 @@ final class TabPanelControllerTest {
     class IsPresentingTabsOf {
 
         @Test
-        void isPresentingTabsOfAnswersYesForAnExpandedPanel() {
+        void answersYesForAnExpandedPanel() {
             assertThat(new TabPanelController().isPresentingTabsOf(buildTwoTabPlacement()))
                 .isTrue();
         }
 
         @Test
-        void isPresentingTabsOfAnswersNoForADockedPanelWithABody() {
+        void answersNoForADockedPanelWithABody() {
             // Its header is behind the rail, so its tabs are not there to be pressed, lit, or keyed to.
             assertThat(TabPanelController.createStartingDocked()
                     .isPresentingTabsOf(buildTwoTabPlacement()))
@@ -464,7 +464,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void isPresentingTabsOfAnswersYesForABodylessPanelWhateverTheFoldSays() {
+        void answersYesForABodylessPanelWhateverTheFoldSays() {
             // The fold outlives a tab switch, so a bodyless tab can be laid out under a fraction another
             // tab's body left standing. It has nothing to fold and no handle to unfold it, so acting on
             // that fraction would leave its row drawn in full but dead to every press, pointer and key -
@@ -479,7 +479,7 @@ final class TabPanelControllerTest {
     class HandlePointer {
 
         @Test
-        void handlePointerSwallowsAnEventOverTheDrawnTabRow() {
+        void swallowsAnEventOverTheDrawnTabRow() {
             // The row is drawn outside the body's box, so without this the surface behind the panel would
             // go on reading a pointer the player has parked on the tabs - and a tab row with no body under
             // it, which is the whole of such a panel, would block nothing at all.
@@ -493,7 +493,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void handlePointerParksAMoveOverTheDrawnTabRow() {
+        void parksAMoveOverTheDrawnTabRow() {
             // The row claims a move the same way the body does, and for the same reason: swallowing it
             // would leave a vanilla control lit behind the panel for as long as the pointer rests on the
             // tabs, that control letting go only on hearing a move that is not on it.
@@ -510,7 +510,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void handlePointerParksAMoveOverTheBody() {
+        void parksAMoveOverTheBody() {
             // Delegated to the body's own controller, which claims it the same way - so a move anywhere on
             // the panel reads alike to the screen behind, rather than the row and the body differing.
             var moveFake = RelocatableEventFake.createMoveAt(
@@ -526,7 +526,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void handlePointerLeavesAnEventOffThePanelAlone() {
+        void leavesAnEventOffThePanelAlone() {
             // Off every part of it the panel claims nothing, so the map underneath keeps answering the
             // pointer as it did before the panel was there.
             var eventMock = PointerEventMocks.mockPointerEventAt(OFF_PANEL_X, OFF_PANEL_Y);
@@ -539,7 +539,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void handlePointerFiresTheBandButtonAndNoTabForAPressOnTheButton() {
+        void firesTheBandButtonAndNoTabForAPressOnTheButton() {
             // The routing the whole band-button seam exists for: the panel's own action runs and the
             // selection does not move, so the player opens the dialog without their layer changing under it.
             var firedTabs = new ArrayList<Integer>();
@@ -562,7 +562,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void handlePointerStillSwitchesTheTabBesideTheBandButton() {
+        void stillSwitchesTheTabBesideTheBandButton() {
             // The other half of the same pairing. A button standing in the row must leave every tab in it
             // firing exactly as it did, or the row's indexing has moved after all.
             var firedTabs = new ArrayList<Integer>();
@@ -582,7 +582,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void handlePointerLeavesAnEventOverAWipedTabRowAlone() {
+        void leavesAnEventOverAWipedTabRowAlone() {
             // Mid-fold the drawn band is narrower than the row was laid out; the panel claims only what it
             // still paints, so the screen its tabs have wiped off goes back to whatever is behind.
             var eventMock = PointerEventMocks.mockPointerEventAt(INSIDE_SECOND_TAB_X, ON_TAB_ROW_Y);
@@ -599,7 +599,7 @@ final class TabPanelControllerTest {
     class ActivateTabAtPoint {
 
         @Test
-        void activateTabAtPointFiresThePressedTabsActionAndPulsesThatTab() {
+        void firesThePressedTabsActionAndPulsesThatTab() {
             // The pairing this seam exists to pin: the tab that fires is the tab that lifts. Crossed over,
             // a press would switch to one tab and confirm on another.
             var firedTabs = new ArrayList<Integer>();
@@ -624,7 +624,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateTabAtPointLiftsTheTabAlreadyShowingWithoutFiringIt() {
+        void liftsTheTabAlreadyShowingWithoutFiringIt() {
             // Where the lift and the action part. A tabs row is inert on its lit tab, as a vanilla strip is,
             // so the press fires nothing; but the press was still an act the player made, and a tab that
             // answered it with nothing at all would read as a panel that missed the click.
@@ -646,7 +646,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateTabAtPointActsOnNothingWhileTheTabsAreNotPresented() {
+        void actsOnNothingWhileTheTabsAreNotPresented() {
             // The gate that keeps a docked panel from acting on bare screen. Folding only clips the header
             // at paint time - its tabs keep the hit boxes they were laid at - so without this a press where
             // a tab used to be would fire that tab and swallow the click with nothing drawn to explain it.
@@ -670,7 +670,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateTabAtPointFiresABodylessPanelsTabWhateverTheFoldSays() {
+        void firesABodylessPanelsTabWhateverTheFoldSays() {
             // The same docked controller, now laying out a tab with nothing under it: the row is drawn in
             // full, so a press on it has to act. Gated on the fold alone this tab would be unpressable for
             // the rest of the session, with no handle to expand a body it does not have.
@@ -688,7 +688,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateTabAtPointActsOnNothingForAPressOffTheHeader() {
+        void actsOnNothingForAPressOffTheHeader() {
             // A press on the body falls through to the body controller, so this has to report that it did
             // not act rather than swallowing the press on a tab it never hit.
             var firedTabs = new ArrayList<Integer>();
@@ -713,7 +713,7 @@ final class TabPanelControllerTest {
     class ActivateBandButtonAtPoint {
 
         @Test
-        void activateBandButtonAtPointFiresTheButtonsOwnActionAndNoTabsAction() {
+        void firesTheButtonsOwnActionAndNoTabsAction() {
             // The whole reason the button is not a segment of the tabs row: a press on it reaches the
             // panel's own action and leaves the selection exactly where it was. As a segment it would both
             // fire the row's action and shift every index behind it.
@@ -737,7 +737,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateBandButtonAtPointActsOnNothingForAPressOnATab() {
+        void actsOnNothingForAPressOnATab() {
             // The tabs keep their own row. Reported as not acted so the press falls through to the tab
             // path, which is what still switches the layer under the button's neighbour.
             var firedButtonCells = new ArrayList<Integer>();
@@ -755,7 +755,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateBandButtonAtPointActsOnNothingWhileTheTabsAreNotPresented() {
+        void actsOnNothingWhileTheTabsAreNotPresented() {
             // Wiped with the row it stands in. Folding clips the band at paint time and leaves every hit box
             // where it was laid, so without the gate a press behind the docked rail would open the panel's
             // own dialog with nothing on screen to explain it.
@@ -774,7 +774,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void activateBandButtonAtPointActsOnNothingWhereThePanelFliesNoButton() {
+        void actsOnNothingWhereThePanelFliesNoButton() {
             // A panel asked for none has nothing there to press, so the point is bare band and the press
             // goes on to whatever else claims it.
             var hasActed = new TabPanelController().activateBandButtonAtPoint(
@@ -791,7 +791,7 @@ final class TabPanelControllerTest {
     class IsBandButtonHoveredAt {
 
         @Test
-        void isBandButtonHoveredAtReportsAPointerOnTheButton() {
+        void reportsAPointerOnTheButton() {
             assertThat(new TabPanelController().isBandButtonHoveredAt(
                 buildPlacementWithBandButton(TABS_SHOWING_FIRST_TAB, ControlAction.NONE),
                 INSIDE_BAND_BUTTON_X,
@@ -800,7 +800,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void isBandButtonHoveredAtReportsNoPointerOnATabBesideIt() {
+        void reportsNoPointerOnATabBesideIt() {
             // The pairing a crossed hit-test would break: the button lighting for a pointer on a tab would
             // read as the tab having moved.
             assertThat(new TabPanelController().isBandButtonHoveredAt(
@@ -811,7 +811,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void isBandButtonHoveredAtReportsNoPointerWhileTheTabsAreNotPresented() {
+        void reportsNoPointerWhileTheTabsAreNotPresented() {
             // Read by the fade as well as by the press, so the same gate keeps a docked panel from lighting
             // a button the player cannot see.
             assertThat(TabPanelController.createStartingDocked().isBandButtonHoveredAt(
@@ -826,7 +826,7 @@ final class TabPanelControllerTest {
     class StartHotkeyBlinkAt {
 
         @Test
-        void startHotkeyBlinkAtCarriesTheNamedTabOntoTheHoveredShade() {
+        void carriesTheNamedTabOntoTheHoveredShade() {
             // The blink is read on the look channel, so a key's press shows on the tab it is bound to with
             // the pointer nowhere near it - which is the whole point of marking a keyboard switch.
             var controller = new TabPanelController();
@@ -841,7 +841,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtLiftsNothingOnTheWashChannel() {
+        void liftsNothingOnTheWashChannel() {
             // A blink travels onto the hovered shade rather than past it, so it must leave the lift channel
             // alone - read there as well, it would brighten the tab twice and outshine a click.
             var controller = new TabPanelController();
@@ -854,7 +854,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtStrikesAtItsOwnPaceRatherThanThePanelsTravelPace() {
+        void strikesAtItsOwnPaceRatherThanThePanelsTravelPace() {
             // The whole of this pace: a strike confirms a key pressed away from the panel, so it lands and
             // is gone however leisurely the host is stepping the panel's travels. Stepped by the blink's own
             // rise while the travel pair says a traverse takes a whole second - on the travel pair this same
@@ -872,7 +872,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtAddsNothingToATabTheHoverAlreadyHoldsFullyLit() {
+        void addsNothingToATabTheHoverAlreadyHoldsFullyLit() {
             // The composition rule: the greater of the two, not their sum. Both stand fully on the shade
             // here, so a summed channel would read twice over and only the greater reads the one shade
             // either motion aims at - which is what makes a key pressed for the hovered tab a no-op.
@@ -894,7 +894,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtKeepsTheTabOnTheBlinkUntilAnArrivingHoverOvertakesIt() {
+        void keepsTheTabOnTheBlinkUntilAnArrivingHoverOvertakesIt() {
             // The other side of the same rule, and the one that says which motion the greater picks: neither
             // is aware of the other, so a pointer arriving at the blink's peak reads the blink's decay - not
             // its own fade starting from rest - until the two cross. Read half way down the blink's fall,
@@ -917,7 +917,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtRunsItsBlinkBackOutWithNoFurtherPress() {
+        void runsItsBlinkBackOutWithNoFurtherPress() {
             // A blink is one in-and-out cycle from a single trigger, so the tab has to fall back to its own
             // look on its own - left held, a key press would light a tab until something else moved it. Its
             // own rise and fall are the whole of what that takes.
@@ -939,7 +939,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void startHotkeyBlinkAtRunsItsCycleOutWhileThePanelIsDocked() {
+        void runsItsCycleOutWhileThePanelIsDocked() {
             // Unlike a hover, a blink takes no docked gate: it is an event already seen, so a fold arriving
             // mid-cycle must let it finish rather than cutting it off part-way lit.
             var controller = TabPanelController.createStartingDocked();
@@ -956,7 +956,7 @@ final class TabPanelControllerTest {
     class AdvanceInputMotionsForFrame {
 
         @Test
-        void advanceInputMotionsForFrameRaisesTheNamedTabInTheSourceTheRendererReads() {
+        void raisesTheNamedTabInTheSourceTheRendererReads() {
             // The seam the paint pass actually consumes: a fade stepped here has to surface through the
             // interaction sources, or the strip paints a row that never moves however long it is hovered.
             var controller = new TabPanelController();
@@ -972,7 +972,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameWindsTheDepartedTabBackDown() {
+        void windsTheDepartedTabBackDown() {
 
             var controller = new TabPanelController();
 
@@ -993,7 +993,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameLightsWhateverTabItIsHandedEvenWhileDocked() {
+        void lightsWhateverTabItIsHandedEvenWhileDocked() {
             // The frame advance takes the pointer's position as settled: whether the panel is presenting
             // its tabs is decided where the placement is known, so a tab named here is a tab to light. The
             // fold is asked once, not twice.
@@ -1008,7 +1008,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameRaisesTheNamedBodySlotAndNoOther() {
+        void raisesTheNamedBodySlotAndNoOther() {
             // The body's cells travel on the panel's own pair of paces, like the row above them: one frame
             // of a whole traverse puts the hovered slot fully on its hovered look and leaves every other
             // slot at rest.
@@ -1025,7 +1025,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameWindsTheDepartedBodySlotBackDown() {
+        void windsTheDepartedBodySlotBackDown() {
 
             var controller = new TabPanelController();
 
@@ -1046,7 +1046,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameKeepsTheBodySlotsFadesApartFromTheTabsOwn() {
+        void keepsTheBodySlotsFadesApartFromTheTabsOwn() {
             // The two rows are keyed in different terms and held apart, so a slot and a tab index that
             // happen to name the same number cannot read as one another. Held in one set, the body cell of
             // control 0 and tab 0 would light together and every case above would still pass.
@@ -1062,7 +1062,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameLightsTheHandleWhileThePointerIsOnIt() {
+        void lightsTheHandleWhileThePointerIsOnIt() {
 
             var controller = new TabPanelController();
             controller.advanceInputMotionsForFrame(
@@ -1075,7 +1075,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameDimsTheHandleOnceThePointerLeavesIt() {
+        void dimsTheHandleOnceThePointerLeavesIt() {
 
             var controller = new TabPanelController();
 
@@ -1094,7 +1094,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameLightsTheHandleWhileThePanelIsDocked() {
+        void lightsTheHandleWhileThePanelIsDocked() {
             // The handle is the one part of a docked panel still on screen - it is what brings the body
             // back - so the gate that silences the tabs must not reach it.
             var controller = TabPanelController.createStartingDocked();
@@ -1108,7 +1108,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameHoldsAPressLiftAtItsPeakWhileTheButtonIsDown() {
+        void holdsAPressLiftAtItsPeakWhileTheButtonIsDown() {
             // The whole of what a held lift is: the press has not ended, so the lift may not either, however
             // many frames pass with the cursor anywhere at all. A lift that timed its own fall would drop
             // out from under a button the player is still holding.
@@ -1127,7 +1127,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameRunsAPressLiftBackOutOnceTheButtonIsReleased() {
+        void runsAPressLiftBackOutOnceTheButtonIsReleased() {
             // The release is what ends it, and it takes no pointer of its own: the lift falls with the
             // cursor anywhere at all, and finishes without a third event.
             var controller = new TabPanelController();
@@ -1149,7 +1149,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameEndsAPressLiftReleasedAwayFromItsOwnTab() {
+        void endsAPressLiftReleasedAwayFromItsOwnTab() {
             // A press begun on a tab and let go somewhere else entirely - over a neighbour, off the panel -
             // still ends that tab's lift, the act it reported being the press rather than where the pointer
             // finished up. Released by where the cursor landed, this lift would stand at its peak until the
@@ -1171,7 +1171,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsForFrameChargesAPressLiftRunningOnABodyCell() {
+        void chargesAPressLiftRunningOnABodyCell() {
             // The body's lifts are held where a body press lands - on its own controller - and charged from
             // here with the row's, so a pass that stepped only the motions this end holds would leave a
             // press that sounded standing still on screen, and standing still for the rest of the session.
@@ -1192,7 +1192,7 @@ final class TabPanelControllerTest {
     class AdvanceInputMotionsAtPoint {
 
         @Test
-        void advanceInputMotionsAtPointLightsTheTabUnderThePointerAndNotTheHandle() {
+        void lightsTheTabUnderThePointerAndNotTheHandle() {
             // The pairing this seam exists to pin: the header hit-test feeds the tab fades. Crossed over,
             // a pointer on a tab would light the handle and every assertion below would still pass.
             var controller = new TabPanelController();
@@ -1212,7 +1212,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsTheTabTheHeaderIsAlreadyShowing() {
+        void lightsTheTabTheHeaderIsAlreadyShowing() {
             // The hover half of what the shared resolver is for. A press on this tab fires nothing, and the
             // pointer still has to light it: the sidebar's resting and selected tabs converge on one hovered
             // shade, with the underline left to mark the selection. Hover read as "what a press would
@@ -1230,7 +1230,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsNoTabOfADockedPanel() {
+        void lightsNoTabOfADockedPanel() {
             // Where the gate now lives: the placement says the panel has a body, the fold says that body is
             // behind the rail, so the tab under the pointer is not one the player can see to point at.
             var controller = TabPanelController.createStartingDocked();
@@ -1246,7 +1246,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsABodylessPanelsTabWhateverTheFoldSays() {
+        void lightsABodylessPanelsTabWhateverTheFoldSays() {
             // The row of a bodyless tab is drawn in full, so it lights under the pointer like any other -
             // a fold another tab left standing says nothing about a panel that has none.
             var controller = TabPanelController.createStartingDocked();
@@ -1262,7 +1262,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsTheBodyControlUnderThePointerAndNoTab() {
+        void lightsTheBodyControlUnderThePointerAndNoTab() {
             // The third pairing this seam holds: the body walk feeds the body fades. The point is inside the
             // box and below the row, so a tab lighting here could only come from the wrong hit-test - and a
             // body cell staying dark from the walk never being reached.
@@ -1281,7 +1281,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsNoBodyControlBehindADockedPanelsRail() {
+        void lightsNoBodyControlBehindADockedPanelsRail() {
             // The fold reaching the body, end to end: the placement's box is the rail a fully docked panel
             // leaves, and the control is laid where it always was. The panel's own collapse state is not
             // consulted for the body - the box the layout narrowed is - so a hover reads what is drawn
@@ -1299,7 +1299,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsTheHandleUnderThePointerAndNoTab() {
+        void lightsTheHandleUnderThePointerAndNoTab() {
             // The other half of the pairing: the notch hit-test feeds the lone fade. The handle's rect is
             // clear of every tab, so a tab lighting here could only come from the wrong hit-test.
             var controller = new TabPanelController();
@@ -1319,7 +1319,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsNothingForAPointerOffThePanel() {
+        void lightsNothingForAPointerOffThePanel() {
 
             var controller = new TabPanelController();
             controller.advanceInputMotionsAtPoint(
@@ -1338,7 +1338,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void advanceInputMotionsAtPointLightsNoHandleOnABodylessPanelThatHasNone() {
+        void lightsNoHandleOnABodylessPanelThatHasNone() {
             // A panel with nothing to fold carries no handle rect; the placement's own test absorbs that,
             // so a pointer anywhere over such a panel must leave the fade at rest rather than throwing.
             var controller = new TabPanelController();
@@ -1358,7 +1358,7 @@ final class TabPanelControllerTest {
     class ResetInputMotions {
 
         @Test
-        void resetInputMotionsDropsATabFadeLeftPartWayUpWhenThePanelStopsShowing() {
+        void dropsATabFadeLeftPartWayUpWhenThePanelStopsShowing() {
             // Otherwise the next session opens painting the tail of a hover the player never saw begin.
             var controller = new TabPanelController();
 
@@ -1374,7 +1374,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resetInputMotionsDropsABodyCellsFadeLeftPartWayUpWhenThePanelStopsShowing() {
+        void dropsABodyCellsFadeLeftPartWayUpWhenThePanelStopsShowing() {
             // The body's cells are dropped with the row's and for the same reason, and in the same call:
             // a strip rebuilt for the next session would otherwise open with whatever now occupies that
             // slot part-way lit, which the player never saw rise and would see fall for no reason.
@@ -1392,7 +1392,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resetInputMotionsDropsABodyCellsPressLiftLeftPartWayThroughItsCycle() {
+        void dropsABodyCellsPressLiftLeftPartWayThroughItsCycle() {
             // The body's lifts are dropped with the panel's own and in the same call, though they are held
             // one level down: a lift left standing there would be inherited by whatever the next session's
             // rebuilt strip puts in that slot, showing a press made on a control that is no longer there.
@@ -1414,7 +1414,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resetInputMotionsDropsTheHandlesFadeLeftPartWayUpWhenThePanelStopsShowing() {
+        void dropsTheHandlesFadeLeftPartWayUpWhenThePanelStopsShowing() {
             // The handle is dropped for the same reason and in the same call, so a panel re-opened under a
             // still pointer cannot paint one part lit and the other at rest.
             var controller = new TabPanelController();
@@ -1431,7 +1431,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resetInputMotionsDropsAClickPulseLeftPartWayThroughItsCycle() {
+        void dropsAClickPulseLeftPartWayThroughItsCycle() {
             // A pulse is dropped in the same call for the same reason: the next session would otherwise
             // open decaying from a peak the player never saw rise.
             var controller = new TabPanelController();
@@ -1453,7 +1453,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resetInputMotionsDropsALiftStillHeldAtItsPeakByAPressedButton() {
+        void dropsALiftStillHeldAtItsPeakByAPressedButton() {
             // The one hold with no release owed to it. A press outlives the panel when the overlay closes
             // under a button still down - the release then lands on a screen that is no longer routing to
             // this controller - so without the reset that lift would stand at its peak for the rest of the
@@ -1480,7 +1480,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resetInputMotionsDropsAHotkeyBlinkLeftPartWayThroughItsCycle() {
+        void dropsAHotkeyBlinkLeftPartWayThroughItsCycle() {
             // The blink is dropped with the rest: it runs on the look channel, so one left part-way would
             // open the next session with a tab lit as though the pointer were on it.
             var controller = new TabPanelController();
@@ -1502,7 +1502,7 @@ final class TabPanelControllerTest {
     class ResolveTabIndexAtPoint {
 
         @Test
-        void resolveTabIndexAtPointReturnsTheTabThePointIsOn() {
+        void returnsTheTabThePointIsOn() {
             assertThat(new TabPanelController().resolveTabIndexAtPoint(
                     buildTwoTabPlacement(),
                     INSIDE_FIRST_TAB_X,
@@ -1516,7 +1516,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resolveTabIndexAtPointReturnsNoTabForAPointOnTheBody() {
+        void returnsNoTabForAPointOnTheBody() {
             // A pointer inside the panel but below the header is on no tab, so the whole row winds down
             // rather than the nearest tab staying lit.
             assertThat(new TabPanelController().resolveTabIndexAtPoint(
@@ -1527,7 +1527,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resolveTabIndexAtPointReturnsNoTabForAPointOffThePanel() {
+        void returnsNoTabForAPointOffThePanel() {
             assertThat(new TabPanelController().resolveTabIndexAtPoint(
                     buildTwoTabPlacement(),
                     OFF_PANEL_X,
@@ -1536,7 +1536,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resolveTabIndexAtPointReturnsNoTabOnADockedPanelsLaidOutTab() {
+        void returnsNoTabOnADockedPanelsLaidOutTab() {
             // The fold gate, now part of the answer rather than a test each reader runs for itself. The tab
             // is laid out exactly where it was - folding only clips the header at paint time - so this point
             // is on a tab by geometry alone and on bare screen by what the player can see.
@@ -1548,7 +1548,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resolveTabIndexAtPointReturnsABodylessPanelsTabWhateverTheFoldSays() {
+        void returnsABodylessPanelsTabWhateverTheFoldSays() {
             // The same docked controller over a row with nothing under it: it is drawn in full, so it
             // resolves in full. A fold another tab left standing says nothing about a panel that has none.
             assertThat(TabPanelController.createStartingDocked().resolveTabIndexAtPoint(
@@ -1559,7 +1559,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void resolveTabIndexAtPointReturnsTheTabTheHeaderIsAlreadyShowing() {
+        void returnsTheTabTheHeaderIsAlreadyShowing() {
             // Geometry and visibility, never actionability: the lit tab fires nothing and is still the tab
             // the pointer is on, so it lights like any other - which is the shade the sidebar's resting and
             // selected tabs converge on. Resolved to no cell, the tab under the pointer would go dark for
@@ -1614,7 +1614,7 @@ final class TabPanelControllerTest {
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
         @Test
-        void interfaceSoundsPlayThePressOnTheReleaseRatherThanOnTheWayDown() {
+        void playThePressOnTheReleaseRatherThanOnTheWayDown() {
             // The engine's own tabs sound as the button comes up, so the sound and the wash fading out are
             // one answer. Pinned as two assertions either side of the release, since a press that sounded on
             // the way down would still leave the right sound recorded by the end.
@@ -1634,7 +1634,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsPlayThePressForTheTabAlreadyShowing() {
+        void playThePressForTheTabAlreadyShowing() {
             // The lit tab fires no action and still answers the press, so it must sound like every other
             // tab - a press that lifted but stayed silent would read as a half-registered click.
             var controller = buildVanillaSoundingController();
@@ -1648,7 +1648,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsStaySilentForAReleaseThatEndedNoPress() {
+        void staySilentForAReleaseThatEndedNoPress() {
             // Every release on the screen reaches the panel, so one that let go of nothing must not click at
             // the player - otherwise clicking the map behind the sidebar would sound like pressing it.
             var controller = buildVanillaSoundingController();
@@ -1662,7 +1662,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsPlayThePressForABoundKey() {
+        void playThePressForABoundKey() {
             // A keypress puts nothing under the pointer to explain itself, so it takes both answers the
             // engine gives a press rather than the flash alone.
             var controller = buildVanillaSoundingController();
@@ -1674,7 +1674,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsPlayTheMouseoverOnceAsThePointerArrives() {
+        void playTheMouseoverOnceAsThePointerArrives() {
             // A moment, not a position: the pointer resting on a tab holds its fade at the top for as long
             // as it stays, and a sound read off that would be a tone rather than a tick.
             var controller = buildVanillaSoundingController();
@@ -1688,7 +1688,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnnounceTheHandleAgainOnceThePointerHasBeenBackOnTheTabs() {
+        void announceTheHandleAgainOnceThePointerHasBeenBackOnTheTabs() {
             // Both parts' arrivals are stepped every frame, not only whichever one answers. Read through a
             // short-circuit, the part left unstepped keeps a stale latch saying it never left - and then
             // stays silent on the frame the pointer actually does come back to it.
@@ -1707,7 +1707,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsTakeThePressRoleFromTheLookRatherThanNamingOne() {
+        void takeThePressRoleFromTheLookRatherThanNamingOne() {
             // The point of the whole seam: which sound a press makes is the panel's look talking, so a look
             // naming something else must be what sounds. A scheme naming the role a caller would have
             // reached for anyway would pass whether or not it was ever read.
@@ -1720,7 +1720,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsTakeThePointerArrivalRoleFromTheLookRatherThanNamingOne() {
+        void takeThePointerArrivalRoleFromTheLookRatherThanNamingOne() {
             // The arrival half of the same rule, crossed the other way.
             var controller = buildControllerSounding(SWAPPED_SOUNDS);
 
@@ -1731,7 +1731,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnswerAnArrivalOnTheHeaderAtThePanelChromeLevel() {
+        void answerAnArrivalOnTheHeaderAtThePanelChromeLevel() {
             // Which kind of thing was reached is the one part of an arrival this end names, the look owning
             // the rest - so a controller that named the wrong kind would answer a tab at a body control's
             // level, silently. A tab and its handle are the panel's own furniture, not its contents.
@@ -1746,7 +1746,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnswerAnArrivalOnAWholeRowControlAtTheSingleOptionLevel() {
+        void answerAnArrivalOnAWholeRowControlAtTheSingleOptionLevel() {
             // Driven through the point rather than through a handed-in reading, because the kind is the one
             // part of a body arrival the panel works out for itself: the walk has the control in hand and
             // reads what it is off that. Handed in, a controller naming one kind for every body cell would
@@ -1762,7 +1762,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnswerAnArrivalOnOneSegmentOfARowAtTheListedItemLevel() {
+        void answerAnArrivalOnOneSegmentOfARowAtTheListedItemLevel() {
             // The other half of the same rule, over a body laying a row of segments where the case above
             // lays one whole-row control. A sweep down a strip crosses several of these on its way
             // somewhere, which is what the quieter level is for.
@@ -1781,7 +1781,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnnounceEachSegmentOfOneRowTheCursorCrossesInto() {
+        void announceEachSegmentOfOneRowTheCursorCrossesInto() {
             // Crossing straight from one segment to its neighbour is an arrival like any other: the pointer
             // never left the control, and on abutting segments that is the ordinary way to reach one. Keyed
             // by the control rather than by the cell, the second segment would be reached in silence.
@@ -1798,7 +1798,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsPlayTheMouseoverOnceWhileThePointerRestsOnABodyCell() {
+        void playTheMouseoverOnceWhileThePointerRestsOnABodyCell() {
             // A moment, not a position, and the reason a body cell needs its own latch: its fade stands at
             // the top for as long as the pointer stays, so a sound read off the fade would be a tone.
             var controller = buildVanillaSoundingController();
@@ -1812,7 +1812,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnnounceABodyCellAgainOnceThePointerHasBeenBackOnTheTabs() {
+        void announceABodyCellAgainOnceThePointerHasBeenBackOnTheTabs() {
             // The third latch joins the rule the other two already answer to: every one is stepped each
             // frame, not only whichever one sounds. Left unstepped while a tab answered, the body's would
             // hold a stale reading saying the pointer never left this cell - and then say nothing on the
@@ -1831,7 +1831,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsStaySilentForABodyCellBehindADockedPanelsRail() {
+        void staySilentForABodyCellBehindADockedPanelsRail() {
             // The gate is the walk's, not a test of this end's own: the box a fully docked panel leaves is
             // the rail, and the control is laid where it always was. A cell the fold has wiped off the
             // screen lights for nobody, so it announces itself to nobody either.
@@ -1845,7 +1845,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnnounceABodyCellAgainOnceTheMotionsWereReset() {
+        void announceABodyCellAgainOnceTheMotionsWereReset() {
             // The panel dropping its motions drops what it announced with them, so a panel re-opened with
             // the cursor already over a cell answers it. It is an arrival to the player - the strip was not
             // there a moment ago - and the latch left standing would call it a cell they never left.
@@ -1862,7 +1862,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsStaySilentThroughoutForALookThatNamesNone() {
+        void staySilentThroughoutForALookThatNamesNone() {
             // Silence is something a look states, so a panel is quietened by the value it is built from
             // rather than by visiting every moment that ever asked for a sound. Both moments in one case,
             // since a scheme that silenced only one of them would be the fault worth catching.
@@ -1877,7 +1877,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsPlayThePressAsTheCollapseHandleIsPressed() {
+        void playThePressAsTheCollapseHandleIsPressed() {
             // The handle is a control the player aims at and presses, so it answers like one. On the way
             // down rather than on the release the tabs wait for: the fold is already moving, so the moment
             // it acts is the moment there is something to confirm.
@@ -1892,7 +1892,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsPlayTheMouseoverOnceAsThePointerArrivesOnTheCollapseHandle() {
+        void playTheMouseoverOnceAsThePointerArrivesOnTheCollapseHandle() {
             // The handle's half of the arrival rule, and a moment rather than a position for the same
             // reason: the pointer parked on the handle holds its fade at the top for as long as it stays.
             var controller = buildVanillaSoundingController();
@@ -1905,7 +1905,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsScrollTheBodyByTheLookThePanelWasBuiltWith() {
+        void scrollTheBodyByTheLookThePanelWasBuiltWith() {
             // The body is the panel's own, so it sounds by the panel's own look. Built with a scheme of its
             // own, the body would answer the wheel from the library's defaults while the header answered
             // from the host's - one panel presenting itself two ways.
@@ -1920,7 +1920,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnswerAWheelWithTheScrollAndNotTheRowsItCarriedUnderTheCursor() {
+        void answerAWheelWithTheScrollAndNotTheRowsItCarriedUnderTheCursor() {
             // The rule the whole listed-item level is liveable because of. Rows sliding under a parked
             // pointer are arrivals by the slot key and by nothing the player did, so a wheel down a long
             // list would tick once per row; the scroll answers for the whole movement in one sound, which
@@ -1947,7 +1947,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnnounceTheRowAScrollLeftUnderTheCursorOnceThePointerReachesItItself() {
+        void announceTheRowAScrollLeftUnderTheCursorOnceThePointerReachesItItself() {
             // Adopted rather than gone deaf. The latch takes the row the scroll carried under the cursor
             // without announcing it, so the pointer genuinely arriving on that row afterwards is an arrival
             // like any other - a latch that had simply stopped tracking would swallow this one too.
@@ -1973,7 +1973,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void interfaceSoundsAnnounceARowAfreshWhenThePanelHidBetweenTheScrollAndTheNextFrame() {
+        void announceARowAfreshWhenThePanelHidBetweenTheScrollAndTheNextFrame() {
             // A movement no frame ever read is a movement the next session must not answer to. Left
             // standing, it would make the re-opened panel take the cell under the cursor in silence - the
             // one thing dropping the panel's motions exists to prevent.
@@ -2055,7 +2055,7 @@ final class TabPanelControllerTest {
         private final List<Integer> reportedCells = new ArrayList<>();
 
         @Test
-        void hoverReportsTellTheHostWhichCellThePointerCameOnto() {
+        void tellTheHostWhichCellThePointerCameOnto() {
             // The reading a frame takes goes back out to whoever built the control, which is what lets a
             // host answer a hover without reading a cursor or hit-testing a strip of its own. Reported off
             // the mid-strip slot, whose two halves are different numbers - a report that carried the
@@ -2069,7 +2069,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void hoverReportsTellTheHostOnceWhileThePointerRestsOnTheCell() {
+        void tellTheHostOnceWhileThePointerRestsOnTheCell() {
             // On change rather than per frame: a host acting on what it is told would otherwise redo that
             // work every frame the player leaves the pointer where it is.
             var controller = new TabPanelController();
@@ -2082,7 +2082,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void hoverReportsTellTheHostThePointerLeftTheStrip() {
+        void tellTheHostThePointerLeftTheStrip() {
             // The one thing a stream of readings never says out loud, and the reason the channel a reading
             // went out on is kept: by the time the pointer is off the strip there is no spec to read one
             // from.
@@ -2096,7 +2096,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void hoverReportsTellTheHostTheRowAScrollCarriedUnderAStillPointer() {
+        void tellTheHostTheRowAScrollCarriedUnderAStillPointer() {
             // Driven through the point rather than through a handed-in reading, because this is the case
             // the placement-driven reading exists for: the cursor never moved, the list did, and the row
             // now under it is a different row. Latched from the last pointer event, the host would still
@@ -2111,7 +2111,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void hoverReportsTellTheHostTheLeaveAsThePanelStandsDown() {
+        void tellTheHostTheLeaveAsThePanelStandsDown() {
             // A panel going away is a leave to whatever was answering the hover over it: no further frame
             // resolves a reading, so a host left holding that cell would answer a hover over a strip that
             // is no longer drawn.
@@ -2125,7 +2125,7 @@ final class TabPanelControllerTest {
         }
 
         @Test
-        void hoverReportsStaySilentForACellBehindADockedPanelsRail() {
+        void staySilentForACellBehindADockedPanelsRail() {
             // The gate is the walk's, not a test of the report's own: a cell the fold has wiped off the
             // screen is hovered by nobody, so its host hears nothing about a row the player cannot see.
             var controller = new TabPanelController();

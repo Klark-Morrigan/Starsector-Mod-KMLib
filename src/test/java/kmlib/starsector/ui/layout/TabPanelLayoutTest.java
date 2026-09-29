@@ -166,7 +166,7 @@ final class TabPanelLayoutTest {
     class ComputePlacement {
 
         @Test
-        void computePlacementSnapsTheHeaderTabsAtThePanelAnchor() {
+        void snapsTheHeaderTabsAtThePanelAnchor() {
 
             var header = place(List.of()).tabsHeader();
 
@@ -200,7 +200,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementSnapsTheHeaderInTheTabFaceAndTheBodyInTheBodyFace() {
+        void snapsTheHeaderInTheTabFaceAndTheBodyInTheBodyFace() {
             // The panel letters its band and its body in different atlases, so each half has to be charged
             // its own. One measurement spent on both sizes whichever half it does not belong to against
             // letters that half never wears - and the box, framed to the widest body row, carries that
@@ -238,7 +238,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementStandsTheBoxOnTheTabsBottomEdgeNotTheBandsWhenTheBoxIsShorter() {
+        void standsTheBoxOnTheTabsBottomEdgeNotTheBandsWhenTheBoxIsShorter() {
             // A 18-tall tab in a 19 band: the box hangs from the TABS' bottom, so the pixel the band keeps
             // under them is the box's own top border - the row rules its baseline in that same pixel, and
             // the two coincide instead of stacking into a two-pixel rule with a dead pixel between.
@@ -258,7 +258,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesTheBoxOnTheBandWhenTheTabsFillIt() {
+        void leavesTheBoxOnTheBandWhenTheTabsFillIt() {
             // The other end of the same rule: a snapped row's tabs are the band, so there is no spare pixel
             // and the box's top is the band's bottom as it always was. Pinned so the shorter-box case above
             // reads as the box following the tabs rather than as a constant offset applied everywhere.
@@ -269,7 +269,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementSizesTheBoxWidthToTheBodyNotTheWiderTabRow() {
+        void sizesTheBoxWidthToTheBodyNotTheWiderTabRow() {
 
             var placement = place(BODY);
             var box = placement.body().box();
@@ -288,7 +288,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementPullsContentFlushAndShrinksTheBoxWhenTheLeftBorderIsDropped() {
+        void pullsContentFlushAndShrinksTheBoxWhenTheLeftBorderIsDropped() {
 
             var framed = place(BODY);
             var droppedLeft = place(BODY, 0f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM));
@@ -317,7 +317,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementKeepsTheBoxHeightWhenOnlyASideBorderIsDropped() {
+        void keepsTheBoxHeightWhenOnlyASideBorderIsDropped() {
 
             var framed = place(BODY);
             var droppedLeft = place(BODY, 0f, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM));
@@ -331,7 +331,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLetsAWiderTabRowOverhangTheBoxRatherThanClampIt() {
+        void letsAWiderTabRowOverhangTheBoxRatherThanClampIt() {
 
             var placement = place(BODY);
             var box = placement.body().box();
@@ -346,7 +346,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesNoBoxBeneathTheHeaderWhenBodyIsEmpty() {
+        void leavesNoBoxBeneathTheHeaderWhenBodyIsEmpty() {
 
             var placement = place(List.of());
             var box = placement.body().box();
@@ -367,7 +367,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementHangsTheBodyBeneathTheHeaderBand() {
+        void hangsTheBodyBeneathTheHeaderBand() {
 
             var body = place(BODY).body().body();
 
@@ -381,7 +381,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementFramesTheBodyAloneWithTheRowStandingOnIt() {
+        void framesTheBodyAloneWithTheRowStandingOnIt() {
 
             var placement = place(BODY);
             var box = placement.body().box();
@@ -404,7 +404,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementCarriesTheTabsControlAsTheHeader() {
+        void carriesTheTabsControlAsTheHeader() {
 
             var header = place(BODY).tabsHeader();
 
@@ -415,7 +415,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLaysTheBodyAtItsInterpolatedWidthWhenPartlyCollapsed() {
+        void laysTheBodyAtItsInterpolatedWidthWhenPartlyCollapsed() {
 
             var fullWidth = place(BODY, 0f).body().body().width();
             var halfPlacement = place(BODY, 0.5f);
@@ -431,7 +431,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementCollapsesTheBoxToADockedRailAtFullCollapse() {
+        void collapsesTheBoxToADockedRailAtFullCollapse() {
 
             var placement = place(BODY, 1f);
             var box = placement.body().box();
@@ -454,14 +454,14 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementExposesANotchWhenTheBodyHasControlsToCollapse() {
+        void exposesANotchWhenTheBodyHasControlsToCollapse() {
             // A body with controls is collapsible, so the panel carries a handle to fold it with.
             assertThat(place(BODY).notch())
                 .isNotNull();
         }
 
         @Test
-        void computePlacementExposesNoNotchWhenTheBodyIsEmpty() {
+        void exposesNoNotchWhenTheBodyIsEmpty() {
             // An empty body has nothing to collapse, so the panel is not collapsible and carries no handle
             // - a notch protruding off a bodyless tab row would fold a body that is not there.
             assertThat(place(List.of()).notch())
@@ -469,7 +469,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementSitsTheNotchOnTheRightBorderEdgeCentredOnTheFrame() {
+        void sitsTheNotchOnTheRightBorderEdgeCentredOnTheFrame() {
 
             var placement = place(BODY, 0f);
             var box = placement.body().box();
@@ -489,7 +489,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementTracksTheNotchToTheCollapsingRightEdge() {
+        void tracksTheNotchToTheCollapsingRightEdge() {
 
             var expanded = place(BODY, 0f);
             var docked = place(BODY, 1f);
@@ -505,7 +505,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementKeepsTheNotchOnTheEdgeAndCentredMidCollapse() {
+        void keepsTheNotchOnTheEdgeAndCentredMidCollapse() {
 
             var placement = place(BODY, 0.5f);
             var box = placement.body().box();
@@ -520,7 +520,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementDocksToAZeroWidthRailWhenThereIsNoBorder() {
+        void docksToAZeroWidthRailWhenThereIsNoBorder() {
 
             var placement = TabPanelLayout.computePlacement(
                 SCREEN_HEIGHT,
@@ -544,7 +544,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementClampsCollapseFractionToTheUnitRange() {
+        void clampsCollapseFractionToTheUnitRange() {
             // A fraction past the ends behaves as the nearest end - past 1 stays fully docked, below 0 stays
             // fully expanded - so an overshooting animation value never inverts the geometry.
             assertThat(place(BODY, 2f).body().box().width())
@@ -554,7 +554,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementStandsTheHeaderBandAtTheInjectedHeight() {
+        void standsTheHeaderBandAtTheInjectedHeight() {
 
             var placement = placeStyled(DEFAULT_TAB_STYLE, BODY);
             var styled = placeStyled(TabStyles.buildAtBandHeight(CUSTOM_BAND_HEIGHT), BODY);
@@ -581,7 +581,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementClampsANegativeBandToABandlessPanel() {
+        void clampsANegativeBandToABandlessPanel() {
             // A negative height would hang the tab row above its own top edge; it floors at zero instead, so
             // the panel degrades to its body under the border rather than inverting the header.
             var styled = placeStyled(TabStyles.buildAtBandHeight(-8f), BODY);
@@ -593,7 +593,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementDrawsTheWholeTabRowWhileThePanelRests() {
+        void drawsTheWholeTabRowWhileThePanelRests() {
 
             var placement = place(BODY, 0f);
 
@@ -604,7 +604,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementWipesTheTabRowWithTheFoldedBox() {
+        void wipesTheTabRowWithTheFoldedBox() {
 
             var placement = place(BODY, 0.5f);
             var box = placement.body().box();
@@ -629,7 +629,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesABodylessRowUnwipedByAStaleFold() {
+        void leavesABodylessRowUnwipedByAStaleFold() {
 
             // The fold state outlives a tab switch, so a bodyless tab can be laid out at a fraction another
             // tab's body left standing. It has nothing to fold and no handle to unfold it, so its row must
@@ -643,7 +643,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementFliesNoBandButtonWhereNoneWasAskedFor() {
+        void fliesNoBandButtonWhereNoneWasAskedFor() {
             // The band a panel of tabs alone lays, unchanged: the button is something a host asks for, so a
             // host that does not gets exactly the row it had before there was one to ask for.
             var placement = place(BODY);
@@ -655,7 +655,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLaysTheBandButtonWhereTheTabsLeaveOff() {
+        void laysTheBandButtonWhereTheTabsLeaveOff() {
             // Appended to the row rather than pinned somewhere of its own, so the button stands beside the
             // last tab at the same height and the band simply grows by one box.
             var button = placeWithBandButton(BODY).bandButton().control().bounds();
@@ -671,7 +671,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesTheTabsRowExactlyAsItWasUnderABandButton() {
+        void leavesTheTabsRowExactlyAsItWasUnderABandButton() {
             // The one thing a button in the row may not do. Every index the pick, the lit tab and the
             // shortcut walk are resolved by is a position in this control, so a button that moved a segment
             // by a pixel would move what a click on it selects.
@@ -685,7 +685,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementSizesTheBandButtonToItsOwnBoxBesideWiderTabs() {
+        void sizesTheBandButtonToItsOwnBoxBesideWiderTabs() {
             // The button wears its own box, not the row's. Under a fixed-width tab style - the sector map's,
             // whose boxes are wide enough for a layer name - a button that inherited the row would stand in
             // a box several times the width of the mark it carries.
@@ -702,7 +702,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementCarriesTheBandButtonsIconOverToItsPlacement() {
+        void carriesTheBandButtonsIconOverToItsPlacement() {
             // The mark travels with the laid-out button rather than being looked up again at the draw, so
             // the pass that paints it cannot be handed one image while the box was sized for another.
             assertThat(placeWithBandButton(BODY).bandButton().icon())
@@ -710,7 +710,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementBoxesTheIconAtTheButtonsTabRatherThanItsBand() {
+        void boxesTheIconAtTheButtonsTabRatherThanItsBand() {
             // The image fills the tab, and the tab is shorter than the band it hangs in - a chrome keeps the
             // difference for the line its tabs stand on, so an image drawn over the whole bounds would sit a
             // pixel low and cover that rule.
@@ -728,7 +728,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementStandsTheBandButtonInThePanelsBandRatherThanItsOwn() {
+        void standsTheBandButtonInThePanelsBandRatherThanItsOwn() {
             // The band is the room the panel was given, so it is the one part of its look the button does
             // not choose. Left to its own, a button carrying a style built for another panel would stand
             // taller or shorter than the tabs it sits beside.
@@ -741,7 +741,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementDrawsTheBandOverTheButtonAsWellAsTheTabs() {
+        void drawsTheBandOverTheButtonAsWellAsTheTabs() {
             // One band for both, so the fold wipes them together, the footprint claims the button, and the
             // panel's outer bound reaches it. A band naming only its tabs would leave the button unclipped
             // and on screen the panel does not own.
@@ -754,7 +754,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementCarriesTheBorderItFramedTheBoxAround() {
+        void carriesTheBorderItFramedTheBoxAround() {
             // The width a later stroke must use: handed back on the placement so the pass that paints
             // the frame spends exactly the inset this layout reserved for it, rather than re-reading
             // the width from the source the caller read it from.
@@ -768,7 +768,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementCarriesTheScrollbarThicknessOntoTheBodyPlacement() {
+        void carriesTheScrollbarThicknessOntoTheBodyPlacement() {
 
             var placement = placeAtThickness(BODY, THICK_BAR);
 
@@ -779,7 +779,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesABodylessPanelWithNoBarAtAll() {
+        void leavesABodylessPanelWithNoBarAtAll() {
 
             var placement = placeAtThickness(List.of(), THICK_BAR);
 
@@ -791,7 +791,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementGrowsTheBoxWithTheScrollbarGutter() {
+        void growsTheBoxWithTheScrollbarGutter() {
 
             var atDefault = placeAtThickness(SCROLLING_BODY, ScrollbarThickness.DEFAULT).body();
             var atThick = placeAtThickness(SCROLLING_BODY, THICK_BAR).body();
@@ -808,7 +808,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementDocksAWidenedBodyToTheSameRail() {
+        void docksAWidenedBodyToTheSameRail() {
 
             var box = placeAtThickness(SCROLLING_BODY, THICK_BAR, 1f).body().box();
 
@@ -822,7 +822,7 @@ final class TabPanelLayoutTest {
         }
 
         @Test
-        void computePlacementRidesTheNotchOnTheWidenedBoxEdge() {
+        void ridesTheNotchOnTheWidenedBoxEdge() {
 
             var placement = placeAtThickness(SCROLLING_BODY, THICK_BAR);
             var box = placement.body().box();

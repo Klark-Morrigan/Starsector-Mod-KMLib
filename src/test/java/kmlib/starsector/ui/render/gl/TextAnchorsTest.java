@@ -21,7 +21,7 @@ class TextAnchorsTest {
         // the failure the hand-written switch exists to catch.
         @ParameterizedTest
         @EnumSource(TextAlignment.class)
-        void resolveAnchorNamesTheLazyFontAnchorForTheSamePosition(TextAlignment alignment) {
+        void namesTheLazyFontAnchorForTheSamePosition(TextAlignment alignment) {
             var expected = switch (alignment) {
             case TOP_LEFT -> LazyFont.TextAnchor.TOP_LEFT;
             case TOP_CENTER -> LazyFont.TextAnchor.TOP_CENTER;
@@ -38,7 +38,7 @@ class TextAnchorsTest {
         }
 
         @Test
-        void resolveAnchorIsDistinctForEveryAlignment() {
+        void isDistinctForEveryAlignment() {
             // Nine positions to nine anchors: two alignments sharing one anchor - the copy-paste a
             // hand-written switch invites - would pin text of one alignment where the other belongs.
             var anchors = Arrays.stream(TextAlignment.values())

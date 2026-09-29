@@ -18,7 +18,7 @@ final class SilentProfilerTest {
     class Open {
 
         @Test
-        void openReturnsAScopeThatClosesWithoutEffect() {
+        void returnsAScopeThatClosesWithoutEffect() {
 
             var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("build"));
 
@@ -29,7 +29,7 @@ final class SilentProfilerTest {
         }
 
         @Test
-        void openHandsBackOneSharedScopeRatherThanANewOne() {
+        void handsBackOneSharedScopeRatherThanANewOne() {
             // What makes a section opened on a per-frame path free: nothing is allocated to open
             // one, so library code can sit inside a scope with no readout bound.
             var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("build"));
@@ -43,7 +43,7 @@ final class SilentProfilerTest {
     class OpenRoot {
 
         @Test
-        void openRootHandsBackTheSameSharedScopeAndKeepsNoOrigin() {
+        void handsBackTheSameSharedScopeAndKeepsNoOrigin() {
             // A beat naming the game it runs in costs the same nothing as any other section here:
             // there is no tree for an origin to head, so the label goes nowhere.
             var scope = SilentProfiler.INSTANCE.openRoot(
@@ -63,7 +63,7 @@ final class SilentProfilerTest {
     class AddCount {
 
         @Test
-        void addCountOnTheSharedScopeKeepsNothing() {
+        void onTheSharedScopeKeepsNothing() {
             // What lets a walker count what it traverses unconditionally: with no readout bound
             // the count goes nowhere, so the counting is a call and not a tally.
             var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("walk"));
@@ -96,7 +96,7 @@ final class SilentProfilerTest {
     class TagCall {
 
         @Test
-        void tagCallOnTheSharedScopeKeepsNothing() {
+        void onTheSharedScopeKeepsNothing() {
             // The shared scope is stateless, so a name handed to it cannot outlive the call and
             // reach the next section opened through it.
             var scope = SilentProfiler.INSTANCE.open(ProfileSection.registerSection("rebuild"));
@@ -113,7 +113,7 @@ final class SilentProfilerTest {
     class OpenIterations {
 
         @Test
-        void openIterationsHandsBackTheSameSharedScope() {
+        void handsBackTheSameSharedScope() {
             // A loop is as free to leave unmeasured as the section holding it: nothing is
             // allocated for the turns of a bake with no readout bound.
             var scope = SilentProfiler.INSTANCE.openIterations(
@@ -144,7 +144,7 @@ final class SilentProfilerTest {
     class Measure {
 
         @Test
-        void measureRunsTheWorkItIsHanded() {
+        void runsTheWorkItIsHanded() {
 
             var runs = new AtomicInteger();
 
@@ -155,7 +155,7 @@ final class SilentProfilerTest {
         }
 
         @Test
-        void measureSupplierReturnsTheWorkResult() {
+        void supplierReturnsTheWorkResult() {
 
             var result = SilentProfiler.INSTANCE.measure("compute", () -> "value");
 
@@ -180,7 +180,7 @@ final class SilentProfilerTest {
     class Snapshot {
 
         @Test
-        void snapshotIsEmptyAfterMeasuringAndRecording() {
+        void isEmptyAfterMeasuringAndRecording() {
 
             SilentProfiler.INSTANCE.measure("build", () -> {
             });
@@ -196,7 +196,7 @@ final class SilentProfilerTest {
     class Reset {
 
         @Test
-        void resetLeavesTheSnapshotEmpty() {
+        void leavesTheSnapshotEmpty() {
 
             SilentProfiler.INSTANCE.record("render", 2_000_000);
 

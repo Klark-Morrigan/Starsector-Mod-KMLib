@@ -29,14 +29,14 @@ final class EmbeddedMapHostTraceTest {
     class IsModOwnedClass {
 
         @Test
-        void isModOwnedClassAcceptsAModsOwnClass() {
+        void acceptsAModsOwnClass() {
             // The finding itself: one name like this in the report ends the search.
             assertThat(EmbeddedMapHostTrace.isModOwnedClass("org.example.mod.ui.MapTooltip"))
                 .isTrue();
         }
 
         @Test
-        void isModOwnedClassRejectsTheEnginesObfuscatedWidgets() {
+        void rejectsTheEnginesObfuscatedWidgets() {
             // The tree is almost entirely these, which is exactly why they cannot be the answer.
             assertThat(EmbeddedMapHostTrace.isModOwnedClass("com.fs.starfarer.ui.OOOo"))
                 .isFalse();
@@ -45,14 +45,14 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void isModOwnedClassRejectsTheEnginesPublishedApi() {
+        void rejectsTheEnginesPublishedApi() {
             assertThat(EmbeddedMapHostTrace.isModOwnedClass(
                 "com.fs.starfarer.api.impl.campaign.terrain.BaseTerrain"))
                 .isFalse();
         }
 
         @Test
-        void isModOwnedClassRejectsThePlatformsOwnClasses() {
+        void rejectsThePlatformsOwnClasses() {
             // Reached through the same walk - a children list holds whatever the tree holds - and
             // no more capable of naming an owner than the engine's are.
             assertThat(EmbeddedMapHostTrace.isModOwnedClass("java.util.ArrayList"))
@@ -62,7 +62,7 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void isModOwnedClassRejectsANameItCouldNotRead() {
+        void rejectsANameItCouldNotRead() {
             // A component that answers no class name says nothing about ownership, and must not be
             // reported as though it did.
             assertThat(EmbeddedMapHostTrace.isModOwnedClass(null))
@@ -70,7 +70,7 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void isModOwnedClassAcceptsANameMerelyContainingAnEnginePackage() {
+        void acceptsANameMerelyContainingAnEnginePackage() {
             // Prefix rather than substring, deliberately: a mod is free to name a package after the
             // thing it extends, and dropping it would hide the owner most likely to be embedding a
             // map in the first place.
@@ -83,7 +83,7 @@ final class EmbeddedMapHostTraceTest {
     class DescribeMapHost {
 
         @Test
-        void describeMapHostNamesTheTooltipTheMapSitsInAsItsHost() {
+        void namesTheTooltipTheMapSitsInAsItsHost() {
             // The host is what the search for an owner is bounded to, and a tooltip is the whole of
             // what a mod built - so picking the immediate parent instead would bound the search to
             // one panel inside somebody's widget and miss the class that names them.
@@ -100,7 +100,7 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void describeMapHostNamesTheImmediateParentWhenNoTooltipIsAboveTheMap() {
+        void namesTheImmediateParentWhenNoTooltipIsAboveTheMap() {
             // The fallback, and it is a narrowing rather than a guess: it bounds the search to the
             // map's own siblings instead of the whole screen, which is the most that can be said
             // when nothing in the chain announces itself as a host.
@@ -115,7 +115,7 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void describeMapHostNamesTheMapItselfWhenItHangsUnderNothing() {
+        void namesTheMapItselfWhenItHangsUnderNothing() {
             // A map found at the root of the walk. There is no host to search around, and naming
             // the map is what keeps the line's shape the same rather than leaving a field empty.
             var mapFake = new SectorMapWidgetFake();
@@ -125,7 +125,7 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void describeMapHostNamesAModOwnedPluginCarriedInsideTheHost() {
+        void namesAModOwnedPluginCarriedInsideTheHost() {
             // The finding this line exists for. A custom panel is a vanilla component holding a
             // mod-supplied plugin, so a walk reading component classes alone crosses the mod's own
             // object and reports the engine's wrapper around it.
@@ -140,7 +140,7 @@ final class EmbeddedMapHostTraceTest {
         }
 
         @Test
-        void describeMapHostNamesAModOwnedClassStandingAboveTheHost() {
+        void namesAModOwnedClassStandingAboveTheHost() {
             // Searched over the ancestry as well as below the host, because a mod that builds no
             // tooltip of its own leaves its own class further up the chain than any host bound.
             var mapFake = new SectorMapWidgetFake();

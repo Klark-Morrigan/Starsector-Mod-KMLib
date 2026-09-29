@@ -30,19 +30,19 @@ final class NotchColoursTest {
     class ComputeChevronColour {
 
         @Test
-        void computeChevronColourTakesTheRestingShadeWhileTheHandleIsUnlit() {
+        void takesTheRestingShadeWhileTheHandleIsUnlit() {
             assertThat(COLOURS.computeChevronColour(FULLY_RESTING))
                 .isEqualTo(RESTING);
         }
 
         @Test
-        void computeChevronColourTakesTheHoveredShadeOnceTheHandleIsFullyLit() {
+        void takesTheHoveredShadeOnceTheHandleIsFullyLit() {
             assertThat(COLOURS.computeChevronColour(FULLY_LIT))
                 .isEqualTo(HOVERED);
         }
 
         @Test
-        void computeChevronColourSitsBetweenTheTwoShadesPartWayThroughTheTravel() {
+        void sitsBetweenTheTwoShadesPartWayThroughTheTravel() {
             // The whole reason the pick became a blend: a half-faded handle draws a colour neither state
             // holds, rather than jumping between them at some threshold.
             assertThat(COLOURS.computeChevronColour(HALF_LIT))
@@ -50,7 +50,7 @@ final class NotchColoursTest {
         }
 
         @Test
-        void computeChevronColourHoldsOneShadeThroughoutForALookThatDoesNotDistinguishTheStates() {
+        void holdsOneShadeThroughoutForALookThatDoesNotDistinguishTheStates() {
             // The gold choice passes the same colour twice; every point of its travel must be that colour,
             // so the handle answers a hover by its wash alone rather than by a drifting glyph.
             var singleShade = new NotchColours(RESTING, RESTING);

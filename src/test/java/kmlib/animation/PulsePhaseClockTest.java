@@ -53,7 +53,7 @@ final class PulsePhaseClockTest {
     class ReadElapsedSeconds {
 
         @Test
-        void readElapsedSecondsReportsTheTimeSinceTheClockWasMade() {
+        void reportsTheTimeSinceTheClockWasMade() {
 
             nanoClockFake.advanceBySeconds(2.5);
 
@@ -62,7 +62,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void readElapsedSecondsIgnoresWhereTheSourceStarted() {
+        void ignoresWhereTheSourceStarted() {
             // A monotonic clock's origin is arbitrary, so elapsed time has to be measured against the reading
             // the clock was made at rather than against zero.
             var distantNanoClockFake = new NanoClockFake(DISTANT_SOURCE_ORIGIN_NANOS);
@@ -75,7 +75,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void readElapsedSecondsStartsFromNothingOnAClockOverTheLiveSource() {
+        void startsFromNothingOnAClockOverTheLiveSource() {
             // The wiring the game gets, which no other case touches: the live source has an origin of its own
             // and a clock made over it must still start from nothing.
             assertThat(new PulsePhaseClock().readElapsedSeconds())
@@ -88,7 +88,7 @@ final class PulsePhaseClockTest {
     class ResolvePhase {
 
         @Test
-        void resolvePhaseRunsFromTheStartOfTheCycleToItsEnd() {
+        void runsFromTheStartOfTheCycleToItsEnd() {
 
             assertThat(clock.resolvePhase(PERIOD_SECONDS))
                 .isCloseTo(0f, within(PHASE_TOLERANCE));
@@ -105,7 +105,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void resolvePhaseWrapsAtEveryTurn() {
+        void wrapsAtEveryTurn() {
             // Two and a half turns in, the phase reads the same as it did half a turn in: what makes the
             // reading a place in a cycle rather than a count of how long the clock has run.
             nanoClockFake.advanceBySeconds(10.0);
@@ -115,7 +115,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void resolvePhaseStandsStillForAPeriodOfNothing() {
+        void standsStillForAPeriodOfNothing() {
             // A knob wound down to nothing, and a negative one however it got there: both hold the animation
             // at the start of its cycle rather than dividing by a turn that takes no time.
             nanoClockFake.advanceBySeconds(3.0);
@@ -131,7 +131,7 @@ final class PulsePhaseClockTest {
     class ResolvePhaseForSubject {
 
         @Test
-        void resolvePhaseForSubjectMovesTheSubjectAlongItsOwnShareOfTheTurn() {
+        void movesTheSubjectAlongItsOwnShareOfTheTurn() {
 
             nanoClockFake.advanceBySeconds(1.0);
 
@@ -140,7 +140,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void resolvePhaseForSubjectWrapsWhenTheShareCarriesPastTheTurn() {
+        void wrapsWhenTheShareCarriesPastTheTurn() {
             // The shift has to fold back into the same cycle: a subject whose share pushes it past the end
             // reappears at the start rather than reading past a whole turn.
             nanoClockFake.advanceBySeconds(3.0);
@@ -150,7 +150,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void resolvePhaseForSubjectSeparatesTwoSubjectsInTheSameCycle() {
+        void separatesTwoSubjectsInTheSameCycle() {
             // The reason the subject reading exists: emitters sharing one clock must not peak together, or
             // the set reads as one thing happening rather than as several sources.
             nanoClockFake.advanceBySeconds(1.0);
@@ -160,7 +160,7 @@ final class PulsePhaseClockTest {
         }
 
         @Test
-        void resolvePhaseForSubjectStandsStillForAPeriodOfNothing() {
+        void standsStillForAPeriodOfNothing() {
             // The still reading wins over the shift, so a stopped animation is stopped for every subject
             // rather than frozen at a different point per subject.
             nanoClockFake.advanceBySeconds(3.0);

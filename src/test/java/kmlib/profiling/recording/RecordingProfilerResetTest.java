@@ -23,7 +23,7 @@ final class RecordingProfilerResetTest {
     class Reset {
 
         @Test
-        void resetClearsAllSections() {
+        void clearsAllSections() {
             // Read as the whole capture rather than through one origin's roots: a group left
             // behind would still be holding the tree it was grouping.
             var profiler = new RecordingProfiler(new ScriptedClock(0, 10));

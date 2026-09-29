@@ -59,7 +59,7 @@ class LazyFontGlyphCoverageReaderTest {
     class CoversText {
 
         @Test
-        void coversTextIsTrueForTextEveryCharacterOfWhichTheAtlasHolds() {
+        void isTrueForTextEveryCharacterOfWhichTheAtlasHolds() {
 
             answerWith(createAsciiFaceMock(true));
 
@@ -68,7 +68,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextIsFalseWhenACharacterFallsBack() {
+        void isFalseWhenACharacterFallsBack() {
             // The vanilla atlas under a localised name: every character comes back as the question mark,
             // which is the row of them KMU's map labels drew.
             answerWith(createAsciiFaceMock(true));
@@ -78,7 +78,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextCountsAPresentQuestionMarkAsDrawn() {
+        void countsAPresentQuestionMarkAsDrawn() {
             // The question mark is the fallback's own glyph, so a reader comparing against the fallback
             // alone would call the one character it certainly draws a gap.
             answerWith(createAsciiFaceMock(true));
@@ -88,7 +88,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextCountsAQuestionMarkAsAGapWhereTheAtlasFallsBackToTheSpace() {
+        void countsAQuestionMarkAsAGapWhereTheAtlasFallsBackToTheSpace() {
             // An atlas without a question mark falls back to its space, so the question mark itself is
             // then one of the characters it cannot draw.
             answerWith(createAsciiFaceMock(false));
@@ -98,7 +98,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextCountsATypographicApostropheLazyLibRedrawsAsDrawn() {
+        void countsATypographicApostropheLazyLibRedrawsAsDrawn() {
             // LazyLib answers the typographic apostrophe with the straight one's glyph - a different ID
             // from the character asked for, and still no fallback.
             answerWith(createAsciiFaceMock(true));
@@ -110,7 +110,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextLeavesWhitespaceUnasked() {
+        void leavesWhitespaceUnasked() {
             // A face draws whitespace as space whether its atlas holds a glyph or not, so a tab in a name
             // is no reason to leave the preferred face.
             answerWith(createAsciiFaceMock(true));
@@ -120,7 +120,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextIsFalseForACharacterOutsideTheBasicPlane() {
+        void isFalseForACharacterOutsideTheBasicPlane() {
 
             answerWith(createAsciiFaceMock(true));
 
@@ -131,7 +131,7 @@ class LazyFontGlyphCoverageReaderTest {
         }
 
         @Test
-        void coversTextIsFalseWhenTheFaceCannotLoad() {
+        void isFalseWhenTheFaceCannotLoad() {
             // A face that will not load draws nothing, so it covers nothing either.
             cacheMock
                 .when(() -> LazyFontCache.loadByFace(StarsectorFont.VANILLA_INSIGNIA_42))

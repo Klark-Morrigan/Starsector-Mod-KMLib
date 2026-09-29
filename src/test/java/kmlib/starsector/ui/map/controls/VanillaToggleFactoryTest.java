@@ -48,7 +48,7 @@ class VanillaToggleFactoryTest {
     class AppendToggle {
 
         @Test
-        void appendToggleStandsOneMoreButtonAtTheEndOfTheRow() {
+        void standsOneMoreButtonAtTheEndOfTheRow() {
             // The ordinary case on either screen, and the one thing the whole match is for: a row
             // the game built, with a button on the end of it that the game did not.
             var rowFake = MapFilterRowFake.createMapScreenStrip("Starscape", "Fuel range");
@@ -63,7 +63,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleSendsTheButtonsClicksToTheCallerAndNotToTheRow() {
+        void sendsTheButtonsClicksToTheCallerAndNotToTheRow() {
             // Both halves of the redirect. The row answers a click by rewriting all eight of the
             // game's filter settings from its own toggles, so a button still reporting there would
             // spend every click writing the player's map filters back over themselves.
@@ -80,7 +80,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRedirectsAButtonWhoseSetterTheGameHasRenamed() {
+        void redirectsAButtonWhoseSetterTheGameHasRenamed() {
             // The build the name-then-shape order exists for. `setListener` is the one member here
             // the game leaves unobfuscated, and nothing says it will stay that way - so the shape
             // has to carry the match on its own the day the name goes, and a redirect that only ever
@@ -96,7 +96,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesARowThatBuildsNoButtons() {
+        void refusesARowThatBuildsNoButtons() {
             // What a game build that reworked the row into some other shape looks like from here.
             // Nothing is reached for once the first member is missing, the button's own shape being
             // what the rest of the match is read off.
@@ -105,7 +105,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesARowWhereTwoMembersLookLikeItsButtonFactory() {
+        void refusesARowWhereTwoMembersLookLikeItsButtonFactory() {
             // Two candidates say the recognition no longer picks out one member, which is the same
             // news as none: picking either would be a guess about what the game does with it.
             assertThat(appendToggleTo(new TwinFactoryRowFake(), DOES_NOTHING))
@@ -113,7 +113,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesARowWithNowhereToStandAButton() {
+        void refusesARowWithNowhereToStandAButton() {
             // A row that builds buttons and lays out none of them. Refused rather than half-done:
             // the button would exist, belong to nothing, and draw nowhere.
             assertThat(appendToggleTo(new UnappendableRowFake(), DOES_NOTHING))
@@ -121,7 +121,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesARowWhereTwoMembersLookLikeItsAppender() {
+        void refusesARowWhereTwoMembersLookLikeItsAppender() {
             // The second member matched, and ambiguous for the same reason and with the same answer
             // as the first.
             assertThat(appendToggleTo(new TwinAppenderRowFake(), DOES_NOTHING))
@@ -129,7 +129,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesARowWhoseButtonsCannotBeRedirected() {
+        void refusesARowWhoseButtonsCannotBeRedirected() {
             // The match reaches the button and stops there. A button whose clicks cannot be taken
             // off the row is worse than no button: it would draw as a control of ours and act as one
             // of the game's.
@@ -138,7 +138,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesAButtonOfferingTwoWaysToRedirectItsClicks() {
+        void refusesAButtonOfferingTwoWaysToRedirectItsClicks() {
             // Ambiguity on the name is not a licence to fall through to a guess: the shape behind it
             // meets the same two members, so the fallback refuses where the name did rather than
             // taking whichever came back first.
@@ -147,7 +147,7 @@ class VanillaToggleFactoryTest {
         }
 
         @Test
-        void appendToggleRefusesARowThatBuildsNothingWhenAsked() {
+        void refusesARowThatBuildsNothingWhenAsked() {
             // A row of the right shape that answers the call with nothing, which is a different
             // failure from any shape mismatch and has to be survived before the button is used.
             assertThat(appendToggleTo(new ButtonlessRowFake(), DOES_NOTHING))

@@ -32,14 +32,14 @@ final class TraverseDurationsTest {
     class ResolveDurationSeconds {
 
         @Test
-        void resolveDurationSecondsReturnsTheRiseWhileHeadingForTheFarEnd() {
+        void returnsTheRiseWhileHeadingForTheFarEnd() {
 
             assertThat(DURATIONS.resolveDurationSeconds(RISING))
                 .isCloseTo(0.1f, within(TOLERANCE));
         }
 
         @Test
-        void resolveDurationSecondsReturnsTheFallWhileHeadingBackToRest() {
+        void returnsTheFallWhileHeadingBackToRest() {
 
             assertThat(DURATIONS.resolveDurationSeconds(FALLING))
                 .isCloseTo(0.4f, within(TOLERANCE));
@@ -50,7 +50,7 @@ final class TraverseDurationsTest {
     class CreateSymmetric {
 
         @Test
-        void createSymmetricGivesBothDirectionsTheSamePace() {
+        void givesBothDirectionsTheSamePace() {
 
             assertThat(TraverseDurations.createSymmetric(0.25f))
                 .isEqualTo(new TraverseDurations(0.25f, 0.25f));
@@ -61,7 +61,7 @@ final class TraverseDurationsTest {
     class Snap {
 
         @Test
-        void snapCoversBothDirectionsInOneStep() {
+        void coversBothDirectionsInOneStep() {
             // A non-positive duration is how an advance is told to skip the travel, so both ends of the
             // named pair have to be one - a snap that only snapped one way would wind the other back down
             // over the frames after an element was already dropped.

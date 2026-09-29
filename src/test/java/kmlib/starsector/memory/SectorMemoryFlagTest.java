@@ -40,7 +40,7 @@ class SectorMemoryFlagTest {
     class IsSet {
 
         @Test
-        void isSetReturnsTheStoredValueWhenTheKeyIsPresent() {
+        void returnsTheStoredValueWhenTheKeyIsPresent() {
 
             sectorMemoryFake.storeValue(KEY, false);
 
@@ -49,14 +49,14 @@ class SectorMemoryFlagTest {
         }
 
         @Test
-        void isSetReturnsTheDefaultWhenTheKeyIsAbsent() {
+        void returnsTheDefaultWhenTheKeyIsAbsent() {
 
             assertThat(flag.isSet())
                 .isTrue();
         }
 
         @Test
-        void isSetReturnsTheDefaultWhenTheSectorIsMissing() {
+        void returnsTheDefaultWhenTheSectorIsMissing() {
 
             sectorMemoryFake.removeSector();
 
@@ -69,7 +69,7 @@ class SectorMemoryFlagTest {
     class Set {
 
         @Test
-        void setWritesTheValueToSectorMemoryAndReportsItLanded() {
+        void writesTheValueToSectorMemoryAndReportsItLanded() {
 
             assertThat(flag.set(false))
                 .isTrue();
@@ -79,7 +79,7 @@ class SectorMemoryFlagTest {
         }
 
         @Test
-        void setDoesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
+        void doesNothingAndReportsNoWriteWhenTheSectorIsMissing() {
 
             sectorMemoryFake.removeSector();
 
@@ -95,7 +95,7 @@ class SectorMemoryFlagTest {
     class Toggle {
 
         @Test
-        void toggleWritesTheFlippedStoredValue() {
+        void writesTheFlippedStoredValue() {
 
             sectorMemoryFake.storeValue(KEY, true);
 
@@ -106,7 +106,7 @@ class SectorMemoryFlagTest {
         }
 
         @Test
-        void toggleFlipsFromTheDefaultWhenTheKeyIsAbsent() {
+        void flipsFromTheDefaultWhenTheKeyIsAbsent() {
 
             flag.toggle();
 

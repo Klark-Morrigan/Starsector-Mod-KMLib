@@ -52,7 +52,7 @@ class ChangedLineTraceTest {
     class CreateWholeLineTrace {
 
         @Test
-        void createWholeLineTraceRefusesALoggerThatIsNull() {
+        void refusesALoggerThatIsNull() {
             // The one way one of these is built wrongly, and it is not a typo: a holder is typically
             // a static field, so a logger declared below it in the same class is still null when it
             // arrives here. Held, that surfaces frames later as a null dereference inside a render
@@ -63,7 +63,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createWholeLineTraceReportsALineTheFirstTimeItIsSeen() {
+        void reportsALineTheFirstTimeItIsSeen() {
 
             var logMock = createListeningLoggerMock();
 
@@ -75,7 +75,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createWholeLineTraceStaysSilentWhileTheLineIsUnchanged() {
+        void staysSilentWhileTheLineIsUnchanged() {
             // The state the map is in nearly always: a still cursor over a map nobody has reopened,
             // read every frame and worth saying once.
             var logMock = createListeningLoggerMock();
@@ -89,7 +89,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createWholeLineTraceReportsAgainOnceTheLineChanges() {
+        void reportsAgainOnceTheLineChanges() {
             // The one moment the trace exists for, so suppressing repeats must not suppress the
             // change they surround.
             var logMock = createListeningLoggerMock();
@@ -110,7 +110,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createWholeLineTraceStaysSilentWhenTheReadingHasNoLineToGive() {
+        void staysSilentWhenTheReadingHasNoLineToGive() {
             // Every reading behind one of these answers null off the screens it does not apply to,
             // which is an ordinary state rather than something to report.
             var logMock = createListeningLoggerMock();
@@ -123,7 +123,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createWholeLineTraceDescribesNothingWhileTheLogIsAboveDebug() {
+        void describesNothingWhileTheLogIsAboveDebug() {
             // What every player who never turns the trace on pays: nothing. The describe is a walk
             // of the live widget tree, so asking for one and discarding it would be the whole cost
             // of the diagnostic, several times a frame.
@@ -148,7 +148,7 @@ class ChangedLineTraceTest {
     class CreateKeyedLineTrace {
 
         @Test
-        void createKeyedLineTraceRefusesALoggerThatIsNull() {
+        void refusesALoggerThatIsNull() {
 
             assertThatThrownBy(() -> ChangedLineTrace.createKeyedLineTrace(
                     null,
@@ -158,7 +158,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createKeyedLineTraceReportsTheTextRatherThanTheKey() {
+        void reportsTheTextRatherThanTheKey() {
             // The key is a decision about what counts as the same news; it is not what a reader is
             // meant to see, and printing it instead would cost the detail the split exists to keep.
             var logMock = createListeningLoggerMock();
@@ -173,7 +173,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createKeyedLineTraceStaysSilentWhileOnlyTheTextChanges() {
+        void staysSilentWhileOnlyTheTextChanges() {
             // The whole point of keying. A reading whose text carries a box that moves under a still
             // cursor would otherwise report every frame, burying the crossings it exists to catch.
             var logMock = createListeningLoggerMock();
@@ -194,7 +194,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createKeyedLineTraceReportsAgainOnceTheKeyChanges() {
+        void reportsAgainOnceTheKeyChanges() {
 
             var logMock = createListeningLoggerMock();
             var reportedLines = new ArrayList<>(List.of(
@@ -216,7 +216,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createKeyedLineTraceStaysSilentWhenTheReadingHasNoLineToGive() {
+        void staysSilentWhenTheReadingHasNoLineToGive() {
 
             var logMock = createListeningLoggerMock();
 
@@ -228,7 +228,7 @@ class ChangedLineTraceTest {
         }
 
         @Test
-        void createKeyedLineTraceDescribesNothingWhileTheLogIsAboveDebug() {
+        void describesNothingWhileTheLogIsAboveDebug() {
 
             var describeCount = new int[1];
             var logMock = mock(Logger.class);
@@ -269,14 +269,14 @@ class ChangedLineTraceTest {
     class CreateWholeLine {
 
         @Test
-        void createWholeLineKeysTheLineOnItsOwnText() {
+        void keysTheLineOnItsOwnText() {
             // The case where nothing in the reading moves on its own, so any difference is news.
             assertThat(TracedLine.createWholeLine(LINE))
                 .isEqualTo(new TracedLine(LINE, LINE));
         }
 
         @Test
-        void createWholeLineRefusesTextThatIsNull() {
+        void refusesTextThatIsNull() {
 
             assertThatThrownBy(() -> TracedLine.createWholeLine(null))
                 .isInstanceOf(NullPointerException.class);

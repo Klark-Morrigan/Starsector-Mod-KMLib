@@ -41,14 +41,14 @@ final class PanelPlacementTest {
     class IsScrollbarDrawn {
 
         @Test
-        void isScrollbarDrawnReportsABarForAnOverrunningListAtADrawableThickness() {
+        void reportsABarForAnOverrunningListAtADrawableThickness() {
 
             assertThat(buildPlacement(ScrollbarThickness.DEFAULT).isScrollbarDrawn())
                 .isTrue();
         }
 
         @Test
-        void isScrollbarDrawnReportsNoBarAtNoThickness() {
+        void reportsNoBarAtNoThickness() {
             // The half the overflow alone cannot answer: the list still overruns, so a reading taken off
             // that would paint a track of no width and claim a column over it.
             assertThat(buildPlacement(ScrollbarThickness.NONE).isScrollbarDrawn())
@@ -56,7 +56,7 @@ final class PanelPlacementTest {
         }
 
         @Test
-        void isScrollbarDrawnReportsNoBarForAListThatFits() {
+        void reportsNoBarForAListThatFits() {
 
             assertThat(buildFittingPlacement(ScrollbarThickness.DEFAULT).isScrollbarDrawn())
                 .isFalse();
@@ -67,14 +67,14 @@ final class PanelPlacementTest {
     class IsScrollbarNeeded {
 
         @Test
-        void isScrollbarNeededReportsSomewhereToScrollForAnOverrunningList() {
+        void reportsSomewhereToScrollForAnOverrunningList() {
 
             assertThat(buildPlacement(ScrollbarThickness.DEFAULT).isScrollbarNeeded())
                 .isTrue();
         }
 
         @Test
-        void isScrollbarNeededStillReportsSomewhereToScrollAtNoThickness() {
+        void stillReportsSomewhereToScrollAtNoThickness() {
             // The wheel's question, and why it is a question of its own: a player who has set the bar away
             // moves the list by the wheel, so a list that overruns still has somewhere to go.
             assertThat(buildPlacement(ScrollbarThickness.NONE).isScrollbarNeeded())
@@ -82,7 +82,7 @@ final class PanelPlacementTest {
         }
 
         @Test
-        void isScrollbarNeededReportsNowhereToScrollForAListThatFits() {
+        void reportsNowhereToScrollForAListThatFits() {
 
             assertThat(buildFittingPlacement(ScrollbarThickness.DEFAULT).isScrollbarNeeded())
                 .isFalse();
@@ -93,7 +93,7 @@ final class PanelPlacementTest {
     class ToScrollRegion {
 
         @Test
-        void toScrollRegionMapsTheBodyViewportOffsetAndOverflow() {
+        void mapsTheBodyViewportOffsetAndOverflow() {
 
             var region = buildPlacement(ScrollbarThickness.DEFAULT).toScrollRegion();
 
@@ -106,7 +106,7 @@ final class PanelPlacementTest {
         }
 
         @Test
-        void toScrollRegionIsTheSameRegionWhateverTheScrollbarThickness() {
+        void isTheSameRegionWhateverTheScrollbarThickness() {
 
             var thin = buildPlacement(ScrollbarThickness.DEFAULT).toScrollRegion();
             var thick = buildPlacement(new ScrollbarThickness(12f)).toScrollRegion();

@@ -30,7 +30,7 @@ class ProbeDescriptionsTest {
     class DescribeUpToCap {
 
         @Test
-        void describeUpToCapKeepsTheOrderItWasGiven() {
+        void keepsTheOrderItWasGiven() {
 
             assertThat(ProbeDescriptions.describeUpToCap(
                     List.of("outer", "middle", "inner"),
@@ -39,14 +39,14 @@ class ProbeDescriptionsTest {
         }
 
         @Test
-        void describeUpToCapDescribesNothingForNoItems() {
+        void describesNothingForNoItems() {
 
             assertThat(ProbeDescriptions.describeUpToCap(List.of(), Object::toString))
                 .isEmpty();
         }
 
         @Test
-        void describeUpToCapStopsAtTheCapAndKeepsTheItemsBeforeIt() {
+        void stopsAtTheCapAndKeepsTheItemsBeforeIt() {
             // Stops rather than samples: the head of a walk is the part a reader can act on, since
             // it is where the outermost widgets and the earliest-seeded icons are.
             var describedItems = ProbeDescriptions.describeUpToCap(
@@ -65,7 +65,7 @@ class ProbeDescriptionsTest {
     class DescribeComponent {
 
         @Test
-        void describeComponentNamesTheBoxAndOpacityOfADrawnWidget() {
+        void namesTheBoxAndOpacityOfADrawnWidget() {
 
             assertThat(ProbeDescriptions.describeComponent(buildWidgetMock(10f, 20f, 30f, 40f, 1f)))
                 .contains("x=10 y=20 w=30 h=40")
@@ -73,7 +73,7 @@ class ProbeDescriptionsTest {
         }
 
         @Test
-        void describeComponentStillNamesTheOpacityOfAWidgetFadedToNothing() {
+        void stillNamesTheOpacityOfAWidgetFadedToNothing() {
             // The reading that explains a host nobody can see: it renders its whole subtree at zero
             // opacity exactly as it does at one, so "there but invisible" has to be sayable.
             assertThat(ProbeDescriptions.describeComponent(buildWidgetMock(5f, 6f, 7f, 8f, 0f)))
@@ -81,7 +81,7 @@ class ProbeDescriptionsTest {
         }
 
         @Test
-        void describeComponentSaysSoWhenTheLayoutNeverPositionedTheWidget() {
+        void saysSoWhenTheLayoutNeverPositionedTheWidget() {
 
             var unpositionedWidgetMock = mock(UIComponentAPI.class);
 
@@ -93,7 +93,7 @@ class ProbeDescriptionsTest {
         }
 
         @Test
-        void describeComponentNamesAnEntryThatIsNotAComponentAtAll() {
+        void namesAnEntryThatIsNotAComponentAtAll() {
             // A children list promises nothing about what is in it, and an entry with no box is
             // still part of the tree the line is describing.
             assertThat(ProbeDescriptions.describeComponent("not a widget"))

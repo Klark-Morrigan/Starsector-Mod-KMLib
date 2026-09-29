@@ -70,7 +70,7 @@ final class CallLogThresholdTest {
     class CanLogAnyCall {
 
         @Test
-        void canLogAnyCallIsFalseWhereNothingWasStated() {
+        void isFalseWhereNothingWasStated() {
             // The one answer that marks a section's calls as per-frame cost rather than events,
             // which is what keeps the compilation clock off its path.
             assertThat(CallLogThreshold.NO_LOGGING.canLogAnyCall())
@@ -78,14 +78,14 @@ final class CallLogThresholdTest {
         }
 
         @Test
-        void canLogAnyCallIsTrueWhereEveryCallIsWanted() {
+        void isTrueWhereEveryCallIsWanted() {
 
             assertThat(CallLogThreshold.LOGGING_EVERY_CALL.canLogAnyCall())
                 .isTrue();
         }
 
         @Test
-        void canLogAnyCallIsTrueOverADuration() {
+        void isTrueOverADuration() {
             // A threshold a call may or may not reach still names the section's calls as events:
             // the ones that reach it are the ones a reader has to judge, cold or not.
             assertThat(CallLogThreshold.loggingOverMillis(TWO_MILLISECONDS).canLogAnyCall())

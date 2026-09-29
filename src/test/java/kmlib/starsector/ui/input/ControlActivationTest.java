@@ -74,7 +74,7 @@ final class ControlActivationTest {
     class ActivateCellIfActionable {
 
         @Test
-        void activateCellIfActionableFiresTheCellItWasHandedWithoutHitTestingForOne() {
+        void firesTheCellItWasHandedWithoutHitTestingForOne() {
             // The seam a header press reaches directly, having resolved its own tab already: the cell handed
             // over is the cell that fires, with no point to test it against.
             var firedCell = new int[] {-1};
@@ -89,7 +89,7 @@ final class ControlActivationTest {
         }
 
         @Test
-        void activateCellIfActionableFiresEveryCellOfAWholeRowControl() {
+        void firesEveryCellOfAWholeRowControl() {
             // A checkbox has no lit segment to re-pick, so every hit on it acts - the case the narrowing
             // below must not reach.
             var firedCell = new int[] {-1};
@@ -102,7 +102,7 @@ final class ControlActivationTest {
         }
 
         @Test
-        void activateCellIfActionableSwallowsARepickOfAnInertRowsLitSegment() {
+        void swallowsARepickOfAnInertRowsLitSegment() {
             // The standard radio rule, and what makes re-clicking a vanilla tab strip's active tab do
             // nothing: a plain option pair is always one lit, so its lit segment reaches no action.
             var fired = new boolean[1];
@@ -119,7 +119,7 @@ final class ControlActivationTest {
         }
 
         @Test
-        void activateCellIfActionableFiresARepickOfADeselectableRowsLitSegment() {
+        void firesARepickOfADeselectableRowsLitSegment() {
             // The opposite reselect, and why the narrowing reads the control rather than assuming: a
             // deselectable row wants the re-pick so its host can turn the control off.
             var firedCell = new int[] {-1};
@@ -136,7 +136,7 @@ final class ControlActivationTest {
         }
 
         @Test
-        void activateCellIfActionableFiresASegmentThatIsNotTheLitOne() {
+        void firesASegmentThatIsNotTheLitOne() {
             // The ordinary pick. Pinned beside the inert case above so the narrowing cannot be read as "a
             // segmented control never acts" - only its own lit segment is the one in question.
             var firedCell = new int[] {-1};
@@ -152,7 +152,7 @@ final class ControlActivationTest {
         }
 
         @Test
-        void activateCellIfActionableActsOnNothingForACellThatResolvedToNone() {
+        void actsOnNothingForACellThatResolvedToNone() {
             // What a walk hands over when the point was on no cell at all - passed straight back, so a
             // caller can offer this whatever its resolver answered without checking first.
             assertThat(ControlActivation.activateCellIfActionable(
@@ -162,7 +162,7 @@ final class ControlActivationTest {
         }
 
         @Test
-        void activateCellIfActionableActsOnNothingForAControlThatIsNotInteractive() {
+        void actsOnNothingForAControlThatIsNotInteractive() {
             // A caption carries no action to reach, so a cell named on one goes nowhere rather than throwing
             // on the cast that would reach it. Nothing resolves a cell on a label today, which is exactly
             // why this is stated here rather than left to whichever caller first hands one over.

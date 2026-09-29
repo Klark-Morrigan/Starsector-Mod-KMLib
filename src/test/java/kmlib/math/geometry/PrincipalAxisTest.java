@@ -17,7 +17,7 @@ class PrincipalAxisTest {
     class FitTo {
 
         @Test
-        void fitToCentresOnTheMeanOfThePoints() {
+        void centresOnTheMeanOfThePoints() {
 
             var axis = PrincipalAxis.fitTo(List.of(
                 new double[] {0, 0},
@@ -31,7 +31,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToPointsAlongTheDirectionOfGreatestSpread() {
+        void pointsAlongTheDirectionOfGreatestSpread() {
             // Points spread far along x and little along y, so the axis is the x
             // direction (unit length). The sign is arbitrary, so compare magnitudes.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -46,7 +46,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToFindsADiagonalSpread() {
+        void findsADiagonalSpread() {
             // A cloud stretched along y = x: the axis is the 45-degree diagonal, so
             // its two components share a magnitude.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -62,7 +62,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToMeasuresTheExtentAlongTheAxis() {
+        void measuresTheExtentAlongTheAxis() {
             // Span 20 along x (from -10 to 10); the projected extent is that full span.
             var axis = PrincipalAxis.fitTo(List.of(
                 new double[] {-10, 0},
@@ -74,7 +74,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToMeasuresTheMinorExtentPerpendicularToTheAxis() {
+        void measuresTheMinorExtentPerpendicularToTheAxis() {
             // The same cloud spans 20 along x and only 1 along y (the middle point sits
             // at y=1, the ends at y=0), so the minor extent reads that across-axis width.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -87,7 +87,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToYieldsAUnitVector() {
+        void yieldsAUnitVector() {
 
             var axis = PrincipalAxis.fitTo(List.of(
                 new double[] {1, 2},
@@ -99,7 +99,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToFallsBackToTheXAxisForASinglePoint() {
+        void fallsBackToTheXAxisForASinglePoint() {
             // One point has a centroid but no direction or spread; the axis defaults
             // to the x-axis with zero length rather than a NaN from dividing by a
             // zero eigenvector.
@@ -120,7 +120,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToFallsBackToTheXAxisForAnIsotropicSpread() {
+        void fallsBackToTheXAxisForAnIsotropicSpread() {
             // A symmetric square has equal spread in every direction, so no axis
             // dominates; the fallback keeps the result finite.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -136,7 +136,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void fitToRejectsAnEmptyCloud() {
+        void rejectsAnEmptyCloud() {
             assertThatThrownBy(() -> PrincipalAxis.fitTo(List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
         }
@@ -146,7 +146,7 @@ class PrincipalAxisTest {
     class ComputeElongation {
 
         @Test
-        void computeElongationReadsNearOneForAThinLine() {
+        void readsNearOneForAThinLine() {
             // A cloud strung far along x with almost no y spread: minor is tiny beside
             // major, so the elongation approaches 1 - the axis is highly trustworthy.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -159,7 +159,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void computeElongationReadsZeroForAnIsotropicCloud() {
+        void readsZeroForAnIsotropicCloud() {
             // A symmetric square spreads equally every way, so minor equals major and the
             // elongation is 0 - the fallback axis direction carries no real meaning.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -173,7 +173,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void computeElongationReadsAMiddlingValueForAModeratelyStrungCloud() {
+        void readsAMiddlingValueForAModeratelyStrungCloud() {
             // Major extent 20 (x from -10 to 10), minor extent 10 (y from -5 to 5): a 2:1
             // cloud reads 1 - 10/20 = 0.5, half-trustworthy.
             var axis = PrincipalAxis.fitTo(List.of(
@@ -187,7 +187,7 @@ class PrincipalAxisTest {
         }
 
         @Test
-        void computeElongationReadsZeroForASinglePoint() {
+        void readsZeroForASinglePoint() {
             // A point has no spread in any direction, so there is no shape and no
             // trustworthy axis; the elongation is 0 rather than a divide-by-zero.
             var axis = PrincipalAxis.fitTo(List.of(new double[] {7, 3}));

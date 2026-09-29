@@ -41,7 +41,7 @@ class EmbeddedMapFinderTest {
     class CollectEmbeddedMapsUnder {
 
         @Test
-        void collectEmbeddedMapsUnderFindsAMapWithWhatItHangsUnder() {
+        void findsAMapWithWhatItHangsUnder() {
             // The ancestry is the whole reason the walk answers a value rather than a widget: it is
             // in hand only while the walk is running, and it is what names an owner afterwards.
             // Reading it back outside the walk also shows it was copied rather than borrowed - the
@@ -62,7 +62,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void collectEmbeddedMapsUnderLeavesOutTheMapTabOnScreen() {
+        void leavesOutTheMapTabOnScreen() {
             // The one map that is nobody's intruder. Answering it here would name the screen the
             // player opened as a foreign surface to work around.
             var mapTabFake = new SectorMapWidgetFake();
@@ -73,7 +73,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void collectEmbeddedMapsUnderLeavesOutAMapBelowTheMapTabOnScreen() {
+        void leavesOutAMapBelowTheMapTabOnScreen() {
             // Pruned at the tab rather than filtered afterwards, so the tab's own subtree - which is
             // most of the tree, the panned map content hanging below it - goes unwalked.
             var mapTabFake = new SectorMapWidgetFake(
@@ -85,7 +85,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void collectEmbeddedMapsUnderFindsEveryMapWhileNoMapTabIsOnScreen() {
+        void findsEveryMapWhileNoMapTabIsOnScreen() {
             // Game space, which is where a minimap on the campaign HUD is the only map drawn. With
             // no tab to exclude, every map in the tree is somebody's embedded one.
             var minimapFake = new SectorMapWidgetFake();
@@ -100,7 +100,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void collectEmbeddedMapsUnderFindsNothingInATreeHoldingNoMap() {
+        void findsNothingInATreeHoldingNoMap() {
             // A vanilla install with no screen open, which is what most of these walks look at.
             assertThat(EmbeddedMapFinder.collectEmbeddedMapsUnder(
                     new CoreUiComponentFake(new CoreUiComponentFake()), NO_MAP_TAB_ON_SCREEN))
@@ -108,7 +108,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void collectEmbeddedMapsUnderStopsDescendingPastTheSearchDepth() {
+        void stopsDescendingPastTheSearchDepth() {
             // The runaway guard. A pathological tree - or one whose parent and child answer as each
             // other's children - would otherwise walk until the stack gave out, in the middle of a
             // frame.
@@ -127,7 +127,7 @@ class EmbeddedMapFinderTest {
     class FindEmbeddedMaps {
 
         @Test
-        void findEmbeddedMapsAnswersNothingBeforeThereIsATree() {
+        void answersNothingBeforeThereIsATree() {
             // No campaign UI is stood up yet. Nothing to walk is not a failure and says nothing
             // about what a tree will hold once there is one.
             var finder = new EmbeddedMapFinder(
@@ -138,7 +138,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsWalksOneTreeOnce() {
+        void walksOneTreeOnce() {
             // What makes this askable from a render pass. A widget a mod built once stays where it
             // was put, so a second walk of the same tree would pay a full descent for the answer
             // already in hand.
@@ -154,7 +154,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsWalksATreeItHasNotSeen() {
+        void walksATreeItHasNotSeen() {
             // The core UI in force changes when an interaction dialog stands up its own, so an
             // answer held past that would describe a tree nobody is being shown.
             var firstMapFake = new SectorMapWidgetFake();
@@ -174,7 +174,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsWalksAgainWhileNothingIsFound() {
+        void walksAgainWhileNothingIsFound() {
             // Nothing orders a mod's widget building against ours, so an empty first walk can mean
             // "not built yet" rather than "not there". Remembered, it would answer for the session.
             var rootFake = new CoreUiComponentFake();
@@ -189,7 +189,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsWalksTheSameTreeAgainOnceTheMemoryElapses() {
+        void walksTheSameTreeAgainOnceTheMemoryElapses() {
             // The root outlives changes within the tree, so an answer keyed on it alone would stand
             // for as long as the campaign's own core UI does - which is the session. A screen the
             // player closed is still in the tree while it fades and is no longer the map on screen,
@@ -209,7 +209,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsReusesTheWalkWithinTheMemory() {
+        void reusesTheWalkWithinTheMemory() {
             // The other half of the same bound, and the reason it is a bound rather than no memo at
             // all: a caller in a render pass asks per frame, and the walk descends the whole core UI
             // by name.
@@ -227,7 +227,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsAnswersTheScreenAsItStandsAfterTheMemoryElapses() {
+        void answersTheScreenAsItStandsAfterTheMemoryElapses() {
             // What the re-walk is for, in the shape the fault took: a map counted as embedded while
             // the screen it belongs to was between states stops being counted once the reads settle,
             // rather than standing as the answer for as long as the root does.
@@ -248,7 +248,7 @@ class EmbeddedMapFinderTest {
         }
 
         @Test
-        void findEmbeddedMapsAnswersNothingWhenTheTreeCannotBeRead() {
+        void answersNothingWhenTheTreeCannotBeRead() {
             // The reach is by-name reflection into classes no game build is obliged to keep. A
             // caller is in the middle of a frame, so a broken reach costs the answer and not the
             // frame.

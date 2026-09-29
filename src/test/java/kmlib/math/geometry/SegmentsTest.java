@@ -13,7 +13,7 @@ class SegmentsTest {
     class IntersectSegments {
 
         @Test
-        void intersectSegmentsFindsWhereTwoCrossingSpansMeet() {
+        void findsWhereTwoCrossingSpansMeet() {
             // An X: the two diagonals of the unit-10 square cross at its centre.
             assertThat(Segments.intersectSegments(
                     new double[] {0, 0},
@@ -24,7 +24,7 @@ class SegmentsTest {
         }
 
         @Test
-        void intersectSegmentsIsNullWhenOnlyTheLinesWouldCross() {
+        void isNullWhenOnlyTheLinesWouldCross() {
             // The distinguishing case against intersectLines, and the whole reason this
             // exists: two short spans far apart whose infinite lines meet at (4, 4).
             // Extended they cross; as drawn they come nowhere near each other.
@@ -37,7 +37,7 @@ class SegmentsTest {
         }
 
         @Test
-        void intersectSegmentsMeetingEndToEndCountsAsCrossing() {
+        void meetingEndToEndCountsAsCrossing() {
             // Touching at a shared endpoint is a crossing at the ends of both spans.
             // Pinned because a ring's consecutive edges always touch this way, so a
             // caller scanning a ring for folds has to exclude them itself rather than
@@ -51,7 +51,7 @@ class SegmentsTest {
         }
 
         @Test
-        void intersectSegmentsIsNullForCollinearSpansThatOverlap() {
+        void isNullForCollinearSpansThatOverlap() {
             // Not a miss: these two share the stretch from 5 to 10. Pinned because null
             // reads as "they do not touch" everywhere else this returns it, and a caller
             // that needs to tell an overlap apart from a miss has to look elsewhere.
@@ -64,7 +64,7 @@ class SegmentsTest {
         }
 
         @Test
-        void intersectSegmentsIsNullForParallelSpans() {
+        void isNullForParallelSpans() {
 
             assertThat(Segments.intersectSegments(
                     new double[] {0, 0},
@@ -78,21 +78,21 @@ class SegmentsTest {
     @Nested
     class ComputeCrossingPoint {
         @Test
-        void computeCrossingPointLandsWhereTheSignedValueReachesZero() {
+        void landsWhereTheSignedValueReachesZero() {
             // Signed +4 at (0,0) and -4 at (8,0) crosses zero at the midpoint.
             assertThat(Segments.computeCrossingPoint(new double[] {0, 0}, new double[] {8, 0}, 4, -4))
                 .containsExactly(4.0, 0.0);
         }
 
         @Test
-        void computeCrossingPointIsProportionalToTheSignedMagnitudes() {
+        void isProportionalToTheSignedMagnitudes() {
             // +1 at start, -3 at end: the zero is a quarter of the way along.
             assertThat(Segments.computeCrossingPoint(new double[] {0, 0}, new double[] {8, 4}, 1, -3))
                 .containsExactly(2.0, 1.0);
         }
 
         @Test
-        void computeCrossingPointIsOrderIndependentForTheSameSegment() {
+        void isOrderIndependentForTheSameSegment() {
             // Walking the segment the other way with swapped signs finds the same
             // point on it.
             assertThat(Segments.computeCrossingPoint(new double[] {8, 0}, new double[] {0, 0}, -4, 4))
@@ -104,7 +104,7 @@ class SegmentsTest {
     class ComputeDistanceToPoint {
 
         @Test
-        void computeDistanceToPointIsThePerpendicularWhereTheFootLandsOnTheSegment() {
+        void isThePerpendicularWhereTheFootLandsOnTheSegment() {
             // (4,3) drops onto the segment at (4,0), three away.
             assertThat(Segments.computeDistanceToPoint(
                     new double[] {0, 0},
@@ -114,7 +114,7 @@ class SegmentsTest {
         }
 
         @Test
-        void computeDistanceToPointMeasuresToTheNearerEndPastTheSegment() {
+        void measuresToTheNearerEndPastTheSegment() {
             // (12,0) sits four past the end. The perpendicular foot is off the segment,
             // so the distance is to the end itself - the bound that separates this from
             // a distance to the infinite line, which would answer zero.
@@ -126,7 +126,7 @@ class SegmentsTest {
         }
 
         @Test
-        void computeDistanceToPointMeasuresToTheStartBeforeTheSegment() {
+        void measuresToTheStartBeforeTheSegment() {
             assertThat(Segments.computeDistanceToPoint(
                     new double[] {0, 0},
                     new double[] {8, 0},
@@ -135,7 +135,7 @@ class SegmentsTest {
         }
 
         @Test
-        void computeDistanceToPointIsZeroOnTheSegment() {
+        void isZeroOnTheSegment() {
             assertThat(Segments.computeDistanceToPoint(
                     new double[] {0, 0},
                     new double[] {8, 0},
@@ -144,7 +144,7 @@ class SegmentsTest {
         }
 
         @Test
-        void computeDistanceToPointMeasuresToTheSpotASegmentTooShortToAimSitsAt() {
+        void measuresToTheSpotASegmentTooShortToAimSitsAt() {
             // No direction to project onto, so the answer is the distance to the point
             // the degenerate segment occupies rather than a projection onto noise.
             assertThat(Segments.computeDistanceToPoint(

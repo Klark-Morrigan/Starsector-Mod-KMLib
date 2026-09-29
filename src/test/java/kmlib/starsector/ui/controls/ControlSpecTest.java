@@ -295,7 +295,7 @@ final class ControlSpecTest {
     class Divider {
 
         @Test
-        void dividerIsARuleWithNoLabel() {
+        void isARuleWithNoLabel() {
             // A divider is drawn but never clicked and carries no text, so it holds no label.
             assertThat(new DividerSpec().labels())
                 .isEmpty();
@@ -346,7 +346,7 @@ final class ControlSpecTest {
     class Tabs {
 
         @Test
-        void tabsCarriesLabelsAndShortcuts() {
+        void carriesLabelsAndShortcuts() {
 
             var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
@@ -363,7 +363,7 @@ final class ControlSpecTest {
         }
 
         @Test
-        void tabsKeepsNullShortcutEntriesForHintlessTabs() {
+        void keepsNullShortcutEntriesForHintlessTabs() {
             // A tab with no bound shortcut rides as a null entry, so the list stays aligned to the labels
             // index for index; the copy must preserve the null rather than reject it.
             var tabs = new TabsSpec(
@@ -377,7 +377,7 @@ final class ControlSpecTest {
         }
 
         @Test
-        void tabsCarriesTheClickActionByTabIndex() {
+        void carriesTheClickActionByTabIndex() {
 
             var firedTab = new int[] {-99};
             var tabs = new TabsSpec(
@@ -393,7 +393,7 @@ final class ControlSpecTest {
         }
 
         @Test
-        void tabsDoesNotAliasTheCallersShortcutList() {
+        void doesNotAliasTheCallersShortcutList() {
             // The caller may hand in a mutable list it goes on to reuse; the spec must copy it, so a later
             // mutation of the caller's list cannot rewrite the drawn hints.
             var callerShortcuts = new ArrayList<String>(List.of("N", "P"));
@@ -414,7 +414,7 @@ final class ControlSpecTest {
     class ShortcutAt {
 
         @Test
-        void shortcutAtIsTheTabsHintWhenItHasOne() {
+        void isTheTabsHintWhenItHasOne() {
 
             var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
@@ -427,7 +427,7 @@ final class ControlSpecTest {
         }
 
         @Test
-        void shortcutAtIsEmptyForANullEntry() {
+        void isEmptyForANullEntry() {
             // A null entry is a real "no hint", so it reads as an empty string rather than throwing.
             var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),
@@ -440,7 +440,7 @@ final class ControlSpecTest {
         }
 
         @Test
-        void shortcutAtIsEmptyForAnIndexPastTheShortcutList() {
+        void isEmptyForAnIndexPastTheShortcutList() {
             // A shorter (or empty) shortcut list leaves the trailing tabs hint-less rather than throwing.
             var tabs = new TabsSpec(
                 List.of("No Layer", "Political Map"),

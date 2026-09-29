@@ -188,7 +188,7 @@ final class PolygonOffsetsTest {
     @Nested
     class InsetSelectedEdges {
         @Test
-        void insetSelectedEdgesPullsInOnlyTheFlaggedEdges() {
+        void pullsInOnlyTheFlaggedEdges() {
             // Square side 10; inset every edge but the right one (index 1). The kept
             // right edge stays at x = 10 while the other three pull in by 2, giving
             // the rectangle (2,2)..(10,8).
@@ -210,7 +210,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void insetSelectedEdgesFlagsTheKeptEdgeAndTruncatesItWithinTheInset() {
+        void flagsTheKeptEdgeAndTruncatesItWithinTheInset() {
 
             var result = PolygonOffsets.insetSelectedEdges(
                 buildReferenceSquare(),
@@ -237,7 +237,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void insetSelectedEdgesMatchesTheWholePolygonInsetWhenEveryEdgeIsFlagged() {
+        void matchesTheWholePolygonInsetWhenEveryEdgeIsFlagged() {
 
             var selective = PolygonOffsets.insetSelectedEdges(
                 buildReferenceSquare(),
@@ -255,7 +255,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void insetSelectedEdgesEmptiesWhenTheInsetConsumesThePolygon() {
+        void emptiesWhenTheInsetConsumesThePolygon() {
 
             var thin = Arrays.asList(
                 new double[] {0, 0},
@@ -275,7 +275,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void insetSelectedEdgesEmptiesACollapseRatherThanReturningASliver() {
+        void emptiesACollapseRatherThanReturningASliver() {
             // Insetting every edge of the side-10 square by exactly half its side
             // pulls all four borders through the centre, so the clip collapses to
             // coincident points at (5,5) - a non-zero raw vertex count but no area.
@@ -293,7 +293,7 @@ final class PolygonOffsetsTest {
         }
 
         @Test
-        void insetSelectedEdgesRejectsAMaskNotParallelToTheEdges() {
+        void rejectsAMaskNotParallelToTheEdges() {
             assertThatThrownBy(() -> PolygonOffsets.insetSelectedEdges(
                     buildReferenceSquare(),
                     new boolean[] {true},

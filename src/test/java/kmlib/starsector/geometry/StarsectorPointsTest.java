@@ -22,7 +22,7 @@ class StarsectorPointsTest {
     @Nested
     class ComputeDistanceBetween {
         @Test
-        void computeDistanceBetweenIsEuclidean() {
+        void isEuclidean() {
             var a = buildEntityAt(0f, 0f);
             var b = buildEntityAt(3f, 4f);
 
@@ -30,7 +30,7 @@ class StarsectorPointsTest {
         }
 
         @Test
-        void computeDistanceBetweenIsZeroForCoincidentEntities() {
+        void isZeroForCoincidentEntities() {
             var a = buildEntityAt(2f, 7f);
             var b = buildEntityAt(2f, 7f);
 
@@ -41,7 +41,7 @@ class StarsectorPointsTest {
     @Nested
     class ComputeAngleDegreesBetween {
         @Test
-        void computeAngleDegreesBetweenIsCounterClockwiseFromPositiveX() {
+        void isCounterClockwiseFromPositiveX() {
             var from = buildEntityAt(0f, 0f);
             var to = buildEntityAt(1f, 1f);
 
@@ -49,7 +49,7 @@ class StarsectorPointsTest {
         }
 
         @Test
-        void computeAngleDegreesBetweenIsRelativeToTheFromEntity() {
+        void isRelativeToTheFromEntity() {
             var from = buildEntityAt(2f, 2f);
             var to = buildEntityAt(5f, 6f);
 

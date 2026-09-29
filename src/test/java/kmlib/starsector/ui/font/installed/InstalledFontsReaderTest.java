@@ -62,7 +62,7 @@ class InstalledFontsReaderTest {
     class ReadInstall {
 
         @Test
-        void readInstallReadsTheEditionAndPackVersionTheMarkerStates(@TempDir Path starsectorRoot)
+        void readsTheEditionAndPackVersionTheMarkerStates(@TempDir Path starsectorRoot)
                 throws IOException {
 
             writeFile(starsectorRoot.resolve("starsector-core/localization_version.json"), ZONGYI_MARKER);
@@ -76,7 +76,7 @@ class InstalledFontsReaderTest {
         }
 
         @Test
-        void readInstallReadsAnInstallWithNoMarkerAsVanilla(@TempDir Path starsectorRoot) {
+        void readsAnInstallWithNoMarkerAsVanilla(@TempDir Path starsectorRoot) {
 
             var fonts = InstalledFontsReader.readInstall(starsectorRoot);
 
@@ -87,7 +87,7 @@ class InstalledFontsReaderTest {
         }
 
         @Test
-        void readInstallReadsEachFaceTheInstallCarriesAndNoOther(@TempDir Path starsectorRoot)
+        void readsEachFaceTheInstallCarriesAndNoOther(@TempDir Path starsectorRoot)
                 throws IOException {
             // A face the install lacks is left out rather than read as empty, which is how a missing atlas
             // is told from one declaring no glyphs.
@@ -100,7 +100,7 @@ class InstalledFontsReaderTest {
         }
 
         @Test
-        void readInstallReadsTheDefaultFaceTheInstallsSettingsName(@TempDir Path starsectorRoot)
+        void readsTheDefaultFaceTheInstallsSettingsName(@TempDir Path starsectorRoot)
                 throws IOException {
             // Settings as the game ships them: a comment, and the key among others.
             writeFile(
@@ -118,14 +118,14 @@ class InstalledFontsReaderTest {
         }
 
         @Test
-        void readInstallReadsAnInstallWithNoSettingsAsVanillasDefault(@TempDir Path starsectorRoot) {
+        void readsAnInstallWithNoSettingsAsVanillasDefault(@TempDir Path starsectorRoot) {
 
             assertThat(InstalledFontsReader.readInstall(starsectorRoot).defaultAtlas())
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void readInstallReadsADeclaredDefaultTheEnumDoesNotNameWithTheDescriptorTheInstallCarries(
+        void readsADeclaredDefaultTheEnumDoesNotNameWithTheDescriptorTheInstallCarries(
                 @TempDir Path starsectorRoot) throws IOException {
             // The pack's face is read by its own descriptor, smoothing included, so a walk over this reading
             // reaches it as the running game on the install would.
@@ -146,7 +146,7 @@ class InstalledFontsReaderTest {
         }
 
         @Test
-        void readInstallReadsADeclaredDefaultTheInstallDoesNotCarryAsNoFace(@TempDir Path starsectorRoot)
+        void readsADeclaredDefaultTheInstallDoesNotCarryAsNoFace(@TempDir Path starsectorRoot)
                 throws IOException {
             // A mod's own file lives in the mod's folder, out of this reading's reach: it reads as a face that
             // will not load, which a walk passes over.

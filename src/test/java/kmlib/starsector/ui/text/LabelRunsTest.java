@@ -56,7 +56,7 @@ class LabelRunsTest {
     class AppendRun {
 
         @Test
-        void appendRunPutsTheRunLast() {
+        void putsTheRunLast() {
 
             var runs = LabelRuns.appendRun(
                 List.of(new TextSpan("Hegemony", RUN_COLOUR)),
@@ -69,7 +69,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void appendRunPutsAnImageRunLast() {
+        void putsAnImageRunLast() {
             // The two kinds compose alike, so a caller sets a crest into a sentence the same way it
             // picks a word out in another colour.
             var runs = LabelRuns.appendRun(
@@ -83,7 +83,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void appendRunLeavesTheCallersRunsAlone() {
+        void leavesTheCallersRunsAlone() {
             // A refinement hands its own list in and keeps holding it, so appending must not rewrite the
             // label of the value the caller started from.
             var callerRuns = new ArrayList<LabelRun>();
@@ -100,7 +100,7 @@ class LabelRunsTest {
     class CopyRuns {
 
         @Test
-        void copyRunsKeepsTheRunsInReadingOrder() {
+        void keepsTheRunsInReadingOrder() {
 
             var runs = LabelRuns.copyRuns(List.of(
                 new TextSpan("Hegemony", RUN_COLOUR),
@@ -113,7 +113,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void copyRunsDoesNotAliasTheCallersList() {
+        void doesNotAliasTheCallersList() {
 
             var callerRuns = new ArrayList<LabelRun>();
             callerRuns.add(new TextSpan("Hegemony", RUN_COLOUR));
@@ -126,7 +126,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void copyRunsRejectsALabelWithNoRuns() {
+        void rejectsALabelWithNoRuns() {
             // Content with no runs is not a line; rejecting it here is what keeps the emptiness from
             // surfacing inside a measurement that cannot say which line was meant.
             assertThatThrownBy(() -> LabelRuns.copyRuns(List.of()))
@@ -135,14 +135,14 @@ class LabelRunsTest {
         }
 
         @Test
-        void copyRunsRejectsAMissingRunList() {
+        void rejectsAMissingRunList() {
             assertThatThrownBy(() -> LabelRuns.copyRuns(null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("labelRuns");
         }
 
         @Test
-        void copyRunsRejectsANullRun() {
+        void rejectsANullRun() {
             assertThatThrownBy(() -> LabelRuns.copyRuns(Arrays.asList(
                     new TextSpan("Hegemony", RUN_COLOUR),
                     null)))
@@ -154,14 +154,14 @@ class LabelRunsTest {
     class HasDrawnRun {
 
         @Test
-        void hasDrawnRunIsTrueForALabelWithWords() {
+        void isTrueForALabelWithWords() {
 
             assertThat(LabelRuns.hasDrawnRun(List.of(new TextSpan("Hegemony", RUN_COLOUR))))
                 .isTrue();
         }
 
         @Test
-        void hasDrawnRunIsFalseWhereEveryRunCameOutBlank() {
+        void isFalseWhereEveryRunCameOutBlank() {
             // What a caller that assembled a label from parts and came up with nothing produces. Asked
             // of the runs rather than measured, so whatever decides whether a label is there to point at
             // needs no face to find out.
@@ -174,7 +174,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void hasDrawnRunIsTrueWhereOnlyALaterRunDraws() {
+        void isTrueWhereOnlyALaterRunDraws() {
             // A label opening on a blank still draws, so it is a label - the same reading the offsets
             // walk gives it, where the blank is passed over and the run after it starts the line.
             var runs = List.<LabelRun>of(
@@ -186,7 +186,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void hasDrawnRunIsTrueForALabelOfOneImage() {
+        void isTrueForALabelOfOneImage() {
             // A crest set among the words draws as much as a word does, so a label made of one is there
             // to be pointed at - measured on its text alone it would read as empty.
             assertThat(LabelRuns.hasDrawnRun(List.of(new ImageSpan(CREST_SPRITE_PATH))))
@@ -198,7 +198,7 @@ class LabelRunsTest {
     class MeasureWordSpaceWidth {
 
         @Test
-        void measureWordSpaceWidthChargesTheFacesOwnSpace() {
+        void chargesTheFacesOwnSpace() {
             // A space is one character, so this measurer charges it one unit - the same one the walk
             // below spends between two runs. Offered for a mark set between a label and what follows it,
             // which has to stand off by the very space the label parts its own runs by.
@@ -209,7 +209,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureWordSpaceWidthAnswersWhatTheRunWalkSpends() {
+        void answersWhatTheRunWalkSpends() {
             // The two must not part: what a caller stands a mark off by is read from the same span the
             // offsets walk charges between runs, so a face that spaces its words widely spaces both.
             var wideSpaceMeasurer = createSpaceHeavyMeasurer();
@@ -234,7 +234,7 @@ class LabelRunsTest {
     class MeasureRunOffsets {
 
         @Test
-        void measureRunOffsetsAnchorsASingleRunAtTheLabelsLeftEdge() {
+        void anchorsASingleRunAtTheLabelsLeftEdge() {
 
             var offsets = LabelRuns.measureRunOffsets(
                 List.of(new TextSpan("AA", RUN_COLOUR)),
@@ -248,7 +248,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsStartsEachRunAWordGapPastTheOneBefore() {
+        void startsEachRunAWordGapPastTheOneBefore() {
             // The runs read as one sentence, so the second starts past the first plus the face's own
             // space, which this measurer charges as the one character it is: 2 + 1.
             var offsets = LabelRuns.measureRunOffsets(
@@ -265,7 +265,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsAnswersEachRunItsOwnWidth() {
+        void answersEachRunItsOwnWidth() {
             // Held beside the anchors so a caller drawing something the size of one run takes the width
             // the label was charged rather than measuring the face again and risking a second answer.
             var offsets = LabelRuns.measureRunOffsets(
@@ -281,7 +281,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsAnswersARunThatDrawsNothingNoWidthOfItsOwn() {
+        void answersARunThatDrawsNothingNoWidthOfItsOwn() {
             // The blank is charged neither gap nor width, so its own entry reads as the nothing the total
             // was charged for it - a caller walking the widths beside the runs needs no second rule for
             // which of them draw.
@@ -298,7 +298,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsChargesAnImageRunItsLineHeight() {
+        void chargesAnImageRunItsLineHeight() {
             // An image squares off its line, so the label is charged 20 for the crest, the face's 1-wide
             // space, and 3 for the glyphs after it.
             var offsets = LabelRuns.measureRunOffsets(
@@ -315,7 +315,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsSpacesAnImageRunFromTheWordsBeforeIt() {
+        void spacesAnImageRunFromTheWordsBeforeIt() {
             // The image is a run like any other, so it takes the same word space a second colour would
             // rather than butting against the glyphs: 2 + 1.
             var offsets = LabelRuns.measureRunOffsets(
@@ -332,7 +332,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsChargesARedactedRunItsWordsAndTheirOwnGaps() {
+        void chargesARedactedRunItsWordsAndTheirOwnGaps() {
             // A withheld name is a run like any other from out here: the label spaces it off the words
             // before it, and the gap its own two words are parted by is the same one - 2, the face's
             // 1-wide space, then 3 + 1 + 4 for the blocks standing in for a seven-character name.
@@ -350,7 +350,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsChargesABlankRunNeitherGapNorWidth() {
+        void chargesABlankRunNeitherGapNorWidth() {
             // A caller assembling a run from parts and coming up blank gets the line it would have had
             // without it, rather than a gap reserved in front of no glyphs.
             var offsets = LabelRuns.measureRunOffsets(
@@ -368,7 +368,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsTakesItsWordSpaceFromTheDrawingFace() {
+        void takesItsWordSpaceFromTheDrawingFace() {
             // The rule the whole measurement turns on: the space parting two runs is the face's own, so a
             // face with a wide space spaces its runs widely and one with a narrow space does not. Fixed at
             // one number instead, a stack whose lines draw at several sizes would space a footnote's runs
@@ -390,7 +390,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsChargesNoGapToARunThatJoinsTheOneBeforeIt() {
+        void chargesNoGapToARunThatJoinsTheOneBeforeIt() {
             // What lets a label pick a stretch out of the middle of a word: the second run anchors where
             // the first measured out rather than a space past it, so the two draw as one word in two
             // colours - 2, then 2 + 3.
@@ -408,7 +408,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsStillSpacesTheRunAfterAJoinedOne() {
+        void stillSpacesTheRunAfterAJoinedOne() {
             // The joining is one run's statement about its own left edge and says nothing about the run
             // after it, so a name split at a match closes up at the split and keeps the sentence spacing
             // beyond it: 2, 2 + 3, then a space past that.
@@ -427,7 +427,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsAnchorsAJoinedOpeningRunAtTheLabelsLeftEdge() {
+        void anchorsAJoinedOpeningRunAtTheLabelsLeftEdge() {
             // A label whose first run happens to ask to be joined has nothing to join to, so it opens
             // flush rather than being charged a gap against the edge itself.
             var offsets = LabelRuns.measureRunOffsets(
@@ -442,7 +442,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void measureRunOffsetsChargesNoLeadingGapWhenTheFirstRunIsBlank() {
+        void chargesNoLeadingGapWhenTheFirstRunIsBlank() {
             // The gap is charged where one drawn run follows another, so a blank opening run leaves the
             // first drawn one flush at the label's left edge.
             var offsets = LabelRuns.measureRunOffsets(
@@ -463,7 +463,7 @@ class LabelRunsTest {
     class ResolveLineText {
 
         @Test
-        void resolveLineTextJoinsTheRunsInReadingOrder() {
+        void joinsTheRunsInReadingOrder() {
             // Parted by one space, spelled here because this form has no anchors to part them with -
             // the same rule the run-by-run form spends as geometry, so a label authored once reads
             // alike whichever way a surface lays it.
@@ -476,7 +476,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextPassesOverARunWithNothingToDraw() {
+        void passesOverARunWithNothingToDraw() {
             // The space is spent between two runs that draw, so a run assembled from parts and coming up
             // blank costs the line neither a space of its own nor a doubled one around it.
             var lineText = LabelRuns.resolveLineText(List.of(
@@ -489,13 +489,13 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextReadsASingleRunAsItself() {
+        void readsASingleRunAsItself() {
             assertThat(LabelRuns.resolveLineText(List.of(new TextSpan("Hegemony", RUN_COLOUR))))
                 .isEqualTo("Hegemony");
         }
 
         @Test
-        void resolveLineTextSpacesTheRunsAsWidelyAsTheyArePlaced() {
+        void spacesTheRunsAsWidelyAsTheyArePlaced() {
             // The invariant the two forms stand or fall on. They part their runs by one rule written
             // twice - as a width added between two drawn runs, and as a character appended between them -
             // so nothing but a test holds them together, and a surface that measures by one and draws by
@@ -518,7 +518,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextJoinsARunThatButtsAgainstTheOneBeforeItWithoutASpace() {
+        void joinsARunThatButtsAgainstTheOneBeforeItWithoutASpace() {
             // The single-draw form of the same rule, and the one that says what a split label actually
             // spells: a name parted at a match reads back as the name, not as the name with a space
             // opened inside it.
@@ -531,7 +531,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextSpacesAJoinedLabelAsWidelyAsItIsPlaced() {
+        void spacesAJoinedLabelAsWidelyAsItIsPlaced() {
             // The agreement above, held over the joining too: the two forms part their runs by one rule
             // written twice, so a surface that measures by one and draws by the other cannot open a gap
             // inside a word on only one of them.
@@ -551,7 +551,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextReadsALabelOfBlankRunsAsNothing() {
+        void readsALabelOfBlankRunsAsNothing() {
             // Every run assembled from parts and coming up empty leaves no line at all - not a string of
             // the spaces that would have parted them, which a surface would then measure and centre.
             assertThat(LabelRuns.resolveLineText(List.of(
@@ -561,7 +561,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextPassesOverAnImageRunBetweenTwoWords() {
+        void passesOverAnImageRunBetweenTwoWords() {
             // A crest set among the words contributes neither glyphs nor a space, so the words either
             // side of it close to the single space that parts them - where a space charged per run would
             // leave the line reading as though something had been dropped out of it.
@@ -575,7 +575,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextRejectsALabelCarryingARedactedRun() {
+        void rejectsALabelCarryingARedactedRun() {
             // Dropped, the withheld name would not read as withheld - it would read as though nothing had
             // been there, on a line the surface receiving it has no way to tell is short. So the label is
             // refused here rather than silently shortened; a surface showing one lays its runs out and
@@ -588,7 +588,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextReadsALabelWhoseRedactionStandsForNothing() {
+        void readsALabelWhoseRedactionStandsForNothing() {
             // A redaction that came out with no words to block draws nothing, so this form loses nothing
             // by it - the refusal is over what would go missing, not over the kind of run it was.
             var lineText = LabelRuns.resolveLineText(List.of(
@@ -601,7 +601,7 @@ class LabelRunsTest {
         }
 
         @Test
-        void resolveLineTextLeavesOutAnImageRun() {
+        void leavesOutAnImageRun() {
             // The line form is glyphs only, so a surface drawing a label in one pass gets its words and
             // is charged nothing for a crest it will not be laying out run by run - not even the space
             // that would part one, which would open the line on a blank the crest was meant to fill.

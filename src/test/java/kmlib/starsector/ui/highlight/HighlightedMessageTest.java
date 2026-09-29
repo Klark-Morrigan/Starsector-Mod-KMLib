@@ -50,7 +50,7 @@ class HighlightedMessageTest {
     @Nested
     class GetLines {
         @Test
-        void getLinesReturnsTheConstructorParagraphsInOrder() {
+        void returnsTheConstructorParagraphsInOrder() {
             var first = new HighlightedParagraph("first");
             var second = new HighlightedParagraph("second");
 
@@ -63,7 +63,7 @@ class HighlightedMessageTest {
     @Nested
     class ToMessageIntel {
         @Test
-        void toMessageIntelEmitsOneLinePerParagraph() throws Exception {
+        void emitsOneLinePerParagraph() throws Exception {
             var message = new HighlightedMessage(
                 new HighlightedParagraph("first line"),
                 new HighlightedParagraph("second line"));
@@ -75,7 +75,7 @@ class HighlightedMessageTest {
         }
 
         @Test
-        void toMessageIntelPropagatesHighlightsAndColoursPerParagraph() throws Exception {
+        void propagatesHighlightsAndColoursPerParagraph() throws Exception {
             var paragraph = new HighlightedParagraph(
                 "construction complete on Test Prime.",
                 Color.GRAY,

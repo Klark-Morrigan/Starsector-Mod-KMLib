@@ -27,7 +27,7 @@ final class EntityNameplatesTest {
     class ReadNameplate {
 
         @Test
-        void readNameplatePairsTheEntitysOwnNameWithItsOwnGlyph() {
+        void pairsTheEntitysOwnNameWithItsOwnGlyph() {
             // Both halves off the one token is the whole of what this read buys, so the case asserts
             // them together rather than one at a time.
             var stationMock = buildEntityWithIcon(
@@ -44,7 +44,7 @@ final class EntityNameplatesTest {
         }
 
         @Test
-        void readNameplateNamesAnEntityTheMapMarksWithNothing() {
+        void namesAnEntityTheMapMarksWithNothing() {
             // An entity carrying no icon spec is still identified by its name, so the read answers an
             // ordinary nameplate with an empty glyph rather than nothing at all.
             var entityMock = mock(SectorEntityToken.class);
@@ -59,7 +59,7 @@ final class EntityNameplatesTest {
         }
 
         @Test
-        void readNameplateIsBlankForANullEntity() {
+        void isBlankForANullEntity() {
             // The null-defensive shape the package holds to: a caller reading an entity that turned
             // out not to be there gets something it can draw rather than a throw at the draw.
             assertThat(EntityNameplates.readNameplate(null))

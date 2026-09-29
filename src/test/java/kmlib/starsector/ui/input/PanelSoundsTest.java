@@ -49,7 +49,7 @@ final class PanelSoundsTest {
     class SoundPress {
 
         @Test
-        void soundPressPlaysTheLooksPressCue() {
+        void playsTheLooksPressCue() {
 
             sounds.soundPress();
 
@@ -62,7 +62,7 @@ final class PanelSoundsTest {
     class SoundListScroll {
 
         @Test
-        void soundListScrollPlaysTheLooksListScrollCue() {
+        void playsTheLooksListScrollCue() {
 
             sounds.soundListScroll();
 
@@ -75,7 +75,7 @@ final class PanelSoundsTest {
     class SoundPointerArrivalAt {
 
         @Test
-        void soundPointerArrivalAtPlaysTheArrivalRoleAtTheLevelThatKindIsOwed() {
+        void playsTheArrivalRoleAtTheLevelThatKindIsOwed() {
             // The one moment answering at more than one level, so what reaches the player is the look's
             // arrival role bound to the volume its kind carries - the pair, never the role alone.
             sounds.soundPointerArrivalAt(PointerArrivalTarget.PANEL_CHROME);
@@ -85,7 +85,7 @@ final class PanelSoundsTest {
         }
 
         @Test
-        void soundPointerArrivalAtTakesItsLevelFromTheKindReached() {
+        void takesItsLevelFromTheKindReached() {
             // A second kind, so the level is shown to follow what was reached rather than being one arrival
             // volume the look happens to hold.
             sounds.soundPointerArrivalAt(PointerArrivalTarget.SINGLE_OPTION_CONTROL);
@@ -95,7 +95,7 @@ final class PanelSoundsTest {
         }
 
         @Test
-        void soundPointerArrivalAtStaysSilentUnderALookThatNamesNoArrivalRole() {
+        void staysSilentUnderALookThatNamesNoArrivalRole() {
             // Silence is something a look states, so a scheme with no arrival role plays nothing rather than
             // reaching the player with a cue at no volume - a sound played at nothing is still a sound
             // played, and reads as wiring that half worked.

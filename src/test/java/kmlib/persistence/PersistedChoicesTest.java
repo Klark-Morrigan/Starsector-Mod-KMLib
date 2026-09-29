@@ -18,21 +18,21 @@ final class PersistedChoicesTest {
     class FromKey {
 
         @Test
-        void fromKeyResolvesAKnownKeyToItsOption() {
+        void resolvesAKnownKeyToItsOption() {
 
             assertThat(PersistedChoices.fromKey(Speed.values(), "fast", Speed.SLOW))
                 .isEqualTo(Speed.FAST);
         }
 
         @Test
-        void fromKeyFallsBackWhenNothingIsStored() {
+        void fallsBackWhenNothingIsStored() {
 
             assertThat(PersistedChoices.fromKey(Speed.values(), null, Speed.SLOW))
                 .isEqualTo(Speed.SLOW);
         }
 
         @Test
-        void fromKeyFallsBackWhenNoOptionAnswersToTheKey() {
+        void fallsBackWhenNoOptionAnswersToTheKey() {
             // A key an older build or another mod wrote names nothing here, so it reads as the
             // choice never having been made.
             assertThat(PersistedChoices.fromKey(Speed.values(), "ludicrous", Speed.SLOW))
@@ -40,7 +40,7 @@ final class PersistedChoicesTest {
         }
 
         @Test
-        void fromKeyMatchesTheKeyRatherThanTheOptionsName() {
+        void matchesTheKeyRatherThanTheOptionsName() {
             // The key is the option's own and frozen, and the name is free to change, so a stored
             // string spelling a name must not resolve.
             assertThat(PersistedChoices.fromKey(Speed.values(), "FAST", Speed.SLOW))
@@ -48,7 +48,7 @@ final class PersistedChoicesTest {
         }
 
         @Test
-        void fromKeyResolvesAmongOptionsACallerAssembled() {
+        void resolvesAmongOptionsACallerAssembled() {
             // The iterable form, for a vocabulary a consumer states rather than an enum declares.
             var options = List.of(Speed.SLOW, Speed.FAST);
 

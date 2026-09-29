@@ -78,7 +78,7 @@ class CampaignScreenViewTest {
     class ResolveShownCoreTab {
 
         @Test
-        void resolveShownCoreTabReportsTheTabTheCampaignUiNames() {
+        void reportsTheTabTheCampaignUiNames() {
 
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
@@ -88,14 +88,14 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void resolveShownCoreTabIsNullWhileNoCoreScreenIsUp() {
+        void isNullWhileNoCoreScreenIsUp() {
 
             assertThat(CampaignScreenView.resolveShownCoreTab())
                 .isNull();
         }
 
         @Test
-        void resolveShownCoreTabReportsTheTabOfADialogsCoreThatIsStillShowing() {
+        void reportsTheTabOfADialogsCoreThatIsStillShowing() {
             // A screen opened from a dialog is drawn from the core that dialog stands up, and is as
             // much on screen as one opened from game space.
             when(campaignUiMock.getCurrentCoreTab())
@@ -109,7 +109,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void resolveShownCoreTabIsNullOnceADialogsCoreIsDismissed() {
+        void isNullOnceADialogsCoreIsDismissed() {
             // The correction this read exists for. Closing a screen opened from a dialog only fades
             // that core out; it goes on naming the tab it last showed, and the campaign UI goes on
             // reporting it, for the rest of the visit. Read raw, every screen-gated overlay stays
@@ -125,7 +125,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void resolveShownCoreTabReportsTheTabWhileAScriptedDialogIsUp() {
+        void reportsTheTabWhileAScriptedDialogIsUp() {
             // A dialog hosting no core UI leaves the reading alone: the tab it names then comes from
             // the campaign's own core, which does close its tab when the player leaves a screen.
             when(campaignUiMock.getCurrentCoreTab())
@@ -138,7 +138,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void resolveShownCoreTabIsNullBeforeThereIsASector() {
+        void isNullBeforeThereIsASector() {
             // Failing closed, as the game-space read does and for the same reason.
             globalMock.when(Global::getSector)
                 .thenReturn(null);
@@ -152,14 +152,14 @@ class CampaignScreenViewTest {
     class IsShowingGameSpace {
 
         @Test
-        void isShowingGameSpaceIsTrueWithNoScreenAndNoDialogUp() {
+        void isTrueWithNoScreenAndNoDialogUp() {
             // The player flying the sector, which is the whole of what this answers yes to.
             assertThat(CampaignScreenView.isShowingGameSpace())
                 .isTrue();
         }
 
         @Test
-        void isShowingGameSpaceIsFalseWhileACoreScreenIsUp() {
+        void isFalseWhileACoreScreenIsUp() {
             // Any core screen ends it, not the map alone: the tab is read for its presence rather
             // than for which one it names, so a screen added by a later game build ends it too.
             when(campaignUiMock.getCurrentCoreTab())
@@ -170,7 +170,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void isShowingGameSpaceIsFalseWhileADialogIsUp() {
+        void isFalseWhileADialogIsUp() {
             // The second signal earning its place: a scripted dialog hosts no core UI, so it raises
             // no tab while covering the world completely.
             when(campaignUiMock.isShowingDialog())
@@ -181,7 +181,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void isShowingGameSpaceIsTrueWhileThePauseMenuIsUp() {
+        void isTrueWhileThePauseMenuIsUp() {
             // Deliberate, and the reason this read names no menu: the menu is raised over whatever
             // was on screen without taking it down, so it is neither of the two signals. A caller
             // that must stand aside for it reads the menu itself.
@@ -193,7 +193,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void isShowingGameSpaceIsFalseBeforeThereIsASector() {
+        void isFalseBeforeThereIsASector() {
             // Failing closed. The reads only ever widen what a caller does, and a widening taken on
             // a campaign that is not stood up would act on a screen nobody can see.
             globalMock.when(Global::getSector)
@@ -204,7 +204,7 @@ class CampaignScreenViewTest {
         }
 
         @Test
-        void isShowingGameSpaceIsFalseBeforeThereIsACampaignUi() {
+        void isFalseBeforeThereIsACampaignUi() {
             // The same failure one hop further in, which a sector answers for during load.
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);

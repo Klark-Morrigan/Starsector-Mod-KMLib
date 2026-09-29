@@ -11,28 +11,28 @@ class KmlibNumbersTest {
     class FormatDelta {
 
         @Test
-        void formatDeltaIntPositive() {
+        void signsAPositiveInt() {
 
             assertThat(KmlibNumbers.formatDelta(3))
                 .isEqualTo("+3");
         }
 
         @Test
-        void formatDeltaIntZero() {
+        void signsAZeroIntAsPositive() {
 
             assertThat(KmlibNumbers.formatDelta(0))
                 .isEqualTo("+0");
         }
 
         @Test
-        void formatDeltaIntNegative() {
+        void keepsTheMinusOnANegativeInt() {
 
             assertThat(KmlibNumbers.formatDelta(-5))
                 .isEqualTo("-5");
         }
 
         @Test
-        void formatDeltaFloatTruncatesTowardZero() {
+        void truncatesAFloatTowardZero() {
 
             assertThat(KmlibNumbers.formatDelta(1.999f))
                 .isEqualTo("+1");
@@ -41,7 +41,7 @@ class KmlibNumbersTest {
         }
 
         @Test
-        void formatDeltaFloatZero() {
+        void signsAZeroFloatAsPositive() {
 
             assertThat(KmlibNumbers.formatDelta(0.0f))
                 .isEqualTo("+0");
@@ -52,21 +52,21 @@ class KmlibNumbersTest {
     class FormatSignedNonZero {
 
         @Test
-        void formatSignedNonZeroSignsAValueAboveTheScalesMiddle() {
+        void signsAValueAboveTheScalesMiddle() {
 
             assertThat(KmlibNumbers.formatSignedNonZero(60))
                 .isEqualTo("+60");
         }
 
         @Test
-        void formatSignedNonZeroKeepsTheMinusOnAValueBelowIt() {
+        void keepsTheMinusOnAValueBelowIt() {
 
             assertThat(KmlibNumbers.formatSignedNonZero(-40))
                 .isEqualTo("-40");
         }
 
         @Test
-        void formatSignedNonZeroDrawsTheScalesMiddleUnsigned() {
+        void drawsTheScalesMiddleUnsigned() {
             // The one thing that parts this from formatDelta: a reading sitting at the middle of a
             // scale has no direction, where a movement of none is still a movement.
             assertThat(KmlibNumbers.formatSignedNonZero(0))
@@ -78,21 +78,21 @@ class KmlibNumbersTest {
     class FormatGroupedInteger {
 
         @Test
-        void formatGroupedIntegerZero() {
+        void rendersZeroUngrouped() {
 
             assertThat(KmlibNumbers.formatGroupedInteger(0))
                 .isEqualTo("0");
         }
 
         @Test
-        void formatGroupedIntegerSubThousandRendersUngrouped() {
+        void rendersASubThousandValueUngrouped() {
             // Below a thousand no separator is warranted.
             assertThat(KmlibNumbers.formatGroupedInteger(999))
                 .isEqualTo("999");
         }
 
         @Test
-        void formatGroupedIntegerGroupsAtFirstThousand() {
+        void groupsAtFirstThousand() {
             // A comma regardless of the JVM's default locale, per the
             // fixed root locale in the contract.
             assertThat(KmlibNumbers.formatGroupedInteger(1000))
@@ -100,14 +100,14 @@ class KmlibNumbersTest {
         }
 
         @Test
-        void formatGroupedIntegerGroupsEveryThreeDigits() {
+        void groupsEveryThreeDigits() {
 
             assertThat(KmlibNumbers.formatGroupedInteger(1234567))
                 .isEqualTo("1,234,567");
         }
 
         @Test
-        void formatGroupedIntegerNegativeKeepsSignOutsideGrouping() {
+        void keepsANegativeSignOutsideTheGrouping() {
             // The minus sits before the first digit, never adjacent to
             // a separator, and grouping counts digits only.
             assertThat(KmlibNumbers.formatGroupedInteger(-1234567))
@@ -119,7 +119,7 @@ class KmlibNumbersTest {
     class FormatCompactDecimal {
 
         @Test
-        void formatCompactDecimalDropsTheTailOfAWholeValue() {
+        void dropsTheTailOfAWholeValue() {
             // A whole value padded to "5.00" reads as a measurement rather
             // than as the round number the author set.
             assertThat(KmlibNumbers.formatCompactDecimal(5.0))
@@ -127,49 +127,49 @@ class KmlibNumbersTest {
         }
 
         @Test
-        void formatCompactDecimalKeepsAFractionItHas() {
+        void keepsAFractionItHas() {
 
             assertThat(KmlibNumbers.formatCompactDecimal(0.25))
                 .isEqualTo("0.25");
         }
 
         @Test
-        void formatCompactDecimalDropsOnlyThePaddingOfAOneDecimalValue() {
+        void dropsOnlyThePaddingOfAOneDecimalValue() {
 
             assertThat(KmlibNumbers.formatCompactDecimal(2.5))
                 .isEqualTo("2.5");
         }
 
         @Test
-        void formatCompactDecimalGroupsThousandsLikeTheIntegerForm() {
+        void groupsThousandsLikeTheIntegerForm() {
 
             assertThat(KmlibNumbers.formatCompactDecimal(1234.5))
                 .isEqualTo("1,234.5");
         }
 
         @Test
-        void formatCompactDecimalRoundsPastTwoDecimals() {
+        void roundsPastTwoDecimals() {
             // Past two decimals is float noise rather than an authored value.
             assertThat(KmlibNumbers.formatCompactDecimal(0.129))
                 .isEqualTo("0.13");
         }
 
         @Test
-        void formatCompactDecimalZero() {
+        void rendersZeroWithoutDecimals() {
 
             assertThat(KmlibNumbers.formatCompactDecimal(0.0))
                 .isEqualTo("0");
         }
 
         @Test
-        void formatCompactDecimalKeepsANegativeSignOnAValueThatSurvivesTheTrim() {
+        void keepsANegativeSignOnAValueThatSurvivesTheTrim() {
 
             assertThat(KmlibNumbers.formatCompactDecimal(-2.5))
                 .isEqualTo("-2.5");
         }
 
         @Test
-        void formatCompactDecimalStatesANegligibleNegativeAsPlainZero() {
+        void statesANegligibleNegativeAsPlainZero() {
             // "-0" reads as a distinct quantity rather than as the zero it is.
             assertThat(KmlibNumbers.formatCompactDecimal(-0.001))
                 .isEqualTo("0");
@@ -180,21 +180,21 @@ class KmlibNumbersTest {
     class FormatScientific {
 
         @Test
-        void formatScientificStripsExponentSignAndPadding() {
+        void stripsExponentSignAndPadding() {
 
             assertThat(KmlibNumbers.formatScientific(1523.4))
                 .isEqualTo("1.5e3");
         }
 
         @Test
-        void formatScientificKeepsNegativeExponent() {
+        void keepsNegativeExponent() {
 
             assertThat(KmlibNumbers.formatScientific(0.05))
                 .isEqualTo("5.0e-2");
         }
 
         @Test
-        void formatScientificZero() {
+        void rendersZeroWithAZeroExponent() {
 
             assertThat(KmlibNumbers.formatScientific(0.0))
                 .isEqualTo("0.0e0");

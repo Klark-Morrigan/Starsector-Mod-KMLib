@@ -23,7 +23,7 @@ final class UiSoundPlayerTest {
     class PlayCueIfPresent {
 
         @Test
-        void playCueIfPresentPlaysTheCueItWasGivenAtTheVolumeItNames() {
+        void playsTheCueItWasGivenAtTheVolumeItNames() {
             // Role and volume both reach the player, which is what the pair exists for: a seam that
             // carried only the role would leave every volume to be applied by whoever plays it.
             var soundCue = new UiSoundCue(StarsectorUiSound.BUTTON_MOUSEOVER, QUIETER_VOLUME);
@@ -35,7 +35,7 @@ final class UiSoundPlayerTest {
         }
 
         @Test
-        void playCueIfPresentPlaysNothingWhenThereIsNoCue() {
+        void playsNothingWhenThereIsNoCue() {
             // Nothing reaches the implementation at all, which is the point of the guard sitting on the
             // port: a recording player must not log a sound the player never made.
             soundPlayerFake.playCueIfPresent(null);

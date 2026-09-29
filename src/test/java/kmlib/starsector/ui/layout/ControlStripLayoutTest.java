@@ -67,7 +67,7 @@ final class ControlStripLayoutTest {
     class MeasureStrip {
 
         @Test
-        void measureStripReturnsZeroFootprintAndNoRowsForAnEmptyStrip() {
+        void returnsZeroFootprintAndNoRowsForAnEmptyStrip() {
 
             var measurement = ControlStripLayout.measureStrip(List.<ControlSpec>of(), measurersFake);
 
@@ -79,7 +79,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesTheBodyToTheWidestRowPlusInset() {
+        void sizesTheBodyToTheWidestRowPlusInset() {
             // "Muted" is 5 chars; a checkbox row is the tick box, a gap, then the label, and the body
             // adds the inset on each side.
             var measurement = ControlStripLayout.measureStrip(
@@ -97,7 +97,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesAContinuedLabelBothRunsAndTheGapBetweenThem() {
+        void chargesAContinuedLabelBothRunsAndTheGapBetweenThem() {
             // A control that picks part of its label out in another colour is drawn run by run, so the
             // row it is snapped into has to hold the runs and the word space parting them - "Muted" (5)
             // and "on" (2) at 10 per character, plus the face's own space, which this measurer charges
@@ -121,7 +121,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesAnImageRunTheControlRowHeight() {
+        void chargesAnImageRunTheControlRowHeight() {
             // An image set among a label's words squares off the row it sits on, so the strip reserves
             // that square and the word space in front of it as it would any other run - "Muted" (5) at 10
             // per character, the face's own space, then the 20-unit square. Measured from the runs rather
@@ -145,7 +145,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesAContinuedToggleLabelBothRunsAndTheGapBetweenThem() {
+        void chargesAContinuedToggleLabelBothRunsAndTheGapBetweenThem() {
             // A toggle sizes its button past its label, so the runs and their gap have to reach the
             // padding rather than only the first run - "Factions" (8) and "3" (1) at 10 per character,
             // plus the face's own space, plus the button's own padding.
@@ -167,7 +167,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesAColumnTableRowBothRunsAndTheGapBetweenThem() {
+        void chargesAColumnTableRowBothRunsAndTheGapBetweenThem() {
             // The shape a picker list actually draws: a crest, a name called out part-way through in
             // another colour, and a right-aligned value. The row has to hold both runs and the gap
             // parting them, or the column comes out narrower than the name painted into it - "AB" (2)
@@ -197,7 +197,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesABlankRunNoGapAndNoWidth() {
+        void chargesABlankRunNoGapAndNoWidth() {
             // A host assembling a run from parts and coming up empty gets the row it would have had
             // without that run, rather than one widened for glyphs that will never be painted.
             var caption = LabelledControlSpecs
@@ -213,7 +213,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSumsRowHeightsAndGapsPlusInset() {
+        void sumsRowHeightsAndGapsPlusInset() {
 
             var measurement = ControlStripLayout.measureStrip(
                 List.<ControlSpec>of(
@@ -231,7 +231,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesAHorizontalRadioRowToEqualSegments() {
+        void sizesAHorizontalRadioRowToEqualSegments() {
 
             var radio = HorizontalRadioSpec.of(
                     List.of("Short", "Full"),
@@ -250,7 +250,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSnapsAHorizontalRadioToPerLabelWidths() {
+        void snapsAHorizontalRadioToPerLabelWidths() {
             // A snapped horizontal radio sizes each cell to its own label plus the padding, so "Short"
             // (5) and "Full" (4) span 9 characters plus two paddings - narrower than the uniform row's
             // two widest-label cells.
@@ -268,7 +268,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsAStackedRadioOneRowTallPerOption() {
+        void standsAStackedRadioOneRowTallPerOption() {
 
             var radio = VerticalRadioSpec.of(
                 List.of("Factions", "Alliances", "Claims"),
@@ -282,7 +282,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesAStackedRadioToOneWidestOptionCell() {
+        void sizesAStackedRadioToOneWidestOptionCell() {
             // Stacked cells are one column, so the column is the widest option ("Alliances", 9 chars)
             // plus the segment padding - not the sum a row of the same options would need.
             var radio = VerticalRadioSpec.of(
@@ -298,7 +298,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsASegmentedListOneRowTallPerOption() {
+        void standsASegmentedListOneRowTallPerOption() {
 
             var radio = VerticalTableSpecs.buildSegmentedList(
                 List.of("Factions", "Alliances"),
@@ -313,7 +313,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsAnIconListOneRowTallPerOption() {
+        void standsAnIconListOneRowTallPerOption() {
             // The icon list stacks like a vertical radio, so it stands one control-row tall per
             // option regardless of icons.
             var picker = VerticalTableSpecs.buildIconList(
@@ -329,7 +329,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripLeavesADividerWithoutIntrinsicWidth() {
+        void leavesADividerWithoutIntrinsicWidth() {
             // A divider has no text and no chrome, so it measures zero here - it is stretched to the
             // full framed body only at placement, once a host has framed the body rectangle.
             var specs = List.<ControlSpec>of(
@@ -343,7 +343,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripDoesNotLetADividerDriveTheBodyWidth() {
+        void doesNotLetADividerDriveTheBodyWidth() {
             // The divider measures zero and is spanned only at placement, so a strip of only a
             // checkbox measures the same body width whether or not a divider heads it.
             var checkbox = LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE);
@@ -357,7 +357,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesAnIconListToItsWidestOptionRow() {
+        void sizesAnIconListToItsWidestOptionRow() {
             // "AB" carries a crest, "CDE" does not; the row is the widest of the two, each sized
             // through the shared IconLabelRow geometry so the width tracks whether the option draws an
             // icon. The measurement reads that geometry rather than re-deriving the icon and gap sizes.
@@ -386,7 +386,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsATwoColumnListOnlyAsTallAsItsLongestColumn() {
+        void standsATwoColumnListOnlyAsTallAsItsLongestColumn() {
             // Three options across two columns wrap into two rows (the first column holds two, the
             // second one), so the list is two rows tall, not three - it wraps rather than stacking one
             // row per option.
@@ -404,7 +404,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesATwoColumnListToTwiceOneColumnsWidth() {
+        void sizesATwoColumnListToTwiceOneColumnsWidth() {
             // Two columns sit side by side, each sized to the widest option row, so the list is twice
             // a single column's width - the same width the one-column list of the same options measures.
             var labels = List.of("A", "B", "C");
@@ -439,7 +439,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripReservesEachOptionsTrailingValueInTheIconListWidth() {
+        void reservesEachOptionsTrailingValueInTheIconListWidth() {
             // A ranked table row must hold its crest, name, and value; the measurement reads the same
             // IconLabelRow geometry the renderer places the value with, so the column is wide enough
             // that "AB" clears its two-char value "12".
@@ -462,7 +462,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripReservesNoValueColumnForABlankTrailingRun() {
+        void reservesNoValueColumnForABlankTrailingRun() {
             // A ranked list under a mode with no metric fills every row's value with a blank run
             // rather than dropping the column, so the width must come out as though no row trailed
             // anything - otherwise the list widens by a gap in front of glyphs it never draws.
@@ -487,7 +487,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripReservesTheDirectionTriangleSlotInTheSortTableWidth() {
+        void reservesTheDirectionTriangleSlotInTheSortTableWidth() {
             // A direction table's trailing column is a fixed triangle slot, not measured text, so the
             // row reserves the triangle slot width the renderer sizes the triangle to rather than a
             // letter width it no longer draws.
@@ -510,7 +510,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesASideBySideRowToItsTwoColumnsPlusTheGap() {
+        void sizesASideBySideRowToItsTwoColumnsPlusTheGap() {
             // The group lays its two columns across one row, so it is as wide as the left column, the
             // gap parting them, and the right column - not one column's width.
             var pair = new SideBySideSpec(
@@ -534,7 +534,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsASideBySideRowAsTallAsItsTallerColumn() {
+        void standsASideBySideRowAsTallAsItsTallerColumn() {
             // The left column holds two stacked controls and the right one, so the group stands as tall
             // as the two-row left column - its taller side - and the right column top-aligns within it.
             var pair = new SideBySideSpec(
@@ -552,7 +552,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripStandsATabsRowOneTabHeightTall() {
+        void standsATabsRowOneTabHeightTall() {
             // A tabs row is drawn in the larger tab face, so it stands one tab-height tall rather than a
             // body-row tall.
             var tabs = new TabsSpec(
@@ -568,7 +568,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripSizesATabsRowToItsTabsSnappedWidths() {
+        void sizesATabsRowToItsTabsSnappedWidths() {
             // Neither key stands in its label, so both are spelt out: "No Layer  [Z]" is 13 chars and
             // "Political Map  [Q]" is 18. Each snaps to its width plus the tab padding (both clear the
             // minimum), and the row is the two tabs side by side.
@@ -586,7 +586,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesABodyRowTheBodyFaceNotTheTabFace() {
+        void chargesABodyRowTheBodyFaceNotTheTabFace() {
             // A strip letters its body in one face and its tabs in another, so a body row charged the tab
             // face is sized against letters it is never drawn in. The two faces measure far apart here, so
             // reading the wrong one cannot pass as rounding.
@@ -604,7 +604,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void measureStripChargesATabsRowTheTabFaceNotTheBodyFace() {
+        void chargesATabsRowTheTabFaceNotTheBodyFace() {
             // The other half of the same rule: the one row drawn in the tab face is charged that face, so
             // a row of tabs is as wide as the letters the band will actually carry. "No Layer  [Z]" is 13
             // chars and "Political Map  [Q]" is 18, both at the tab face's own width.
@@ -630,7 +630,7 @@ final class ControlStripLayoutTest {
     class LayoutControls {
 
         @Test
-        void layoutControlsStacksTheFirstRowFromTheBodyTopLeftInset() {
+        void stacksTheFirstRowFromTheBodyTopLeftInset() {
 
             var specs = List.<ControlSpec>of(
                 LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
@@ -654,7 +654,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSplitsARadioIntoAbuttingEqualSegments() {
+        void splitsARadioIntoAbuttingEqualSegments() {
 
             var specs = List.<ControlSpec>of(HorizontalRadioSpec.of(
                     List.of("Short", "Full"),
@@ -682,7 +682,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSplitsAStackedRadioIntoAbuttingStackedCells() {
+        void splitsAStackedRadioIntoAbuttingStackedCells() {
 
             var specs = List.<ControlSpec>of(VerticalRadioSpec.of(
                 List.of("Factions", "Alliances", "Claims"),
@@ -713,7 +713,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSplitsASnappedRadioIntoPerLabelSegments() {
+        void splitsASnappedRadioIntoPerLabelSegments() {
             // A snapped horizontal radio splits into cells sized to each label, so "Short" (5) is wider
             // than "Full" (4) rather than sharing one width - the ragged row the render chrome then rules
             // its seams on.
@@ -751,7 +751,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSplitsAnIconListIntoStackedVerticalSegments() {
+        void splitsAnIconListIntoStackedVerticalSegments() {
 
             var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(
                 List.of("Hegemony", "Tri-Tachyon"),
@@ -783,7 +783,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSplitsATwoColumnListColumnMajorIntoAGrid() {
+        void splitsATwoColumnListColumnMajorIntoAGrid() {
             // Three options across two columns: options 0 and 1 fill the left column top to bottom, and
             // option 2 heads the right column - the same column-major wrap the renderer draws against.
             var specs = List.<ControlSpec>of(VerticalTableSpecs.buildIconList(
@@ -821,7 +821,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsLeavesACheckboxWithoutSegments() {
+        void leavesACheckboxWithoutSegments() {
 
             var specs = List.<ControlSpec>of(
                 LabelledControlSpecs.buildCheckbox("Muted", false, ControlAction.NONE));
@@ -837,7 +837,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsLeavesALabelWithoutSegments() {
+        void leavesALabelWithoutSegments() {
 
             var specs = List.<ControlSpec>of(LabelledControlSpecs.buildLabel("Non-allied factions are"));
             var measurement = ControlStripLayout.measureStrip(specs, measurersFake);
@@ -852,7 +852,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsLeavesADividerWithoutSegments() {
+        void leavesADividerWithoutSegments() {
             // A divider is a single non-hit row, not a segmented control, so it lays out with no
             // segments like a caption does.
             var specs = List.<ControlSpec>of(
@@ -871,7 +871,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSpansADividerRowAcrossTheFullBodyWidth() {
+        void spansADividerRowAcrossTheFullBodyWidth() {
             // The laid divider row spans the whole framed body - edge to edge inside the border inset,
             // across the padding the other controls sit within - so the rule reaches the frame rather
             // than stopping at the padded content column.
@@ -895,7 +895,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsReturnsNothingForAnEmptyStrip() {
+        void returnsNothingForAnEmptyStrip() {
 
             var body = new Rectangle(BODY_ORIGIN_X, BODY_ORIGIN_Y, 0f, 0f);
 
@@ -908,7 +908,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsFlattensASideBySideIntoItsColumnsControlsSideBySide() {
+        void flattensASideBySideIntoItsColumnsControlsSideBySide() {
             // The group is not laid out as one control: it expands into its two children, the left at
             // the body inset and the right one left-column-width plus the column gap to its right, both
             // hanging from the group's top.
@@ -950,7 +950,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsStacksASideBySideColumnTopToBottom() {
+        void stacksASideBySideColumnTopToBottom() {
             // A column is a vertical run like the top-level strip: its two children stack (the first
             // above the second), abutting with one row gap between them.
             var top = LabelledControlSpecs.buildCheckbox("A", false, ControlAction.NONE);
@@ -984,7 +984,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsSplitsATabsRowIntoLabelSnappedSegmentsSideBySide() {
+        void splitsATabsRowIntoLabelSnappedSegmentsSideBySide() {
             // A tabs row splits into one segment per tab, each snapped to the text that tab shows (unlike
             // a radio's equal segments), abutting left to right. Both keys here are spelt out after their
             // label - neither letter stands in it - so each tab carries its bracketed key.
@@ -1019,7 +1019,7 @@ final class ControlStripLayoutTest {
         }
 
         @Test
-        void layoutControlsLeavesABodyTabsRowOnTheUnstyledBandHeight() {
+        void leavesABodyTabsRowOnTheUnstyledBandHeight() {
             // A tabs control placed in the BODY takes no style - it sizes itself through the strip's row
             // measurement - so it stands at the baseline band, where a styled header stands at its own.
             // The two paths are deliberately separate; this pins that the body one takes the baseline.

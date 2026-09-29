@@ -25,7 +25,7 @@ class StarsectorUiSoundTest {
         // exhaustive over the enum, so a role added without a spelling pinned here fails to compile.
         @ParameterizedTest
         @EnumSource(StarsectorUiSound.class)
-        void getSoundIdNamesTheEnginesOwnIdForTheRole(StarsectorUiSound sound) {
+        void namesTheEnginesOwnIdForTheRole(StarsectorUiSound sound) {
 
             var expected = switch (sound) {
                 case BUTTON_PRESSED -> "ui_button_pressed";
@@ -42,7 +42,7 @@ class StarsectorUiSoundTest {
         }
 
         @Test
-        void getSoundIdIsDistinctForEveryRole() {
+        void isDistinctForEveryRole() {
             // Two roles sharing an ID is the copy-paste that adding one invites, and it survives the
             // pinning above only as a pair of literals that happen to match - so it is asked separately.
             // Sharing a *sample* is not sharing an ID: the scroll and the typed tick are both ui_type.ogg

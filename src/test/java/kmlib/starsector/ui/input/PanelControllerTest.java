@@ -132,7 +132,7 @@ final class PanelControllerTest {
             new PanelController(soundPlayerFake, UiSoundScheme.createVanillaSoundScheme());
 
         @Test
-        void pressBodyControlAtPointPassesOverACaptionLabelWithoutActing() {
+        void passesOverACaptionLabelWithoutActing() {
             // A caption row is drawn but never clickable - a Label is not Interactive - so a press over
             // it hits nothing and falls through rather than being swallowed as if it acted.
             var label = buildCaptionControl();
@@ -149,7 +149,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointFiresACheckboxHitAnywhereOnItsRow() {
+        void firesACheckboxHitAnywhereOnItsRow() {
 
             var firedCell = new int[] {-1};
             var checkbox = buildCheckboxControl("Muted", cell -> firedCell[0] = cell);
@@ -167,7 +167,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointReportsNoHitForAPressOutsideACheckboxRow() {
+        void reportsNoHitForAPressOutsideACheckboxRow() {
 
             var checkbox = buildCheckboxControl("Muted", ControlAction.NONE);
             var activatedCell = controller.pressBodyControlAtPoint(
@@ -180,7 +180,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointFiresAScrollingListOptionInsideItsViewport() {
+        void firesAScrollingListOptionInsideItsViewport() {
 
             var firedCell = new int[] {-1};
             var list = buildScrollingListAtRow(cell -> firedCell[0] = cell);
@@ -199,7 +199,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointRejectsAScrollingListOptionScrolledOutOfItsViewport() {
+        void rejectsAScrollingListOptionScrolledOutOfItsViewport() {
 
             var fired = new boolean[1];
             var list = buildScrollingListAtRow(cell -> fired[0] = true);
@@ -220,7 +220,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointFiresATabHitReportedAsThatTabIndex() {
+        void firesATabHitReportedAsThatTabIndex() {
 
             var firedCell = new int[] {-1};
 
@@ -240,7 +240,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointTreatsAPressOnTheLitTabAsInert() {
+        void treatsAPressOnTheLitTabAsInert() {
 
             var fired = new boolean[1];
 
@@ -261,7 +261,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointReportsNoHitForAPressOutsideEveryTab() {
+        void reportsNoHitForAPressOutsideEveryTab() {
 
             var tabs = buildTwoTabRowAtRow(0, ControlAction.NONE);
             var activatedCell = controller.pressBodyControlAtPoint(
@@ -274,7 +274,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointFiresADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
+        void firesADeselectableHorizontalRadioOnARepickOfItsLitSegment() {
 
             var firedCell = new int[] {-1};
 
@@ -300,7 +300,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointTreatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
+        void treatsAPressOnAnInertHorizontalRadiosLitSegmentAsInert() {
 
             var fired = new boolean[1];
 
@@ -325,7 +325,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointSoundsThePressThatReachedAControl() {
+        void soundsThePressThatReachedAControl() {
             // The moment the panel answers, and the smallest statement of it: one press on one control,
             // one sound. Everything below is about which presses do not get it.
             controller.pressBodyControlAtPoint(
@@ -338,7 +338,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointSoundsAPressOnAnInertSegmentThatFiresNothing() {
+        void soundsAPressOnAnInertSegmentThatFiresNothing() {
             // The rule the sound hangs on the resolve for. A re-press on a lit segment changes nothing on
             // screen, so it is the one press the player has only the sound to go by for - and hanging the
             // sound on the firing would make it the panel's only silent press.
@@ -362,7 +362,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointStaysSilentForAPressOnADivider() {
+        void staysSilentForAPressOnADivider() {
             // Chrome answers no cell, so a press over it reached nothing to press. A divider is the case
             // worth pinning because it spans the whole body width, so it is what a press between two
             // controls actually lands on.
@@ -376,7 +376,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointStaysSilentForAPressOnBlankBody() {
+        void staysSilentForAPressOnBlankBody() {
             // The same rule where there is no control at all: blank body swallows the click so the surface
             // behind does not act, and swallowing is not an act of its own.
             controller.pressBodyControlAtPoint(
@@ -389,7 +389,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointTakesThePressRoleFromTheLookRatherThanNamingOne() {
+        void takesThePressRoleFromTheLookRatherThanNamingOne() {
             // The point of the seam: which sound a press makes is the panel's look talking. A scheme
             // agreeing with a hardcoded role would pass whether or not it was ever read, and the vanilla
             // press role is exactly what a hardcoding would have named.
@@ -405,7 +405,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointStartsThePressLiftOfTheRowItLandedOn() {
+        void startsThePressLiftOfTheRowItLandedOn() {
             // A caption above the checkbox, so the press lands at the strip's second slot: a lift keyed off
             // the walk's start rather than off where the hit landed would read at the first and still pass.
             controller.pressBodyControlAtPoint(
@@ -426,7 +426,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointStartsThePressLiftOfTheSegmentItLandedOn() {
+        void startsThePressLiftOfTheSegmentItLandedOn() {
             // The other half of the slot. A press on the right segment lifts that segment alone, so a lift
             // keyed by the control rather than by the cell would light a whole row the player pressed one
             // end of - which is the same fault the other way about.
@@ -450,7 +450,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointAimsALiftAlreadyRunningBackAtItsPeak() {
+        void aimsALiftAlreadyRunningBackAtItsPeak() {
             // One lift per cell, retriggered where it stands. A player clicking repeatedly is answered from
             // wherever the last press had got to, rather than by a second lift stacking beside the first or
             // by the first dropping to nothing and climbing again - the second reads as a dip in the
@@ -473,7 +473,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void pressBodyControlAtPointStartsNoPressLiftForAPressOnBlankBody() {
+        void startsNoPressLiftForAPressOnBlankBody() {
             // The rule the sound already answers to, on the seen channel: a press that reached no cell has
             // nothing to light, so blank body swallows the click without the strip showing anything for it.
             controller.pressBodyControlAtPoint(
@@ -557,7 +557,7 @@ final class PanelControllerTest {
         private final PanelController controller = new PanelController();
 
         @Test
-        void advanceBodyPressPulsesLeavesASpentLiftAtRest() {
+        void leavesASpentLiftAtRest() {
             // A press is an act already over, so its lift times its own fall and is gone: nothing else lets
             // go of it, and one left standing would mark a click the player made minutes ago.
             controller.pressBodyControlAtPoint(
@@ -577,7 +577,7 @@ final class PanelControllerTest {
     class ResolveBodyPressFractionAt {
 
         @Test
-        void resolveBodyPressFractionAtReadsAtRestBeforeAnyPressHasLanded() {
+        void readsAtRestBeforeAnyPressHasLanded() {
             // A freshly built panel has been pressed nowhere, so its first painted frame must show a strip
             // at rest rather than a cell already part-way lit.
             assertThat(new PanelController().resolveBodyPressFractionAt(FIRST_ROW_SLOT))
@@ -591,7 +591,7 @@ final class PanelControllerTest {
         private final PanelController controller = new PanelController();
 
         @Test
-        void resetBodyPressPulsesDropsALiftLeftPartWayThroughItsCycle() {
+        void dropsALiftLeftPartWayThroughItsCycle() {
             // A panel that stops showing drops what it was mid-way through, so the next session does not
             // open painting the tail of a press the player never saw made.
             controller.pressBodyControlAtPoint(
@@ -613,7 +613,7 @@ final class PanelControllerTest {
         private final PanelController controller = new PanelController();
 
         @Test
-        void advanceBodyInputMotionsForFrameRaisesTheHoveredSlotAndNoOther() {
+        void raisesTheHoveredSlotAndNoOther() {
             // The fade is keyed by the place under the pointer, so a frame lights that place alone - a
             // reading spent against the whole strip would light every cell of it at once.
             controller.advanceBodyInputMotionsForFrame(
@@ -627,7 +627,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void advanceBodyInputMotionsForFrameWindsTheDepartedSlotBackDown() {
+        void windsTheDepartedSlotBackDown() {
             // A fade travels both ways, so the cell the pointer left comes back off its hovered look under
             // its own steam rather than being cut to nothing the frame the reading changed.
             controller.advanceBodyInputMotionsForFrame(
@@ -640,7 +640,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void advanceBodyInputMotionsForFrameReportsTheHoveredCellToItsHost() {
+        void reportsTheHoveredCellToItsHost() {
             // The reading spent outwards rather than on paint. Off a slot whose two halves are different
             // numbers, so a report carrying the control's place where it means its cell reads as a wrong
             // number rather than as the right one by coincidence.
@@ -652,7 +652,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void advanceBodyInputMotionsForFrameChargesAPressLiftRunningOnACell() {
+        void chargesAPressLiftRunningOnACell() {
             // One call charges every motion the body makes, so a panel pumping its frames through this one
             // cannot leave the lifts unstepped while the fades run - which would show as a press that never
             // fades out.
@@ -675,14 +675,14 @@ final class PanelControllerTest {
         private final PanelController controller = new PanelController();
 
         @Test
-        void detectBodyCellArrivalAtReportsThePointerReachingACell() {
+        void reportsThePointerReachingACell() {
 
             assertThat(controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT))
                 .isTrue();
         }
 
         @Test
-        void detectBodyCellArrivalAtReportsNothingWhileThePointerRestsOnTheCell() {
+        void reportsNothingWhileThePointerRestsOnTheCell() {
             // A moment rather than a position, which is what the whole latch is for: the fade beside it
             // stands at the top for as long as the pointer stays, and an answer read off that would be a
             // tone rather than a tick.
@@ -693,7 +693,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void detectBodyCellArrivalAtReportsNothingForARowAWheelCarriedUnderTheCursor() {
+        void reportsNothingForARowAWheelCarriedUnderTheCursor() {
             // The rule this end is the only one that can answer, being the end that moved the list: rows
             // sliding past a parked pointer were reached by nobody, so a wheel down a long list is one act
             // rather than one arrival per row it swept past.
@@ -706,7 +706,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void detectBodyCellArrivalAtReportsTheRowAWheelLeftUnderTheCursorOnceThePointerReachesItItself() {
+        void reportsTheRowAWheelLeftUnderTheCursorOnceThePointerReachesItItself() {
             // Adopted rather than gone deaf. The row the scroll carried under the cursor is taken without
             // being announced, so the pointer genuinely arriving on it afterwards is an arrival like any
             // other - a latch that had simply stopped tracking would swallow this one too.
@@ -728,7 +728,7 @@ final class PanelControllerTest {
         private final PanelController controller = new PanelController();
 
         @Test
-        void resetBodyInputMotionsDropsAFadeLeftPartWayUp() {
+        void dropsAFadeLeftPartWayUp() {
             // A panel that stops showing drops what it was mid-way through, so the next session does not
             // open painting the tail of a hover the player never made.
             controller.advanceBodyInputMotionsForFrame(
@@ -741,7 +741,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void resetBodyInputMotionsReportsTheLeaveToTheHostLastTold() {
+        void reportsTheLeaveToTheHostLastTold() {
             // What a panel going away is to whatever was answering the hover: no further frame resolves a
             // reading, so nothing else would tell that host to let go of the cell it holds.
             controller.advanceBodyInputMotionsForFrame(
@@ -754,7 +754,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void resetBodyInputMotionsMakesAPointerParkedOnACellArriveAfresh() {
+        void makesAPointerParkedOnACellArriveAfresh() {
             // The strip was not there a moment ago, so the player reaching it is an arrival even though the
             // pointer never moved - the panel came to the cursor rather than the other way about.
             controller.detectBodyCellArrivalAt(FIRST_ROW_SLOT);
@@ -766,7 +766,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void resetBodyInputMotionsDropsAScrollNoFrameHasReadYet() {
+        void dropsAScrollNoFrameHasReadYet() {
             // A movement no frame ever read is a movement the next session must not answer to: left
             // standing, the re-opened panel would adopt whatever is under the cursor and take that cell in
             // silence.
@@ -787,7 +787,7 @@ final class PanelControllerTest {
         private final UiSoundPlayerFake soundPlayerFake = new UiSoundPlayerFake();
 
         @Test
-        void handlePointerRoutesAWheelOverTheListToIt() {
+        void routesAWheelOverTheListToIt() {
             // The wheel branch, shown by the one thing only the list answers with: the sound it makes on
             // moving. What decides that sound is the scroll controller's and pinned there.
             var controller = buildVanillaSoundingController();
@@ -801,7 +801,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerKeepsAHeldDragPastThePanelEdge() {
+        void keepsAHeldDragPastThePanelEdge() {
             // The order of the first two branches: a held drag is asked before the panel's own claim, so the
             // list keeps following a pointer that has wandered off the box rather than the drag dropping the
             // moment it leaves the narrow column. Grabbed low, which took the list to its end; a pointer
@@ -822,7 +822,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerSoundsThePressThatLandedOnABodyControl() {
+        void soundsThePressThatLandedOnABodyControl() {
             // The routing, which is the half of the press the method above cannot show: a left press over
             // the body reaches the control under it rather than being swallowed as an event the panel only
             // consumes.
@@ -837,7 +837,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerStaysSilentForAPressInTheScrollbarGrabColumn() {
+        void staysSilentForAPressInTheScrollbarGrabColumn() {
             // The order the branches are tried in, stated as a sound. The grab column is laid over the body,
             // so a control sits under this press - and the drag takes it before any control is offered it,
             // which is what keeps the scrollbar from answering like a control.
@@ -852,7 +852,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerSoundsAPressInTheGrabColumnWhenNoBarIsDrawn() {
+        void soundsAPressInTheGrabColumnWhenNoBarIsDrawn() {
             // The same press one line up, on the same geometry, with the bar set away: with no track and no
             // thumb there is nothing over that column to grab, so it claims nothing and the press falls
             // through to the control it was always laid over. A bar of no width still taking presses would
@@ -873,7 +873,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerStaysSilentForAPressOnAControlTheFoldHasWipedOffTheScreen() {
+        void staysSilentForAPressOnAControlTheFoldHasWipedOffTheScreen() {
             // A press outside the box the body is drawn in never reaches the body at all. The checkbox is
             // laid where it always was and the box has narrowed to a docked panel's rail, so the control
             // under this press is on screen nowhere - and a control nobody can see must not answer.
@@ -890,7 +890,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerStaysSilentForAPointerMovedOverABodyControl() {
+        void staysSilentForAPointerMovedOverABodyControl() {
             // A press is what a control answers, and the pointer merely being over one is not that. The
             // panel claims every event it covers, so the branch that tells them apart is the only thing
             // between a control and a sound for each frame the cursor rests on it.
@@ -905,7 +905,7 @@ final class PanelControllerTest {
         }
 
         @Test
-        void handlePointerSoundsOnlyTheWheelForAWheelOverABodyControl() {
+        void soundsOnlyTheWheelForAWheelOverABodyControl() {
             // The wheel is not a press, however squarely it lands on a control. Pinned because both moments
             // are answered from this end now, and a panel that sounded both would tick twice for one turn.
             var controller = buildVanillaSoundingController();

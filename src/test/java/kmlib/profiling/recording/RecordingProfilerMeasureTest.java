@@ -23,7 +23,7 @@ final class RecordingProfilerMeasureTest {
     class Measure {
 
         @Test
-        void measureRecordsTheClockDeltaForASection() {
+        void recordsTheClockDeltaForASection() {
 
             var clock = new ScriptedClock(100, 250);
             var profiler = new RecordingProfiler(clock);
@@ -68,7 +68,7 @@ final class RecordingProfilerMeasureTest {
         }
 
         @Test
-        void measureSupplierReturnsTheWorkResultAndStillTimesIt() {
+        void supplierReturnsTheWorkResultAndStillTimesIt() {
 
             var clock = new ScriptedClock(0, 42);
             var profiler = new RecordingProfiler(clock);

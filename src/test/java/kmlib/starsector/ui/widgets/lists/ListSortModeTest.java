@@ -26,7 +26,7 @@ final class ListSortModeTest {
     class ResolveTrailingRuns {
 
         @Test
-        void resolveTrailingRunsDefaultsToNoRunsForAModeThatDeclaresNone() {
+        void defaultsToNoRunsForAModeThatDeclaresNone() {
             // The fixture's alpha mode leaves the default in place, so a list ranked by it reads as a
             // plain one.
             assertThat(AnomalySortMode.ALPHA.resolveTrailingRuns(

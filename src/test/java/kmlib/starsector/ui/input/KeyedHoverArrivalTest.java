@@ -28,13 +28,13 @@ final class KeyedHoverArrivalTest {
     class DetectArrivalAt {
 
         @Test
-        void detectArrivalAtReportsThePointerComingOntoTheRow() {
+        void reportsThePointerComingOntoTheRow() {
             assertThat(hoverArrival.detectArrivalAt(FIRST_ELEMENT))
                 .isTrue();
         }
 
         @Test
-        void detectArrivalAtReportsCrossingStraightToTheNeighbouringElement() {
+        void reportsCrossingStraightToTheNeighbouringElement() {
             // The common move on a row of abutting elements: the pointer never leaves the row, so an
             // arrival detected only from off the row would answer the first element and then nothing else.
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);
@@ -44,7 +44,7 @@ final class KeyedHoverArrivalTest {
         }
 
         @Test
-        void detectArrivalAtReportsNothingWhileThePointerRestsOnAnElement() {
+        void reportsNothingWhileThePointerRestsOnAnElement() {
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);
 
             assertThat(hoverArrival.detectArrivalAt(FIRST_ELEMENT))
@@ -52,7 +52,7 @@ final class KeyedHoverArrivalTest {
         }
 
         @Test
-        void detectArrivalAtReportsNothingAsThePointerLeavesTheRow() {
+        void reportsNothingAsThePointerLeavesTheRow() {
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);
 
             assertThat(hoverArrival.detectArrivalAt(NO_ELEMENT_HOVERED))
@@ -60,7 +60,7 @@ final class KeyedHoverArrivalTest {
         }
 
         @Test
-        void detectArrivalAtReportsTheSameElementReachedAgainAfterLeavingTheRow() {
+        void reportsTheSameElementReachedAgainAfterLeavingTheRow() {
             // Leaving clears which element was reached, so coming back to it is a fresh arrival rather
             // than a continuation of the last one.
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);
@@ -75,7 +75,7 @@ final class KeyedHoverArrivalTest {
     class AdoptArrivalAt {
 
         @Test
-        void adoptArrivalAtReportsNothingForTheElementItTook() {
+        void reportsNothingForTheElementItTook() {
             // The row moved under a still pointer, so what is now under it was reached by nobody - and the
             // very next frame must not report it either, the adoption being what stops the moment coming
             // one frame late instead of not at all.
@@ -86,7 +86,7 @@ final class KeyedHoverArrivalTest {
         }
 
         @Test
-        void adoptArrivalAtLeavesTheLatchAnsweringThePointersOwnMoves() {
+        void leavesTheLatchAnsweringThePointersOwnMoves() {
             // Adopted rather than gone deaf: the pointer genuinely moving on to what the row carried under
             // it is an arrival like any other, so the element has to be reachable again once left.
             hoverArrival.adoptArrivalAt(FIRST_ELEMENT);
@@ -97,7 +97,7 @@ final class KeyedHoverArrivalTest {
         }
 
         @Test
-        void adoptArrivalAtDropsTheElementThePointerWasOnBeforeTheRowMoved() {
+        void dropsTheElementThePointerWasOnBeforeTheRowMoved() {
             // A row that moves away from under the pointer leaves it on nothing, and the element it was on
             // must not stay latched - coming back to that element afterwards is an arrival.
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);
@@ -112,7 +112,7 @@ final class KeyedHoverArrivalTest {
     class ResetArrival {
 
         @Test
-        void resetArrivalMakesAPointerParkedOnAnElementArriveAfresh() {
+        void makesAPointerParkedOnAnElementArriveAfresh() {
             // The row came to the pointer rather than the other way about, which the player reads as an
             // arrival even though the pointer never moved.
             hoverArrival.detectArrivalAt(FIRST_ELEMENT);

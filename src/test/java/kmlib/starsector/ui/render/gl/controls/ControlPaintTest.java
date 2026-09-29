@@ -38,7 +38,7 @@ final class ControlPaintTest {
     class ChromeOpacity {
 
         @Test
-        void chromeOpacityHonoursTheLooksTranslucencyAndTheMoment() {
+        void honoursTheLooksTranslucencyAndTheMoment() {
             // Chrome is the body: a see-through panel's fills and frames are what the player asked to
             // see through, so they take both channels compounded.
             assertThat(PAINT.chromeOpacity())
@@ -50,7 +50,7 @@ final class ControlPaintTest {
     class TextOpacity {
 
         @Test
-        void textOpacityHonoursTheMomentAloneSoAReadingKeepsItsColour() {
+        void honoursTheMomentAloneSoAReadingKeepsItsColour() {
             // Words opt out of the look's translucency: the cost of fading them falls hardest on text
             // carrying a colour of its own, which gives up that colour toward the backdrop while the
             // greys it is meant to be told apart from barely move.
@@ -59,7 +59,7 @@ final class ControlPaintTest {
         }
 
         @Test
-        void textOpacityStillLeavesWithThePanel() {
+        void stillLeavesWithThePanel() {
             // The half it must not drop. Text held at full strength over a dissolving body would hang
             // there, which reads worse than not fading at all.
             var leaving = new ControlPaint(null, new PanelAlpha(1f, 0f), null);
@@ -69,7 +69,7 @@ final class ControlPaintTest {
         }
 
         @Test
-        void textOpacityMatchesTheChromeOnAnOpaqueBody() {
+        void matchesTheChromeOnAnOpaqueBody() {
             // The frames that hide a wrong reading: with nothing to be see-through about, both channels
             // answer the same number, which is why a case at rest proves nothing on its own.
             var opaqueBody = new ControlPaint(null, new PanelAlpha(1f, PANEL_FADE), null);

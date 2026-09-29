@@ -21,13 +21,13 @@ final class TabInteractionSourcesTest {
     class Resting {
 
         @Test
-        void restingHoversNoTab() {
+        void hoversNoTab() {
             assertThat(TabInteractionSources.RESTING.hoverSource().resolveHoverFractionAt(ANY_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
-        void restingLiftsNoTab() {
+        void liftsNoTab() {
             assertThat(TabInteractionSources.RESTING.pulseSource().resolvePulseFractionAt(ANY_INDEX))
                 .isCloseTo(0f, within(TOLERANCE));
         }

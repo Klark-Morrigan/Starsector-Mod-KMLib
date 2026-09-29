@@ -25,7 +25,7 @@ final class TabPulseSourceTest {
     class CreateRestingPulseSource {
 
         @Test
-        void createRestingPulseSourceLiftsNoTabInTheRow() {
+        void liftsNoTabInTheRow() {
 
             var pulses = TabPulseSource.createRestingPulseSource();
 
@@ -36,7 +36,7 @@ final class TabPulseSourceTest {
         }
 
         @Test
-        void createRestingPulseSourceAnswersForAnIndexOutsideTheRow() {
+        void answersForAnIndexOutsideTheRow() {
 
             var pulses = TabPulseSource.createRestingPulseSource();
 

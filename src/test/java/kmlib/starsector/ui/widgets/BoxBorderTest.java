@@ -27,12 +27,12 @@ final class BoxBorderTest {
     class ComputeEdgeInset {
 
         @Test
-        void computeEdgeInsetReservesTheWidthOnAStrokedEdge() {
+        void reservesTheWidthOnAStrokedEdge() {
             assertThat(new BoxBorder(WIDTH).computeEdgeInset(BoxEdge.LEFT)).isEqualTo(WIDTH);
         }
 
         @Test
-        void computeEdgeInsetReservesNothingOnAnOpenEdge() {
+        void reservesNothingOnAnOpenEdge() {
             // The intel panel's flush side: the edge draws no border, so it reserves no strip either and the
             // content sits hard against whatever the box abuts.
             var border = new BoxBorder(WIDTH, EnumSet.of(BoxEdge.TOP, BoxEdge.RIGHT, BoxEdge.BOTTOM));
@@ -41,14 +41,14 @@ final class BoxBorderTest {
         }
 
         @Test
-        void computeEdgeInsetReservesNothingWhenTheWidthIsZero() {
+        void reservesNothingWhenTheWidthIsZero() {
             // A zero-width frame strokes nothing, so even a listed edge costs no room - a box with no border
             // is its own content.
             assertThat(new BoxBorder(0f).computeEdgeInset(BoxEdge.TOP)).isZero();
         }
 
         @Test
-        void computeEdgeInsetReservesNothingWhenNoEdgeIsStroked() {
+        void reservesNothingWhenNoEdgeIsStroked() {
             assertThat(new BoxBorder(WIDTH, Set.of()).computeEdgeInset(BoxEdge.BOTTOM)).isZero();
         }
     }
@@ -57,7 +57,7 @@ final class BoxBorderTest {
     class ComputeStrokeBoxes {
 
         @Test
-        void computeStrokeBoxesCutsTheSidesShortOfTheEdgesTheyMeet() {
+        void cutsTheSidesShortOfTheEdgesTheyMeet() {
             // The corners are the whole point: every shade composites, so a translucent frame painted twice
             // where two edges cross comes out with four bright corner pixels. The horizontals run the full
             // width and the verticals give up that width at each end, so no pixel is covered by two quads.
@@ -72,7 +72,7 @@ final class BoxBorderTest {
         }
 
         @Test
-        void computeStrokeBoxesRunsASideToTheBoxsEdgeWhereItMeetsAnOpenSide() {
+        void runsASideToTheBoxsEdgeWhereItMeetsAnOpenSide() {
             // An open edge draws no quad, so there is nothing at that end for a side to leave room for -
             // the intel panel's flush left is exactly this, and a side stopping short of it would leave a
             // notch out of the frame at the corner.
@@ -84,7 +84,7 @@ final class BoxBorderTest {
         }
 
         @Test
-        void computeStrokeBoxesCollapsesTheSidesOfABoxShorterThanItsOwnEdges() {
+        void collapsesTheSidesOfABoxShorterThanItsOwnEdges() {
             // A negative height would draw a side upside down through the corners it was cut to clear, so a
             // box with no room between its two horizontals yields sides with nothing in them.
             var strokes = new BoxBorder(WIDTH).computeStrokeBoxes(new Rectangle(100f, 50f, 60f, 6f));
@@ -94,7 +94,7 @@ final class BoxBorderTest {
         }
 
         @Test
-        void computeStrokeBoxesStrokesNothingAtZeroWidth() {
+        void strokesNothingAtZeroWidth() {
             // A zero-width frame is a box with no border at all, so the pass that fills these draws nothing
             // rather than four quads of no thickness.
             assertThat(new BoxBorder(0f).computeStrokeBoxes(BOX))
@@ -106,7 +106,7 @@ final class BoxBorderTest {
     class WidthOnlyConstructor {
 
         @Test
-        void widthOnlyConstructorStrokesEveryEdge() {
+        void strokesEveryEdge() {
             // The common case - a panel floating free, framed all round - so a caller naming no edges gets a
             // full frame rather than an unstroked one.
             var border = new BoxBorder(WIDTH);

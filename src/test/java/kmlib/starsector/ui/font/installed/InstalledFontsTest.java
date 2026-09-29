@@ -55,7 +55,7 @@ class InstalledFontsTest {
     class CreateFaceResolver {
 
         @Test
-        void createFaceResolverTriesTheInstallsDeclaredDefaultBeforeTheLastResort() {
+        void triesTheInstallsDeclaredDefaultBeforeTheLastResort() {
 
             var zongyiWithAnotherDefault = new InstalledFonts(
                 "font-zongyi",
@@ -76,14 +76,14 @@ class InstalledFontsTest {
     class DescribeEdition {
 
         @Test
-        void describeEditionNamesTheEditionAndItsPackVersion() {
+        void namesTheEditionAndItsPackVersion() {
 
             assertThat(createZongyiFonts().describeEdition())
                 .isEqualTo("font-zongyi 2026.09.04");
         }
 
         @Test
-        void describeEditionNamesTheGamesOwnAtlasesByTheEditionAlone() {
+        void namesTheGamesOwnAtlasesByTheEditionAlone() {
 
             var vanillaFonts = new InstalledFonts(
                 "vanilla",
@@ -101,7 +101,7 @@ class InstalledFontsTest {
     class CreateLineHeightReader {
 
         @Test
-        void createLineHeightReaderAnswersTheInstalledLineHeight() {
+        void answersTheInstalledLineHeight() {
 
             assertThat(createZongyiFonts().createLineHeightReader()
                     .readLineHeight(StarsectorFont.VANILLA_INSIGNIA_25))
@@ -109,7 +109,7 @@ class InstalledFontsTest {
         }
 
         @Test
-        void createLineHeightReaderAnswersZeroForAFaceTheInstallDoesNotCarry() {
+        void answersZeroForAFaceTheInstallDoesNotCarry() {
 
             assertThat(createZongyiFonts().createLineHeightReader()
                     .readLineHeight(StarsectorFont.VANILLA_INSIGNIA_42))
@@ -117,7 +117,7 @@ class InstalledFontsTest {
         }
 
         @Test
-        void createLineHeightReaderAnswersTheDeclaredDefaultsInstalledLineHeight() {
+        void answersTheDeclaredDefaultsInstalledLineHeight() {
 
             assertThat(createPackDeclaredFonts().createLineHeightReader()
                     .readLineHeight(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED)))
@@ -129,7 +129,7 @@ class InstalledFontsTest {
     class CreateGlyphCoverageReader {
 
         @Test
-        void createGlyphCoverageReaderCoversTextEveryCharacterOfWhichTheAtlasDeclares() {
+        void coversTextEveryCharacterOfWhichTheAtlasDeclares() {
 
             assertThat(createZongyiFonts().createGlyphCoverageReader()
                     .coversText(StarsectorFont.VANILLA_INSIGNIA_25, "H&H " + LOCALISED_NAME))
@@ -137,7 +137,7 @@ class InstalledFontsTest {
         }
 
         @Test
-        void createGlyphCoverageReaderIsFalseForACharacterTheAtlasLacks() {
+        void isFalseForACharacterTheAtlasLacks() {
 
             assertThat(createZongyiFonts().createGlyphCoverageReader()
                     .coversText(StarsectorFont.VANILLA_INSIGNIA_25, "Hegemony"))
@@ -145,7 +145,7 @@ class InstalledFontsTest {
         }
 
         @Test
-        void createGlyphCoverageReaderIsFalseForAFaceTheInstallDoesNotCarry() {
+        void isFalseForAFaceTheInstallDoesNotCarry() {
 
             assertThat(createZongyiFonts().createGlyphCoverageReader()
                     .coversText(StarsectorFont.VANILLA_INSIGNIA_42, "H"))
@@ -153,7 +153,7 @@ class InstalledFontsTest {
         }
 
         @Test
-        void createGlyphCoverageReaderReadsTheDeclaredDefaultsInstalledGlyphs() {
+        void readsTheDeclaredDefaultsInstalledGlyphs() {
 
             assertThat(createPackDeclaredFonts().createGlyphCoverageReader()
                     .coversText(new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED), LOCALISED_NAME))

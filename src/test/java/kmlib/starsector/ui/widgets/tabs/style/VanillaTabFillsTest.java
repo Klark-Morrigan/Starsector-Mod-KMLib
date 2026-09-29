@@ -34,14 +34,14 @@ final class VanillaTabFillsTest {
     class ResolveRestingFill {
 
         @Test
-        void resolveRestingFillCompositesTheButtonFillOntoTheBackdrop() {
+        void compositesTheButtonFillOntoTheBackdrop() {
             // buttonBgDark at alpha 175 over black.
             assertThat(VanillaTabFills.resolveRestingFill(VANILLA_PAINT))
                 .isEqualTo(new Color(21, 65, 77, OPAQUE_ALPHA));
         }
 
         @Test
-        void resolveRestingFillTakesTheBackdropWhereTheFillIsAbsent() {
+        void takesTheBackdropWhereTheFillIsAbsent() {
             // A fully transparent fill leaves the tab the colour of what it stands on - the degenerate end
             // of the same composite, not a special case.
             assertThat(VanillaTabFills.resolveRestingFill(paintWithFill(new Color(31, 94, 112, 0))))
@@ -49,7 +49,7 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveRestingFillFollowsARestyledButtonFill() {
+        void followsARestyledButtonFill() {
             // The whole point of computing rather than sampling: a restyled install moves this tab.
             assertThat(VanillaTabFills.resolveRestingFill(
                     paintWithFill(new Color(200, 40, 40, OPAQUE_ALPHA))))
@@ -61,7 +61,7 @@ final class VanillaTabFillsTest {
     class ResolveFillAtGlow {
 
         @Test
-        void resolveFillAtGlowLightsTheShownTabShortOfTheFullGlow() {
+        void lightsTheShownTabShortOfTheFullGlow() {
             // The resting shade (21, 65, 77) plus 0.45 of the glow: buttonText half-way to white,
             // (213, 239, 255), at half strength tempered by the fill's alpha - 0.45 * 0.5 * (175 + 50) /
             // 255 = 0.1985.
@@ -70,7 +70,7 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowLightsThePointedTabAboveTheShownOne() {
+        void lightsThePointedTabAboveTheShownOne() {
             // The same shade at the pointer's amount - 0.65 * 0.5 * (175 + 50) / 255 = 0.2868 - which is
             // where the tab under the pointer stands: above the shown tab and short of the full glow, the
             // whole of it having read brighter than the engine's own tabs beside it.
@@ -79,14 +79,14 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowLeavesAnUnlitTabAtItsRestingShade() {
+        void leavesAnUnlitTabAtItsRestingShade() {
             // No glow is the same statement as no glow pass at all, so the two ways of asking agree.
             assertThat(resolveFillAt(VanillaTabFills.NO_GLOW))
                 .isEqualTo(VanillaTabFills.resolveRestingFill(VANILLA_PAINT));
         }
 
         @Test
-        void resolveFillAtGlowKeepsThePointedTabBrighterThanTheShownOne() {
+        void keepsThePointedTabBrighterThanTheShownOne() {
             // The load-bearing ordering: nothing but the fill marks the shown tab, so a pointed-at tab has
             // to outshine it on every channel or the two states read alike while the pointer is on the row.
             var resting = resolveFillAt(VanillaTabFills.NO_GLOW);
@@ -103,7 +103,7 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowTakesTheFullGlowOnceTheFillIsSolidEnough() {
+        void takesTheFullGlowOnceTheFillIsSolidEnough() {
             // The headroom means an opaque fill and one a little short of it take the same glow. Asked of
             // a black fill so only the glow is left standing: any coloured fill composites to a different
             // resting shade at each alpha, which would move the answer for a reason this is not about.
@@ -112,7 +112,7 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowDimsTheGlowOnASeeThroughFill() {
+        void dimsTheGlowOnASeeThroughFill() {
             // Below the headroom the glow is scaled down with the fill, so a barely-there fill does not
             // light up as strongly as a solid one. Black again, for the reason above: (213, 239, 255) at
             // 0.65 * 0.5 * (25 + 50) / 255 = 0.0956 rather than at the pointer's full amount.
@@ -121,7 +121,7 @@ final class VanillaTabFillsTest {
         }
 
         @Test
-        void resolveFillAtGlowReturnsAnOpaqueSurface() {
+        void returnsAnOpaqueSurface() {
             // A tab fill is a surface: left translucent the row would be the colour of whatever it is
             // drawn over, which is exactly what standing over the bare map would expose.
             assertThat(resolveFillAt(VanillaTabFills.POINTED_GLOW).getAlpha())
@@ -133,7 +133,7 @@ final class VanillaTabFillsTest {
     class ResolveGlowColour {
 
         @Test
-        void resolveGlowColourStandsHalfWayFromTheLabelToWhite() {
+        void standsHalfWayFromTheLabelToWhite() {
             // The one axis every brightening of a tab travels along - the fills, the labels, and the lift a
             // press raises - so it is pinned here rather than only through the shades built on it.
             assertThat(VanillaTabFills.resolveGlowColour(BUTTON_TEXT))

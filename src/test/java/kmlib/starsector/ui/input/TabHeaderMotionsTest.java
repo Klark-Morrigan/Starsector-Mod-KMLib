@@ -31,14 +31,14 @@ final class TabHeaderMotionsTest {
     class ResolveHoverFractionAt {
 
         @Test
-        void resolveHoverFractionAtIsRestingBeforeAnythingReachesTheTab() {
+        void isRestingBeforeAnythingReachesTheTab() {
 
             assertThat(headerMotions.resolveHoverFractionAt(FIRST_TAB))
                 .isZero();
         }
 
         @Test
-        void resolveHoverFractionAtFollowsThePointerHoldingTheTab() {
+        void followsThePointerHoldingTheTab() {
             headerMotions.advanceTabMotionsForFrame(
                 FIRST_TAB,
                 ONE_FRAME_SECONDS,
@@ -53,7 +53,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void resolveHoverFractionAtFollowsABlinkOnATabThePointerIsNotOn() {
+        void followsABlinkOnATabThePointerIsNotOn() {
             // The blink reaches the same shade the pointer would carry a tab onto, which is what lets a
             // keypress answer on a row nobody is pointing at.
             headerMotions.startHotkeyBlinkAt(FIRST_TAB);
@@ -64,7 +64,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void resolveHoverFractionAtTakesTheGreaterOfTheTwoRatherThanTheirSum() {
+        void takesTheGreaterOfTheTwoRatherThanTheirSum() {
             // Both motions aim at the one shade, so a blink struck on a tab the pointer already holds fully
             // carries it nowhere. Summed, this would read past a shade neither names.
             headerMotions.startHotkeyBlinkAt(FIRST_TAB);
@@ -79,7 +79,7 @@ final class TabHeaderMotionsTest {
     class AdvanceTabMotionsForFrame {
 
         @Test
-        void advanceTabMotionsForFramePacesTheBlinkByItsOwnClock() {
+        void pacesTheBlinkByItsOwnClock() {
             // The one motion here that does not run at the pace the host sets: a strike has to be over about
             // as fast as the eye can catch it however leisurely the rest of the panel moves. Charged at the
             // host's pace instead, a blink given the full strike time would barely have left rest.
@@ -91,7 +91,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void advanceTabMotionsForFramePacesTheClickLiftByTheHostsClock() {
+        void pacesTheClickLiftByTheHostsClock() {
             // The lift is a travel like the fades, so it moves at whatever pace the panel was given - here
             // one slow enough that a frame leaves it near rest.
             headerMotions.startHeldClickPulseAt(FIRST_TAB);
@@ -108,7 +108,7 @@ final class TabHeaderMotionsTest {
     class ReleaseHeldClickPulses {
 
         @Test
-        void releaseHeldClickPulsesReportsThatAHoldEnded() {
+        void reportsThatAHoldEnded() {
             headerMotions.startHeldClickPulseAt(FIRST_TAB);
 
             assertThat(headerMotions.releaseHeldClickPulses())
@@ -116,7 +116,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void releaseHeldClickPulsesReportsNothingWhenNoTabIsHeld() {
+        void reportsNothingWhenNoTabIsHeld() {
             // Every release on the screen reaches the row, and only the ones that let go of a tab were owed
             // anything - which is what a caller sounds a press on.
             assertThat(headerMotions.releaseHeldClickPulses())
@@ -124,7 +124,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void releaseHeldClickPulsesReportsNothingOnASecondRelease() {
+        void reportsNothingOnASecondRelease() {
 
             headerMotions.startHeldClickPulseAt(FIRST_TAB);
             headerMotions.releaseHeldClickPulses();
@@ -138,7 +138,7 @@ final class TabHeaderMotionsTest {
     class DetectTabArrivalAt {
 
         @Test
-        void detectTabArrivalAtFiresOnceForOneArrival() {
+        void firesOnceForOneArrival() {
 
             assertThat(headerMotions.detectTabArrivalAt(FIRST_TAB))
                 .isTrue();
@@ -147,7 +147,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void detectTabArrivalAtFiresAgainAfterThePointerLeaves() {
+        void firesAgainAfterThePointerLeaves() {
             headerMotions.detectTabArrivalAt(FIRST_TAB);
             headerMotions.detectTabArrivalAt(null);
 
@@ -156,7 +156,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void detectTabArrivalAtFiresOnCrossingToAnotherTab() {
+        void firesOnCrossingToAnotherTab() {
             // One latch for the row rather than one per tab, so crossing from a tab to its neighbour is an
             // arrival on the neighbour and not a pointer that never left.
             headerMotions.detectTabArrivalAt(FIRST_TAB);
@@ -170,7 +170,7 @@ final class TabHeaderMotionsTest {
     class ResetTabMotions {
 
         @Test
-        void resetTabMotionsDropsEveryMotionTheRowHolds() {
+        void dropsEveryMotionTheRowHolds() {
             // A fade left part-way up, or a lift left part-way through its cycle, would otherwise be the
             // first thing the next session paints and then wind down.
             headerMotions.startHeldClickPulseAt(FIRST_TAB);
@@ -193,7 +193,7 @@ final class TabHeaderMotionsTest {
         }
 
         @Test
-        void resetTabMotionsForgetsWhatWasAnnounced() {
+        void forgetsWhatWasAnnounced() {
             // So a panel re-opening under a still pointer sounds that tab's arrival afresh: the row was not
             // there a moment ago, even though the pointer never moved.
             headerMotions.detectTabArrivalAt(FIRST_TAB);

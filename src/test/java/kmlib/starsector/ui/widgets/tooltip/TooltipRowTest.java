@@ -93,7 +93,7 @@ class TooltipRowTest {
     class Constructor {
 
         @Test
-        void constructorRejectsATableRowWithNullContent() {
+        void rejectsATableRowWithNullContent() {
             // A line is its content plus how the box treats it, so a line with no content at all is not a
             // line - and a null would otherwise surface inside a measurement, well past the point that
             // could say which line was meant.
@@ -108,7 +108,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void constructorRejectsACentredRowWithNoLabelRuns() {
+        void rejectsACentredRowWithNoLabelRuns() {
             // A centred line holds its label directly rather than through a labelled row, so the floor
             // that a line has a label has to hold here too - it is the same floor, not a second one.
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
@@ -119,7 +119,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void constructorCopiesACentredRowsLabelRuns() {
+        void copiesACentredRowsLabelRuns() {
             // The line is a value, so a caller still holding the list it built must not be able to add a
             // run to a line already handed to a layout - which would size a box for runs and then draw
             // another. A centred line holds its runs directly, so it needs the copy a labelled row makes.
@@ -135,7 +135,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void constructorRejectsACentredRowWithANullLabel() {
+        void rejectsACentredRowWithANullLabel() {
             assertThatThrownBy(() -> new TooltipRow.CentredRow(
                     TooltipLineStyle.PARAGRAPH,
                     null))
@@ -148,13 +148,13 @@ class TooltipRowTest {
     class CreateRow {
 
         @Test
-        void createRowCarriesTheLabelAsOneRun() {
+        void carriesTheLabelAsOneRun() {
             assertThat(buildBareRow().labelRuns())
                 .containsExactly(new TextSpan(TEXT, Color.WHITE));
         }
 
         @Test
-        void createRowCarriesNoneOfTheOptionalParts() {
+        void carriesNoneOfTheOptionalParts() {
 
             var row = buildBareRow();
 
@@ -167,7 +167,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void createRowAlignsItsLabelWithTheCrestedRows() {
+        void alignsItsLabelWithTheCrestedRows() {
             // An ordinary content line lines up with the box's other entries, so a caller that says
             // nothing about placement gets that - starting at the content edge instead is stated.
             assertThat(buildBareRow().labelPlacement())
@@ -175,7 +175,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void createRowReadsAsAParagraph() {
+        void readsAsAParagraph() {
             // Most of a tooltip is its body, so a caller that says nothing about the kind of line it is
             // authoring gets a body line - which is what lets a whole existing body be built without
             // naming a kind at all.
@@ -184,7 +184,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void createRowOverRunsBuildsTheLineItsRunsContinuedOneByOneWould() {
+        void overRunsBuildsTheLineItsRunsContinuedOneByOneWould() {
             // The composed label is a shortcut to the same bare line, not a second shape of it: every
             // row-level default a one-run line starts from holds for a line opened on a whole sentence.
             var runs = List.<LabelRun>of(
@@ -201,13 +201,13 @@ class TooltipRowTest {
     class CreateCentredRow {
 
         @Test
-        void createCentredRowCarriesTheLabelAsOneRun() {
+        void carriesTheLabelAsOneRun() {
             assertThat(buildBareCentredRow().labelRuns())
                 .containsExactly(new TextSpan(TEXT, Color.WHITE));
         }
 
         @Test
-        void createCentredRowReadsAsAParagraph() {
+        void readsAsAParagraph() {
             // The same bare state a table row starts from, for the one look-facing fact the two kinds
             // share: a caller states a heading, and gets a body line by saying nothing.
             assertThat(buildBareCentredRow().lineStyle())
@@ -218,13 +218,13 @@ class TooltipRowTest {
     @Nested
     class CarriesCrest {
         @Test
-        void carriesCrestLeadsTheRowWithThatImage() {
+        void leadsTheRowWithThatImage() {
             assertThat(buildBareRow().carriesCrest(CREST).labelledRow().leadingRowSlot())
                 .isEqualTo(new RowSlot.Image(CREST));
         }
 
         @Test
-        void carriesCrestLeavesTheSlotUnfilledForAnAbsentPath() {
+        void leavesTheSlotUnfilledForAnAbsentPath() {
             // A caller resolving a crest a faction may simply not have hands the result straight over,
             // so a null is a crest-less line rather than an image slot holding nothing to load.
             assertThat(buildBareRow().carriesCrest(null).labelledRow().leadingRowSlot())
@@ -232,7 +232,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void carriesCrestChangesNothingElse() {
+        void changesNothingElse() {
             assertRefinementChangesOnly(
                 buildRichRow().carriesCrest(OTHER_CREST),
                 buildRichRow(),
@@ -244,7 +244,7 @@ class TooltipRowTest {
     class CarriesValue {
 
         @Test
-        void carriesValueTrailsTheRowWithThatRun() {
+        void trailsTheRowWithThatRun() {
 
             var valueTextSpan = new TextSpan(VALUE, Color.GRAY);
 
@@ -253,7 +253,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void carriesValueFillsTheSlotWithABlankRunForABlankSpan() {
+        void fillsTheSlotWithABlankRunForABlankSpan() {
             // A caller assembling a value from parts and coming up empty said its line has a value, so
             // the slot is filled with a run that draws nothing rather than emptied - which is what a
             // line that never states a value holds. Neither is charged a column.
@@ -264,7 +264,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void carriesValueChangesNothingElse() {
+        void changesNothingElse() {
             assertRefinementChangesOnly(
                 buildRichRow().carriesValue(new TextSpan(OTHER_VALUE, Color.CYAN)),
                 buildRichRow(),
@@ -276,7 +276,7 @@ class TooltipRowTest {
     class CarriesValueRuns {
 
         @Test
-        void carriesValueRunsTrailsTheRowWithThoseRuns() {
+        void trailsTheRowWithThoseRuns() {
             // The runs fill the one trailing column together, so a value stating a finding and the
             // working behind it still aligns with the plain values of the rows around it.
             var valueTextSpans = List.of(
@@ -288,7 +288,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void carriesValueRunsReplacesAValueAlreadyCarried() {
+        void replacesAValueAlreadyCarried() {
             // The two refinements fill one column, so a line cannot end up holding a single-run value
             // and a multi-run one at once - the last one stated is what the row carries.
             var row = buildBareRow()
@@ -300,7 +300,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void carriesValueRunsChangesNothingElse() {
+        void changesNothingElse() {
             assertRefinementChangesOnly(
                 buildRichRow().carriesValueRuns(List.of(new TextSpan(OTHER_VALUE, Color.CYAN))),
                 buildRichRow(),
@@ -312,7 +312,7 @@ class TooltipRowTest {
     class ContinuesWith {
 
         @Test
-        void continuesWithAppendsTheRun() {
+        void appendsTheRun() {
             assertThat(buildBareRow()
                     .continuesWith(new TextSpan(RUN_TEXT, Color.YELLOW))
                     .labelRuns())
@@ -322,7 +322,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void continuesWithAppendsTheRunOnACentredRow() {
+        void appendsTheRunOnACentredRow() {
             // A centred line reads in more than one colour exactly as a table row does: the runs are the
             // label, and the label is the one thing the two kinds carry alike.
             assertThat(buildBareCentredRow()
@@ -334,7 +334,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void continuesWithChangesNothingElse() {
+        void changesNothingElse() {
             // The point of composing refinements: a run cannot restate - or lose - the tier, crest, and
             // value the line was already built with.
             assertRefinementChangesOnly(
@@ -344,7 +344,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void continuesWithChangesNothingElseOnACentredRow() {
+        void changesNothingElseOnACentredRow() {
             assertRefinementChangesOnly(
                 buildRichCentredRow().continuesWith(new TextSpan(OTHER_RUN_TEXT, Color.CYAN)),
                 buildRichCentredRow(),
@@ -356,7 +356,7 @@ class TooltipRowTest {
     class IndentsBy {
 
         @Test
-        void indentsBySetsTheInset() {
+        void setsTheInset() {
 
             var row = buildBareRow().indentsBy(INDENT);
 
@@ -365,7 +365,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void indentsByChangesNothingElse() {
+        void changesNothingElse() {
             assertRefinementChangesOnly(
                 buildRichRow().indentsBy(OTHER_INDENT),
                 buildRichRow(),
@@ -377,7 +377,7 @@ class TooltipRowTest {
     class ClearsCrestColumn {
 
         @Test
-        void clearsCrestColumnStartsTheLabelAtTheContentEdge() {
+        void startsTheLabelAtTheContentEdge() {
 
             var row = buildBareRow().clearsCrestColumn();
 
@@ -386,7 +386,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void clearsCrestColumnChangesNothingElse() {
+        void changesNothingElse() {
             // Only the crest gutter is cleared. A title still carries a trailing value the way the rows
             // it heads do, so the value column is not part of what the placement decides.
             assertRefinementChangesOnly(
@@ -400,7 +400,7 @@ class TooltipRowTest {
     class ReadsAs {
 
         @Test
-        void readsAsSetsTheKindOfLine() {
+        void setsTheKindOfLine() {
 
             var row = buildBareRow().readsAs(TooltipLineStyle.HEADER);
 
@@ -409,7 +409,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void readsAsSetsTheKindOfLineOnACentredRow() {
+        void setsTheKindOfLineOnACentredRow() {
 
             var centredRow = buildBareCentredRow().readsAs(TooltipLineStyle.HEADER);
 
@@ -418,7 +418,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void readsAsChangesNothingElse() {
+        void changesNothingElse() {
             // A heading is still a line: naming its kind must not disturb the content or the placement it
             // was already built with, since the kind decides only how it is drawn.
             assertRefinementChangesOnly(
@@ -428,7 +428,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void readsAsChangesNothingElseOnACentredRow() {
+        void changesNothingElseOnACentredRow() {
             assertRefinementChangesOnly(
                 buildRichCentredRow().readsAs(TooltipLineStyle.HEADER),
                 buildRichCentredRow(),
@@ -440,13 +440,13 @@ class TooltipRowTest {
     class SubordinationLevel {
 
         @Test
-        void subordinationLevelAnswersTheStepsATableRowWasPutUnder() {
+        void answersTheStepsATableRowWasPutUnder() {
             assertThat(buildBareRow().subordinatedAt(TWO_STEPS_UNDER).subordinationLevel())
                 .isEqualTo(TWO_STEPS_UNDER);
         }
 
         @Test
-        void subordinationLevelAnswersTheBoxsOwnVoiceForACentredRow() {
+        void answersTheBoxsOwnVoiceForACentredRow() {
             // A centred line has left the table and stands under nothing in it, however deep the table
             // beside it goes - asked of the interface, so a measurer and a renderer resolving its look
             // cannot each answer the question their own way.
@@ -455,7 +455,7 @@ class TooltipRowTest {
         }
 
         @Test
-        void subordinationLevelAnswersTheBoxsOwnVoiceForAnUnplacedTableRow() {
+        void answersTheBoxsOwnVoiceForAnUnplacedTableRow() {
             assertThat(buildBareRow().subordinationLevel())
                 .isEqualTo(IN_THE_BOXS_VOICE);
         }

@@ -36,14 +36,14 @@ class ImageSpanTest {
     class Constructor {
 
         @Test
-        void constructorKeepsThePathItWasGiven() {
+        void keepsThePathItWasGiven() {
 
             assertThat(new ImageSpan(CREST_SPRITE_PATH).spritePath())
                 .isEqualTo(CREST_SPRITE_PATH);
         }
 
         @Test
-        void constructorRejectsANullPath() {
+        void rejectsANullPath() {
 
             assertThatThrownBy(() -> new ImageSpan(null))
                 .isInstanceOf(NullPointerException.class)
@@ -51,7 +51,7 @@ class ImageSpanTest {
         }
 
         @Test
-        void constructorBuildsAWordOfItsOwn() {
+        void buildsAWordOfItsOwn() {
             // An image is set among the words rather than inside one, so it always stands the sentence's
             // own space clear of them - a mark butted against the name it prefixes would read as part of
             // the glyphs.
@@ -60,7 +60,7 @@ class ImageSpanTest {
         }
 
         @Test
-        void constructorStatesNoTintForAnImageDrawnAsAuthored() {
+        void statesNoTintForAnImageDrawnAsAuthored() {
             // A crest's colours are in its own pixels, so the path alone builds the run and the draw is
             // left to multiply by nothing.
             assertThat(new ImageSpan(CREST_SPRITE_PATH).tintColour())
@@ -68,7 +68,7 @@ class ImageSpanTest {
         }
 
         @Test
-        void constructorKeepsTheTintItWasGiven() {
+        void keepsTheTintItWasGiven() {
             // A map glyph's colour is authored beside its path, so the run carries it to the draw rather
             // than the draw picking a shade of its own.
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).tintColour())
@@ -80,7 +80,7 @@ class ImageSpanTest {
     class ResolveDrawnTint {
 
         @Test
-        void resolveDrawnTintAnswersWhiteForAnImageStatingNone() {
+        void answersWhiteForAnImageStatingNone() {
             // The multiply that changes nothing, so a caller washing or drawing an untinted image needs
             // no null branch of its own - and every such branch is a chance to multiply by black.
             assertThat(new ImageSpan(CREST_SPRITE_PATH).resolveDrawnTint())
@@ -88,7 +88,7 @@ class ImageSpanTest {
         }
 
         @Test
-        void resolveDrawnTintAnswersTheImagesOwnColourWhereItStatesOne() {
+        void answersTheImagesOwnColourWhereItStatesOne() {
 
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).resolveDrawnTint())
                 .isEqualTo(ICON_TINT);
@@ -99,14 +99,14 @@ class ImageSpanTest {
     class Equals {
 
         @Test
-        void equalsIsTrueForTheSamePathAndTint() {
+        void isTrueForTheSamePathAndTint() {
 
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
                 .isEqualTo(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT));
         }
 
         @Test
-        void equalsIsFalseForTheSamePathInAnotherTint() {
+        void isFalseForTheSamePathInAnotherTint() {
             // The tint is half of what an image run states, so two runs of one shared glyph in two
             // colours are two different marks rather than one repeated.
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
@@ -114,14 +114,14 @@ class ImageSpanTest {
         }
 
         @Test
-        void equalsIsFalseForATintedSpanAgainstAnUntintedOne() {
+        void isFalseForATintedSpanAgainstAnUntintedOne() {
 
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT))
                 .isNotEqualTo(new ImageSpan(ICON_SPRITE_PATH));
         }
 
         @Test
-        void equalsIsTrueForTheTwoSpellingsOfAnUntintedImage() {
+        void isTrueForTheTwoSpellingsOfAnUntintedImage() {
             // Untinted has one value however it was built, so a run assembled from a path alone and one
             // stating no colour are the same mark rather than two that happen to draw alike.
             assertThat(new ImageSpan(CREST_SPRITE_PATH))
@@ -133,7 +133,7 @@ class ImageSpanTest {
     class CanBeLeftOutOfLineText {
 
         @Test
-        void canBeLeftOutOfLineTextIsTrue() {
+        void isTrueForADecorativeCrest() {
             // A crest is decoration the sentence still reads without, so a surface that can only draw
             // glyphs drops it and keeps the line - the long-standing behaviour, and what parts an image
             // from a run whose whole meaning is in its own draw.
@@ -146,7 +146,7 @@ class ImageSpanTest {
     class ComputeWidth {
 
         @Test
-        void computeWidthSquaresTheImageOffItsLine() {
+        void squaresTheImageOffItsLine() {
             // The square follows the line rather than a fixed step, so a crest set among body text and
             // one set among a heading each come out the size of the words beside them.
             assertThat(new ImageSpan(CREST_SPRITE_PATH).computeWidth(20f, ONE_UNIT_PER_RUN))
@@ -154,14 +154,14 @@ class ImageSpanTest {
         }
 
         @Test
-        void computeWidthFollowsATallerLine() {
+        void followsATallerLine() {
 
             assertThat(new ImageSpan(CREST_SPRITE_PATH).computeWidth(32f, ONE_UNIT_PER_RUN))
                 .isEqualTo(32f);
         }
 
         @Test
-        void computeWidthIsUnchangedByATint() {
+        void isUnchangedByATint() {
             // A tint is a colour the texture is multiplied by, so it changes what the square shows and
             // never how much room the line reserves for it.
             assertThat(new ImageSpan(ICON_SPRITE_PATH, ICON_TINT).computeWidth(20f, ONE_UNIT_PER_RUN))
@@ -173,7 +173,7 @@ class ImageSpanTest {
     class HasContent {
 
         @Test
-        void hasContentIsTrueForAnyImageRun() {
+        void isTrueForAnyImageRun() {
             // There is no blank spelling of an image run, so one exists only where a caller had an image
             // to set into the line.
             assertThat(new ImageSpan(CREST_SPRITE_PATH).hasContent())
@@ -185,7 +185,7 @@ class ImageSpanTest {
     class PaintRun {
 
         @Test
-        void paintRunHandsItselfToThePaintersImageMethod() {
+        void handsItselfToThePaintersImageMethod() {
             // A run that named no kind would compile and draw nothing, leaving a gap on the line the size
             // of the room the measurement charged for it.
             var imageSpan = new ImageSpan(CREST_SPRITE_PATH);

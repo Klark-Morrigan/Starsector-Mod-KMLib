@@ -36,14 +36,14 @@ final class TabPanelInteractionSourcesTest {
     class ResolveBandButtonSources {
 
         @Test
-        void resolveBandButtonSourcesReportsTheButtonsHoverOnTheLookChannel() {
+        void reportsTheButtonsHoverOnTheLookChannel() {
 
             assertThat(SOURCES.resolveBandButtonSources().hoverSource().resolveHoverFractionAt(FIRST_CELL))
                 .isCloseTo(PART_WAY_LIT, within(TOLERANCE));
         }
 
         @Test
-        void resolveBandButtonSourcesReportsThatHoverWhicheverCellIsAsked() {
+        void reportsThatHoverWhicheverCellIsAsked() {
             // One box, so there is no second cell to be asked about - and a source that answered only
             // index zero would leave a chrome numbering its own cells differently drawing a dark button.
             assertThat(SOURCES.resolveBandButtonSources()
@@ -53,7 +53,7 @@ final class TabPanelInteractionSourcesTest {
         }
 
         @Test
-        void resolveBandButtonSourcesLiftsTheButtonForNoPress() {
+        void liftsTheButtonForNoPress() {
             // The button acts on the way down and has nothing left to report by the release, so it carries
             // no lift at all - a channel wired live here would show a press the button never holds.
             assertThat(SOURCES.resolveBandButtonSources().pulseSource().resolvePulseFractionAt(FIRST_CELL))
@@ -65,7 +65,7 @@ final class TabPanelInteractionSourcesTest {
     class Resting {
 
         @Test
-        void restingLightsNoBandButton() {
+        void lightsNoBandButton() {
             // What a panel drawn without an animator behind it paints: a button already part-way lit on the
             // first frame would be showing an interaction nobody made.
             assertThat(TabPanelInteractionSources.RESTING.bandButtonHover())

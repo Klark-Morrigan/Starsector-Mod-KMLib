@@ -52,7 +52,7 @@ final class TabWashSourceTest {
     class CreateClickPulsedWashSource {
 
         @Test
-        void createClickPulsedWashSourceLiftsNoTabWithNoPulseRunning() {
+        void liftsNoTabWithNoPulseRunning() {
 
             var washes = TabWashSource.createClickPulsedWashSource(
                 PALETTE,
@@ -63,7 +63,7 @@ final class TabWashSourceTest {
         }
 
         @Test
-        void createClickPulsedWashSourceLiftsToTheFullClickDepthAtTheLiftsPeak() {
+        void liftsToTheFullClickDepthAtTheLiftsPeak() {
 
             var washes = TabWashSource.createClickPulsedWashSource(PALETTE, tabIndex -> 1f);
 
@@ -72,7 +72,7 @@ final class TabWashSourceTest {
         }
 
         @Test
-        void createClickPulsedWashSourceScalesTheClickDepthByTheLiftsProgress() {
+        void scalesTheClickDepthByTheLiftsProgress() {
             // The whole of what the binding does: the palette says how bright a click reads at its
             // brightest, the fraction says how far through the cycle the tab has got.
             var washes = TabWashSource.createClickPulsedWashSource(PALETTE, tabIndex -> 0.5f);
@@ -82,7 +82,7 @@ final class TabWashSourceTest {
         }
 
         @Test
-        void createClickPulsedWashSourceLiftsTowardTheClickTargetRatherThanAnotherRole() {
+        void liftsTowardTheClickTargetRatherThanAnotherRole() {
             // A palette holds a wash per momentary state; this channel carries the click's, so reaching the
             // hotkey role instead would decay a click through a colour nothing named for it.
             var washes = TabWashSource.createClickPulsedWashSource(PALETTE, tabIndex -> 1f);
@@ -92,7 +92,7 @@ final class TabWashSourceTest {
         }
 
         @Test
-        void createClickPulsedWashSourceAnswersEachTabFromItsOwnPulse() {
+        void answersEachTabFromItsOwnPulse() {
             // Asked per index rather than walked as a list, so a click on one tab lifts that tab alone.
             var washes = TabWashSource.createClickPulsedWashSource(
                 PALETTE,
@@ -105,7 +105,7 @@ final class TabWashSourceTest {
         }
 
         @Test
-        void createClickPulsedWashSourceAnswersForAnIndexOutsideTheRow() {
+        void answersForAnIndexOutsideTheRow() {
 
             var washes = TabWashSource.createClickPulsedWashSource(
                 PALETTE,

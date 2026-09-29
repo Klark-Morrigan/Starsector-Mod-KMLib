@@ -73,7 +73,7 @@ final class PanelScrollControllerTest {
     class ScrollListUnderPointer {
 
         @Test
-        void scrollListUnderPointerSoundsTheWheelThatMovedTheList() {
+        void soundsTheWheelThatMovedTheList() {
             // One act, one sound. The wheel is the panel's answer to the list moving as a whole, which is
             // what lets the rows it carries past the cursor stay quiet.
             var scrolling = buildVanillaSoundingScrolling();
@@ -87,7 +87,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void scrollListUnderPointerSettlesAWheeledOffsetWithinWhatTheListCanScroll() {
+        void settlesAWheeledOffsetWithinWhatTheListCanScroll() {
             // Settled at the wheel rather than left to the next layout's clamp, which is what makes the
             // silence below real: an unsettled request runs past the end of the list, so every further
             // notch would change a number and read as a list that moved.
@@ -103,7 +103,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void scrollListUnderPointerStaysSilentForAWheelAgainstTheEndOfTheList() {
+        void staysSilentForAWheelAgainstTheEndOfTheList() {
             // Sounded on the list having moved rather than on the wheel having turned: the panel answers
             // what happened, and at the end of a list nothing did.
             var scrolling = buildVanillaSoundingScrolling();
@@ -120,7 +120,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void scrollListUnderPointerStaysSilentForAWheelOverAListThatFits() {
+        void staysSilentForAWheelOverAListThatFits() {
             // A body with nothing to scroll has nothing to answer: a panel that ticked here would answer
             // every wheel turn the player made over it whether or not it had anything to show for it.
             var scrolling = buildVanillaSoundingScrolling();
@@ -134,7 +134,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void scrollListUnderPointerStaysSilentForAWheelOffTheScrollRegion() {
+        void staysSilentForAWheelOffTheScrollRegion() {
             // The wheel reaches the list only over the list. Off it - over a control pinned above or below
             // the scrolling strip, or over the scrollbar gutter - it moves nothing and has nothing to answer
             // for.
@@ -151,7 +151,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void scrollListUnderPointerTakesTheScrollRoleFromTheLookRatherThanNamingOne() {
+        void takesTheScrollRoleFromTheLookRatherThanNamingOne() {
             // The point of the seam, at the one moment this end answers audibly: which sound a wheel makes
             // is the panel's look talking. A scheme agreeing with a hardcoded role would pass whether or
             // not it was ever read.
@@ -166,7 +166,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void scrollListUnderPointerMovesAndSoundsTheListWhenNoBarIsDrawn() {
+        void movesAndSoundsTheListWhenNoBarIsDrawn() {
             // The wheel is what is left to a player who has set the bar away, so it answers to the list
             // overrunning and not to the bar being drawn - taking it with the bar would strand the rows past
             // the viewport with no way to reach them.
@@ -187,7 +187,7 @@ final class PanelScrollControllerTest {
     class BeginThumbDragIfPressed {
 
         @Test
-        void beginThumbDragIfPressedGrabsAPressInTheGrabColumnAndMovesTheList() {
+        void grabsAPressInTheGrabColumnAndMovesTheList() {
             // A press on the bare track jumps the thumb to the pointer at once, so the press low in the
             // column carries the list to its end on the same event that grabbed it.
             var scrolling = buildVanillaSoundingScrolling();
@@ -203,7 +203,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void beginThumbDragIfPressedStaysSilentForADragThatMovedTheList() {
+        void staysSilentForADragThatMovedTheList() {
             // A drag is one held act carrying the list continuously, with the pointer off on the scrollbar
             // rather than on the rows. Sounded per frame it would be exactly the chatter the wheel's single
             // sound exists to avoid, so the moment belongs to the wheel alone.
@@ -221,7 +221,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void beginThumbDragIfPressedLeavesAPressOffTheGrabColumnAlone() {
+        void leavesAPressOffTheGrabColumnAlone() {
             // A press over the list is a control's to answer, so nothing here takes it.
             var scrolling = buildVanillaSoundingScrolling();
 
@@ -236,7 +236,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void beginThumbDragIfPressedLeavesAPressInTheGrabColumnAloneWhenNoBarIsDrawn() {
+        void leavesAPressInTheGrabColumnAloneWhenNoBarIsDrawn() {
             // The same press on the same geometry with the bar set away: with no track and no thumb there
             // is nothing over that column to grab, so it claims nothing. A bar of no width still taking
             // presses would leave a dead strip down the panel that nothing on screen accounts for.
@@ -253,7 +253,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void beginThumbDragIfPressedLeavesAPressAloneWhenTheListFits() {
+        void leavesAPressAloneWhenTheListFits() {
             // No overflow, no bar, nothing to grab - whatever column the press is in.
             var scrolling = buildVanillaSoundingScrolling();
 
@@ -270,7 +270,7 @@ final class PanelScrollControllerTest {
     class ContinueDragIfHeld {
 
         @Test
-        void continueDragIfHeldReportsNoDragWhenNoneIsHeld() {
+        void reportsNoDragWhenNoneIsHeld() {
             // Nothing to follow, so the event is not this end's and is left untouched for whatever is.
             var scrolling = buildVanillaSoundingScrolling();
             var moveMock = PointerEventMocks.mockMoveAt(ON_LIST_X, ON_LIST_Y);
@@ -284,7 +284,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void continueDragIfHeldFollowsThePointerWhileTheDragIsHeld() {
+        void followsThePointerWhileTheDragIsHeld() {
             // Grabbed low, which took the list to its end; followed to the top of the column, which maps to
             // the start - so a drag that follows carries the whole overflow back, and one that did not would
             // leave the list where the press put it.
@@ -306,7 +306,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void continueDragIfHeldKeepsTheThumbUnderAPointerThatGrabbedItOffCentre() {
+        void keepsTheThumbUnderAPointerThatGrabbedItOffCentre() {
             // The grab offset: a thumb pressed above its centre stays that far above the pointer as it is
             // dragged, rather than snapping its centre to the cursor on the first move. The two readings
             // named at the top of the class are the ones that part on it.
@@ -330,7 +330,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void continueDragIfHeldConsumesTheEventItFollows() {
+        void consumesTheEventItFollows() {
             // The surface behind must neither pan nor act while the thumb is held, wherever the pointer has
             // wandered to.
             var scrolling = buildVanillaSoundingScrolling();
@@ -347,7 +347,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void continueDragIfHeldEndsTheDragOnTheRelease() {
+        void endsTheDragOnTheRelease() {
             // The release is the drag's, and the last event it takes: the move after it is nobody's here.
             var scrolling = buildVanillaSoundingScrolling();
             var placement = buildGutteredPlacement();
@@ -370,7 +370,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void continueDragIfHeldCarriesTheDragWithoutMovingTheListOnceTheBarHasGone() {
+        void carriesTheDragWithoutMovingTheListOnceTheBarHasGone() {
             // A drag reads the same question that started it, so a bar taken away under a held thumb stops
             // carrying the list rather than going on following a pointer with nothing under it. The drag is
             // still carried - the event is taken - so the release still ends it where the player let go.
@@ -396,7 +396,7 @@ final class PanelScrollControllerTest {
     class CancelDrag {
 
         @Test
-        void cancelDragLetsGoOfAHeldDrag() {
+        void letsGoOfAHeldDrag() {
             // For a panel that stops showing: a drag left dangling would take the next session's first move
             // as its own.
             var scrolling = buildVanillaSoundingScrolling();
@@ -421,7 +421,7 @@ final class PanelScrollControllerTest {
         private final PanelScrollController scrolling = buildVanillaSoundingScrolling();
 
         @Test
-        void takeHasListScrolledSinceLastFrameReportsAWheelThatMovedTheList() {
+        void reportsAWheelThatMovedTheList() {
 
             scrolling.scrollListUnderPointer(
                 PointerEventMocks.mockWheelDownAt(ON_LIST_X, ON_LIST_Y),
@@ -432,7 +432,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void takeHasListScrolledSinceLastFrameReportsAScrollbarDragThatMovedTheList() {
+        void reportsAScrollbarDragThatMovedTheList() {
             // The drag reports through the same latch as the wheel, silent though it is: what the latch
             // answers is that content moved and not what moved it, and rows carried past a cursor parked
             // off on the scrollbar were reached by nobody either way.
@@ -445,7 +445,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void takeHasListScrolledSinceLastFrameReportsNothingForAWheelAgainstTheEndOfTheList() {
+        void reportsNothingForAWheelAgainstTheEndOfTheList() {
             // A list already against its stop shows the same rows afterwards, so nothing was carried under
             // the pointer and the frame after it is an ordinary frame.
             var placement = buildScrollingPlacement();
@@ -459,7 +459,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void takeHasListScrolledSinceLastFrameIsClearedByTheReading() {
+        void isClearedByTheReading() {
             // One movement is answered by the first frame after it and by that frame alone. Left standing,
             // every later frame would adopt whatever is under the cursor and the panel would go permanently
             // deaf to the pointer arriving on anything in its body.
@@ -474,7 +474,7 @@ final class PanelScrollControllerTest {
         }
 
         @Test
-        void takeHasListScrolledSinceLastFrameReportsNothingOnceTheMovementWasReset() {
+        void reportsNothingOnceTheMovementWasReset() {
             // A movement no frame ever read is a movement the next session must not answer to: the panel
             // stopped showing between the scroll and the frame that would have adopted on it, and the
             // player has been somewhere else since.

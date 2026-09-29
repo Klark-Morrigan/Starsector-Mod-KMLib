@@ -28,7 +28,7 @@ final class ListPickerTest {
     class Items {
 
         @Test
-        void itemsAreTheListTheConsumerHandedOver() {
+        void areTheListTheConsumerHandedOver() {
             // The bundle carries rather than reorders: the sort is applied where the list is drawn,
             // so what a consumer put in comes back out in the order it walked its own source.
             assertThat(new ListPicker<>(List.of(MILD), MODES).items())
@@ -40,7 +40,7 @@ final class ListPickerTest {
     class SortModes {
 
         @Test
-        void sortModesAreTheVocabularyBundledWithTheItems() {
+        void areTheVocabularyBundledWithTheItems() {
             assertThat(new ListPicker<>(List.of(MILD), MODES).sortModes())
                 .isEqualTo(MODES);
         }
@@ -50,13 +50,13 @@ final class ListPickerTest {
     class Empty {
 
         @Test
-        void emptyOffersNoItemsSoAConsumerWithNothingToSpotlightStillAnswersWithAPicker() {
+        void offersNoItemsSoAConsumerWithNothingToSpotlightStillAnswersWithAPicker() {
             assertThat(ListPicker.empty().items())
                 .isEmpty();
         }
 
         @Test
-        void emptyCarriesNoVocabularyAndNoFallbackMode() {
+        void carriesNoVocabularyAndNoFallbackMode() {
             // Pinned because it is what makes the empty picker safe only in one reading order: the
             // item list says "nothing to draw" on its own, while the vocabulary would fail a stored
             // sort resolution with no mode to land on.

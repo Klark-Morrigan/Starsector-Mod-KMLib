@@ -54,7 +54,7 @@ class CoreUiDialogViewTest {
     class IsModalDialogShowingUnder {
 
         @Test
-        void isModalDialogShowingUnderIsTrueForACoreUiHoldingAModal() {
+        void isTrueForACoreUiHoldingAModal() {
 
             var coreUiFake = new CoreUiComponentFake(new ModalDialogFake());
 
@@ -63,7 +63,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderFindsAModalAmongOrdinarySiblings() {
+        void findsAModalAmongOrdinarySiblings() {
             // The ordinary shape, and not a contrived one: showing a modal adds two children, the
             // dialog and the event interceptor laid over the screen beneath it, to whatever the
             // core UI was already holding. Only one of the three carries the marker.
@@ -77,7 +77,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderIsFalseForACoreUiHoldingOnlyOrdinaryComponents() {
+        void isFalseForACoreUiHoldingOnlyOrdinaryComponents() {
 
             var coreUiFake = new CoreUiComponentFake(
                 new CoreUiComponentFake(),
@@ -88,7 +88,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderIsFalseForAModalThatHasFadedOut() {
+        void isFalseForAModalThatHasFadedOut() {
             // A dialog stays a child until its fade finishes, so presence alone would keep an
             // overlay down for frames after the screen underneath has resumed taking input.
             var coreUiFake = new CoreUiComponentFake(ModalDialogFake.createDismissed());
@@ -98,7 +98,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderIsFalseForACoreUiCarryingTheMarkerItself() {
+        void isFalseForACoreUiCarryingTheMarkerItself() {
             // The load-bearing case. The core UI panel descends from the same base its dialogs do
             // and so carries the marker, which makes "is this a modal?" true of the root on every
             // frame. Tested against the children alone, a root holding none answers no.
@@ -109,7 +109,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderLooksPastANullChild() {
+        void looksPastANullChild() {
             // The children list is handed back verbatim from whatever the game's own panel
             // answered, so a null in it takes the read down rather than being ruled out - and a
             // read that runs every frame from a render pass cannot be the thing that raises.
@@ -118,14 +118,14 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderIsFalseForACoreUiHoldingNothing() {
+        void isFalseForACoreUiHoldingNothing() {
 
             assertThat(CoreUiDialogView.isModalDialogShowingUnder(new CoreUiComponentFake()))
                 .isFalse();
         }
 
         @Test
-        void isModalDialogShowingUnderIsFalseForAShapeThatListsNoChildren() {
+        void isFalseForAShapeThatListsNoChildren() {
             // A core UI that answers no children at all is a leaf to the reach, which is a shape
             // this must survive rather than a state it can rule out.
             assertThat(CoreUiDialogView.isModalDialogShowingUnder(new Object()))
@@ -133,7 +133,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingUnderIsFalseWhenThereIsNoCoreUi() {
+        void isFalseWhenThereIsNoCoreUi() {
 
             assertThat(CoreUiDialogView.isModalDialogShowingUnder(null))
                 .isFalse();
@@ -144,7 +144,7 @@ class CoreUiDialogViewTest {
     class ResolveModalPresenceUnder {
 
         @Test
-        void resolveModalPresenceUnderFollowsAModalMidFade() {
+        void followsAModalMidFade() {
             // The read the presence one cannot stand in for, and the reason it exists: the modal
             // darkens the screen by this same fraction, so anything fading against it lands frame
             // for frame instead of on a duration guessed to match.
@@ -155,7 +155,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void resolveModalPresenceUnderReportsAModalMidFadeAsRaised() {
+        void reportsAModalMidFadeAsRaised() {
             // The half that must not follow the fade. A modal claims input from the frame it is
             // raised, when its fade is still at nothing, so presence read off that fraction would
             // let the panel underneath route for the frames the fade is climbing through.
@@ -166,7 +166,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void resolveModalPresenceUnderIsFullyRaisedForAModalAtRest() {
+        void isFullyRaisedForAModalAtRest() {
 
             var coreUiFake = new CoreUiComponentFake(new ModalDialogFake());
 
@@ -175,14 +175,14 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void resolveModalPresenceUnderIsNoneWithNoModalUp() {
+        void isNoneWithNoModalUp() {
 
             assertThat(CoreUiDialogView.resolveModalPresenceUnder(new CoreUiComponentFake()))
                 .isEqualTo(OverlayPresence.NONE);
         }
 
         @Test
-        void resolveModalPresenceUnderIsFullyRaisedWhenTheFadeCannotBeRead() {
+        void isFullyRaisedWhenTheFadeCannotBeRead() {
             // Failing the opposite way from the presence read beside it, which is the point: a modal
             // was found, so only how far in it is went unread - and answering "not raised" there
             // would leave a caller painting over the dialog it had just been told about.
@@ -216,7 +216,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingIsTrueForAModalOverTheCoreUiInForce() {
+        void isTrueForAModalOverTheCoreUiInForce() {
 
             var campaignUiMock = mock(CampaignUIAPI.class);
 
@@ -231,7 +231,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingIsFalseBeforeThereIsASector() {
+        void isFalseBeforeThereIsASector() {
 
             globalMock
                 .when(Global::getSector)
@@ -242,7 +242,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingIsFalseBeforeThereIsACampaignUi() {
+        void isFalseBeforeThereIsACampaignUi() {
 
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
@@ -252,7 +252,7 @@ class CoreUiDialogViewTest {
         }
 
         @Test
-        void isModalDialogShowingIsFalseWhenTheReachIntoTheCoreUiFails() {
+        void isFalseWhenTheReachIntoTheCoreUiFails() {
             // The reach raises rather than answering null when a hop is absent outright, leaving the
             // policy to each caller. This one's is to report no modal, so an overlay gated on it
             // keeps drawing on a build whose core UI this can no longer walk.

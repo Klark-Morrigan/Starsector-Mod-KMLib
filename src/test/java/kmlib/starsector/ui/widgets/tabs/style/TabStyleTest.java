@@ -24,14 +24,14 @@ final class TabStyleTest {
     class HeaderBandHeight {
 
         @Test
-        void headerBandHeightCarriesThePositiveValueThrough() {
+        void carriesThePositiveValueThrough() {
 
             assertThat(TabStyles.buildAtBandHeight(17f).headerBandHeight())
                 .isCloseTo(17f, within(TOLERANCE));
         }
 
         @Test
-        void headerBandHeightFloorsAtZeroWhenNegative() {
+        void floorsAtZeroWhenNegative() {
             // A negative band would hang a tab row above the top edge it descends from, so it collapses to
             // nothing instead - a bandless panel, not an inverted one.
             assertThat(TabStyles.buildAtBandHeight(-8f).headerBandHeight())
@@ -39,7 +39,7 @@ final class TabStyleTest {
         }
 
         @Test
-        void headerBandHeightKeepsZeroAsABandlessStyle() {
+        void keepsZeroAsABandlessStyle() {
             // Zero is a legitimate ask (a panel wanting no tab row at all), so it passes through rather than
             // being nudged up to some minimum.
             assertThat(TabStyles.buildAtBandHeight(0f).headerBandHeight())
@@ -51,14 +51,14 @@ final class TabStyleTest {
     class WithHeaderBandHeight {
 
         @Test
-        void withHeaderBandHeightStandsTheStyleInTheGivenBand() {
+        void standsTheStyleInTheGivenBand() {
 
             assertThat(TabStyles.buildAtBandHeight(17f).withHeaderBandHeight(24f).headerBandHeight())
                 .isCloseTo(24f, within(TOLERANCE));
         }
 
         @Test
-        void withHeaderBandHeightCarriesEverythingElseOver() {
+        void carriesEverythingElseOver() {
             // The whole point of a refinement: a caller changing the room a row stands in must not find its
             // chrome, box or lettering changed under it as well.
             var style = TabStyles.buildAtBandHeightInBox(17f, new TabBox(40f, 12f, 3f));
@@ -71,7 +71,7 @@ final class TabStyleTest {
         }
 
         @Test
-        void withHeaderBandHeightFloorsAtZeroWhenNegative() {
+        void floorsAtZeroWhenNegative() {
             // The same clamp the constructor applies, since the refinement builds one.
             assertThat(TabStyles.buildAtBandHeight(17f).withHeaderBandHeight(-8f).headerBandHeight())
                 .isCloseTo(0f, within(TOLERANCE));
@@ -82,7 +82,7 @@ final class TabStyleTest {
     class WithTabBox {
 
         @Test
-        void withTabBoxStandsTheTabsInTheGivenBox() {
+        void standsTheTabsInTheGivenBox() {
 
             var box = new TabBox(40f, 12f, 3f);
 
@@ -91,7 +91,7 @@ final class TabStyleTest {
         }
 
         @Test
-        void withTabBoxCarriesEverythingElseOver() {
+        void carriesEverythingElseOver() {
             // What a band button relies on: it is drawn in the row's own chrome and colours and differs
             // from the tabs in its width alone, so anything else moving here would part it from the row.
             var style = TabStyles.buildAtBandHeight(17f);

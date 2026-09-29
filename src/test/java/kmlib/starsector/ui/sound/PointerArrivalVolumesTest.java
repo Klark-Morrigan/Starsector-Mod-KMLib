@@ -22,7 +22,7 @@ final class PointerArrivalVolumesTest {
     class Constructor {
 
         @Test
-        void constructorRejectsANegativeVolumeWhicheverKindNamesIt() {
+        void rejectsANegativeVolumeWhicheverKindNamesIt() {
             // Caught where the balance is composed rather than where a cue is built from it: a look is
             // composed once, and its cue is built on the frame the pointer first reaches something - so the
             // same bad number reaches the player as a crash mid-hover if it is left that late.
@@ -50,7 +50,7 @@ final class PointerArrivalVolumesTest {
     class CreateDefaultVolumes {
 
         @Test
-        void createDefaultVolumesTakesTheLibrarysOwnBalance() {
+        void takesTheLibrarysOwnBalance() {
             // Spelt as literals rather than read off the constants they come from, so a default nudged in
             // the source is a decision this case reports rather than one it agrees with silently. The ratio
             // is the point: a listed item is quieter than either thing the player aims at, which is the
@@ -70,7 +70,7 @@ final class PointerArrivalVolumesTest {
     class ResolveVolumeFor {
 
         @Test
-        void resolveVolumeForAnswersEachKindAtTheLevelItWasBuiltWith() {
+        void answersEachKindAtTheLevelItWasBuiltWith() {
             // Three distinct numbers rather than the defaults, because a balance agreeing with the ones the
             // library ships would pass whether or not the kind was ever read - and the fault worth catching
             // is a kind wired to a neighbour's level, which no default set can show.

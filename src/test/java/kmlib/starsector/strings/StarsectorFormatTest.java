@@ -18,14 +18,14 @@ class StarsectorFormatTest {
     class FormatPercent {
 
         @Test
-        void formatPercentRendersWholePercentWithSign() {
+        void rendersWholePercentWithSign() {
             // Default-shape value from a one-significant-figure setting.
             assertThat(StarsectorFormat.formatPercent(0.20f))
                 .isEqualTo("20%");
         }
 
         @Test
-        void formatPercentRendersSmallFractionAsOnePercent() {
+        void rendersSmallFractionAsOnePercent() {
             // 0.01f is the KMU/KMO baseline magnitude for per-instance
             // bonuses; rendering it as 1% is the everyday case.
             assertThat(StarsectorFormat.formatPercent(0.01f))
@@ -33,7 +33,7 @@ class StarsectorFormatTest {
         }
 
         @Test
-        void formatPercentTruncatesRatherThanRounds() {
+        void truncatesRatherThanRounds() {
             // 1.4% would round to 1% under standard rounding too, but the
             // contract is truncation so a value of 1.9% must also collapse
             // to 1% rather than rounding up to 2%. Pinning the upper edge
@@ -44,7 +44,7 @@ class StarsectorFormatTest {
         }
 
         @Test
-        void formatPercentRendersZeroAsZero() {
+        void rendersZeroAsZero() {
 
             assertThat(StarsectorFormat.formatPercent(0f))
                 .isEqualTo("0%");

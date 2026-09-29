@@ -50,7 +50,7 @@ final class EntityNameplateTest {
     class CreateUnmarkedNameplate {
 
         @Test
-        void createUnmarkedNameplateNamesTheEntityAndMarksItWithNothing() {
+        void namesTheEntityAndMarksItWithNothing() {
 
             assertThat(EntityNameplate.createUnmarkedNameplate("Ancyra"))
                 .isEqualTo(new EntityNameplate("Ancyra", Optional.empty()));

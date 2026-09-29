@@ -55,7 +55,7 @@ final class TabLookSourceTest {
     class CreateHoverFadedLookSource {
 
         @Test
-        void createHoverFadedLookSourceLeavesAnUnhoveredTabOnTheLookItsSelectionNames() {
+        void leavesAnUnhoveredTabOnTheLookItsSelectionNames() {
 
             var looks = TabLookSource.createHoverFadedLookSource(
                 PALETTE,
@@ -69,7 +69,7 @@ final class TabLookSourceTest {
         }
 
         @Test
-        void createHoverFadedLookSourceBringsBothTabsToTheSameShadeWhenFullyHovered() {
+        void bringsBothTabsToTheSameShadeWhenFullyHovered() {
             // The one shade the resting and the lit tab meet at, which is why hovering is a look rather
             // than a lift: no fraction of each tab's own fill could bring two starting colours together.
             var looks = TabLookSource.createHoverFadedLookSource(
@@ -84,7 +84,7 @@ final class TabLookSourceTest {
         }
 
         @Test
-        void createHoverFadedLookSourceFadesEachTabByItsOwnFraction() {
+        void fadesEachTabByItsOwnFraction() {
             // Two tabs part-way along at once is the ordinary case while a pointer moves across a row, so
             // each must read its own fraction rather than the row's most recent one.
             var looks = TabLookSource.createHoverFadedLookSource(
@@ -99,7 +99,7 @@ final class TabLookSourceTest {
         }
 
         @Test
-        void createHoverFadedLookSourceTreatsEveryTabAsRestingWhenNoneIsSelected() {
+        void treatsEveryTabAsRestingWhenNoneIsSelected() {
             // A row with no selection at all - an index outside it - must not accidentally light a tab.
             var looks = TabLookSource.createHoverFadedLookSource(
                 PALETTE,

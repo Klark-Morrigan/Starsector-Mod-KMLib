@@ -51,7 +51,7 @@ class InstalledFontsIntegrationTest {
     class ReadInstall {
 
         @Test
-        void readInstallFindsEveryFaceOnEveryInstallInAShapeLazyLibAndTheGameBothLoad() {
+        void findsEveryFaceOnEveryInstallInAShapeLazyLibAndTheGameBothLoad() {
             for (var installedFonts : readEveryHandedInstall()) {
 
                 var edition = installedFonts.describeEdition();
@@ -86,7 +86,7 @@ class InstalledFontsIntegrationTest {
     class ResolveFont {
 
         @Test
-        void resolveFontKeepsEveryFaceForALatinNameOnEveryInstall() {
+        void keepsEveryFaceForALatinNameOnEveryInstall() {
             // Nothing a Latin name needs is missing from any face on any install, so no walk moves.
             for (var installedFonts : readEveryHandedInstall()) {
 
@@ -102,7 +102,7 @@ class InstalledFontsIntegrationTest {
         }
 
         @Test
-        void resolveFontSettlesEveryFaceOnOneDrawingALocalisedNameOnEveryLocalisedInstall() {
+        void settlesEveryFaceOnOneDrawingALocalisedNameOnEveryLocalisedInstall() {
             // Wherever the walk ends, the face it ends on has to hold the name: a walk running out onto a
             // default that lacks it would draw the same question marks it set out to avoid.
             for (var installedFonts : readEveryLocalisedInstall()) {
@@ -122,7 +122,7 @@ class InstalledFontsIntegrationTest {
         }
 
         @Test
-        void resolveFontStepsTheHighResolutionAtlasDownOneCutForALocalisedNameOnEveryLocalisedInstall() {
+        void stepsTheHighResolutionAtlasDownOneCutForALocalisedNameOnEveryLocalisedInstall() {
             // The one face no edition replaces, and the case the walk exists for: the next cut down holds
             // the script on every edition, so a map label drops no further than it has to.
             for (var installedFonts : readEveryLocalisedInstall()) {

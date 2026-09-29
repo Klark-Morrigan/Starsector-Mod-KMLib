@@ -40,13 +40,13 @@ final class TraverseFractionTest {
     class GetEasedValue {
 
         @Test
-        void getEasedValueStartsAtRest() {
+        void startsAtRest() {
             assertThat(new TraverseFraction().getEasedValue())
                 .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
-        void getEasedValueEasesTheHalfwayProgressToTheCurveMidpoint() {
+        void easesTheHalfwayProgressToTheCurveMidpoint() {
             // The stored progress is linear and the curve is applied on read, so half a duration reads as
             // the curve's own midpoint rather than as the raw half.
             var fraction = new TraverseFraction();
@@ -61,7 +61,7 @@ final class TraverseFractionTest {
     class AdvanceTowardEnd {
 
         @Test
-        void advanceTowardEndReachesTheFarEndWhileHeadingThere() {
+        void reachesTheFarEndWhileHeadingThere() {
 
             var fraction = new TraverseFraction();
             fraction.advanceTowardEnd(RISING, FULL_STEP_SECONDS, DURATIONS);
@@ -71,7 +71,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void advanceTowardEndComesBackToRestOnceHeadingBack() {
+        void comesBackToRestOnceHeadingBack() {
 
             var fraction = new TraverseFraction();
             fraction.advanceTowardEnd(RISING, FULL_STEP_SECONDS, DURATIONS);
@@ -82,7 +82,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void advanceTowardEndFallsFromWhereItStandsWhenTheDirectionTurnsMidRise() {
+        void fallsFromWhereItStandsWhenTheDirectionTurnsMidRise() {
             // The point of a retargeted travel: something abandoned half-way out falls from half-way rather
             // than snapping to either end or replaying a curve from the top.
             var fraction = new TraverseFraction();
@@ -96,7 +96,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void advanceTowardEndSnapsAllTheWayForANonPositiveDuration() {
+        void snapsAllTheWayForANonPositiveDuration() {
             // A zero pace means "no animation", so the travel lands on its far end in one step rather than
             // dividing by a zero duration.
             var fraction = new TraverseFraction();
@@ -107,7 +107,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void advanceTowardEndTravelsOutAtTheRisePaceAndBackAtTheFallPace() {
+        void travelsOutAtTheRisePaceAndBackAtTheFallPace() {
             // The reason the two are a pair rather than one value: a travel taking the same time either way
             // reads as the slower half. The rise here is charged its whole duration and arrives; the same
             // step then spends only half of the longer fall, so it is still out at the midpoint rather than
@@ -127,7 +127,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void advanceTowardEndLeavesASettledFractionWhereItIs() {
+        void leavesASettledFractionWhereItIs() {
             // A render loop calls this unconditionally every frame, so a fraction already at its end must
             // rest there rather than creeping past it.
             var fraction = new TraverseFraction();
@@ -143,13 +143,13 @@ final class TraverseFractionTest {
     class HasSettledAtRest {
 
         @Test
-        void hasSettledAtRestIsTrueForAFreshFraction() {
+        void isTrueForAFreshFraction() {
             assertThat(new TraverseFraction().hasSettledAtRest())
                 .isTrue();
         }
 
         @Test
-        void hasSettledAtRestIsFalseWhileStillPartWayOut() {
+        void isFalseWhileStillPartWayOut() {
 
             var fraction = new TraverseFraction();
             fraction.advanceTowardEnd(RISING, HALF_STEP_SECONDS, DURATIONS);
@@ -159,7 +159,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void hasSettledAtRestIsTrueOnceTheTravelHasComeAllTheWayBack() {
+        void isTrueOnceTheTravelHasComeAllTheWayBack() {
 
             var fraction = new TraverseFraction();
             fraction.advanceTowardEnd(RISING, FULL_STEP_SECONDS, DURATIONS);
@@ -174,7 +174,7 @@ final class TraverseFractionTest {
     class DropToRest {
 
         @Test
-        void dropToRestDropsAFractionLeftPartWayOutWithoutWindingItDown() {
+        void dropsAFractionLeftPartWayOutWithoutWindingItDown() {
             // Whatever was travelling has stopped showing, so there is no travel left to see: the fraction
             // has to be at rest outright rather than falling from where it stood over the next frames.
             var fraction = new TraverseFraction();
@@ -188,7 +188,7 @@ final class TraverseFractionTest {
         }
 
         @Test
-        void dropToRestRisesAgainFromRestWhenWhateverItPacesComesBack() {
+        void risesAgainFromRestWhenWhateverItPacesComesBack() {
             // A drop must leave a reusable fraction, not a spent one - the next session's travel has to run
             // from the bottom exactly as a fresh one's does.
             var fraction = new TraverseFraction();

@@ -24,14 +24,14 @@ final class TabPanelCollapseTest {
     class CreateDocked {
 
         @Test
-        void createDockedStartsFullyCollapsedAtTheDockedRail() {
+        void startsFullyCollapsedAtTheDockedRail() {
             var collapse = TabPanelCollapse.createDocked();
             assertThat(collapse.getCollapseFraction()).isCloseTo(1f, within(TOLERANCE));
             assertThat(collapse.isDocked()).isTrue();
         }
 
         @Test
-        void createDockedIsSettledSoAFrameDoesNotDriftItOffTheDockedEnd() {
+        void isSettledSoAFrameDoesNotDriftItOffTheDockedEnd() {
             var collapse = TabPanelCollapse.createDocked();
             // Seeded at the docked end and aimed there, an unconditional per-frame advance leaves it put
             // rather than pushing progress past one.
@@ -41,7 +41,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void createDockedExpandsBackToZeroAfterTheHandleReverses() {
+        void expandsBackToZeroAfterTheHandleReverses() {
             var collapse = TabPanelCollapse.createDocked();
             // The next toggle sends a docked start toward expanded, so a full duration back reaches the
             // expanded end - a docked start animates open just as an expanded start animates shut.
@@ -56,12 +56,12 @@ final class TabPanelCollapseTest {
     class GetCollapseFraction {
 
         @Test
-        void getCollapseFractionStartsFullyExpandedAtZero() {
+        void startsFullyExpandedAtZero() {
             assertThat(new TabPanelCollapse().getCollapseFraction()).isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
-        void getCollapseFractionEasesTheHalfwayProgressToTheCurveMidpoint() {
+        void easesTheHalfwayProgressToTheCurveMidpoint() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
@@ -70,7 +70,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void getCollapseFractionEasesTheQuarterProgressBelowItsLinearValue() {
+        void easesTheQuarterProgressBelowItsLinearValue() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(QUARTER_DURATION, DURATION);
@@ -83,7 +83,7 @@ final class TabPanelCollapseTest {
     class AdvanceByElapsedTime {
 
         @Test
-        void advanceByElapsedTimeReachesTheDockedEndAfterAFullDuration() {
+        void reachesTheDockedEndAfterAFullDuration() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -92,7 +92,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeClampsAtTheDockedEndRatherThanOvershooting() {
+        void clampsAtTheDockedEndRatherThanOvershooting() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             // Two full durations would step progress to 2; it settles at the docked end instead.
@@ -102,7 +102,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeLeavesASettledExpandedPanelUnchanged() {
+        void leavesASettledExpandedPanelUnchanged() {
             var collapse = new TabPanelCollapse();
             // Fresh and expanded, with no toggle, a frame's advance cannot push it below zero.
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -111,7 +111,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeAccumulatesManySmallStepsLikeOneBigStep() {
+        void accumulatesManySmallStepsLikeOneBigStep() {
             var manySteps = new TabPanelCollapse();
             manySteps.toggleCollapse();
             // Five per-frame slices of a tenth of the duration reach the same progress as one half-duration
@@ -127,7 +127,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeExpandsBackToZeroAfterReversing() {
+        void expandsBackToZeroAfterReversing() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -139,7 +139,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeSnapsToDockedInOneStepWhenDurationIsZero() {
+        void snapsToDockedInOneStepWhenDurationIsZero() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             // A zero duration is the "no animation" setting: one advance jumps straight to the docked end
@@ -150,7 +150,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeSnapsBackToExpandedInOneStepWhenDurationIsZero() {
+        void snapsBackToExpandedInOneStepWhenDurationIsZero() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -162,7 +162,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimeReachesTheDockedEndAfterAFullTwoSecondRamp() {
+        void reachesTheDockedEndAfterAFullTwoSecondRamp() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             // The slider's slow end: a two-second duration reaches the docked end only after two seconds.
@@ -174,7 +174,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void advanceByElapsedTimePacesAtTheDefaultWhenGivenTheDefaultDuration() {
+        void pacesAtTheDefaultWhenGivenTheDefaultDuration() {
             var stretched = new TabPanelCollapse();
             stretched.toggleCollapse();
             // The eased fraction depends only on the elapsed-to-duration ratio, so a mid-range duration
@@ -192,7 +192,7 @@ final class TabPanelCollapseTest {
     class ToggleCollapse {
 
         @Test
-        void toggleCollapseBeginsCollapsingFromTheExpandedStart() {
+        void beginsCollapsingFromTheExpandedStart() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
@@ -201,7 +201,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void toggleCollapseBeginsExpandingFromTheDockedEnd() {
+        void beginsExpandingFromTheDockedEnd() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -212,7 +212,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void toggleCollapseReversesMidFlightFromTheCurrentFraction() {
+        void reversesMidFlightFromTheCurrentFraction() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
@@ -229,12 +229,12 @@ final class TabPanelCollapseTest {
     class IsDocked {
 
         @Test
-        void isDockedIsFalseWhileTheBodyIsExpanded() {
+        void isFalseWhileTheBodyIsExpanded() {
             assertThat(new TabPanelCollapse().isDocked()).isFalse();
         }
 
         @Test
-        void isDockedIsFalseMidCollapse() {
+        void isFalseMidCollapse() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
@@ -242,7 +242,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isDockedIsTrueOnceFullyCollapsed() {
+        void isTrueOnceFullyCollapsed() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -254,12 +254,12 @@ final class TabPanelCollapseTest {
     class IsAnimating {
 
         @Test
-        void isAnimatingIsFalseWhenSettledExpanded() {
+        void isFalseWhenSettledExpanded() {
             assertThat(new TabPanelCollapse().isAnimating()).isFalse();
         }
 
         @Test
-        void isAnimatingIsTrueImmediatelyAfterTheHandleStartsACollapse() {
+        void isTrueImmediatelyAfterTheHandleStartsACollapse() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             // Heading for docked but not yet stepped, it already reads as animating so frames keep pumping.
@@ -267,7 +267,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isAnimatingIsTrueImmediatelyAfterTheHandleStartsAnExpand() {
+        void isTrueImmediatelyAfterTheHandleStartsAnExpand() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -278,7 +278,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isAnimatingIsTrueMidFlight() {
+        void isTrueMidFlight() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
@@ -286,7 +286,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isAnimatingIsFalseOnceSettledAtTheDockedEnd() {
+        void isFalseOnceSettledAtTheDockedEnd() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -298,13 +298,13 @@ final class TabPanelCollapseTest {
     class IsFullyExpanded {
 
         @Test
-        void isFullyExpandedIsTrueForAFreshExpandedHolder() {
+        void isTrueForAFreshExpandedHolder() {
             // The expanded default sits idle at zero, so a consumer's expanded-only input is live from open.
             assertThat(new TabPanelCollapse().isFullyExpanded()).isTrue();
         }
 
         @Test
-        void isFullyExpandedIsFalseTheFrameACollapseBegins() {
+        void isFalseTheFrameACollapseBegins() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             // Aimed at the dock but not yet stepped, progress is still zero - the direction guard is what
@@ -313,7 +313,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isFullyExpandedIsFalseMidCollapse() {
+        void isFalseMidCollapse() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(HALF_DURATION, DURATION);
@@ -321,7 +321,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isFullyExpandedIsFalseWhenDocked() {
+        void isFalseWhenDocked() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -329,7 +329,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isFullyExpandedIsFalseWhileUndocking() {
+        void isFalseWhileUndocking() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);
@@ -340,7 +340,7 @@ final class TabPanelCollapseTest {
         }
 
         @Test
-        void isFullyExpandedIsTrueOnceAnUndockCompletes() {
+        void isTrueOnceAnUndockCompletes() {
             var collapse = new TabPanelCollapse();
             collapse.toggleCollapse();
             collapse.advanceByElapsedTime(FULL_DURATION, DURATION);

@@ -20,7 +20,7 @@ final class SelectableListItemTest {
     class IsDimmed {
 
         @Test
-        void isDimmedIsFalseForAnItemThatDeclaresNoRule() {
+        void isFalseForAnItemThatDeclaresNoRule() {
             // Receding is opt-in: a list whose every item is equally worth picking implements the
             // three required values and says nothing further, and its rows stay at full strength.
             assertThat(new PlainItem().isDimmed())

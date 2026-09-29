@@ -27,13 +27,13 @@ final class TabWashTest {
     class Strength {
 
         @Test
-        void strengthCarriesAnInRangeValueThrough() {
+        void carriesAnInRangeValueThrough() {
             assertThat(new TabWash(TARGET_COLOUR, 0.35f).strength())
                 .isCloseTo(0.35f, within(TOLERANCE));
         }
 
         @Test
-        void strengthFloorsAtZeroWhenNegative() {
+        void floorsAtZeroWhenNegative() {
             // A composed lift can subtract its way below nothing; the floor makes that a tab at rest
             // rather than one washing away from its target into a colour neither side named.
             assertThat(new TabWash(TARGET_COLOUR, -0.4f).strength())
@@ -41,7 +41,7 @@ final class TabWashTest {
         }
 
         @Test
-        void strengthCapsAtOneWhenAboveTheRange() {
+        void capsAtOneWhenAboveTheRange() {
             // Overlapping lifts can sum past full; the cap settles the tab at the target instead of
             // blending past it and back out the far side.
             assertThat(new TabWash(TARGET_COLOUR, 1.6f).strength())
@@ -53,7 +53,7 @@ final class TabWashTest {
     class ComputeScaledWash {
 
         @Test
-        void computeScaledWashKeepsTheTargetAndScalesTheDepth() {
+        void keepsTheTargetAndScalesTheDepth() {
             // A decaying lift fades back along the one colour it lifted toward, so only the depth moves.
             var scaled = new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(0.5f);
 
@@ -64,20 +64,20 @@ final class TabWashTest {
         }
 
         @Test
-        void computeScaledWashReachesTheFullDepthAtTheTopOfTheRange() {
+        void reachesTheFullDepthAtTheTopOfTheRange() {
             assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(1f).strength())
                 .isCloseTo(0.4f, within(TOLERANCE));
         }
 
         @Test
-        void computeScaledWashLiftsNothingAtTheBottomOfTheRange() {
+        void liftsNothingAtTheBottomOfTheRange() {
             // What a tab with no pulse running on it carries, so nothing at rest needs a path of its own.
             assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(0f).strength())
                 .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
-        void computeScaledWashCannotBeDrivenPastTheFullDepth() {
+        void cannotBeDrivenPastTheFullDepth() {
             // The strength clamp catches an out-of-range fraction, so an overshooting animator settles the
             // tab at its peak rather than blending past the target.
             assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(4f).strength())
@@ -85,7 +85,7 @@ final class TabWashTest {
         }
 
         @Test
-        void computeScaledWashFloorsANegativeFractionAtNoLift() {
+        void floorsANegativeFractionAtNoLift() {
             assertThat(new TabWash(TARGET_COLOUR, 0.4f).computeScaledWash(-1f).strength())
                 .isCloseTo(0f, within(TOLERANCE));
         }
@@ -95,25 +95,25 @@ final class TabWashTest {
     class ComputeWashedColour {
 
         @Test
-        void computeWashedColourReturnsTheBaseColourAtZeroStrength() {
+        void returnsTheBaseColourAtZeroStrength() {
             assertThat(new TabWash(TARGET_COLOUR, 0f).computeWashedColour(BASE_COLOUR))
                 .isEqualTo(new Color(0, 100, 200, 128));
         }
 
         @Test
-        void computeWashedColourReachesTheTargetAtFullStrength() {
+        void reachesTheTargetAtFullStrength() {
             assertThat(new TabWash(TARGET_COLOUR, 1f).computeWashedColour(BASE_COLOUR))
                 .isEqualTo(new Color(100, 200, 0, 128));
         }
 
         @Test
-        void computeWashedColourMovesEachChannelByTheStrength() {
+        void movesEachChannelByTheStrength() {
             assertThat(new TabWash(TARGET_COLOUR, 0.5f).computeWashedColour(BASE_COLOUR))
                 .isEqualTo(new Color(50, 150, 100, 128));
         }
 
         @Test
-        void computeWashedColourKeepsTheBaseAlphaWhateverTheTargetCarries() {
+        void keepsTheBaseAlphaWhateverTheTargetCarries() {
             // The target's own alpha is not part of the lift: a wash is a brightness shift, so a strip
             // fading as a unit keeps deciding transparency for itself.
             var opaqueTarget = new Color(100, 200, 0, 255);

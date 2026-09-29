@@ -30,7 +30,7 @@ final class ListSortTest {
     class Constructor {
 
         @Test
-        void constructorRejectsAModeItsOwnVocabularyDoesNotOffer() {
+        void rejectsAModeItsOwnVocabularyDoesNotOffer() {
             // A narrowed set stands in for another consumer's vocabulary. A sort pairing a mode with
             // a set that does not hold it would light no selector row and resolve no click, so it
             // fails where it is built rather than drawing wrong.
@@ -51,7 +51,7 @@ final class ListSortTest {
     class ResolveStored {
 
         @Test
-        void resolveStoredReadsTheStoredModeAndDirection() {
+        void readsTheStoredModeAndDirection() {
             var stored = ListSort.resolveStored(
                 AnomalySortMode.SEVERITY.persistenceKey(),
                 SortDirection.ASCENDING.persistenceKey(),
@@ -62,7 +62,7 @@ final class ListSortTest {
         }
 
         @Test
-        void resolveStoredFallsBackToTheCallersDefaultWhenNothingIsStored() {
+        void fallsBackToTheCallersDefaultWhenNothingIsStored() {
             // A save that never picked a sort holds neither key, so the sort resolves to the
             // caller's default mode in that mode's own natural direction.
             var stored = ListSort.resolveStored(null, null, MODES);
@@ -72,7 +72,7 @@ final class ListSortTest {
         }
 
         @Test
-        void resolveStoredFallsBackToTheCallersDefaultWhenTheKeyIsUnrecognised() {
+        void fallsBackToTheCallersDefaultWhenTheKeyIsUnrecognised() {
             // A key left by an older or a modded build names no mode in the caller's set, so the
             // sort defaults rather than failing on it.
             var stored = ListSort.resolveStored("no_such_mode", null, MODES);
@@ -82,7 +82,7 @@ final class ListSortTest {
         }
 
         @Test
-        void resolveStoredResolvesAnUnstoredDirectionAgainstTheStoredModesDefault() {
+        void resolvesAnUnstoredDirectionAgainstTheStoredModesDefault() {
             // A save with a mode but no direction (a pre-direction save, or one that never flipped)
             // reads that mode's own default direction rather than some global default.
             var stored = ListSort.resolveStored(
@@ -100,7 +100,7 @@ final class ListSortTest {
     class Comparator {
 
         @Test
-        void comparatorRanksItemsUnderTheSortsModeAndDirection() {
+        void ranksItemsUnderTheSortsModeAndDirection() {
             // The picker sorts under a mode declared outside this package - the proof the ranking
             // mechanism is the caller's to fill. Severity descending leads with the harsher anomaly;
             // the flipped sort reverses the pair.
@@ -116,7 +116,7 @@ final class ListSortTest {
         }
 
         @Test
-        void comparatorRanksItemsAsTheModeDoesInThatDirection() {
+        void ranksItemsAsTheModeDoesInThatDirection() {
             // The sort's comparator is the mode's comparator run in the sort's direction, so
             // ranking a list through the sort matches ranking it through the mode directly.
             var near = new Anomaly("Near", 3, 2);

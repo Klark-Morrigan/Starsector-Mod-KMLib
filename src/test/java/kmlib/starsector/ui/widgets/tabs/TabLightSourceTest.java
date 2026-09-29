@@ -62,7 +62,7 @@ final class TabLightSourceTest {
     class CreateHoverLitSource {
 
         @Test
-        void createHoverLitSourceLightsEachTabByHowFarItsOwnFadeHasRun() {
+        void lightsEachTabByHowFarItsOwnFadeHasRun() {
             // Per tab, off that tab's own fraction: one light shared across the row would leave a
             // neighbour lit by the pointer resting on the tab beside it.
             var lights = TabLightSource.createHoverLitSource(
@@ -76,7 +76,7 @@ final class TabLightSourceTest {
         }
 
         @Test
-        void createHoverLitSourceLightsEveryTabInTheOnePaletteColour() {
+        void lightsEveryTabInTheOnePaletteColour() {
             // Only the weight follows the fade. A colour that moved with it would walk the light through
             // shades the palette never named on the way to the one it did.
             var lights = TabLightSource.createHoverLitSource(GLOWING_PALETTE, tabIndex -> 0.5f);
@@ -86,7 +86,7 @@ final class TabLightSourceTest {
         }
 
         @Test
-        void createHoverLitSourceAddsNothingToAnUntouchedTab() {
+        void addsNothingToAnUntouchedTab() {
             // The resting row has to be exactly unlit rather than faintly lit, or every tab on screen would
             // stand a step above the palette it was built from.
             var lights = TabLightSource.createHoverLitSource(
@@ -98,7 +98,7 @@ final class TabLightSourceTest {
         }
 
         @Test
-        void createHoverLitSourceAddsNothingForAPaletteThatBrightensByShade() {
+        void addsNothingForAPaletteThatBrightensByShade() {
             // A strip's tabs travel to the shade they are meant to reach, so light over the top would carry
             // them past it - and past it is where a hovered tab stops being told from the shown one.
             var lights = TabLightSource.createHoverLitSource(SHADED_PALETTE, tabIndex -> 1f);
@@ -108,7 +108,7 @@ final class TabLightSourceTest {
         }
 
         @Test
-        void createHoverLitSourceAnswersForAnIndexOutsideTheRow() {
+        void answersForAnIndexOutsideTheRow() {
             // Asked per tab by whoever is walking a row, so it cannot assume the row: an index off either
             // end has to answer rather than throw.
             var lights = TabLightSource.createHoverLitSource(GLOWING_PALETTE, tabIndex -> 0f);
@@ -122,7 +122,7 @@ final class TabLightSourceTest {
     class CreateUnlitSource {
 
         @Test
-        void createUnlitSourceLightsNoTabAtAll() {
+        void lightsNoTabAtAll() {
             // What a row drawn with no animator behind it takes, and the reason a chrome needs no separate
             // path for one: it is handed a light that draws nothing rather than nothing at all.
             var lights = TabLightSource.createUnlitSource();

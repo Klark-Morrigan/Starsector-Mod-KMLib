@@ -32,21 +32,21 @@ class CodexViewTest {
     class IsCodexShowingOn {
 
         @Test
-        void isCodexShowingOnIsTrueForAStateReportingTheCodexUp() {
+        void isTrueForAStateReportingTheCodexUp() {
 
             assertThat(CodexView.isCodexShowingOn(new CodexShowingStateFake(true)))
                 .isTrue();
         }
 
         @Test
-        void isCodexShowingOnIsFalseForAStateReportingNoCodex() {
+        void isFalseForAStateReportingNoCodex() {
 
             assertThat(CodexView.isCodexShowingOn(new CodexShowingStateFake(false)))
                 .isFalse();
         }
 
         @Test
-        void isCodexShowingOnIsFalseForAStateThatDoesNotAnswerForACodex() {
+        void isFalseForAStateThatDoesNotAnswerForACodex() {
             // The shape the rule must survive rather than one it can rule out: the accessor belongs
             // to the states that can raise a codex, so a state not carrying it is a different state
             // and not a broken read.
@@ -55,7 +55,7 @@ class CodexViewTest {
         }
 
         @Test
-        void isCodexShowingOnIsFalseWhenTheStateRaisesOnBeingAsked() {
+        void isFalseWhenTheStateRaisesOnBeingAsked() {
             // A hop that resolves and then throws is the other way the read fails, and it lands on
             // the same answer as a shape carrying no accessor - the caller has no way to act on the
             // difference, and this runs from a render pass every frame.
@@ -64,7 +64,7 @@ class CodexViewTest {
         }
 
         @Test
-        void isCodexShowingOnIsFalseWhenThereIsNoState() {
+        void isFalseWhenThereIsNoState() {
 
             assertThat(CodexView.isCodexShowingOn(null))
                 .isFalse();
@@ -75,7 +75,7 @@ class CodexViewTest {
     class IsCodexShowing {
 
         @Test
-        void isCodexShowingIsFalseBeforeTheGameHasStoodUpAState() {
+        void isFalseBeforeTheGameHasStoodUpAState() {
 
             assertThat(CodexView.isCodexShowing(reachRecord.getReporter()))
                 .isFalse();

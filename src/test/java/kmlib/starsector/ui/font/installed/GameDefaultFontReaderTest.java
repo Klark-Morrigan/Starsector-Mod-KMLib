@@ -38,7 +38,7 @@ class GameDefaultFontReaderTest {
     class ReadDefaultFont {
 
         @Test
-        void readDefaultFontAnswersTheEnumsFaceWhereTheSettingNamesOne() throws IOException {
+        void answersTheEnumsFaceWhereTheSettingNamesOne() throws IOException {
 
             installDefaultFont("graphics/fonts/insignia25LTaa.fnt", null);
 
@@ -47,7 +47,7 @@ class GameDefaultFontReaderTest {
         }
 
         @Test
-        void readDefaultFontAnswersADeclaredFileTheEnumDoesNotNameByItsPath() throws IOException {
+        void answersADeclaredFileTheEnumDoesNotNameByItsPath() throws IOException {
             // A language pack's face is the one that may hold its script, so it is reached as named.
             installDefaultFont(PACK_FONT_PATH, "info face=\"Pack\" size=15 smooth=1 aa=4");
 
@@ -56,7 +56,7 @@ class GameDefaultFontReaderTest {
         }
 
         @Test
-        void readDefaultFontReadsADeclaredPixelFaceAsPixelExact() throws IOException {
+        void readsADeclaredPixelFaceAsPixelExact() throws IOException {
             // The declared file's own descriptor decides, KM having no table of a face it did not ship.
             installDefaultFont(PACK_FONT_PATH, "info face=\"Pack\" size=-10 smooth=1 aa=1");
 
@@ -65,7 +65,7 @@ class GameDefaultFontReaderTest {
         }
 
         @Test
-        void readDefaultFontReadsADeclaredFileItCannotOpenAsAntialiasedAndLogsIt() throws IOException {
+        void readsADeclaredFileItCannotOpenAsAntialiasedAndLogsIt() throws IOException {
             // Unreadable means unloadable too, so every walk passes over it whatever is answered; the line
             // is what tells a reader the setting names a file that is not there.
             installDefaultFont(PACK_FONT_PATH, null);
@@ -81,7 +81,7 @@ class GameDefaultFontReaderTest {
         }
 
         @Test
-        void readDefaultFontAnswersVanillasFaceWhereTheSettingNamesNothing() throws IOException {
+        void answersVanillasFaceWhereTheSettingNamesNothing() throws IOException {
 
             installDefaultFont(null, null);
 
@@ -94,7 +94,7 @@ class GameDefaultFontReaderTest {
     class ResolveDefaultFont {
 
         @Test
-        void resolveDefaultFontAnswersTheFaceThePathNames() {
+        void answersTheFaceThePathNames() {
 
             assertThat(GameDefaultFontReader.resolveDefaultFont(
                     "graphics/fonts/insignia15LTaa.fnt",
@@ -103,7 +103,7 @@ class GameDefaultFontReaderTest {
         }
 
         @Test
-        void resolveDefaultFontAsksTheReaderForTheSmoothingOfADeclaredFile() {
+        void asksTheReaderForTheSmoothingOfADeclaredFile() {
 
             assertThat(GameDefaultFontReader.resolveDefaultFont(
                     PACK_FONT_PATH,
@@ -112,7 +112,7 @@ class GameDefaultFontReaderTest {
         }
 
         @Test
-        void resolveDefaultFontAnswersVanillasFaceForABlankSetting() {
+        void answersVanillasFaceForABlankSetting() {
 
             assertThat(GameDefaultFontReader.resolveDefaultFont(" ", declaredPath -> AtlasSmoothing.PIXEL_EXACT))
                 .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_15);

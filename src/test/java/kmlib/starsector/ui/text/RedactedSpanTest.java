@@ -59,14 +59,14 @@ class RedactedSpanTest {
     class Constructor {
 
         @Test
-        void constructorKeepsTheWordLengthsItWasGiven() {
+        void keepsTheWordLengthsItWasGiven() {
 
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR).wordLengths())
                 .containsExactly(7, 5);
         }
 
         @Test
-        void constructorCopiesTheWordLengths() {
+        void copiesTheWordLengths() {
             // The counts are derived where the line is built, often from a list that goes on being
             // assembled - a run reading a caller's live list would redact a different shape later in the
             // same frame.
@@ -80,7 +80,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void constructorRejectsNullWordLengths() {
+        void rejectsNullWordLengths() {
 
             assertThatThrownBy(() -> new RedactedSpan(null, REDACTION_COLOUR))
                 .isInstanceOf(NullPointerException.class)
@@ -88,7 +88,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void constructorRejectsANullColour() {
+        void rejectsANullColour() {
 
             assertThatThrownBy(() -> new RedactedSpan(TWO_WORD_NAME_LENGTHS, null))
                 .isInstanceOf(NullPointerException.class)
@@ -96,7 +96,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void constructorRejectsANegativeWordLength() {
+        void rejectsANegativeWordLength() {
             // No name has a word of fewer than no characters, so a negative count is a mistake in
             // whatever derived it rather than a redaction of some other shape.
             assertThatThrownBy(() -> new RedactedSpan(List.of(-3), REDACTION_COLOUR))
@@ -105,7 +105,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void constructorBuildsAWordOfItsOwn() {
+        void buildsAWordOfItsOwn() {
             // A redaction stands where a name stood, so it keeps the sentence's own space clear of the
             // words either side of it rather than butting against them.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR).isJoinedToPreviousRun())
@@ -117,7 +117,7 @@ class RedactedSpanTest {
     class CanBeLeftOutOfLineText {
 
         @Test
-        void canBeLeftOutOfLineTextIsFalse() {
+        void isFalseForRedactionBlocks() {
             // The blocks are the only way the run says anything, so a line that drops them reads as
             // though no name had been there - which is why the flattened form refuses one outright
             // rather than handing back a shortened line nothing downstream can tell is short.
@@ -131,7 +131,7 @@ class RedactedSpanTest {
     class ComputeWidth {
 
         @Test
-        void computeWidthChargesEachWordItsCharactersAndOneGapBetweenThem() {
+        void chargesEachWordItsCharactersAndOneGapBetweenThem() {
             // Seven characters, the face's own word space, then five - the same rule the label parts its
             // other runs by, so the blocks stand where the words they replace stood.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
@@ -140,7 +140,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void computeWidthChargesASingleWordNoGap() {
+        void chargesASingleWordNoGap() {
 
             assertThat(new RedactedSpan(List.of(7), REDACTION_COLOUR)
                 .computeWidth(LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
@@ -148,7 +148,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void computeWidthChargesNothingForAWordOfNoCharacters() {
+        void chargesNothingForAWordOfNoCharacters() {
             // A word that ran to nothing is charged neither block nor gap, the reading a blank run of
             // text gets - so a redaction assembled from parts and coming up empty gets the line it would
             // have had without it.
@@ -158,7 +158,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void computeWidthChargesNothingForNoWordsAtAll() {
+        void chargesNothingForNoWordsAtAll() {
 
             assertThat(new RedactedSpan(List.of(), REDACTION_COLOUR)
                 .computeWidth(LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
@@ -166,7 +166,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void computeWidthIsUnchangedByTheLineHeight() {
+        void isUnchangedByTheLineHeight() {
             // A block stands as wide as the characters it replaces, so what squares an image off its line
             // has no bearing here.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
@@ -179,21 +179,21 @@ class RedactedSpanTest {
     class HasContent {
 
         @Test
-        void hasContentIsTrueForAWordWithCharacters() {
+        void isTrueForAWordWithCharacters() {
 
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR).hasContent())
                 .isTrue();
         }
 
         @Test
-        void hasContentIsFalseForNoWordsAtAll() {
+        void isFalseForNoWordsAtAll() {
 
             assertThat(new RedactedSpan(List.of(), REDACTION_COLOUR).hasContent())
                 .isFalse();
         }
 
         @Test
-        void hasContentIsFalseWhereEveryWordRanToNothing() {
+        void isFalseWhereEveryWordRanToNothing() {
             // Answered without a face, like every run, and by the same reading the walk charges the run
             // nothing by - so a line cannot reserve room for a redaction that draws no block.
             assertThat(new RedactedSpan(List.of(0, 0), REDACTION_COLOUR).hasContent())
@@ -205,7 +205,7 @@ class RedactedSpanTest {
     class LayOutWordBars {
 
         @Test
-        void layOutWordBarsPlacesOneBlockPerWordAcrossTheGapBetweenThem() {
+        void placesOneBlockPerWordAcrossTheGapBetweenThem() {
             // Seven characters from the run's left edge, then the word space, then five - the blocks fill
             // exactly the stretch the width above charged room for.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
@@ -216,7 +216,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void layOutWordBarsStandsEveryBlockInTheBandItWasGiven() {
+        void standsEveryBlockInTheBandItWasGiven() {
             // Where the line's foot sits and how tall it stands are the drawing surface's own - a box
             // anchoring its rows by their tops and a strip centring them on a row stand the same run on
             // two different footings.
@@ -226,7 +226,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void layOutWordBarsLeavesOutAWordOfNoCharacters() {
+        void leavesOutAWordOfNoCharacters() {
             // The word was charged no room, so painting a block for it would put one where the
             // measurement reserved none.
             assertThat(new RedactedSpan(List.of(0, 5), REDACTION_COLOUR)
@@ -235,7 +235,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void layOutWordBarsDrawsNothingForNoWordsAtAll() {
+        void drawsNothingForNoWordsAtAll() {
 
             assertThat(new RedactedSpan(List.of(), REDACTION_COLOUR)
                 .layOutWordBars(BAR_LEFT_X, BAR_BOTTOM_Y, LINE_HEIGHT, ONE_UNIT_PER_CHARACTER))
@@ -247,7 +247,7 @@ class RedactedSpanTest {
     class PaintRun {
 
         @Test
-        void paintRunHandsItselfToThePaintersRedactionMethod() {
+        void handsItselfToThePaintersRedactionMethod() {
 
             var redactedSpan = new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR);
             var labelRunPainterFake = new LabelRunPainterFake();
@@ -265,7 +265,7 @@ class RedactedSpanTest {
     class ResolveBlockFillColour {
 
         @Test
-        void resolveBlockFillColourSinksTheLineColourByTheStrengthGiven() {
+        void sinksTheLineColourByTheStrengthGiven() {
             // A block covers its whole band where the glyphs it replaces cover a fraction of theirs, so
             // filling it in the line's own colour lands several times the area of it on screen and the
             // redaction shouts over the words either side. A tenth taken off is a tenth of every channel.
@@ -275,7 +275,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourFillsInTheLinesOwnColourAtNoStrength() {
+        void fillsInTheLinesOwnColourAtNoStrength() {
             // The near end of a host's slider, where the player has asked for no correction at all - so
             // the blocks draw in exactly the colour the words either side of them do.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
@@ -284,7 +284,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourFillsBlackAtFullStrength() {
+        void fillsBlackAtFullStrength() {
 
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
                 .resolveBlockFillColour(FULL_STRENGTH))
@@ -292,7 +292,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourHoldsAStrengthPastFullAtBlack() {
+        void holdsAStrengthPastFullAtBlack() {
             // Past the range the strength means anything over. The channels would clamp on their own, but
             // holding it here is what keeps the reading the caller asked for - a host handing over more
             // than the whole colour gets black rather than a colour arrived at by some other route.
@@ -302,7 +302,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourHoldsANegativeStrengthAtNoDarkening() {
+        void holdsANegativeStrengthAtNoDarkening() {
             // The other end: a strength below nothing would brighten the blocks past the line they stand
             // in, which is the one thing the correction exists to prevent.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
@@ -311,7 +311,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourKeepsTheLineColoursOwnAlpha() {
+        void keepsTheLineColoursOwnAlpha() {
             // The correction is a weight one, and fading is the drawing surface's to decide - a run that
             // also thinned itself would fade twice over in a box already drawing at part opacity.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, PART_ALPHA_REDACTION_COLOUR)
@@ -321,7 +321,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourSinksTheShippedShareAtTheStandardStrength() {
+        void sinksTheShippedShareAtTheStandardStrength() {
             // The weight the library ships, restated as the colour it lands on so a change to the finding
             // shows up here as a changed expectation rather than passing silently.
             assertThat(new RedactedSpan(TWO_WORD_NAME_LENGTHS, REDACTION_COLOUR)
@@ -330,7 +330,7 @@ class RedactedSpanTest {
         }
 
         @Test
-        void resolveBlockFillColourLeavesTheRunsOwnColourAsTheLineWroteIt() {
+        void leavesTheRunsOwnColourAsTheLineWroteIt() {
             // The line's colour is what the run was handed and what the words either side of it draw in;
             // the fill is a reading taken off it. Kept apart so a surface asking for one cannot be given
             // the other, and so the two never drift into disagreeing about what colour the line is.

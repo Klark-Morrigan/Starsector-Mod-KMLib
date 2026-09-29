@@ -30,7 +30,7 @@ class ReflectedMembersTest {
     class FindFieldsMatching {
 
         @Test
-        void findFieldsMatchingReachesAFieldTheShapeKeepsToItself() {
+        void reachesAFieldTheShapeKeepsToItself() {
             // What the whole search exists for: the fields worth reaching are private, so a search
             // that saw only public ones would see none of them.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
@@ -41,7 +41,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingLeavesOutWhatASuperclassDeclaresByDefault() {
+        void leavesOutWhatASuperclassDeclaresByDefault() {
             // A field is reached where it is declared, and a caller naming a subclass usually means
             // that subclass's own - so the wider search is asked for rather than assumed.
             assertThat(ReflectedMembers.findFieldsMatching(InheritingShapeFake.class,
@@ -50,7 +50,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingReachesUpTheHierarchyWhenAsked() {
+        void reachesUpTheHierarchyWhenAsked() {
             // The core UI's shapes are deep, and the fields a probe wants are declared well above
             // the leaf class it is handed.
             assertThat(ReflectedMembers.findFieldsMatching(InheritingShapeFake.class,
@@ -59,7 +59,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingSelectsByDeclaredTypeWhenNoNameSurvives() {
+        void selectsByDeclaredTypeWhenNoNameSurvives() {
             // The obfuscated case: no usable name, so the declared type is the whole description.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
                 FieldQuery.anyField().ofExactType(int.class)))
@@ -69,7 +69,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingSelectsAFieldItsValueCouldBeHandedOnFrom() {
+        void selectsAFieldItsValueCouldBeHandedOnFrom() {
             // Assignable rather than exact, for a caller that knows what it wants to do with the
             // value rather than exactly how the field was declared.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
@@ -80,7 +80,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingSelectsAFieldAValueCouldBePutIn() {
+        void selectsAFieldAValueCouldBePutIn() {
             // The opposite direction to the read above, and the one a write is aimed by: what the
             // field would accept rather than what its value could be handed to.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
@@ -91,7 +91,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingLeavesOutAnUntypedFieldOnANamelessTypeSearch() {
+        void leavesOutAnUntypedFieldOnANamelessTypeSearch() {
             // A field declared as Object accepts everything, so it answers every such search on
             // top of whatever the caller meant. Counted, it would turn a search that identified one
             // field into an ambiguity, and the caller would never learn which field it wanted.
@@ -101,7 +101,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingKeepsAnUntypedFieldForACallerThatAskedForObject() {
+        void keepsAnUntypedFieldForACallerThatAskedForObject() {
             // The one case where those fields are the answer rather than noise, which is why the
             // exclusion turns on what was asked for and not on the field alone.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
@@ -112,7 +112,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsMatchingKeepsAnUntypedFieldWhenTheSearchNamesIt() {
+        void keepsAnUntypedFieldWhenTheSearchNamesIt() {
             // A named search is already unambiguous, so the exclusion has nothing to protect and
             // would only hide a field the caller asked for outright.
             assertThat(ReflectedMembers.findFieldsMatching(ShapeFake.class,
@@ -125,7 +125,7 @@ class ReflectedMembersTest {
     class FindFieldsHoldingMethodMatching {
 
         @Test
-        void findFieldsHoldingMethodMatchingSelectsByWhatTheFieldsTypeCanDo() {
+        void selectsByWhatTheFieldsTypeCanDo() {
             // The last way in when neither the field nor its type carries a usable name: an
             // obfuscated widget's parts are recognised by what they are capable of.
             assertThat(ReflectedMembers.findFieldsHoldingMethodMatching(
@@ -136,7 +136,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsHoldingMethodMatchingLeavesOutAFieldWhoseTypeCannot() {
+        void leavesOutAFieldWhoseTypeCannot() {
 
             assertThat(ReflectedMembers.findFieldsHoldingMethodMatching(
                 ShapeFake.class, FieldQuery.anyField(), MethodQuery.named("noSuchMemberAnywhere")))
@@ -144,7 +144,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findFieldsHoldingMethodMatchingLeavesOutAnUntypedFieldHoweverItWasFilled() {
+        void leavesOutAnUntypedFieldHoweverItWasFilled() {
             // Matched against what the field is declared as, not against what it holds - a field
             // declared as Object says nothing about its contents until something reads it, and a
             // search cannot read every field of every shape it walks.
@@ -161,7 +161,7 @@ class ReflectedMembersTest {
     class ReadFieldValue {
 
         @Test
-        void readFieldValueReachesAFieldTheShapeKeepsToItself() {
+        void reachesAFieldTheShapeKeepsToItself() {
 
             assertThat(ReflectedMembers.readFieldValue(new ShapeFake(),
                 FieldQuery.named("hiddenLabel")))
@@ -169,7 +169,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void readFieldValueThrowsWhenNothingMatches() {
+        void throwsWhenNothingMatches() {
             // Raised rather than answered null, so a caller can tell a field holding null from a
             // description that reached nothing at all.
             assertThatThrownBy(() -> ReflectedMembers.readFieldValue(new ShapeFake(),
@@ -178,7 +178,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void readFieldValueThrowsWhenMoreThanOneMatches() {
+        void throwsWhenMoreThanOneMatches() {
             // Two fields of one type is ordinary, and picking either would make the answer turn on
             // declaration order - which an obfuscated build reshuffles between releases.
             assertThatThrownBy(() -> ReflectedMembers.readFieldValue(new ShapeFake(),
@@ -191,7 +191,7 @@ class ReflectedMembersTest {
     class WriteFieldValue {
 
         @Test
-        void writeFieldValueReachesAFieldTheShapeKeepsToItself() {
+        void reachesAFieldTheShapeKeepsToItself() {
 
             var shapeFake = new ShapeFake();
 
@@ -202,7 +202,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void writeFieldValueThrowsWhenTheValueDoesNotFitTheField() {
+        void throwsWhenTheValueDoesNotFitTheField() {
             // Refused by the write itself rather than checked beforehand, so the failure names the
             // field rather than a guess made about it.
             assertThatThrownBy(() -> ReflectedMembers.writeFieldValue(new ShapeFake(),
@@ -215,7 +215,7 @@ class ReflectedMembersTest {
     class FindConstructorsMatching {
 
         @Test
-        void findConstructorsMatchingSelectsByWhatItTakes() {
+        void selectsByWhatItTakes() {
             // A constructor has no name of its own, so its parameter list is the only thing telling
             // one from another.
             assertThat(ReflectedMembers.findConstructorsMatching(BuiltShapeFake.class,
@@ -226,7 +226,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findConstructorsMatchingSelectsByHowManyItTakes() {
+        void selectsByHowManyItTakes() {
 
             assertThat(ReflectedMembers.findConstructorsMatching(BuiltShapeFake.class,
                 ConstructorQuery.anyConstructor().takingCount(0)))
@@ -234,7 +234,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findConstructorsMatchingReachesOneTheShapeKeepsToItself() {
+        void reachesOneTheShapeKeepsToItself() {
 
             assertThat(ReflectedMembers.findConstructorsMatching(BuiltShapeFake.class,
                 ConstructorQuery.anyConstructor().takingArgumentTypes(List.of(int.class))))
@@ -246,7 +246,7 @@ class ReflectedMembersTest {
     class Construct {
 
         @Test
-        void constructBuildsThroughAConstructorTheShapeKeepsToItself() {
+        void buildsThroughAConstructorTheShapeKeepsToItself() {
             // The whole point of reaching a constructor at all: the game's own widget classes are
             // built by code the mod cannot call directly.
             var built = (BuiltShapeFake) ReflectedMembers.construct(BuiltShapeFake.class, 7);
@@ -256,7 +256,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void constructSelectsTheConstructorTheArgumentsFit() {
+        void selectsTheConstructorTheArgumentsFit() {
 
             var built = (BuiltShapeFake) ReflectedMembers.construct(BuiltShapeFake.class, LABEL);
 
@@ -265,7 +265,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void constructThrowsWhenNoConstructorTakesThoseArguments() {
+        void throwsWhenNoConstructorTakesThoseArguments() {
 
             assertThatThrownBy(() -> ReflectedMembers.construct(BuiltShapeFake.class, 1.5d))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -276,7 +276,7 @@ class ReflectedMembersTest {
     class ReadStaticFieldValue {
 
         @Test
-        void readStaticFieldValueReachesAStaticFieldTheShapeKeepsToItself() {
+        void reachesAStaticFieldTheShapeKeepsToItself() {
             // Its own read rather than the instance one with null handed in: a Class passed where an
             // instance is expected would search java.lang.Class, which compiles and finds nothing
             // the caller meant.
@@ -286,7 +286,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void readStaticFieldValueThrowsWhenNothingMatches() {
+        void throwsWhenNothingMatches() {
 
             assertThatThrownBy(() -> ReflectedMembers.readStaticFieldValue(ShapeFake.class,
                 FieldQuery.named("noSuchFieldAnywhere")))
@@ -298,7 +298,7 @@ class ReflectedMembersTest {
     class WriteStaticFieldValue {
 
         @Test
-        void writeStaticFieldValueReachesAStaticFieldTheShapeKeepsToItself() {
+        void reachesAStaticFieldTheShapeKeepsToItself() {
 
             ReflectedMembers.writeStaticFieldValue(ShapeFake.class,
                 FieldQuery.named("hiddenStaticWritable"), 23L);
@@ -308,7 +308,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void writeStaticFieldValueThrowsWhenTheValueDoesNotFitTheField() {
+        void throwsWhenTheValueDoesNotFitTheField() {
 
             assertThatThrownBy(() -> ReflectedMembers.writeStaticFieldValue(ShapeFake.class,
                 FieldQuery.named("hiddenStaticWritable"), LABEL))
@@ -320,7 +320,7 @@ class ReflectedMembersTest {
     class HasMethodNamed {
 
         @Test
-        void hasMethodNamedIsTrueForAShapeCarryingTheName() {
+        void isTrueForAShapeCarryingTheName() {
             // Answered off a memo the reach keeps, so a walk asking per node per frame resolves each
             // shape once - which is why it is answered here rather than by a caller's own map.
             assertThat(ReflectedMembers.hasMethodNamed(ShapeFake.class, "readHiddenCount"))
@@ -328,7 +328,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void hasMethodNamedIsFalseForAShapeCarryingNoSuchName() {
+        void isFalseForAShapeCarryingNoSuchName() {
             // The common leaf, and what this exists for: answered without building a match, so a
             // per-frame walk stays off the thrown-exception path at every ordinary component.
             assertThat(ReflectedMembers.hasMethodNamed(ShapeFake.class, "noSuchMemberAnywhere"))
@@ -336,7 +336,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void hasMethodNamedAnswersAlikeOnASecondAsk() {
+        void answersAlikeOnASecondAsk() {
             // The memo has to answer what the scan behind it would, both ways round - a cache that
             // returned a stale or default answer on the second ask would be invisible in a single
             // call and wrong in the walk that matters.
@@ -351,7 +351,7 @@ class ReflectedMembersTest {
     class InvokeStaticByName {
 
         @Test
-        void invokeStaticByNameReachesAStaticMemberTheShapeKeepsToItself() {
+        void reachesAStaticMemberTheShapeKeepsToItself() {
             // Distinct from calling on an object: there is no object, and a reach that always
             // passed one would fail on every static member the game declares.
             assertThat(ReflectedMembers.invokeStaticByName(ShapeFake.class, "buildStaticLabel"))
@@ -359,7 +359,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void invokeStaticByNameThrowsWhenTheMemberIsAbsent() {
+        void throwsWhenTheMemberIsAbsent() {
 
             assertThatThrownBy(() -> ReflectedMembers
                 .invokeStaticByName(ShapeFake.class, "noSuchMemberAnywhere"))
@@ -371,7 +371,7 @@ class ReflectedMembersTest {
     class FindMethodsMatching {
 
         @Test
-        void findMethodsMatchingSelectsByWhatItAnswersWith() {
+        void selectsByWhatItAnswersWith() {
             // The obfuscated case for methods: no usable name, so the signature is the whole
             // description.
             assertThat(ReflectedMembers.findMethodsMatching(ShapeFake.class,
@@ -382,7 +382,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findMethodsMatchingSelectsByWhatACallerWouldPass() {
+        void selectsByWhatACallerWouldPass() {
 
             assertThat(ReflectedMembers.findMethodsMatching(ShapeFake.class,
                 MethodQuery.named("buildLabelledThing").taking(String.class, Object.class)))
@@ -390,7 +390,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findMethodsMatchingIsEmptyWhenTheArgumentShapeFitsNothingOfThatName() {
+        void isEmptyWhenTheArgumentShapeFitsNothingOfThatName() {
 
             assertThat(ReflectedMembers.findMethodsMatching(ShapeFake.class,
                 MethodQuery.named("buildLabelledThing").taking(int.class)))
@@ -398,7 +398,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findMethodsMatchingLeavesOutANonPublicInheritedMethodByDefault() {
+        void leavesOutANonPublicInheritedMethodByDefault() {
             // The hole the two sets a shape offers leave between them: a method neither declared
             // here nor published is in neither. Left open by default because widening the candidate
             // set turns a name that identified one method into an ambiguity, and the reads taken
@@ -409,7 +409,7 @@ class ReflectedMembersTest {
         }
 
         @Test
-        void findMethodsMatchingReachesANonPublicInheritedMethodWhenAsked() {
+        void reachesANonPublicInheritedMethodWhenAsked() {
             // The way to close it, for a caller reaching a member the game declares on a base class
             // and keeps to itself - which a deep obfuscated hierarchy is full of.
             assertThat(ReflectedMembers.findMethodsMatching(InheritingShapeFake.class,

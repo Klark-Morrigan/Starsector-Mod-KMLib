@@ -41,7 +41,7 @@ class EmbeddedMapTest {
     class ResolveDrawnBox {
 
         @Test
-        void resolveDrawnBoxAnswersThePlacedBoxOfADrawnMap() {
+        void answersThePlacedBoxOfADrawnMap() {
             // The ordinary case: a mod's minimap, placed and visible, which is the only state its
             // box is worth comparing a cursor against.
             var mapFake = new PlacedSectorMapWidgetFake(
@@ -52,14 +52,14 @@ class EmbeddedMapTest {
         }
 
         @Test
-        void resolveDrawnBoxAnswersNothingForAMapThatIsNotAComponent() {
+        void answersNothingForAMapThatIsNotAComponent() {
             // A map is recognised by the map interface alone, which promises nothing about layout.
             assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveDrawnBox())
                 .isNull();
         }
 
         @Test
-        void resolveDrawnBoxAnswersNothingForAMapTheLayoutNeverPlaced() {
+        void answersNothingForAMapTheLayoutNeverPlaced() {
             // A widget built but not yet laid out occupies nothing, so there is no box to point at.
             var mapFake = new PlacedSectorMapWidgetFake(null, FULLY_DRAWN);
 
@@ -68,7 +68,7 @@ class EmbeddedMapTest {
         }
 
         @Test
-        void resolveDrawnBoxAnswersNothingForAMapFadedOutOfSight() {
+        void answersNothingForAMapFadedOutOfSight() {
             // A panel keeps its box and its place in the tree while it fades away, so the box
             // outlives what the player can see - and only what they can see is pointable.
             var mapFake = new PlacedSectorMapWidgetFake(
@@ -83,7 +83,7 @@ class EmbeddedMapTest {
     class ResolveComponent {
 
         @Test
-        void resolveComponentAnswersTheWidgetOfAMapThatIsOne() {
+        void answersTheWidgetOfAMapThatIsOne() {
 
             var mapFake = new PlacedSectorMapWidgetFake(
                 new PositionFake(PLACED_BOX),
@@ -94,7 +94,7 @@ class EmbeddedMapTest {
         }
 
         @Test
-        void resolveComponentAnswersAMapFadedOutOfSight() {
+        void answersAMapFadedOutOfSight() {
             // Where this parts from the box read: a widget drawn to nothing is still a component
             // standing somewhere, which is what a caller asking about the widget itself is after.
             var mapFake = new PlacedSectorMapWidgetFake(
@@ -106,7 +106,7 @@ class EmbeddedMapTest {
         }
 
         @Test
-        void resolveComponentAnswersNothingForAMapThatIsNotAComponent() {
+        void answersNothingForAMapThatIsNotAComponent() {
 
             assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveComponent())
                 .isNull();
@@ -117,7 +117,7 @@ class EmbeddedMapTest {
     class ResolveDockedWidget {
 
         @Test
-        void resolveDockedWidgetAnswersTheWidgetAddedToTheWalksRoot() {
+        void answersTheWidgetAddedToTheWalksRoot() {
             // The load-bearing case, and the one an index off by one would pass anyway if the chain
             // were shorter: a mod's panel with the map nested another level down inside it. The
             // panel is what covers every way a mod might have assembled that nesting, so the walk
@@ -132,7 +132,7 @@ class EmbeddedMapTest {
         }
 
         @Test
-        void resolveDockedWidgetAnswersTheMapItselfWhenItHangsStraightUnderTheRoot() {
+        void answersTheMapItselfWhenItHangsStraightUnderTheRoot() {
             // Nothing was wrapped around it, so the map is the whole of what was docked. Answering
             // nothing here would leave a caller with no root at all for a map that is plainly on
             // screen.
@@ -144,7 +144,7 @@ class EmbeddedMapTest {
         }
 
         @Test
-        void resolveDockedWidgetAnswersNothingWithoutAnAncestry() {
+        void answersNothingWithoutAnAncestry() {
             // A chain that was never recorded says nothing about what the map hangs under, so there
             // is no widget to name - as against the case above, where the absence is the answer.
             assertThat(new EmbeddedMap(new SectorMapWidgetFake(), NO_ANCESTORS).resolveDockedWidget())

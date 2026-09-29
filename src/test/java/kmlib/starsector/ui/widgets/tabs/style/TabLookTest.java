@@ -32,7 +32,7 @@ final class TabLookTest {
     class ComputeBlendedLook {
 
         @Test
-        void computeBlendedLookPlacesTheFillBetweenTheTwoLooks() {
+        void placesTheFillBetweenTheTwoLooks() {
 
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 0.5f);
 
@@ -41,7 +41,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeBlendedLookMovesTheLabelTheSameWay() {
+        void movesTheLabelTheSameWay() {
 
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 0.5f);
 
@@ -50,7 +50,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeBlendedLookCarriesHowSolidEachShadeIsAcrossToo() {
+        void carriesHowSolidEachShadeIsAcrossToo() {
             // How solid a look is is part of the look, not a property of the shade it started from: a
             // chrome whose resting state is an unpainted interior states that as a fill at zero alpha, so
             // a fade that kept the starting alpha would never bring the target's surface in at all.
@@ -64,7 +64,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeBlendedLookBringsAFadeOffAnUnpaintedFillAllTheWayToItsSurface() {
+        void bringsAFadeOffAnUnpaintedFillAllTheWayToItsSurface() {
             // The raised button's own case, spelt out because it is what the alpha travel is for: a tab
             // resting on nothing but its backing arrives at the same opaque interior a settled one wears
             // rather than staying invisible while its colour changes underneath it.
@@ -76,7 +76,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeBlendedLookLeavesTheLookWhereItIsAtNoTravel() {
+        void leavesTheLookWhereItIsAtNoTravel() {
 
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 0f);
 
@@ -88,7 +88,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeBlendedLookSettlesOnTheTargetForAnOvershootingFraction() {
+        void settlesOnTheTargetForAnOvershootingFraction() {
             // A fraction composed from more than one live channel can overshoot; blending past the target
             // would land on a colour neither end named.
             var blended = LOOK.computeBlendedLook(TARGET_LOOK, 1.5f);
@@ -102,7 +102,7 @@ final class TabLookTest {
     class ComputeWashedLook {
 
         @Test
-        void computeWashedLookMovesTheFillTowardTheWashTarget() {
+        void movesTheFillTowardTheWashTarget() {
 
             var washed = LOOK.computeWashedLook(new TabWash(WASH_TARGET, 0.5f));
 
@@ -111,7 +111,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeWashedLookMovesTheLabelByTheSameLift() {
+        void movesTheLabelByTheSameLift() {
 
             var washed = LOOK.computeWashedLook(new TabWash(WASH_TARGET, 0.5f));
 
@@ -120,7 +120,7 @@ final class TabLookTest {
         }
 
         @Test
-        void computeWashedLookLeavesBothShadesWhereTheyAreForARestingTab() {
+        void leavesBothShadesWhereTheyAreForARestingTab() {
 
             var washed = LOOK.computeWashedLook(new TabWash(WASH_TARGET, 0f));
 

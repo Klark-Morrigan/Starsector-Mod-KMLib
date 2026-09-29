@@ -34,7 +34,7 @@ class InstalledFaceTest {
     class ReadDescriptor {
 
         @Test
-        void readDescriptorReadsEveryFieldOffOneFileWhateverScriptItsFaceIsNamedIn(@TempDir Path directory)
+        void readsEveryFieldOffOneFileWhateverScriptItsFaceIsNamedIn(@TempDir Path directory)
                 throws IOException {
             // The face name's UTF-8 bytes, read as Latin-1, split no token, so the count comes out as
             // LazyLib's does.
@@ -50,7 +50,7 @@ class InstalledFaceTest {
         }
 
         @Test
-        void readDescriptorNamesTheFileAMalformedDescriptorSitsIn(@TempDir Path directory) throws IOException {
+        void namesTheFileAMalformedDescriptorSitsIn(@TempDir Path directory) throws IOException {
 
             var descriptorFile = writeDescriptor(directory, "info face=\"x\"\n");
 

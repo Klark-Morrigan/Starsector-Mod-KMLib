@@ -34,7 +34,7 @@ final class EntityMapIconsTest {
     class ResolveMapIcon {
 
         @Test
-        void resolveMapIconReadsAPlanetsOwnSpec() {
+        void readsAPlanetsOwnSpec() {
 
             var planetMock = buildPlanetWithIcon(
                 "graphics/warroom/icon_planet.png",
@@ -47,7 +47,7 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconReadsACustomEntitysOwnSpec() {
+        void readsACustomEntitysOwnSpec() {
 
             var stationMock = buildCustomEntityWithIcon(
                 "graphics/icons/station0.png",
@@ -60,7 +60,7 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconIsEmptyForAnEntityWithNoSpec() {
+        void isEmptyForAnEntityWithNoSpec() {
             // A plain token that is neither a planet nor a custom entity carries no icon spec at
             // all, which is the "nothing authored" case rather than a malformed one.
             var entityMock = mock(SectorEntityToken.class);
@@ -73,7 +73,7 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconIsEmptyForAPlanetWithNoSpec() {
+        void isEmptyForAPlanetWithNoSpec() {
 
             var planetMock = mock(PlanetAPI.class);
 
@@ -85,14 +85,14 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconIsEmptyForANullEntity() {
+        void isEmptyForANullEntity() {
 
             assertThat(EntityMapIcons.resolveMapIcon(null))
                 .isEmpty();
         }
 
         @Test
-        void resolveMapIconIsEmptyForABlankPlanetIconPath() {
+        void isEmptyForABlankPlanetIconPath() {
             // An authored-but-empty path reads as no icon, so a whitespace path collapses to empty
             // rather than pointing a caller at a missing sprite. The colour is authored and good,
             // which is what says the path alone decides whether there is an icon here.
@@ -103,7 +103,7 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconIsEmptyForABlankCustomEntityIconPath() {
+        void isEmptyForABlankCustomEntityIconPath() {
 
             var stationMock = buildCustomEntityWithIcon(null, Color.WHITE);
 
@@ -112,7 +112,7 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconTrimsTheAuthoredPath() {
+        void trimsTheAuthoredPath() {
 
             var stationMock = buildCustomEntityWithIcon(
                 "  graphics/icons/relay.png  ",
@@ -123,7 +123,7 @@ final class EntityMapIconsTest {
         }
 
         @Test
-        void resolveMapIconCarriesAnUncolouredGlyph() {
+        void carriesAnUncolouredGlyph() {
             // A spec authoring no colour still has an icon: the glyph's own pixels carry it, and
             // the draw reads a null tint as "as authored". Only the path decides presence.
             var stationMock = buildCustomEntityWithIcon("graphics/icons/buoy.png", null);

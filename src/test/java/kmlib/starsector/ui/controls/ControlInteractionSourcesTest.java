@@ -21,13 +21,13 @@ final class ControlInteractionSourcesTest {
     class Resting {
 
         @Test
-        void restingHoversNoCell() {
+        void hoversNoCell() {
             assertThat(ControlInteractionSources.RESTING.hovers().resolveHoverFractionAt(ANY_CELL))
                 .isCloseTo(0f, within(TOLERANCE));
         }
 
         @Test
-        void restingLiftsNoCell() {
+        void liftsNoCell() {
             assertThat(ControlInteractionSources.RESTING.presses().resolvePressFractionAt(ANY_CELL))
                 .isCloseTo(0f, within(TOLERANCE));
         }

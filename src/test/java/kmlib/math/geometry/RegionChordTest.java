@@ -20,7 +20,7 @@ class RegionChordTest {
     @Nested
     class ToSegment {
         @Test
-        void toSegmentPlacesTheEndsAtTheParametersMeasuredFromTheOrigin() {
+        void placesTheEndsAtTheParametersMeasuredFromTheOrigin() {
             // Origin (10, 20) running along +x: t=2 and t=5 are 2 and 5 units past it.
             var segment = computeChordAlong(new DirectedLine(10, 20, 1, 0))
                 .toSegment(new double[] {2, 5});
@@ -36,7 +36,7 @@ class RegionChordTest {
         }
 
         @Test
-        void toSegmentPlacesANegativeParameterBehindTheOrigin() {
+        void placesANegativeParameterBehindTheOrigin() {
             // The origin is parameter zero, not the span's start, so a span straddling
             // it reaches back along the direction rather than clamping at it.
             var segment = computeChordAlong(new DirectedLine(0, 0, 1, 0))
@@ -49,7 +49,7 @@ class RegionChordTest {
         }
 
         @Test
-        void toSegmentCarriesBothCoordinatesForADiagonalDirection() {
+        void carriesBothCoordinatesForADiagonalDirection() {
             // Ten units along the 3-4-5 unit direction lands at (6, 8).
             var segment = computeChordAlong(new DirectedLine(0, 0, 0.6, 0.8))
                 .toSegment(new double[] {0, 10});

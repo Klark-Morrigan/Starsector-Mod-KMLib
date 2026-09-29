@@ -12,24 +12,24 @@ class KmlibCollectionsTest {
     @Nested
     class Join {
         @Test
-        void joinReturnsEmptyStringForNoItems() {
+        void returnsEmptyStringForNoItems() {
             assertThat(KmlibCollections.join(List.<String>of(), ", ", value -> value)).isEmpty();
         }
 
         @Test
-        void joinRendersASingleItemWithoutADelimiter() {
+        void rendersASingleItemWithoutADelimiter() {
             assertThat(KmlibCollections.join(List.of("alpha"), ", ", value -> value))
                 .isEqualTo("alpha");
         }
 
         @Test
-        void joinSeparatesRenderedItemsWithTheDelimiter() {
+        void separatesRenderedItemsWithTheDelimiter() {
             assertThat(KmlibCollections.join(List.of(1, 2, 3), ", ", String::valueOf))
                 .isEqualTo("1, 2, 3");
         }
 
         @Test
-        void joinAppliesTheRendererToEachItem() {
+        void appliesTheRendererToEachItem() {
             // The renderer selects a field rather than the element's toString, the
             // reason this exists instead of String.join over a pre-mapped list.
             assertThat(KmlibCollections.join(List.of("alpha", "beta"), "-",
@@ -37,7 +37,7 @@ class KmlibCollectionsTest {
         }
 
         @Test
-        void joinKeepsTheDelimiterAfterAnItemThatRendersEmpty() {
+        void keepsTheDelimiterAfterAnItemThatRendersEmpty() {
             // A first-item flag, not length() > 0, so an empty render between two
             // others still gets its surrounding delimiters.
             assertThat(KmlibCollections.join(List.of("a", "", "b"), ",", value -> value))

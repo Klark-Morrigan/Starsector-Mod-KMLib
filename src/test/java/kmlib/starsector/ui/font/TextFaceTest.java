@@ -13,7 +13,7 @@ class TextFaceTest {
     class CreateNativeFace {
 
         @Test
-        void createNativeFaceDrawsTheFaceAtTheLineHeightTheInstallStates() {
+        void drawsTheFaceAtTheLineHeightTheInstallStates() {
             // An install whose atlas under this basename is taller than vanilla's, as a core localisation's
             // is. The face has to land on that atlas's own 1:1 size, which no size written down for
             // vanilla could produce.

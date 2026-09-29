@@ -30,7 +30,7 @@ final class TextHaloTest {
     class ComputeHaloBoxes {
 
         @Test
-        void computeHaloBoxesRingsTheTextBoxOnAllFourSidesAtTheStyledRadius() {
+        void ringsTheTextBoxOnAllFourSidesAtTheStyledRadius() {
             // Four copies, each the text's box moved one radius to its own side. A ring rather than an
             // offset copy is the whole point of the value: a side left out is a side of the glyphs left
             // reading against whatever is behind them.
@@ -43,7 +43,7 @@ final class TextHaloTest {
         }
 
         @Test
-        void computeHaloBoxesKeepsTheTextBoxsOwnExtentInEveryCopy() {
+        void keepsTheTextBoxsOwnExtentInEveryCopy() {
             // Each copy is the same text at the same size, so it must centre in a box of the same shape:
             // a copy's box that grew or shrank would slide it by half the difference as well.
             assertThat(HALO_AT_RADIUS.computeHaloBoxes(TEXT_BOX))
@@ -56,7 +56,7 @@ final class TextHaloTest {
         }
 
         @Test
-        void computeHaloBoxesLaysDownNoCopyAtAllForAnUndrawnHalo() {
+        void laysDownNoCopyAtAllForAnUndrawnHalo() {
             // The claim that matters is that nothing is drawn, not that the radius is zero: a ring at zero
             // would land invisibly under its own text and still cost four passes over every run, so an
             // empty answer is what lets a renderer walk this list without testing the flag itself.
@@ -69,7 +69,7 @@ final class TextHaloTest {
     class None {
 
         @Test
-        void noneDrawsNoRingAtAll() {
+        void drawsNoRingAtAll() {
             assertThat(TextHalo.NONE.isHaloDrawn())
                 .isFalse();
         }
@@ -79,7 +79,7 @@ final class TextHaloTest {
     class CreateBlackHairline {
 
         @Test
-        void createBlackHairlineRingsTheTextInSolidBlack() {
+        void ringsTheTextInSolidBlack() {
             // A black ring is what gives a hard-edged pixel face an edge to sit against live content, and it
             // is solid because the face is: single-pixel strokes backed by a partial shade read as a grey
             // smudge where the vanilla text beside them reads as strokes on black.

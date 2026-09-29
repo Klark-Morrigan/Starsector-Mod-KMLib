@@ -20,7 +20,7 @@ class TooltipLeaderLineStyleTest {
     class Construct {
 
         @Test
-        void constructKeepsTheWeightsAHostStates() {
+        void keepsTheWeightsAHostStates() {
 
             var leaderLineStyle = new TooltipLeaderLineStyle(2f, 0.4f);
 
@@ -31,7 +31,7 @@ class TooltipLeaderLineStyleTest {
         }
 
         @Test
-        void constructKeepsNothingAsAWeightInItsOwnRight() {
+        void keepsNothingAsAWeightInItsOwnRight() {
             // Not floored away, because it is a statement rather than a mistake: a host - or a player at
             // the near end of either slider - turns the rules off by asking for none of them.
             var switchedOff = new TooltipLeaderLineStyle(0f, 0f);
@@ -43,7 +43,7 @@ class TooltipLeaderLineStyleTest {
         }
 
         @Test
-        void constructFloorsANegativeThickness() {
+        void floorsANegativeThickness() {
 
             var leaderLineStyle = new TooltipLeaderLineStyle(-3f, 0.65f);
 
@@ -52,7 +52,7 @@ class TooltipLeaderLineStyleTest {
         }
 
         @Test
-        void constructFloorsANegativeAlphaMultiplier() {
+        void floorsANegativeAlphaMultiplier() {
 
             var leaderLineStyle = new TooltipLeaderLineStyle(1f, -0.5f);
 
@@ -65,7 +65,7 @@ class TooltipLeaderLineStyleTest {
     class TextWeighted {
 
         @Test
-        void textWeightedRulesAWholeUnitLetDownTowardTheText() {
+        void rulesAWholeUnitLetDownTowardTheText() {
             // A whole unit, because a run thinner than a pixel would strengthen and fade with where the
             // row landed on the pixel grid as the box followed the cursor; the weight comes off the alpha
             // instead, which composites the same wherever the run lands.

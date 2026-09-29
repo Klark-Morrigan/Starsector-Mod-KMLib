@@ -72,7 +72,7 @@ class FaceResolverTest {
     class ResolveFont {
 
         @Test
-        void resolveFontKeepsTheFaceAskedForWhereItsAtlasHoldsTheText() {
+        void keepsTheFaceAskedForWhereItsAtlasHoldsTheText() {
             // An English build's names on a localised install: the high-resolution atlas holds them, so
             // nothing moves the text off it.
             assertThat(createLocalisedResolver().resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of("Hegemony")))
@@ -80,7 +80,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontStepsDownToTheLargestCutThatHoldsTheText() {
+        void stepsDownToTheLargestCutThatHoldsTheText() {
             // The row of question marks, answered: the next cut down holds the script, so the walk stops
             // there rather than dropping further than it has to.
             assertThat(createLocalisedResolver().resolveFont(
@@ -90,7 +90,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontStepsDownWhenAnyOneOfTheTextsNeedsAGlyphTheFaceLacks() {
+        void stepsDownWhenAnyOneOfTheTextsNeedsAGlyphTheFaceLacks() {
             // A caller settles one face for everything it draws, so one localised name among Latin ones
             // moves them all.
             assertThat(createLocalisedResolver().resolveFont(
@@ -100,7 +100,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontPassesOverACutThatWillNotLoad() {
+        void passesOverACutThatWillNotLoad() {
 
             var resolver = createLocalisedResolverWithUnloadable(StarsectorFont.VANILLA_INSIGNIA_25);
 
@@ -109,7 +109,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontStepsDownWhenTheFaceAskedForWillNotLoadEvenForTextItWouldHold() {
+        void stepsDownWhenTheFaceAskedForWillNotLoadEvenForTextItWouldHold() {
             // A face that will not load draws nothing, however little it would have had to draw.
             var resolver = createLocalisedResolverWithUnloadable(StarsectorFont.VANILLA_INSIGNIA_42);
 
@@ -118,14 +118,14 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontFallsToTheDeclaredDefaultFromAFaceWithNoSmallerCut() {
+        void fallsToTheDeclaredDefaultFromAFaceWithNoSmallerCut() {
             // A pixel face lacking the script has no smaller cut of its own design to try.
             assertThat(createLocalisedResolver().resolveFont(StarsectorFont.VANILLA_VICTOR_10, List.of(LOCALISED_NAME)))
                 .isEqualTo(VANILLA_DECLARED_DEFAULT);
         }
 
         @Test
-        void resolveFontReachesADeclaredDefaultTheEnumDoesNotNameWhereItHoldsTheText() {
+        void reachesADeclaredDefaultTheEnumDoesNotNameWhereItHoldsTheText() {
             // The language pack's case: no vanilla atlas holds the script, and the face the pack declared is
             // the one that does - reached by its path, since the enum has never heard of it.
             assertThat(createPackDeclaredResolver(16d).resolveFont(
@@ -135,7 +135,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontAnswersTheLastResortWhereTheDeclaredDefaultWillNotLoad() {
+        void answersTheLastResortWhereTheDeclaredDefaultWillNotLoad() {
             // A setting naming a broken or missing file is passed over, and the walk ends on KMLib's own face.
             assertThat(createPackDeclaredResolver(UNLOADABLE).resolveFont(
                     StarsectorFont.VANILLA_INSIGNIA_42,
@@ -144,7 +144,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontAnswersTheLastResortRatherThanTheDeclaredDefaultWhereNothingHoldsTheText() {
+        void answersTheLastResortRatherThanTheDeclaredDefaultWhereNothingHoldsTheText() {
             // A localised build on a vanilla install with a mod's declared default lacking the script too:
             // nothing on the walk draws it, and the answer is KMLib's own face, never the setting's.
             var resolver = new FaceResolver(
@@ -158,7 +158,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void resolveFontAnswersTheLastResortWhereNoFaceOnTheWalkLoads() {
+        void answersTheLastResortWhereNoFaceOnTheWalkLoads() {
             // Never no face: the last resort is answered even where it will not load itself, drawing nothing
             // - as the face asked for would have.
             var resolver = createLocalisedResolverWithUnloadable(
@@ -176,7 +176,7 @@ class FaceResolverTest {
     class ListFallbackWalk {
 
         @Test
-        void listFallbackWalkStepsDownTheFamilyAndTriesEachFaceOnce() {
+        void stepsDownTheFamilyAndTriesEachFaceOnce() {
             // The family's smallest cut is both the vanilla declared default and the last resort here, so it
             // is tried once, not three times.
             assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_42))
@@ -188,14 +188,14 @@ class FaceResolverTest {
         }
 
         @Test
-        void listFallbackWalkGoesStraightToTheDefaultsFromAFaceWithNoSmallerCut() {
+        void goesStraightToTheDefaultsFromAFaceWithNoSmallerCut() {
 
             assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_ORBITRON_20AA))
                 .containsExactly(StarsectorFont.VANILLA_ORBITRON_20AA, StarsectorFont.VANILLA_INSIGNIA_15);
         }
 
         @Test
-        void listFallbackWalkTriesTheDeclaredDefaultBeforeTheLastResort() {
+        void triesTheDeclaredDefaultBeforeTheLastResort() {
             // The declared face is the install's choice and is tried as such; KMLib's own face comes after it
             // whatever the setting names.
             assertThat(createPackDeclaredResolver(16d).listFallbackWalk(StarsectorFont.VANILLA_VICTOR_10))
@@ -206,7 +206,7 @@ class FaceResolverTest {
         }
 
         @Test
-        void listFallbackWalkIsTheLastResortAloneWhereItIsAskedFor() {
+        void isTheLastResortAloneWhereItIsAskedFor() {
 
             assertThat(createLocalisedResolver().listFallbackWalk(StarsectorFont.VANILLA_INSIGNIA_15))
                 .containsExactly(StarsectorFont.VANILLA_INSIGNIA_15);

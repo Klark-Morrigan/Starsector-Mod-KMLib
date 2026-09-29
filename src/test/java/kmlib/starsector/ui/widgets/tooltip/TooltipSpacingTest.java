@@ -57,7 +57,7 @@ class TooltipSpacingTest {
     class CreateSpacing {
 
         @Test
-        void createSpacingTakesTheStandardRoomBetweenLinesBlocksAndGroups() {
+        void takesTheStandardRoomBetweenLinesBlocksAndGroups() {
 
             var spacing = buildStandardSpacing();
 
@@ -70,7 +70,7 @@ class TooltipSpacingTest {
         }
 
         @Test
-        void createSpacingStacksEveryTierOfLinesAtTheSameGap() {
+        void stacksEveryTierOfLinesAtTheSameGap() {
             // A box that never names a tier is spaced as one did before there was anything to name, so a
             // listing that goes deep does not quietly tighten with depth.
             assertThat(buildStandardSpacing().resolveLineGapAfter(TWO_STEPS_UNDER))
@@ -78,7 +78,7 @@ class TooltipSpacingTest {
         }
 
         @Test
-        void createSpacingLeavesABlockPartingWiderThanAGroupParting() {
+        void leavesABlockPartingWiderThanAGroupParting() {
             // The two are held apart so a run inside a block never reads as a block of its own, which
             // only holds while the baseline keeps them in that order.
             assertThat(buildStandardSpacing().groupBreak())
@@ -86,7 +86,7 @@ class TooltipSpacingTest {
         }
 
         @Test
-        void createSpacingPartsBlocksWiderThanItStacksLines() {
+        void partsBlocksWiderThanItStacksLines() {
             // The parting is what tells a reader one block ended, so it has to stand clear of the gap
             // two lines of the same block already sit at.
             assertThat(buildStandardSpacing().sectionBreak())
@@ -98,13 +98,13 @@ class TooltipSpacingTest {
     class StackedAt {
 
         @Test
-        void stackedAtSetsHowFarApartTheLinesOfABlockStand() {
+        void setsHowFarApartTheLinesOfABlockStand() {
             assertThat(buildTightenedSpacing().lineGaps())
                 .isEqualTo(TIGHTENED_GAPS);
         }
 
         @Test
-        void stackedAtChangesNothingElse() {
+        void changesNothingElse() {
             assertThat(buildTightenedSpacing())
                 .usingRecursiveComparison()
                 .ignoringFields("lineGaps")
@@ -116,13 +116,13 @@ class TooltipSpacingTest {
     class PartedBy {
 
         @Test
-        void partedBySetsHowFarApartTheBlocksStand() {
+        void setsHowFarApartTheBlocksStand() {
             assertThat(buildStandardSpacing().partedBy(WIDER_SECTION_BREAK).sectionBreak())
                 .isCloseTo(WIDER_SECTION_BREAK, within(TOLERANCE));
         }
 
         @Test
-        void partedByChangesNothingElse() {
+        void changesNothingElse() {
             // The block parting and the group parting are bare floats of the same unit standing side by
             // side, so a refinement writing into the wrong one compiles - this is what would catch it.
             assertThat(buildStandardSpacing().partedBy(WIDER_SECTION_BREAK))
@@ -136,7 +136,7 @@ class TooltipSpacingTest {
     class TightenedBy {
 
         @Test
-        void tightenedByKeepsThatShareOfTheRoomBetweenTwoLines() {
+        void keepsThatShareOfTheRoomBetweenTwoLines() {
             // What a box compressed to fit spends where no boundary falls, which is most of a listing.
             assertThat(buildStandardSpacing()
                     .tightenedBy(HALF_THE_ROOM)
@@ -145,7 +145,7 @@ class TooltipSpacingTest {
         }
 
         @Test
-        void tightenedByHoldsBothBlockPartingsAsTheyWere() {
+        void holdsBothBlockPartingsAsTheyWere() {
             // A boundary marks where the box changes subject and reads as one at whatever size the lines
             // around it draw; given up along with the leading, a compressed listing would come out as a
             // single undifferentiated run.
@@ -160,13 +160,13 @@ class TooltipSpacingTest {
     class GroupedBy {
 
         @Test
-        void groupedBySetsHowFarApartTheNestedBlocksStand() {
+        void setsHowFarApartTheNestedBlocksStand() {
             assertThat(buildStandardSpacing().groupedBy(WIDER_GROUP_BREAK).groupBreak())
                 .isCloseTo(WIDER_GROUP_BREAK, within(TOLERANCE));
         }
 
         @Test
-        void groupedByChangesNothingElse() {
+        void changesNothingElse() {
             assertThat(buildStandardSpacing().groupedBy(WIDER_GROUP_BREAK))
                 .usingRecursiveComparison()
                 .ignoringFields("groupBreak")
@@ -178,7 +178,7 @@ class TooltipSpacingTest {
     class ResolveLineGapAfter {
 
         @Test
-        void resolveLineGapAfterAnswersFromTheTierOfTheLineAboveTheGap() {
+        void answersFromTheTierOfTheLineAboveTheGap() {
             // The one lookup a surface makes per line. Which tier it reads is the whole of the rule, so
             // a tightened run must not reach the lines standing above it.
             var spacing = buildTightenedSpacing();

@@ -20,7 +20,7 @@ class DirectedLineTest {
     class ToUnitLine {
 
         @Test
-        void toUnitLineScalesTheDirectionToUnitLengthAndLeavesTheOriginWhereItWas() {
+        void scalesTheDirectionToUnitLengthAndLeavesTheOriginWhereItWas() {
             // The 3-4-5 direction has length 5, so unit length is (0.6, 0.8); the origin
             // is parameter zero either way and must not shift with the rescaling.
             var unitLine = new DirectedLine(10, -5, 3, 4)
@@ -37,7 +37,7 @@ class DirectedLineTest {
         }
 
         @Test
-        void toUnitLineLeavesAnAlreadyUnitDirectionAsItIs() {
+        void leavesAnAlreadyUnitDirectionAsItIs() {
             var unitLine = new DirectedLine(0, 0, 0, 1)
                 .toUnitLine();
 
@@ -48,7 +48,7 @@ class DirectedLineTest {
         }
 
         @Test
-        void toUnitLineIsNullForAZeroDirection() {
+        void isNullForAZeroDirection() {
             // No direction at all is no line: there is nothing to measure parameters
             // along, which callers read as "skip this line" rather than as a zero span.
             assertThat(new DirectedLine(0, 0, 0, 0).toUnitLine())
@@ -56,7 +56,7 @@ class DirectedLineTest {
         }
 
         @Test
-        void toUnitLineIsNullForADirectionShorterThanTheMinimumEdgeLength() {
+        void isNullForADirectionShorterThanTheMinimumEdgeLength() {
             // Below the shared degenerate threshold the direction is noise, and dividing
             // by its length would amplify that noise into the parameter frame.
             assertThat(new DirectedLine(0, 0, 1e-9, 0).toUnitLine())

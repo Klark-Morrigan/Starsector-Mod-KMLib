@@ -15,31 +15,31 @@ final class PicksTest {
     @Nested
     class PickHigher {
         @Test
-        void pickHigherReturnsTheCandidateWhenItScoresHigher() {
+        void returnsTheCandidateWhenItScoresHigher() {
             assertThat(Picks.pickHigher("current", "candidate",
                 value -> value.equals("candidate") ? 2.0 : 1.0)).isEqualTo("candidate");
         }
 
         @Test
-        void pickHigherKeepsTheCurrentOnATie() {
+        void keepsTheCurrentOnATie() {
             // First seen wins a tie - the deterministic pick a repeated search needs.
             assertThat(Picks.pickHigher("current", "candidate", value -> 1.0))
                 .isEqualTo("current");
         }
 
         @Test
-        void pickHigherReturnsTheCandidateWhenCurrentIsNull() {
+        void returnsTheCandidateWhenCurrentIsNull() {
             assertThat(Picks.<String>pickHigher(null, "candidate", value -> 1.0))
                 .isEqualTo("candidate");
         }
 
         @Test
-        void pickHigherKeepsTheCurrentWhenCandidateIsNull() {
+        void keepsTheCurrentWhenCandidateIsNull() {
             assertThat(Picks.pickHigher("current", null, value -> 1.0)).isEqualTo("current");
         }
 
         @Test
-        void pickHigherReturnsNullWhenBothAreNull() {
+        void returnsNullWhenBothAreNull() {
             assertThat(Picks.<String>pickHigher(null, null, value -> 1.0)).isNull();
         }
     }

@@ -15,14 +15,14 @@ class TimingsTest {
     class ConvertNanosToMillis {
 
         @Test
-        void convertNanosToMillisDividesByAMillion() {
+        void dividesByAMillion() {
 
             assertThat(Timings.convertNanosToMillis(2_500_000L))
                 .isEqualTo(2.5);
         }
 
         @Test
-        void convertNanosToMillisIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.convertNanosToMillis(0L))
                 .isZero();
@@ -33,14 +33,14 @@ class TimingsTest {
     class ConvertNanosToSeconds {
 
         @Test
-        void convertNanosToSecondsDividesByABillion() {
+        void dividesByABillion() {
 
             assertThat(Timings.convertNanosToSeconds(2_500_000_000L))
                 .isEqualTo(2.5);
         }
 
         @Test
-        void convertNanosToSecondsKeepsSubSecondPrecision() {
+        void keepsSubSecondPrecision() {
             // A phase read off the clock lands mid-second far more often than on one, so the
             // fraction is the case that matters rather than a whole-second divide.
             assertThat(Timings.convertNanosToSeconds(1_500_000L))
@@ -48,7 +48,7 @@ class TimingsTest {
         }
 
         @Test
-        void convertNanosToSecondsIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.convertNanosToSeconds(0L))
                 .isZero();
@@ -59,14 +59,14 @@ class TimingsTest {
     class ConvertMillisToNanos {
 
         @Test
-        void convertMillisToNanosMultipliesByAMillion() {
+        void multipliesByAMillion() {
 
             assertThat(Timings.convertMillisToNanos(2.5))
                 .isEqualTo(2_500_000L);
         }
 
         @Test
-        void convertMillisToNanosKeepsSubMillisecondPrecision() {
+        void keepsSubMillisecondPrecision() {
             // A frame budget is stated in whole milliseconds, but the knob behind one moves in
             // fractions of one, so the fraction is the case that matters.
             assertThat(Timings.convertMillisToNanos(0.25))
@@ -74,7 +74,7 @@ class TimingsTest {
         }
 
         @Test
-        void convertMillisToNanosIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.convertMillisToNanos(0))
                 .isZero();
@@ -85,14 +85,14 @@ class TimingsTest {
     class ConvertSecondsToNanos {
 
         @Test
-        void convertSecondsToNanosMultipliesByABillion() {
+        void multipliesByABillion() {
 
             assertThat(Timings.convertSecondsToNanos(2.5))
                 .isEqualTo(2_500_000_000L);
         }
 
         @Test
-        void convertSecondsToNanosKeepsSubSecondPrecision() {
+        void keepsSubSecondPrecision() {
             // A duration stated in seconds is nearly always a fraction of one - an animation pace,
             // a frame span - so the fraction is the case that matters rather than a whole second.
             assertThat(Timings.convertSecondsToNanos(0.0015))
@@ -100,7 +100,7 @@ class TimingsTest {
         }
 
         @Test
-        void convertSecondsToNanosIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.convertSecondsToNanos(0))
                 .isZero();
@@ -111,14 +111,14 @@ class TimingsTest {
     class ConvertNanosToMicros {
 
         @Test
-        void convertNanosToMicrosDividesByAThousand() {
+        void dividesByAThousand() {
 
             assertThat(Timings.convertNanosToMicros(2_500L))
                 .isEqualTo(2.5);
         }
 
         @Test
-        void convertNanosToMicrosIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.convertNanosToMicros(0L))
                 .isZero();
@@ -129,21 +129,21 @@ class TimingsTest {
     class FormatMicros {
 
         @Test
-        void formatMicrosShowsOneDecimalAndTheUnit() {
+        void showsOneDecimalAndTheUnit() {
 
             assertThat(Timings.formatMicros(123_400L))
                 .isEqualTo("123.4us");
         }
 
         @Test
-        void formatMicrosRoundsToOneDecimal() {
+        void roundsToOneDecimal() {
             // 123.45us rounds up at the first decimal (second digit 5).
             assertThat(Timings.formatMicros(123_450L))
                 .isEqualTo("123.5us");
         }
 
         @Test
-        void formatMicrosKeepsASpanMillisecondsWouldRoundAway() {
+        void keepsASpanMillisecondsWouldRoundAway() {
             // Three microseconds is "0.003ms" in milliseconds - a leading zero and two of them
             // spent before a digit says anything, which is why a per-item cost gets this format
             // rather than the millisecond one.
@@ -152,7 +152,7 @@ class TimingsTest {
         }
 
         @Test
-        void formatMicrosIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.formatMicros(0L))
                 .isEqualTo("0.0us");
@@ -163,21 +163,21 @@ class TimingsTest {
     class FormatMillis {
 
         @Test
-        void formatMillisShowsThreeDecimalsAndTheUnit() {
+        void showsThreeDecimalsAndTheUnit() {
 
             assertThat(Timings.formatMillis(1_234_567L))
                 .isEqualTo("1.235ms");
         }
 
         @Test
-        void formatMillisRoundsToThreeDecimals() {
+        void roundsToThreeDecimals() {
             // 1.2348ms rounds up at the third decimal (fourth digit 8).
             assertThat(Timings.formatMillis(1_234_800L))
                 .isEqualTo("1.235ms");
         }
 
         @Test
-        void formatMillisKeepsASpanTwoDecimalsWouldRoundAway() {
+        void keepsASpanTwoDecimalsWouldRoundAway() {
             // Eight microseconds is "0.01ms" at two decimals and "0.00ms" at anything coarser -
             // three is what keeps a sub-ten-microsecond row from reading as nothing.
             assertThat(Timings.formatMillis(8_000L))
@@ -185,7 +185,7 @@ class TimingsTest {
         }
 
         @Test
-        void formatMillisIsZeroForZero() {
+        void isZeroForZero() {
 
             assertThat(Timings.formatMillis(0L))
                 .isEqualTo("0.000ms");

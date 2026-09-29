@@ -84,7 +84,7 @@ final class PanelLayoutTest {
     class ComputePlacement {
 
         @Test
-        void computePlacementHangsTheBoxFromTheTopLeftByItsPadding() {
+        void hangsTheBoxFromTheTopLeftByItsPadding() {
 
             var box = place(BODY).box();
 
@@ -96,7 +96,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesAMinimalBorderedBoxWhenNoControlsAreGiven() {
+        void leavesAMinimalBorderedBoxWhenNoControlsAreGiven() {
 
             var placement = place(List.of());
 
@@ -111,7 +111,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementStacksTheBodyControlsAsAColumnBeneathTheContentTop() {
+        void stacksTheBodyControlsAsAColumnBeneathTheContentTop() {
 
             var controls = place(BODY).bodyControls();
 
@@ -136,7 +136,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementSplitsARadioIntoAbuttingEqualSegments() {
+        void splitsARadioIntoAbuttingEqualSegments() {
 
             var radio = place(BODY).bodyControls().get(1);
 
@@ -158,7 +158,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementLeavesSingleHitControlsWithoutSegments() {
+        void leavesSingleHitControlsWithoutSegments() {
 
             var controls = place(BODY).bodyControls();
 
@@ -171,7 +171,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementEnclosesEveryControlWithinTheBody() {
+        void enclosesEveryControlWithinTheBody() {
 
             var placement = place(BODY);
             var body = placement.body();
@@ -190,7 +190,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementWrapsTheBodyWithTheBorderOnEveryEdge() {
+        void wrapsTheBodyWithTheBorderOnEveryEdge() {
 
             var placement = place(BODY);
             var box = placement.box();
@@ -204,7 +204,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementGrowsTheBodyDownwardWhenAControlIsAppended() {
+        void growsTheBodyDownwardWhenAControlIsAppended() {
 
             var basePlacement = place(BODY);
             var appended = new ArrayList<>(BODY);
@@ -237,7 +237,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementStandsASegmentedListOneRowTallPerOption() {
+        void standsASegmentedListOneRowTallPerOption() {
 
             var radio = place(buildSegmentedListBody()).bodyControls().get(0);
 
@@ -248,7 +248,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementStacksASegmentedListsSegmentsTopToBottomInOneColumn() {
+        void stacksASegmentedListsSegmentsTopToBottomInOneColumn() {
 
             var radio = place(buildSegmentedListBody()).bodyControls().get(0);
 
@@ -277,7 +277,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementSnapsALabelRowToItsMeasuredText() {
+        void snapsALabelRowToItsMeasuredText() {
 
             var caption = "Non-allied factions are";
             var label = place(List.<ControlSpec>of(LabelledControlSpecs.buildLabel(caption)))
@@ -295,7 +295,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementCapsTheBoxToTheBottomMarginAndOpensAScrollViewport() {
+        void capsTheBoxToTheBottomMarginAndOpensAScrollViewport() {
 
             var placement = placeCapped(0f);
 
@@ -312,7 +312,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementPinsTheHeaderAndFooterAroundTheScrollingList() {
+        void pinsTheHeaderAndFooterAroundTheScrollingList() {
 
             var placement = placeCapped(0f);
             var controls = placement.bodyControls();
@@ -331,7 +331,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementCarriesTheScrollbarThicknessOntoThePlacement() {
+        void carriesTheScrollbarThicknessOntoThePlacement() {
 
             var placement = place(BODY, THICK_BAR);
 
@@ -342,7 +342,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementGrowsTheBoxWithTheScrollbarGutter() {
+        void growsTheBoxWithTheScrollbarGutter() {
 
             var atDefault = placeCapped(0f, ScrollbarThickness.DEFAULT);
             var atThick = placeCapped(0f, THICK_BAR);
@@ -359,7 +359,7 @@ final class PanelLayoutTest {
         }
 
         @Test
-        void computePlacementBakesTheScrollOffsetIntoTheListBounds() {
+        void bakesTheScrollOffsetIntoTheListBounds() {
 
             var atTop = placeCapped(0f).bodyControls().get(1).bounds();
             var scrolled = placeCapped(20f).bodyControls().get(1).bounds();

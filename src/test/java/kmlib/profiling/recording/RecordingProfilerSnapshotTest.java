@@ -23,7 +23,7 @@ final class RecordingProfilerSnapshotTest {
     class Snapshot {
 
         @Test
-        void snapshotFollowsFirstRecordOrder() {
+        void followsFirstRecordOrder() {
 
             var profiler = new RecordingProfiler(new ScriptedClock(0, 0, 0, 0));
 

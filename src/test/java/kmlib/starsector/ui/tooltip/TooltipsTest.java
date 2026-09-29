@@ -167,7 +167,7 @@ class TooltipsTest {
         }
 
         @Test
-        void attachWithOwnSurfaceRegistersTheCreatorOnAnElementItMakesForTheCall() {
+        void registersTheCreatorOnAnElementItMakesForTheCall() {
             var targetMock = mock(UIComponentAPI.class);
 
             Tooltips.attachWithOwnSurface(
@@ -186,7 +186,7 @@ class TooltipsTest {
         }
 
         @Test
-        void attachWithOwnSurfaceRegistersACreatorAnsweringTheEngineAsTheParentFormDoes() {
+        void registersACreatorAnsweringTheEngineAsTheParentFormDoes() {
             var targetMock = mock(UIComponentAPI.class);
             var engineTooltipMock = mock(TooltipMakerAPI.class);
             var invocations = new AtomicInteger();
@@ -210,7 +210,7 @@ class TooltipsTest {
         }
 
         @Test
-        void attachWithOwnSurfaceRejectsNullsFastAtTheCallSite() {
+        void rejectsNullsFastAtTheCallSite() {
             var targetMock = mock(UIComponentAPI.class);
             Consumer<TooltipMakerAPI> body = tt -> {
                 /* unused */ };

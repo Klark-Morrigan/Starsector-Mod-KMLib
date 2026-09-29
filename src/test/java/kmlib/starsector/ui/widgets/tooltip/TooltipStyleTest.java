@@ -130,7 +130,7 @@ class TooltipStyleTest {
     class CreateStyle {
 
         @Test
-        void createStyleCarriesTheTwoLooksAtTheStandardSpacing() {
+        void carriesTheTwoLooksAtTheStandardSpacing() {
             // The room a box spends is taken whole from the standard spacing rather than assembled here,
             // so a box that asks for no room at all is spaced exactly as every other unrefined box is.
             var style = buildTwoFacedStyle();
@@ -144,7 +144,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void createStyleSetsANoteInTheBodyLookUntilOneIsAskedFor() {
+        void setsANoteInTheBodyLookUntilOneIsAskedFor() {
             // Most boxes note nothing and so never resolve the look; demanding a third face up front
             // would have every caller name one for a line it will not draw.
             assertThat(buildTwoFacedStyle().footnoteStyle())
@@ -156,13 +156,13 @@ class TooltipStyleTest {
     class FootnotedIn {
 
         @Test
-        void footnotedInSetsTheLookANoteAtTheFootIsDrawnIn() {
+        void setsTheLookANoteAtTheFootIsDrawnIn() {
             assertThat(buildTwoFacedStyle().footnotedIn(FOOTNOTE_STYLE).footnoteStyle())
                 .isEqualTo(FOOTNOTE_STYLE);
         }
 
         @Test
-        void footnotedInChangesNothingElse() {
+        void changesNothingElse() {
             // A box setting its notes apart says nothing about how its headings or its body are drawn,
             // nor about how far apart its blocks stand.
             assertThat(buildTwoFacedStyle().footnotedIn(FOOTNOTE_STYLE))
@@ -176,13 +176,13 @@ class TooltipStyleTest {
     class ShrunkPerLevel {
 
         @Test
-        void shrunkPerLevelSetsHowMuchSmallerEachStepDraws() {
+        void setsHowMuchSmallerEachStepDraws() {
             assertThat(buildTwoFacedStyle().shrunkPerLevel(LEVEL_SHRINK).levelShrink())
                 .isCloseTo(LEVEL_SHRINK, within(TOLERANCE));
         }
 
         @Test
-        void shrunkPerLevelChangesNothingElse() {
+        void changesNothingElse() {
             // A box demoting its levels says nothing about how much room it spends between its lines or
             // its blocks, so the whole of the spacing has to come through the refinement untouched.
             assertThat(buildTwoFacedStyle().shrunkPerLevel(LEVEL_SHRINK))
@@ -192,7 +192,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void shrunkPerLevelLeavesAStyleDrawingEveryLevelAtItsKindsOwnSize() {
+        void leavesAStyleDrawingEveryLevelAtItsKindsOwnSize() {
             // A box that never asks demotes nothing, so a stack of rows reads at one size until one does.
             assertThat(buildTwoFacedStyle().levelShrink())
                 .isCloseTo(NO_LEVEL_SHRINK, within(TOLERANCE));
@@ -203,7 +203,7 @@ class TooltipStyleTest {
     class CompressedTowardLevel {
 
         @Test
-        void compressedTowardLevelAnchorsTheShrinkAtTheStatedTier() {
+        void anchorsTheShrinkAtTheStatedTier() {
             // The whole of what a compression re-anchors: which tier reads at its kind's own size. Every
             // other tier is then read off its distance from that one.
             var compressedStyle = buildCompressedStyle();
@@ -215,7 +215,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void compressedTowardLevelAnchorsAnUncompressedBoxAtItsOwnVoice() {
+        void anchorsAnUncompressedBoxAtItsOwnVoice() {
             // The baseline the refinement moves off: a box that was never compressed reads largest at
             // the top, the step being spent going deeper.
             assertThat(buildTwoFacedStyle().shrinkAnchorLevel())
@@ -223,7 +223,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void compressedTowardLevelTightensTheRoomBetweenLinesByTheShareTheGlyphsKept() {
+        void tightensTheRoomBetweenLinesByTheShareTheGlyphsKept() {
             // Leading is most of what a row costs, so the room comes down with the lines rather than the
             // compression spending glyphs alone: the base gap keeps the share one step of the ramp
             // leaves of a body line.
@@ -234,7 +234,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void compressedTowardLevelHoldsTheBlockPartingsAsTheyWere() {
+        void holdsTheBlockPartingsAsTheyWere() {
             // A boundary marks where the box changes subject, which reads as a boundary at whatever size
             // the lines around it draw - given up, a compressed listing would read as one run.
             assertThat(buildCompressedStyle().spacing().sectionBreak())
@@ -242,7 +242,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void compressedTowardLevelTightensWhateverGapsItIsAppliedTo() {
+        void tightensWhateverGapsItIsAppliedTo() {
             // The refinement reaches the gaps the typography it is applied to holds, so compressing an
             // already-compressed one compounds. Pinned because it is what a caller solving for a ramp
             // has to work around: every candidate is built off the uncompressed typography, or the
@@ -255,7 +255,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void compressedTowardLevelChangesNothingBeyondTheRampAndTheLineGaps() {
+        void changesNothingBeyondTheRampAndTheLineGaps() {
             // A box compressed to fit is the same box: the two looks, its footnote face, and both block
             // partings have to come through untouched, or the fit would restyle content it was only
             // asked to make room for.
@@ -270,7 +270,7 @@ class TooltipStyleTest {
     class PartedBy {
 
         @Test
-        void partedBySetsHowFarApartTheBlocksStand() {
+        void setsHowFarApartTheBlocksStand() {
             // The refinement reaches one of three measurements held in one value, so this is also what
             // pins it as the block parting rather than either of the two beside it.
             assertThat(buildTwoFacedStyle().partedBy(WIDER_SECTION_BREAK).spacing().sectionBreak())
@@ -278,7 +278,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void partedByChangesNothingElse() {
+        void changesNothingElse() {
             // A box widening its partings is saying nothing about how its lines are drawn, so the two
             // looks have to come through the refinement untouched.
             assertThat(buildTwoFacedStyle().partedBy(WIDER_SECTION_BREAK))
@@ -292,13 +292,13 @@ class TooltipStyleTest {
     class GroupedBy {
 
         @Test
-        void groupedBySetsHowFarApartTheNestedBlocksStand() {
+        void setsHowFarApartTheNestedBlocksStand() {
             assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK).spacing().groupBreak())
                 .isCloseTo(WIDER_GROUP_BREAK, within(TOLERANCE));
         }
 
         @Test
-        void groupedByChangesNothingElse() {
+        void changesNothingElse() {
             assertThat(buildTwoFacedStyle().groupedBy(WIDER_GROUP_BREAK))
                 .usingRecursiveComparison()
                 .ignoringFields("spacing.groupBreak")
@@ -310,13 +310,13 @@ class TooltipStyleTest {
     class StackedAt {
 
         @Test
-        void stackedAtSetsHowFarApartTheLinesOfABlockStand() {
+        void setsHowFarApartTheLinesOfABlockStand() {
             assertThat(buildTightenedStyle().spacing().lineGaps().resolveGapAfter(TWO_STEPS_UNDER))
                 .isCloseTo(TIGHTER_LINE_GAP, within(TOLERANCE));
         }
 
         @Test
-        void stackedAtChangesNothingElse() {
+        void changesNothingElse() {
             // A box tightening a run of its lines says nothing about how they are drawn or about how far
             // apart its blocks stand, so everything but the line gaps has to come through untouched.
             assertThat(buildTightenedStyle())
@@ -330,20 +330,20 @@ class TooltipStyleTest {
     class ResolveStyleFor {
 
         @Test
-        void resolveStyleForReturnsTheHeaderLookForAHeaderLine() {
+        void returnsTheHeaderLookForAHeaderLine() {
             assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.HEADER, IN_THE_BOXS_VOICE))
                 .isEqualTo(HEADER_STYLE);
         }
 
         @Test
-        void resolveStyleForReturnsTheParagraphLookForAParagraphLine() {
+        void returnsTheParagraphLookForAParagraphLine() {
             assertThat(buildTwoFacedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH, IN_THE_BOXS_VOICE))
                 .isEqualTo(PARAGRAPH_STYLE);
         }
 
         @ParameterizedTest
         @EnumSource(TooltipLineStyle.class)
-        void resolveStyleForAnswersEveryLineStyle(TooltipLineStyle lineStyle) {
+        void answersEveryLineStyle(TooltipLineStyle lineStyle) {
             // Swept over the enum rather than asserted per value: a renderer resolves whatever kind the
             // row it is drawing carries, so a kind with no answer would fail at paint time on the one
             // box that happened to use it.
@@ -352,7 +352,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForReturnsTheFootnoteLookForANoteAtTheFoot() {
+        void returnsTheFootnoteLookForANoteAtTheFoot() {
             assertThat(buildTwoFacedStyle()
                     .footnotedIn(FOOTNOTE_STYLE)
                     .resolveStyleFor(TooltipLineStyle.FOOTNOTE, IN_THE_BOXS_VOICE))
@@ -360,7 +360,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForDrawsALineSpeakingInTheBoxsVoiceAtItsKindsOwnSize() {
+        void drawsALineSpeakingInTheBoxsVoiceAtItsKindsOwnSize() {
             // The level a row carries when it is subordinate to nothing, which is most of them - the
             // lookup has to hand back the kind's own look untouched rather than a rebuilt copy of it.
             assertThat(buildShrinkingStyle()
@@ -369,7 +369,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForShrinksALineOncePerStepItStandsUnderTheBoxsVoice() {
+        void shrinksALineOncePerStepItStandsUnderTheBoxsVoice() {
             // The step compounds with depth rather than being one demotion applied to anything below the
             // box's voice, which is what makes a stack of levels read as a stack.
             assertThat(resolveParagraphSizeAt(ONE_STEP_UNDER))
@@ -379,7 +379,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForKeepsTheKindsOwnFaceWhileShrinkingIt() {
+        void keepsTheKindsOwnFaceWhileShrinkingIt() {
             // Only the size is demoted: a subordinate heading is still set in the heading face, or the
             // step would quietly restyle a whole kind of line instead of quieting one.
             assertThat(buildShrinkingStyle()
@@ -390,7 +390,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForDrawsEveryLevelAtItsKindsOwnSizeWhenNoStepWasAskedFor() {
+        void drawsEveryLevelAtItsKindsOwnSizeWhenNoStepWasAskedFor() {
             // The default path, and the one every box that lists nothing deep takes: a level carried by a
             // row means nothing to a style that was never asked to demote one.
             assertThat(buildTwoFacedStyle()
@@ -399,7 +399,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForStopsShrinkingAtTheSmallestLegibleSize() {
+        void stopsShrinkingAtTheSmallestLegibleSize() {
             // A listing is as deep as its subject matter, so nothing bounds the level a row can carry.
             // Left to run, the step would resolve a size no atlas renders, then zero, then a negative.
             assertThat(resolveParagraphSizeAt(DEEPER_THAN_THE_FLOOR))
@@ -407,7 +407,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForDrawsACompressedBoxsAnchoredTierAtItsKindsOwnSize() {
+        void drawsACompressedBoxsAnchoredTierAtItsKindsOwnSize() {
             // The tier a compressed box was anchored at is the one thing it does not give up, so the
             // lookup has to hand back that kind's own look however deep the tier sits.
             assertThat(buildCompressedStyle().resolveStyleFor(TooltipLineStyle.PARAGRAPH, ANCHOR_LEVEL))
@@ -415,7 +415,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForShrinksACompressedBoxsLinesOncePerStepAboveItsAnchor() {
+        void shrinksACompressedBoxsLinesOncePerStepAboveItsAnchor() {
             // The step is spent going back UP once the shrink is re-anchored, so a line lands on the
             // size its distance from the anchor names - the same size that distance names below the
             // box's own voice, since it is the same step.
@@ -428,7 +428,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForNeverDemotesALinePastItsKindsOwnSize() {
+        void neverDemotesALinePastItsKindsOwnSize() {
             // The floor is there to stop a demotion running away, so it must not raise one: a host whose
             // face is already smaller than the smallest legible size would otherwise have every
             // subordinate line drawn LARGER than the line it stands under.
@@ -441,7 +441,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForTreatsALevelBelowTheBoxsVoiceAsSpeakingInIt() {
+        void treatsALevelBelowTheBoxsVoiceAsSpeakingInIt() {
             // A row floors its own level at zero, but the lookup is public and is handed whatever a
             // caller has - a negative must not resolve a size LARGER than the box's own voice.
             assertThat(buildShrinkingStyle()
@@ -450,7 +450,7 @@ class TooltipStyleTest {
         }
 
         @Test
-        void resolveStyleForReturnsOneLookForEveryKindWhenBothAreTheSame() {
+        void returnsOneLookForEveryKindWhenBothAreTheSame() {
             // A box that wants its headings drawn like its body says so by passing one look twice, so
             // the lookup has to be free of any per-kind adjustment of its own.
             var flatStyle = TooltipStyle.createStyle(PARAGRAPH_STYLE, PARAGRAPH_STYLE);
@@ -466,7 +466,7 @@ class TooltipStyleTest {
     class ResolveLineGapAfter {
 
         @Test
-        void resolveLineGapAfterReturnsTheGapTheBoxHoldsThatTierAt() {
+        void returnsTheGapTheBoxHoldsThatTierAt() {
             // The lookup a surface makes per line, and the reason the spacing is reachable from the
             // style at all: a stated tier has to answer through the same object the looks come from.
             assertThat(buildTightenedStyle().resolveLineGapAfter(TWO_STEPS_UNDER))

@@ -38,7 +38,7 @@ final class RingRegionTest {
     class ToRings {
 
         @Test
-        void toRingsLeadsWithTheOuterRing() {
+        void leadsWithTheOuterRing() {
 
             var region = new RingRegion(OUTER_RING, List.of(FIRST_HOLE));
 
@@ -48,7 +48,7 @@ final class RingRegionTest {
         }
 
         @Test
-        void toRingsAppendsEveryHoleInTheOrderTheRegionHoldsThem() {
+        void appendsEveryHoleInTheOrderTheRegionHoldsThem() {
 
             var region = new RingRegion(OUTER_RING, List.of(FIRST_HOLE, SECOND_HOLE));
 
@@ -57,7 +57,7 @@ final class RingRegionTest {
         }
 
         @Test
-        void toRingsReturnsTheOuterRingAloneWhenNothingIsCutOut() {
+        void returnsTheOuterRingAloneWhenNothingIsCutOut() {
 
             var region = new RingRegion(OUTER_RING, List.of());
 
@@ -66,7 +66,7 @@ final class RingRegionTest {
         }
 
         @Test
-        void toRingsLeavesTheRegionUntouched() {
+        void leavesTheRegionUntouched() {
 
             var region = new RingRegion(OUTER_RING, List.of(FIRST_HOLE));
 

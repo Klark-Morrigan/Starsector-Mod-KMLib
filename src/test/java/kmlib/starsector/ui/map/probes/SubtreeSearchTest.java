@@ -30,7 +30,7 @@ class SubtreeSearchTest {
     class FindFirstUnder {
 
         @Test
-        void findFirstUnderAnswersAValueOnTheRootItself() {
+        void answersAValueOnTheRootItself() {
             // Root-first, so a container that answers is found before whatever it holds. A walk that
             // descended first would answer about the innermost widget of a surface rather than the
             // surface.
@@ -41,7 +41,7 @@ class SubtreeSearchTest {
         }
 
         @Test
-        void findFirstUnderAnswersAValueDeepInTheSubtree() {
+        void answersAValueDeepInTheSubtree() {
             // The ordinary case for both callers: what they look for is several containers below the
             // root, on a chain whose shape is one build's layout rather than anything to rely on.
             var targetFake = new CoreUiComponentFake();
@@ -52,7 +52,7 @@ class SubtreeSearchTest {
         }
 
         @Test
-        void findFirstUnderAnswersTheEarliestBranchWhenMoreThanOneComponentAnswers() {
+        void answersTheEarliestBranchWhenMoreThanOneComponentAnswers() {
             // "First" has to mean something stable, or a caller looking for one widget among several
             // gets a different one as the tree is rebuilt.
             var earlierFake = new CoreUiComponentFake();
@@ -71,7 +71,7 @@ class SubtreeSearchTest {
         }
 
         @Test
-        void findFirstUnderAnswersNothingWhenNoComponentDoes() {
+        void answersNothingWhenNoComponentDoes() {
             // The resting state on every screen that is not showing what a caller is looking for.
             assertThat(SubtreeSearch.<Object>findFirstUnder(
                     new CoreUiComponentFake(new CoreUiComponentFake()), component -> null))
@@ -79,14 +79,14 @@ class SubtreeSearchTest {
         }
 
         @Test
-        void findFirstUnderAnswersNothingWithNoRoot() {
+        void answersNothingWithNoRoot() {
 
             assertThat(SubtreeSearch.<Object>findFirstUnder(NO_ROOT, component -> ANSWER))
                 .isNull();
         }
 
         @Test
-        void findFirstUnderStopsDescendingPastTheSearchDepth() {
+        void stopsDescendingPastTheSearchDepth() {
             // The runaway guard, and the reason the bound is the walk's rather than each caller's: a
             // pathological tree - or one whose parent and child answer as each other's children -
             // would otherwise walk until the stack gave out, in the middle of a frame.
@@ -102,7 +102,7 @@ class SubtreeSearchTest {
         }
 
         @Test
-        void findFirstUnderTriesEveryComponentItReaches() {
+        void triesEveryComponentItReaches() {
             // What lets a caller hang a tally or a record of what it saw on the read itself, rather
             // than the walk having to offer a second callback for it. Three components, three tries.
             var readCount = new AtomicInteger();

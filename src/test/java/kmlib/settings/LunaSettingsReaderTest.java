@@ -41,7 +41,7 @@ class LunaSettingsReaderTest {
     class GetDouble {
 
         @Test
-        void getDoubleAnswersTheFallbackOutsideARunningGame() {
+        void answersTheFallbackOutsideARunningGame() {
             // The state that made this necessary: a value read on a path a test drives - a per-frame
             // budget, a cadence - reaching LunaLib's loader before the game has stood its settings
             // up, where the loader reads the mod set and dies.
@@ -51,7 +51,7 @@ class LunaSettingsReaderTest {
         }
 
         @Test
-        void getDoubleAnswersTheFallbackWithNoModManagerStoodUp() {
+        void answersTheFallbackWithNoModManagerStoodUp() {
             // The half-built state between a game that is up and one that is not, which is a
             // separate hop and so a separate way to throw.
             ModStateScopes.runWithoutModManager(() ->
@@ -60,7 +60,7 @@ class LunaSettingsReaderTest {
         }
 
         @Test
-        void getDoubleAnswersTheFallbackOnAnInstallWithoutLunaLib() {
+        void answersTheFallbackOnAnInstallWithoutLunaLib() {
             // LunaLib is a declared KMLib dependency, so this is not a state a shipped install
             // reaches - it is what the reading actually asks, and pinning it is what keeps the guard
             // from being quietly narrowed to one of the two states above.
@@ -74,7 +74,7 @@ class LunaSettingsReaderTest {
     class GetBoolean {
 
         @Test
-        void getBooleanAnswersTheFallbackOutsideARunningGame() {
+        void answersTheFallbackOutsideARunningGame() {
             // Posed against true, so a getter that had lost its guard and answered a primitive
             // default would fail rather than pass by coincidence.
             ModStateScopes.runWithoutGameSettings(() ->
@@ -87,7 +87,7 @@ class LunaSettingsReaderTest {
     class GetInt {
 
         @Test
-        void getIntAnswersTheFallbackOutsideARunningGame() {
+        void answersTheFallbackOutsideARunningGame() {
 
             ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(LunaSettingsReader.getInt(MOD_ID, FIELD_ID, 7))
@@ -99,7 +99,7 @@ class LunaSettingsReaderTest {
     class GetString {
 
         @Test
-        void getStringAnswersTheFallbackOutsideARunningGame() {
+        void answersTheFallbackOutsideARunningGame() {
 
             ModStateScopes.runWithoutGameSettings(() ->
                 assertThat(LunaSettingsReader.getString(MOD_ID, FIELD_ID, "unset"))

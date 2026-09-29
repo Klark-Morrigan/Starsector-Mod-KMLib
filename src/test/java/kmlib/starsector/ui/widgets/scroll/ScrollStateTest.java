@@ -20,7 +20,7 @@ final class ScrollStateTest {
     class ScrollBy {
 
         @Test
-        void scrollByAddsToTheOffset() {
+        void addsToTheOffset() {
 
             var state = new ScrollState();
 
@@ -31,7 +31,7 @@ final class ScrollStateTest {
         }
 
         @Test
-        void scrollByAccumulatesAcrossCalls() {
+        void accumulatesAcrossCalls() {
             // A run of notches sums, so repeated scrolling walks the content rather than jumping to a
             // single position.
             var state = new ScrollState();
@@ -48,7 +48,7 @@ final class ScrollStateTest {
     class SetOffset {
 
         @Test
-        void setOffsetJumpsStraightToTheGivenPosition() {
+        void jumpsStraightToTheGivenPosition() {
             // A scrollbar drag maps the pointer to an absolute position, so setOffset replaces the offset
             // rather than accumulating like scrollBy does.
             var state = new ScrollState();
@@ -65,7 +65,7 @@ final class ScrollStateTest {
     class ClampTo {
 
         @Test
-        void clampToHoldsTheOffsetWithinTheOverflow() {
+        void holdsTheOffsetWithinTheOverflow() {
             // A request past the content's bottom settles at the overflow, so the stored value tracks what
             // can be scrolled rather than drifting far below the last row.
             var state = new ScrollState();
@@ -78,7 +78,7 @@ final class ScrollStateTest {
         }
 
         @Test
-        void clampToFloorsANegativeOffsetAtTheTop() {
+        void floorsANegativeOffsetAtTheTop() {
 
             var state = new ScrollState();
 
@@ -90,7 +90,7 @@ final class ScrollStateTest {
         }
 
         @Test
-        void clampToCollapsesToTheTopWhenNothingOverflows() {
+        void collapsesToTheTopWhenNothingOverflows() {
             // A region that now fits (overflow 0) pulls the stored offset back to the top, so a shrunk
             // region does not stay scrolled into blank space.
             var state = new ScrollState();

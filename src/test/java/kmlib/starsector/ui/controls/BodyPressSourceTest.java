@@ -25,7 +25,7 @@ final class BodyPressSourceTest {
     class CreateRestingPressSource {
 
         @Test
-        void createRestingPressSourceLiftsNoCellOfAnyControl() {
+        void liftsNoCellOfAnyControl() {
 
             assertThat(BodyPressSource.createRestingPressSource()
                     .resolveControlPressSourceAt(LATE_CONTROL_INDEX)
@@ -34,7 +34,7 @@ final class BodyPressSourceTest {
         }
 
         @Test
-        void createRestingPressSourceAnswersEveryControlWithASourceOfItsOwn() {
+        void answersEveryControlWithASourceOfItsOwn() {
             // A position answered with nothing is a null a paint pass reads through, so the resting source
             // has to hand one back for a strip position no control stands at as readily as for one that has.
             assertThat(BodyPressSource.createRestingPressSource()

@@ -63,7 +63,7 @@ class LazyFontMeasurerTest {
     class MeasureLineWidth {
 
         @Test
-        void measureLineWidthAnswersWhatTheFaceMeasuresTheLineAt() {
+        void answersWhatTheFaceMeasuresTheLineAt() {
             // The port's whole contribution is asking the loaded face, so what is pinned is that the size
             // asked for reaches it rather than a size of this class's own.
             var faceMock = mock(LazyFont.class);
@@ -80,7 +80,7 @@ class LazyFontMeasurerTest {
     class MeasureLowercaseBandCentreDrop {
 
         @Test
-        void measureLowercaseBandCentreDropFallsAtTheMiddleOfTheGlyphBox() {
+        void fallsAtTheMiddleOfTheGlyphBox() {
             // At the atlas's own height nothing is scaled, so the drop is the glyph's top offset plus
             // half its height: 4 + 3.
             var drop = new LazyFontMeasurer(createFaceMock())
@@ -91,7 +91,7 @@ class LazyFontMeasurerTest {
         }
 
         @Test
-        void measureLowercaseBandCentreDropScalesWithTheSizeTheLineDrawsAt() {
+        void scalesWithTheSizeTheLineDrawsAt() {
             // Drawn at twice the atlas height every glyph unit is worth two, so the same box centres at
             // 14 rather than 7 - a drop left unscaled would put the rule near the cap height of a line
             // drawn large, which is exactly the case a box mixing faces produces.

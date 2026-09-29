@@ -47,7 +47,7 @@ final class CellHoverWashSourceTest {
     class CreateHoverFadedWashSource {
 
         @Test
-        void createHoverFadedWashSourceWashesEachCellAtItsOwnFadesPoint() {
+        void washesEachCellAtItsOwnFadesPoint() {
 
             var washes = CellHoverWashSource.createHoverFadedWashSource(WASH, HOVERS, FULLY_OPAQUE);
 
@@ -58,7 +58,7 @@ final class CellHoverWashSourceTest {
         }
 
         @Test
-        void createHoverFadedWashSourceHidesTheWashOfACellNothingIsPointingAt() {
+        void hidesTheWashOfACellNothingIsPointingAt() {
             // A renderer washes every cell it lays and lets the hidden ones fall away, so a resting cell has
             // to answer a paint the fill skips rather than one it composites at nothing.
             var washes = CellHoverWashSource.createHoverFadedWashSource(WASH, HOVERS, FULLY_OPAQUE);
@@ -68,7 +68,7 @@ final class CellHoverWashSourceTest {
         }
 
         @Test
-        void createHoverFadedWashSourceFadesEveryCellWithThePanelsOpacity() {
+        void fadesEveryCellWithThePanelsOpacity() {
 
             var washes = CellHoverWashSource.createHoverFadedWashSource(WASH, HOVERS, 0.5f);
 
@@ -81,7 +81,7 @@ final class CellHoverWashSourceTest {
     class ResolveSingleCellWashPaint {
 
         @Test
-        void resolveSingleCellWashPaintAnswersTheCellAWholeRowControlIsNumberedBy() {
+        void answersTheCellAWholeRowControlIsNumberedBy() {
             // The whole point of the default: a tick box and a toggle have one hit target, numbered zero by
             // the hit resolver, and a widget spelling that out for itself is a widget that has to know the
             // resolver's numbering to paint.

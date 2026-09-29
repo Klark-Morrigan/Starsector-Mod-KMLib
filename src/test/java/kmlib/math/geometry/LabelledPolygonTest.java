@@ -26,7 +26,7 @@ final class LabelledPolygonTest {
     class CreateRegularPolygon {
 
         @Test
-        void createRegularPolygonHasOneEdgePerSideAllSeedLabelled() {
+        void hasOneEdgePerSideAllSeedLabelled() {
 
             var polygon = LabelledPolygon.createRegularPolygon(
                 new Disk(new double[] {0, 0}, 100, 4),
@@ -45,7 +45,7 @@ final class LabelledPolygonTest {
         }
 
         @Test
-        void createRegularPolygonVerticesLieOnTheRadiusAboutTheCentre() {
+        void verticesLieOnTheRadiusAboutTheCentre() {
 
             double[] centre = {10, -5};
 
@@ -65,7 +65,7 @@ final class LabelledPolygonTest {
         }
 
         @Test
-        void createRegularPolygonStartsOnThePositiveXAxis() {
+        void startsOnThePositiveXAxis() {
 
             var polygon = LabelledPolygon.createRegularPolygon(
                 new Disk(new double[] {10, -5}, 200, 8),
@@ -80,7 +80,7 @@ final class LabelledPolygonTest {
     class FromLabelledEdges {
 
         @Test
-        void fromLabelledEdgesKeepsTheVerticesAndPerEdgeLabels() {
+        void keepsTheVerticesAndPerEdgeLabels() {
 
             var vertices = java.util.List.of(
                 new double[] {0, 0},
@@ -96,7 +96,7 @@ final class LabelledPolygonTest {
         }
 
         @Test
-        void fromLabelledEdgesRejectsMismatchedArrayLengths() {
+        void rejectsMismatchedArrayLengths() {
 
             var vertices = java.util.List.of(
                 new double[] {0, 0},

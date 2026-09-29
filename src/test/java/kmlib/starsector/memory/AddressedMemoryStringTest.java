@@ -52,7 +52,7 @@ final class AddressedMemoryStringTest {
     class Get {
 
         @Test
-        void getReadsTheValueStoredAtTheAddressComposedKey() {
+        void readsTheValueStoredAtTheAddressComposedKey() {
 
             sectorMemoryFake.storeValue(KEY, STORED);
 
@@ -61,7 +61,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void getReadsEachAddressApart() {
+        void readsEachAddressApart() {
             // One string, one base key, and as many slots as there are addresses - so what is stored at
             // one address is not what another reads.
             sectorMemoryFake.storeValue(KEY, STORED);
@@ -74,7 +74,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void getIsNullWhileTheAddressHoldsNothing() {
+        void isNullWhileTheAddressHoldsNothing() {
             // No default of its own: what an absent value stands for is the holder's vocabulary, so an
             // untouched slot reads back as nothing at all.
             assertThat(SAMPLE_VALUE.get(ADDRESS))
@@ -82,7 +82,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void getIsNullBeforeTheSectorExists() {
+        void isNullBeforeTheSectorExists() {
             sectorMemoryFake.removeSector();
 
             assertThat(SAMPLE_VALUE.get(ADDRESS))
@@ -94,7 +94,7 @@ final class AddressedMemoryStringTest {
     class Set {
 
         @Test
-        void setStoresTheValueAtTheAddressComposedKeyAndReportsTheWrite() {
+        void storesTheValueAtTheAddressComposedKeyAndReportsTheWrite() {
 
             assertThat(SAMPLE_VALUE.set(ADDRESS, STORED))
                 .isTrue();
@@ -103,7 +103,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void setLeavesEveryOtherAddressUntouched() {
+        void leavesEveryOtherAddressUntouched() {
 
             SAMPLE_VALUE.set(ADDRESS, STORED);
 
@@ -112,7 +112,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void setReportsNoWriteBeforeTheSectorExists() {
+        void reportsNoWriteBeforeTheSectorExists() {
             sectorMemoryFake.removeSector();
 
             assertThat(SAMPLE_VALUE.set(ADDRESS, STORED))
@@ -124,7 +124,7 @@ final class AddressedMemoryStringTest {
     class Clear {
 
         @Test
-        void clearRemovesTheAddressStoredValueAndReportsTheRemoval() {
+        void removesTheAddressStoredValueAndReportsTheRemoval() {
 
             sectorMemoryFake.storeValue(KEY, STORED);
 
@@ -135,7 +135,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void clearLeavesEveryOtherAddressStoredValueStanding() {
+        void leavesEveryOtherAddressStoredValueStanding() {
             // A clear is as partitioned as a write: emptying one panel's slot must not empty another's.
             sectorMemoryFake.storeValue(KEY, STORED);
             sectorMemoryFake.storeValue(OTHER_KEY, OTHER_STORED);
@@ -147,7 +147,7 @@ final class AddressedMemoryStringTest {
         }
 
         @Test
-        void clearReportsNoRemovalWhenTheAddressHeldNothing() {
+        void reportsNoRemovalWhenTheAddressHeldNothing() {
             // The report is what a caller gates its repaint on, so clearing an already-empty slot must
             // not look like a change.
             assertThat(SAMPLE_VALUE.clear(ADDRESS))

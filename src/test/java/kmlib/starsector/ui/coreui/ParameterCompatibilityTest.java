@@ -26,14 +26,14 @@ class ParameterCompatibilityTest {
     class IsParameterCompatible {
 
         @Test
-        void isParameterCompatibleAcceptsTheSameType() {
+        void acceptsTheSameType() {
 
             assertThat(ParameterCompatibility.isParameterCompatible(String.class, String.class))
                 .isTrue();
         }
 
         @Test
-        void isParameterCompatibleAcceptsASubtypeForAReferenceParameter() {
+        void acceptsASubtypeForAReferenceParameter() {
             // Assignment compatibility rather than identity: the core UI's own signatures are
             // written in interfaces and base classes, and a caller holds the concrete thing.
             assertThat(ParameterCompatibility.isParameterCompatible(
@@ -42,7 +42,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleRefusesASupertypeForAReferenceParameter() {
+        void refusesASupertypeForAReferenceParameter() {
             // The direction that does not hold: a member taking a String cannot be handed just any
             // CharSequence, and a reach that allowed it would resolve members a call could not.
             assertThat(ParameterCompatibility.isParameterCompatible(
@@ -51,7 +51,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleUnwrapsABoxForAPrimitiveParameter() {
+        void unwrapsABoxForAPrimitiveParameter() {
             // The load-bearing case. A caller can only ever hand over a Float, and render(float) is
             // the member the whole reach exists to call.
             assertThat(ParameterCompatibility.isParameterCompatible(float.class, Float.class))
@@ -59,14 +59,14 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleWidensANarrowerPrimitive() {
+        void widensANarrowerPrimitive() {
 
             assertThat(ParameterCompatibility.isParameterCompatible(float.class, int.class))
                 .isTrue();
         }
 
         @Test
-        void isParameterCompatibleWidensAnUnwrappedBox() {
+        void widensAnUnwrappedBox() {
             // Both conversions in sequence, which is what makes a literal 1 reach a float parameter
             // - and the reason one such argument can fit two overloads at once.
             assertThat(ParameterCompatibility.isParameterCompatible(float.class, Integer.class))
@@ -74,7 +74,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleRefusesAWiderPrimitiveForANarrowerParameter() {
+        void refusesAWiderPrimitiveForANarrowerParameter() {
             // Narrowing is what a direct call refuses without an explicit cast, and the reach has
             // no cast to offer.
             assertThat(ParameterCompatibility.isParameterCompatible(int.class, double.class))
@@ -82,14 +82,14 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleTreatsCharAsANarrowInteger() {
+        void treatsCharAsANarrowInteger() {
 
             assertThat(ParameterCompatibility.isParameterCompatible(int.class, char.class))
                 .isTrue();
         }
 
         @Test
-        void isParameterCompatibleWidensNothingIntoBoolean() {
+        void widensNothingIntoBoolean() {
             // Boolean stands outside the numeric widening order entirely, so a member taking one is
             // reached by a boolean and by nothing else.
             assertThat(ParameterCompatibility.isParameterCompatible(boolean.class, int.class))
@@ -97,7 +97,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleBoxesAPrimitiveForAReferenceParameter() {
+        void boxesAPrimitiveForAReferenceParameter() {
             // The other direction across the divide: a member declaring Object takes a float,
             // because a call would box it on the way in.
             assertThat(ParameterCompatibility.isParameterCompatible(Object.class, float.class))
@@ -105,7 +105,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleAcceptsNullForAReferenceParameter() {
+        void acceptsNullForAReferenceParameter() {
             // A null argument brings no type to match, so the only question left is whether the
             // parameter can hold one.
             assertThat(ParameterCompatibility.isParameterCompatible(String.class, null))
@@ -113,7 +113,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isParameterCompatibleRefusesNullForAPrimitiveParameter() {
+        void refusesNullForAPrimitiveParameter() {
 
             assertThat(ParameterCompatibility.isParameterCompatible(int.class, null))
                 .isFalse();
@@ -124,7 +124,7 @@ class ParameterCompatibilityTest {
     class IsCallableWith {
 
         @Test
-        void isCallableWithAcceptsEachArgumentInItsOwnPosition() {
+        void acceptsEachArgumentInItsOwnPosition() {
 
             assertThat(ParameterCompatibility.isCallableWith(
                 new Class<?>[] {CharSequence.class, float.class},
@@ -133,7 +133,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isCallableWithRefusesAnArgumentThatFitsOnlyAnotherPosition() {
+        void refusesAnArgumentThatFitsOnlyAnotherPosition() {
             // Position matters, and a check that merely counted compatible types would pass a call
             // the target refuses at runtime - where the failure is far from the cause.
             assertThat(ParameterCompatibility.isCallableWith(
@@ -143,7 +143,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isCallableWithRefusesTooFewArguments() {
+        void refusesTooFewArguments() {
 
             assertThat(ParameterCompatibility.isCallableWith(
                 new Class<?>[] {String.class, float.class},
@@ -152,14 +152,14 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void isCallableWithAcceptsAMemberTakingNothing() {
+        void acceptsAMemberTakingNothing() {
 
             assertThat(ParameterCompatibility.isCallableWith(new Class<?>[0], List.of()))
                 .isTrue();
         }
 
         @Test
-        void isCallableWithAcceptsANullArgumentInAReferencePosition() {
+        void acceptsANullArgumentInAReferencePosition() {
             // The list a null argument produces holds a null, which nothing downstream may treat as
             // "no constraint" by accident.
             assertThat(ParameterCompatibility.isCallableWith(
@@ -173,7 +173,7 @@ class ParameterCompatibilityTest {
     class ReadArgumentTypes {
 
         @Test
-        void readArgumentTypesUnwrapsABoxToItsPrimitive() {
+        void unwrapsABoxToItsPrimitive() {
             // Done once per call rather than per candidate member, and this is where the boxed
             // float that a caller must hand over becomes the float a member declares.
             assertThat(ParameterCompatibility.readArgumentTypes(new Object[] {0.75f, 3}))
@@ -181,14 +181,14 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void readArgumentTypesKeepsAnOrdinaryReferenceType() {
+        void keepsAnOrdinaryReferenceType() {
 
             assertThat(ParameterCompatibility.readArgumentTypes(new Object[] {"a label"}))
                 .containsExactly(String.class);
         }
 
         @Test
-        void readArgumentTypesContributesNoTypeForANullArgument() {
+        void contributesNoTypeForANullArgument() {
             // A null has no class to read, so its slot has to stay empty rather than collapse the
             // argument list and shift every later argument a position left.
             assertThat(ParameterCompatibility.readArgumentTypes(new Object[] {null, "a label"}))
@@ -196,7 +196,7 @@ class ParameterCompatibilityTest {
         }
 
         @Test
-        void readArgumentTypesIsEmptyForNoArguments() {
+        void isEmptyForNoArguments() {
 
             assertThat(ParameterCompatibility.readArgumentTypes(new Object[0]))
                 .isEmpty();
@@ -207,21 +207,21 @@ class ParameterCompatibilityTest {
     class UnboxOrKeepType {
 
         @Test
-        void unboxOrKeepTypeUnwrapsABox() {
+        void unwrapsABox() {
 
             assertThat(ParameterCompatibility.unboxOrKeepType(Double.class))
                 .isEqualTo(double.class);
         }
 
         @Test
-        void unboxOrKeepTypeLeavesAnOrdinaryTypeAlone() {
+        void leavesAnOrdinaryTypeAlone() {
 
             assertThat(ParameterCompatibility.unboxOrKeepType(String.class))
                 .isEqualTo(String.class);
         }
 
         @Test
-        void unboxOrKeepTypeLeavesAPrimitiveAlone() {
+        void leavesAPrimitiveAlone() {
 
             assertThat(ParameterCompatibility.unboxOrKeepType(int.class))
                 .isEqualTo(int.class);

@@ -39,7 +39,7 @@ final class VanillaButtonFillsTest {
     class ResolveShownFill {
 
         @Test
-        void resolveShownFillCompositesTheInteriorOntoTheBacking() {
+        void compositesTheInteriorOntoTheBacking() {
             // The dark step at alpha 175 over black. Samples as #17424f off the engine's own buttons; the
             // two channel values between that and this are the visor content the grab was taken over.
             assertThat(VanillaButtonFills.resolveShownFill(VANILLA_PAINT))
@@ -47,7 +47,7 @@ final class VanillaButtonFillsTest {
         }
 
         @Test
-        void resolveShownFillFollowsARestyledAccent() {
+        void followsARestyledAccent() {
             // The point of computing rather than sampling: a panel pointed at another palette moves these
             // buttons. An opaque dark step composites to itself, so what comes back is the accent handed
             // in and nothing of the stock one.
@@ -58,7 +58,7 @@ final class VanillaButtonFillsTest {
         }
 
         @Test
-        void resolveShownFillReturnsAnOpaqueInterior() {
+        void returnsAnOpaqueInterior() {
             // A shown interior covers the backing rather than tinting it: left translucent, the shade a
             // button reads at would depend on what the row happens to stand over.
             assertThat(VanillaButtonFills.resolveShownFill(VANILLA_PAINT).getAlpha())
@@ -70,7 +70,7 @@ final class VanillaButtonFillsTest {
     class ResolveUnpaintedFill {
 
         @Test
-        void resolveUnpaintedFillLaysDownNothingOfTheShownButtonsShade() {
+        void laysDownNothingOfTheShownButtonsShade() {
             // Zero alpha is what makes "no interior" a value rather than a quad the paint pass skips, and
             // the RGB is the shown button's own - so the travel between the two states is one interior
             // fading in over an unchanged backing rather than two colours crossing.

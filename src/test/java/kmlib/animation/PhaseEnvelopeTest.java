@@ -46,14 +46,14 @@ final class PhaseEnvelopeTest {
     class ResolveAmplitude {
 
         @Test
-        void resolveAmplitudeOpensTheTurnAtRest() {
+        void opensTheTurnAtRest() {
 
             assertThat(envelope.resolveAmplitude(TURN_START))
                 .isCloseTo(REST_AMPLITUDE, within(TOLERANCE));
         }
 
         @Test
-        void resolveAmplitudeClimbsToThePeakOverTheLeadingShare() {
+        void climbsToThePeakOverTheLeadingShare() {
 
             assertThat(envelope.resolveAmplitude(CLIMB_PHASE_AT_QUARTER_RAMP))
                 .isCloseTo(EASED_QUARTER_AMPLITUDE, within(TOLERANCE));
@@ -66,7 +66,7 @@ final class PhaseEnvelopeTest {
         }
 
         @Test
-        void resolveAmplitudeFallsBackOverTheRemainderOfTheTurn() {
+        void fallsBackOverTheRemainderOfTheTurn() {
 
             assertThat(envelope.resolveAmplitude(FALL_PHASE_AT_HALF_RAMP))
                 .isCloseTo(HALF_AMPLITUDE, within(TOLERANCE));
@@ -76,7 +76,7 @@ final class PhaseEnvelopeTest {
         }
 
         @Test
-        void resolveAmplitudeClosesTheTurnAtRest() {
+        void closesTheTurnAtRest() {
             // What lets a phase wrap without a jump: the amplitude a turn ends on is the one the next turn
             // opens on, so nothing about the seam is visible in what is drawn.
             assertThat(envelope.resolveAmplitude(TURN_END))
@@ -84,7 +84,7 @@ final class PhaseEnvelopeTest {
         }
 
         @Test
-        void resolveAmplitudeStandsAtThePeakFromTheOutsetWhenNothingIsSpentClimbing() {
+        void standsAtThePeakFromTheOutsetWhenNothingIsSpentClimbing() {
             // A share of nothing means a strike: the value is already at its peak on the turn's first instant
             // and spends the whole turn decaying, rather than dividing a climb by a span of nothing.
             var strikeEnvelope = new PhaseEnvelope(0f);
@@ -96,7 +96,7 @@ final class PhaseEnvelopeTest {
         }
 
         @Test
-        void resolveAmplitudeClimbsForTheWholeTurnWhenNothingIsLeftToFallOver() {
+        void climbsForTheWholeTurnWhenNothingIsLeftToFallOver() {
             // The mirror case, and the one that would divide by nothing if the fall were taken unguarded: a
             // turn spent entirely climbing ends at the peak.
             var swellEnvelope = new PhaseEnvelope(1f);
@@ -108,7 +108,7 @@ final class PhaseEnvelopeTest {
         }
 
         @Test
-        void resolveAmplitudeConfinesAPhaseFromOutsideTheTurn() {
+        void confinesAPhaseFromOutsideTheTurn() {
             // A caller reading a phase of its own need not guard it, so a reading that has drifted past
             // either end is answered with the end rather than with a curve run past where it folds back.
             var strikeEnvelope = new PhaseEnvelope(0f);
@@ -124,7 +124,7 @@ final class PhaseEnvelopeTest {
     class RiseFraction {
 
         @Test
-        void riseFractionConfinesAShareFromOutsideTheTurn() {
+        void confinesAShareFromOutsideTheTurn() {
             // Confined once, at the point the envelope is made, so no reading has to guard against a share
             // that would leave one of the two halves a negative span.
             assertThat(new PhaseEnvelope(-1f).riseFraction())

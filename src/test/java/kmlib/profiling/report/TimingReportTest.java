@@ -138,14 +138,14 @@ final class TimingReportTest {
     class Format {
 
         @Test
-        void formatReturnsANoticeWhenNothingWasRecorded() {
+        void returnsANoticeWhenNothingWasRecorded() {
 
             assertThat(formatTree(List.of()))
                 .isEqualTo("No timings recorded.");
         }
 
         @Test
-        void formatReturnsADifferentNoticeWhereTheRequestKeptNothing() {
+        void returnsADifferentNoticeWhereTheRequestKeptNothing() {
             // Not the same answer as an empty capture: one says nothing was measured, the other
             // says the question found nothing, and a reader narrowing a filter needs to know which.
             var report = TimingReport.format(
@@ -159,7 +159,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatRendersSectionNameCountAndMillisecondColumns() {
+        void rendersSectionNameCountAndMillisecondColumns() {
             // 2 calls, total 3_000_000ns = 3.000ms, avg 1.500ms.
             var node = new ProfileNode(
                 ProfileSection.registerSection("render"),
@@ -183,7 +183,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatIndentsASectionUnderTheOneItRanInside() {
+        void indentsASectionUnderTheOneItRanInside() {
             // The whole point of the tree in text: a reader follows a row to what it is made of by
             // reading down and to the right, rather than by matching spelled-alike prefixes.
             var report = formatOneOrigin(
@@ -196,7 +196,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatSeparatesSelfTimeFromTheInclusiveTotal() {
+        void separatesSelfTimeFromTheInclusiveTotal() {
             // A parent of 3.000ms holding a 2.000ms walk spent 1.000ms itself, which is what says
             // whether to look at the row or below it.
             var report = formatOneOrigin(
@@ -221,7 +221,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatHeadsAColumnGroupForEveryCounterAShownRowTouched() {
+        void headsAColumnGroupForEveryCounterAShownRowTouched() {
             // What a duration is read against: the row states how much it counted in all and what
             // one of them cost, beside the milliseconds it took to do it. Not how far one call's
             // worth spread - that is a per-call fact, and the line under a row already carries
@@ -237,7 +237,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatRaisesNoColumnGroupForACounterOnlyADroppedRowTouched() {
+        void raisesNoColumnGroupForACounterOnlyADroppedRowTouched() {
             // A reading narrowed to one namespace was narrowed to be read, and a group raised for
             // a counter none of its rows fill is a column of blanks standing in the way of that.
             var report = TimingReport.format(
@@ -256,7 +256,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatDividesSelfTimeByTheItemsTheRowCountedItself() {
+        void dividesSelfTimeByTheItemsTheRowCountedItself() {
             // 3.000ms of self time over 300 systems is 10 microseconds each - the number an
             // optimisation is judged against, and one milliseconds would round away.
             var report = formatOneOrigin(List.of(nodeCounting(
@@ -267,7 +267,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatLeavesACounterBlankOnARowThatNeverTouchedIt() {
+        void leavesACounterBlankOnARowThatNeverTouchedIt() {
             // A zero would say the row counted none of that thing, which is a fact worth seeing.
             // A row that does not count it at all has nothing to say, and a wide tree where every
             // row answers every counter is a table of zeroes hiding the rows that count.
@@ -282,7 +282,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatPricesNoItemForARowWhoseChildrenDidAllTheCounting() {
+        void pricesNoItemForARowWhoseChildrenDidAllTheCounting() {
             // The row still states the 7 counted beneath it, because that is what it is answerable
             // for. It states no cost each, because its self time bought none of those 7 - pricing
             // one against the other would charge this row for work a row below it did.
@@ -295,7 +295,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatMarksEachDurationBandWithHowManyDigitsItsTallyHas() {
+        void marksEachDurationBandWithHowManyDigitsItsTallyHas() {
             // The shape a mean and a maximum cannot show: the band holding the thousand quick calls
             // reads taller than the one holding the single stall, so a row that stalled once is
             // told apart from a row that is always this slow.
@@ -307,7 +307,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatShowsNoBandsForARowNoCallHasFinishedOn() {
+        void showsNoBandsForARowNoCallHasFinishedOn() {
             // A line of dots would read as calls that were all too fast to matter, which is the
             // opposite of what a row caught mid-call holds.
             var report = formatOneOrigin(List.of(nodeCounting(
@@ -319,7 +319,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesWhatTheSlowestCallWasDoingUnderTheRow() {
+        void writesWhatTheSlowestCallWasDoingUnderTheRow() {
             // The one fact that says what to optimise: the maximum column carries the duration, and
             // the tag and the counters it was reached over have nowhere else to go.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
@@ -336,7 +336,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesUnderWhatConditionsTheKeptCallRan() {
+        void writesUnderWhatConditionsTheKeptCallRan() {
             // A maximum that was the row's first call under a compiling JVM is a different
             // finding from one that was not, and the two are told apart where the number is.
             // Conditions alone earn the line: a cold call that counted nothing and was named
@@ -352,7 +352,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesTheSlowestCallsCountersWhereItWasNamedNothing() {
+        void writesTheSlowestCallsCountersWhereItWasNamedNothing() {
             // A call is worth a line for what it counted alone: most of the paths that count are
             // walkers, which have a tally to report and no name to give it.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(new WorstCall(
@@ -369,7 +369,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatMarksABandHoldingMoreCallsThanADigitCanCountAtItsWidest() {
+        void marksABandHoldingMoreCallsThanADigitCanCountAtItsWidest() {
             // The mark is a digit, so a tally past nine digits has to stop widening it: a column
             // that grew with the capture could not be read against the capture before it.
             var report = formatOneOrigin(List.of(nodeSpreadOver(
@@ -380,7 +380,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesNoWorstCallLineWhereItRepeatsTheMaximumColumn() {
+        void writesNoWorstCallLineWhereItRepeatsTheMaximumColumn() {
             // A call named nothing and counting nothing has only its duration to state, and the
             // table has already stated it - so the rows whose calls are all alike stay one line.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
@@ -391,7 +391,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesWhatARowWentOverBudgetByBesideTheCallThatBrokeIt() {
+        void writesWhatARowWentOverBudgetByBesideTheCallThatBrokeIt() {
             // A finding and its evidence on one line: the bound that was broken says what is wrong,
             // and the call beside it is what a reader would otherwise go looking for.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
@@ -410,7 +410,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatNamesABreachedRowsCallTheLatestBreachRatherThanTheWorst() {
+        void namesABreachedRowsCallTheLatestBreachRatherThanTheWorst() {
             // The two lines carry different calls: an unbreached row keeps the slowest it has seen,
             // a breached one the latest that broke the bound however fast that call was. A breached
             // row saying "worst" beside a maximum column holding the first of the two reads as a
@@ -425,7 +425,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesTheBreachEvenWhereTheCallHasNothingElseToAdd() {
+        void writesTheBreachEvenWhereTheCallHasNothingElseToAdd() {
             // A row is one line while its calls are alike, but a broken bound is never a repeat of
             // the maximum column: it is the reason to look at the row at all.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(
@@ -437,7 +437,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesWhatOneTurnOfTheLoopCostInEachStep() {
+        void writesWhatOneTurnOfTheLoopCostInEachStep() {
             // What the row's own columns cannot say: they are per call, and a bake's cost scales
             // with the cells it turned over rather than with how often it ran.
             var report = formatOneOrigin(List.of(nodeIterating(
@@ -451,7 +451,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesTheLoopLineUnderTheWorstCallLine() {
+        void writesTheLoopLineUnderTheWorstCallLine() {
             // Both say something the columns do not, about different denominators - the call and
             // the turn - so both are written, the call's first since the columns are per call.
             var report = formatOneOrigin(List.of(nodeIterating(
@@ -464,7 +464,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatWritesNoLoopLineForARowThatRanNone() {
+        void writesNoLoopLineForARowThatRanNone() {
             // Most rows, which would otherwise each carry a line saying they iterated over
             // nothing.
             var report = formatOneOrigin(List.of(nodeWhoseWorstCall(WorstCall.NO_CALL)));
@@ -474,7 +474,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatKeepsTheColumnsAlignedAroundALoopLine() {
+        void keepsTheColumnsAlignedAroundALoopLine() {
             // The loop line belongs to no column for the same reason the worst call's does: its
             // numbers are per turn, and its tag is a caller's own text of a caller's own length.
             var report = formatOneOrigin(List.of(nodeIterating(
@@ -485,7 +485,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatKeepsTheColumnsAlignedAroundAWorstCallLine() {
+        void keepsTheColumnsAlignedAroundAWorstCallLine() {
             // The line belongs to no column and carries a caller's own text, so measuring it would
             // widen the section column by however long that text was and push every number away
             // from the header it sits under.
@@ -497,7 +497,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatHeadsEachGroupOfRootsWithTheOriginItWasMeasuredIn() {
+        void headsEachGroupOfRootsWithTheOriginItWasMeasuredIn() {
             // Two games in one capture: without the headings a reader has two rows spelled alike
             // and no way to say which save either came from, which is the one thing that would let
             // them go back and reproduce it.
@@ -517,7 +517,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatNamesEachRowByItsWholePathInAListing() {
+        void namesEachRowByItsWholePathInAListing() {
             // A listing has taken the rows out of the tree, so the indent that said what a row ran
             // inside is gone: without the path, two rows of one section under two parents would be
             // one name printed twice.
@@ -530,7 +530,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatSortsAListingByWhatEachRowSpentItself() {
+        void sortsAListingByWhatEachRowSpentItself() {
             // The 2.000ms walk before the 3.000ms rebuild that was waiting on it: what a reader
             // hunting for time to save opens next is the row that spent it, not the row above it.
             var report = TimingReport.format(
@@ -542,7 +542,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatShowsOnlyTheRowsThatCountedInACounterListing() {
+        void showsOnlyTheRowsThatCountedInACounterListing() {
             // A listing of what walked is unreadable beside the rows that never walked: the
             // question is which pass went looking for the sector, and a row that never did is not
             // an answer at zero.
@@ -559,7 +559,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatDividesTotalsByTheFramesTheBeatRanFor() {
+        void dividesTotalsByTheFramesTheBeatRanFor() {
             // What a reader is after: 3.000ms over two frames is 1.500ms a frame, which is a figure
             // that means the same whether the capture ran for four seconds or four minutes.
             var beat = ProfileSection.registerSection(PARENT_SECTION);
@@ -575,7 +575,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatReportsAsCapturedWhereTheFrameBeatNeverRanInThatGame() {
+        void reportsAsCapturedWhereTheFrameBeatNeverRanInThatGame() {
             // A capture holding no frame of the beat cannot say what one cost, and dividing by
             // nothing would report a figure no frame ever had - so it says so and leaves the
             // totals alone.
@@ -591,7 +591,7 @@ final class TimingReportTest {
         }
 
         @Test
-        void formatKeepsTheColumnsAlignedAroundAnOriginHeading() {
+        void keepsTheColumnsAlignedAroundAnOriginHeading() {
             // The heading belongs to no column and carries a label a caller composed, so measuring
             // it would widen the section column by however long that label was.
             var report = formatTree(List.of(new ProfileOriginTree(

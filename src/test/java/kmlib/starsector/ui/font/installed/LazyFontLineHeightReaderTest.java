@@ -29,7 +29,7 @@ class LazyFontLineHeightReaderTest {
     class ReadLineHeight {
 
         @Test
-        void readLineHeightAnswersTheLoadedFacesOwnLineHeight() {
+        void answersTheLoadedFacesOwnLineHeight() {
             // The install decides the number, so the reader has to take it off the face it loaded rather
             // than off anything the enum could state.
             var faceMock = mock(LazyFont.class);
@@ -49,7 +49,7 @@ class LazyFontLineHeightReaderTest {
         }
 
         @Test
-        void readLineHeightAnswersZeroWhenTheFaceCannotLoad() {
+        void answersZeroWhenTheFaceCannotLoad() {
             // A face that will not load paints nothing, so a line in it takes no room: the reader answers
             // no height rather than throwing through the style being composed.
             try (var cacheMock = mockStatic(LazyFontCache.class)) {

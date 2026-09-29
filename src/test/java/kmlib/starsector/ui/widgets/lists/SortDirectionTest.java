@@ -16,7 +16,7 @@ final class SortDirectionTest {
     class PersistenceKey {
 
         @Test
-        void persistenceKeyIsTheFrozenKeyForEachDirection() {
+        void isTheFrozenKeyForEachDirection() {
             // Pinned as literals: renaming a key silently resets every save that stored that direction
             // back to its mode's default, so a change must break this test before it ships.
             assertThat(SortDirection.ASCENDING.persistenceKey())
@@ -31,7 +31,7 @@ final class SortDirectionTest {
     class Opposite {
 
         @Test
-        void oppositeFlipsEachDirectionToTheOther() {
+        void flipsEachDirectionToTheOther() {
 
             assertThat(SortDirection.ASCENDING.opposite())
                 .isEqualTo(SortDirection.DESCENDING);

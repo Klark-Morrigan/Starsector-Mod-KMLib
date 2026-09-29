@@ -19,32 +19,32 @@ final class EasingTest {
     class EaseInOut {
 
         @Test
-        void easeInOutPinsBothEndsToTheirLinearValues() {
+        void pinsBothEndsToTheirLinearValues() {
             assertThat(Easing.easeInOut(0f)).isCloseTo(0f, within(TOLERANCE));
             assertThat(Easing.easeInOut(1f)).isCloseTo(1f, within(TOLERANCE));
         }
 
         @Test
-        void easeInOutCrossesTheLinearLineAtTheMidpoint() {
+        void crossesTheLinearLineAtTheMidpoint() {
             assertThat(Easing.easeInOut(0.5f)).isCloseTo(0.5f, within(TOLERANCE));
         }
 
         @Test
-        void easeInOutLagsTheLinearRampWhileEasingInOutOfTheStart() {
+        void lagsTheLinearRampWhileEasingInOutOfTheStart() {
             // Below the midpoint the eased value trails a straight ramp - the slow, accelerating start.
             assertThat(Easing.easeInOut(0.25f)).isCloseTo(0.15625f, within(TOLERANCE));
             assertThat(Easing.easeInOut(0.25f)).isLessThan(0.25f);
         }
 
         @Test
-        void easeInOutLeadsTheLinearRampWhileEasingIntoTheEnd() {
+        void leadsTheLinearRampWhileEasingIntoTheEnd() {
             // Above the midpoint it runs ahead of the ramp, then decelerates - the settling finish.
             assertThat(Easing.easeInOut(0.75f)).isCloseTo(0.84375f, within(TOLERANCE));
             assertThat(Easing.easeInOut(0.75f)).isGreaterThan(0.75f);
         }
 
         @Test
-        void easeInOutIsSymmetricAboutItsMidpoint() {
+        void isSymmetricAboutItsMidpoint() {
             // easeInOut(t) + easeInOut(1 - t) == 1, so a forward and a reversed run trace the same shape.
             for (var t = 0f; t <= 1f; t += 0.1f) {
                 assertThat(Easing.easeInOut(t) + Easing.easeInOut(1f - t))
@@ -53,7 +53,7 @@ final class EasingTest {
         }
 
         @Test
-        void easeInOutRisesMonotonicallyAcrossTheRange() {
+        void risesMonotonicallyAcrossTheRange() {
             var previous = Easing.easeInOut(0f);
             for (var t = 0.05f; t <= 1f; t += 0.05f) {
                 var current = Easing.easeInOut(t);
@@ -63,7 +63,7 @@ final class EasingTest {
         }
 
         @Test
-        void easeInOutClampsProgressPastEitherEndToTheNearestBound() {
+        void clampsProgressPastEitherEndToTheNearestBound() {
             // An overshooting progress settles at the end rather than folding back through the polynomial.
             assertThat(Easing.easeInOut(1.4f)).isCloseTo(1f, within(TOLERANCE));
             assertThat(Easing.easeInOut(-0.6f)).isCloseTo(0f, within(TOLERANCE));

@@ -31,13 +31,13 @@ final class VanillaActionIdsTest {
     class ResolveActionId {
 
         @Test
-        void resolveActionIdFindsAnIdHandedOverInTheFirstPosition() {
+        void findsAnIdHandedOverInTheFirstPosition() {
             assertThat(VanillaActionIds.resolveActionId(RowAction.MOVE_UP, null, RowAction.class))
                 .isEqualTo(RowAction.MOVE_UP);
         }
 
         @Test
-        void resolveActionIdFindsAnIdHandedOverInTheSecondPosition() {
+        void findsAnIdHandedOverInTheSecondPosition() {
             // The position the engine's own panel leaves the ID in for some of its widgets. A reader of
             // the first position alone drops every press from those.
             assertThat(VanillaActionIds.resolveActionId(null, RowAction.MOVE_DOWN, RowAction.class))
@@ -45,7 +45,7 @@ final class VanillaActionIdsTest {
         }
 
         @Test
-        void resolveActionIdReadsTheIdOffAWidgetHandedOverInstead() {
+        void readsTheIdOffAWidgetHandedOverInstead() {
             // What the engine's panel actually does with a button: it passes the widget and expects the
             // ID to be taken off it.
             var buttonMock = Mockito.mock(ButtonAPI.class);
@@ -58,7 +58,7 @@ final class VanillaActionIdsTest {
         }
 
         @Test
-        void resolveActionIdPrefersAnIdHandedOverToOneCarriedByAWidget() {
+        void prefersAnIdHandedOverToOneCarriedByAWidget() {
             // Both shapes at once, which a surface passing the ID alongside its widget produces. The
             // direct answer is taken, so no case depends on a widget being asked for data it may not hold.
             var buttonMock = Mockito.mock(ButtonAPI.class);
@@ -71,7 +71,7 @@ final class VanillaActionIdsTest {
         }
 
         @Test
-        void resolveActionIdAnswersNothingForAnIdOfAnotherKind() {
+        void answersNothingForAnIdOfAnotherKind() {
             // A press on a widget somebody else added. Answering nothing is what leaves it alone rather
             // than acting on a guess.
             assertThat(VanillaActionIds.resolveActionId(
@@ -82,7 +82,7 @@ final class VanillaActionIdsTest {
         }
 
         @Test
-        void resolveActionIdAnswersNothingForAWidgetCarryingNoId() {
+        void answersNothingForAWidgetCarryingNoId() {
             // A widget added without one, which reads the same as somebody else's: there is nothing to act
             // on either way.
             var buttonMock = Mockito.mock(ButtonAPI.class);
@@ -92,7 +92,7 @@ final class VanillaActionIdsTest {
         }
 
         @Test
-        void resolveActionIdAnswersNothingWhenHandedNeitherObject() {
+        void answersNothingWhenHandedNeitherObject() {
             assertThat(VanillaActionIds.resolveActionId(null, null, RowAction.class))
                 .isNull();
         }

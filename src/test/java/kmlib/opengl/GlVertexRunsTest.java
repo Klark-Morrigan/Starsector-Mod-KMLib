@@ -19,7 +19,7 @@ final class GlVertexRunsTest {
     @Nested
     class FlattenVertices {
         @Test
-        void flattenVerticesPacksEachPointInOrderAsAnXYPair() {
+        void packsEachPointInOrderAsAnXYPair() {
             var flat = GlVertexRuns.flattenVertices(List.of(
                 new double[] {1, 2},
                 new double[] {3, 4},
@@ -30,7 +30,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flattenVerticesYieldsAnEmptyRunForNoPoints() {
+        void yieldsAnEmptyRunForNoPoints() {
             assertThat(GlVertexRuns.flattenVertices(List.of()))
                 .isEmpty();
         }
@@ -39,7 +39,7 @@ final class GlVertexRunsTest {
     @Nested
     class FlattenLoops {
         @Test
-        void flattenLoopsPacksOneRunPerLoopInOrder() {
+        void packsOneRunPerLoopInOrder() {
             var runs = GlVertexRuns.flattenLoops(List.of(
                 List.of(
                     new double[] {0, 0},
@@ -60,7 +60,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flattenLoopsPacksEachLoopExactlyAsFlattenVerticesWould() {
+        void packsEachLoopExactlyAsFlattenVerticesWould() {
             // The plural is the singular applied down the list; a divergence here would show
             // as geometry that draws correctly alone and wrongly in company.
             var loop = List.of(
@@ -72,13 +72,13 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void flattenLoopsYieldsNoRunsForNoLoops() {
+        void yieldsNoRunsForNoLoops() {
             assertThat(GlVertexRuns.flattenLoops(List.of()))
                 .isEmpty();
         }
 
         @Test
-        void flattenLoopsKeepsAnEmptyLoopAsAnEmptyRun() {
+        void keepsAnEmptyLoopAsAnEmptyRun() {
             // Dropping it would silently renumber the runs against the loops they came from,
             // which a caller pairing them up by index would never see.
             var runs = GlVertexRuns.flattenLoops(List.of(
@@ -95,7 +95,7 @@ final class GlVertexRunsTest {
     @Nested
     class UnflattenVertices {
         @Test
-        void unflattenVerticesReadsEachXYPairBackOutInOrder() {
+        void readsEachXYPairBackOutInOrder() {
             var vertices = GlVertexRuns.unflattenVertices(new float[] {1, 2, 3, 4, 5, 6});
 
             assertThat(vertices)
@@ -106,7 +106,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void unflattenVerticesRoundTripsWhatFlattenVerticesPacked() {
+        void roundTripsWhatFlattenVerticesPacked() {
             // The two halves of the packing must agree; a stride that drifted apart would
             // survive either test alone.
             var polygon = List.of(
@@ -122,7 +122,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void unflattenVerticesYieldsNoPointsForAnEmptyRun() {
+        void yieldsNoPointsForAnEmptyRun() {
             assertThat(GlVertexRuns.unflattenVertices(GlVertexRuns.NO_VERTICES))
                 .isEmpty();
         }
@@ -131,7 +131,7 @@ final class GlVertexRunsTest {
     @Nested
     class PackFloats {
         @Test
-        void packFloatsWritesEachFloatIntoTheRunInOrder() {
+        void writesEachFloatIntoTheRunInOrder() {
             var run = GlVertexRuns.packFloats(List.of(1f, 2f, 3f, 4f, 5f));
 
             assertThat(run)
@@ -139,7 +139,7 @@ final class GlVertexRunsTest {
         }
 
         @Test
-        void packFloatsYieldsAnEmptyRunForNoFloats() {
+        void yieldsAnEmptyRunForNoFloats() {
             assertThat(GlVertexRuns.packFloats(List.of()))
                 .isEmpty();
         }

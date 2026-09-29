@@ -29,34 +29,34 @@ final class DiskTest {
     class Construct {
 
         @Test
-        void constructRejectsANullCentre() {
+        void rejectsANullCentre() {
             assertThatThrownBy(() -> new Disk(null, 10, 8))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("centre");
         }
 
         @Test
-        void constructRejectsACentreOfFewerThanTwoCoordinates() {
+        void rejectsACentreOfFewerThanTwoCoordinates() {
             assertThatThrownBy(() -> new Disk(new double[] {1}, 10, 8))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("centre");
         }
 
         @Test
-        void constructRejectsASegmentCountBelowThree() {
+        void rejectsASegmentCountBelowThree() {
             assertThatThrownBy(() -> new Disk(CENTRE, 10, 2))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("segments");
         }
 
         @Test
-        void constructAcceptsTheLowestSegmentCountThatEnclosesAnArea() {
+        void acceptsTheLowestSegmentCountThatEnclosesAnArea() {
             assertThatCode(() -> new Disk(CENTRE, 10, 3))
                 .doesNotThrowAnyException();
         }
 
         @Test
-        void constructAcceptsARadiusTooSmallToEncloseAnArea() {
+        void acceptsARadiusTooSmallToEncloseAnArea() {
             // Legal by design: the clips read it as "withholds nothing", so a computed
             // radius needs no guard at the call site.
             assertThatCode(() -> new Disk(CENTRE, 0, 8))
@@ -100,7 +100,7 @@ final class DiskTest {
     class CentreX {
 
         @Test
-        void centreXReadsTheFirstCoordinate() {
+        void readsTheFirstCoordinate() {
             assertThat(new Disk(new double[] {3, 7}, 10, 8).centreX())
                 .isEqualTo(3.0);
         }
@@ -110,7 +110,7 @@ final class DiskTest {
     class CentreY {
 
         @Test
-        void centreYReadsTheSecondCoordinate() {
+        void readsTheSecondCoordinate() {
             assertThat(new Disk(new double[] {3, 7}, 10, 8).centreY())
                 .isEqualTo(7.0);
         }

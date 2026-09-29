@@ -67,7 +67,7 @@ class RowSlotTest {
     @Nested
     class ComputeWidth {
         @Test
-        void computeWidthSquaresAnImageOffTheLineHeight() {
+        void squaresAnImageOffTheLineHeight() {
             // An image hangs as tall as its line, so it sits level with the label beside it whatever
             // face that label draws in.
             assertThat(computeWidth(new RowSlot.Image("crest_a"), LINE_HEIGHT))
@@ -75,7 +75,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthSquaresATickOffTheLineHeight() {
+        void squaresATickOffTheLineHeight() {
             // Matching the image's width is what lets a row leading with a tick lay its label exactly
             // where a crested row lays its own.
             assertThat(computeWidth(new RowSlot.Tick(true), LINE_HEIGHT))
@@ -83,7 +83,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthIsUnchangedByWhetherATickIsTicked() {
+        void isUnchangedByWhetherATickIsTicked() {
             // A ticked box and a clear one occupy the same column, so a list cannot shift as its
             // options are ticked.
             assertThat(computeWidth(new RowSlot.Tick(false), LINE_HEIGHT))
@@ -91,7 +91,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthTakesATriangleFromTheDrawnTriangleSlot() {
+        void takesATriangleFromTheDrawnTriangleSlot() {
             // The reserved width is the width the marker is drawn at, so the column and the shape in it
             // cannot disagree - and it stays narrower than the line, reading as a compact marker.
             assertThat(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT))
@@ -100,13 +100,13 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthIsUnchangedByWhichWayATrianglePoints() {
+        void isUnchangedByWhichWayATrianglePoints() {
             assertThat(computeWidth(new RowSlot.Triangle(TriangleDirection.DOWN), LINE_HEIGHT))
                 .isEqualTo(computeWidth(new RowSlot.Triangle(TriangleDirection.UP), LINE_HEIGHT));
         }
 
         @Test
-        void computeWidthMeasuresARunOfTextThroughTheBoundMeasurement() {
+        void measuresARunOfTextThroughTheBoundMeasurement() {
             // Four characters at one unit each: the slot spends the measurement it was handed rather
             // than deriving a width from the line it sits on.
             assertThat(computeWidth(new RowSlot.Text(new TextSpan("9999", SLOT_COLOUR)), LINE_HEIGHT))
@@ -114,7 +114,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthChargesNothingForABlankRunOfText() {
+        void chargesNothingForABlankRunOfText() {
             // A caller that assembled a run from parts and came up empty gets the column it would have
             // had without the run, rather than a gap held open in front of no glyphs.
             assertThat(computeWidth(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)), LINE_HEIGHT))
@@ -122,7 +122,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthChargesNothingForAWhitespaceOnlyRunOfText() {
+        void chargesNothingForAWhitespaceOnlyRunOfText() {
             // Which runs read as nothing-to-draw is TextSpan's rule, so a run of separators is charged
             // as blank here too rather than as the width its spaces happen to measure.
             assertThat(computeWidth(new RowSlot.Text(new TextSpan("   ", SLOT_COLOUR)), LINE_HEIGHT))
@@ -130,7 +130,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthSumsTheRunsOfAValueDrawnInSeveral() {
+        void sumsTheRunsOfAValueDrawnInSeveral() {
             // Four characters, the word space, then two more: the column reserves room for the space the
             // runs are drawn apart by, or the second run would be painted past the edge it was sized to.
             assertThat(computeWidth(
@@ -142,7 +142,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthChargesAValueOfOneRunWhatTheSingleRunKindIsCharged() {
+        void chargesAValueOfOneRunWhatTheSingleRunKindIsCharged() {
             // A value picked out in two colours and a plain one must be priced by one rule, or a stack
             // mixing them would reserve two different columns for the same glyphs.
             assertThat(computeWidth(
@@ -154,7 +154,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthChargesNothingForAValueWhoseRunsAreAllBlank() {
+        void chargesNothingForAValueWhoseRunsAreAllBlank() {
             // Neither the glyphs nor the gap between them: a caller that assembled every run from parts
             // and came up empty gets the column collapsed, exactly as the single-run kind does.
             assertThat(computeWidth(
@@ -166,7 +166,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthChargesNoGapInFrontOfABlankRunOfAValue() {
+        void chargesNoGapInFrontOfABlankRunOfAValue() {
             // A value whose working came out empty measures as the finding alone, rather than as the
             // finding held one gap in from the column it is aligned to.
             assertThat(computeWidth(
@@ -178,13 +178,13 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthChargesNothingForAnUnfilledSlot() {
+        void chargesNothingForAnUnfilledSlot() {
             assertThat(computeWidth(RowSlot.EMPTY, LINE_HEIGHT))
                 .isEqualTo(RowSlot.NO_WIDTH);
         }
 
         @Test
-        void computeWidthMeasuresNoTextForTheKindsSizedOffGeometry() {
+        void measuresNoTextForTheKindsSizedOffGeometry() {
             // An image, a tick, and a triangle answer from the line alone, so a container with no text
             // measurement to hand - or one bound to another face - still gets their widths.
             assertThat(new RowSlot.Image("crest_a").computeWidth(LINE_HEIGHT, UNSPENDABLE_MEASURER))
@@ -199,7 +199,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthScalesTheSquareAndTriangleKindsWithTheLineHeight() {
+        void scalesTheSquareAndTriangleKindsWithTheLineHeight() {
             // Every kind whose width is geometry rather than glyphs grows with the line, so a stack
             // drawn larger keeps the same proportions rather than shrinking its slots.
             assertThat(computeWidth(new RowSlot.Image("crest_a"), TALLER_LINE_HEIGHT))
@@ -211,7 +211,7 @@ class RowSlotTest {
         }
 
         @Test
-        void computeWidthLeavesARunOfTextUnchangedByTheLineHeight() {
+        void leavesARunOfTextUnchangedByTheLineHeight() {
             // Text is as wide as the face it was measured in, and that face is already bound into the
             // measurement - so a taller line does not silently re-price a run measured on another face.
             var textSlot = new RowSlot.Text(new TextSpan("9999", SLOT_COLOUR));
@@ -224,7 +224,7 @@ class RowSlotTest {
     @Nested
     class IsFilled {
         @Test
-        void isFilledIsTrueForTheKindsThatAlwaysDrawSomething() {
+        void isTrueForTheKindsThatAlwaysDrawSomething() {
             // An image, a tick, and a triangle each draw whatever state they carry, so a row holding
             // one fills that flank and the label beside it starts past the reserved column.
             assertThat(new RowSlot.Image("crest_a").isFilled())
@@ -236,13 +236,13 @@ class RowSlotTest {
         }
 
         @Test
-        void isFilledIsTrueForARunOfTextWithGlyphs() {
+        void isTrueForARunOfTextWithGlyphs() {
             assertThat(new RowSlot.Text(new TextSpan("12", SLOT_COLOUR)).isFilled())
                 .isTrue();
         }
 
         @Test
-        void isFilledIsTrueForAValueWhereAnyRunHasGlyphs() {
+        void isTrueForAValueWhereAnyRunHasGlyphs() {
             // A value stating only its finding, its working having come out empty, still fills its
             // column - the row draws something there and the label must stay clear of it.
             assertThat(new RowSlot.TextRuns(List.of(
@@ -253,7 +253,7 @@ class RowSlotTest {
         }
 
         @Test
-        void isFilledIsFalseForAValueWhoseRunsAreAllBlank() {
+        void isFalseForAValueWhoseRunsAreAllBlank() {
             assertThat(new RowSlot.TextRuns(List.of(
                         TextSpan.createBlank(SLOT_COLOUR),
                         new TextSpan("   ", OTHER_SLOT_COLOUR)))
@@ -262,13 +262,13 @@ class RowSlotTest {
         }
 
         @Test
-        void isFilledIsFalseForAnUnfilledSlot() {
+        void isFalseForAnUnfilledSlot() {
             assertThat(RowSlot.EMPTY.isFilled())
                 .isFalse();
         }
 
         @Test
-        void isFilledIsFalseForABlankRunOfText() {
+        void isFalseForABlankRunOfText() {
             // A caller that assembled a value from parts and came up empty said its row has a value;
             // the row is charged the absence it actually draws rather than a gutter in front of no
             // glyphs.
@@ -277,13 +277,13 @@ class RowSlotTest {
         }
 
         @Test
-        void isFilledIsFalseForAWhitespaceOnlyRunOfText() {
+        void isFalseForAWhitespaceOnlyRunOfText() {
             assertThat(new RowSlot.Text(new TextSpan("   ", SLOT_COLOUR)).isFilled())
                 .isFalse();
         }
 
         @Test
-        void isFilledAgreesWithWhetherTheSlotIsChargedAWidth() {
+        void agreesWithWhetherTheSlotIsChargedAWidth() {
             // The two readings of "is anything here" must not part company: a slot a container skips
             // laying out is exactly one it would have reserved nothing for.
             assertThat(new RowSlot.Text(TextSpan.createBlank(SLOT_COLOUR)).isFilled())
@@ -297,7 +297,7 @@ class RowSlotTest {
     class PaintSlot {
 
         @Test
-        void paintSlotHandsEachKindToItsOwnPainterMethod() {
+        void handsEachKindToItsOwnPainterMethod() {
             // How a surface is meant to branch on the kind, so every kind reaching its own method is the
             // whole of what it promises. Run over all six at once, since a kind wired to a neighbour's
             // method is exactly the mistake a per-kind case would read as passing.
@@ -312,7 +312,7 @@ class RowSlotTest {
         }
 
         @Test
-        void paintSlotHandsTheSlotItselfToThePainterThatTookIt() {
+        void handsTheSlotItselfToThePainterThatTookIt() {
             // A surface reads the slot's own content off the method it landed in, so the slot has to be
             // handed over rather than only its kind named.
             var painter = new RecordingRowSlotPainter();
@@ -328,7 +328,7 @@ class RowSlotTest {
     @Nested
     class Equals {
         @Test
-        void equalsMatchesTheSharedEmptySlotWithOneBuiltByHand() {
+        void matchesTheSharedEmptySlotWithOneBuiltByHand() {
             // The shared constant is a convenience, not an identity: a row holding a hand-built empty
             // slot must compare equal to one holding EMPTY, or two rows that carry nothing would differ.
             assertThat(RowSlot.EMPTY)
@@ -339,7 +339,7 @@ class RowSlotTest {
     @Nested
     class Constructor {
         @Test
-        void constructorRejectsAnImageWithNoPath() {
+        void rejectsAnImageWithNoPath() {
             // A slot holding no image is RowSlot.EMPTY; a null path would otherwise surface at the
             // texture lookup inside a draw call.
             assertThatThrownBy(() -> new RowSlot.Image(null))
@@ -348,7 +348,7 @@ class RowSlotTest {
         }
 
         @Test
-        void constructorLeavesAnImageUntintedWhenNoColourIsStated() {
+        void leavesAnImageUntintedWhenNoColourIsStated() {
             // The path-only form is what almost every row builds, so it must mean "as authored"
             // rather than some stand-in shade: a null tint is the no-op multiply the draw already
             // treats as drawing the texture's own pixels.
@@ -357,7 +357,7 @@ class RowSlotTest {
         }
 
         @Test
-        void constructorCarriesAStatedImageTint() {
+        void carriesAStatedImageTint() {
             // A row that recedes states the shade its mark is multiplied by, and the slot carries it
             // through to the draw rather than the two ends agreeing on it separately.
             assertThat(new RowSlot.Image("crest_a", SLOT_COLOUR).tintColour())
@@ -365,14 +365,14 @@ class RowSlotTest {
         }
 
         @Test
-        void constructorRejectsATextSlotWithNoSpan() {
+        void rejectsATextSlotWithNoSpan() {
             assertThatThrownBy(() -> new RowSlot.Text(null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("textSpan");
         }
 
         @Test
-        void constructorRejectsAMultiRunValueWithNoRuns() {
+        void rejectsAMultiRunValueWithNoRuns() {
             // A slot holding no value is RowSlot.EMPTY and a value that draws nothing is a blank run,
             // so an empty list spells neither absence and would reach the layout as a value of nothing.
             assertThatThrownBy(() -> new RowSlot.TextRuns(List.of()))
@@ -381,7 +381,7 @@ class RowSlotTest {
         }
 
         @Test
-        void constructorCopiesAMultiRunValuesRuns() {
+        void copiesAMultiRunValuesRuns() {
             // The slot is a value, so a caller still holding the list it built must not be able to add
             // a run to a slot already handed to a layout - which would reserve a column for the runs it
             // measured and then draw another one past its edge.
@@ -398,13 +398,13 @@ class RowSlotTest {
         }
 
         @Test
-        void constructorRejectsAMultiRunValueWithNoRunList() {
+        void rejectsAMultiRunValueWithNoRunList() {
             assertThatThrownBy(() -> new RowSlot.TextRuns(null))
                 .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        void constructorRejectsATriangleWithNoDirection() {
+        void rejectsATriangleWithNoDirection() {
             assertThatThrownBy(() -> new RowSlot.Triangle(null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("triangleDirection");

@@ -48,7 +48,7 @@ final class PanelScrollbarsTest {
     class ComputeTrack {
 
         @Test
-        void computeTrackLandsInTheBodyRightGutterSpanningTheViewport() {
+        void landsInTheBodyRightGutterSpanningTheViewport() {
 
             var track = PanelScrollbars.computeTrack(buildPlacement(0f));
             // Right of the list column (228), the default 3 margin in from the body's right edge (300),
@@ -66,7 +66,7 @@ final class PanelScrollbarsTest {
         }
 
         @Test
-        void computeTrackSizesTheTrackToThePlacementsOwnThickness() {
+        void sizesTheTrackToThePlacementsOwnThickness() {
 
             var track = PanelScrollbars.computeTrack(buildPlacement(0f, THICK_BAR));
 
@@ -83,7 +83,7 @@ final class PanelScrollbarsTest {
     class ComputeThumb {
 
         @Test
-        void computeThumbSizesTheThumbToTheVisibleFractionOfTheContent() {
+        void sizesTheThumbToTheVisibleFractionOfTheContent() {
 
             var thumb = PanelScrollbars.computeThumb(buildPlacement(0f));
 
@@ -93,7 +93,7 @@ final class PanelScrollbarsTest {
         }
 
         @Test
-        void computeThumbSitsTheThumbInATrackOfThePlacementsOwnThickness() {
+        void sitsTheThumbInATrackOfThePlacementsOwnThickness() {
 
             var thumb = PanelScrollbars.computeThumb(buildPlacement(0f, THICK_BAR));
 
@@ -107,7 +107,7 @@ final class PanelScrollbarsTest {
         }
 
         @Test
-        void computeThumbDropsTheThumbAsTheListScrolls() {
+        void dropsTheThumbAsTheListScrolls() {
 
             var atTop = PanelScrollbars.computeThumb(buildPlacement(0f));
             var scrolled = PanelScrollbars.computeThumb(buildPlacement(OVERFLOW));
@@ -121,7 +121,7 @@ final class PanelScrollbarsTest {
     class ComputeGrabColumn {
 
         @Test
-        void computeGrabColumnRunsTheGutterRightOfTheList() {
+        void runsTheGutterRightOfTheList() {
 
             var grab = PanelScrollbars.computeGrabColumn(buildPlacement(0f));
 
@@ -139,7 +139,7 @@ final class PanelScrollbarsTest {
     class ResolveOffsetForPointer {
 
         @Test
-        void resolveOffsetForPointerIsZeroAtTheTrackTop() {
+        void isZeroAtTheTrackTop() {
 
             var track = PanelScrollbars.computeTrack(buildPlacement(0f));
             var offset = PanelScrollbars.resolveOffsetForPointer(
@@ -151,7 +151,7 @@ final class PanelScrollbarsTest {
         }
 
         @Test
-        void resolveOffsetForPointerIsTheOverflowAtTheTrackBottom() {
+        void isTheOverflowAtTheTrackBottom() {
 
             var track = PanelScrollbars.computeTrack(buildPlacement(0f));
             var offset = PanelScrollbars.resolveOffsetForPointer(

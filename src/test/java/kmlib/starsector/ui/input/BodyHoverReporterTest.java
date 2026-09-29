@@ -48,7 +48,7 @@ final class BodyHoverReporterTest {
     class ReportHoverChangeTo {
 
         @Test
-        void reportHoverChangeToReportsTheCellThePointerCameOnto() {
+        void reportsTheCellThePointerCameOnto() {
 
             hoverReporter.reportHoverChangeTo(buildHoveredCell(FIRST_ROW));
 
@@ -57,7 +57,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverChangeToReportsNothingFurtherWhileThePointerRestsOnTheCell() {
+        void reportsNothingFurtherWhileThePointerRestsOnTheCell() {
             // A report per change and not per frame: a host that acts on what it is told would otherwise
             // redo that work sixty times a second for a pointer standing still. Each of these readings
             // carries a channel of its own, as a host rebuilding its specs every frame hands over - so a
@@ -71,7 +71,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverChangeToReportsTheNewCellAloneWhenThePointerMovesWithinOneControl() {
+        void reportsTheNewCellAloneWhenThePointerMovesWithinOneControl() {
             // Moving down a list supersedes on the one channel. A leave sent first would tell the host it
             // holds nothing an instant before telling it what it holds, which reads as a flicker in
             // whatever the host drives.
@@ -83,7 +83,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverChangeToReportsTheLeaveAsThePointerGoesOffEveryCell() {
+        void reportsTheLeaveAsThePointerGoesOffEveryCell() {
 
             hoverReporter.reportHoverChangeTo(buildHoveredCell(FIRST_ROW));
             hoverReporter.reportHoverChangeTo(NO_CELL_HOVERED);
@@ -93,7 +93,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverChangeToReportsNothingFurtherWhileThePointerStaysOffEveryCell() {
+        void reportsNothingFurtherWhileThePointerStaysOffEveryCell() {
             // The leave is a change like any other, so the frames after it are frames where nothing
             // changed - a host hearing the leave once a frame could not tell a pointer that left from one
             // crossing back and forth over the strip's edge.
@@ -106,7 +106,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverChangeToTellsTheControlLeftBehindBeforeTheOneReached() {
+        void tellsTheControlLeftBehindBeforeTheOneReached() {
             // Two hosts, so the order is readable: the control the pointer left hears the leave, and the
             // one it reached hears its cell. Told only the arrival, the first host would go on answering a
             // hover the pointer has moved off.
@@ -129,7 +129,7 @@ final class BodyHoverReporterTest {
     class ReportHoverCleared {
 
         @Test
-        void reportHoverClearedReportsTheLeaveToWhoeverWasLastTold() {
+        void reportsTheLeaveToWhoeverWasLastTold() {
             // What a panel standing down is to a host answering a hover: no further frame resolves a
             // reading, so nothing else would ever tell it to let go of the cell it was handed.
             hoverReporter.reportHoverChangeTo(buildHoveredCell(FIRST_ROW));
@@ -141,7 +141,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverClearedReportsNothingASecondTime() {
+        void reportsNothingASecondTime() {
             // A panel stood down twice tells its host once, the second clear having nothing left to let go
             // of - and a host that had since been told about a fresh cell must not hear a leave for it.
             hoverReporter.reportHoverChangeTo(buildHoveredCell(FIRST_ROW));
@@ -154,7 +154,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverClearedReportsNothingWhereNothingWasReported() {
+        void reportsNothingWhereNothingWasReported() {
             // A panel that stood down having never had the pointer on it owes nobody anything.
             hoverReporter.reportHoverCleared();
 
@@ -163,7 +163,7 @@ final class BodyHoverReporterTest {
         }
 
         @Test
-        void reportHoverClearedLeavesTheSameCellReportableAfresh() {
+        void leavesTheSameCellReportableAfresh() {
             // The next session opening with the cursor already over that cell has to be told about it: the
             // strip was not there a moment ago, so the host holds nothing and would otherwise wait for the
             // player to move off the cell and back onto it.
