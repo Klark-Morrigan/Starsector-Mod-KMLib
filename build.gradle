@@ -59,7 +59,7 @@ def testBuildScripts = tasks.register('testBuildScripts', Test) {
 
 reportTestOutcomesOf(testBuildScripts.get())
 
-// The core localisation's editions, fetched at the blob SHAs the lock pins and laid over the located
+// The localisation editions the lock names, fetched at the blob SHAs it pins and laid over the located
 // install's own descriptors. The faces are the enum's, read off the compiled class so the lock is held to
 // the one list of faces rather than to a copy of it.
 ext.fontEditionsLockFile = file('font-editions.lock.json')

@@ -175,6 +175,13 @@ Build:
   See [Rendering environment](#rendering-environment).
 - [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle) -
   warns when a mod compiles against one KMLib and asks players for another.
+- [`gradle/tasks/checks/check-font-editions.gradle`](gradle/tasks/checks/check-font-editions.gradle) -
+  KMLib's own:
+  lays each localisation edition's descriptors,
+  at the blob SHAs [`font-editions.lock.json`](font-editions.lock.json) pins,
+  over the game's own for the font suites,
+  and rewrites the lock from the branch heads.
+  See [Build & Test](#build--test).
 - [`gradle/tasks/generate/stamp-fast-rendering-version.gradle`](gradle/tasks/generate/stamp-fast-rendering-version.gradle) -
   KMLib's own,
   applied by the binding selection above:
@@ -1349,27 +1356,49 @@ located on Windows from the git on `PATH`.
   or the remote -
   changes.
 
-The font suites check the atlases of every install the build is handed:
+The font suites check the atlases of every install the build hands them:
 the one it located,
+each localisation edition the lock names,
 and any others `-PfontInstallRoots` names.
-The core Chinese localisation replaces several atlases under the same basenames,
-each of its editions with others of its own line heights and glyph sets,
-so a machine holding those editions hands them in:
+A localisation replaces several atlases under the same basenames,
+each of its editions with others of its own line heights and glyph sets.
 
-```powershell
-./gradlew test "-PfontInstallRoots=<root>;<root>"
-```
+- `checkFontEditions`, which every `test` runs after,
+  fetches each edition's descriptors at the blob SHAs
+  [`font-editions.lock.json`](font-editions.lock.json) pins
+  and lays them over the located install's own under `build/font-editions/`.
+  Each run compares the lock with every edition's branch head,
+  so a pack published upstream fails the build naming the edition, the face and both SHAs
+  until the lock is rewritten:
 
-- The atlases are read where they are installed,
-  never recorded:
-  a recording goes on passing after the localisation publishes a pack that no longer matches it,
-  so it would report an edition as checked when it was not.
-- A CI runner carries the game's JARs and no fonts,
-  so the font suites skip there:
-  every install they check is on a machine holding the full game.
-  No CI leg exists per edition either -
-  none changes what the jar is compiled against.
-  The workspace menu's Chinese section hands the editions in.
+  ```powershell
+  ./gradlew writeFontEditionsLock
+  ```
+
+  A rewrite is a pull request of its own,
+  so the new descriptors are checked before they are trusted.
+- The lock lists the editions,
+  each under a name of KM's choosing with the git repository, branch and descriptor folder it is published in,
+  so editions from different localisations - even on branches of the same name - stay apart.
+  An edition is added by hand with no faces,
+  and `writeFontEditionsLock` fills them;
+  it rewrites only the faces.
+  The faces are the enum's,
+  and a lock naming others fails the build.
+- Every build needs the network and the game's fonts,
+  and fails rather than skipping without either:
+  a skipped check reads as a passed one.
+  A CI runner carries `starsector-core/graphics/fonts/*.fnt` beside the game's jars for this.
+- An edition's own `settings.json` is not laid over:
+  KMLib reads whatever default the running game declares,
+  so an edition root reads the game's own.
+- A machine holding the editions installed checks them as installed -
+  the one run over an install's dynamic-font pipeline -
+  by handing them in, which the workspace menu's Chinese section does:
+
+  ```powershell
+  ./gradlew test "-PfontInstallRoots=<root>;<root>"
+  ```
 
 A mod keeping its player-facing files per language,
 one bundle per locale under `localisation/<locale>/` beside a `localisation/manifest.json`,

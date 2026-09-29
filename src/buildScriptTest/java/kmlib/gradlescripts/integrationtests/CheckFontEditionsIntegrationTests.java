@@ -16,21 +16,23 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Exercises the font-edition gate against a real Gradle build and a local repository standing in for the
- * upstream localisation: one edition branch shipping one of two faces, over a folder of the game's own
+ * Exercises the font-edition gate against a real Gradle build and local repositories standing in for the
+ * upstream localisations: an edition branch shipping one of two faces, over a folder of the game's own
  * descriptors.
  *
  * <p>What the gate has to get right is what a player's install would hold - the edition's descriptor
  * where it ships one and the game's own where it does not - and that every way upstream can part from the
  * lock fails the build naming the edition, the face and both SHAs, since a gate that passed on a moved
- * pack would report an edition as checked when it was not.
+ * pack would report an edition as checked when it was not. Editions are the lock's by name rather than by
+ * where they are published, so two repositories sharing a branch name stay two editions.
  */
 final class CheckFontEditionsIntegrationTests {
 
     private static final String GATE_SCRIPT =
         new File("gradle/tasks/checks/check-font-editions.gradle").getAbsolutePath();
 
-    private static final String EDITION = "font-alpha";
+    private static final String EDITION_NAME = "alpha";
+    private static final String BRANCH = "font-alpha";
     private static final String FONTS_PATH = "localization/graphics/fonts";
 
     // Two faces: the edition ships the first and leaves the second to the game.
@@ -40,9 +42,6 @@ final class CheckFontEditionsIntegrationTests {
     private static final String EDITION_DESCRIPTOR = "info face=\"Alpha\" aa=4";
     private static final String VANILLA_SHIPPED_DESCRIPTOR = "info face=\"Vanilla A\" aa=4";
     private static final String VANILLA_ABSENT_DESCRIPTOR = "info face=\"Vanilla B\" aa=1";
-
-    private static final String EDITION_FONTS_PATH = "build/font-editions/roots/" + EDITION
-        + "/starsector-core/graphics/fonts/";
 
     /** The pieces a case poses: the upstream repository, the game's descriptors, and the build. */
     private record Workspace(
@@ -86,7 +85,7 @@ final class CheckFontEditionsIntegrationTests {
         return output.trim();
     }
 
-    // Commits a descriptor onto the edition branch upstream.
+    // Commits a descriptor onto the edition branch of an upstream.
     private static void commitDescriptor(Path upstreamDirectory, String face, String content) throws IOException {
 
         var descriptor = upstreamDirectory.resolve(FONTS_PATH).resolve(face + ".fnt");
@@ -98,9 +97,27 @@ final class CheckFontEditionsIntegrationTests {
         runGit(upstreamDirectory, "commit", "--quiet", "-m", "Descriptor " + face);
     }
 
-    // The blob SHA upstream holds for a face on the edition branch.
+    // The blob SHA an upstream holds for a face on the edition branch.
     private static String readBlobSha(Path upstreamDirectory, String face) throws IOException {
-        return runGit(upstreamDirectory, "rev-parse", EDITION + ":" + FONTS_PATH + "/" + face + ".fnt");
+        return runGit(upstreamDirectory, "rev-parse", BRANCH + ":" + FONTS_PATH + "/" + face + ".fnt");
+    }
+
+    // An upstream whose edition branch ships the first face, as the given descriptor.
+    private static Path createUpstream(Path upstreamDirectory, String shippedDescriptor) throws IOException {
+
+        Files.createDirectories(upstreamDirectory);
+
+        runGit(upstreamDirectory, "init", "--quiet");
+        runGit(upstreamDirectory, "checkout", "--quiet", "-b", BRANCH);
+
+        // A partial clone reads its blobs by SHA when it first needs them, which the stand-in has to
+        // allow as the real host does.
+        runGit(upstreamDirectory, "config", "uploadpack.allowFilter", "true");
+        runGit(upstreamDirectory, "config", "uploadpack.allowAnySHA1InWant", "true");
+
+        commitDescriptor(upstreamDirectory, SHIPPED_FACE, shippedDescriptor);
+
+        return upstreamDirectory;
     }
 
     /**
@@ -109,18 +126,7 @@ final class CheckFontEditionsIntegrationTests {
      */
     private static Workspace writeWorkspace(Path root) throws IOException {
 
-        var upstreamDirectory = Files.createDirectories(root.resolve("upstream"));
-
-        runGit(upstreamDirectory, "init", "--quiet");
-        runGit(upstreamDirectory, "checkout", "--quiet", "-b", EDITION);
-
-        // A partial clone reads its blobs by SHA when it first needs them, which the stand-in has to
-        // allow as the real host does.
-        runGit(upstreamDirectory, "config", "uploadpack.allowFilter", "true");
-        runGit(upstreamDirectory, "config", "uploadpack.allowAnySHA1InWant", "true");
-
-        commitDescriptor(upstreamDirectory, SHIPPED_FACE, EDITION_DESCRIPTOR);
-
+        var upstreamDirectory = createUpstream(root.resolve("upstream"), EDITION_DESCRIPTOR);
         var vanillaFontsDirectory = Files.createDirectories(root.resolve("vanilla-fonts"));
 
         Files.writeString(vanillaFontsDirectory.resolve(SHIPPED_FACE + ".fnt"), VANILLA_SHIPPED_DESCRIPTOR);
@@ -141,24 +147,49 @@ final class CheckFontEditionsIntegrationTests {
         return new Workspace(upstreamDirectory, vanillaFontsDirectory, projectDirectory);
     }
 
-    // The lock over the stand-in upstream, the edition's faces written as the JSON members they are.
-    private static void writeLock(Workspace workspace, String faceMembers) throws IOException {
+    // One edition's lock entry, its faces written as the JSON members they are.
+    private static String writeEditionEntry(String name, Path upstreamDirectory, String faceMembers) {
+
+        return String.join(
+            " ",
+            "{",
+            "\"name\": \"" + name + "\",",
+            "\"repository\": \"" + upstreamDirectory.toUri() + "\",",
+            "\"branch\": \"" + BRANCH + "\",",
+            "\"fontsPath\": \"" + FONTS_PATH + "\",",
+            "\"faces\": { " + faceMembers + " }",
+            "}");
+    }
+
+    // The faces as an upstream's current head holds them.
+    private static String writeMatchingFaces(Path upstreamDirectory) throws IOException {
+        return "\"" + SHIPPED_FACE + "\": \"" + readBlobSha(upstreamDirectory, SHIPPED_FACE) + "\", \""
+            + ABSENT_FACE + "\": null";
+    }
+
+    private static void writeLock(Workspace workspace, String... editionEntries) throws IOException {
 
         Files.writeString(
             workspace.projectDirectory().resolve("font-editions.lock.json"),
-            String.join(
-                "\n",
-                "{",
-                "  \"repository\": \"" + workspace.upstreamDirectory().toUri() + "\",",
-                "  \"fontsPath\": \"" + FONTS_PATH + "\",",
-                "  \"editions\": { \"" + EDITION + "\": { " + faceMembers + " } }",
-                "}"));
+            "{ \"editions\": [ " + String.join(", ", editionEntries) + " ] }");
     }
 
-    // The lock as it stands for the upstream's current head.
+    // The lock as it stands for the one upstream's current head.
     private static void writeMatchingLock(Workspace workspace) throws IOException {
-        writeLock(workspace, "\"" + SHIPPED_FACE + "\": \"" + readBlobSha(workspace.upstreamDirectory(), SHIPPED_FACE)
-            + "\", \"" + ABSENT_FACE + "\": null");
+
+        writeLock(
+            workspace,
+            writeEditionEntry(
+                EDITION_NAME,
+                workspace.upstreamDirectory(),
+                writeMatchingFaces(workspace.upstreamDirectory())));
+    }
+
+    private static Path resolveEditionFonts(Workspace workspace, String editionName) {
+
+        return workspace
+            .projectDirectory()
+            .resolve("build/font-editions/roots/" + editionName + "/starsector-core/graphics/fonts");
     }
 
     private static String toGradlePath(Path path) {
@@ -185,7 +216,7 @@ final class CheckFontEditionsIntegrationTests {
             writeMatchingLock(workspace);
             createRunner(workspace, "checkFontEditions").build();
 
-            var editionFonts = workspace.projectDirectory().resolve(EDITION_FONTS_PATH);
+            var editionFonts = resolveEditionFonts(workspace, EDITION_NAME);
 
             assertThat(editionFonts.resolve(SHIPPED_FACE + ".fnt"))
                 .hasContent(EDITION_DESCRIPTOR);
@@ -194,17 +225,44 @@ final class CheckFontEditionsIntegrationTests {
         }
 
         @Test
-        void marksTheEditionRootWithTheBranchAsAnInstalledEditionIs(@TempDir Path root) throws IOException {
+        void marksTheEditionRootWithTheEditionsNameAsAnInstalledEditionIsMarked(@TempDir Path root)
+                throws IOException {
 
             var workspace = writeWorkspace(root);
 
             writeMatchingLock(workspace);
             createRunner(workspace, "checkFontEditions").build();
 
-            assertThat(workspace.projectDirectory()
-                    .resolve("build/font-editions/roots/" + EDITION + "/starsector-core/localization_version.json"))
+            var markerFile = workspace.projectDirectory()
+                .resolve("build/font-editions/roots/" + EDITION_NAME + "/starsector-core/localization_version.json");
+
+            assertThat(markerFile)
                 .content()
-                .contains("\"branch\":\"" + EDITION + "\"");
+                .contains("\"branch\":\"" + EDITION_NAME + "\"");
+        }
+
+        @Test
+        void laysEachEditionUnderItsOwnNameWhereTwoRepositoriesShareABranchName(@TempDir Path root)
+                throws IOException {
+            // Two localisations publishing on a branch of the same name: keyed by where they are
+            // published, the second would overwrite the first.
+            var workspace = writeWorkspace(root);
+            var betaDescriptor = "info face=\"Beta\" aa=4";
+            var betaUpstream = createUpstream(root.resolve("beta-upstream"), betaDescriptor);
+
+            writeLock(
+                workspace,
+                writeEditionEntry(
+                    EDITION_NAME,
+                    workspace.upstreamDirectory(),
+                    writeMatchingFaces(workspace.upstreamDirectory())),
+                writeEditionEntry("beta", betaUpstream, writeMatchingFaces(betaUpstream)));
+            createRunner(workspace, "checkFontEditions").build();
+
+            assertThat(resolveEditionFonts(workspace, EDITION_NAME).resolve(SHIPPED_FACE + ".fnt"))
+                .hasContent(EDITION_DESCRIPTOR);
+            assertThat(resolveEditionFonts(workspace, "beta").resolve(SHIPPED_FACE + ".fnt"))
+                .hasContent(betaDescriptor);
         }
 
         @Test
@@ -220,7 +278,7 @@ final class CheckFontEditionsIntegrationTests {
             var upstreamSha = readBlobSha(workspace.upstreamDirectory(), SHIPPED_FACE);
 
             assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
-                .contains(EDITION + " " + SHIPPED_FACE + ": locked " + lockedSha + ", upstream " + upstreamSha)
+                .contains(EDITION_NAME + " " + SHIPPED_FACE + ": locked " + lockedSha + ", upstream " + upstreamSha)
                 .contains("gradlew writeFontEditionsLock");
         }
 
@@ -233,7 +291,7 @@ final class CheckFontEditionsIntegrationTests {
             commitDescriptor(workspace.upstreamDirectory(), ABSENT_FACE, "info face=\"Alpha B\" aa=4");
 
             assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
-                .contains(EDITION + " " + ABSENT_FACE + ": locked absent, upstream "
+                .contains(EDITION_NAME + " " + ABSENT_FACE + ": locked absent, upstream "
                     + readBlobSha(workspace.upstreamDirectory(), ABSENT_FACE));
         }
 
@@ -241,12 +299,33 @@ final class CheckFontEditionsIntegrationTests {
         void failsWhenTheLockNamesOtherFacesThanTheEnum(@TempDir Path root) throws IOException {
 
             var workspace = writeWorkspace(root);
-            writeLock(workspace, "\"" + SHIPPED_FACE + "\": \""
-                + readBlobSha(workspace.upstreamDirectory(), SHIPPED_FACE) + "\"");
+
+            writeLock(
+                workspace,
+                writeEditionEntry(
+                    EDITION_NAME,
+                    workspace.upstreamDirectory(),
+                    "\"" + SHIPPED_FACE + "\": \""
+                        + readBlobSha(workspace.upstreamDirectory(), SHIPPED_FACE) + "\""));
 
             assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
-                .contains(EDITION + ": the lock names faces [" + SHIPPED_FACE + "], the enum ["
+                .contains(EDITION_NAME + ": the lock names faces [" + SHIPPED_FACE + "], the enum ["
                     + SHIPPED_FACE + ", " + ABSENT_FACE + "]");
+        }
+
+        @Test
+        void failsWhenTwoEditionsShareAName(@TempDir Path root) throws IOException {
+            // Both would be laid into one root, and the second would silently stand for the first.
+            var workspace = writeWorkspace(root);
+            var entry = writeEditionEntry(
+                EDITION_NAME,
+                workspace.upstreamDirectory(),
+                writeMatchingFaces(workspace.upstreamDirectory()));
+
+            writeLock(workspace, entry, entry);
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("two editions are named '" + EDITION_NAME + "'");
         }
 
         @Test
@@ -272,27 +351,31 @@ final class CheckFontEditionsIntegrationTests {
 
             var workspace = writeWorkspace(root);
 
-            writeLock(workspace, "");
+            writeLock(workspace, writeEditionEntry(EDITION_NAME, workspace.upstreamDirectory(), ""));
             createRunner(workspace, "writeFontEditionsLock").build();
 
             assertThat(workspace.projectDirectory().resolve("font-editions.lock.json"))
                 .content()
-                .contains("\"" + SHIPPED_FACE + "\": \"" + readBlobSha(workspace.upstreamDirectory(), SHIPPED_FACE) + "\"")
+                .contains("\"" + SHIPPED_FACE + "\": \""
+                    + readBlobSha(workspace.upstreamDirectory(), SHIPPED_FACE) + "\"")
                 .contains("\"" + ABSENT_FACE + "\": null");
         }
 
         @Test
-        void keepsTheRepositoryAndTheEditionsTheLockNames(@TempDir Path root) throws IOException {
-
+        void keepsEachEditionsNameAndWhereItIsPublished(@TempDir Path root) throws IOException {
+            // Which editions there are, and where each is published, are the lock author's: a rewrite
+            // touches the faces alone.
             var workspace = writeWorkspace(root);
 
-            writeLock(workspace, "");
+            writeLock(workspace, writeEditionEntry(EDITION_NAME, workspace.upstreamDirectory(), ""));
             createRunner(workspace, "writeFontEditionsLock").build();
 
             assertThat(workspace.projectDirectory().resolve("font-editions.lock.json"))
                 .content()
+                .contains("\"name\": \"" + EDITION_NAME + "\"")
                 .contains("\"repository\": \"" + workspace.upstreamDirectory().toUri() + "\"")
-                .contains("\"" + EDITION + "\": {");
+                .contains("\"branch\": \"" + BRANCH + "\"")
+                .contains("\"fontsPath\": \"" + FONTS_PATH + "\"");
         }
     }
 }
