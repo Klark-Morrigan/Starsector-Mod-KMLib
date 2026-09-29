@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 final class SaveFormatFixtureTests {
 
-    private static final String LEDGER = "kmlib.testfixtures.starsector.save.SaveFormatFixtureTest_-Ledger";
+    private static final String LEDGER = "kmlib.testfixtures.starsector.save.SaveFormatFixtureTests_-Ledger";
     private static final String OWNER = "tritachyon";
 
     private SaveFormatFixture fixture;
@@ -39,8 +39,8 @@ final class SaveFormatFixtureTests {
                     LEDGER,
                     LEDGER + "/collaborator",
                     LEDGER + "/entries",
-                    LEDGER + "/entries/kmlib.testfixtures.starsector.save.SaveFormatFixtureTest_-Entry",
-                    LEDGER + "/entries/kmlib.testfixtures.starsector.save.SaveFormatFixtureTest_-Entry/amount",
+                    LEDGER + "/entries/kmlib.testfixtures.starsector.save.SaveFormatFixtureTests_-Entry",
+                    LEDGER + "/entries/kmlib.testfixtures.starsector.save.SaveFormatFixtureTests_-Entry/amount",
                     LEDGER + "/owner");
         }
     }
