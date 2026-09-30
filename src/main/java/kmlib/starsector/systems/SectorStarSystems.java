@@ -70,6 +70,27 @@ public final class SectorStarSystems {
     }
 
     /**
+     * Every star system's name, blanks left out - for a caller that has to know what a system may be
+     * called before it names one, such as settling the face a system's name is drawn in.
+     *
+     * @param sector the sector to read; null yields an empty list
+     * @return one name per named system, in the sector's star-system order
+     */
+    public static List<String> listSystemNames(SectorAPI sector) {
+
+        var names = new ArrayList<String>();
+
+        walkStarSystems(sector, system -> {
+            var name = system.getName();
+            if (KmlibStrings.hasText(name)) {
+                names.add(name);
+            }
+        });
+
+        return names;
+    }
+
+    /**
      * The star system the player's fleet is currently in, for callers (e.g.
      * in-system-only console commands) that must act on the current system.
      *
