@@ -1378,8 +1378,13 @@ each of its editions with others of its own line heights and glyph sets.
   A rewrite is a pull request of its own,
   so the new descriptors are checked before they are trusted.
 - The lock lists the editions,
-  each under a name of KM's choosing with the git repository, branch and descriptor folder it is published in,
+  each under a name of KM's choosing with the git repository, branch and descriptor folder it is published in
+  and the language it localises,
   so editions from different localisations - even on branches of the same name - stay apart.
+  Per language it states a probe text,
+  which the suites check every face settles on a face drawing;
+  an installed edition is matched to its probe by the language its own marker names,
+  and an edition whose language has none fails the build.
   An edition is added by hand with no faces,
   and `writeFontEditionsLock` fills them;
   it rewrites only the faces.

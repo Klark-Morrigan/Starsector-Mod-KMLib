@@ -104,6 +104,12 @@ tasks.named('test') {
     systemProperty 'kmlib.fontInstallRoots',
         (handedRoots + fontEditionRootDirectories*.absolutePath).join(File.pathSeparator)
 
+    // The text each language's faces are probed with, as the lock states it, for installed editions as well
+    // as the laid ones - whose markers name the language, never the probe.
+    fontEditionProbeTexts.each { language, probeText ->
+        systemProperty "kmlib.fontProbeText.${language}", probeText
+    }
+
     // The roots' content, so a build whose lock moved runs the suites again.
     fontEditionRootDirectories.each { root -> inputs.dir(root).withPropertyName("fontEdition:${root.name}") }
 }

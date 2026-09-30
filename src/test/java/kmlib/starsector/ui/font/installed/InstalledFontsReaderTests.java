@@ -62,7 +62,7 @@ class InstalledFontsReaderTests {
     class ReadInstall {
 
         @Test
-        void readsTheEditionAndPackVersionTheMarkerStates(@TempDir Path starsectorRoot)
+        void readsTheEditionPackVersionAndLanguageTheMarkerStates(@TempDir Path starsectorRoot)
                 throws IOException {
 
             writeFile(starsectorRoot.resolve("starsector-core/localization_version.json"), ZONGYI_MARKER);
@@ -73,6 +73,8 @@ class InstalledFontsReaderTests {
                 .isEqualTo("font-zongyi");
             assertThat(fonts.packVersion())
                 .contains("2026.09.04");
+            assertThat(fonts.language())
+                .contains("zh-Hans");
         }
 
         @Test
@@ -83,6 +85,8 @@ class InstalledFontsReaderTests {
             assertThat(fonts.edition())
                 .isEqualTo("vanilla");
             assertThat(fonts.packVersion())
+                .isEmpty();
+            assertThat(fonts.language())
                 .isEmpty();
         }
 

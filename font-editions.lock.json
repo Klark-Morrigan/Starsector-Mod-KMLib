@@ -1,10 +1,17 @@
 {
+    "probeTexts": {
+        "zh-Hans": {
+            "text": "霸主",
+            "meaning": "Hegemony, a faction name (U+9738 U+4E3B)"
+        }
+    },
     "editions": [
         {
             "name": "cn-optimised",
             "repository": "https://github.com/TruthOriginem/Starsector-Localization-CN.git",
             "branch": "startup-optimization",
             "fontsPath": "localization/graphics/fonts",
+            "language": "zh-Hans",
             "faces": {
                 "insignia15LTaa": "f147f69aaee3db1064c0852d137faefd01d508d1",
                 "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",
@@ -20,6 +27,7 @@
             "repository": "https://github.com/TruthOriginem/Starsector-Localization-CN.git",
             "branch": "font-simsong",
             "fontsPath": "localization/graphics/fonts",
+            "language": "zh-Hans",
             "faces": {
                 "insignia15LTaa": "11f41f08a2cf71299c435d045725b7854b6b187e",
                 "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",
@@ -35,6 +43,7 @@
             "repository": "https://github.com/TruthOriginem/Starsector-Localization-CN.git",
             "branch": "font-zongyi",
             "fontsPath": "localization/graphics/fonts",
+            "language": "zh-Hans",
             "faces": {
                 "insignia15LTaa": "e768b66837c4a9b030762802d4bc837491eb662f",
                 "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",

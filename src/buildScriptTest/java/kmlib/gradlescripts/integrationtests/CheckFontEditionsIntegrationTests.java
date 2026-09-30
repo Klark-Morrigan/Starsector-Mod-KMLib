@@ -34,6 +34,10 @@ final class CheckFontEditionsIntegrationTests {
     private static final String EDITION_NAME = "alpha";
     private static final String BRANCH = "font-alpha";
     private static final String FONTS_PATH = "localization/graphics/fonts";
+    private static final String LANGUAGE = "zh-Hans";
+
+    // "Hegemony" (U+9738 U+4E3B): the edition's probe text, in a script a lock rewrite has to keep as is.
+    private static final String PROBE_TEXT = "霸主";
 
     // Two faces: the edition ships the first and leaves the second to the game.
     private static final String SHIPPED_FACE = "faceA";
@@ -157,6 +161,7 @@ final class CheckFontEditionsIntegrationTests {
             "\"repository\": \"" + upstreamDirectory.toUri() + "\",",
             "\"branch\": \"" + BRANCH + "\",",
             "\"fontsPath\": \"" + FONTS_PATH + "\",",
+            "\"language\": \"" + LANGUAGE + "\",",
             "\"faces\": { " + faceMembers + " }",
             "}");
     }
@@ -167,11 +172,19 @@ final class CheckFontEditionsIntegrationTests {
             + ABSENT_FACE + "\": null";
     }
 
+    // A lock stating the editions' language's probe text beside the editions.
     private static void writeLock(Workspace workspace, String... editionEntries) throws IOException {
+        writeLockProbing(workspace, "\"" + LANGUAGE + "\": { \"text\": \"" + PROBE_TEXT + "\" }", editionEntries);
+    }
+
+    private static void writeLockProbing(Workspace workspace, String probeTextMembers, String... editionEntries)
+            throws IOException {
 
         Files.writeString(
             workspace.projectDirectory().resolve("font-editions.lock.json"),
-            "{ \"editions\": [ " + String.join(", ", editionEntries) + " ] }");
+            "{ \"probeTexts\": { " + probeTextMembers + " }, \"editions\": [ "
+                + String.join(", ", editionEntries) + " ] }",
+            StandardCharsets.UTF_8);
     }
 
     // The lock as it stands for the one upstream's current head.
@@ -225,7 +238,7 @@ final class CheckFontEditionsIntegrationTests {
         }
 
         @Test
-        void marksTheEditionRootWithTheEditionsNameAsAnInstalledEditionIsMarked(@TempDir Path root)
+        void marksTheEditionRootWithTheEditionsNameAndLanguageAsAnInstalledEditionIsMarked(@TempDir Path root)
                 throws IOException {
 
             var workspace = writeWorkspace(root);
@@ -238,7 +251,25 @@ final class CheckFontEditionsIntegrationTests {
 
             assertThat(markerFile)
                 .content()
-                .contains("\"branch\":\"" + EDITION_NAME + "\"");
+                .contains("\"branch\":\"" + EDITION_NAME + "\"")
+                .contains("\"language\":\"" + LANGUAGE + "\"");
+        }
+
+        @Test
+        void failsWhenAnEditionsLanguageHasNoProbeText(@TempDir Path root) throws IOException {
+            // The suites could not tell whether the edition's faces draw its script, and would pass it.
+            var workspace = writeWorkspace(root);
+
+            writeLockProbing(
+                workspace,
+                "",
+                writeEditionEntry(
+                    EDITION_NAME,
+                    workspace.upstreamDirectory(),
+                    writeMatchingFaces(workspace.upstreamDirectory())));
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("no probe text for " + LANGUAGE + ", the language of edition '" + EDITION_NAME + "'");
         }
 
         @Test
@@ -375,7 +406,22 @@ final class CheckFontEditionsIntegrationTests {
                 .contains("\"name\": \"" + EDITION_NAME + "\"")
                 .contains("\"repository\": \"" + workspace.upstreamDirectory().toUri() + "\"")
                 .contains("\"branch\": \"" + BRANCH + "\"")
-                .contains("\"fontsPath\": \"" + FONTS_PATH + "\"");
+                .contains("\"fontsPath\": \"" + FONTS_PATH + "\"")
+                .contains("\"language\": \"" + LANGUAGE + "\"");
+        }
+
+        @Test
+        void keepsTheProbeTextsInTheirOwnScript(@TempDir Path root) throws IOException {
+            // Escaped, the probe text would still parse, but the lock would no longer read as the text it
+            // probes with.
+            var workspace = writeWorkspace(root);
+
+            writeLock(workspace, writeEditionEntry(EDITION_NAME, workspace.upstreamDirectory(), ""));
+            createRunner(workspace, "writeFontEditionsLock").build();
+
+            assertThat(workspace.projectDirectory().resolve("font-editions.lock.json"))
+                .content(StandardCharsets.UTF_8)
+                .contains("\"text\": \"" + PROBE_TEXT + "\"");
         }
     }
 }

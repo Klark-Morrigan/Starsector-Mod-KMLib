@@ -25,6 +25,7 @@ import java.util.Optional;
  * @param edition              which edition of the game's fonts the install carries; names the install in a
  *                             failure
  * @param packVersion          the core localisation's version, absent for the game's own atlases
+ * @param language             the language the localisation is in, absent for the game's own atlases
  * @param defaultAtlas         the face the install's settings declare as the game's default, by the rule the
  *                             running game's is read by
  * @param faceByFont           what the install states for each face the enum names that it carries
@@ -34,6 +35,7 @@ import java.util.Optional;
 record InstalledFonts(
     String edition,
     Optional<String> packVersion,
+    Optional<String> language,
     FontAtlas defaultAtlas,
     Map<StarsectorFont, InstalledFace> faceByFont,
     Optional<InstalledFace> declaredDefaultFace) {

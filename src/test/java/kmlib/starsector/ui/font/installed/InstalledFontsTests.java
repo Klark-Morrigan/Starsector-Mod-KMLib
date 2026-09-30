@@ -36,6 +36,7 @@ class InstalledFontsTests {
         return new InstalledFonts(
             "font-zongyi",
             Optional.of("2026.09.04"),
+            Optional.of("zh-Hans"),
             StarsectorFont.VANILLA_INSIGNIA_15,
             Map.of(StarsectorFont.VANILLA_INSIGNIA_25, LOCALISED_FACE),
             Optional.empty());
@@ -45,6 +46,7 @@ class InstalledFontsTests {
     private static InstalledFonts createPackDeclaredFonts() {
         return new InstalledFonts(
             "vanilla",
+            Optional.empty(),
             Optional.empty(),
             new DeclaredFontAtlas(PACK_FONT_PATH, AtlasSmoothing.SMOOTHED),
             Map.of(),
@@ -60,6 +62,7 @@ class InstalledFontsTests {
             var zongyiWithAnotherDefault = new InstalledFonts(
                 "font-zongyi",
                 Optional.of("2026.09.04"),
+                Optional.of("zh-Hans"),
                 StarsectorFont.VANILLA_ORBITRON_20AA,
                 Map.of(),
                 Optional.empty());
@@ -87,6 +90,7 @@ class InstalledFontsTests {
 
             var vanillaFonts = new InstalledFonts(
                 "vanilla",
+                Optional.empty(),
                 Optional.empty(),
                 StarsectorFont.VANILLA_INSIGNIA_15,
                 Map.of(),

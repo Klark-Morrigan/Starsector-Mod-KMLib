@@ -22,8 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the enum, which names both. That each is present in a shape LazyLib and the game both load, with the
  * smoothing the enum states for it. And that
  * every face KM may ask for settles, walking down its family to the install's own default, on one that
- * draws a localised faction name - which is the row of question marks the walk exists to end, settled
- * here against real atlases rather than posed ones.
+ * draws text in the install's own language - which is the row of question marks the walk exists to end,
+ * settled here against real atlases rather than posed ones. The text is the probe the lock states for the
+ * language the install's marker names, so an edition of another script is probed in its own.
  *
  * <p>Walks the enum, never the fonts folder: an install running a localisation's dynamic-font pipeline
  * writes generated descriptors and a subfolder of its own into that folder, and a listing would take them
@@ -34,12 +35,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class InstalledFontsIntegrationTests {
 
-    // The installs to check, as the build hands them.
+    // The installs to check, and each language's probe text as the lock states it, as the build hands them.
     private static final String STARSECTOR_ROOT_PROPERTY = "kmlib.starsectorRoot";
     private static final String INSTALL_ROOTS_PROPERTY = "kmlib.fontInstallRoots";
+    private static final String PROBE_TEXT_PROPERTY_PREFIX = "kmlib.fontProbeText.";
 
-    // "Hegemony" (U+9738 U+4E3B), a faction name as a localised install draws it.
-    private static final String LOCALISED_NAME = "霸主";
+    // The language of the Chinese editions, which alone share the fallback cut their faces step down to.
+    private static final String CHINESE_LANGUAGE = "zh-Hans";
+
+    // A Latin faction name, which every face on every install holds.
+    private static final String LATIN_NAME = "Hegemony";
 
     @Nested
     class ReadInstall {
@@ -87,7 +92,7 @@ class InstalledFontsIntegrationTests {
                 var resolver = installedFonts.createFaceResolver();
 
                 for (var font : StarsectorFont.values()) {
-                    assertThat(resolver.resolveFont(font, List.of("Hegemony")))
+                    assertThat(resolver.resolveFont(font, List.of(LATIN_NAME)))
                         .as("the face %s settles on for a Latin name on %s",
                             font.getBasename(), installedFonts.describeEdition())
                         .isEqualTo(font);
@@ -96,38 +101,64 @@ class InstalledFontsIntegrationTests {
         }
 
         @Test
-        void settlesEveryFaceOnOneDrawingALocalisedNameOnEveryLocalisedInstall() {
-            // Wherever the walk ends, the face it ends on has to hold the name: a walk running out onto a
+        void settlesEveryFaceOnOneDrawingItsLanguagesProbeTextOnEveryLocalisedInstall() {
+            // Wherever the walk ends, the face it ends on has to hold the text: a walk running out onto a
             // default that lacks it would draw the same question marks it set out to avoid.
             for (var installedFonts : readEveryLocalisedInstall()) {
 
+                var probeText = resolveProbeText(installedFonts);
                 var resolver = installedFonts.createFaceResolver();
                 var coverage = installedFonts.createGlyphCoverageReader();
 
                 for (var font : StarsectorFont.values()) {
-                    var settledAtlas = resolver.resolveFont(font, List.of(LOCALISED_NAME));
+                    var settledAtlas = resolver.resolveFont(font, List.of(probeText));
 
-                    assertThat(coverage.coversText(settledAtlas, LOCALISED_NAME))
-                        .as("%s, which %s settles on for a localised name on %s, holds the name",
-                            settledAtlas.resolvePath(), font.getBasename(), installedFonts.describeEdition())
+                    assertThat(coverage.coversText(settledAtlas, probeText))
+                        .as("%s, which %s settles on for %s on %s, holds it",
+                            settledAtlas.resolvePath(), font.getBasename(), probeText,
+                            installedFonts.describeEdition())
                         .isTrue();
                 }
             }
         }
 
         @Test
-        void stepsTheHighResolutionAtlasDownOneCutForALocalisedNameOnEveryLocalisedInstall() {
-            // The one face no edition replaces, and the case the walk exists for: the next cut down holds
-            // the script on every edition, so a map label drops no further than it has to.
-            for (var installedFonts : readEveryLocalisedInstall()) {
+        void stepsTheHighResolutionAtlasDownOneCutForAChineseNameOnEveryChineseInstall() {
+            // The one face no Chinese edition replaces, and the case the walk exists for: the next cut down
+            // holds the script on every Chinese edition, so a map label drops no further than it has to. A
+            // fact about those editions rather than a rule for every localisation.
+            var chineseProbeText = System.getProperty(PROBE_TEXT_PROPERTY_PREFIX + CHINESE_LANGUAGE);
+            var chineseInstalls = readEveryLocalisedInstall().stream()
+                .filter(installedFonts -> installedFonts.language().filter(CHINESE_LANGUAGE::equals).isPresent())
+                .toList();
+
+            assertThat(chineseInstalls)
+                .as("the Chinese installs the build handed")
+                .isNotEmpty();
+
+            for (var installedFonts : chineseInstalls) {
 
                 assertThat(installedFonts.createFaceResolver()
-                        .resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of(LOCALISED_NAME)))
-                    .as("the face insignia42LTaa settles on for a localised name on %s",
+                        .resolveFont(StarsectorFont.VANILLA_INSIGNIA_42, List.of(chineseProbeText)))
+                    .as("the face insignia42LTaa settles on for a Chinese name on %s",
                         installedFonts.describeEdition())
                     .isEqualTo(StarsectorFont.VANILLA_INSIGNIA_25);
             }
         }
+    }
+
+    // The probe text for the language an install's marker names, failing where it names none the lock has a
+    // probe for: an install the suite cannot probe is one it would otherwise pass.
+    private static String resolveProbeText(InstalledFonts installedFonts) {
+
+        var probeText = installedFonts.language()
+            .map(language -> System.getProperty(PROBE_TEXT_PROPERTY_PREFIX + language));
+
+        assertThat(probeText)
+            .as("the probe text for %s, in %s", installedFonts.describeEdition(), installedFonts.language())
+            .isPresent();
+
+        return probeText.get();
     }
 
     // Every handed install a core localisation has been laid over, of which the build always hands some.

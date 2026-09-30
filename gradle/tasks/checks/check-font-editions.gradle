@@ -17,15 +17,18 @@
 //
 // Input, read from the applying project:
 //   ext.fontEditionsLockFile   - the lock: a list of editions, each a name KM gives it, the git repository and
-//                                branch it is published on, the descriptor folder in that repository, and each
-//                                face's blob SHA there, or null for a face it does not ship.
+//                                branch it is published on, the descriptor folder in that repository, the
+//                                language it localises, and each face's blob SHA there, or null for a face it
+//                                does not ship; and per language, the text the font suites probe its faces with.
 //   ext.fontEditionFaces       - a closure answering the basenames of the faces KM draws in, in order.
 //                                Called when a task runs, so it may read compiled classes.
 //   ext.vanillaFontsDirectory  - the game's own descriptors, which an edition's are laid over.
 //
 // Published back to it:
 //   ext.fontEditionRootDirectories - one root per edition, in the lock's order and named for the edition,
-//                                    holding starsector-core/graphics/fonts and the localisation marker.
+//                                    holding starsector-core/graphics/fonts and a localisation marker naming the
+//                                    edition and its language, as an installed edition's does.
+//   ext.fontEditionProbeTexts      - per language, the text the lock states its faces are probed with.
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -46,7 +49,7 @@ def markerPath = 'starsector-core/localization_version.json'
 def bumpTaskName = 'writeFontEditionsLock'
 
 // What an edition states beside its faces, in the order the lock is written in.
-def editionSourceKeys = ['name', 'repository', 'branch', 'fontsPath']
+def editionSourceKeys = ['name', 'repository', 'branch', 'fontsPath', 'language']
 
 // An edition's name becomes its root's folder and what a failure calls it, so it is held to a plain
 // folder name.
@@ -55,11 +58,38 @@ def editionNamePattern = ~/[A-Za-z0-9][A-Za-z0-9._-]*/
 // A commit is named by its first twelve characters: enough to find it upstream, short enough to read.
 def shortCommitLength = 12
 
-def readEditions = { -> (new JsonSlurper().parse(lockFile) as Map).editions as List<Map> }
+def readLock = { -> new JsonSlurper().parse(lockFile, 'UTF-8') as Map }
+
+// The lock as a reader edits it: four-space indentation, and text in its own script rather than escaped.
+def jsonWriter = new groovy.json.JsonGenerator.Options().disableUnicodeEscaping().build()
+def prettyPrintJson
+prettyPrintJson = { Object value, String indent ->
+
+    def innerIndent = indent + '    '
+
+    if (value instanceof Map) {
+        return value.isEmpty()
+            ? '{}'
+            : '{\n' + value.collect { key, member ->
+                innerIndent + jsonWriter.toJson(key as String) + ': ' + prettyPrintJson(member, innerIndent)
+            }.join(',\n') + '\n' + indent + '}'
+    }
+    if (value instanceof List) {
+        return value.isEmpty()
+            ? '[]'
+            : '[\n' + value.collect { element -> innerIndent + prettyPrintJson(element, innerIndent) }
+                .join(',\n') + '\n' + indent + ']'
+    }
+    return jsonWriter.toJson(value)
+}
 
 // Refuses a lock an edition cannot be read from, naming the edition and what it lacks, before anything
-// reaches the network.
-def requireEditions = { List<Map> editions ->
+// reaches the network. Each edition's language needs a probe text, or the suites could not tell whether its
+// faces draw its script.
+def requireEditions = { Map lock ->
+
+    def editions = lock.editions as List<Map>
+    def probeTexts = (lock.probeTexts ?: [:]) as Map
 
     if (editions == null) {
         throw new GradleException("${lockFile.name} states no editions list")
@@ -84,6 +114,12 @@ def requireEditions = { List<Map> editions ->
             throw new GradleException("${lockFile.name}: edition '${edition.name}' states its faces as other than "
                 + 'an object')
         }
+        def probeText = probeTexts[edition.language] as Map
+
+        if (!(probeText?.text instanceof String) || (probeText.text as String).isBlank()) {
+            throw new GradleException("${lockFile.name}: no probe text for ${edition.language}, the language of "
+                + "edition '${edition.name}'")
+        }
         seenNames << edition.name
     }
     return editions
@@ -92,8 +128,11 @@ def requireEditions = { List<Map> editions ->
 // Read at configuration time, so the test task knows its roots before anything runs. The editions are the
 // one list the lock keeps; the faces come from the enum when a task runs.
 ext.fontEditionRootDirectories = lockFile.isFile()
-    ? readEditions().collect { edition -> new File(editionRootsDirectory, edition.name as String) }
+    ? (readLock().editions as List<Map>).collect { edition -> new File(editionRootsDirectory, edition.name as String) }
     : []
+ext.fontEditionProbeTexts = lockFile.isFile()
+    ? ((readLock().probeTexts ?: [:]) as Map).collectEntries { language, probe -> [language, (probe as Map).text] }
+    : [:]
 
 // One bare repository per upstream, named for its URL, so editions published on one repository share its
 // fetches and blobs, and two repositories never share a remote.
@@ -186,7 +225,7 @@ tasks.register('checkFontEditions') {
             throw new GradleException("No game fonts at ${vanillaFontsDirectory}: each edition is laid over "
                 + 'them, so the build needs starsector-core/graphics/fonts/*.fnt beside the game\'s jars.')
         }
-        def editions = requireEditions(readEditions())
+        def editions = requireEditions(readLock())
         def faces = fontEditionFaces() as List<String>
         def disagreements = []
         def headByName = [:]
@@ -250,10 +289,12 @@ tasks.register('checkFontEditions') {
                     descriptorFile.bytes = vanillaFile.bytes
                 }
             }
-            // The marker names the edition as an installed one does; the commit stands in for the pack version.
+            // The marker names the edition and its language as an installed one does; the commit stands in for
+            // the pack version.
             new File(editionRoot, markerPath).text = JsonOutput.toJson([
-                branch : edition.name,
-                version: (headByName[edition.name].commit as String).take(shortCommitLength)])
+                branch  : edition.name,
+                version : (headByName[edition.name].commit as String).take(shortCommitLength),
+                language: edition.language])
         }
     }
 }
@@ -265,7 +306,8 @@ tasks.register(bumpTaskName) {
 
     doLast {
 
-        def editions = requireEditions(readEditions())
+        def lock = readLock()
+        def editions = requireEditions(lock)
         def faces = fontEditionFaces() as List<String>
 
         // Only the faces are rewritten: which editions there are, and where each is published, are the
@@ -283,6 +325,10 @@ tasks.register(bumpTaskName) {
 
             return rewritten
         }
-        lockFile.text = JsonOutput.prettyPrint(JsonOutput.toJson([editions: rewrittenEditions])) + '\n'
+        def rewrittenLock = new LinkedHashMap(lock)
+
+        rewrittenLock.editions = rewrittenEditions
+
+        lockFile.setText(prettyPrintJson(rewrittenLock, '') + '\n', 'UTF-8')
     }
 }
