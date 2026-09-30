@@ -178,6 +178,25 @@ public final class Points {
     }
 
     /**
+     * How long a path through the given points is, end to end.
+     *
+     * <p>The sum of the steps between consecutive points, open: no step is taken from the last
+     * point back to the first, so a ring measured here is its perimeter less its closing edge.
+     *
+     * @param points the path's points in order, as {@code {x, y}}
+     * @return the length; zero for a path of one point or none
+     */
+    public static double measurePathLength(List<double[]> points) {
+
+        var length = 0.0;
+
+        for (var index = 0; index + 1 < points.size(); index++) {
+            length += computeDistance(points.get(index), points.get(index + 1));
+        }
+        return length;
+    }
+
+    /**
      * The squared Euclidean distance between {@code (x1, y1)} and {@code (x2, y2)}.
      * The companion to {@link #computeDistance} for the common case of comparing a
      * distance against a threshold: squaring the threshold instead lets the test skip
