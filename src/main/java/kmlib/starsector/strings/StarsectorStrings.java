@@ -4,7 +4,13 @@ import com.fs.starfarer.api.Global;
 
 import kmlib.text.KmlibStrings;
 
+import org.apache.log4j.Logger;
+import org.json.JSONException;
+
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.IllegalFormatException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -36,6 +42,13 @@ public final class StarsectorStrings {
      */
     public static final String REDACTED = "[REDACTED]";
 
+    // Asked of log4j directly rather than of the game: the same logger under the same name, and one a
+    // class this widely read cannot be handed null by a suite that first loads it under a stood-in game.
+    private static final Logger LOG = Logger.getLogger(StarsectorStrings.class);
+
+    // Where a mod's strings sit in its own folder, as the game loads them.
+    private static final String STRINGS_PATH = "data/strings/strings.json";
+
     private StarsectorStrings() {
     }
 
@@ -66,6 +79,44 @@ public final class StarsectorStrings {
      */
     public static String format(String category, String key, Object... args) {
         return format(category, key, StarsectorStrings::fromSettings, args);
+    }
+
+    /**
+     * Every non-blank string one mod ships in one category of its {@code data/strings/strings.json},
+     * read off that mod's own file as the game loads it - for a caller that has to know everything its
+     * text may say, such as settling the face that text is drawn in.
+     *
+     * <p>Empty rather than failing where the file or the category cannot be read, and said in the log
+     * on each such read, since a caller settling on what it read would otherwise act on nothing with
+     * no trace of why.
+     *
+     * @param modId    the mod whose file is read
+     * @param category the category read out of it
+     * @return the category's strings, in the file's order
+     */
+    public static List<String> listCategoryStrings(String modId, String category) {
+
+        try {
+            var categoryObject = Global.getSettings().loadJSON(STRINGS_PATH, modId).getJSONObject(category);
+            var strings = new ArrayList<String>();
+            var keys = categoryObject.keys();
+
+            while (keys.hasNext()) {
+
+                var text = categoryObject.optString((String) keys.next());
+
+                if (KmlibStrings.hasText(text)) {
+                    strings.add(text);
+                }
+            }
+            return strings;
+
+        } catch (IOException | JSONException | RuntimeException readFailure) {
+
+            LOG.warn("The strings of category '" + category + "' in " + modId + "'s " + STRINGS_PATH
+                + " could not be read", readFailure);
+            return List.of();
+        }
     }
 
     /**
