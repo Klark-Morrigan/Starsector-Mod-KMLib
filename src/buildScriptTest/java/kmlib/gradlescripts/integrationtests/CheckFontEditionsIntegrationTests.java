@@ -372,6 +372,64 @@ final class CheckFontEditionsIntegrationTests {
             assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
                 .contains("No game fonts at");
         }
+
+        @Test
+        void failsWhereAFaceTheEditionDoesNotShipIsMissingFromTheGameToo(@TempDir Path root)
+                throws IOException {
+            // The root would lack the face, and the suites would read the edition as one that cannot load it.
+            var workspace = writeWorkspace(root);
+            writeMatchingLock(workspace);
+
+            Files.delete(workspace.vanillaFontsDirectory().resolve(ABSENT_FACE + ".fnt"));
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains(EDITION_NAME + " ships no " + ABSENT_FACE + ".fnt and the game's own is missing at");
+        }
+
+        @Test
+        void failsNamingWhatAnEditionDoesNotState(@TempDir Path root) throws IOException {
+
+            var workspace = writeWorkspace(root);
+            var entryWithoutBranch = writeEditionEntry(
+                    EDITION_NAME,
+                    workspace.upstreamDirectory(),
+                    writeMatchingFaces(workspace.upstreamDirectory()))
+                .replace("\"branch\": \"" + BRANCH + "\",", "");
+
+            writeLock(workspace, entryWithoutBranch);
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("an edition states no branch");
+        }
+
+        @Test
+        void failsWhereAnEditionsNameIsNoPlainFolderName(@TempDir Path root) throws IOException {
+            // The name becomes the edition's folder under build/, which a path could lead out of.
+            var workspace = writeWorkspace(root);
+
+            writeLock(
+                workspace,
+                writeEditionEntry(
+                    "../escape",
+                    workspace.upstreamDirectory(),
+                    writeMatchingFaces(workspace.upstreamDirectory())));
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("edition name '../escape' is not a plain folder name");
+        }
+
+        @Test
+        void failsWhereTheLockStatesNoEditionsList(@TempDir Path root) throws IOException {
+
+            var workspace = writeWorkspace(root);
+
+            Files.writeString(
+                workspace.projectDirectory().resolve("font-editions.lock.json"),
+                "{ \"probeTexts\": {} }");
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("font-editions.lock.json states no editions list");
+        }
     }
 
     @Nested

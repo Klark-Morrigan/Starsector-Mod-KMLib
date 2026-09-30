@@ -13,9 +13,10 @@ import java.util.Optional;
 
 /**
  * An install's font atlases: which edition of the game's fonts it carries, and what its descriptor states
- * for every face KM text may draw in. A core localisation replaces several atlases under the same basenames
- * and each of its editions replaces them differently, so the checks on what KM text needs of an atlas are
- * run against every install a machine holds. {@link InstalledFontsReader} reads one off an install.
+ * for every face KM text may draw in. A localisation replaces several atlases under the same basenames and
+ * each of its editions replaces them differently, so the checks on what KM text needs of an atlas are run
+ * against every install the build hands them - the editions it laid out as well as installed ones.
+ * {@link InstalledFontsReader} reads one off an install.
  *
  * <p>A reading answers {@link FaceLineHeightReader} and {@link GlyphCoverageReader} the way the running
  * game on that install would, and names the default face its settings declare, so a face can be settled

@@ -30,8 +30,11 @@
 //                                    edition and its language, as an installed edition's does.
 //   ext.fontEditionProbeTexts      - per language, the text the lock states its faces are probed with.
 
+import groovy.json.JsonGenerator
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+
+import java.security.MessageDigest
 
 def lockFile = (File) project.property('fontEditionsLockFile')
 def vanillaFontsDirectory = (File) project.property('vanillaFontsDirectory')
@@ -58,11 +61,19 @@ def editionNamePattern = ~/[A-Za-z0-9][A-Za-z0-9._-]*/
 // A commit is named by its first twelve characters: enough to find it upstream, short enough to read.
 def shortCommitLength = 12
 
+// How much of a repository URL's digest its folder name carries: enough that two URLs folding to one
+// readable name still get two folders.
+def repositoryDigestLength = 8
+
+// How much of a repository URL a folder name reads as, which the path length Windows allows bounds.
+def repositoryReadableNameLength = 48
+
 def readLock = { -> new JsonSlurper().parse(lockFile, 'UTF-8') as Map }
 
 // The lock as a reader edits it: four-space indentation, and text in its own script rather than escaped.
-def jsonWriter = new groovy.json.JsonGenerator.Options().disableUnicodeEscaping().build()
+def jsonWriter = new JsonGenerator.Options().disableUnicodeEscaping().build()
 def prettyPrintJson
+
 prettyPrintJson = { Object value, String indent ->
 
     def innerIndent = indent + '    '
@@ -74,12 +85,14 @@ prettyPrintJson = { Object value, String indent ->
                 innerIndent + jsonWriter.toJson(key as String) + ': ' + prettyPrintJson(member, innerIndent)
             }.join(',\n') + '\n' + indent + '}'
     }
+
     if (value instanceof List) {
         return value.isEmpty()
             ? '[]'
             : '[\n' + value.collect { element -> innerIndent + prettyPrintJson(element, innerIndent) }
                 .join(',\n') + '\n' + indent + ']'
     }
+
     return jsonWriter.toJson(value)
 }
 
@@ -125,25 +138,45 @@ def requireEditions = { Map lock ->
     return editions
 }
 
-// Read at configuration time, so the test task knows its roots before anything runs. The editions are the
-// one list the lock keeps; the faces come from the enum when a task runs.
-ext.fontEditionRootDirectories = lockFile.isFile()
-    ? (readLock().editions as List<Map>).collect { edition -> new File(editionRootsDirectory, edition.name as String) }
-    : []
-ext.fontEditionProbeTexts = lockFile.isFile()
-    ? ((readLock().probeTexts ?: [:]) as Map).collectEntries { language, probe -> [language, (probe as Map).text] }
-    : [:]
+// Read once while the build configures, so the test task knows its roots and probe texts before anything
+// runs. What cannot be read here is passed over rather than refused: the tasks refuse it, naming what is
+// wrong, where a failure here would stop every task in the build with a bare error. The editions are the one
+// list the lock keeps; the faces come from the enum when a task runs.
+def configuredLock = lockFile.isFile() ? readLock() : [:]
+
+ext.fontEditionRootDirectories = ((configuredLock.editions ?: []) as List)
+    .findAll { edition ->
+        edition instanceof Map && edition.name instanceof String && edition.name ==~ editionNamePattern
+    }
+    .collect { edition -> new File(editionRootsDirectory, edition.name as String) }
+
+ext.fontEditionProbeTexts = ((configuredLock.probeTexts ?: [:]) as Map)
+    .findAll { language, probe -> probe instanceof Map && probe.text instanceof String }
+    .collectEntries { language, probe -> [language, probe.text] }
 
 // One bare repository per upstream, named for its URL, so editions published on one repository share its
-// fetches and blobs, and two repositories never share a remote.
+// fetches and blobs, and two repositories never share a remote. Named by the URL's last two segments - a
+// host's owner and repository - rather than the whole of it, since git's own files sit several folders below
+// and a long name carries them past the path length Windows allows.
 def resolveRepositoryDirectory = { String repositoryUrl ->
 
-    def folderName = repositoryUrl
-        .replaceFirst(/^[A-Za-z][A-Za-z0-9+.-]*:\/+/, '')
+    def readableName = repositoryUrl
         .replaceFirst(/\.git\/?$/, '')
+        .split('/')
+        .findAll { segment -> !segment.isEmpty() }
+        .takeRight(2)
+        .join('-')
         .replaceAll(/[^A-Za-z0-9._-]+/, '-')
+        .take(repositoryReadableNameLength)
 
-    return new File(repositoriesDirectory, folderName + '.git')
+    def urlDigest = MessageDigest
+        .getInstance('SHA-256')
+        .digest(repositoryUrl.getBytes('UTF-8'))
+        .encodeHex()
+        .toString()
+        .take(repositoryDigestLength)
+
+    return new File(repositoriesDirectory, "${readableName}-${urlDigest}.git")
 }
 
 // Runs git over a repository and answers its standard output as bytes. A failure names the command and
@@ -181,15 +214,18 @@ def prepareRepository = { String repositoryUrl ->
     return repository
 }
 
-// Each face's descriptor blob SHA on an edition's branch head, fetched shallow and without blobs. A face the
-// branch does not ship is absent from the answer.
-def readBranchHead = { File repository, String branch, String fontsPath ->
+// Each face's descriptor blob SHA on an edition's branch head, and the head commit, fetched shallow and
+// without blobs. A face the branch does not ship is absent from the answer.
+def readEditionHead = { Map edition ->
+
+    def repository = prepareRepository(edition.repository as String)
+    def branchRef = "refs/heads/${edition.branch}".toString()
 
     runGit(repository, ['fetch', '--quiet', '--depth', '1', '--filter=blob:none', 'origin',
-                        "+refs/heads/${branch}:refs/heads/${branch}".toString()])
+                        "+${branchRef}:${branchRef}".toString()])
 
     def blobShaByFace = [:]
-    def treeListing = runGit(repository, ['ls-tree', "refs/heads/${branch}".toString(), '--', "${fontsPath}/".toString()])
+    def treeListing = runGit(repository, ['ls-tree', branchRef, '--', "${edition.fontsPath}/".toString()])
 
     new String(treeListing, 'UTF-8')
         .readLines()
@@ -203,11 +239,92 @@ def readBranchHead = { File repository, String branch, String fontsPath ->
                 blobShaByFace[fileName - descriptorExtension] = sha
             }
         }
-    def commit = runGit(repository, ['rev-parse', "refs/heads/${branch}".toString()])
-
     return [
         blobShaByFace: blobShaByFace,
-        commit       : new String(commit, 'UTF-8').trim()]
+        commit       : new String(runGit(repository, ['rev-parse', branchRef]), 'UTF-8').trim()]
+}
+
+// The game's own descriptors, which every edition is laid over; without them the gate would check nothing.
+def requireVanillaFonts = { ->
+
+    if (!vanillaFontsDirectory.isDirectory()) {
+        throw new GradleException("No game fonts at ${vanillaFontsDirectory}: each edition is laid over them, "
+            + 'so the build needs starsector-core/graphics/fonts/*.fnt beside the game\'s jars.')
+    }
+}
+
+// Each edition's branch head, by edition name, where every edition matches the lock - and otherwise a
+// failure naming every disagreement at once, so one run says everything a rewrite will change.
+def readHeadsMatchingLock = { List<Map> editions, List<String> faces ->
+
+    def disagreements = []
+    def headByName = [:]
+
+    editions.each { edition ->
+
+        def lockedShaByFace = (edition.faces ?: [:]) as Map
+
+        if (lockedShaByFace.keySet() as List != faces) {
+            disagreements << ("${edition.name}: the lock names faces ${lockedShaByFace.keySet() as List}, "
+                + "the enum ${faces}")
+            return
+        }
+        def head = readEditionHead(edition)
+
+        headByName[edition.name] = head
+
+        faces.each { face ->
+
+            def lockedSha = lockedShaByFace[face]
+            def upstreamSha = head.blobShaByFace[face]
+
+            if (lockedSha != upstreamSha) {
+                disagreements << ("${edition.name} ${face}: locked ${lockedSha ?: 'absent'}, "
+                    + "upstream ${upstreamSha ?: 'absent'} (${edition.repository} ${edition.branch})")
+            }
+        }
+    }
+    if (!disagreements.isEmpty()) {
+        throw new GradleException("${lockFile.name} no longer matches upstream:\n  "
+            + disagreements.join('\n  ')
+            + "\nReview the editions' new descriptors, then run: gradlew ${bumpTaskName}")
+    }
+    return headByName
+}
+
+// One edition's root: the pinned blob where the edition ships a face and the game's own where it does not,
+// and a marker naming the edition and its language as an installed one does - the commit standing in for
+// the pack version.
+def layEditionRoot = { Map edition, Map head, List<String> faces ->
+
+    def repository = resolveRepositoryDirectory(edition.repository as String)
+    def editionRoot = new File(editionRootsDirectory, edition.name as String)
+    def fontsDirectory = new File(editionRoot, coreFontsPath)
+
+    editionRoot.deleteDir()
+    fontsDirectory.mkdirs()
+
+    faces.each { face ->
+
+        def descriptorFile = new File(fontsDirectory, face + descriptorExtension)
+        def blobSha = (edition.faces as Map)[face] as String
+
+        if (blobSha != null) {
+            descriptorFile.bytes = runGit(repository, ['cat-file', 'blob', blobSha])
+        } else {
+            def vanillaFile = new File(vanillaFontsDirectory, face + descriptorExtension)
+
+            if (!vanillaFile.isFile()) {
+                throw new GradleException("${edition.name} ships no ${face}${descriptorExtension} and the game's "
+                    + "own is missing at ${vanillaFile}")
+            }
+            descriptorFile.bytes = vanillaFile.bytes
+        }
+    }
+    new File(editionRoot, markerPath).text = JsonOutput.toJson([
+        branch  : edition.name,
+        version : (head.commit as String).take(shortCommitLength),
+        language: edition.language])
 }
 
 tasks.register('checkFontEditions') {
@@ -221,81 +338,13 @@ tasks.register('checkFontEditions') {
 
     doLast {
 
-        if (!vanillaFontsDirectory.isDirectory()) {
-            throw new GradleException("No game fonts at ${vanillaFontsDirectory}: each edition is laid over "
-                + 'them, so the build needs starsector-core/graphics/fonts/*.fnt beside the game\'s jars.')
-        }
+        requireVanillaFonts()
+
         def editions = requireEditions(readLock())
         def faces = fontEditionFaces() as List<String>
-        def disagreements = []
-        def headByName = [:]
+        def headByName = readHeadsMatchingLock(editions, faces)
 
-        editions.each { edition ->
-
-            def lockedShaByFace = (edition.faces ?: [:]) as Map
-
-            if (lockedShaByFace.keySet() as List != faces) {
-                disagreements << ("${edition.name}: the lock names faces ${lockedShaByFace.keySet() as List}, "
-                    + "the enum ${faces}")
-                return
-            }
-            def head = readBranchHead(
-                prepareRepository(edition.repository as String),
-                edition.branch as String,
-                edition.fontsPath as String)
-
-            headByName[edition.name] = head
-
-            faces.each { face ->
-
-                def lockedSha = lockedShaByFace[face]
-                def upstreamSha = head.blobShaByFace[face]
-
-                if (lockedSha != upstreamSha) {
-                    disagreements << ("${edition.name} ${face}: locked ${lockedSha ?: 'absent'}, "
-                        + "upstream ${upstreamSha ?: 'absent'} (${edition.repository} ${edition.branch})")
-                }
-            }
-        }
-        if (!disagreements.isEmpty()) {
-            throw new GradleException("${lockFile.name} no longer matches upstream:\n  "
-                + disagreements.join('\n  ')
-                + "\nReview the editions' new descriptors, then run: gradlew ${bumpTaskName}")
-        }
-        editions.each { edition ->
-
-            def repository = resolveRepositoryDirectory(edition.repository as String)
-            def editionRoot = new File(editionRootsDirectory, edition.name as String)
-            def fontsDirectory = new File(editionRoot, coreFontsPath)
-
-            editionRoot.deleteDir()
-            fontsDirectory.mkdirs()
-
-            // The pinned blob where the edition ships the face, the game's own where it does not.
-            faces.each { face ->
-
-                def descriptorFile = new File(fontsDirectory, face + descriptorExtension)
-                def blobSha = (edition.faces as Map)[face] as String
-
-                if (blobSha != null) {
-                    descriptorFile.bytes = runGit(repository, ['cat-file', 'blob', blobSha])
-                } else {
-                    def vanillaFile = new File(vanillaFontsDirectory, face + descriptorExtension)
-
-                    if (!vanillaFile.isFile()) {
-                        throw new GradleException("${edition.name} ships no ${face}${descriptorExtension} and the "
-                            + "game's own is missing at ${vanillaFile}")
-                    }
-                    descriptorFile.bytes = vanillaFile.bytes
-                }
-            }
-            // The marker names the edition and its language as an installed one does; the commit stands in for
-            // the pack version.
-            new File(editionRoot, markerPath).text = JsonOutput.toJson([
-                branch  : edition.name,
-                version : (headByName[edition.name].commit as String).take(shortCommitLength),
-                language: edition.language])
-        }
+        editions.each { edition -> layEditionRoot(edition, headByName[edition.name] as Map, faces) }
     }
 }
 
@@ -307,17 +356,13 @@ tasks.register(bumpTaskName) {
     doLast {
 
         def lock = readLock()
-        def editions = requireEditions(lock)
         def faces = fontEditionFaces() as List<String>
 
         // Only the faces are rewritten: which editions there are, and where each is published, are the
         // lock author's to state.
-        def rewrittenEditions = editions.collect { edition ->
+        def rewrittenEditions = requireEditions(lock).collect { edition ->
 
-            def head = readBranchHead(
-                prepareRepository(edition.repository as String),
-                edition.branch as String,
-                edition.fontsPath as String)
+            def head = readEditionHead(edition)
             def rewritten = new LinkedHashMap()
 
             editionSourceKeys.each { key -> rewritten[key] = edition[key] }

@@ -15,9 +15,9 @@ import java.util.Optional;
  * and the descriptor of every face KM text may draw in.
  *
  * <p>The edition is the {@code branch} a core localisation records in
- * {@code starsector-core/localization_version.json}, and the pack version that file's {@code version}.
- * An install with no such file carries the game's own atlases, which is the
- * {@value InstalledFonts#VANILLA_EDITION} edition, and has no pack version.
+ * {@code starsector-core/localization_version.json}, the pack version that file's {@code version}, and the
+ * language its {@code language}. An install with no such file carries the game's own atlases, which is the
+ * {@value InstalledFonts#VANILLA_EDITION} edition, and has no pack version or language.
  *
  * <p>A declared default the enum does not name is read where the install carries it under
  * {@code starsector-core}. One a mod ships sits in that mod's folder, which is the game's to merge and not

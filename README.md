@@ -1377,18 +1377,18 @@ each of its editions with others of its own line heights and glyph sets.
 
   A rewrite is a pull request of its own,
   so the new descriptors are checked before they are trusted.
-- The lock lists the editions,
-  each under a name of KM's choosing with the git repository, branch and descriptor folder it is published in
-  and the language it localises,
-  so editions from different localisations - even on branches of the same name - stay apart.
-  Per language it states a probe text,
-  which the suites check every face settles on a face drawing;
-  an installed edition is matched to its probe by the language its own marker names,
-  and an edition whose language has none fails the build.
-  An edition is added by hand with no faces,
-  and `writeFontEditionsLock` fills them;
+- Each edition in the lock has a name of KM's choosing,
+  the git repository, branch and descriptor folder it is published in,
+  and the language it localises.
+  Editions of different localisations stay apart even on branches of the same name.
+- The lock states a probe text per language.
+  Every face has to settle on a face drawing its install's probe,
+  matched by the language the install's marker names;
+  an edition whose language has none fails the build.
+- An edition is added by hand with no faces,
+  and `writeFontEditionsLock` fills them -
   it rewrites only the faces.
-  The faces are the enum's,
+- The faces are the enum's,
   and a lock naming others fails the build.
 - Every build needs the network and the game's fonts,
   and fails rather than skipping without either:
