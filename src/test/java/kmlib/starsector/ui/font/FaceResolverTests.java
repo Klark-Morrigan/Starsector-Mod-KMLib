@@ -36,6 +36,7 @@ class FaceResolverTests {
         AtlasSmoothing.SMOOTHED);
 
     private static GlyphCoverageReaderFake createLocalisedCoverage() {
+
         return GlyphCoverageReaderFake.createLatinOnlyCoverage()
             .coveringEveryCharacter(StarsectorFont.VANILLA_INSIGNIA_25)
             .coveringEveryCharacter(StarsectorFont.VANILLA_INSIGNIA_21)
@@ -43,6 +44,7 @@ class FaceResolverTests {
     }
 
     private static FaceResolver createLocalisedResolver() {
+
         return new FaceResolver(
             FaceLineHeightReaderFake.createVanillaLineHeights(),
             createLocalisedCoverage(),
@@ -52,15 +54,18 @@ class FaceResolverTests {
     private static FaceResolver createLocalisedResolverWithUnloadable(StarsectorFont... unloadableFonts) {
 
         var lineHeightsFake = FaceLineHeightReaderFake.createVanillaLineHeights();
+
         for (var unloadableFont : unloadableFonts) {
             lineHeightsFake = lineHeightsFake.answeringLineHeight(unloadableFont, UNLOADABLE);
         }
+
         return new FaceResolver(lineHeightsFake, createLocalisedCoverage(), VANILLA_DECLARED_DEFAULT);
     }
 
     // A vanilla install whose settings a language pack has pointed at its own face, which holds the pack's
     // script where no vanilla atlas does.
     private static FaceResolver createPackDeclaredResolver(double packLineHeight) {
+
         return new FaceResolver(
             FaceLineHeightReaderFake.createVanillaLineHeights()
                 .answeringLineHeight(PACK_DECLARED_DEFAULT, packLineHeight),
