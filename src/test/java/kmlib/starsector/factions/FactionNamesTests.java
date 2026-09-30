@@ -1,9 +1,12 @@
 package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -67,6 +70,32 @@ class FactionNamesTests {
 
             assertThat(FactionNames.resolveName(null, FactionNameForm.SHORT))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class ListEveryName {
+
+        @Test
+        void readsEveryFactionsShortAndLongNameLeavingBlanksOut() {
+            // Plenty of modded factions declare no long name; a blank is nothing a caller could draw.
+            var sectorMock = mock(SectorAPI.class);
+            var factions = List.of(
+                createNamedFaction(SHORT_NAME, LONG_NAME),
+                createNamedFaction("Pather", " "));
+
+            when(sectorMock.getAllFactions())
+                .thenReturn(factions);
+
+            assertThat(FactionNames.listEveryName(sectorMock))
+                .containsExactly("Hegemony", "The Hegemony", "Pather");
+        }
+
+        @Test
+        void answersNothingForANullSector() {
+
+            assertThat(FactionNames.listEveryName(null))
+                .isEmpty();
         }
     }
 
