@@ -1,8 +1,12 @@
 package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.text.KmlibStrings;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Reads a faction's authored names, so the choice between its two forms and what an absent faction
@@ -32,6 +36,34 @@ public final class FactionNames {
         return form == FactionNameForm.SHORT
             ? faction.getDisplayName()
             : faction.getDisplayNameLong();
+    }
+
+    /**
+     * Every name the sector's factions are authored with, both forms of each, blanks left out - for a
+     * caller that has to know what a faction may be called before it names one, such as settling the
+     * face a faction's name is drawn in.
+     *
+     * @param sector the sector whose factions are read; null yields an empty list
+     * @return each faction's short name then its long one, in the sector's faction order
+     */
+    public static List<String> listEveryName(SectorAPI sector) {
+
+        if (sector == null) {
+            return List.of();
+        }
+        var names = new ArrayList<String>();
+
+        for (var faction : sector.getAllFactions()) {
+            for (var form : FactionNameForm.values()) {
+
+                var name = resolveName(faction, form);
+
+                if (KmlibStrings.hasText(name)) {
+                    names.add(name);
+                }
+            }
+        }
+        return names;
     }
 
     /**
