@@ -7,6 +7,22 @@
     },
     "editions": [
         {
+            "name": "cn-master",
+            "repository": "https://github.com/TruthOriginem/Starsector-Localization-CN.git",
+            "branch": "master",
+            "fontsPath": "localization/graphics/fonts",
+            "language": "zh-Hans",
+            "faces": {
+                "insignia15LTaa": "f147f69aaee3db1064c0852d137faefd01d508d1",
+                "orbitron20aa": "62d5a2bc5d28688ec4076c79e29871109a65aa57",
+                "orbitron12condensed": "d485711f866f5aa8c0522f4924bc9e990323b86c",
+                "victor10": "9b42778547098e3ed147e21059e9fbb8c26c8b89",
+                "insignia21LTaa": "5a970e0630c7be67f65e2db1b9dd3bca43cfc859",
+                "insignia25LTaa": "0373ac7c03e406413f6f9b94fce0e666fbe3455f",
+                "insignia42LTaa": null
+            }
+        },
+        {
             "name": "cn-optimised",
             "repository": "https://github.com/TruthOriginem/Starsector-Localization-CN.git",
             "branch": "startup-optimization",
