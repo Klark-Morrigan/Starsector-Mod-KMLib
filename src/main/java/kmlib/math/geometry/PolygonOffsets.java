@@ -592,12 +592,6 @@ public final class PolygonOffsets {
         return segments;
     }
 
-    // Appends the inset of one corner from its two edges' signed distances (equal
-    // for the scalar inset): the miter point for a convex corner within the spike
-    // limit, otherwise the bevel (the two shifted edge ends). A reflex corner always
-    // bevels, since its miter would spike into the interior; a degenerate
-    // (zero-length) edge falls back to the one good offset, or the corner itself when
-    // neither edge has a direction.
     // One splice per call, so the caller's loop stops when a whole pass finds nothing.
     //
     // A crossing cuts the ring into two loops, the run between the crossing edges and the
@@ -682,6 +676,12 @@ public final class PolygonOffsets {
             && PolygonRegions.countSelfCrossings(loop) == 0;
     }
 
+    // Appends the inset of one corner from its two edges' signed distances (equal
+    // for the scalar inset): the miter point for a convex corner within the spike
+    // limit, otherwise the bevel (the two shifted edge ends). A reflex corner always
+    // bevels, since its miter would spike into the interior; a degenerate
+    // (zero-length) edge falls back to the one good offset, or the corner itself when
+    // neither edge has a direction.
     private static void appendInsetCorner(
             List<double[]> inset,
             double[] previous,
