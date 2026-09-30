@@ -491,30 +491,57 @@ public final class PolygonOffsets {
      * <p>Offered separately rather than folded into the inset so that callers pinning the
      * existing behaviour keep it. Splicing a fold out shortens the ring, so this terminates.
      *
-     * <p>Only crossings within {@code windowVertices} of each other along the ring are
-     * considered. A fold is two sides of ONE corner, so its segments sit close together;
+     * <p>Only crossings within {@code windowVertexCount} vertices of each other along the
+     * ring are considered. A fold is two sides of ONE corner, so its segments sit close together;
      * scanning every pair costs quadratically more to find the same folds. A caller who has
      * offset by more than the shape's own scale, where distant parts of a ring can cross,
      * should pass a window covering the ring.
      *
-     * @param polygon        closed polygon vertices as {x, y} pairs
-     * @param windowVertices how far apart along the ring two segments may be and still be
-     *                       compared; non-positive compares every pair
+     * @param polygon           closed polygon vertices as {x, y} pairs
+     * @param windowVertexCount how far apart along the ring two segments may be and still be
+     *                          compared; non-positive compares every pair
      * @return the polygon with its reversed loops spliced out; the input when it has fewer
      *         than three vertices or nothing folds
      */
     public static List<double[]> removeReversedLoops(
             List<double[]> polygon,
-            int windowVertices) {
+            int windowVertexCount) {
+
+        return removeReversedLoops(
+            polygon, PolygonRegions.computeSignedArea(polygon) >= 0, windowVertexCount);
+    }
+
+    /**
+     * Removes the loops a polygon folds over itself into, keeping only what is wound the
+     * given way - for a caller who knows how the ring was meant to wind.
+     *
+     * <p>The net signed area is the wrong guide once the folds outweigh the body. A ring
+     * offset past its own width at both ends, with a body between them still wider than the
+     * offset, comes back as two large reversed loops around a smaller body of the right
+     * winding; read off the net area, that ring winds the wrong way and the body is what gets
+     * spliced out. A caller that insets a ring it knows to be counter-clockwise asks for the
+     * counter-clockwise remainder instead, and learns from what is left whether the inset
+     * consumed the ring or only its ends.
+     *
+     * @param polygon            closed polygon vertices as {x, y} pairs
+     * @param isCounterClockwise whether the loops to keep are wound counter-clockwise
+     * @param windowVertexCount  how far apart along the ring two segments may be and still be
+     *                           compared; non-positive compares every pair
+     * @return the polygon with the loops wound against the given way spliced out; the input
+     *         when it has fewer than three vertices or nothing folds
+     */
+    public static List<double[]> removeReversedLoops(
+            List<double[]> polygon,
+            boolean isCounterClockwise,
+            int windowVertexCount) {
 
         if (polygon.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return polygon;
         }
 
         var cleaned = new ArrayList<>(polygon);
-        var windsPositive = PolygonRegions.computeSignedArea(cleaned) >= 0;
 
-        while (spliceOneReversedLoop(cleaned, windsPositive, windowVertices)) {
+        while (spliceOneReversedLoop(cleaned, isCounterClockwise, windowVertexCount)) {
 
             if (cleaned.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
                 return polygon;
@@ -565,22 +592,28 @@ public final class PolygonOffsets {
         return segments;
     }
 
-    // Appends the inset of one corner from its two edges' signed distances (equal
-    // for the scalar inset): the miter point for a convex corner within the spike
-    // limit, otherwise the bevel (the two shifted edge ends). A reflex corner always
-    // bevels, since its miter would spike into the interior; a degenerate
-    // (zero-length) edge falls back to the one good offset, or the corner itself when
-    // neither edge has a direction.
     // One splice per call, so the caller's loop stops when a whole pass finds nothing.
+    //
+    // A crossing cuts the ring into two loops, the run between the crossing edges and the
+    // run round the other way through the ring's start, and either can be the fold. Both are
+    // read, because which one the fold falls in is an accident of where the ring happens to
+    // begin: a fold straddling the start is the second kind, and reading only the first
+    // would leave it in place.
+    //
+    // Only a loop that does not cross itself is a fold. A ring folded at both ends cuts, at
+    // either crossing, into that end's fold and everything else - the body with the other
+    // fold still in it - and everything else can net against the ring while holding the very
+    // body the splice is meant to keep. Taking only simple loops takes the innermost fold
+    // first, after which the next one is simple in its turn.
     private static boolean spliceOneReversedLoop(
             List<double[]> ring,
-            boolean windsPositive,
-            int windowVertices) {
+            boolean isCounterClockwise,
+            int windowVertexCount) {
 
         for (var first = 0; first < ring.size(); first++) {
 
-            var last = windowVertices > 0
-                ? Math.min(first + windowVertices, ring.size() - 1)
+            var last = windowVertexCount > 0
+                ? Math.min(first + windowVertexCount, ring.size() - 1)
                 : ring.size() - 1;
 
             for (var second = first + 2; second <= last; second++) {
@@ -602,26 +635,53 @@ public final class PolygonOffsets {
                     continue;
                 }
 
-                var loop = new ArrayList<double[]>();
+                var between = new ArrayList<double[]>();
 
-                loop.add(crossing);
-                loop.addAll(ring.subList(first + 1, second + 1));
+                between.add(crossing);
+                between.addAll(ring.subList(first + 1, second + 1));
 
-                if (PolygonRegions.computeSignedArea(loop) >= 0 == windsPositive) {
-                    continue;
+                if (isFoldWoundAgainst(between, isCounterClockwise)) {
+
+                    // The fold collapses to the point its two sides met at, which is where
+                    // a miter would have put the corner had one been takeable.
+                    ring.subList(first + 1, second + 1).clear();
+                    ring.add(first + 1, crossing);
+
+                    return true;
                 }
 
-                // The fold collapses to the point its two sides met at, which is where a
-                // miter would have put the corner had one been takeable.
-                ring.subList(first + 1, second + 1).clear();
-                ring.add(first + 1, crossing);
+                var around = new ArrayList<double[]>();
 
-                return true;
+                around.add(crossing);
+                around.addAll(ring.subList(second + 1, ring.size()));
+                around.addAll(ring.subList(0, first + 1));
+
+                if (isFoldWoundAgainst(around, isCounterClockwise)) {
+
+                    ring.clear();
+                    ring.addAll(between);
+
+                    return true;
+                }
             }
         }
         return false;
     }
 
+    // Whether a loop cut off at a crossing is a fold to splice: simple, and wound against
+    // the ring.
+    private static boolean isFoldWoundAgainst(List<double[]> loop, boolean isCounterClockwise) {
+
+        return PolygonRegions.computeSignedArea(loop) >= 0 != isCounterClockwise
+            && PolygonRegions.countSelfCrossings(loop) == 0;
+    }
+
+    // Appends the inset of one corner from its two edges' signed distances (equal
+    // for the scalar inset): the miter point for a convex corner within the spike
+    // limit, otherwise the bevel (the two shifted edge ends). A reflex corner always
+    // bevels, since its miter would spike into the interior; a degenerate
+    // (zero-length) edge falls back to the one good offset, or the corner itself when
+    // neither edge has a direction.
     private static void appendInsetCorner(
             List<double[]> inset,
             double[] previous,
