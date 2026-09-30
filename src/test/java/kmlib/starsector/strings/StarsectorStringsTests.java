@@ -1,9 +1,21 @@
 package kmlib.starsector.strings;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.SettingsAPI;
+
+import kmlib.testfixtures.logging.LogAppenderFake;
+
+import org.json.JSONObject;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 final class StarsectorStringsTests {
 
@@ -113,6 +125,53 @@ final class StarsectorStringsTests {
 
             assertThat(value)
                 .isEqualTo(StarsectorStrings.REDACTED);
+        }
+    }
+
+    @Nested
+    class ListCategoryStrings {
+
+        @AfterEach
+        void clearSettings() {
+            Global.setSettings(null);
+        }
+
+        @Test
+        void readsEveryNonBlankStringOfTheCategoryInTheModsOwnFile() throws Exception {
+            // Any other category is some other text, and a blank is nothing a caller could draw.
+            var settingsMock = mock(SettingsAPI.class);
+
+            when(settingsMock.loadJSON("data/strings/strings.json", "some_mod"))
+                .thenReturn(new JSONObject(
+                    "{ \"test_category\": { \"first\": \"Political map\", \"blank\": \"\" },"
+                        + " \"other\": { \"elsewhere\": \"Another text\" } }"));
+
+            Global.setSettings(settingsMock);
+
+            assertThat(StarsectorStrings.listCategoryStrings("some_mod", CATEGORY))
+                .containsExactly("Political map");
+        }
+
+        @Test
+        void answersNothingAndSaysSoWhereTheFileCannotBeRead() throws Exception {
+            // A caller acting on what it read would otherwise act on nothing with no trace of why.
+            var settingsMock = mock(SettingsAPI.class);
+
+            when(settingsMock.loadJSON("data/strings/strings.json", "some_mod"))
+                .thenThrow(new IOException("missing"));
+
+            Global.setSettings(settingsMock);
+
+            var strings = new ArrayList<String>();
+            var logFake = LogAppenderFake.captureLogOf(
+                StarsectorStrings.class,
+                () -> strings.addAll(StarsectorStrings.listCategoryStrings("some_mod", CATEGORY)));
+
+            assertThat(strings)
+                .isEmpty();
+            assertThat(logFake.getMessages())
+                .containsExactly("The strings of category 'test_category' in some_mod's data/strings/strings.json"
+                    + " could not be read");
         }
     }
 }
