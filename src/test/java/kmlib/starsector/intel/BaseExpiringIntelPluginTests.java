@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 class BaseExpiringIntelPluginTests {
 
     private static final long CREATED_AT = 1_000_000L;
+    private static final long HANDED_CREATED_AT = 2_000_000L;
 
     private MockedStatic<Global> globalMock;
     private SectorAPI sectorMock;
@@ -105,6 +106,40 @@ class BaseExpiringIntelPluginTests {
 
             verify(intelManagerMock, never()).removeIntel(intel);
         }
+
+        @Test
+        void advanceIsNoOpWhenTheIntelManagerIsMissing() {
+            var intel = new FixedDurationIntel();
+            // Expired, so only the missing manager stands between the tick and a removal.
+            when(clockMock.getElapsedDaysSince(CREATED_AT))
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
+            when(sectorMock.getIntelManager()).thenReturn(null);
+
+            intel.advanceImpl(1f);
+
+            verify(intelManagerMock, never()).removeIntel(intel);
+        }
+    }
+
+    @Nested
+    class Constructor {
+        @Test
+        void opensTheWindowOnTheRunningClockWhenHandedNone() {
+            var intel = new FixedDurationIntel();
+
+            assertThat(intel.getCreatedTimestamp()).isEqualTo(CREATED_AT);
+        }
+
+        @Test
+        void opensTheWindowOnTheHandedClock() {
+            // The running clock and the handed one disagree, so the stamp shows which was read.
+            var handedClockMock = mock(CampaignClockAPI.class);
+            when(handedClockMock.getTimestamp()).thenReturn(HANDED_CREATED_AT);
+
+            var intel = new HandedClockIntel(handedClockMock);
+
+            assertThat(intel.getCreatedTimestamp()).isEqualTo(HANDED_CREATED_AT);
+        }
     }
 
     @Nested
@@ -132,6 +167,19 @@ class BaseExpiringIntelPluginTests {
             globalMock.when(Global::getSector).thenReturn(null);
 
             assertThat(intel.isExpired()).isFalse();
+        }
+
+        @Test
+        void measuresTheWindowAgainstTheHandedClock() {
+            var intel = new FixedDurationIntel();
+            // The running clock says live, the handed one says expired: the
+            // answer must follow the clock passed in.
+            var handedClockMock = mock(CampaignClockAPI.class);
+            when(clockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(0f);
+            when(handedClockMock.getElapsedDaysSince(CREATED_AT))
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
+
+            assertThat(intel.isExpired(handedClockMock)).isTrue();
         }
     }
 
@@ -203,9 +251,50 @@ class BaseExpiringIntelPluginTests {
 
             assertThat(BaseExpiringIntelPlugin.findActive(FixedDurationIntel.class)).isNull();
         }
+
+        @Test
+        void readsTheHandedSectorRatherThanTheRunningOne() {
+            // The running sector holds nothing; a second sector beside it holds a
+            // live item on its own clock, so only a lookup that honours the handed
+            // sector for both the manager and the clock finds it.
+            var intel = new FixedDurationIntel();
+            var handedClockMock = mock(CampaignClockAPI.class);
+            var handedIntelManagerMock = mock(IntelManagerAPI.class);
+            var handedSectorMock = mock(SectorAPI.class);
+            when(clockMock.getElapsedDaysSince(CREATED_AT))
+                .thenReturn((float) StarsectorClock.DAYS_PER_MONTH);
+            when(intelManagerMock.getIntel(FixedDurationIntel.class))
+                .thenReturn(Collections.emptyList());
+            when(handedClockMock.getElapsedDaysSince(CREATED_AT)).thenReturn(0f);
+            when(handedIntelManagerMock.getIntel(FixedDurationIntel.class))
+                .thenReturn(Collections.singletonList(intel));
+            when(handedSectorMock.getClock()).thenReturn(handedClockMock);
+            when(handedSectorMock.getIntelManager()).thenReturn(handedIntelManagerMock);
+
+            assertThat(BaseExpiringIntelPlugin.findActive(handedSectorMock, FixedDurationIntel.class))
+                .isSameAs(intel);
+        }
+
+        @Test
+        void returnsNullWhenTheHandedSectorIsMissing() {
+            assertThat(BaseExpiringIntelPlugin.findActive(null, FixedDurationIntel.class)).isNull();
+        }
+
+        @Test
+        void returnsNullWhenTheIntelManagerIsMissing() {
+            when(sectorMock.getIntelManager()).thenReturn(null);
+
+            assertThat(BaseExpiringIntelPlugin.findActive(sectorMock, FixedDurationIntel.class)).isNull();
+        }
     }
 
     private static final class FixedDurationIntel extends BaseExpiringIntelPlugin {
+    }
+
+    private static final class HandedClockIntel extends BaseExpiringIntelPlugin {
+        HandedClockIntel(CampaignClockAPI clock) {
+            super(clock);
+        }
     }
 
     private static final class CustomDurationIntel extends BaseExpiringIntelPlugin {

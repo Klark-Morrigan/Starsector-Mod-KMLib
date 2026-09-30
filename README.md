@@ -1964,11 +1964,14 @@ which is what lets the expiring chain support untagged consumers.
 extends it,
 so an expiring intel declares its tab tags through the same constructor channel;
 the no-arg form is for callers pinning to a vanilla tab.
-It captures the creation timestamp
+It captures the creation timestamp -
+off a clock the constructor is handed, or the running sector's when it is handed none -
 and auto-removes from the `IntelManager` once `getExpiryDays()` elapses,
 defaulting to one Starsector month.
 Static `findActive(Class)` returns the first non-expired item of a given subclass,
 so synchronous callers share one definition of "still within the current window".
+`findActive(SectorAPI, Class)` asks the same of a sector the caller was handed,
+measuring each window against that sector's clock.
 
 ## Licence
 

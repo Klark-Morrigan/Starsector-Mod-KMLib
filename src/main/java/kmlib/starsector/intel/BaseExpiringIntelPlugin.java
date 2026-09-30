@@ -1,6 +1,8 @@
 package kmlib.starsector.intel;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CampaignClockAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.starsector.time.CampaignCountdown;
 import kmlib.starsector.time.StarsectorClock;
@@ -38,17 +40,28 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
 
     /**
      * Builds an expiring intel that also contributes
-     * {@code extraIntelTags} to its tab placement. Forwards to
-     * {@link BaseTaggedIntelPlugin} for the tag merge and captures
-     * the creation timestamp locally for the expiry check.
+     * {@code extraIntelTags} to its tab placement, stamped off the
+     * running sector's clock. See
+     * {@link #BaseExpiringIntelPlugin(CampaignClockAPI, String...)}.
      */
     protected BaseExpiringIntelPlugin(String... extraIntelTags) {
+        this(Global.getSector().getClock(), extraIntelTags);
+    }
+
+    /**
+     * Builds an expiring intel whose window opens at {@code clock}'s
+     * current time, for code handed its sector rather than reading the
+     * running one. Forwards to {@link BaseTaggedIntelPlugin} for the
+     * tag merge and captures the creation timestamp locally for the
+     * expiry check.
+     *
+     * @param clock          the campaign clock the window opens on
+     * @param extraIntelTags tab tags added to the intel's placement
+     */
+    protected BaseExpiringIntelPlugin(CampaignClockAPI clock, String... extraIntelTags) {
 
         super(extraIntelTags);
-        this.createdTimestamp = Global
-            .getSector()
-            .getClock()
-            .getTimestamp();
+        this.createdTimestamp = clock.getTimestamp();
     }
 
     /**
@@ -71,9 +84,32 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
         if (sector == null) {
             return false;
         }
+        return isExpired(sector.getClock());
+    }
+
+    /**
+     * {@link #isExpired()} against a clock the caller already holds,
+     * for code handed its sector rather than reading the running one.
+     *
+     * @param clock the campaign clock to measure the window against
+     * @return whether the window has run out on {@code clock}
+     */
+    public final boolean isExpired(CampaignClockAPI clock) {
+
         // No slack: an intel's window is a player-facing promise with no frame-jitter completion to absorb.
         return new CampaignCountdown(createdTimestamp, getExpiryDays(), NO_SLACK_DAYS)
-            .isComplete(sector.getClock());
+            .isComplete(clock);
+    }
+
+    /**
+     * {@link #findActive(SectorAPI, Class)} over the running sector.
+     *
+     * @param intelClass the intel type to look up
+     * @param <T>        the intel type
+     * @return the first intel of that type still within its window, or {@code null}
+     */
+    public static <T extends BaseExpiringIntelPlugin> T findActive(Class<T> intelClass) {
+        return findActive(Global.getSector(), intelClass);
     }
 
     /**
@@ -92,22 +128,30 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
      * <p>Returns {@code null} when the sector or its
      * {@code IntelManager} is unavailable so callers can use the
      * same null branch they already need for the empty-list case.</p>
+     *
+     * @param sector     the sector whose intel manager and clock to read, possibly {@code null}
+     * @param intelClass the intel type to look up
+     * @param <T>        the intel type
+     * @return the first intel of that type still within its window, or {@code null}
      */
-    public static <T extends BaseExpiringIntelPlugin> T findActive(Class<T> intelClass) {
+    public static <T extends BaseExpiringIntelPlugin> T findActive(SectorAPI sector, Class<T> intelClass) {
 
-        var sector = Global.getSector();
         if (sector == null) {
             return null;
         }
+
         var intelManager = sector.getIntelManager();
         if (intelManager == null) {
             return null;
         }
+
+        var clock = sector.getClock();
         var items = intelManager.getIntel(intelClass);
+
         for (var item : items) {
 
             var typed = intelClass.cast(item);
-            if (!typed.isExpired()) {
+            if (!typed.isExpired(clock)) {
                 return typed;
             }
         }
@@ -138,11 +182,20 @@ public abstract class BaseExpiringIntelPlugin extends BaseTaggedIntelPlugin {
     @Override
     protected void advanceImpl(float amount) {
 
-        if (Global.getSector() == null) {
+        // An engine callback handed no sector, so it reads the running one once. Early load and teardown leave the
+        // sector or its intel manager missing, the same absences findActive answers as "nothing to act on".
+        var sector = Global.getSector();
+        if (sector == null) {
             return;
         }
-        if (isExpired()) {
-            Global.getSector().getIntelManager().removeIntel(this);
+
+        var intelManager = sector.getIntelManager();
+        if (intelManager == null) {
+            return;
+        }
+
+        if (isExpired(sector.getClock())) {
+            intelManager.removeIntel(this);
         }
     }
 }
