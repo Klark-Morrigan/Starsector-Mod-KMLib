@@ -13,7 +13,7 @@ import org.lwjgl.util.vector.Matrix4f;
  * side by side, so the transpose between them is legible at the fixture rather than inferred from
  * two files that happen to disagree.
  *
- * <p>Deliberately not what {@code kmlib.opengl.FastRenderingTest} uses. That suite tests the
+ * <p>Deliberately not what {@code kmlib.opengl.FastRenderingTests} uses. That suite tests the
  * transpose itself, so its input has to be written out longhand where the assertion can be read
  * against it; everything else takes a pass's matrix as a given and is about something further
  * downstream.

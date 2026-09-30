@@ -13,9 +13,10 @@ import java.util.Optional;
 
 /**
  * An install's font atlases: which edition of the game's fonts it carries, and what its descriptor states
- * for every face KM text may draw in. A core localisation replaces several atlases under the same basenames
- * and each of its editions replaces them differently, so the checks on what KM text needs of an atlas are
- * run against every install a machine holds. {@link InstalledFontsReader} reads one off an install.
+ * for every face KM text may draw in. A localisation replaces several atlases under the same basenames and
+ * each of its editions replaces them differently, so the checks on what KM text needs of an atlas are run
+ * against every install the build hands them - the editions it laid out as well as installed ones.
+ * {@link InstalledFontsReader} reads one off an install.
  *
  * <p>A reading answers {@link FaceLineHeightReader} and {@link GlyphCoverageReader} the way the running
  * game on that install would, and names the default face its settings declare, so a face can be settled
@@ -25,6 +26,7 @@ import java.util.Optional;
  * @param edition              which edition of the game's fonts the install carries; names the install in a
  *                             failure
  * @param packVersion          the core localisation's version, absent for the game's own atlases
+ * @param language             the language the localisation is in, absent for the game's own atlases
  * @param defaultAtlas         the face the install's settings declare as the game's default, by the rule the
  *                             running game's is read by
  * @param faceByFont           what the install states for each face the enum names that it carries
@@ -34,6 +36,7 @@ import java.util.Optional;
 record InstalledFonts(
     String edition,
     Optional<String> packVersion,
+    Optional<String> language,
     FontAtlas defaultAtlas,
     Map<StarsectorFont, InstalledFace> faceByFont,
     Optional<InstalledFace> declaredDefaultFace) {

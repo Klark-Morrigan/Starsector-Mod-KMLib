@@ -15,9 +15,9 @@ import java.util.Optional;
  * and the descriptor of every face KM text may draw in.
  *
  * <p>The edition is the {@code branch} a core localisation records in
- * {@code starsector-core/localization_version.json}, and the pack version that file's {@code version}.
- * An install with no such file carries the game's own atlases, which is the
- * {@value InstalledFonts#VANILLA_EDITION} edition, and has no pack version.
+ * {@code starsector-core/localization_version.json}, the pack version that file's {@code version}, and the
+ * language its {@code language}. An install with no such file carries the game's own atlases, which is the
+ * {@value InstalledFonts#VANILLA_EDITION} edition, and has no pack version or language.
  *
  * <p>A declared default the enum does not name is read where the install carries it under
  * {@code starsector-core}. One a mod ships sits in that mod's folder, which is the game's to merge and not
@@ -25,10 +25,11 @@ import java.util.Optional;
  */
 final class InstalledFontsReader {
 
-    // Where a core localisation records itself, under the install root, and the two fields read from it.
+    // Where a core localisation records itself, under the install root, and the fields read from it.
     private static final String MARKER_PATH = "starsector-core/localization_version.json";
     private static final String MARKER_EDITION_KEY = "branch";
     private static final String MARKER_VERSION_KEY = "version";
+    private static final String MARKER_LANGUAGE_KEY = "language";
 
     // Where a face's descriptor path resolves from under the install root.
     private static final String CORE_DIRECTORY = "starsector-core";
@@ -56,6 +57,7 @@ final class InstalledFontsReader {
         var markerFile = starsectorRoot.resolve(MARKER_PATH);
         var edition = InstalledFonts.VANILLA_EDITION;
         Optional<String> packVersion = Optional.empty();
+        Optional<String> language = Optional.empty();
 
         if (Files.isRegularFile(markerFile)) {
             var marker = ShippedJson.readObjectFile(markerFile);
@@ -67,6 +69,9 @@ final class InstalledFontsReader {
             packVersion = Optional.of(ShippedJson.requireString(
                 marker.get(MARKER_VERSION_KEY),
                 ShippedJson.locateMember(location, MARKER_VERSION_KEY)));
+            language = Optional.of(ShippedJson.requireString(
+                marker.get(MARKER_LANGUAGE_KEY),
+                ShippedJson.locateMember(location, MARKER_LANGUAGE_KEY)));
         }
         var faceByFont = new EnumMap<StarsectorFont, InstalledFace>(StarsectorFont.class);
 
@@ -78,6 +83,7 @@ final class InstalledFontsReader {
         return new InstalledFonts(
             edition,
             packVersion,
+            language,
             defaultAtlas,
             faceByFont,
             defaultAtlas instanceof StarsectorFont

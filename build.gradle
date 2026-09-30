@@ -44,10 +44,12 @@ dependencies {
 }
 
 def testBuildScripts = tasks.register('testBuildScripts', Test) {
+
     group = 'verification'
     description = 'Runs the build scripts under gradle/ against throwaway Gradle builds.'
     testClassesDirs = sourceSets.buildScriptTest.output.classesDirs
     classpath = sourceSets.buildScriptTest.runtimeClasspath
+
     useJUnitPlatform()
 
     // writeLocaleFiles reads with the game's own parser, and the throwaway builds
@@ -57,15 +59,59 @@ def testBuildScripts = tasks.register('testBuildScripts', Test) {
 
 reportTestOutcomesOf(testBuildScripts.get())
 
-// The installs the font suites hold every face KM text may draw in to: the one the build located, and
-// any others -PfontInstallRoots names, separated by the platform's path separator. The others are how a
-// machine holding a core localisation's editions checks them - there is no CI leg per edition, since
-// none changes what the jar is compiled against, so they are checked wherever they are installed rather
-// than recorded and trusted elsewhere. Properties rather than paths the suites work out, so the suites
-// and the build agree on which installs those are; the suites skip where none is present.
+// The localisation editions the lock names, fetched at the blob SHAs it pins and laid over the located
+// install's own descriptors. The faces are the enum's, read off the compiled class so the lock is held to
+// the one list of faces rather than to a copy of it.
+ext.fontEditionsLockFile = file('font-editions.lock.json')
+ext.vanillaFontsDirectory = file("${starsectorRoot}/starsector-core/graphics/fonts")
+ext.fontEditionFaces = { ->
+
+    def loader = new URLClassLoader(
+        sourceSets.main.output.classesDirs.files.collect { it.toURI().toURL() } as URL[],
+        (ClassLoader) null)
+
+    try {
+        return loader
+            .loadClass('kmlib.starsector.ui.font.StarsectorFont')
+            .getMethod('values')
+            .invoke(null)
+            .collect { it.getBasename() }
+
+    } finally {
+        loader.close()
+    }
+}
+apply from: "${rootDir}/gradle/tasks/checks/check-font-editions.gradle"
+
+['checkFontEditions', 'writeFontEditionsLock'].each { taskName ->
+    tasks.named(taskName) { dependsOn tasks.named('classes') }
+}
+
+// The installs the font suites hold every face KM text may draw in to: the one the build located, each
+// edition the lock pins, and any others -PfontInstallRoots names, separated by the platform's path
+// separator - which is how a machine holding the editions installed checks them as installed.
+// Properties rather than paths the suites work out, so the suites and the build agree on which installs
+// those are.
 tasks.named('test') {
+
+    dependsOn tasks.named('checkFontEditions')
+
+    def handedRoots = ((findProperty('fontInstallRoots') ?: '') as String)
+        .split(File.pathSeparator)
+        .findAll { !it.isBlank() }
+
     systemProperty 'kmlib.starsectorRoot', starsectorRoot
-    systemProperty 'kmlib.fontInstallRoots', findProperty('fontInstallRoots') ?: ''
+    systemProperty 'kmlib.fontInstallRoots',
+        (handedRoots + fontEditionRootDirectories*.absolutePath).join(File.pathSeparator)
+
+    // The text each language's faces are probed with, as the lock states it, for installed editions as well
+    // as the laid ones - whose markers name the language, never the probe.
+    fontEditionProbeTexts.each { language, probeText ->
+        systemProperty "kmlib.fontProbeText.${language}", probeText
+    }
+
+    // The roots' content, so a build whose lock moved runs the suites again.
+    fontEditionRootDirectories.each { root -> inputs.dir(root).withPropertyName("fontEdition:${root.name}") }
 }
 
 tasks.named('check') {

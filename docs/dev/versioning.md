@@ -98,7 +98,7 @@ Two places pin KMLib and they must agree:
 
     ```json
     "dependencies": [
-      { "id": "kmlib", "name": "Klark Morrigan's Library", "version": "1.0.0" }
+      { "id": "kmlib", "name": "Klark Morrigan's Library (KMLib)", "version": "1.0.0" }
     ]
     ```
 
