@@ -28,6 +28,7 @@ and that is the fact the package is shaped around.
 [`SectorStarSystems`](SectorStarSystems.java)
 answers about the sector's whole set:
 where the systems sit (`collectHyperspacePositions`),
+what they are all called (`listSystemNames`),
 which one the player is in (`getPlayerStarSystem`),
 and how to reach one by ID or by key
 (`indexById`, `indexByKey`, `indexHeldSystemsById`, `findSystemById`, `findSystemByKey`).

@@ -88,6 +88,40 @@ final class SectorStarSystemsTests {
     }
 
     @Nested
+    class ListSystemNames {
+
+        @Test
+        void readsEveryNamedSystemLeavingBlanksOut() {
+
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.nameSystem(StarSystemFixture.buildSystem("corvus"), "Corvus Star System"),
+                StarSystemFixture.nameSystem(StarSystemFixture.buildSystem("nameless"), " "),
+                StarSystemFixture.nameSystem(StarSystemFixture.buildSystem("yma"), "Yma Star System"));
+
+            assertThat(SectorStarSystems.listSystemNames(sector))
+                .containsExactly("Corvus Star System", "Yma Star System");
+        }
+
+        @Test
+        void answersNothingForANullSector() {
+            assertThat(SectorStarSystems.listSystemNames(null))
+                .isEmpty();
+        }
+
+        @Test
+        void countsOneWalkOverEverySystemOnTheOpenSection() {
+
+            var sector = StarSystemFixture.buildSectorOf(
+                StarSystemFixture.nameSystem(StarSystemFixture.buildSystem("corvus"), "Corvus Star System"));
+
+            var counts = WalkCountCapture.captureCountsOf(() -> SectorStarSystems.listSystemNames(sector));
+
+            assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
+                .isEqualTo(1L);
+        }
+    }
+
+    @Nested
     class GetPlayerStarSystem {
 
         @Test
