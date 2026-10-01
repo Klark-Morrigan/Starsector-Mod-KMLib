@@ -1,26 +1,35 @@
-# Composes the line a release body carries to tell a player which zip holds
-# which language, and which language needs a core localisation installed over
-# the game before its text can draw.
+# Composes what a release body carries for a mod releasing in more than one
+# language: which zip holds which language, which language needs a core
+# localisation installed over the game before its text can draw, and each
+# translated language's notes for the version.
 #
 # An action rather than a `run:` block in the release workflow, for the reason
 # compose-dependency-note is one: this is player-facing copy with a condition
-# attached - a mod keeping no locales must produce no line - and a workflow's
+# attached - a mod keeping no locales must produce nothing - and a workflow's
 # inline bash cannot be unit tested.
 #
 # Delegates to scripts/compose_locale_note.sh so the logic is unit-tested
 # with bats. Composite actions themselves are not unit-testable.
 name: Compose locale note
 description: >-
-  Composes a markdown line naming each locale's release zip and linking the
-  core localisation a locale needs, for appending to a release body. Emits
-  nothing for a mod keeping no locales.
+  Composes a markdown list naming each locale's release zip and linking the
+  core localisation a locale needs, and each translated locale's changelog
+  section for the version collapsed under its name, for appending to a
+  release body. Emits nothing for a mod keeping no locales.
 
 inputs:
   locales:
     description: >-
-      The read-locales action's locales output. Empty or [] produces no line.
+      The read-locales action's locales output. Empty or [] produces nothing.
     required: false
     default: '[]'
+  default-locale:
+    description: >-
+      The read-locales action's default-locale output: the locale whose notes
+      are the release body's own, and so the one locale given no collapsed
+      section. Required where changelog-lib is given.
+    required: false
+    default: ''
   jar-source:
     description: >-
       mod_info jars[0], from read-mod-info, which the zip names are derived
@@ -29,13 +38,26 @@ inputs:
   version:
     description: "The version being released."
     required: true
+  changelog-lib:
+    description: >-
+      Path to Common-Automation's .github/lib/changelog.sh, which the
+      translated sections are taken with, so a translation's section is cut
+      exactly as the root changelog's is. Empty composes the list alone.
+    required: false
+    default: ''
 
 outputs:
   note:
     description: >-
-      The composed markdown line, or empty when no line is due. Empty is the
-      value create-github-release's notes-suffix input treats as absent.
+      The "Builds by language" heading and list, or empty when no list is
+      due. Empty is the value create-github-release's notes-suffix input
+      treats as absent.
     value: ${{ steps.compose.outputs.note }}
+  translations:
+    description: >-
+      Each translated locale's changelog section for the version, collapsed
+      under its display name, or empty when none is due.
+    value: ${{ steps.compose.outputs.translations }}
 
 runs:
   using: composite
@@ -46,8 +68,10 @@ runs:
       # an input cannot break out of the command and run as shell.
       env:
         LOCALES: ${{ inputs.locales }}
+        DEFAULT_LOCALE: ${{ inputs.default-locale }}
         JAR_SOURCE: ${{ inputs.jar-source }}
         VERSION: ${{ inputs.version }}
+        CHANGELOG_LIB: ${{ inputs.changelog-lib }}
       # GITHUB_ACTION_PATH points at this action's directory regardless
       # of the caller's working directory, so the script path is stable.
       run: "$GITHUB_ACTION_PATH/scripts/compose_locale_note.sh"

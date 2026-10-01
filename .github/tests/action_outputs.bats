@@ -33,12 +33,14 @@ ACTIONS_WITH_OUTPUTS=(
 ACTIONS_DIR_NAME="actions"
 
 # Echoes the keys a script writes to $GITHUB_OUTPUT, one per line, sorted.
-# Both writers use the same `{ echo "key=value" ... } >> "$GITHUB_OUTPUT"`
-# block, so matching the echo lines is enough and needs no YAML or shell parse.
+# A one-line value is written as an `echo "key=value"` line, and a multi-line
+# one through a `write_multiline_output "key" ...` call, so matching those two
+# shapes is enough and needs no YAML or shell parse.
 read_emitted_keys() {
+
     local scriptPath="$1"
-    grep -oE '^[[:space:]]*echo "[a-z][a-z0-9_-]*=' "$scriptPath" \
-        | sed -E 's/.*echo "([a-z0-9_-]+)=/\1/' \
+    grep -oE '^[[:space:]]*(echo "[a-z][a-z0-9_-]*=|write_multiline_output "[a-z][a-z0-9_-]*")' "$scriptPath" \
+        | sed -E 's/.*(echo|write_multiline_output) "([a-z0-9_-]+)[="]$/\2/' \
         | sort -u
 }
 
@@ -46,6 +48,7 @@ read_emitted_keys() {
 # sorted. Every output's value is a steps.<id>.outputs.<key> expression, and
 # the trailing <key> is the half that has to exist on the script side.
 read_referenced_keys() {
+
     local actionPath="$1"
     grep -oE 'steps\.[a-z0-9_-]+\.outputs\.[a-z0-9_-]+' "$actionPath" \
         | sed -E 's/.*\.outputs\.//' \
@@ -57,6 +60,7 @@ read_referenced_keys() {
 # every action here follows. A future action breaking it fails this suite
 # rather than going unchecked.
 derive_script_path() {
+
     local actionsDir="$1" action="$2"
     printf '%s/%s/scripts/%s.sh' "$actionsDir" "$action" "${action//-/_}"
 }
@@ -73,7 +77,9 @@ report() {
 }
 
 @test "every action declares an output for each key its script emits" {
+
     for action in "${ACTIONS_WITH_OUTPUTS[@]}"; do
+
         actionPath="$ACTIONS_DIR/$action/action.yml"
         scriptPath="$(derive_script_path "$ACTIONS_DIR" "$action")"
 
@@ -81,6 +87,7 @@ report() {
             report "no action.yml for '$action'"
             return 1
         fi
+
         if [ ! -f "$scriptPath" ]; then
             report "no script for '$action' at $scriptPath"
             return 1
@@ -95,6 +102,7 @@ report() {
             report "no emitted keys found in $scriptPath"
             return 1
         fi
+
         if [ -z "$referenced" ]; then
             report "no referenced keys found in $actionPath"
             return 1
@@ -109,10 +117,13 @@ report() {
 }
 
 @test "the covered action list names every action declaring outputs" {
+
     # Without this the test above passes by omission: a new action arrives
     # with its own outputs and nothing checks its two halves agree.
     declared="$(cd "$ACTIONS_DIR" && grep -l '^outputs:' -- */action.yml \
         | sed -E 's#/action\.yml$##' | sort)"
+
     covered="$(printf '%s\n' "${ACTIONS_WITH_OUTPUTS[@]}" | sort)"
+
     [ "$declared" = "$covered" ]
 }

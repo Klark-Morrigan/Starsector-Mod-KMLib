@@ -352,14 +352,19 @@ jobs:
       # Which zip holds which language, and which language needs a core
       # localisation installed over the game to draw at all - a dependency the
       # launcher cannot see, so the release page is one of the few places a
-      # player can be told. Empty for a mod keeping no locales.
-      - name: Compose the locale line for the release body
+      # player can be told. Then each translated language's notes for the
+      # version, cut from its translated changelog by the same helpers
+      # create-github-release cuts the root one with. Both empty for a mod
+      # keeping no locales.
+      - name: Compose the locale list and translated notes for the release body
         id: locale-note
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/compose-locale-note@master
         with:
           locales: ${{ needs.config.outputs.locales }}
+          default-locale: ${{ needs.config.outputs.default-locale }}
           jar-source: ${{ needs.config.outputs.jar-source }}
           version: ${{ needs.config.outputs.version }}
+          changelog-lib: .common-automation/.github/lib/changelog.sh
 
       # A player reading the release has to install the pinned KMLib to run
       # the mod at all - the game refuses to load it otherwise - so the body
@@ -383,14 +388,16 @@ jobs:
           release-url: ${{ needs.config.outputs.kmlib-release-url }}
 
       # Cut the release with the body taken from the matching CHANGELOG.md
-      # section, the two composed lines under it, and every packaged asset:
-      # the zips (the mod's actual distribution channel) and the generated
+      # section, the composed parts under it, and every packaged asset: the
+      # zips (the mod's actual distribution channel) and the generated
       # .version files that update checkers poll. The action fails on a
       # missing section, so the body is never silently empty - also enforced
       # earlier by validate-versioning, but this is the step that consumes it.
       #
-      # The lines are joined by a blank line and the whole trimmed by the
-      # action, so either one resolving to empty leaves no gap behind it.
+      # Under the rule: the locale list, the dependency line, then the
+      # translated notes, which are the longest and are collapsed. The parts
+      # are joined by a blank line and the whole trimmed by the action, so a
+      # part resolving to empty leaves no gap behind it at either end.
       - name: Create GitHub release from changelog
         uses: ./.common-automation/.github/actions/create-github-release
         with:
@@ -399,4 +406,6 @@ jobs:
             ${{ steps.locale-note.outputs.note }}
 
             ${{ steps.dependency-note.outputs.note }}
+
+            ${{ steps.locale-note.outputs.translations }}
           files: ${{ steps.assets.outputs.files }}

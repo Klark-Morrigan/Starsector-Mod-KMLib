@@ -62,6 +62,35 @@ final class LocalisationDirectoryTests {
     }
 
     @Nested
+    class ReadChangelogOutline {
+
+        @Test
+        void theChangelogIsReadFromBesideTheDirectory(@TempDir Path modRoot) throws IOException {
+
+            Files.writeString(modRoot.resolve("CHANGELOG.md"), """
+                # Changelog
+
+                ## [Unreleased]
+                """, StandardCharsets.UTF_8);
+
+            var outline = new LocalisationDirectory(modRoot.resolve("localisation")).readChangelogOutline();
+
+            assertThat(outline)
+                .map(ChangelogOutline::versions)
+                .hasValueSatisfying(versions -> assertThat(versions)
+                    .extracting(ChangelogOutline.BlockOutline::blockName)
+                    .containsExactly("## [Unreleased]"));
+        }
+
+        @Test
+        void aModKeepingNoChangelogHasNone(@TempDir Path modRoot) {
+
+            assertThat(new LocalisationDirectory(modRoot.resolve("localisation")).readChangelogOutline())
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class ReadManifest {
 
         @Test
