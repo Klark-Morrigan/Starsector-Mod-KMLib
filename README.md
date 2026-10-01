@@ -72,15 +72,27 @@ so an install without any of them is ordinary
 
 ### Files
 
-What the game reads:
+What the game reads, and where each file is edited:
 
-- [`mod_info.json`](mod_info.json) -
+- [`mod_info.base.json`](mod_info.base.json) -
   mod ID,
   version,
   dependencies,
   and the plugin class the launcher loads.
-- [`data/config/LunaSettings.csv`](data/config/LunaSettings.csv) -
+  The `mod_info.json` the launcher reads is written from it by `gradlew jar`,
+  with the built locale's launcher text merged over it,
+  and is not committed.
+- [`localisation/manifest.json`](localisation/manifest.json) -
+  the locales KMLib ships in,
+  the default,
+  and where each bundle file lands under `data/`.
+  See [Build & Test](#build--test).
+- [`localisation/en/LunaSettings.csv`](localisation/en/LunaSettings.csv) -
   LunaLib settings declarations.
+  Written to `data/config/LunaSettings.csv`,
+  the file LunaLib reads,
+  by `gradlew jar`;
+  that copy is not committed.
 - [`data/config/LunaSettingsConfig.json`](data/config/LunaSettingsConfig.json) -
   what LunaLib titles the settings tab and which icon it stands beside it,
   keyed by mod ID.
@@ -89,8 +101,12 @@ What the game reads:
 - [`data/console/commands.csv`](data/console/commands.csv) -
   Console Commands registrations,
   and the per-command help the console prints.
-- [`data/strings/strings.json`](data/strings/strings.json) -
+- [`localisation/en/strings.json`](localisation/en/strings.json) -
   localisation lookups.
+  Written to `data/strings/strings.json`,
+  the file the game reads,
+  by `gradlew jar`;
+  that copy is not committed.
 - [`graphics/icons/kmlib_icon.png`](graphics/icons/kmlib_icon.png) -
   the icon the LunaLib config above names.
   Its `.psd` source sits beside it in the repo and is not read by anything.
@@ -1283,8 +1299,9 @@ extracting the `## [<version>]` section for the body and attaching the assets -
 is delegated to Common-Automation's stack-agnostic `create-github-release`;
 only the nine actions above live in KMLib.
 The body is the changelog section,
-then the locale line and the dependency line,
-either left out when it has nothing to say.
+then the locale list, the dependency line
+and each translated locale's notes, collapsed -
+any of them left out when it has nothing to say.
 
 A release carries one zip and one version file per locale,
 and the default locale's version file a second time under the bare name.
@@ -1417,6 +1434,14 @@ and the launcher reads one `mod_info.json`.
 `-Plocale=<tag>` selects;
 omitted,
 the manifest's `defaultLocale` is built.
+KMLib keeps its own text this way,
+English under [localisation/en/](localisation/en/)
+and Simplified Chinese under [localisation/zh-hans/](localisation/zh-hans/),
+and `LocaleParityIntegrationTests` holds every locale it declares to the default under `test`,
+as each consumer mod's suite does over its own directory.
+A translated locale keeps a terminology reference in its bundle directory,
+the base every KM mod's own reference builds on:
+[localisation/zh-hans/README.md](localisation/zh-hans/README.md).
 
 - Registered by
   [write-locale-files.gradle](gradle/tasks/generate/write-locale-files.gradle),

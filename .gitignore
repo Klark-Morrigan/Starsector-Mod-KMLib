@@ -10,6 +10,16 @@ gradle.properties
 # filled it (a release job, a local build), never committed.
 /kmlib.version
 
+# Written by writeLocaleFiles from localisation/<locale>/, which is where
+# they are edited; these are the copies the game reads. Named exactly
+# rather than as data/, which also holds files that are not generated.
+/data/config/LunaSettings.csv
+/data/strings/strings.json
+
+# Written by writeLocaleFiles too: mod_info.base.json with the built
+# locale's launcher text merged over it. The base is what is edited.
+/mod_info.json
+
 .idea/
 .vscode/
 bin/

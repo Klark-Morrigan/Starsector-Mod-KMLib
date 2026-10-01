@@ -1,0 +1,41 @@
+{
+  "kmlib": {
+    "compatibility_notice_title": "%2$s 与 %3$s %1$s。",
+    "compatibility_notice_title_error": "集成出错",
+    "compatibility_notice_diagnosis_older_version": "你的 %1$s %2$s，%3$s。",
+    "compatibility_notice_diagnosis_newer_version": "你的 %1$s %2$s，而 %3$s %4$s这些契约，你可以%5$s。",
+    "compatibility_notice_diagnosis_unknown_version": "可能的原因是你的 %s 属于以下情况之一：",
+    "compatibility_notice_diagnosis_unknown_older": "- %s，%s；",
+    "compatibility_notice_diagnosis_unknown_newer": "- 或者%1$s，而 %2$s %3$s这些契约，你可以%4$s。",
+    "compatibility_notice_diagnosis_same_version": "你的 %s 报告的版本正是本集成所针对的版本，因此%s。",
+    "compatibility_notice_phrase_too_old": "版本过旧",
+    "compatibility_notice_phrase_carries_changes": "更改了公共契约",
+    "compatibility_notice_phrase_new_and_carries_changes": "版本较新且更改了公共契约",
+    "compatibility_notice_phrase_depends_on": "依赖于",
+    "compatibility_notice_phrase_report_to_developer": "最好将此问题报告给 %s 的开发者",
+    "compatibility_notice_action_update": "需要更新到至少 %s",
+    "compatibility_notice_action_downgrade_or_wait": "将 %s 降级到 %s，或等待 %s 更新",
+    "compatibility_notice_row_mod": "    Mod：         %s",
+    "compatibility_notice_row_integration": "    集成：        %s",
+    "compatibility_notice_row_targeted": "    目标版本：    %s",
+    "compatibility_notice_row_detected": "    检测版本：    %s",
+    "compatibility_notice_row_broken": "    已损坏：      %s",
+    "compatibility_notice_row_failed_while": "    失败于：      %s",
+    "compatibility_notice_row_effect": "    影响：        %s",
+    "compatibility_notice_row_no_effect": "    不受影响：    %s",
+    "compatibility_notice_see_log": "详情请见 %s。",
+    "compatibility_notice_version_unknown": "未知",
+    "compatibility_notice_confirm_button": "确认",
+
+    "compatibility_lost_lunalib_settings": "本次游戏期间，KMLib 自身的设置将不会生效：无论设置界面显示什么，共享库都会以默认详细程度写日志。",
+    "compatibility_unaffected_lunalib_settings": "其他 Mod 的设置，以及你的存档。",
+    "compatibility_lost_nexerelin_routines": "本次游戏期间，通过依赖 KMLib 的 Mod 建立或移交的殖民地将遵循游戏自身的规则，而非 Nexerelin 的规则。此后保存的存档可能会写入不完整的数据。",
+    "compatibility_unaffected_nexerelin_routines": "Nexerelin 本身，以及不经 KMLib 而与 Nexerelin 集成的 Mod。",
+    "compatibility_lost_nexerelin_alliances": "本次游戏期间，所有依赖 KMLib 的 Mod 都将读取不到 Nexerelin 的联盟。",
+    "compatibility_unaffected_nexerelin_alliances": "Nexerelin 本身、不经 KMLib 而与 Nexerelin 集成的 Mod，以及你的存档。",
+    "compatibility_lost_rat_access_routes": "本次游戏期间，只能经由 Random Assortment of Things 自身路径到达的星系，将被 KM 系列 Mod 视为无法到达。",
+    "compatibility_unaffected_rat_access_routes": "这些路径本身（游戏中仍可让舰队通行），以及你的存档。",
+
+    "jump_point_label": "跳跃点"
+  }
+}
