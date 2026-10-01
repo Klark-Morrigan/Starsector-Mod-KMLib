@@ -23,7 +23,9 @@ building on this one with the terms of its features.
   - [The compatibility notice](#the-compatibility-notice)
   - [What a failed binding costs](#what-a-failed-binding-costs)
   - [Settings](#settings)
+  - [The changelog](#the-changelog)
 - [Adding a string](#adding-a-string)
+- [Translating the changelog](#translating-the-changelog)
 
 ## What this folder holds
 
@@ -32,6 +34,7 @@ building on this one with the terms of its features.
 | [strings.json](strings.json) | Every string KMLib draws in game: the compatibility notice, the sentences its own failed bindings cost, and the jump-point label. |
 | [LunaSettings.csv](LunaSettings.csv) | KMLib's row on the LunaLib settings screen: the tab name, the setting's name and its description. |
 | [mod_info.json](mod_info.json) | The launcher's mod list entry: `name` and `description` only, merged over the base. |
+| [CHANGELOG.md](CHANGELOG.md) | A full translation of the root [CHANGELOG.md](../../CHANGELOG.md): every version, every section. The Chinese zip ships it, and each release's notes show its section for the version. |
 
 Players of this bundle are expected to have the
 [Chinese core localisation](https://github.com/TruthOriginem/Starsector-Localization-CN)
@@ -158,6 +161,44 @@ so the values line up as they do in English.
 | Log verbosity | 日志详细程度 | verbosity alone is 详细程度 |
 | probes that read the game's UI by reflection | 通过反射读取游戏界面的探测器 | reflection is 反射, a probe 探测器 |
 
+### The changelog
+
+The headings every KM mod's translated changelog shares,
+and the words its entries lean on most.
+A version heading is never translated; see [translating the changelog](#translating-the-changelog).
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| Changelog (the title) | 更新日志 | |
+| Index | 索引 | |
+| Unreleased (index entry) | 未发布 | the index's link text only; the heading stays `## [Unreleased]` |
+| Added | 新增 | |
+| Changed | 变更 | |
+| Fixed | 修复 | |
+| Dependency changes | 依赖变更 | |
+| Public contracts changed (**breaking**) | 公共契约变更（**破坏性**） | from 公共契约 |
+| Test fixtures | 测试夹具 | |
+| Reported by X at USC | 由 X 在 USC 报告 | closes the entry as a sentence of its own |
+| Requested by X at USC | 由 X 在 USC 提出请求 | |
+| release (a published version) | 发布版本 | |
+| release notes | 发布说明 | |
+| release zip | 压缩包 | |
+| version file | 版本文件 | |
+| update checker | 更新检查器 | |
+| locale | 语言区域 | |
+| bundle | 语言包 | |
+| core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
+| library | 程序库 | |
+| consumer mod | 使用方 Mod | |
+| caller | 调用方 | |
+| binding | 绑定 | |
+| adapter | 适配器 | |
+| seam | 接缝 | |
+| renderer, render pass | 渲染器, 渲染通道 | |
+| font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
+| line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
+| test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+
 ## Adding a string
 
 1. Look the term up here.
@@ -172,3 +213,28 @@ so the values line up as they do in English.
    `LocaleParityIntegrationTests` holds this bundle to the English one,
    and `test` takes every bundle as an input,
    so a change made here alone re-runs it.
+
+## Translating the changelog
+
+Every entry added to the root [CHANGELOG.md](../../CHANGELOG.md) is added here in the same pull request:
+`LocaleParityIntegrationTests` holds this file to the root one point for point,
+so a pull request adding a point the translation lacks fails.
+
+1. **Version headings stay as written**, byte for byte:
+   `## [Unreleased]`, `## [0.4.0] - 2026-09-15`.
+   A release finds a version's notes by its heading,
+   and the index links each version by the anchor its heading makes.
+2. **The same sections in the same order**, at the same heading level,
+   their headings translated by [the changelog terms](#the-changelog).
+3. **One point for one point.**
+   Every list item stays one item at the same depth;
+   never merge, split, drop or add one.
+   Wording, links and emphasis are the translation's own and are not compared.
+4. **One line per point and per paragraph.**
+   A version's section becomes the release notes,
+   where GitHub draws every newline as a line break.
+5. **Links to repository files take `../../`**,
+   this file sitting two directories below the root one.
+   Absolute links and `#` anchors stay as they are.
+6. Identifiers, file names and anything in backticks stay as written,
+   and the [rules](#rules) hold as they do for strings.
