@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 /**
  * One locale's directory under {@code localisation/}: every file the manifest maps, held whole, plus the
- * locale's launcher fragment.
+ * locale's launcher fragment and, for a locale other than the default, its translation of the changelog.
  *
  * <p>Each file is read the way a mod's shipped copy of it is read, so a bundle file is never parsed a
  * second way: the strings file through {@link ShippedStrings}, and the settings table through
@@ -63,6 +63,15 @@ public final class LocaleBundle {
      */
     public LunaSettingsTable openSettingsTable(String fieldIdPrefix) {
         return new LunaSettingsTable(resolveBundleFile(SETTINGS_FILE_NAME), fieldIdPrefix);
+    }
+
+    /**
+     * Reads this locale's translation of the mod's changelog.
+     *
+     * @return its outline
+     */
+    public ChangelogOutline readChangelogOutline() {
+        return ChangelogOutline.readOutline(resolveBundleFile(LocalisationDirectory.CHANGELOG_FILE_NAME));
     }
 
     /**

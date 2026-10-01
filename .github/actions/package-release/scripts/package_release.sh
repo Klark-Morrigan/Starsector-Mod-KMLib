@@ -13,7 +13,9 @@
 # Per locale, in LOCALES order:
 #   1. ./gradlew writeLocaleFiles -Plocale=<tag>, which writes that locale's
 #      data files and merged mod_info.json into the checkout
-#   2. the runtime payload assembled into dist/<folder>/
+#   2. the runtime payload assembled into dist/<folder>/, carrying the locale's
+#      own CHANGELOG.md: a translated locale's from localisation/<tag>/, the
+#      default's from the root
 #   3. <mod-id>.version filled into the payload for that locale
 #   4. <folder>-<version>-<tag>.zip and <mod-id>-<tag>.version into OUTPUT_DIR
 # then <mod-id>.version into OUTPUT_DIR as a copy of the default locale's.
@@ -39,26 +41,32 @@ SCRIPT_NAME="package_release"
 # Resolved from this script's own location, not from $PWD: these scripts run
 # against the caller's checkout, which is never where they live.
 ACTIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
 source "${ACTIONS_DIR}/_lib/mod_info.sh"
+
 # shellcheck source=../../_lib/json.sh
 source "${ACTIONS_DIR}/_lib/json.sh"
 
 # Called rather than restated, so a zip's version file and the one a mod without
 # locales has always shipped come out of one implementation.
 FILL_VERSION_FILE_SCRIPT="${ACTIONS_DIR}/fill-version-file-template/scripts/fill_version_file_template.sh"
-
 DIST_ROOT="dist"
 
 # What a player's install needs and nothing else - no source, tests, docs/dev,
 # build caches or Gradle wrapper. Each is copied when present, so a jar-only
 # library and an asset-bearing content mod share one list.
-PAYLOAD_FILES=(README.md CHANGELOG.md LICENSE)
+CHANGELOG_FILE="CHANGELOG.md"
+PAYLOAD_FILES=(README.md "${CHANGELOG_FILE}" LICENSE)
 PAYLOAD_DIRECTORIES=(data graphics sounds)
 
+# Where a translated locale keeps its translation of the changelog, under its
+# own tag.
+LOCALISATION_DIRECTORY="localisation"
 MOD_ROOT="${MOD_ROOT:-.}"
 OUTPUT_DIR="${OUTPUT_DIR:?${SCRIPT_NAME}: OUTPUT_DIR is required}"
+
 LOCALES="${LOCALES:-[]}"
 DEFAULT_LOCALE="${DEFAULT_LOCALE:-}"
 
@@ -91,20 +99,23 @@ DIST_DIR="${DIST_ROOT}/${MOD_FOLDER_NAME}"
 PAYLOAD_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
 
 json_require_array "${LOCALES}" "LOCALES"
+
 # Declared here, being filled through json_read_lines' name reference.
 LOCALE_TAGS=()
 json_read_lines LOCALE_TAGS -r '.[].tag' <<< "${LOCALES}"
-
 IS_LOCALISED=false
+
 if (( ${#LOCALE_TAGS[@]} > 0 )); then
 
   IS_LOCALISED=true
+
   # Its version file is copied to the unsuffixed name last of all, so a
   # default the loop never packages would fail only after every zip was built.
   if ! jq -e --arg tag "${DEFAULT_LOCALE}" 'any(.[]; .tag == $tag)' <<< "${LOCALES}" > /dev/null; then
     echo "${SCRIPT_NAME}: default locale '${DEFAULT_LOCALE}' is not among the locales ${LOCALES}" >&2
     exit 1
   fi
+
 else
   # One pass under no tag, which every name below reads as "no suffix".
   LOCALE_TAGS=("")
@@ -113,6 +124,9 @@ fi
 # Copies the runtime payload into a fresh dist folder. Fresh, because a file a
 # previous locale shipped and this one does not would otherwise ride along.
 assemble_payload() {
+
+  local localeTag="${1}"
+
   rm -rf "${DIST_DIR}"
   mkdir -p "${DIST_DIR}/jars"
 
@@ -123,26 +137,56 @@ assemble_payload() {
          "${MOD_INFO_BASE_FILE}" >&2
     exit 1
   fi
-  cp "${MOD_INFO_LAUNCHER_FILE}" "${DIST_DIR}/"
 
+  cp "${MOD_INFO_LAUNCHER_FILE}" "${DIST_DIR}/"
   local payloadFile payloadDirectory
+
   for payloadFile in "${PAYLOAD_FILES[@]}"; do
     if [[ -f "${payloadFile}" ]]; then
       cp "${payloadFile}" "${DIST_DIR}/"
     fi
   done
+
   for payloadDirectory in "${PAYLOAD_DIRECTORIES[@]}"; do
     if [[ -d "${payloadDirectory}" ]]; then
       cp -r "${payloadDirectory}" "${DIST_DIR}/"
     fi
   done
+
   cp "${JAR_SOURCE}" "${DIST_DIR}/jars/"
+  replace_changelog_with_translation "${localeTag}"
+}
+
+# Swaps the root changelog in the payload for the locale's translation of it,
+# so a player opening their download reads what changed in the language they
+# chose. The default locale's is the root one, and an unlocalised release has
+# no other. A translated locale lacking one fails rather than shipping the
+# default's under its name: the parity suite holds every translated locale to
+# carrying one, so a gap here means the checkout is not what was tested.
+replace_changelog_with_translation() {
+
+  local localeTag="${1}"
+  local translatedChangelog="${LOCALISATION_DIRECTORY}/${localeTag}/${CHANGELOG_FILE}"
+
+  if [[ -z "${localeTag}" || "${localeTag}" == "${DEFAULT_LOCALE}" || ! -f "${CHANGELOG_FILE}" ]]; then
+    return
+  fi
+
+  if [[ ! -f "${translatedChangelog}" ]]; then
+    echo "${SCRIPT_NAME}: locale ${localeTag} has no ${translatedChangelog}, the translation of" \
+         "${CHANGELOG_FILE}" >&2
+    exit 1
+  fi
+
+  cp "${translatedChangelog}" "${DIST_DIR}/${CHANGELOG_FILE}"
 }
 
 # Packages one locale, or the unlocalised release for an empty tag.
 package_locale() {
+
   local localeTag="${1}"
   local zipName assetVersionFileName
+
   zipName=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${localeTag}")
   assetVersionFileName=$(mod_info_derive_version_file_name "${MOD_ID}" "${localeTag}")
 
@@ -150,7 +194,7 @@ package_locale() {
     ./gradlew writeLocaleFiles "-Plocale=${localeTag}" --no-daemon --console=plain
   fi
 
-  assemble_payload
+  assemble_payload "${localeTag}"
 
   # The zip name is passed rather than left to the script to derive, so the
   # download URL and the asset written below are one string.
@@ -169,7 +213,9 @@ for localeTag in "${LOCALE_TAGS[@]}"; do
 done
 
 if [[ "${IS_LOCALISED}" == "true" ]]; then
+
   DEFAULT_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}" "${DEFAULT_LOCALE}")
+
   cp "${OUTPUT_DIR}/${DEFAULT_VERSION_FILE_NAME}" "${OUTPUT_DIR}/${PAYLOAD_VERSION_FILE_NAME}"
   echo "${SCRIPT_NAME}: copied locale ${DEFAULT_LOCALE}'s version file to ${PAYLOAD_VERSION_FILE_NAME}" \
        "for installs polling the unlocalised name"

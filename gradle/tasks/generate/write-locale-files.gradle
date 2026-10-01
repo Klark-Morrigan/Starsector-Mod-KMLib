@@ -385,6 +385,17 @@ if (manifestFile.isFile()) {
             inputs.files(writeLocaleFilesTask)
                 .withPropertyName('writtenLocaleFiles')
                 .withPathSensitivity(PathSensitivity.RELATIVE)
+
+            // The bundles themselves and the changelog the translated ones are held to, read by a mod's
+            // parity suite: the written files are only the locale being built, so an edit to another
+            // locale's bundle or to a translated changelog would otherwise leave the suite up to date.
+            // The changelog as a collection, a mod keeping none being one a declared single file fails.
+            inputs.dir(localisationDirectory)
+                .withPropertyName('localisationBundles')
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+            inputs.files(file('CHANGELOG.md'))
+                .withPropertyName('changelogFile')
+                .withPathSensitivity(PathSensitivity.RELATIVE)
         }
     }
 }

@@ -152,6 +152,26 @@ final class WriteLocaleFilesIntegrationTests {
         return Files.readString(projectDirectory.resolve(relativePath), StandardCharsets.UTF_8);
     }
 
+    // Lists test's input files, relative to the project, through a task appended to its build.
+    private static String printTestInputs(Path projectDirectory) throws IOException {
+
+        Files.writeString(
+            projectDirectory.resolve("build.gradle"),
+            String.join(
+                "\n",
+                Files.readString(projectDirectory.resolve("build.gradle")),
+                "tasks.register('printTestInputs') {",
+                "    doLast {",
+                "        tasks.test.inputs.files.files.each { inputFile ->",
+                "            println 'test input: ' + projectDir.toPath().relativize(inputFile.toPath())"
+                    + ".toString().replace('\\\\', '/')",
+                "        }",
+                "    }",
+                "}"));
+
+        return createRunner(projectDirectory, "printTestInputs").build().getOutput();
+    }
+
     private static GradleRunner createRunner(Path projectDirectory, String... arguments) {
 
         return GradleRunner
@@ -552,23 +572,25 @@ final class WriteLocaleFilesIntegrationTests {
 
             var projectDirectory = writeTwoLocaleProject(workspace);
 
-            Files.writeString(
-                projectDirectory.resolve("build.gradle"),
-                String.join(
-                    "\n",
-                    Files.readString(projectDirectory.resolve("build.gradle")),
-                    "tasks.register('printTestInputs') {",
-                    "    doLast {",
-                    "        tasks.test.inputs.files.files.each { inputFile ->",
-                    "            println 'test input: ' + projectDir.toPath().relativize(inputFile.toPath())"
-                        + ".toString().replace('\\\\', '/')",
-                    "        }",
-                    "    }",
-                    "}"));
-
-            assertThat(createRunner(projectDirectory, "printTestInputs").build().getOutput())
+            assertThat(printTestInputs(projectDirectory))
                 .contains("test input: data/strings/strings.json")
                 .contains("test input: data/config/LunaSettings.csv");
+        }
+
+        /**
+         * The written files are the built locale's alone, so an edit to another locale's bundle, or to the
+         * changelog a translated one is held to, re-runs the suites only as an input of its own.
+         */
+        @Test
+        void makesEveryBundleAndTheChangelogInputsOfTest(@TempDir Path workspace) throws IOException {
+
+            var projectDirectory = writeTwoLocaleProject(workspace);
+
+            writeProjectFile(projectDirectory, "CHANGELOG.md", "# Changelog\n");
+
+            assertThat(printTestInputs(projectDirectory))
+                .contains("test input: localisation/zh-hans/strings.json")
+                .contains("test input: CHANGELOG.md");
         }
     }
 }

@@ -64,6 +64,24 @@ final class LocaleBundleTests {
     }
 
     @Nested
+    class ReadChangelogOutline {
+
+        @Test
+        void theBundlesOwnChangelogIsRead(@TempDir Path directory) throws IOException {
+
+            var bundle = createBundleWith(directory, "CHANGELOG.md", """
+                # %s
+
+                ## [0.1.0] - 2026-09-14
+                """.formatted(CHINESE_TEXT));
+
+            assertThat(bundle.readChangelogOutline().versions())
+                .extracting(ChangelogOutline.BlockOutline::blockName)
+                .containsExactly("## [0.1.0] - 2026-09-14");
+        }
+    }
+
+    @Nested
     class ReadModInfoFragment {
 
         @Test

@@ -104,6 +104,16 @@ final class LocaleParityTests {
         }
         """;
 
+    // The mod's own changelog, at its root rather than in the default's bundle.
+    private static final String ROOT_CHANGELOG = """
+        # Changelog
+
+        ## [Unreleased]
+
+        - Added a layer.
+        - Fixed a tooltip.
+        """;
+
     private static void writeFile(Path file, String contents) throws IOException {
 
         Files.createDirectories(file.getParent());
@@ -252,6 +262,102 @@ final class LocaleParityTests {
                     "zh-hans: strings.json lacks string kmu > farewell, which en declares",
                     "zh-hans: strings.json declares string kmu > welcome, which en does not",
                     "zh-hans: LunaSettings.csv row kmu_width differs from en in maxValue: \"9\" against \"8\"");
+        }
+    }
+
+    @Nested
+    class FindChangelogMismatches {
+
+        @Test
+        void aModKeepingNoChangelogIsAskedForNoTranslation(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot)).findChangelogMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aTranslationMatchingPointForPointPassesAndTheDefaultIsAskedForNone(@TempDir Path modRoot)
+                throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeFile(
+                modRoot.resolve("CHANGELOG.md"),
+                ROOT_CHANGELOG);
+
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("CHANGELOG.md"),
+                """
+                # %s
+
+                ## [Unreleased]
+
+                - Un calque.
+                - Une infobulle.
+                """.formatted(CHINESE_TEXT));
+
+            assertThat(createParity(localisation).findChangelogMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aTranslatedLocaleHoldingNoChangelogIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeFile(
+                modRoot.resolve("CHANGELOG.md"),
+                ROOT_CHANGELOG);
+
+            assertThat(createParity(localisation).findChangelogMismatches())
+                .containsExactly("zh-hans: holds no CHANGELOG.md, the translation of the mod's own");
+        }
+
+        @Test
+        void aTranslationThatFellBehindIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeFile(
+                modRoot.resolve("CHANGELOG.md"),
+                ROOT_CHANGELOG);
+
+            writeFile(
+                localisation
+                    .resolve("zh-hans")
+                    .resolve("CHANGELOG.md"),
+                """
+                # Journal
+
+                ## [Unreleased]
+
+                - Un calque.
+                """);
+
+            assertThat(createParity(localisation).findChangelogMismatches())
+                .containsExactly("zh-hans: CHANGELOG.md ## [Unreleased] before its first heading holds [1] list items "
+                    + "by depth, where en before its first heading holds [2]");
+        }
+
+        @Test
+        void aLocaleWithNoDirectoryIsLeftToItsOwnFinding(@TempDir Path modRoot) throws IOException {
+
+            var localisation = modRoot.resolve("localisation");
+
+            writeFile(
+                localisation.resolve("manifest.json"),
+                MANIFEST_WITH_CORE_LOCALISATION);
+
+            writeFile(
+                modRoot.resolve("CHANGELOG.md"),
+                ROOT_CHANGELOG);
+
+            Files.createDirectories(localisation.resolve("en"));
+
+            assertThat(createParity(localisation).findChangelogMismatches())
+                .isEmpty();
         }
     }
 

@@ -10,7 +10,8 @@ import java.util.Optional;
 
 /**
  * A mod's {@code localisation/} directory: the manifest at its root, one bundle directory per locale,
- * and the launcher base beside it that every locale's fragment is merged over.
+ * and beside it the launcher base every locale's fragment is merged over and the changelog every
+ * translated locale translates.
  *
  * <p>Offered to every mod on these conventions because the layout is the tooling's rather than any one
  * mod's. What a mod translates is its own business, and none of it is decided here - this reads, and
@@ -21,6 +22,12 @@ import java.util.Optional;
  * is exactly what a check over the two has to find.
  */
 public final class LocalisationDirectory {
+
+    /**
+     * The mod's changelog, at the mod root in the default locale and as each translated locale's
+     * translation of it in that locale's bundle directory, under the same name.
+     */
+    public static final String CHANGELOG_FILE_NAME = "CHANGELOG.md";
 
     /** Where a mod on these conventions keeps its locale bundles, relative to its root. */
     public static final Path LOCALISATION_DIRECTORY = Path.of("localisation");
@@ -76,6 +83,21 @@ public final class LocalisationDirectory {
      */
     public LocaleBundle openBundle(DeclaredLocale locale) {
         return new LocaleBundle(directory.resolve(locale.localeTag()), locale);
+    }
+
+    /**
+     * Reads the mod's own changelog beside this directory, the one written in the default locale. Absent
+     * for a mod keeping none, whose locales then have none to translate.
+     *
+     * @return its outline, or nothing where the mod keeps no changelog
+     */
+    public Optional<ChangelogOutline> readChangelogOutline() {
+
+        var changelogFile = directory.resolveSibling(CHANGELOG_FILE_NAME);
+
+        return Files.isRegularFile(changelogFile)
+            ? Optional.of(ChangelogOutline.readOutline(changelogFile))
+            : Optional.empty();
     }
 
     /**

@@ -77,7 +77,7 @@ public final class LocaleParity {
      * Every finding of every check below, so a mod holds its locales to the default in one assertion. Each
      * finding names its locale, its file and the edit to make, so the check it came from needs no naming.
      * Listed in the order a fix is best made: the directories and files first, since a gap there hides the
-     * comparisons over them, then the strings, the settings table and the launcher fragment.
+     * comparisons over them, then the strings, the settings table, the launcher fragment and the changelog.
      *
      * @return the findings of every check, in that order
      */
@@ -93,9 +93,57 @@ public final class LocaleParity {
                 findSettingsRowMismatches(),
                 findSettingsBehaviourMismatches(),
                 findSettingsTabMismatches(),
-                findModInfoFragmentMismatches())
+                findModInfoFragmentMismatches(),
+                findChangelogMismatches())
             .flatMap(List::stream)
             .toList();
+    }
+
+    /**
+     * The translated changelogs that do not match the mod's own point for point, and the translated locales
+     * holding none. Every locale but the default carries a full translation of the changelog, so a player
+     * reads what changed in the language of the zip they downloaded and a release can show each language's
+     * notes for a version. A translation that fell behind is what this finds: a version missing, a section
+     * added or a point dropped, merged or split. Wording, links and emphasis are the translation's own and
+     * are not compared.
+     *
+     * <p>Nothing is asked of a mod keeping no changelog.
+     *
+     * @return one finding per missing translation, and one per difference in a translation's shape
+     */
+    public List<String> findChangelogMismatches() {
+
+        var referenceOutline = directory.readChangelogOutline();
+
+        if (referenceOutline.isEmpty()) {
+            return List.of();
+        }
+        var findings = new ArrayList<String>();
+        var manifest = directory.readManifest();
+        var defaultLocale = manifest.getDefaultLocale();
+        var bundleDirectoryNames = directory.listBundleDirectoryNames();
+
+        for (var locale : manifest.declaredLocalesByTag().values()) {
+
+            // The default's changelog is the mod's own; a locale with no directory is found once, by the
+            // check about that.
+            if (locale.equals(defaultLocale) || !bundleDirectoryNames.contains(locale.localeTag())) {
+                continue;
+            }
+            var bundle = directory.openBundle(locale);
+            var filePrefix = locale.localeTag() + ": " + LocalisationDirectory.CHANGELOG_FILE_NAME;
+
+            if (!Files.isRegularFile(bundle.resolveBundleFile(LocalisationDirectory.CHANGELOG_FILE_NAME))) {
+
+                findings.add(locale.localeTag() + ": holds no " + LocalisationDirectory.CHANGELOG_FILE_NAME
+                    + ", the translation of the mod's own");
+                continue;
+            }
+            bundle.readChangelogOutline()
+                .describeDifferencesFrom(referenceOutline.get(), defaultLocale.localeTag())
+                .forEach(difference -> findings.add(filePrefix + " " + difference));
+        }
+        return findings;
     }
 
     /**
