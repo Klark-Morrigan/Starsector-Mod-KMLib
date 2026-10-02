@@ -10,7 +10,7 @@ No bridge class implements `glGetFloat(int, FloatBuffer)`. Since the agent rewri
 
 Verified against **v0.8.10rc1** (`fr.jar`, SHA-256 `573fca71f6aeac3f3e6a9030f6ff1ea302def4ffea20b0be804ea5024d3f6074`, 716402 bytes) on Starsector 0.98a-RC8.
 
-v0.8.9 changed how this surfaces, without changing the gap. `com.genir.renderer.bridge.opengl.GL11` is the new rewrite target and declares LWJGL's whole `glGet*` surface, `glGetFloat(int, FloatBuffer)` included, forwarding the implemented entry points to `com.genir.renderer.bridge.commands.GL11` and throwing `UnsupportedOperationException` for the rest. So the call that used to fail to link now links and throws when called. That is a better failure - it names the method rather than the descriptor, and it cannot be mistaken for a classpath problem - but the matrix still cannot be read, and the pattern below still has no supported form.
+v0.8.9 changed how this surfaces, without changing the gap. `com.genir.renderer.bridge.opengl.GL11` is the new rewrite target and declares LWJGL's whole `glGet*` surface, `glGetFloat(int, FloatBuffer)` included, forwarding the implemented entry points to `com.genir.renderer.bridge.commands.GL11` and throwing `UnsupportedOperationException` for the rest. So the call that used to fail to link now links and throws when called. That is a better failure - it cannot be mistaken for a classpath problem - but the matrix still cannot be read, and the pattern below still has no supported form. (The throw itself carries no message on `GL11`; see [the smaller ask](#a-smaller-ask-give-every-facade-throw-a-message) below.)
 
 This was first written against v0.7.2 and re-read on every release since. One `glGet*` entry point has been added in that whole span - `glGetTexParameteri`, in v0.8.7 - and it is telling: it closed exactly this class of bug for a different pname family, by delegating through `exec.get`. So the gap reported here is a known shape with a known remedy; the matrix reads are simply the ones still missing.
 
@@ -18,7 +18,7 @@ Everything around that surface has meanwhile turned over repeatedly - v0.7.4 mov
 
 ## Details
 
-The bridge's entire implemented `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`, `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, `glGetTexParameteri`, and two `glGetTexImage` overloads (`commands/GL11.java`, the `glGet*` block; in the shipped v0.8.10rc1 jar it decompiles to L1228-L1479). Everything else on `opengl/GL11` throws. `glGetFloat` is implemented only in its scalar form, which cannot take a matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked state without a stall is already there, and it keeps being reached for. `glIsTexture` took it in v0.8.4 and `glGetTexLevelParameteri`'s three size pnames in v0.8.5rc1: both now answer from a caller-side `TextureTracker` and demote the real GL call to a deferred assertion, turning reads that used to stall into ones that cannot. v0.8.9 applied the same reasoning again in `stall/BufferManager`, serving a mapped buffer range from a CPU-side scratch buffer rather than a synchronous readback. The modelview is the same shape of problem with no such treatment.
+The bridge's entire implemented `glGet*` surface is `glGetInteger(int)`, `glGetInteger(int, IntBuffer)`, `glGetString(int)`, `glGetFloat(int)`, `glGetError()`, `glGetTexLevelParameteri`, `glGetTexParameteri`, and two `glGetTexImage` overloads (`commands/GL11.java`, the `glGet*` block; in the shipped v0.8.10rc1 jar it decompiles to L1229-L1480). Everything else on `opengl/GL11` throws, `glGetDouble(int, DoubleBuffer)` included, so the double-precision form is no way round it. `glGetFloat` is implemented only in its scalar form, which cannot take a matrix - and it answers `GL_LINE_WIDTH` inline, so the shape for serving a value from tracked state without a stall is already there, and it keeps being reached for. `glIsTexture` took it in v0.8.4 and `glGetTexLevelParameteri`'s three size pnames in v0.8.5rc1: both now answer from a caller-side `TextureTracker` and demote the real GL call to a deferred assertion, turning reads that used to stall into ones that cannot. v0.8.9 applied the same reasoning again in `stall/BufferManager`, serving a mapped buffer range from a CPU-side scratch buffer rather than a synchronous readback. The modelview is the same shape of problem with no such treatment.
 
 The affected pattern is the standard one for turning a cursor into world coordinates:
 
@@ -59,37 +59,72 @@ This is a constraint on mods, not on the bridge itself: the bridge owns the dete
 Serve `GL_MODELVIEW_MATRIX` from the tracked state rather than from GL, and - like the existing `GL_VIEWPORT` simulation - answer it inline on the caller thread with no stall. That needs the current CPU modelview mirrored in caller-side state (an `AttribTracker`-style shadow updated as `glTranslatef`/`glLoadMatrix`/`glPushMatrix`/`glPopMatrix` records commands), so the getter can return it without a render-thread round trip:
 
 - `GL_MODELVIEW_MATRIX` -> the caller-side modelview shadow when `cpuMode` is set, otherwise the real GL read. Serving it from `transformManager` on the caller thread instead reintroduces the render-thread race above; serving it through `Executor.get`/`wait` reintroduces the stall.
+- Decide "when `cpuMode` is set" on the caller side too. `cpuMode` is itself render-thread state: it flips as the frame replays, in the `glUseProgram` command (`setGPUMode` for a non-zero program, `setCPUMode` for zero; `commands/GL20.java`, `glUseProgram`) and briefly around each `VertexInterceptor` draw. Reading the flag from the caller thread races just as reading the matrix does. The caller side already tracks the equivalent: `attribTracker.getCurrentProgram()`, which `glGetInteger(GL_CURRENT_PROGRAM)` answers inline. The same tracker holds the matrix mode, so the shadow can follow `shouldDelegate()`'s routing rule (matrix mode and program) without touching render-thread state.
+- In the other branch, "the real GL read" is the `exec.get` round trip, so it stalls. That is acceptable there, since a bound program is the case where the matrix really does live in GL, but it leaves a per-frame reader that draws under a shader outside the inline path.
 - Store with `storeTranspose`, not `store`. The bridge's `Matrix4f` fields are row-major (`VertexInterceptor.glVertex3f` takes the translation from `m03/m13/m23`), transposed from what GL and `gluUnProject` expect - which is the same conversion `setGPUMode` already does on the way out.
-- `GL_PROJECTION_MATRIX` has no CPU shadow, so a plain delegation is correct for it.
+- `GL_PROJECTION_MATRIX` has no CPU shadow, so delegating it gives the right answer. Delegation here means `exec.get`, though: the path `glGetFloat(int)` already takes for every pname except `GL_LINE_WIDTH`. So it stalls, and serves a one-off read but not a per-frame one. A per-frame projection read would need a caller-side shadow of its own, fed by the same calls recorded while the tracked matrix mode is `GL_PROJECTION`.
 
 Callers would then get the matrix the vertices are actually drawn with, under both renderers, with no stall and no threading hazard.
 
-## Workaround (for anyone who finds this first)
+## A smaller ask: give every facade throw a message
 
-Read the CPU matrix one frame late, without stalling. `Context.exec.execute(GLCommand)` enqueues a command and returns immediately - no `wait`, no stall - and the command runs on the `FR-Render` thread at your pass's position in the stream, where the matrix is your caller's transform. Have it copy the matrix into a holder you own, and read the *previous* frame's copy.
+The facade's unimplemented entry points do not all fail the same way. The 348 throws in `opengl/GL11`, `GL13`, `GL14`, `GL15` and `GL20` are a bare `new UnsupportedOperationException()`. The 428 in `GL30` through `GL44` carry a message, such as `"UnsupportedOperationException: GL41.glGetFloat"`. So this crash logs as `java.lang.UnsupportedOperationException` with no text, and only the top stack frame says which call it was. Giving the older facades the same message as the newer ones would make a report of any unimplemented call self-describing.
 
-`GLCommand` is `com.genir.renderer.bridge.interfaces.GLCommand` from v0.7.4 and `com.genir.renderer.bridge.context.commands.GLCommand` before it; its method is `run(Context, float[], int)`, and a command that takes no packed arguments ignores the last two:
+## Implemented workaround
+
+This is what my mods ship today, so you can see which of your internals mods lean on until the read is served, and what the fix would let them drop.
+
+It reads the CPU matrix a frame late, without stalling. Each frame it enqueues a command through `Context.exec.execute(GLCommand)`, which returns immediately. The command runs on `FR-Render` at the pass's own position in the stream, where the matrix is the caller's transform, and copies it into a holder the mod owns. The read returns the copy a *previous* frame's command left there. Condensed into one class (the shipped code splits it so a stock install never loads a bridge type):
 
 ```java
-// held on your reader, published across the render/game thread boundary
-private final AtomicReference<float[]> latest = new AtomicReference<>();
+// Reached only when GL11.class.getName().startsWith("com.genir.renderer.").
+private final AtomicReference<float[]> latestCopy = new AtomicReference<>();
+private volatile boolean isBridgeUnavailable;
 
 float[] readModelview() {
-    Context ctx = ContextManager.getThreadContext();          // null off-thread, or before setup
-    if (ctx == null) {
+    if (isBridgeUnavailable) {
         return null;
     }
-    ctx.exec.execute((c, args, off) -> {                      // runs on FR-Render, no stall
-        Matrix4f m = c.transformManager.getCPUModelView();
-        FloatBuffer buf = BufferUtils.createFloatBuffer(16);
-        m.storeTranspose(buf);                                // fields are row-major; see above
-        buf.flip();
-        float[] out = new float[16];
-        buf.get(out);
-        latest.set(out);                                      // copy MUST finish inside the command
-    });
-    return latest.get();                                      // previous frame's copy; null at first
+    try {
+        Context ctx = ContextManager.getThreadContext();      // null before setup or after teardown
+        if (ctx == null) {
+            return null;
+        }
+        ctx.exec.execute((c, args, off) -> {                  // runs on FR-Render, no stall
+            if (isBridgeUnavailable) {
+                return;
+            }
+            try {
+                FloatBuffer buf = BufferUtils.createFloatBuffer(16);
+                c.transformManager.getCPUModelView().storeTranspose(buf);  // fields are row-major
+                buf.flip();
+                float[] out = new float[16];
+                buf.get(out);
+                latestCopy.set(out);                          // the copy finishes inside the command
+            } catch (LinkageError | RuntimeException e) {     // escaping would abandon the frame
+                degrade(e);
+            }
+        });
+    } catch (LinkageError | RuntimeException e) {             // the bridge failing on this thread
+        degrade(e);
+        return null;
+    }
+    return latestCopy.get();                                  // a prior frame's copy; null at first
+}
+
+private void degrade(Throwable cause) {
+    isBridgeUnavailable = true;                               // off the bridge for the session
+    latestCopy.set(null);
+    // logged and reported to the player once
 }
 ```
 
-Four caveats: reading `getCPUModelView()` inline on the caller thread instead races the render thread and resolves a wrong point every frame, and a synchronous `Executor.get`/`wait` read stalls the pipeline and gets the game killed by the stall detector - the deferred `execute` hop avoids both and is the point of the workaround; the copy has to complete inside the command, since the matrix it reads is live and mutated again once the command returns; the value is a frame or two stale (the render thread runs a frame behind, and a frame's copy is only guaranteed complete a frame later), invisible for a still map and trailing by a frame or two of pan velocity while panning; and it returns identity when the matrix has been pushed to the GPU instead, so identity has to be read as "this read is not usable" rather than "no transform".
+The caller treats identity as no reading, since a campaign-UI pass is never identity: its base modelview is identity plus `glTranslatef(0.01, 0.01, 0)`. Identity therefore means the matrix was on the GPU at that point in the stream, that is, a program was bound.
+
+What this costs, and why each part is there:
+
+- **A frame or two of lag.** The render thread runs a frame behind, and a frame's copy is only guaranteed complete a frame later. That is invisible on a still map and trails by a frame or two of pan velocity while panning.
+- **A guard inside the command.** A command that throws on `FR-Render` abandons the rest of its frame and is re-thrown, wrapped, on the game thread at the next `swapFrames` (`Executor.swapFrames`, `rethrowAndClearException`), where no mod frame can catch it. A bug in a hover read would otherwise cost a frame and then the game.
+- **A binding to six members that are not API.** `ContextManager.getThreadContext`, `Context.exec`, `Context.transformManager`, `Executor.execute(GLCommand)`, `GLCommand.run` and `TransformManager.getCPUModelView`, plus the `com.genir.renderer.` prefix on the rewritten `GL11` name for detection. All six have kept their signatures through v0.8.10rc1, the v0.8.9 rework of `Context` and `Executor` included. A rename of any of them turns the read off for the session, which is why the guard and the latch are there. Served inline, the read would need none of them.
+
+The projection is not read at all. On the campaign UI it is `glOrtho(0, w, 0, h, -6000, 6000)` over the screen size from `SettingsAPI`, so mods rebuild it arithmetically and pair it with `GL_VIEWPORT`, which the bridge already answers inline. That is why the modelview is the read this report is about.
