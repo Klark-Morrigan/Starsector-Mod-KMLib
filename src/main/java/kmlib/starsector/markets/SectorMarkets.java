@@ -1,11 +1,11 @@
 package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.text.KmlibStrings;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -17,8 +17,8 @@ import java.util.List;
  */
 public final class SectorMarkets {
 
+    // Reads only; never instantiated.
     private SectorMarkets() {
-        // utility class, no instances.
     }
 
     /**
@@ -37,16 +37,6 @@ public final class SectorMarkets {
 
         SectorWalkCounters.countMarketsRead(markets.size());
 
-        var names = new ArrayList<String>();
-
-        for (var market : markets) {
-
-            var name = market.getName();
-
-            if (KmlibStrings.hasText(name)) {
-                names.add(name);
-            }
-        }
-        return names;
+        return KmlibStrings.collectTexts(markets, MarketAPI::getName);
     }
 }

@@ -106,9 +106,10 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             RandomAssortmentOfThingsIntegration::describeIntegration);
     }
 
-    // Loads every face KM text may draw in before any consumer settles a face on one, so a face the
-    // install cannot load is found here and never chosen. The library's to do rather than a consumer's:
-    // the faces and the cache are shared by every mod drawing KM text, and one load serves them all.
+    // Loads every face KM text may draw in as the game starts, so the log states what the install holds
+    // under each before any text is drawn, and no first draw pays for a load. The library's to do rather
+    // than a consumer's: the faces and the cache are shared by every mod drawing KM text, and one load
+    // serves them all.
     //
     // Guarded without an integration named: LazyLib is a declared dependency, not an optional mod, so a
     // failure here is logged for whoever reads the log rather than reported as a mod that did not

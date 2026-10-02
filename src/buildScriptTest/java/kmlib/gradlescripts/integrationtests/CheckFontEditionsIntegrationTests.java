@@ -430,6 +430,45 @@ final class CheckFontEditionsIntegrationTests {
             assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
                 .contains("font-editions.lock.json states no editions list");
         }
+
+        @Test
+        void failsWhereAnEditionStatesItsFacesAsOtherThanAnObject(@TempDir Path root) throws IOException {
+            // A list of faces would read as naming none, and every face would compare as moved.
+            var workspace = writeWorkspace(root);
+            var entryWithListedFaces = writeEditionEntry(EDITION_NAME, workspace.upstreamDirectory(), "")
+                .replace("\"faces\": {  }", "\"faces\": [ \"" + SHIPPED_FACE + "\" ]");
+
+            writeLock(workspace, entryWithListedFaces);
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("edition '" + EDITION_NAME + "' states its faces as other than an object");
+        }
+
+        @Test
+        void failsNamingGitsOwnReasonWhereAnEditionsRepositoryCannotBeReached(@TempDir Path root)
+                throws IOException {
+            // An unreachable upstream is what a network failure reads as, and git's reason is what says so.
+            var workspace = writeWorkspace(root);
+
+            writeLock(workspace, writeEditionEntry(
+                EDITION_NAME,
+                root.resolve("no-such-upstream"),
+                "\"" + SHIPPED_FACE + "\": null, \"" + ABSENT_FACE + "\": null"));
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("git fetch")
+                .contains("failed:");
+        }
+
+        @Test
+        void failsNamingTheLockWhereThereIsNone(@TempDir Path root) throws IOException {
+            // The parser's own failure would say only that a stream could not be opened.
+            var workspace = writeWorkspace(root);
+
+            assertThat(createRunner(workspace, "checkFontEditions").buildAndFail().getOutput())
+                .contains("No lock at ")
+                .contains("font-editions.lock.json");
+        }
     }
 
     @Nested
@@ -480,6 +519,37 @@ final class CheckFontEditionsIntegrationTests {
             assertThat(workspace.projectDirectory().resolve("font-editions.lock.json"))
                 .content(StandardCharsets.UTF_8)
                 .contains("\"text\": \"" + PROBE_TEXT + "\"");
+        }
+
+        @Test
+        void keepsWhatEachProbeTextMeans(@TempDir Path root) throws IOException {
+            // The meaning is what lets a reader check the probe without reading its script.
+            var workspace = writeWorkspace(root);
+
+            writeLockProbing(
+                workspace,
+                "\"" + LANGUAGE + "\": { \"text\": \"" + PROBE_TEXT + "\", \"meaning\": \"Hegemony\" }",
+                writeEditionEntry(EDITION_NAME, workspace.upstreamDirectory(), ""));
+            createRunner(workspace, "writeFontEditionsLock").build();
+
+            assertThat(workspace.projectDirectory().resolve("font-editions.lock.json"))
+                .content(StandardCharsets.UTF_8)
+                .contains("\"meaning\": \"Hegemony\"");
+        }
+
+        @Test
+        void refusesALockAnEditionCannotBeReadFromAndLeavesItAsItWas(@TempDir Path root) throws IOException {
+            // A rewrite of a lock it cannot read would write out whatever it guessed.
+            var workspace = writeWorkspace(root);
+            var lockFile = workspace.projectDirectory().resolve("font-editions.lock.json");
+            var invalidLock = "{ \"probeTexts\": {} }";
+
+            Files.writeString(lockFile, invalidLock);
+
+            assertThat(createRunner(workspace, "writeFontEditionsLock").buildAndFail().getOutput())
+                .contains("font-editions.lock.json states no editions list");
+            assertThat(lockFile)
+                .hasContent(invalidLock);
         }
     }
 }

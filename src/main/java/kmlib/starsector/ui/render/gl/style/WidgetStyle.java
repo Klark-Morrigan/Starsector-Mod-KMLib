@@ -23,9 +23,9 @@ import kmlib.starsector.ui.widgets.tabs.style.TabStyle;
  * bare {@code Color}s in a row would be four positions a caller could transpose with nothing to catch
  * it - a frame stroked in the tick colour compiles and paints. Grouped by what each dresses, the same
  * slip is a compile error, and each group is small enough that what remains transposable inside one is
- * a handful of shades named a line apart, ordered so a transposition reads wrong. The handle and the tabs were already grouped this way, for their own
- * reason: each is chrome a consumer may want pitched apart from the panel's accents, so its shades are
- * swapped wholesale.
+ * a handful of shades named a line apart, ordered so a transposition reads wrong. The handle and the tabs
+ * are grouped for a reason of their own besides: each is chrome a consumer may want pitched apart from the
+ * panel's accents, so its shades are swapped wholesale.
  *
  * <p>Sound sits in the look bundle rather than beside it because how a panel answers a press is part of
  * how it presents itself, exactly as its fills are: a host that describes its panel describes all of it

@@ -413,9 +413,9 @@ which is why it appears in neither table above.
 Nothing implements it per surface:
 the binding closes over `TextSpanMeasurer`,
 so the LazyLib adapter is still the only thing that knows a glyph width.
-And it lives in `text` rather than beside its sibling in `font`
-because `text` already reads `font` (a `TextStyle` holds a `TextFace`),
-so a port in `font` naming `TextSpan` would close that into a cycle.
+And it lives in `text` rather than beside its sibling in `font.measure`
+because `text` already reads `font.measure` (the binding closes over `TextSpanMeasurer`),
+so a class there naming `TextSpan` would close that into a cycle.
 
 ## A strip is measured in two faces
 

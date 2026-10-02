@@ -21,7 +21,8 @@ import java.util.Optional;
  * <p>A reading answers {@link FaceLineHeightReader} and {@link GlyphCoverageReader} the way the running
  * game on that install would, and names the default face its settings declare, so a face can be settled
  * against a real edition's atlases with no game running. Its coverage is the declared glyph IDs: a
- * character is covered when its code point is one of them, whitespace never being asked about.
+ * character in the basic plane is covered when its code point is one of them, whitespace never being asked
+ * about.
  *
  * @param edition              which edition of the game's fonts the install carries; names the install in a
  *                             failure
@@ -89,8 +90,15 @@ record InstalledFonts(
         return (atlas, text) -> findInstalledFace(atlas)
             .map(face -> text.codePoints()
                 .filter(codePoint -> !Character.isWhitespace(codePoint))
-                .allMatch(codePoint -> face.glyphIds().containsId(codePoint)))
+                .allMatch(codePoint -> isCodePointDrawable(face, codePoint)))
             .orElse(false);
+    }
+
+    // Whether the running game would draw one character from this atlas, by the live reader's rule: a
+    // character outside the basic plane never, since LazyLib looks glyphs up by a single UTF-16 unit, however
+    // the descriptor declares it; any other where the descriptor declares its glyph.
+    private static boolean isCodePointDrawable(InstalledFace face, int codePoint) {
+        return !Character.isSupplementaryCodePoint(codePoint) && face.glyphIds().containsId(codePoint);
     }
 
     // What the install states for an atlas: a face the enum names by its entry, and the declared default by

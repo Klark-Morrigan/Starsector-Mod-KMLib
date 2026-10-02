@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -15,8 +16,9 @@ import java.util.function.Supplier;
  * The face each text settles on, held once settled: the face the text asks for where the installed atlas
  * holds everything it may say, and otherwise the first face down its fallback walk that does.
  *
- * <p>A text names the face it asks for and the kinds of text it is made of - a caller's own kinds, such
- * as faction names or its mod's strings, which it reads once each through the reader it hands in. Held
+ * <p>A text names the face it asks for and the kinds of text it is made of - its probes: a caller's own
+ * kinds, such as faction names or its mod's strings, which it reads once each through the reader it hands
+ * in. Held
  * rather than resolved per draw, because settling reads every glyph of every text of those kinds; two
  * texts asking for one face against the same kinds share one answer, which keeps a line measured in one
  * face from being drawn in another. A face that moves off the one asked for is logged once, which is the
@@ -34,6 +36,7 @@ public final class SettledFaceMemo<K> {
     private final Map<StarsectorFont, Map<Set<K>, FontAtlas>> faceByProbesByFont = new EnumMap<>(StarsectorFont.class);
     private final Map<K, List<String>> textsByProbe = new HashMap<>();
 
+    // Both null only on the unsettled memo, which settles nothing; every other memo is handed both.
     private final Supplier<FaceResolver> faceResolverSource;
     private final Function<K, List<String>> probeTextReader;
 
@@ -41,12 +44,18 @@ public final class SettledFaceMemo<K> {
 
     /**
      * @param faceResolverSource builds the resolver faces are settled through, on first settling
-     * @param probeTextReader    reads one kind of text, once per kind
+     * @param probeTextReader    reads one kind of text, once per kind; a kind read as null holds no text
      */
     public SettledFaceMemo(Supplier<FaceResolver> faceResolverSource, Function<K, List<String>> probeTextReader) {
 
-        this.faceResolverSource = faceResolverSource;
-        this.probeTextReader = probeTextReader;
+        this.faceResolverSource = Objects.requireNonNull(faceResolverSource, "faceResolverSource");
+        this.probeTextReader = Objects.requireNonNull(probeTextReader, "probeTextReader");
+    }
+
+    // The unsettled memo's: no resolver and no reader, so nothing can be settled or read.
+    private SettledFaceMemo() {
+        this.faceResolverSource = null;
+        this.probeTextReader = null;
     }
 
     /**
@@ -57,7 +66,7 @@ public final class SettledFaceMemo<K> {
      * @return a memo answering each text with the face it asks for, reading nothing
      */
     public static <K> SettledFaceMemo<K> createUnsettled() {
-        return new SettledFaceMemo<>(null, null);
+        return new SettledFaceMemo<>();
     }
 
     /**
@@ -69,6 +78,7 @@ public final class SettledFaceMemo<K> {
      */
     public FontAtlas settleFace(StarsectorFont requestedFont, Set<K> probes) {
 
+        // Only the unsettled memo holds no resolver.
         if (faceResolverSource == null) {
             return requestedFont;
         }
@@ -105,7 +115,7 @@ public final class SettledFaceMemo<K> {
         var texts = new ArrayList<String>();
 
         for (var probe : probes) {
-            texts.addAll(textsByProbe.computeIfAbsent(probe, probeTextReader));
+            texts.addAll(textsByProbe.computeIfAbsent(probe, this::readProbeTexts));
         }
 
         var settledFace = faceResolver.resolveFont(requestedFont, texts);
@@ -116,5 +126,10 @@ public final class SettledFaceMemo<K> {
                 + " draws in " + settledFace.resolvePath());
         }
         return settledFace;
+    }
+
+    // A reader with nothing to say for a kind may answer null; that kind then holds the face to nothing.
+    private List<String> readProbeTexts(K probe) {
+        return Objects.requireNonNullElse(probeTextReader.apply(probe), List.of());
     }
 }

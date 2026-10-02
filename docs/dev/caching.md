@@ -13,7 +13,10 @@ Two memos hold answers about live campaign state,
 and hold them for exactly one pass,
 which is safe because they are discarded before the game can move underneath them.
 
-Nothing here holds a live campaign read for longer than the pass that took it.
+Nothing here holds a live campaign read for longer than the pass that took it,
+with one stated exception:
+the [settled faces](#settled-faces),
+which read the campaign's text once and keep the answer for as long as their holder does.
 That is the whole rule,
 and everything below is what it costs to keep.
 
@@ -29,6 +32,7 @@ are documented in [KMU's caching notes](https://github.com/Klark-Morrigan/Starse
   - [Font faces](#font-faces)
   - [Glyph runs](#glyph-runs)
   - [Label line wraps](#label-line-wraps)
+- [Settled faces](#settled-faces)
 - [Pass-scoped memos](#pass-scoped-memos)
 - [Invalidation primitives](#invalidation-primitives)
 - [What is deliberately not cached](#what-is-deliberately-not-cached)
@@ -137,6 +141,30 @@ and an estimator is built for one text with one measurer,
 so it dies with the pass that made it.
 Nothing static,
 nothing to invalidate.
+
+## Settled faces
+
+[`SettledFaceMemo`](../../src/main/java/kmlib/starsector/ui/font/SettledFaceMemo.java)
+holds which face each text draws in:
+keyed on the face asked for and the set of text kinds the text is made of,
+it reads each kind once through the caller's reader
+and resolves each key once through a `FaceResolver` built on first use.
+A miss costs every glyph of every text of those kinds checked against each face on the walk,
+and a settled face is asked on every draw,
+so the answer has to be held.
+
+The kinds are the caller's,
+and the usual ones are campaign text: faction, system and colony names.
+So this is the one cache here that holds a campaign-derived answer past a pass.
+It lives as long as its holder keeps it -
+a consumer holds one per sector -
+and `discardFaces()` forgets every answer and every text read,
+which the holder calls when it is released.
+Between those two points nothing re-reads:
+a name added or changed mid-session keeps the face settled before it until the next load.
+That is the trade taken,
+because a name that needs another script is rare
+and re-reading every name on every change would cost more than every draw it saves.
 
 ## Pass-scoped memos
 

@@ -19,6 +19,7 @@ public final class LazyFontSpanMeasurer {
     // What a face that will not load measures: nothing, since no glyphs of it will be painted either.
     private static final double NO_WIDTH = 0d;
 
+    // Measures only; never instantiated.
     private LazyFontSpanMeasurer() {
     }
 

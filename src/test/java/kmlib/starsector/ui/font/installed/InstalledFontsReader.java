@@ -34,9 +34,9 @@ final class InstalledFontsReader {
     // Where a face's descriptor path resolves from under the install root.
     private static final String CORE_DIRECTORY = "starsector-core";
 
-    // The game's own settings under the install root, and the key it names its default face under.
+    // The game's own settings under the install root; the key its default face is named under is the live
+    // reader's.
     private static final String SETTINGS_PATH = "starsector-core/data/config/settings.json";
-    private static final String DEFAULT_FONT_KEY = "defaultFont";
 
     // Reads only; never instantiated.
     private InstalledFontsReader() {
@@ -99,13 +99,13 @@ final class InstalledFontsReader {
 
         var settingsFile = starsectorRoot.resolve(SETTINGS_PATH);
         var defaultFontValue = Files.isRegularFile(settingsFile)
-            ? ShippedJson.readObjectFile(settingsFile).get(DEFAULT_FONT_KEY)
+            ? ShippedJson.readObjectFile(settingsFile).get(GameDefaultFontReader.DEFAULT_FONT_KEY)
             : null;
         var defaultFontPath = defaultFontValue == null
             ? null
             : ShippedJson.requireString(
                 defaultFontValue,
-                ShippedJson.locateMember(settingsFile.toString(), DEFAULT_FONT_KEY));
+                ShippedJson.locateMember(settingsFile.toString(), GameDefaultFontReader.DEFAULT_FONT_KEY));
 
         return GameDefaultFontReader.resolveDefaultFont(
             defaultFontPath,

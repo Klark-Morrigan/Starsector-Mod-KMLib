@@ -69,9 +69,9 @@ final class SectorMarketsTests {
         void countsEveryMarketItReadOnTheOpenSection() {
 
             var markets = List.of(createNamedMarket("Jangala"), createNamedMarket("Sindria"));
-            var sector = createSectorListing(markets);
+            var sectorMock = createSectorListing(markets);
 
-            var counts = WalkCountCapture.captureCountsOf(() -> SectorMarkets.listMarketNames(sector));
+            var counts = WalkCountCapture.captureCountsOf(() -> SectorMarkets.listMarketNames(sectorMock));
 
             assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
                 .isEqualTo(2L);

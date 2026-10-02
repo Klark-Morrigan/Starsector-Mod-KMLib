@@ -14,10 +14,11 @@ import java.util.StringJoiner;
  * Loads every face KM text may draw in once, as the game starts, and states in the log what the install
  * holds under each.
  *
- * <p>At start rather than on first draw, so a face the install cannot load is found - and logged once,
- * by {@link LazyFontCache} - before any text settles on it: {@link FaceResolver} then reads it as absent
- * and no walk stops at it. Every face the enum names is loaded, and so is the face the game's settings
- * declare as its default, which a walk may reach without the enum naming it.
+ * <p>At start rather than on first draw, so the log states what the install holds before any text is drawn,
+ * a face that will not load is logged once there by {@link LazyFontCache}, and no first draw pays for a
+ * load. Whether a face loads is not decided here: {@link FaceResolver} asks on every walk, so a face that
+ * will not load is passed over with or without this check. Every face the enum names is loaded, and so is
+ * the face the game's settings declare as its default, which a walk may reach without the enum naming it.
  *
  * <p>The line the check leaves is the one reading of which atlases a session drew with. A localised
  * install replaces several of them under the same basenames, and its editions differ in line height, so
@@ -59,7 +60,7 @@ public final class InstalledFaceCheck {
     private static String formatLineHeightReading(double lineHeight) {
 
         return FaceLineHeightReader.isFaceLoadable(lineHeight)
-            ?Long.toString(Math.round(lineHeight))
+            ? Long.toString(Math.round(lineHeight))
             : UNAVAILABLE_READING;
     }
 }

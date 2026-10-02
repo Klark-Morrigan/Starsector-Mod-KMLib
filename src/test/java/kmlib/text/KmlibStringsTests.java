@@ -3,6 +3,9 @@ package kmlib.text;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -63,6 +66,26 @@ class KmlibStringsTests {
             assertThatThrownBy(() -> KmlibStrings.requireText("   ", "A name with no text in it"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("A name with no text in it");
+        }
+    }
+
+    @Nested
+    class CollectTexts {
+
+        @Test
+        void keepsEachItemsTextInOrderLeavingNullsAndBlanksOut() {
+            // A blank or absent name is nothing a caller could draw, so it is not text the caller holds.
+            var names = Arrays.asList("Corvus", null, "  ", "Askonia");
+
+            assertThat(KmlibStrings.collectTexts(names, name -> name))
+                .containsExactly("Corvus", "Askonia");
+        }
+
+        @Test
+        void readsTheTextOffEachItemThroughTheReaderGiven() {
+
+            assertThat(KmlibStrings.collectTexts(List.of(1, 22), number -> "#" + number))
+                .containsExactly("#1", "#22");
         }
     }
 

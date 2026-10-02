@@ -847,8 +847,10 @@ How the tiers meet is in
   quadrant-anchored on-screen debug HUD.
 - [`starsector/ui/font/`](src/main/java/kmlib/starsector/ui/font/) -
   the face enum every caller names an atlas through,
-  the font and glyph-run caches,
-  and width measurers.
+  which face a text draws in where the installed atlas cannot draw it,
+  and the memo holding those answers;
+  under it, `installed/` reads the running game's atlases through the font and glyph-run caches,
+  and `measure/` holds the width measurers.
   See [Caching](#caching).
 - [`starsector/ui/highlight/`](src/main/java/kmlib/starsector/ui/highlight/) -
   highlight,
@@ -1873,8 +1875,9 @@ a cached value here cannot disagree with the sector.
 Beside them sit two memos over readings of the live sector,
 each held for exactly one pass and discarded with it,
 so neither can be read against a sector that has moved.
-Nothing in this library carries an invalidation signal,
-because nothing in it lives long enough to need one.
+The one answer kept longer is which face each text settles on,
+read off the campaign's text once and held until its holder discards it,
+since settling reads every glyph of every name.
 
 [docs/dev/caching.md](docs/dev/caching.md) records what each one keys on,
 how long it lives,

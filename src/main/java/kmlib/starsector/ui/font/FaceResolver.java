@@ -108,6 +108,6 @@ public final class FaceResolver {
     // Whether a face loads and draws every character of every text asked about.
     private boolean isAtlasDrawingEveryText(FontAtlas atlas, Collection<String> probeTexts) {
         return FaceLineHeightReader.isFaceLoadable(lineHeights.readLineHeight(atlas))
-            &&probeTexts.stream().allMatch(probeText -> glyphCoverage.coversText(atlas, probeText));
+            && probeTexts.stream().allMatch(probeText -> glyphCoverage.coversText(atlas, probeText));
     }
 }
