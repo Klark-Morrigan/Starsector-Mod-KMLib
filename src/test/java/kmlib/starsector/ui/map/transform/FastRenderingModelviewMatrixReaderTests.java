@@ -215,7 +215,7 @@ final class FastRenderingModelviewMatrixReaderTests {
 
         return () -> {
             enqueueCount.incrementAndGet();
-            throw new UnsupportedOperationException("com.genir.renderer.bridge.context.Executor.execute()");
+            throw new UnsupportedOperationException("com.genir.renderer.bridge.context.executor.Executor.execute()");
         };
     }
 }
