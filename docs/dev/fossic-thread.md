@@ -73,7 +73,7 @@ Every input, in the form's order (`*` is required):
 
 | Input | What it takes |
 | --- | --- |
-| 标题 `*` | 80 characters at most; the game version in brackets first, then the status tag, then the name |
+| 标题 `*` | 80 characters at most; the game version in brackets first, then the status tag, then the name. The mod version can stay out: the board list and the download panel show the form's Mod版本, and a title without it needs no edit per release |
 | Mod标识符 `*` | the mod ID from `mod_info.json` |
 | Mod中文名 `*`, Mod英文名 | the mod's names |
 | Mod作者 `*` | the forum user name first; several authors comma-separated |
