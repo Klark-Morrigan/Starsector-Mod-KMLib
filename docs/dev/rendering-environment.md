@@ -50,16 +50,12 @@ That jar is where the bridge package name,
 the rewrite tables and the game-class patches live,
 which is the half of the patch KM's detection depends on.
 
-Fourteen claims on this page are release-specific rather than true of every build still in the field,
+Eight claims on this page are release-specific rather than true of every build still in the field,
 and each is flagged where it appears:
 
 - **Per-mod exclusion exists**,
   from `v0.8.5rc1`.
-  Earlier releases rewrite every mod jar without exception;
-  `v0.8.5rc1` hard-codes a class-name prefix that is skipped.
-  Its second half -
-  a separate skip of VRAM Optimizer's *plugin* during resource loading -
-  existed on `v0.8.5rc1` alone and is gone from `v0.8.6`.
+  Earlier releases rewrite every mod jar without exception.
 - **Stall detection is armed at the end of game initialisation**,
   from `v0.8.7`.
   Through `v0.8.7rc1` it was armed on the first combat frame instead,
@@ -67,17 +63,6 @@ and each is flagged where it appears:
   This is the delta on this page with the most teeth for KM code.
   From `v0.9.0rc1` the arming call sits in `overrides/loading/ResourceLoaderState` rather than `overrides/loading/ResourceLoader`,
   at the same moment.
-- **`glIsTexture` is an inline read**,
-  from `v0.8.4`.
-  On `v0.8.3` and earlier it stalls.
-- **`glGetTexLevelParameteri` is an inline read** for three pnames,
-  from `v0.8.5rc1`.
-  Earlier releases always stall on it.
-- **`glGetTexParameteri` exists at all**,
-  from `v0.8.7`.
-  Calling it on an earlier release is a `NoSuchMethodError` from inside a render pass;
-  calling it on `v0.8.7` or later stalls,
-  since it has no inline path.
 - **GL references rewrite to `com.genir.renderer.bridge.opengl`**,
   from `v0.8.9`.
   Through `v0.8.8` they rewrote to `com.genir.renderer.bridge.commands`,
@@ -88,15 +73,6 @@ and each is flagged where it appears:
   Through `v0.8.8` the same call was a `NoSuchMethodError`,
   because the method simply was not there.
   Both land mid-render; only the exception type and the stack trace differ.
-- **Display lists are callable from mod code**,
-  from `v0.8.9`.
-  Through `v0.8.8` `glGenLists` / `glNewList` / `glEndList` / `glCallList` were deliberately unreachable,
-  under `*_restricted` names.
-- **The game's own classes get the full GL rewrite**,
-  from `v0.8.9`.
-  Through `v0.8.8` `com.fs.*` and `sound.*` had only `GL11`,
-  `GL14`,
-  `Display` and `GLContext` redirected.
 - **`Context.exec` is declared as the `bridge.context.executor.Executor` interface**,
   from `v0.9.0`.
   Through `v0.9.0rc2` it was the class `bridge.context.Executor`.
@@ -109,9 +85,6 @@ and each is flagged where it appears:
 - **`GL_SCISSOR_BOX` is an inline read**,
   from `v0.9.0rc2`.
   On `v0.9.0rc1` and every earlier release it stalls.
-- **`glIsBuffer`, `glIsFramebuffer` and `glIsRenderbuffer` are inline reads**,
-  from `v0.9.0`.
-  Earlier releases stall on all three.
 - **A facade throw names the method it refuses**,
   from `v0.9.0`.
   Through `v0.9.0rc2` the `GL11` to `GL20` facades threw a bare `UnsupportedOperationException`,
@@ -133,18 +106,11 @@ The classes around the six have been rewritten repeatedly -
 `VertexInterceptor` and `MatrixStack` more than once -
 without touching the facts KM reads off them.
 
-The table that decides the bridge package name is the exception,
-and it broke its own run in `v0.8.9`:
-`ScriptTransformations` was byte-identical from `v0.8.5rc1` to `v0.8.8`,
-then `v0.8.9` merged it with `ObfTransformations` into a single `Transformations` class
-holding one named map per rewrite family,
-and repointed every `GLnn` entry at the new facade package.
-Neither the merge nor the repoint is in the release notes.
-`v0.9.0rc1` added three maps to it -
-`overrides`,
-`sync` and `lwjgl` -
-and left every `GLnn` entry where it was.
-KM detection spans it because it matches the `com.genir.renderer.` prefix rather than a whole class name,
+The table that decides the bridge package name has been reshaped without notice -
+`ScriptTransformations` through `v0.8.8`,
+`Transformations` with one map per rewrite family from `v0.8.9`,
+three more maps in `v0.9.0rc1` -
+and KM detection spans all of it by matching the `com.genir.renderer.` prefix rather than a whole class name,
 which is the case this tolerance was built for.
 
 Fast Rendering names itself in three places,
@@ -218,10 +184,10 @@ sha256sum "<starsector>/starsector-core/fr.jar"
 ```
 
 Sizes still separate neighbouring releases
-(`v0.7.6` is 632557 bytes, `v0.7.7` is 632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887, `v0.8.3` is 634576, `v0.8.4rc1` is 632459, `v0.8.4` is 639820, `v0.8.5rc1` is 642412, `v0.8.6` is 660831, `v0.8.7rc1` is 666557, `v0.8.7` is 668949, `v0.8.8` is 669864, `v0.8.9` is 716583, `v0.8.10rc1` is 716402, `v0.8.10rc2` is 716913, `v0.8.10rc3` is 719220, `v0.8.10` is 718990, `v0.9.0rc1` is 534841, `v0.9.0rc2` is 539066, `v0.9.0` is 562976),
+(`v0.8.4` is 639820 bytes, `v0.8.5rc1` is 642412, `v0.8.6` is 660831, `v0.8.7rc1` is 666557, `v0.8.7` is 668949, `v0.8.8` is 669864, `v0.8.9` is 716583, `v0.8.10rc1` is 716402, `v0.8.10rc2` is 716913, `v0.8.10rc3` is 719220, `v0.8.10` is 718990, `v0.9.0rc1` is 534841, `v0.9.0rc2` is 539066, `v0.9.0` is 562976),
 so a size mismatch is a fast first check before hashing.
 Only the mismatch is informative:
-`v0.7.6` and `v0.7.7` are 83 bytes apart,
+neighbours can sit within a few hundred bytes of each other,
 and the figure does not climb -
 `v0.9.0rc1` is 184 KB smaller than `v0.8.10`,
 the shadowed game classes having left the jar.
@@ -234,11 +200,7 @@ Four moves so far have invalidated citations wholesale,
 none mentioned in its release notes.
 `v0.7.4` moved the whole GL bridge from `com.genir.renderer.bridge` to `com.genir.renderer.bridge.commands`,
 and the command interfaces to `com.genir.renderer.bridge.interfaces`.
-`v0.8.0` moved the bytecode-rewriting machinery out of `fr.jar` entirely:
-the package `com.genir.renderer.loaders` no longer exists,
-and its transformation tables now sit in a second jar,
-`fr.agent.jar`,
-under `com.genir.renderer.agent`.
+`v0.8.0` moved the rewriting out of `fr.jar` into `fr.agent.jar` (`com.genir.renderer.agent`).
 `v0.8.9` split the bridge in two:
 the implementations stayed in `com.genir.renderer.bridge.commands`,
 and a new `com.genir.renderer.bridge.opengl` became what GL references actually rewrite to.
@@ -365,13 +327,9 @@ so a PatchLib-based mod and Fast Rendering coexist as two ordinary agents on the
 Fast Rendering's transformer sees every class either agent's loaders pull in,
 so PatchLib's view of the game classes is the rewritten one.
 
-This arrangement is new in `v0.8.0`.
-Through `v0.7.7` the patch was instead the system classloader
-(`-Djava.system.class.loader=com.genir.renderer.loaders.AppClassLoader`),
-which loaded and rewrote classes itself
-and had a bespoke path to route an agent's classes back through its own transformer.
-`com.genir.renderer.loaders` no longer exists,
-so a stack frame naming it is from `v0.7.7` or earlier.
+Through `v0.7.7` the patch was a system classloader instead,
+`com.genir.renderer.loaders.AppClassLoader`,
+so a stack frame naming that package is from `v0.7.7` or earlier.
 
 ### It rewrites GL class references in every jar
 
@@ -429,13 +387,6 @@ and a rewrite of obfuscated names that collide with Java keywords -
 `class.do` to `class_do` and so on,
 which is why a decompile shows types like `com/fs/starfarer/util/return`
 (`.../agent/ConstantFileTransformer.java:22`, `.../agent/IllegalTransformations.java:12-23`).
-
-Through `v0.8.8` the game got a narrower rewrite than mods -
-`GL11`,
-`GL14`,
-`Display` and `GLContext` only -
-and had its display-list calls renamed to `*_restricted` variants to steer it off them;
-`v0.8.9` gave it the full list and implemented display lists for game and mods alike.
 
 There is no opt-out a mod can *request*.
 What `v0.8.5rc1` introduced is one genir grants by name:
@@ -522,12 +473,10 @@ and delegates to real GL otherwise
 so there is no CPU projection matrix to read and the campaign's ortho goes straight to GL.
 
 `getThreadContext()` returns `null` more often than "unregistered thread" suggests.
-From `v0.8.5rc1` the main context is created lazily and cleared on shutdown
+The main context is created lazily and cleared on shutdown
 (`.../bridge/context/ContextManager.java:13-15`, `:27-42`),
 so the same call on the same thread answers `null` before the renderer is up
-and again after it is torn down;
-earlier releases built it in a static initialiser and it was never null on the main thread.
-Any read of it has to null-check regardless of release.
+and again after it is torn down.
 
 Four cautions on using it.
 The first is where,
@@ -653,25 +602,14 @@ the detector is armed in `initEpilogue`,
 immediately after every mod's `onApplicationLoad` has run
 and beside the same flag Fast Rendering treats as "game initialised"
 (`.../overrides/loading/ResourceLoaderState.java:168-171`).
-From `v0.9.0rc1` that method is merged into the game's own `ResourceLoaderState` as it loads (below);
-through `v0.8.10` it sat in `overrides/loading/ResourceLoader`,
-a class that no longer exists.
 It is armed twice in that method,
 once either side of the flag,
-from `v0.8.10rc1`,
-the second call being redundant rather than a second detector.
+the second call redundant.
 So arming happens before the main menu is ever drawn,
 and a per-frame stalling read on the campaign map is fatal from the first time the map is opened.
-
-That arming point is release-specific and the change was not announced.
-Through `v0.8.7rc1` the detector was armed on the first **combat frame** rendered instead,
-from the shadowed `com/fs/starfarer/combat/CombatEngine.render`,
-which made stalls free in the launcher,
-during loading and anywhere in the campaign layer -
-a stalling map overlay could be exercised for hours and only die on the first battle.
-Two consequences.
-A clean test on `v0.8.7rc1` or earlier proves nothing about a stalling read;
-and a stall crash that now lands on the sector map with no battle in the session is the expected shape on `v0.8.7` and later,
+Through `v0.8.7rc1` the detector was armed on the first **combat frame** instead,
+so a stalling map overlay could run for hours there and die on the first battle;
+a stall crash on the sector map with no battle in the session is the expected shape from `v0.8.7`,
 not a new bug.
 
 The viewport read escapes this only because it never stalls:
@@ -795,12 +733,6 @@ Always inline:
   framebuffer binding,
   and vertex array binding
   (`.../bridge/commands/GL11.java:1243-1278`).
-  The current program comes from `AttribTracker` on `v0.8.5rc1` and later and on `v0.8.3` and earlier,
-  and from `ShaderTracker` on `v0.8.4`;
-  the two buffer bindings come from `ClientAttribTracker` from `v0.8.10rc3`,
-  the array binding from `AttribTracker` before;
-  inline on all of them,
-  so only a stack trace tells them apart.
 - `glGetInteger(int, IntBuffer)` for `GL_VIEWPORT`,
   and from `v0.9.0rc2` for `GL_SCISSOR_BOX`
   (`:1289-1308`, `.../bridge/context/stall/AttribTracker.java:140`, `:158`).
@@ -826,7 +758,6 @@ Always inline:
   the real GL call still runs,
   deferred,
   purely to assert the two agree.
-  On `v0.8.3` and earlier the same call is an `exec.get` and stalls.
 - `glGetTexLevelParameteri` for `GL_TEXTURE_WIDTH`,
   `GL_TEXTURE_HEIGHT` and `GL_TEXTURE_INTERNAL_FORMAT`,
   from `v0.8.5rc1`
@@ -882,14 +813,8 @@ A VRAM reading taken under this renderer is also never current to the frame it i
 which matters for anything that displays it.
 
 The set grows release by release,
-and each addition is somebody's crash being fixed:
-`GL_CURRENT_PROGRAM` went inline in `v0.7.4`,
-`GL_SCISSOR_TEST` in `v0.7.5`,
-`glIsTexture` in `v0.8.4`,
-`glGetTexLevelParameteri`'s three size pnames in `v0.8.5rc1`,
-`GL_SCISSOR_BOX` and `GL_ELEMENT_ARRAY_BUFFER_BINDING` in `v0.9.0rc2`,
-the three `glIs*Buffer` predicates in `v0.9.0`,
-each to stop a per-frame reader from tripping the stall detector.
+each addition somebody's per-frame reader being saved from the stall detector,
+so on an older release any of the reads above may still stall.
 `v0.8.7` added `glGetTexParameteri`,
 which is the counter-example worth holding onto:
 it closed a `NoSuchMethodError` without adding an inline path,
@@ -994,10 +919,6 @@ That is why a `v0.9.0rc1` jar is 184 KB smaller than a `v0.8.10` one,
 and why a decompile of `fr.jar` from `v0.9.0rc1` on has no `com/fs` tree at all:
 the overrides are no longer complete classes,
 and a frame in a trace that names a game class is running a mix of the game's methods and genir's.
-The two sets do not quite coincide.
-`graphics/L` and `combat/entities/Ship` were shadowed and have no patch,
-and `util/Tesselator` is patched where it was never shadowed,
-so behaviour on those three changed in `v0.9.0rc1` without a note.
 
 The donors are compiled against readable aliases -
 `com.fs.graphics.TextureHandler`,
