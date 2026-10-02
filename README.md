@@ -1077,6 +1077,11 @@ and a key present in only one costs a consumer a blank string rather than an err
 The Gradle build is gated separately in [ci-gradle.yml](.github/workflows/ci-gradle.yml),
 which needs Starsector binaries and so runs on the self-hosted `kmlib-runner`.
 
+A release's Chinese thread on Fossic is posted by hand,
+since the forum offers nothing a workflow could post to;
+what its board asks of a KM mod's thread is
+[docs/dev/fossic-thread.md](docs/dev/fossic-thread.md).
+
 **[read-mod-info](.github/actions/read-mod-info/action.yml)** reads the caller's metadata -
 `mod_info.base.json` where one is committed,
 `mod_info.json` otherwise -

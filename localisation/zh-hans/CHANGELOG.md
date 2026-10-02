@@ -26,7 +26,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ### 新增
 
-- **简体中文。** 发布版本附带第二个压缩包 `KMLib-<version>-zh-hans.zip`，其中兼容性通知、设置标签页以及启动器的 Mod 列表条目均为简体中文。它需要先将[中文本地化](https://github.com/TruthOriginem/Starsector-Localization-CN)覆盖到 `starsector-core` 上：游戏自身的字体不含中文字符，没有它，所有中文字符都会绘制为 `?`。日志级别的选项保留英文，因为 LunaLib 保存的是选项的标签，这样该设置在英文与中文压缩包之间可以沿用。
+- **简体中文。** 发布版本附带第二个压缩包 `KMLib-<version>-zh-hans.zip`，其中兼容性通知、设置标签页以及启动器的 Mod 列表条目均为简体中文。它需要先将[中文本地化](https://github.com/TruthOriginem/Starsector-Localization-CN)覆盖到 `starsector-core` 上：游戏自身的字体不含中文字符，没有它，所有中文字符都会绘制为 `?`。日志详细程度设置的选项保留英文，因为 LunaLib 保存的是选项的标签，这样该设置在英文与中文压缩包之间可以沿用。
 - **`ShownMapTab.isMapTabShowing()`**：星图是否显示在屏幕上，在无法遍历控件树时按未显示处理（失败即关闭）；这是覆盖在星图之上、必须随星图一同撤下的面板所用的读取。`CompatibilityNoticePanel` 通过它读取。
 - **`VerticalRadioSpec`**：自上而下堆叠的一列选项单元，其中一个亮起；超过两三个选项的选项组应呈现为这种形式，因为同样的选项排成一行时，文字会窄到难以区分。它不包含分段尺寸设置和尾随说明文字，二者都仅适用于行。
 - **`RadioSpec`**：`HorizontalRadio` 与 `VerticalRadio` 共同归属的密封接口，承载二者共同遵循的重选规则。处理任意单选组的读取器只需指明它，而不必分别指明每种排列方式。`HorizontalRadio` 其余部分不变，现有的每个调用点都可原样编译。

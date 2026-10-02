@@ -24,6 +24,7 @@ building on this one with the terms of its features.
   - [What a failed binding costs](#what-a-failed-binding-costs)
   - [Settings](#settings)
   - [The changelog](#the-changelog)
+- [Forum terms](#forum-terms)
 - [Adding a string](#adding-a-string)
 - [Translating the changelog](#translating-the-changelog)
 
@@ -198,6 +199,27 @@ A version heading is never translated; see [translating the changelog](#translat
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+
+## Forum terms
+
+The words of a KM mod's thread on [Fossic](https://www.fossic.org/), the Chinese Starsector forum,
+and of its release notes.
+How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thread.md).
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |
+| the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
+| Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
+| pre-release | 预发布 | Fossic's word for its pre-release board |
+| testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
+| repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
+| translation (a translated build) | 汉化 | a Fossic board |
+| dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
+| attachment | 附件 | a file uploaded to a forum post |
+| install mid-run | 中途安装 | 中途, partway through |
+| uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word, as KMU's strings write it; 步骤 for the steps |
+| changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
 
 ## Adding a string
 
