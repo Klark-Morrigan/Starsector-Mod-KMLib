@@ -25,7 +25,7 @@ final class MirroredBridgeShapes {
     static final String REPORTED_VERSION = "v9.9.9";
 
     private static final String CONTEXT_NAME = "com.genir.renderer.bridge.context.Context";
-    private static final String EXECUTOR_NAME = "com.genir.renderer.bridge.context.Executor";
+    private static final String EXECUTOR_NAME = "com.genir.renderer.bridge.context.executor.Executor";
     private static final String GL_COMMAND_NAME = "com.genir.renderer.bridge.interfaces.GLCommand";
     private static final String TRANSFORM_MANAGER_NAME = "com.genir.renderer.bridge.context.TransformManager";
 
@@ -92,11 +92,10 @@ final class MirroredBridgeShapes {
         public final ExecutorShape exec = null;
     }
 
-    /** {@code Executor} as mirrored: the one enqueue the adapter calls. */
-    public static final class ExecutorShape {
+    /** {@code Executor} as mirrored: the interface {@code Context.exec} is declared as, with the one enqueue the adapter calls. */
+    public interface ExecutorShape {
 
-        public void execute(GLCommandShape command) {
-        }
+        void execute(GLCommandShape command);
     }
 
     /** {@code GLCommand} as mirrored. */

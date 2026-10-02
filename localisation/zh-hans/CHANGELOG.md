@@ -114,6 +114,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`UnavailableModelviewMatrixReader`**：第三个 `ModelviewMatrixReader`，其每次读取都没有读数。这不是新的调用方契约：`CampaignMapTransform` 在缺少读数时本就会原地停留。
 - **`FastRenderingBridgeDiagnostic`**：桥接绑定失败后，六个镜像成员中哪些不再成立及其原因，并附上已安装 jar 报告的版本和构建时进行类型检查所针对的版本。在正常路径上从不运行。
 - **`ModelviewMatrixReaders` 中受守卫的绑定**：Fast Rendering 分支在 `LinkageError` 守卫下执行，一个 catch 即可同时覆盖类移动、成员移动和签名变更。不再能链接的绑定现在会降级为 `UnavailableModelviewMatrixReader` 并记录一次失败，而此前它会从最先触及它的渲染通道中抛出，终止该通道，并在堆栈跟踪中留下 KM 的类名，玩家随后便归咎于 KM。
+- **桥接适配器绑定到 Fast Rendering `v0.9.0`**：`Context.exec`（模型视图矩阵副本经由其入队的成员）的类型为该版本引入的 `bridge.context.executor.Executor` 接口，存根、诊断器和版本标记随之跟进。字段按其类型链接，因此同一个 jar 在 `v0.8.10` 及更早版本上无法链接：在那里绑定会降级并报告一次，与任何移动过的成员一样。
 - **`FastRendering.COMPATIBILITY_SUBJECT_KEY`** 和 **`COMPATIBILITY_SUBJECT_NAME`**：对该渲染器的失败绑定所记录的身份，以及报告为其显示的名称，公开出来以便每个绑定方都以相同方式书写。
 - **桥接层在调用处失效也会降级，而不仅限于链接处**：绑定完成链接后，若 Fast Rendering 入口点抛出异常，此前会以致命错误的形式到达玩家面前：在下一帧，从一个没有任何 KM 栈帧可归咎的调用栈中抛出；若由游戏线程调用，则直接从渲染通道本身抛出。现在两种情况都只损失地图的光标读数：本次游戏期间该读数锁存为不可用，不会以过时的矩阵代替报告，且无论地图保持打开多少帧，都只记录一次失败。这一点在 Fast Rendering `v0.8.9` 及之后最为重要，其外观层声明了 LWJGL 的全部接口，并拒绝其未实现的部分，因此这类故障能顺利链接，链接时的守卫永远察觉不到。其机制详见 [docs/dev/rendering-environment.md](../../docs/dev/rendering-environment.md)。
 - **每个基于已损坏绑定的 Mod 都会被告知其损失**：`ModelviewMatrixReaders.selectForActiveRenderer()` 按使用方分别解析，因此读取地图的第二个 Mod 会收到报告，而不是被交给第一个 Mod 的绑定。此前第一个调用方的选择会在本次游戏期间一直保持，之后每个 Mod 的玩家都不会被告知任何事情。

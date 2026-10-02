@@ -4,7 +4,7 @@ import com.genir.renderer.bridge.context.Context;
 
 /**
  * Compile-only mirror of Fast Rendering's {@code GLCommand}, a unit of work an
- * {@code com.genir.renderer.bridge.context.Executor} replays on the render thread. KMLib enqueues
+ * {@code com.genir.renderer.bridge.context.executor.Executor} replays on the render thread. KMLib enqueues
  * one to copy the CPU modelview at the map pass's own position in the command stream, without
  * stalling the pipeline. Never shipped and never loaded - see
  * {@code com.genir.renderer.bridge.context.ContextManager} in this source set for why these stubs

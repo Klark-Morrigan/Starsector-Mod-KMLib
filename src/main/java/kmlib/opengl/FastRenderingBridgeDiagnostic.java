@@ -13,8 +13,9 @@ import java.util.Objects;
  * which release that jar reports itself as: what turns a {@link LinkageError} out of the bridge
  * binding into a sentence worth sending to the renderer's author.
  *
- * <p>A binding that stops holding surfaces as a {@code NoClassDefFoundError} or a
- * {@code NoSuchMethodError} naming one member, thrown from whichever pass reached it first. That
+ * <p>A binding that stops holding surfaces as a {@code NoClassDefFoundError}, a
+ * {@code NoSuchMethodError} or - for a field that kept its name and changed its type - a
+ * {@code NoSuchFieldError} naming one member, thrown from whichever pass reached it first. That
  * names where the JVM gave up rather than what moved: the member named is the first one resolved,
  * and the rest go unchecked. This probes all six by name and full signature and names every one
  * that does not hold.
@@ -49,11 +50,12 @@ public record FastRenderingBridgeDiagnostic(
     List<BrokenMember> brokenMembers) {
 
     // The names probed, spelled out from the one prefix detection matches on. The context package
-    // holds everything the adapter reads; the command it enqueues is the one type outside it.
+    // holds what the adapter reads, the executor in a subpackage of it from Fast Rendering v0.9.0;
+    // the command it enqueues is the one type outside both.
     private static final String BRIDGE_CONTEXT_PACKAGE = FastRendering.BRIDGE_PACKAGE_PREFIX + "bridge.context.";
     private static final String CONTEXT_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "Context";
     private static final String CONTEXT_MANAGER_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "ContextManager";
-    private static final String EXECUTOR_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "Executor";
+    private static final String EXECUTOR_CLASS_NAME = BRIDGE_CONTEXT_PACKAGE + "executor.Executor";
 
     private static final String GL_COMMAND_CLASS_NAME =
         FastRendering.BRIDGE_PACKAGE_PREFIX + "bridge.interfaces.GLCommand";
