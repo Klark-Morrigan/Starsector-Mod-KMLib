@@ -14,12 +14,14 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * The shape of a Keep a Changelog file: its versions, each version's sections, and how many list items each
- * section holds at each nesting depth.
+ * The shape of a Keep a Changelog file: its versions, each version's sections, how many list items each
+ * section holds at each nesting depth, and the code spans each section holds.
  *
- * <p>The text is not read. A translation therefore has the same outline as the file it translates, until
- * one of them gains a point the other lacks. Version headings are the exception. They are kept as written,
- * because a release finds a version's notes by its heading and the index links to the heading's anchor.
+ * <p>The prose is not read. A translation therefore has the same outline as the file it translates, until
+ * one of them gains a point the other lacks. Two things are read as written, because a translation keeps
+ * them verbatim. Version headings: a release finds a version's notes by its heading, and the index links to
+ * the heading's anchor. Code spans: identifiers are never translated, so a point rewritten in one file and
+ * not the other usually changes them.
  *
  * @param preamble everything before the first version: the title, the introduction and the index
  * @param versions every version, in file order
@@ -27,6 +29,10 @@ import java.util.regex.Pattern;
 public record ChangelogOutline(
     BlockOutline preamble,
     List<BlockOutline> versions) {
+
+    // A run of backticks, then the shortest text up to a run of the same length. The lookarounds keep a
+    // longer run from closing a shorter one, as CommonMark has it.
+    private static final Pattern CODE_SPAN = Pattern.compile("(`+)(?!`)(.+?)(?<!`)\\1(?!`)");
 
     // Lines inside a code fence are neither headings nor list items.
     private static final Pattern FENCE = Pattern.compile("[ \\t]*(```|~~~).*");
@@ -57,7 +63,8 @@ public record ChangelogOutline(
 
     /**
      * How this outline differs from a reference outline. Versions are compared first, by heading. Then the
-     * preamble and each version both files hold are compared section by section.
+     * preamble and each version both files hold are compared section by section: list items by depth, and
+     * code spans.
      *
      * @param referenceOutline the outline this one should match
      * @param referenceTag     how a phrase names the reference
@@ -125,6 +132,8 @@ public record ChangelogOutline(
                 }
                 continue;
             }
+            block.collectCodeSpans(line);
+
             var listItem = LIST_ITEM.matcher(line);
 
             if (listItem.matches()) {
@@ -263,12 +272,20 @@ public record ChangelogOutline(
                     .toList());
         }
 
+        void collectCodeSpans(String line) {
+            resolveOpenSection().collectCodeSpans(line);
+        }
+
         void countItem(int depth) {
-            sections.get(sections.size() - 1).countItem(depth);
+            resolveOpenSection().countItem(depth);
         }
 
         void openSection(int headingLevel, String headingText) {
             sections.add(new SectionBuilder(headingLevel, headingText));
+        }
+
+        private SectionBuilder resolveOpenSection() {
+            return sections.get(sections.size() - 1);
         }
     }
 
@@ -316,14 +333,39 @@ public record ChangelogOutline(
                 var section = sectionOutlines.get(index);
                 var referenceSection = referenceBlock.sectionOutlines().get(index);
 
+                var sectionPlace = blockName + " " + section.describePlace();
+                var referencePlace = referenceTag + " " + referenceSection.describePlace();
+
                 if (!section.itemCountsByDepth().equals(referenceSection.itemCountsByDepth())) {
 
-                    differences.add(blockName + " " + section.describePlace() + " holds "
-                        + section.itemCountsByDepth() + " list items by depth, where " + referenceTag + " "
-                        + referenceSection.describePlace() + " holds " + referenceSection.itemCountsByDepth());
+                    differences.add(sectionPlace + " holds " + section.itemCountsByDepth()
+                        + " list items by depth, where " + referencePlace + " holds "
+                        + referenceSection.itemCountsByDepth());
+                }
+                var addedCodeSpans = subtractCodeSpans(section.codeSpans(), referenceSection.codeSpans());
+                var missingCodeSpans = subtractCodeSpans(referenceSection.codeSpans(), section.codeSpans());
+
+                if (!addedCodeSpans.isEmpty()) {
+                    differences.add(sectionPlace + " holds code spans " + addedCodeSpans + " that "
+                        + referencePlace + " does not");
+                }
+                if (!missingCodeSpans.isEmpty()) {
+                    differences.add(sectionPlace + " lacks code spans " + missingCodeSpans + " that "
+                        + referencePlace + " holds");
                 }
             }
             return differences;
+        }
+
+        // What the first sorted list holds that the second does not, counting repeats: a span written twice
+        // in one file and once in the other differs.
+        private static List<String> subtractCodeSpans(List<String> codeSpans, List<String> subtractedCodeSpans) {
+
+            var remainingCodeSpans = new ArrayList<>(codeSpans);
+
+            subtractedCodeSpans.forEach(remainingCodeSpans::remove);
+
+            return remainingCodeSpans;
         }
 
         // The lead section has no heading, so it is left out.
@@ -338,6 +380,7 @@ public record ChangelogOutline(
 
     private static final class SectionBuilder {
 
+        private final List<String> codeSpans = new ArrayList<>();
         private final int headingLevel;
         private final String headingText;
         private final List<Integer> itemCountsByDepth = new ArrayList<>();
@@ -349,7 +392,17 @@ public record ChangelogOutline(
         }
 
         SectionOutline buildSection() {
-            return new SectionOutline(headingLevel, headingText, itemCountsByDepth);
+            return new SectionOutline(headingLevel, headingText, itemCountsByDepth, codeSpans);
+        }
+
+        // Stripped as CommonMark strips a span's padding, so `` `x` `` and `x` read alike.
+        void collectCodeSpans(String line) {
+
+            var codeSpan = CODE_SPAN.matcher(line);
+
+            while (codeSpan.find()) {
+                codeSpans.add(codeSpan.group(2).strip());
+            }
         }
 
         // The first item at a depth opens that depth's count.
@@ -363,29 +416,36 @@ public record ChangelogOutline(
     }
 
     /**
-     * One section: its heading and how many list items it holds at each depth of nesting.
+     * One section: its heading, how many list items it holds at each depth of nesting, and its code spans.
      *
      * @param headingLevel      how many {@code #} open its heading; zero for the lead section, which has none
      * @param headingText       its heading's text as written, empty for the lead section
      * @param itemCountsByDepth how many items stand at each depth, the outermost first, as deep as the
      *                          deepest item
+     * @param codeSpans         the text of every code span below the heading, sorted, repeats kept
      */
     public record SectionOutline(
         int headingLevel,
         String headingText,
-        List<Integer> itemCountsByDepth) {
+        List<Integer> itemCountsByDepth,
+        List<String> codeSpans) {
 
         /**
-         * Holds the counts unmodifiable, however they were built.
+         * Holds the lists unmodifiable, however they were built, and the code spans sorted: a translation
+         * may move a span within its point, or reorder the points of a section.
          *
          * @param headingLevel      see the record
          * @param headingText       see the record
          * @param itemCountsByDepth see the record
+         * @param codeSpans         see the record
          */
         public SectionOutline {
 
             Objects.requireNonNull(headingText, "headingText");
             itemCountsByDepth = List.copyOf(itemCountsByDepth);
+            codeSpans = codeSpans.stream()
+                .sorted()
+                .toList();
         }
 
         // Names the section by its heading as written in its own file, which is what a reader searches for.

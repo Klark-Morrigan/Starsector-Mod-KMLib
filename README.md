@@ -1735,7 +1735,8 @@ each through the reading a mod's shipped copy of that file gets,
 the `mod_info.base.json` the fragments merge over,
 and the mod's changelog.
 `ChangelogOutline` reads a changelog as its outline only:
-its versions, their sections, and how many list items each section holds at each depth.
+its versions, their sections, how many list items each section holds at each depth,
+and each section's code spans.
 Any key the manifest or a fragment does not know is refused,
 so a misspelt field fails the read rather than reading as an absent one.
 `LocaleParity` holds every locale to the default over those readings.

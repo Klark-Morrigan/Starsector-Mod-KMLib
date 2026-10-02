@@ -20,7 +20,8 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 /**
  * Pins how a Keep a Changelog file is read as its shape, and how two shapes are told apart: by version
- * heading as written, by heading level in order, and by list items at each depth, never by wording.
+ * heading as written, by heading level in order, by list items at each depth and by code spans, never by
+ * prose.
  */
 final class ChangelogOutlineTests {
 
@@ -39,18 +40,19 @@ final class ChangelogOutlineTests {
         - **Layers**:
           - Political.
           - Diplomatic.
-        - Sidebar.
+        - Sidebar, `SidebarPanel` and `SidebarStyles`.
 
         ### Fixed
 
-        - Tooltip.
+        - Tooltip, `SystemTooltip`.
 
         ## [0.1.0] - 2026-09-14
 
         - First release.
         """;
 
-    // The same shape in other words, as a translation is meant to read.
+    // The same shape in other words, as a translation is meant to read. The code spans are the same, one point
+    // naming them in another order.
     private static final String TRANSLATED_CHANGELOG = """
         # Journal
 
@@ -66,11 +68,11 @@ final class ChangelogOutlineTests {
         - **Calques** :
           - Politique.
           - Diplomatique.
-        - Barre laterale.
+        - Barre laterale, `SidebarStyles` et `SidebarPanel`.
 
         ### Corrections
 
-        - Infobulle.
+        - Infobulle, `SystemTooltip`.
 
         ## [0.1.0] - 2026-09-14
 
@@ -164,7 +166,7 @@ final class ChangelogOutlineTests {
         @Test
         void aMissingSectionIsDescribedByHeadingLevels() {
 
-            assertThat(describeTranslationReplacing("### Corrections\n\n- Infobulle.\n", ""))
+            assertThat(describeTranslationReplacing("### Corrections\n\n- Infobulle, `SystemTooltip`.\n", ""))
                 .containsExactly("## [Unreleased] holds headings [###], where en holds [###, ###]");
         }
 
@@ -181,6 +183,25 @@ final class ChangelogOutlineTests {
             assertThat(describeTranslationReplacing("  - Diplomatique.\n", ""))
                 .containsExactly("## [Unreleased] under ### Ajouts holds [2, 1] list items by depth, where en "
                     + "under ### Added holds [2, 2]");
+        }
+
+        @Test
+        void aCodeSpanChangedInOneFileIsDescribedBothWays() {
+
+            assertThat(describeTranslationReplacing("`SystemTooltip`", "`SystemHoverBox`"))
+                .containsExactly(
+                    "## [Unreleased] under ### Corrections holds code spans [SystemHoverBox] that en under "
+                        + "### Fixed does not",
+                    "## [Unreleased] under ### Corrections lacks code spans [SystemTooltip] that en under "
+                        + "### Fixed holds");
+        }
+
+        @Test
+        void aCodeSpanWrittenTwiceWhereTheReferenceWritesItOnceIsDescribed() {
+
+            assertThat(describeTranslationReplacing("et `SidebarPanel`", "et `SidebarPanel`, `SidebarPanel`"))
+                .containsExactly("## [Unreleased] under ### Ajouts holds code spans [SidebarPanel] that en under "
+                    + "### Added does not");
         }
 
         @Test
@@ -239,6 +260,27 @@ final class ChangelogOutlineTests {
             assertThat(parseText(ENGLISH_CHANGELOG).versions().get(0).sectionOutlines())
                 .extracting(SectionOutline::itemCountsByDepth)
                 .containsExactly(List.of(), List.of(2, 2), List.of(1));
+        }
+
+        @Test
+        void codeSpansAreHeldPerSectionSorted() {
+
+            assertThat(parseText(ENGLISH_CHANGELOG).versions().get(0).sectionOutlines())
+                .extracting(SectionOutline::codeSpans)
+                .containsExactly(List.of(), List.of("SidebarPanel", "SidebarStyles"), List.of("SystemTooltip"));
+        }
+
+        @Test
+        void aCodeSpanOpenedByTwoBackticksHoldsASingleOneAndLosesItsPadding() {
+
+            var outline = parseText("""
+                ## [Unreleased]
+
+                - The `` `ID` `` key and ``a`b``.
+                """);
+
+            assertThat(outline.versions().get(0).sectionOutlines().get(0).codeSpans())
+                .containsExactly("`ID`", "a`b");
         }
 
         @Test
@@ -325,7 +367,7 @@ final class ChangelogOutlineTests {
         }
 
         @Test
-        void fencedLinesAreNeitherHeadingsNorItems() {
+        void fencedLinesAreNeitherHeadingsNorItemsNorCodeSpans() {
 
             var outline = parseText("""
                 ## [Unreleased]
@@ -333,7 +375,7 @@ final class ChangelogOutlineTests {
                 ```markdown
                 ## [0.0.1]
                 ### Added
-                - Not a point.
+                - Not a point, `not a span`.
                 ```
 
                 - A point.
@@ -343,8 +385,10 @@ final class ChangelogOutlineTests {
                 .singleElement()
                 .satisfies(version -> assertThat(version.sectionOutlines())
                     .singleElement()
-                    .extracting(SectionOutline::itemCountsByDepth)
-                    .isEqualTo(List.of(1)));
+                    .satisfies(section -> {
+                        assertThat(section.itemCountsByDepth()).isEqualTo(List.of(1));
+                        assertThat(section.codeSpans()).isEmpty();
+                    }));
         }
     }
 
