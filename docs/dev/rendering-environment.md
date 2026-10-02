@@ -42,29 +42,15 @@ so a matching hash means the recorded artifact and the running one are the same 
 
 Check both jars,
 and check `fr.agent.jar` by hash only.
-Its size sat at 15558 bytes across `v0.8.5rc1`,
-`v0.8.6`,
-`v0.8.7` and `v0.8.8` alike
-(15561 on `v0.8.7rc1`)
-while its contents changed in every one of them,
-so a size *match* there is no evidence.
-`v0.8.9` moved it to 14841,
-having merged two transformation tables into one class,
-and `v0.8.10rc1` moved it again to 14844 -
-for three characters of release string and nothing else,
-every other class in that jar being byte-identical.
-`v0.9.0rc1` then grew it tenfold,
-to 152638 bytes on `v0.9.0`,
-by embedding an ASM jar and the bytecode patcher that replaced class shadowing (below).
-So neither direction carries information:
-a match can hide a rewrite,
-a move can be a banner,
-and the one large jump says only which side of `v0.9.0rc1` a jar is on.
+Its size held at 15558 bytes across four releases whose contents all differed,
+moved by three bytes for a release string in `v0.8.10rc1`,
+and grew tenfold in `v0.9.0rc1` when it took on an ASM jar and the bytecode patcher (below).
+So a size match can hide a rewrite and a size move can be a banner.
 That jar is where the bridge package name,
 the rewrite tables and the game-class patches live,
 which is the half of the patch KM's detection depends on.
 
-Eighteen claims on this page are release-specific rather than true of every build still in the field,
+Fourteen claims on this page are release-specific rather than true of every build still in the field,
 and each is flagged where it appears:
 
 - **Per-mod exclusion exists**,
@@ -79,8 +65,8 @@ and each is flagged where it appears:
   Through `v0.8.7rc1` it was armed on the first combat frame instead,
   which made a stalling read on the campaign map survive any session that never entered a battle.
   This is the delta on this page with the most teeth for KM code.
-- **`GL_CURRENT_PROGRAM` is answered from `AttribTracker`** on `v0.8.3` and earlier and from `v0.8.5rc1`,
-  and from `ShaderTracker` on `v0.8.4` alone.
+  From `v0.9.0rc1` the arming call sits in `overrides/loading/ResourceLoaderState` rather than `overrides/loading/ResourceLoader`,
+  at the same moment.
 - **`glIsTexture` is an inline read**,
   from `v0.8.4`.
   On `v0.8.3` and earlier it stalls.
@@ -120,52 +106,32 @@ and each is flagged where it appears:
 - **Game classes are patched by merging methods into them**,
   from `v0.9.0rc1`.
   Through `v0.8.10` `fr.jar` shadowed whole copies of 21 game classes instead.
-- **Stall detection is armed from `overrides/loading/ResourceLoaderState`**,
-  from `v0.9.0rc1`,
-  at the same moment as before;
-  through `v0.8.10` the method sat in `overrides/loading/ResourceLoader`.
 - **`GL_SCISSOR_BOX` is an inline read**,
   from `v0.9.0rc2`.
   On `v0.9.0rc1` and every earlier release it stalls.
-- **`GL_ELEMENT_ARRAY_BUFFER_BINDING` is an inline read**,
-  from `v0.9.0rc2`;
-  and `GL_ARRAY_BUFFER_BINDING` is answered from `ClientAttribTracker` from `v0.8.10rc3`,
-  having come from `AttribTracker` before,
-  inline either way.
 - **`glIsBuffer`, `glIsFramebuffer` and `glIsRenderbuffer` are inline reads**,
   from `v0.9.0`.
   Earlier releases stall on all three.
 - **A facade throw names the method it refuses**,
   from `v0.9.0`.
   Through `v0.9.0rc2` the `GL11` to `GL20` facades threw a bare `UnsupportedOperationException`,
-  while `GL30` to `GL44` carried the message from `v0.8.9`.
-- **`glGetError` is rewritten to a never-stalling `glDrainErrors`** for two FarsightDrive renderer classes,
-  from `v0.8.10rc3`.
-  Every other caller's `glGetError` stalls,
-  on every release.
+  so a bare one in a trace dates it.
 
 Of the six members KMLib binds to,
-five have neither moved nor changed signature through `v0.9.0`,
-and one has:
+five have neither moved nor changed signature through `v0.9.0`.
+The sixth,
 `Context.exec`,
-whose type changed in `v0.9.0` from the class `bridge.context.Executor`
-to the interface `bridge.context.executor.Executor`,
-implemented by `AsyncExecutor`
-(`SyncExecutor` and `SyncBatchExecutor` sit beside it and nothing constructs them).
-`execute(GLCommand)` kept its name and signature across that move,
-so the enqueue KMLib makes is the same call;
-what breaks is the field read before it,
-which links by the field's type and so holds on one side of `v0.9.0` only.
+changed type in `v0.9.0` from the class `bridge.context.Executor`
+to the interface `bridge.context.executor.Executor`
+(implemented by `AsyncExecutor`; `SyncExecutor` and `SyncBatchExecutor` sit beside it unused).
+`execute(GLCommand)` is unchanged on it,
+so what breaks is the field read,
+which links by the field's type and holds on one side of `v0.9.0` only.
 KMLib binds to the `v0.9.0` shape.
-`GLCommand`,
-`GLGetter` and `TransformManager` are byte-identical from `v0.8.5rc1` to `v0.9.0`,
-and `ContextManager` from `v0.8.9`,
-when its create-and-destroy pair was renamed without touching `getThreadContext`;
-`Context.transformManager` kept its name and type throughout
-while the code around it turned over -
-`Context` was reworked in `v0.8.9` and again in `v0.9.0` without touching it.
-`VertexInterceptor` and `MatrixStack` were both rewritten in this span without touching the two facts KM reads off them
-(the CPU-modelview multiply and the row-major field order).
+The classes around the six have been rewritten repeatedly -
+`Context` in `v0.8.9` and `v0.9.0`,
+`VertexInterceptor` and `MatrixStack` more than once -
+without touching the facts KM reads off them.
 
 The table that decides the bridge package name is the exception,
 and it broke its own run in `v0.8.9`:
@@ -216,29 +182,24 @@ and a KMLib build bound against `v0.8.5rc1` reports `Fast Rendering: v0.8.4`.
 
 The third is the display string on the launcher and the main menu,
 `"Starsector 0.98a-RC8 FR9.0"`.
-From `v0.9.0rc1` it is made by rewriting one constant inside the game's own version class as it loads:
-the agent replaces the literal `"Starsector 0.98a-RC8"` with that literal plus the release tag,
+From `v0.9.0rc1` the agent makes it by rewriting one constant inside the game's own version class as it loads,
+replacing the literal `"Starsector 0.98a-RC8"` with that literal plus the release tag,
 its leading `v0.` swapped for `FR`
-(`starsector-core/fr.agent/com/genir/renderer/agent/ConstantFileTransformer.java:51-53`).
-Through `v0.8.10` the same string sat in a shadowed copy of that class inside `fr.jar`.
-Two things follow from the rewrite.
-The tag is derived from the version constant rather than typed beside it,
+(`starsector-core/fr.agent/com/genir/renderer/agent/ConstantFileTransformer.java:51-53`);
+through `v0.8.10` the string sat in a shadowed copy of that class inside `fr.jar`.
+Two things follow.
+The tag is derived from the version constant,
 so the two cannot disagree the way they did on `v0.8.5rc1`;
 and the match is on the exact game version literal,
-so on any game build other than `0.98a-RC8` the banner is simply absent,
-and its absence says nothing about whether the patch is running.
-Its shape is `FR` followed by the release tag with its leading `v0.` dropped,
-patch letters and release-candidate suffixes included,
-so `v0.7.1` reads `FR7.1`,
-`v0.7.1b` reads `FR7.1b` and `v0.8.7rc1` reads `FR8.7rc1`.
-What follows the dot is a counter rather than a decimal,
-which started to matter from `v0.8.10rc1`:
-`FR8.10rc1` is a later release than `FR8.9`,
-and is not `FR8.1`.
-It tracked the release exactly except at `v0.8.5rc1`,
-which reads `FR8.4`.
+so on any other game build the banner is simply absent,
+which says nothing about whether the patch is running.
+The shape keeps patch letters and release-candidate suffixes -
+`FR7.1b`,
+`FR8.7rc1` -
+and what follows the dot is a counter,
+so `FR8.10` is later than `FR8.9` and is not `FR8.1`.
 It is the only identifier readable without opening a jar and so the one to ask a player for,
-with that single ambiguity:
+with one ambiguity:
 `FR8.4` is either `v0.8.4` or `v0.8.5rc1`.
 
 None of the three proves the bytes,
@@ -259,19 +220,13 @@ sha256sum "<starsector>/starsector-core/fr.jar"
 Sizes still separate neighbouring releases
 (`v0.7.6` is 632557 bytes, `v0.7.7` is 632640, `v0.8.0` is 617425, `v0.8.1` is 631624, `v0.8.2` is 635887, `v0.8.3` is 634576, `v0.8.4rc1` is 632459, `v0.8.4` is 639820, `v0.8.5rc1` is 642412, `v0.8.6` is 660831, `v0.8.7rc1` is 666557, `v0.8.7` is 668949, `v0.8.8` is 669864, `v0.8.9` is 716583, `v0.8.10rc1` is 716402, `v0.8.10rc2` is 716913, `v0.8.10rc3` is 719220, `v0.8.10` is 718990, `v0.9.0rc1` is 534841, `v0.9.0rc2` is 539066, `v0.9.0` is 562976),
 so a size mismatch is a fast first check before hashing.
-Treat only the mismatch as informative:
+Only the mismatch is informative:
 `v0.7.6` and `v0.7.7` are 83 bytes apart,
-close enough that a size *match* is weak evidence and hashing is what settles it.
-The figure does not climb,
-either:
-`v0.8.10rc1` is 181 bytes *smaller* than `v0.8.9`,
-and `v0.9.0rc1` is 184 KB smaller than `v0.8.10`,
-the shadowed game classes having left the jar,
-so a size cannot be read as a position in the sequence.
-Release candidates are published as ordinary releases and get installed as such,
-so `rc` builds are part of the set an install can be -
-and on `v0.8.5rc1` the size is the *only* cheap discriminator against `v0.8.4`,
-since all three self-reports agree with it.
+and the figure does not climb -
+`v0.9.0rc1` is 184 KB smaller than `v0.8.10`,
+the shadowed game classes having left the jar.
+Release candidates are installed like any other release,
+and on `v0.8.5rc1` the size is the only cheap discriminator against `v0.8.4`.
 
 Names below are release-specific,
 and a rename is not announced.
@@ -303,62 +258,14 @@ the compile-only stubs -
 is therefore a fact about one range of releases,
 and the hash is what says which.
 
-The bridge's *members* have been stabler than its files.
-Nothing KMLib names moved or changed signature from `v0.7.4` to `v0.9.0rc2`,
-and one thing did at `v0.9.0` (above),
-while the code around them turns over steadily:
-`context/BufferPool` was rewritten in `v0.8.0`,
-`commands/GL11`'s `glGetTexImage` gained a compressed-texture path in `v0.8.3`,
-and `v0.8.4` repacked `context/VertexInterceptor`'s vertex arrays,
-added `stall/TextureTracker`,
-moved program tracking from `AttribTracker` to `ShaderTracker`,
-and deleted `commands/ARBVertexBufferObject` and `stall/BufferManager`.
-`v0.8.5rc1` moved texture loading off the startup path into a new `context/TextureManager` and a new `overrides/loading/textures/` package,
-deleting `overrides/loading/DDSCache` and relocating `TextureBuilder`,
-`TextureData` and `TextureLoader` into it;
-deleted `commands/DisplayUtil` and stopped redirecting `org/lwjgl/util/Display` to it;
-made most of `commands/Display` call real LWJGL inline instead of deferring;
-and re-signatured `context/Context`'s constructor from `Context(boolean)` to `Context(Context parent)`,
-so auxiliary contexts now share the main context's texture and shader trackers.
-`v0.8.6` added `async/AsyncException`,
-deleted `overrides/PathUtil`,
-and rewrote `stall/TextureTracker` to record each texture name's bound *target*
-rather than a plain "is bound" flag.
-`v0.8.7rc1` added `interfaces/DebugString` and changed the frame's argument packing (below).
-`v0.8.7` added `overrides/loading/textures/Blacklist` and moved the stall detector's arming point out of `overrides/CombatEngine` (below).
-`v0.8.9` added the whole `bridge/opengl` facade package,
-re-signatured `context/Context`'s constructor again -
-`Context(Context parent)` became a no-arg constructor for the main context and `Context(Context, SharedDrawable)` for auxiliary ones,
-with `shutdown()` renamed `destroy()` and a new `restoreCurrent()` -
-renamed `ContextManager.destroyMainContext` / `destroyAuxContext` to `removeMainContext` / `removeAuxContext`,
-rewrote `Executor`'s exception plumbing around a nested `ExceptionHandler` and an `isStateCorrupted` flag,
-moved `commands/GL11`'s compressed-texture read into a new `context/TextureReadManager` that owns its own FBO and shared drawable,
-and brought back a `stall/BufferManager` -
-the name `v0.8.4` deleted,
-now holding an unrelated mapped-buffer shim (below).
-`v0.8.10rc1` reworked `context/TextureManager`:
-its methods are `synchronized`,
-`manageTexture` gained a `Context` and a target parameter,
-its `LOADED` state became `DO_NOT_MANAGE`,
-and a new `assetLoadingFinished` gate makes every texture created after asset loading upload eagerly
-rather than lazily -
-which is the release's VRAM Optimizer portrait fix.
-The same release made mipmap generation unconditional in
-`overrides/loading/textures/TextureBuilder` and `DDSIntegration`,
-where through `v0.8.9` only textures of 1024x1024 or smaller got a mipmapping minification filter.
-`v0.8.10rc2` fixed a `TextureManager` null dereference and the shader-parameter asserts in `GL20`;
-`v0.8.10rc3` moved `ClientAttribTracker` into `stall/` beside a new `ClientAttribState`,
-added the `glDrainErrors` shim (below) and read `windowLocationX/Y` from the game's settings;
-`v0.8.10` is `v0.8.10rc3` less two debug log lines in `ShaderTracker`,
-under a note reading "no changes".
-`v0.9.0rc1` removed every `com/fs/*` and `sound/*` class from `fr.jar`,
-replaced `overrides/loading/ResourceLoader` and `ScriptLoader` with method patches merged into the game's own classes,
-and renamed `overrides/Tesselation` to `Tesselator`;
-`v0.9.0rc2` renamed `AttribState.Viewport` to `AttribState.Box` and used it for the scissor box too;
-`v0.9.0` split `context/Executor` into the `context/executor/` package
-and added `stall/BufferTracker`.
-
-So byte-identity of the tree is the wrong thing to check on an upgrade;
+The bridge's *members* have been stabler than its files:
+the code around the six KMLib names has been rewritten in nearly every release -
+trackers added and moved,
+`Context`'s constructor re-signatured twice,
+texture loading moved off the startup path,
+the shadowed game classes replaced by patches -
+and only the `v0.9.0` move of `Executor` reached one of them.
+Byte-identity of the tree is therefore the wrong thing to check on an upgrade;
 the six members KMLib mirrors are -
 `ContextManager.getThreadContext`,
 `Context.transformManager`,
@@ -523,67 +430,28 @@ and a rewrite of obfuscated names that collide with Java keywords -
 which is why a decompile shows types like `com/fs/starfarer/util/return`
 (`.../agent/ConstantFileTransformer.java:22`, `.../agent/IllegalTransformations.java:12-23`).
 
-Two things about the game's share of this are `v0.8.9` changes.
-Through `v0.8.8` it was a *narrower* GL rewrite -
+Through `v0.8.8` the game got a narrower rewrite than mods -
 `GL11`,
 `GL14`,
 `Display` and `GLContext` only -
-so the game reached real LWJGL for everything else while mods did not.
-It now gets the same list as mods.
-And through `v0.8.8` it also renamed the display-list calls
-`glGenLists` / `glNewList` / `glEndList` / `glCallList` to `*_restricted` variants,
-which is how the game was steered off display lists;
-`v0.8.9` dropped that rename,
-implemented all four under their real names in `bridge.commands`,
-and exposed them through the facade,
-so display lists are now available to the game and to mods alike.
-Through `v0.8.4` the game's table also redirected `org/lwjgl/util/Display` to a `commands/DisplayUtil` shim;
-`v0.8.5rc1` dropped both.
+and had its display-list calls renamed to `*_restricted` variants to steer it off them;
+`v0.8.9` gave it the full list and implemented display lists for game and mods alike.
 
-This applies to KM jars,
-and no KM code can turn it off:
-a KM jar compiles against real LWJGL and links fine,
-then binds to the bridge at runtime,
-so a bridge gap surfaces from inside a render pass rather than as a build failure -
-as an `UnsupportedOperationException` from `v0.8.9`,
-and as a `NoSuchMethodError` through `v0.8.8`.
-
-There is no opt-out a mod can *request* -
-no annotation,
-no manifest entry,
-no setting.
-What `v0.8.5rc1` introduced is an opt-out genir grants:
-classes whose binary name starts with `DeCell.VOpt.Commons.Rendering.` get no transformer at all
-(`.../agent/ConstantFileTransformer.java:69-71`).
-Earlier releases have no such branch,
-and that one has survived every rewrite of the transformer since.
-`v0.8.5rc1` also had `overrides/loading/ResourceLoader` skip mods whose plugin class starts with `DeCell.VOpt`;
-that half is gone from `v0.8.6`,
-so the exclusion is now purely a bytecode-rewriting one and the mod's plugin loads like any other.
-
-`v0.8.10rc3` added a second named case,
-pointing the other way:
-two FarsightDrive renderer classes get the mod table with `glGetError` renamed to `glDrainErrors`,
+There is no opt-out a mod can *request*.
+What `v0.8.5rc1` introduced is one genir grants by name:
+classes under `DeCell.VOpt.Commons.Rendering.` (VRAM Optimizer) get no transformer at all
+(`.../agent/ConstantFileTransformer.java:69-71`),
+and `v0.8.10rc3` added a second named case pointing the other way,
+two FarsightDrive renderer classes whose `glGetError` is renamed to `glDrainErrors`,
 a bridge-only entry point that returns `0` at once and drains the real error queue on the render thread
-(`.../agent/ConstantFileTransformer.java:72-74`, `.../bridge/commands/GL11.java:1507-1519`).
-That is a stall fix for one mod's per-frame error poll,
-and it means a class on that list never sees a GL error;
-every other caller's `glGetError` still stalls (below).
+(`:72-74`, `.../bridge/commands/GL11.java:1507-1519`),
+so a class on that list never sees a GL error.
 
-VRAM Optimizer is the mod on the far side of that exclusion,
-and Fast Rendering reaches back into it by name rather than the other way round:
-`DDSIntegration` looks up `DeCell.VOpt.Commons.Rendering.TextureLoading.UploadDDSTexture` and falls back to an older `...Rendering.Textures` entry point when that is absent
-(`.../overrides/loading/textures/DDSIntegration.java:248`, `:255`).
-Both are reflective lookups through the script classloader,
-so neither mod is a build-time dependency of the other,
-and a missing method is logged rather than fatal.
-
-That matters to KM code less for the one mod named than for the shape it establishes,
-because an excluded jar is a *mixed* state this page's model does not otherwise admit:
-its GL references stay pointed at real LWJGL while the game around it runs on the bridge.
+The exclusion matters to KM code for the shape it establishes:
+an excluded jar is a *mixed* state,
+its GL references pointed at real LWJGL while the game around it runs on the bridge.
 Detection stays correct through it -
-the check below asks what *this* jar's `GL11` resolved to,
-which is exactly the question an exclusion changes the answer to -
+the check below asks what *this* jar's `GL11` resolved to -
 but "Fast Rendering is installed" and "my calls go through Fast Rendering" stop being the same fact,
 and only the second one is worth acting on.
 
@@ -733,11 +601,9 @@ and `Executor.execute` only records it
 The command that actually mutates `TransformManager` runs later,
 when the frame is replayed on a dedicated single-thread executor named `FR-Render`
 (`.../bridge/context/executor/AsyncExecutor.java:32`, `:127-158`, `:180-193`).
-`Executor` is an interface from `v0.9.0` and `AsyncExecutor` the one implementation the context constructs
-(`.../bridge/context/Context.java:51`);
-through `v0.9.0rc2` it was a single class,
-`.../bridge/context/Executor.java`,
-with the same members at other line numbers.
+`Executor` is an interface from `v0.9.0`,
+`AsyncExecutor` the implementation the context constructs
+(`.../bridge/context/Context.java:51`).
 The same holds for `glPushMatrix`,
 `glPopMatrix`,
 `glLoadIdentity`,
@@ -835,21 +701,13 @@ and costs zero stalls.
 
 This costs KMLib three mirrored members in its compile-only bridge stubs
 (`Context.exec`, `Executor.execute`, `GLCommand`) beyond the modelview read itself -
-see `build.gradle` and `src/bridgestubs/java`.
-Two of the three have moved.
+see `build.gradle` and `src/bridgestubs/java`,
+and [Versions](#versions-this-was-verified-against) for the `v0.9.0` move of `Executor` that the stubs follow.
 `GLCommand` lives in `com.genir.renderer.bridge.interfaces` from `v0.7.4`,
-having been `com.genir.renderer.bridge.context.commands` before,
 and its method is `run(Context, float[], int)` -
 the float array carries the packed arguments of the `execute` overloads that take them
 (`.../bridge/context/executor/AsyncExecutor.java:52-84`),
 and a command that reads nothing from it ignores both parameters.
-`Executor` is `com.genir.renderer.bridge.context.executor.Executor` from `v0.9.0`,
-an interface,
-having been the class `com.genir.renderer.bridge.context.Executor` before;
-`execute(GLCommand)` is unchanged on it,
-but `Context.exec` is declared as the type,
-and a field links by its type,
-so the stubs mirror the `v0.9.0` shape and a KMLib jar links on `v0.9.0` and later.
 
 Ignoring them is also what makes the stub immune to the one change in this area.
 How those arguments are packed was re-laid-out in `v0.8.7rc1`:
@@ -872,27 +730,18 @@ Since `swapFrames` runs every frame,
 "fire and forget" means the exception is deferred,
 not swallowed -
 so the copy command has to be total.
-KMLib's is total by construction rather than by being short enough to look safe:
-the command body is a thin adapter that hands the matrix read over to
+KMLib's is total by construction:
+the command body hands the matrix read to
 [`FastRenderingBridgeReading`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingBridgeReading.java),
-which takes the reading and copies it inside one catch.
-The reading is taken *inside* that catch rather than before it,
-`Context.transformManager` and `getCPUModelView` being as able to stop holding as the copy is.
-Anything caught there costs the reading alone:
-the binding latches unavailable for the session,
-every later read answers no matrix,
-and the mod that took the binding is told once,
+which takes it and copies it inside one catch,
+the reading included,
+since `Context.transformManager` and `getCPUModelView` can stop holding as readily as the copy can.
+Anything caught there latches the binding unavailable for the session and reports once,
 through the [compatibility channel](../../src/main/java/kmlib/starsector/compatibility/README.md).
-
-The enqueue side is guarded separately, on the game thread,
+The enqueue side is guarded the same way on the game thread,
 because `getThreadContext` and `execute` are bridge calls too
-and from `v0.8.9` a declared entry point can refuse the call rather than fail to link
-(see [It rewrites GL class references in every jar](#it-rewrites-gl-class-references-in-every-jar)).
-That guard and the command's own share the one latch,
-so a binding that broke on either thread is broken on both.
-[`FastRenderingModelviewMatrixReader`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingModelviewMatrixReader.java)
-holds it, and every bridge type it depends on sits behind a port -
-which is what makes a refusal assertable off a machine that has no `fr.jar` to refuse anything.
+and from `v0.8.9` a declared entry point can refuse the call rather than fail to link;
+both guards share one latch.
 
 ### What the GL11 bridge can and cannot read back
 
@@ -922,9 +771,6 @@ and the list above is still the whole of what does.
 
 There is **no working buffer-taking `glGetFloat`**,
 so `GL_MODELVIEW_MATRIX` and `GL_PROJECTION_MATRIX` cannot be read through the bridge in any form.
-Through `v0.8.8` that attempt was a `NoSuchMethodError`;
-from `v0.8.9` it is an `UnsupportedOperationException`,
-thrown from the facade before any GL work is attempted.
 `glGetInteger(int, IntBuffer)` is bridged,
 so `GL_VIEWPORT` reads work unchanged under both renderers
 (`.../bridge/commands/GL11.java:1289-1300`).
@@ -996,10 +842,6 @@ Always inline:
   Mip levels above 30000 are the exception and the trap:
   they short-circuit to `0` without touching GL or the cache at all,
   which makes that a read to distrust rather than rely on.
-  Through `v0.8.9` the stalling fall-through issued the driver read twice and discarded the first result;
-  `v0.8.10rc1` dropped the dead one.
-  The stall is one round trip either way,
-  so nothing a caller can observe changed.
 - `glIsBuffer`,
   `glIsFramebuffer` and `glIsRenderbuffer`,
   from `v0.9.0`
@@ -1062,24 +904,11 @@ A call being *present* in the bridge is therefore not evidence that it is cheap 
 and from `v0.8.9` it is not even evidence that it is implemented,
 since the facade declares the whole LWJGL surface and throws on most of it.
 
-`v0.8.9` added no new inline `glGet*` answer,
-but it did remove a stall elsewhere,
-by the same reasoning and worth knowing for the shape:
-a mapped buffer range is now served from a CPU-side scratch buffer instead of a synchronous readback.
-`glMapBufferRange` hands back a plain `ByteBuffer` the caller fills,
-and `glUnmapBuffer` flushes it with `glBufferSubData`,
-so neither call waits on the render thread
-(`.../bridge/context/stall/BufferManager.java:18-55`).
-It is deliberately partial:
-an access mask outside write/invalidate,
-a target with nothing bound,
-or a second overlapping map all return `null`
-and fall back to the stalling path.
-This is the release's `BoxUtil` fix,
-and it reuses the class name `v0.8.4` deleted for something unrelated,
-so a `stall/BufferManager` frame means `v0.8.3` or earlier,
-or `v0.8.9` or later,
-and the two are not the same code.
+`v0.8.9` removed a stall by the same reasoning outside `glGet*`:
+`glMapBufferRange` / `glUnmapBuffer` are served from a CPU-side scratch buffer
+(`.../bridge/context/stall/BufferManager.java:18-55`),
+partially -
+an unusual access mask or an overlapping map falls back to the stalling path.
 `v0.8.10rc3` removed one stall for one mod:
 `glDrainErrors` answers `0` inline and drains the real error queue on the render thread
 (`.../bridge/commands/GL11.java:1507-1519`),
@@ -1094,36 +923,23 @@ so "it worked on my install" proves less than it looks -
 and `v0.8.5rc1` makes that worse,
 since it is indistinguishable from `v0.8.4` in a log or on the main menu
 while answering two of these reads differently.
-And the scissor **box** is the clearest case of that:
+The scissor **box** is the clearest case:
 through `v0.9.0rc1` only the enable flag was shadowed,
-so the current clip rectangle was unreadable without a stall,
-and from `v0.9.0rc2` the box is answered inline from the same tracker
-(`.../bridge/context/stall/AttribTracker.java:158`).
+so "is the clip on,
+and what is it" was half safe and half fatal -
+two lines,
+two different answers;
+from `v0.9.0rc2` `glGetInteger(int, IntBuffer)` answers `GL_SCISSOR_BOX` inline beside `GL_VIEWPORT`
+(`.../bridge/commands/GL11.java:1289-1318`, `.../bridge/context/stall/AttribTracker.java:158`),
+and every other pname still falls through to `exec.wait`.
 Clip composition stays the caller's job either way
 (`kmlib.starsector.ui.render.gl.UiScissor`),
-and the one place KMLib does read the box back -
+and the one place KMLib reads the box back -
 the clip a map hover is diagnosed against,
 in `MapCursorRead.describeRead` -
-stays gated off under this renderer rather than merely used sparingly,
+stays gated off under this renderer,
 because the gate cannot see which release is underneath
 and a diagnostic must not be able to end the session it was turned on to explain.
-
-`glGetInteger(int, IntBuffer)` switches on exactly two pnames -
-`2978`,
-which is `GL_VIEWPORT`,
-and from `v0.9.0rc2` `3088`,
-which is `GL_SCISSOR_BOX` -
-answering each from `attribTracker` and returning before the executor is reached;
-every other pname falls past the switch to `context.exec.wait`
-(`.../bridge/commands/GL11.java:1289-1318`).
-
-The neighbouring pair is what made this easy to get wrong from memory,
-and still does on every release before `v0.9.0rc2`:
-the scissor **enable flag** is inline while the scissor **box** is not,
-so a clip read written as "is it on,
-and what is it" is half safe and half fatal.
-Two lines,
-two different answers.
 
 Matrix reads are best avoided outright rather than worked around:
 the campaign UI's projection is derivable arithmetically (below),
@@ -1188,19 +1004,11 @@ The donors are compiled against readable aliases -
 `com.fs.util.FileLoader` and the like -
 which the obfuscation table maps onto the game's obfuscated names as each class loads
 (`Transformations.obfuscation`, `.../agent/Transformations.java:14`).
-That table was its own class,
-`ObfTransformations`,
-through `v0.8.8`;
-`v0.8.9` folded it into `Transformations`.
 So a name that looks like a public game type in a decompile of `fr.jar` may be an alias for an obfuscated one,
-and that table is where to resolve it.
-The table is not stable either:
-`v0.8.1` renamed the `com.fs.util.ResourceLoader` alias family to `com.fs.util.FileLoader`,
-and `v0.8.4` dropped the `com.fs.starfarer.campaign.rules.Rules` family outright,
-so an alias that resolves on one release may not exist on the next.
-It also carries method-name and field-name aliases,
-not just class names,
-which is why entries like `ProgressBar_render` sit in the same map.
+and that table is where to resolve it;
+it carries method and field aliases too,
+which is why entries like `ProgressBar_render` sit in the same map,
+and an alias that resolves on one release may not exist on the next.
 
 So when behaviour differs under Fast Rendering,
 the bridge is not the only place to look,
