@@ -287,6 +287,8 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   sourced by the scripts reading that metadata.
 - [`actions/_lib/json.sh`](.github/actions/_lib/json.sh) -
   the JSON reads the locale scripts share.
+- [`actions/_lib/localisation.sh`](.github/actions/_lib/localisation.sh) -
+  where a mod keeps its locale bundles and its translated changelogs.
 - [`tests/`](.github/tests/) -
   bats-core tests for the action scripts.
 
@@ -1178,27 +1180,17 @@ takes read-locales' `locales` and `default-locale`,
 a `jar-source`, a `version`
 and the path to Common-Automation's `changelog.sh`,
 and emits two parts of the release body.
-The `note` is a *Builds by language* list naming each locale's zip by its display name,
-linking the core localisation a locale needs installed over `starsector-core`.
-That project has no mod ID,
-so the launcher cannot check for it and the release page is one of the few places a player can be told.
-The `translations` are each translated locale's section for the version,
-taken from its `localisation/<tag>/CHANGELOG.md`
-and collapsed in a `<details>` block under its display name.
 
-- The zip names come from the lib rule the packaging names them by.
-- A section is cut by the same `changelog_section` that cuts the root changelog's,
-  so the two cannot disagree on where a version starts and ends.
-  A translation lacking the version's section fails the release,
-  as the root changelog lacking it does;
-  the parity suite has already failed the pull request that let them part.
-- Both outputs are multi-line,
-  written in the `key<<delimiter` form under a random delimiter,
-  so no changelog line can close a value early.
-- No locales,
-  nothing;
-  no `changelog.sh`,
-  the list alone.
+- `note` is a *Builds by language* list.
+  It names each locale's zip and links the core localisation a locale needs installed over `starsector-core`.
+  That project has no mod ID, so the launcher cannot check for it.
+- `translations` holds each translated locale's notes for the version,
+  collapsed under its display name.
+  They are cut from `localisation/<tag>/CHANGELOG.md` by the same `changelog_section` that cuts the root changelog.
+  A translation without the version's section fails the release.
+
+A mod with no locales gets neither part.
+Without `changelog.sh`, only the list is composed.
 
 **[package-release](.github/actions/package-release/action.yml)**
 takes read-locales' `locales` and `default-locale`,
@@ -1224,12 +1216,9 @@ writing no locale and suffixing nothing.
   What differs is where it points:
   at that locale's zip,
   and at that locale's own copy as the master.
-- Each zip carries its own locale's `CHANGELOG.md`:
-  a translated locale's from its bundle directory,
-  the default's from the root,
-  so a player opening their download reads what changed in the language they chose.
-  A translated locale holding none fails the packaging
-  rather than shipping the default's under its name.
+- Each zip carries the `CHANGELOG.md` in its own language.
+  A translated locale's comes from its bundle directory, the default's from the root.
+  A translated locale without one fails the packaging.
 
 **[fill-version-file-template](.github/actions/fill-version-file-template/action.yml)**
 takes an `output-path` and a `zip-name`
@@ -1313,6 +1302,9 @@ failing an input that is not an array,
 and splitting `jq` output into lines with `jq`'s failure seen,
 carriage returns from a Windows `jq` dropped,
 and no output read as no lines.
+[_lib/localisation.sh](.github/actions/_lib/localisation.sh) holds the bundle paths the locale scripts share:
+the manifest, the changelog,
+and the check that a translated locale has its changelog.
 
 `mod-release.yml` names the actions in registry form
 (`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`),
@@ -1471,14 +1463,12 @@ as each consumer mod's suite does over its own directory.
 A translated locale keeps a terminology reference in its bundle directory,
 the base every KM mod's own reference builds on:
 [localisation/zh-hans/README.md](localisation/zh-hans/README.md).
-It also keeps a full translation of the root `CHANGELOG.md`,
-every version and every section,
-which its release zip ships and its release notes show:
+Each translated locale also keeps a full translation of the root `CHANGELOG.md` in its bundle directory:
 [localisation/zh-hans/CHANGELOG.md](localisation/zh-hans/CHANGELOG.md).
-That file is no entry in the manifest's `files` map,
-which `writeLocaleFiles` would copy over the committed root file;
-a translated locale's `CHANGELOG.md` is the translation by convention,
-and the parity suite holds it to the root one point for point.
+Its zip ships that file, and its release notes show its section.
+The changelog is not in the manifest's `files` map,
+because `writeLocaleFiles` would then copy the translation over the root file.
+The parity suite holds the translation to the root one point for point.
 
 - Registered by
   [write-locale-files.gradle](gradle/tasks/generate/write-locale-files.gradle),
@@ -1509,10 +1499,9 @@ and the parity suite holds it to the root one point for point.
   and CI runs `test` before `jar`.
   The requested locale is an input of its own,
   so switching it re-runs both rather than reporting either up to date.
-- `test` also takes `localisation/` itself and the root `CHANGELOG.md`,
-  which a mod's parity suite reads:
-  the written files are the built locale's alone,
-  so an edit to another locale's bundle or to a translated changelog would otherwise leave the suite up to date.
+- `test` also takes `localisation/` and the root `CHANGELOG.md` as inputs.
+  The written files cover only the locale being built,
+  and the parity suite reads every locale.
 
 The mod's metadata is read once,
 while the build configures,
@@ -1744,11 +1733,10 @@ its launcher fragment,
 and its settings table -
 each through the reading a mod's shipped copy of that file gets,
 the `mod_info.base.json` the fragments merge over,
-and the changelog every translated locale translates,
-read by `ChangelogOutline` as its shape alone:
-versions by heading as written,
-sections by heading level,
-and list items at each depth.
+and the mod's changelog.
+`ChangelogOutline` reads a changelog as its outline only:
+its versions, their sections, how many list items each section holds at each depth,
+and each section's code spans.
 Any key the manifest or a fragment does not know is refused,
 so a misspelt field fails the read rather than reading as an absent one.
 `LocaleParity` holds every locale to the default over those readings.
@@ -1758,7 +1746,7 @@ a slot taking another argument,
 a row varying what it stores,
 a tab split or merged,
 glyphs no named core localisation supplies,
-a translated changelog missing or fallen behind the root one -
+a translated changelog missing or behind the root one -
 and lists the launcher fields a locale leaves to the base without failing on them.
 `findAllMismatches()` gathers every check,
 so a mod's suite is one assertion over its own `localisation/`;

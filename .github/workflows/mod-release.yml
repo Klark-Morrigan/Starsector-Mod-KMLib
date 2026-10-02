@@ -350,12 +350,10 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
       # Which zip holds which language, and which language needs a core
-      # localisation installed over the game to draw at all - a dependency the
-      # launcher cannot see, so the release page is one of the few places a
-      # player can be told. Then each translated language's notes for the
-      # version, cut from its translated changelog by the same helpers
-      # create-github-release cuts the root one with. Both empty for a mod
-      # keeping no locales.
+      # localisation installed over the game. The launcher cannot check for
+      # it, so the release page has to say so. Then each translated language's
+      # notes for the version, cut by the same helper that cuts the root
+      # changelog's. Both are empty for a mod keeping no locales.
       - name: Compose the locale list and translated notes for the release body
         id: locale-note
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/compose-locale-note@master
@@ -395,9 +393,8 @@ jobs:
       # earlier by validate-versioning, but this is the step that consumes it.
       #
       # Under the rule: the locale list, the dependency line, then the
-      # translated notes, which are the longest and are collapsed. The parts
-      # are joined by a blank line and the whole trimmed by the action, so a
-      # part resolving to empty leaves no gap behind it at either end.
+      # translated notes, which are collapsed and go last. The action trims
+      # the whole suffix, so an empty part leaves no gap at either end.
       - name: Create GitHub release from changelog
         uses: ./.common-automation/.github/actions/create-github-release
         with:

@@ -1,23 +1,10 @@
 package kmlib.testfixtures.localisation;
 
-import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
-import kmlib.testfixtures.starsector.settings.LunaSettingsTable.FieldBehaviour;
-import kmlib.testfixtures.starsector.strings.StringTemplates;
-
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.function.Function;
+import java.util.Optional;
 import java.util.stream.Stream;
-
-import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 
 /**
  * Holds every locale of a mod to its default locale, file by file - the checks a mod runs over its
@@ -37,18 +24,17 @@ import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
  *
  * <p>Findings come back as sentences, each opening with the locale's tag, so a check asserts a list
  * empty and a failure reads as the edit to make.
+ *
+ * <p>Each kind of file has a checker of its own in this package; this class is the one entry to them.
  */
 public final class LocaleParity {
 
-    // The last character the vanilla atlases can be relied on for. Anything past it draws as the fallback
-    // glyph unless a core localisation has replaced the atlases.
-    private static final int LATIN_1_LAST_CODE_POINT = 0xFF;
-
-    private final LocalisationDirectory directory;
-
-    // Null for a mod shipping no settings table, which has no field IDs to name. Only a manifest mapping
-    // the table leads to a read of it, and that read refuses a missing prefix.
-    private final String settingsFieldIdPrefix;
+    private final BundleLayoutParity bundleLayoutParity;
+    private final ChangelogParity changelogParity;
+    private final CoreLocalisationParity coreLocalisationParity;
+    private final ModInfoParity modInfoParity;
+    private final SettingsParity settingsParity;
+    private final StringsParity stringsParity;
 
     /**
      * Opens a comparison over a mod shipping no settings table, whose manifest maps its other files alone.
@@ -56,9 +42,7 @@ public final class LocaleParity {
      * @param directory the directory to compare the locales of
      */
     public LocaleParity(LocalisationDirectory directory) {
-
-        this.directory = Objects.requireNonNull(directory, "directory");
-        this.settingsFieldIdPrefix = null;
+        this(directory, Optional.empty());
     }
 
     /**
@@ -68,9 +52,21 @@ public final class LocaleParity {
      * @param settingsFieldIdPrefix what every one of the mod's settings field IDs starts with
      */
     public LocaleParity(LocalisationDirectory directory, String settingsFieldIdPrefix) {
+        this(directory, Optional.of(Objects.requireNonNull(settingsFieldIdPrefix, "settingsFieldIdPrefix")));
+    }
 
-        this.directory = Objects.requireNonNull(directory, "directory");
-        this.settingsFieldIdPrefix = Objects.requireNonNull(settingsFieldIdPrefix, "settingsFieldIdPrefix");
+    private LocaleParity(LocalisationDirectory directory, Optional<String> settingsFieldIdPrefix) {
+
+        Objects.requireNonNull(directory, "directory");
+
+        var comparison = new DefaultLocaleComparison(directory);
+
+        this.bundleLayoutParity = new BundleLayoutParity(directory);
+        this.changelogParity = new ChangelogParity(directory);
+        this.modInfoParity = new ModInfoParity(directory);
+        this.settingsParity = new SettingsParity(comparison, settingsFieldIdPrefix);
+        this.stringsParity = new StringsParity(comparison);
+        this.coreLocalisationParity = new CoreLocalisationParity(directory, settingsParity);
     }
 
     /**
@@ -100,50 +96,16 @@ public final class LocaleParity {
     }
 
     /**
-     * The translated changelogs that do not match the mod's own point for point, and the translated locales
-     * holding none. Every locale but the default carries a full translation of the changelog, so a player
-     * reads what changed in the language of the zip they downloaded and a release can show each language's
-     * notes for a version. A translation that fell behind is what this finds: a version missing, a section
-     * added or a point dropped, merged or split. Wording, links and emphasis are the translation's own and
-     * are not compared.
+     * The translated locales whose changelog is missing or does not match the mod's own point for point.
+     * Every locale but the default carries a full translation, which its zip and its release notes show.
+     * This finds a translation that fell behind: a missing version, an extra section, a dropped point, or
+     * a point whose identifiers changed in one file only. Prose is not compared; code spans are, since a
+     * translation keeps them verbatim. A mod with no changelog is asked for no translation.
      *
-     * <p>Nothing is asked of a mod keeping no changelog.
-     *
-     * @return one finding per missing translation, and one per difference in a translation's shape
+     * @return one finding per missing translation, and one per difference in a translation's outline
      */
     public List<String> findChangelogMismatches() {
-
-        var referenceOutline = directory.readChangelogOutline();
-
-        if (referenceOutline.isEmpty()) {
-            return List.of();
-        }
-        var findings = new ArrayList<String>();
-        var manifest = directory.readManifest();
-        var defaultLocale = manifest.getDefaultLocale();
-        var bundleDirectoryNames = directory.listBundleDirectoryNames();
-
-        for (var locale : manifest.declaredLocalesByTag().values()) {
-
-            // The default's changelog is the mod's own; a locale with no directory is found once, by the
-            // check about that.
-            if (locale.equals(defaultLocale) || !bundleDirectoryNames.contains(locale.localeTag())) {
-                continue;
-            }
-            var bundle = directory.openBundle(locale);
-            var filePrefix = locale.localeTag() + ": " + LocalisationDirectory.CHANGELOG_FILE_NAME;
-
-            if (!Files.isRegularFile(bundle.resolveBundleFile(LocalisationDirectory.CHANGELOG_FILE_NAME))) {
-
-                findings.add(locale.localeTag() + ": holds no " + LocalisationDirectory.CHANGELOG_FILE_NAME
-                    + ", the translation of the mod's own");
-                continue;
-            }
-            bundle.readChangelogOutline()
-                .describeDifferencesFrom(referenceOutline.get(), defaultLocale.localeTag())
-                .forEach(difference -> findings.add(filePrefix + " " + difference));
-        }
-        return findings;
+        return changelogParity.findChangelogMismatches();
     }
 
     /**
@@ -152,17 +114,7 @@ public final class LocaleParity {
      * @return one finding per such locale
      */
     public List<String> findDeclaredLocalesWithoutBundleDirectory() {
-
-        var bundleDirectoryNames = directory.listBundleDirectoryNames();
-
-        return directory
-            .readManifest()
-            .declaredLocalesByTag()
-            .keySet()
-            .stream()
-            .filter(localeTag -> !bundleDirectoryNames.contains(localeTag))
-            .map(localeTag -> localeTag + ": declared by the manifest, but has no bundle directory")
-            .toList();
+        return bundleLayoutParity.findDeclaredLocalesWithoutBundleDirectory();
     }
 
     /**
@@ -174,11 +126,7 @@ public final class LocaleParity {
      * @return one finding per such string
      */
     public List<String> findFormatArgumentMismatches() {
-
-        return compareWithDefault(
-            LocaleBundle.STRINGS_FILE_NAME,
-            bundle -> flattenStrings(bundle.readStrings()),
-            LocaleParity::describeFormatArgumentMismatches);
+        return stringsParity.findFormatArgumentMismatches();
     }
 
     /**
@@ -188,41 +136,7 @@ public final class LocaleParity {
      * @return one finding per such locale and file
      */
     public List<String> findLocalesMissingCoreLocalisation() {
-
-        var findings = new ArrayList<String>();
-        var manifest = directory.readManifest();
-
-        for (var locale : manifest.declaredLocalesByTag().values()) {
-
-            if (locale.coreLocalisation().isPresent()) {
-                continue;
-            }
-            var bundle = directory.openBundle(locale);
-            var displayedTextsByFileName = new TreeMap<String, Collection<String>>();
-
-            if (isFileHeld(manifest, bundle, LocaleBundle.STRINGS_FILE_NAME)) {
-
-                displayedTextsByFileName.put(
-                    LocaleBundle.STRINGS_FILE_NAME,
-                    flattenStrings(bundle.readStrings()).values());
-            }
-            if (isFileHeld(manifest, bundle, LocaleBundle.SETTINGS_FILE_NAME)) {
-
-                displayedTextsByFileName.put(
-                    LocaleBundle.SETTINGS_FILE_NAME,
-                    openSettingsTable(bundle).readDisplayedTexts());
-            }
-            displayedTextsByFileName.forEach((fileName, displayedTexts) -> {
-
-                if (displayedTexts.stream().anyMatch(LocaleParity::hasCharacterOutsideLatin1)) {
-
-                    findings.add(locale.localeTag() + ": " + fileName
-                        + " draws characters outside Latin-1, but the manifest names no coreLocalisation"
-                        + " for the locale");
-                }
-            });
-        }
-        return findings;
+        return coreLocalisationParity.findLocalesMissingCoreLocalisation();
     }
 
     /**
@@ -232,29 +146,7 @@ public final class LocaleParity {
      * @return one finding per missing file
      */
     public List<String> findMissingBundleFiles() {
-
-        var findings = new ArrayList<String>();
-        var manifest = directory.readManifest();
-        var bundleDirectoryNames = directory.listBundleDirectoryNames();
-
-        for (var locale : manifest.declaredLocalesByTag().values()) {
-
-            // A locale with no directory at all is found once, by the check about that.
-            if (!bundleDirectoryNames.contains(locale.localeTag())) {
-                continue;
-            }
-            var bundle = directory.openBundle(locale);
-
-            for (var bundleFileName : manifest.dataPathsByBundleFileName().keySet()) {
-
-                if (!Files.isRegularFile(bundle.resolveBundleFile(bundleFileName))) {
-
-                    findings.add(locale.localeTag() + ": holds no " + bundleFileName
-                        + ", which the manifest maps");
-                }
-            }
-        }
-        return findings;
+        return bundleLayoutParity.findMissingBundleFiles();
     }
 
     /**
@@ -266,36 +158,7 @@ public final class LocaleParity {
      * @return one finding per such fragment or dependency
      */
     public List<String> findModInfoFragmentMismatches() {
-
-        var findings = new ArrayList<String>();
-        var base = directory.readModInfoBase();
-
-        for (var locale : directory.readManifest().declaredLocalesByTag().values()) {
-
-            var bundle = directory.openBundle(locale);
-            var filePrefix = locale.localeTag() + ": " + LocaleBundle.MOD_INFO_FILE_NAME;
-
-            if (base.isEmpty()) {
-
-                if (Files.exists(bundle.resolveBundleFile(LocaleBundle.MOD_INFO_FILE_NAME))) {
-
-                    findings.add(filePrefix + " has no " + LocalisationDirectory.MOD_INFO_BASE_FILE_NAME
-                        + " to be merged over");
-                }
-                continue;
-            }
-            var declaredDependencyIds = base.get().dependencyIds();
-
-            for (var dependencyId : bundle.readModInfoFragment().dependencyNamesById().keySet()) {
-
-                if (!declaredDependencyIds.contains(dependencyId)) {
-
-                    findings.add(filePrefix + " names dependency " + dependencyId + ", which "
-                        + LocalisationDirectory.MOD_INFO_BASE_FILE_NAME + " does not declare");
-                }
-            }
-        }
-        return findings;
+        return modInfoParity.findModInfoFragmentMismatches();
     }
 
     /**
@@ -308,11 +171,7 @@ public final class LocaleParity {
      * @return one finding per differing column of such a row
      */
     public List<String> findSettingsBehaviourMismatches() {
-
-        return compareWithDefault(
-            LocaleBundle.SETTINGS_FILE_NAME,
-            bundle -> openSettingsTable(bundle).readBehavioursByFieldId(),
-            LocaleParity::describeBehaviourMismatches);
+        return settingsParity.findSettingsBehaviourMismatches();
     }
 
     /**
@@ -324,11 +183,7 @@ public final class LocaleParity {
      * @return one finding per missing or added row, or one naming the first row out of place
      */
     public List<String> findSettingsRowMismatches() {
-
-        return compareWithDefault(
-            LocaleBundle.SETTINGS_FILE_NAME,
-            bundle -> openSettingsTable(bundle).readDeclaredFieldIds(),
-            LocaleParity::describeRowMismatches);
+        return settingsParity.findSettingsRowMismatches();
     }
 
     /**
@@ -340,11 +195,7 @@ public final class LocaleParity {
      * @return one finding per split or merged tab
      */
     public List<String> findSettingsTabMismatches() {
-
-        return compareWithDefault(
-            LocaleBundle.SETTINGS_FILE_NAME,
-            bundle -> openSettingsTable(bundle).readTabsByFieldId(),
-            LocaleParity::describeTabMismatches);
+        return settingsParity.findSettingsTabMismatches();
     }
 
     /**
@@ -354,11 +205,7 @@ public final class LocaleParity {
      * @return one finding per missing or added string, named {@code <category> > <key>}
      */
     public List<String> findStringsKeyMismatches() {
-
-        return compareWithDefault(
-            LocaleBundle.STRINGS_FILE_NAME,
-            bundle -> flattenStrings(bundle.readStrings()).keySet(),
-            readings -> describeMissingAndAdded(readings, "string"));
+        return stringsParity.findStringsKeyMismatches();
     }
 
     /**
@@ -369,14 +216,7 @@ public final class LocaleParity {
      * @return one finding per such directory
      */
     public List<String> findUndeclaredBundleDirectories() {
-
-        var declaredLocaleTags = directory.readManifest().declaredLocalesByTag().keySet();
-
-        return directory.listBundleDirectoryNames()
-            .stream()
-            .filter(directoryName -> !declaredLocaleTags.contains(directoryName))
-            .map(directoryName -> directoryName + ": a bundle directory the manifest does not declare")
-            .toList();
+        return bundleLayoutParity.findUndeclaredBundleDirectories();
     }
 
     /**
@@ -387,253 +227,6 @@ public final class LocaleParity {
      *         {@link ModInfoFragment#listFallbackFieldNames} names them
      */
     public Map<String, List<String>> listModInfoFallbackFieldNames() {
-
-        var fallbackFieldNamesByTag = new TreeMap<String, List<String>>();
-        var base = directory.readModInfoBase();
-
-        if (base.isEmpty()) {
-            return fallbackFieldNamesByTag;
-        }
-        for (var locale : directory.readManifest().declaredLocalesByTag().values()) {
-
-            fallbackFieldNamesByTag.put(
-                locale.localeTag(),
-                directory.openBundle(locale).readModInfoFragment().listFallbackFieldNames(base.get()));
-        }
-        return fallbackFieldNamesByTag;
-    }
-
-    // Rows present in only one of the two are the row comparison's; only a row both declare is compared.
-    private static List<String> describeBehaviourMismatches(ComparedReadings<Map<String, FieldBehaviour>> readings) {
-
-        var findings = new ArrayList<String>();
-
-        readings.reading().forEach((fieldId, behaviour) -> {
-
-            var referenceBehaviour = readings.referenceReading().get(fieldId);
-
-            if (referenceBehaviour != null) {
-
-                behaviour.describeDifferencesFrom(referenceBehaviour).forEach(difference -> findings.add(
-                    readings.describeFinding("row " + fieldId + " differs from " + readings.referenceTag()
-                        + " in " + difference)));
-            }
-        });
-        return findings;
-    }
-
-    // The first position where a locale's rows stand in another order than the default's, reported alone:
-    // every position after it is likely out of place for the same reason. Both hold the same IDs by now,
-    // so lists of different lengths mean one declares a row twice.
-    private static List<String> describeFirstMisplacedRow(ComparedReadings<List<String>> readings) {
-
-        var fieldIds = readings.reading();
-        var referenceFieldIds = readings.referenceReading();
-
-        for (var index = 0; index < Math.min(fieldIds.size(), referenceFieldIds.size()); index++) {
-
-            var fieldId = fieldIds.get(index);
-            var referenceFieldId = referenceFieldIds.get(index);
-
-            if (!fieldId.equals(referenceFieldId)) {
-
-                return List.of(readings.describeFinding("places " + fieldId + " at row " + (index + 1)
-                    + ", where " + readings.referenceTag() + " places " + referenceFieldId));
-            }
-        }
-        if (fieldIds.size() != referenceFieldIds.size()) {
-
-            return List.of(readings.describeFinding("declares " + fieldIds.size() + " rows, where "
-                + readings.referenceTag() + " declares " + referenceFieldIds.size()));
-        }
-        return List.of();
-    }
-
-    // Strings present in only one of the two are the key comparison's; only a string both declare is
-    // compared.
-    private static List<String> describeFormatArgumentMismatches(ComparedReadings<SortedMap<String, String>> readings) {
-
-        var findings = new ArrayList<String>();
-
-        readings.reading().forEach((stringKey, wording) -> {
-
-            var referenceWording = readings.referenceReading().get(stringKey);
-
-            if (referenceWording == null) {
-                return;
-            }
-            var conversions = StringTemplates.readArgumentConversions(wording);
-            var referenceConversions = StringTemplates.readArgumentConversions(referenceWording);
-
-            if (!conversions.equals(referenceConversions)) {
-
-                findings.add(readings.describeFinding(stringKey + " takes " + conversions
-                    + " where " + readings.referenceTag() + " takes " + referenceConversions));
-            }
-        });
-        return findings;
-    }
-
-    private static List<String> describeMissingAndAdded(
-            ComparedReadings<? extends Collection<String>> readings,
-            String itemNoun) {
-
-        var items = readings.reading();
-        var referenceItems = readings.referenceReading();
-        var findings = new ArrayList<String>();
-
-        referenceItems.stream()
-            .filter(item -> !items.contains(item))
-            .forEach(item -> findings.add(readings.describeFinding(
-                "lacks " + itemNoun + " " + item + ", which " + readings.referenceTag() + " declares")));
-
-        items.stream()
-            .filter(item -> !referenceItems.contains(item))
-            .forEach(item -> findings.add(readings.describeFinding(
-                "declares " + itemNoun + " " + item + ", which " + readings.referenceTag() + " does not")));
-
-        return findings;
-    }
-
-    private static List<String> describeRowMismatches(ComparedReadings<List<String>> readings) {
-
-        var findings = describeMissingAndAdded(readings, "row");
-
-        return findings.isEmpty()
-            ? describeFirstMisplacedRow(readings)
-            : findings;
-    }
-
-    // Walks the rows both declare, mapping each tab of the default to the tabs its rows land on in the
-    // locale and back; more than one either way is a split or a merge.
-    private static List<String> describeTabMismatches(ComparedReadings<Map<String, String>> readings) {
-
-        var tabsByReferenceTab = new TreeMap<String, SortedSet<String>>();
-        var referenceTabsByTab = new TreeMap<String, SortedSet<String>>();
-
-        readings.referenceReading().forEach((fieldId, referenceTab) -> {
-
-            var tab = readings.reading().get(fieldId);
-
-            if (tab != null) {
-
-                tabsByReferenceTab.computeIfAbsent(referenceTab, ignored -> new TreeSet<>()).add(tab);
-                referenceTabsByTab.computeIfAbsent(tab, ignored -> new TreeSet<>()).add(referenceTab);
-            }
-        });
-        var findings = new ArrayList<String>();
-
-        tabsByReferenceTab.forEach((referenceTab, tabs) -> {
-
-            if (tabs.size() > 1) {
-                findings.add(readings.describeFinding("splits " + readings.referenceTag() + " tab " + referenceTab
-                    + " across tabs " + tabs));
-            }
-        });
-        referenceTabsByTab.forEach((tab, referenceTabs) -> {
-
-            if (referenceTabs.size() > 1) {
-                findings.add(readings.describeFinding("merges " + readings.referenceTag() + " tabs " + referenceTabs
-                    + " into tab " + tab));
-            }
-        });
-        return findings;
-    }
-
-    // Names each string by category and key together, the pair being what identifies it: one key may
-    // stand in two categories.
-    private static SortedMap<String, String> flattenStrings(Map<String, Map<String, String>> stringsByCategory) {
-
-        var wordingsByStringKey = new TreeMap<String, String>();
-
-        stringsByCategory.forEach((category, wordingsByKey) ->
-            wordingsByKey.forEach((key, wording) -> wordingsByStringKey.put(locateMember(category, key), wording)));
-
-        return wordingsByStringKey;
-    }
-
-    private static boolean hasCharacterOutsideLatin1(String text) {
-        return text.codePoints().anyMatch(codePoint -> codePoint > LATIN_1_LAST_CODE_POINT);
-    }
-
-    // Whether the manifest maps a file and a bundle holds it: the one condition under which a comparison
-    // reads it, a gap in either being found elsewhere.
-    private static boolean isFileHeld(LocaleManifest manifest, LocaleBundle bundle, String bundleFileName) {
-
-        return manifest.dataPathsByBundleFileName().containsKey(bundleFileName)
-            && Files.isRegularFile(bundle.resolveBundleFile(bundleFileName));
-    }
-
-    // Reads one file out of the default locale's bundle and out of every other bundle holding it, and
-    // hands each locale's reading beside the default's to the comparison. Nothing where the manifest maps
-    // no such file or the default holds none, there then being nothing to compare with.
-    private <T> List<String> compareWithDefault(
-            String bundleFileName,
-            Function<LocaleBundle, T> readBundleFile,
-            Function<ComparedReadings<T>, List<String>> describeMismatches) {
-
-        var manifest = directory.readManifest();
-        var defaultLocale = manifest.getDefaultLocale();
-        var referenceBundle = directory.openBundle(defaultLocale);
-
-        if (!isFileHeld(manifest, referenceBundle, bundleFileName)) {
-            return List.of();
-        }
-        var referenceReading = readBundleFile.apply(referenceBundle);
-        var findings = new ArrayList<String>();
-
-        for (var locale : manifest.declaredLocalesByTag().values()) {
-
-            var bundle = directory.openBundle(locale);
-
-            if (locale.equals(defaultLocale) || !isFileHeld(manifest, bundle, bundleFileName)) {
-                continue;
-            }
-            var readings = new ComparedReadings<>(
-                bundleFileName,
-                locale.localeTag(),
-                readBundleFile.apply(bundle),
-                defaultLocale.localeTag(),
-                referenceReading);
-
-            findings.addAll(describeMismatches.apply(readings));
-        }
-        return findings;
-    }
-
-    // Reached only where the manifest maps a settings table, so a comparison opened without a prefix
-    // fails here, naming the fix, rather than reading every row as spacing.
-    private LunaSettingsTable openSettingsTable(LocaleBundle bundle) {
-
-        if (settingsFieldIdPrefix == null) {
-
-            throw new IllegalStateException(
-                "The manifest maps " + LocaleBundle.SETTINGS_FILE_NAME
-                    + ", so the comparison needs the mod's settings field ID prefix");
-        }
-        return bundle.openSettingsTable(settingsFieldIdPrefix);
-    }
-
-    /**
-     * One locale's reading of a bundle file beside the default locale's reading of the same file.
-     *
-     * @param bundleFileName   the file both were read from
-     * @param localeTag        the locale compared
-     * @param reading          what that locale's file holds
-     * @param referenceTag     the default locale, which the other is held to
-     * @param referenceReading what the default's file holds
-     * @param <T>              the reading's shape
-     */
-    private record ComparedReadings<T>(
-        String bundleFileName,
-        String localeTag,
-        T reading,
-        String referenceTag,
-        T referenceReading) {
-
-        // Every finding over a file opens by naming the locale and the file, so it reads as where to look.
-        String describeFinding(String findingText) {
-            return localeTag + ": " + bundleFileName + " " + findingText;
-        }
+        return modInfoParity.listModInfoFallbackFieldNames();
     }
 }

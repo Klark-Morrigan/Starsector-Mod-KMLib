@@ -258,5 +258,8 @@ so a pull request adding a point the translation lacks fails.
 5. **Links to repository files take `../../`**,
    this file sitting two directories below the root one.
    Absolute links and `#` anchors stay as they are.
-6. Identifiers, file names and anything in backticks stay as written,
-   and the [rules](#rules) hold as they do for strings.
+6. **Code spans stay as written.**
+   Each section must hold the same code spans as the root one's,
+   in any order within the section.
+   A changed identifier in either file fails until the other matches.
+   The [rules](#rules) hold as they do for strings.

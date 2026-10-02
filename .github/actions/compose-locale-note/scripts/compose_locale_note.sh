@@ -18,24 +18,20 @@
 #   translations  per translated locale, its CHANGELOG.md section for the
 #                 version, collapsed under the locale's display name; or empty
 #
-# A locale naming a core localisation gets a link to it: that project is what
-# supplies the glyphs its text is drawn in, it is installed over the game
-# rather than as a mod, and so nothing but this list and the README can tell a
-# player they need it.
+# A locale that needs a core localisation gets a link to it. That project
+# supplies the glyphs the locale's text is drawn in. It is installed over the
+# game, not as a mod, so the launcher cannot tell a player it is missing.
 #
-# A translated locale's notes come from localisation/<tag>/CHANGELOG.md in the
-# working directory, its translation of the root changelog. A translation with
-# no section for the version fails, as the root changelog lacking one fails the
-# release: the parity suite has already failed the pull request that let them
-# part, so this is the consumer checking what it consumes.
+# A translated locale's notes come from its translated changelog. A missing
+# section for the version fails, as it does for the root changelog.
 set -euo pipefail
 
 SCRIPT_NAME="compose_locale_note"
 
-# Supplies the zip-name rule, so the name a reader is told to download is the
-# name the pipeline uploads.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 
+# The zip-name rule, so the name a reader is told to download is the name the
+# pipeline uploads.
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
@@ -43,13 +39,13 @@ source "${LIB_DIR}/mod_info.sh"
 # shellcheck source=../../_lib/json.sh
 source "${LIB_DIR}/json.sh"
 
+# shellcheck source=../../_lib/localisation.sh
+source "${LIB_DIR}/localisation.sh"
+
 # Separates a locale's fields on one line. A control character no display name
 # or URL carries, so a field is read back exactly, where a tab-separated row
 # would come back with its backslashes escaped.
 FIELD_SEPARATOR=$'\x1f'
-
-LOCALISATION_DIRECTORY="localisation"
-CHANGELOG_FILE_NAME="CHANGELOG.md"
 
 LOCALES="${LOCALES:-[]}"
 DEFAULT_LOCALE="${DEFAULT_LOCALE:-}"
@@ -59,16 +55,22 @@ VERSION="${VERSION:?${SCRIPT_NAME}: VERSION is required}"
 
 CHANGELOG_LIB="${CHANGELOG_LIB:-}"
 
-# Writes one output in the multi-line form, KEY<<DELIMITER, the value, then the
-# delimiter alone. The delimiter is random so no line of a changelog can close
-# the value early, and drawn again in the unlikely case one holds it.
+draw_output_delimiter() {
+  local randomHex
+  randomHex="$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+  printf 'EOF_%s' "${randomHex}"
+}
+
+# Writes one output in the multi-line form: KEY<<DELIMITER, the value, then the
+# delimiter alone. The delimiter is random, so no changelog line can end the
+# value early.
 write_multiline_output() {
 
   local outputKey="${1}" outputValue="${2}" delimiter
-  delimiter="EOF_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+  delimiter="$(draw_output_delimiter)"
 
   while [[ "${outputValue}" == *"${delimiter}"* ]]; do
-    delimiter="EOF_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+    delimiter="$(draw_output_delimiter)"
   done
 
   # GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
@@ -86,14 +88,11 @@ write_multiline_output() {
 compose_translated_notes() {
 
   local localeTag="${1}" displayName="${2}"
-  local changelogFile="${LOCALISATION_DIRECTORY}/${localeTag}/${CHANGELOG_FILE_NAME}"
-  local section
+  local changelogFile section
 
-  if [[ ! -f "${changelogFile}" ]]; then
-    echo "${SCRIPT_NAME}: locale ${localeTag} has no ${changelogFile} to take its notes from" >&2
-    return 1
-  fi
-
+  # This function runs inside a command substitution, which does not inherit
+  # set -e, so a failure returns explicitly.
+  changelogFile="$(localisation_require_translated_changelog "${localeTag}")" || return 1
   section="$(changelog_section "${changelogFile}" "${VERSION}")"
 
   if [[ -z "${section//[[:space:]]/}" ]]; then
@@ -154,8 +153,8 @@ if (( ${#LOCALE_ROWS[@]} > 0 )); then
 
     if [[ -n "${CHANGELOG_LIB}" && "${localeTag}" != "${DEFAULT_LOCALE}" ]]; then
 
-      # Assigned on its own line, so a failure to find the notes stops the
-      # script under set -e rather than appending an empty entry.
+      # A plain assignment, so set -e stops the script when the notes are
+      # missing instead of appending an empty entry.
       translatedNotes="$(compose_translated_notes "${localeTag}" "${displayName}")"
       TRANSLATED_NOTES+=("${translatedNotes}")
 
