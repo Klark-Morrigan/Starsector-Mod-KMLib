@@ -108,6 +108,13 @@ Fossic publishes no size limit,
 but a per-file and a daily one exist per user group;
 the FAQ (thread 3316) says to ask an admin to raise them.
 
+An attachment the post text does not reference is listed under the post.
+A zip referenced by its tag is drawn as a download link where the text names it,
+which is how a dependency's zip with no release-file row of its own,
+such as KMLib's in a consumer's thread, gets a link of its own.
+The editor inserts a tag with its numeric ID when an uploaded file is clicked;
+the attachment URL a browser shows is encoded and is not linked by hand.
+
 ## Markup
 
 Fossic is Discuz! X3.5, and its BBCode differs from the Fractal Softworks forum's SMF:
@@ -115,6 +122,7 @@ Fossic is Discuz! X3.5, and its BBCode differs from the Fractal Softworks forum'
 `[size=1..7]` for point sizes,
 `[*]` list items with no `[li]`,
 `[attachimg]id[/attachimg]` for an uploaded image,
+`[attach]id[/attach]` for an uploaded file, drawn as an inline download link with its name, size and download count,
 and `[hr]` checked in the preview before it is relied on.
 Markdown is also accepted as `[md]...[/md]`,
 but a post translated from the Fractal Softworks one stays BBCode.
