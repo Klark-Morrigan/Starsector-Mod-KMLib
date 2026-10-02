@@ -93,7 +93,8 @@ Every input, in the form's order (`*` is required):
 | 滑块验证 `*` | the slider captcha |
 | 附加选项 | 禁用编辑器代码 off, or the BBCode prints as text; 禁用表情 on, so no command syntax reads as a smiley; 禁用链接识别 off; 接收回复通知 as wanted; HTML is not offered and `[img]` is fixed on |
 | 发贴本地化图片 | copies remote images onto the forum's storage; harmless, and not relied on, since it fetches from Fossic's side where GitHub is the unreliable host |
-| 回帖奖励, 主题标签, 定时发布 | reply rewards, up to five tags, and scheduled posting |
+| 回帖奖励 | left empty. Mod threads on the board run without one, and replies come from bug reports and questions anyway. A reward draws bump replies (顶) that bury those, and its whole pool comes out of the author's 积分 up front |
+| 主题标签, 定时发布 | up to five tags, and scheduled posting |
 
 ## Images and attachments
 
