@@ -217,6 +217,7 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | translation (a translated build) | 汉化 | a Fossic board |
 | dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
 | attachment | 附件 | a file uploaded to a forum post |
+| mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
 | install mid-run | 中途安装 | 中途, partway through |
 | uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word, as KMU's strings write it; 步骤 for the steps |
 | changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
