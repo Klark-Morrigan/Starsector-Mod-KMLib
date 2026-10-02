@@ -8,7 +8,7 @@ import java.util.Optional;
  * door to the game's faces, the way {@code StarsectorUiColour} is to its colours: a face is named
  * rather than spelled, so a mistyped basename is a compile error instead of text that silently
  * fails to draw at runtime, and the set of faces the mods actually use is answerable in one place
- * rather than by grepping string literals across two repositories.
+ * rather than by grepping string literals across every codebase that draws text.
  *
  * <p>A value names an atlas and does not state its size. A bitmap face has exactly one size it is
  * crisp at - its descriptor's {@code lineHeight}, which the font loader scales every request
@@ -107,6 +107,10 @@ public enum StarsectorFont implements FontAtlas {
     private final AtlasSmoothing smoothing;
     private final String basename;
 
+    // Built once rather than on each ask: the font cache is asked for a face on every draw, and the path
+    // is its key.
+    private final String path;
+
     // The next cut down in this face's family, or null for a face with none. Null rather than an
     // Optional because an enum constructor takes it positionally; the accessor answers the Optional.
     private final StarsectorFont lowerResolutionFont;
@@ -118,6 +122,7 @@ public enum StarsectorFont implements FontAtlas {
     StarsectorFont(String basename, AtlasSmoothing smoothing, StarsectorFont lowerResolutionFont) {
         this.basename = basename;
         this.smoothing = smoothing;
+        this.path = FONT_DIR + basename + FONT_EXTENSION;
         this.lowerResolutionFont = lowerResolutionFont;
     }
 
@@ -166,6 +171,6 @@ public enum StarsectorFont implements FontAtlas {
      */
     @Override
     public String resolvePath() {
-        return FONT_DIR + basename + FONT_EXTENSION;
+        return path;
     }
 }

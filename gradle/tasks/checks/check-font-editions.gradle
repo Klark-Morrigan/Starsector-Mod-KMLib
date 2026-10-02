@@ -68,33 +68,19 @@ def repositoryDigestLength = 8
 // How much of a repository URL a folder name reads as, which the path length Windows allows bounds.
 def repositoryReadableNameLength = 48
 
-def readLock = { -> new JsonSlurper().parse(lockFile, 'UTF-8') as Map }
+// The lock, refused by name where it is missing, since the parser's own failure says only that a stream
+// could not be opened.
+def readLock = { ->
 
-// The lock as a reader edits it: four-space indentation, and text in its own script rather than escaped.
-def jsonWriter = new JsonGenerator.Options().disableUnicodeEscaping().build()
-def prettyPrintJson
-
-prettyPrintJson = { Object value, String indent ->
-
-    def innerIndent = indent + '    '
-
-    if (value instanceof Map) {
-        return value.isEmpty()
-            ? '{}'
-            : '{\n' + value.collect { key, member ->
-                innerIndent + jsonWriter.toJson(key as String) + ': ' + prettyPrintJson(member, innerIndent)
-            }.join(',\n') + '\n' + indent + '}'
+    if (!lockFile.isFile()) {
+        throw new GradleException("No lock at ${lockFile}: the editions the font suites read are listed there.")
     }
-
-    if (value instanceof List) {
-        return value.isEmpty()
-            ? '[]'
-            : '[\n' + value.collect { element -> innerIndent + prettyPrintJson(element, innerIndent) }
-                .join(',\n') + '\n' + indent + ']'
-    }
-
-    return jsonWriter.toJson(value)
+    return new JsonSlurper().parse(lockFile, 'UTF-8') as Map
 }
+
+// The lock as a reader edits it: indented, and text in its own script rather than escaped.
+def jsonWriter = new JsonGenerator.Options().disableUnicodeEscaping().build()
+def formatLockJson = { Map lock -> JsonOutput.prettyPrint(jsonWriter.toJson(lock), true) }
 
 // Refuses a lock an edition cannot be read from, naming the edition and what it lacks, before anything
 // reaches the network. Each edition's language needs a probe text, or the suites could not tell whether its
@@ -230,9 +216,9 @@ def readEditionHead = { Map edition ->
     new String(treeListing, 'UTF-8')
         .readLines()
         .each { line ->
-            // "<mode> <type> <sha>\t<path>"
+            // "<mode> <type> <sha>\t<path>"; the mode says nothing a descriptor's type does not.
             def (entry, path) = line.split('\t', 2)
-            def (mode, type, sha) = entry.split(' ')
+            def (type, sha) = entry.split(' ').toList().drop(1)
             def fileName = path.substring(path.lastIndexOf('/') + 1)
 
             if (type == 'blob' && fileName.endsWith(descriptorExtension)) {
@@ -350,7 +336,8 @@ tasks.register('checkFontEditions') {
 
 tasks.register(bumpTaskName) {
 
-    group = 'verification'
+    // A writer rather than a check, beside the build's other tasks that write a committed file.
+    group = 'build'
     description = "Rewrites the faces of each edition in ${lockFile.name} from its branch head."
 
     doLast {
@@ -374,6 +361,6 @@ tasks.register(bumpTaskName) {
 
         rewrittenLock.editions = rewrittenEditions
 
-        lockFile.setText(prettyPrintJson(rewrittenLock, '') + '\n', 'UTF-8')
+        lockFile.setText(formatLockJson(rewrittenLock) + '\n', 'UTF-8')
     }
 }

@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link SectorStarSystems#collectHyperspacePositions},
+ * {@link SectorStarSystems#listSystemNames},
  * {@link SectorStarSystems#getPlayerStarSystem}, {@link SectorStarSystems#indexById},
  * {@link SectorStarSystems#indexHeldSystemsById}, {@link SectorStarSystems#indexByKey},
  * {@link SectorStarSystems#findSystemById} and {@link SectorStarSystems#findSystemByKey}. Each

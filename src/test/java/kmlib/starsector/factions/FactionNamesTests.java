@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
  * as null, and the fullest-name read prefers the long name, falls back to the short one only where
  * the long is blank, trims both and never answers blank.
  */
-class FactionNamesTests {
+final class FactionNamesTests {
 
     private static final String SHORT_NAME = "Hegemony";
     private static final String LONG_NAME = "The Hegemony";
@@ -35,33 +35,44 @@ class FactionNamesTests {
         return factionMock;
     }
 
+    // A sector holding the given factions, in that order.
+    private static SectorAPI createSectorOf(FactionAPI... factionMocks) {
+
+        var sectorMock = mock(SectorAPI.class);
+
+        when(sectorMock.getAllFactions())
+            .thenReturn(List.of(factionMocks));
+
+        return sectorMock;
+    }
+
     @Nested
     class ResolveName {
 
         @Test
         void readsTheShortNameForTheShortForm() {
 
-            var faction = createNamedFaction(SHORT_NAME, LONG_NAME);
+            var factionMock = createNamedFaction(SHORT_NAME, LONG_NAME);
 
-            assertThat(FactionNames.resolveName(faction, FactionNameForm.SHORT))
+            assertThat(FactionNames.resolveName(factionMock, FactionNameForm.SHORT))
                 .isEqualTo("Hegemony");
         }
 
         @Test
         void readsTheLongNameForTheLongForm() {
 
-            var faction = createNamedFaction(SHORT_NAME, LONG_NAME);
+            var factionMock = createNamedFaction(SHORT_NAME, LONG_NAME);
 
-            assertThat(FactionNames.resolveName(faction, FactionNameForm.LONG))
+            assertThat(FactionNames.resolveName(factionMock, FactionNameForm.LONG))
                 .isEqualTo("The Hegemony");
         }
 
         @Test
         void keepsABlankNameAsAuthored() {
 
-            var faction = createNamedFaction(SHORT_NAME, " ");
+            var factionMock = createNamedFaction(SHORT_NAME, " ");
 
-            assertThat(FactionNames.resolveName(faction, FactionNameForm.LONG))
+            assertThat(FactionNames.resolveName(factionMock, FactionNameForm.LONG))
                 .isEqualTo(" ");
         }
 
@@ -79,16 +90,21 @@ class FactionNamesTests {
         @Test
         void readsEveryFactionsShortAndLongNameLeavingBlanksOut() {
             // Plenty of modded factions declare no long name; a blank is nothing a caller could draw.
-            var sectorMock = mock(SectorAPI.class);
-            var factions = List.of(
+            var sectorMock = createSectorOf(
                 createNamedFaction(SHORT_NAME, LONG_NAME),
                 createNamedFaction("Pather", " "));
 
-            when(sectorMock.getAllFactions())
-                .thenReturn(factions);
+            assertThat(FactionNames.listEveryName(sectorMock))
+                .containsExactly("Hegemony", "Pather", "The Hegemony");
+        }
+
+        @Test
+        void readsANameAuthoredAsBothFormsOnce() {
+            // A second copy says nothing the first did not, and would only be read again.
+            var sectorMock = createSectorOf(createNamedFaction("Tri-Tachyon", "Tri-Tachyon"));
 
             assertThat(FactionNames.listEveryName(sectorMock))
-                .containsExactly("Hegemony", "The Hegemony", "Pather");
+                .containsExactly("Tri-Tachyon");
         }
 
         @Test
@@ -105,36 +121,36 @@ class FactionNamesTests {
         @Test
         void readsTheLongNameWhenItHasText() {
 
-            var faction = createNamedFaction(SHORT_NAME, LONG_NAME);
+            var factionMock = createNamedFaction(SHORT_NAME, LONG_NAME);
 
-            assertThat(FactionNames.resolveFullestName(faction))
+            assertThat(FactionNames.resolveFullestName(factionMock))
                 .isEqualTo("The Hegemony");
         }
 
         @Test
         void fallsBackToTheShortNameWhenTheLongIsBlank() {
 
-            var faction = createNamedFaction(SHORT_NAME, "  ");
+            var factionMock = createNamedFaction(SHORT_NAME, "  ");
 
-            assertThat(FactionNames.resolveFullestName(faction))
+            assertThat(FactionNames.resolveFullestName(factionMock))
                 .isEqualTo("Hegemony");
         }
 
         @Test
         void trimsTheNameItReads() {
 
-            var faction = createNamedFaction(null, "  The Hegemony ");
+            var factionMock = createNamedFaction(null, "  The Hegemony ");
 
-            assertThat(FactionNames.resolveFullestName(faction))
+            assertThat(FactionNames.resolveFullestName(factionMock))
                 .isEqualTo("The Hegemony");
         }
 
         @Test
         void answersNullWhenNeitherNameHasText() {
 
-            var faction = createNamedFaction("", null);
+            var factionMock = createNamedFaction("", null);
 
-            assertThat(FactionNames.resolveFullestName(faction))
+            assertThat(FactionNames.resolveFullestName(factionMock))
                 .isNull();
         }
 

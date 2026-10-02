@@ -46,7 +46,7 @@ public final class StarsectorStrings {
     // class this widely read cannot be handed null by a suite that first loads it under a stood-in game.
     private static final Logger LOG = Logger.getLogger(StarsectorStrings.class);
 
-    // Where a mod's strings sit in its own folder, as the game loads them.
+    // Where every mod's strings sit, merged by the game into the one file the lookups read.
     private static final String STRINGS_PATH = "data/strings/strings.json";
 
     private StarsectorStrings() {
@@ -82,38 +82,36 @@ public final class StarsectorStrings {
     }
 
     /**
-     * Every non-blank string one mod ships in one category of its {@code data/strings/strings.json},
-     * read off that mod's own file as the game loads it - for a caller that has to know everything its
-     * text may say, such as settling the face that text is drawn in.
+     * Every non-blank string in one category of {@code data/strings/strings.json}, as the game merges that
+     * file across every enabled mod - for a caller that has to know everything its text may say, such as
+     * settling the face that text is drawn in.
+     *
+     * <p>The merged file rather than one mod's own, because it is what {@link #get(String, String)} draws
+     * from: a translation mod replacing a category's strings replaces them here too, so a face settled on
+     * what was read holds the text that is drawn.
      *
      * <p>Empty rather than failing where the file or the category cannot be read, and said in the log
      * on each such read, since a caller settling on what it read would otherwise act on nothing with
      * no trace of why.
      *
-     * @param modId    the mod whose file is read
-     * @param category the category read out of it
-     * @return the category's strings, in the file's order
+     * @param category the category read
+     * @return the category's strings, in no particular order: the game's parser keeps none
      */
-    public static List<String> listCategoryStrings(String modId, String category) {
+    public static List<String> listCategoryStrings(String category) {
 
         try {
-            var categoryObject = Global.getSettings().loadJSON(STRINGS_PATH, modId).getJSONObject(category);
-            var strings = new ArrayList<String>();
-            var keys = categoryObject.keys();
+            var categoryObject = Global.getSettings().getMergedJSON(STRINGS_PATH).getJSONObject(category);
+            var keys = new ArrayList<String>();
+            var keyIterator = categoryObject.keys();
 
-            while (keys.hasNext()) {
-
-                var text = categoryObject.optString((String) keys.next());
-
-                if (KmlibStrings.hasText(text)) {
-                    strings.add(text);
-                }
+            while (keyIterator.hasNext()) {
+                keys.add((String) keyIterator.next());
             }
-            return strings;
+            return KmlibStrings.collectTexts(keys, categoryObject::optString);
 
         } catch (IOException | JSONException | RuntimeException readFailure) {
 
-            LOG.warn("The strings of category '" + category + "' in " + modId + "'s " + STRINGS_PATH
+            LOG.warn("The strings of category '" + category + "' in the merged " + STRINGS_PATH
                 + " could not be read", readFailure);
             return List.of();
         }

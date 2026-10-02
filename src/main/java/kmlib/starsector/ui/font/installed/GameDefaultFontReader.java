@@ -33,10 +33,11 @@ import java.util.function.Function;
  */
 public final class GameDefaultFontReader {
 
-    private static final Logger LOG = Global.getLogger(GameDefaultFontReader.class);
+    // The settings key the game names its paragraph face under, for any reader of the game's settings in
+    // this package, live or off an install.
+    static final String DEFAULT_FONT_KEY = "defaultFont";
 
-    // The settings key the game names its paragraph face under.
-    private static final String DEFAULT_FONT_KEY = "defaultFont";
+    private static final Logger LOG = Global.getLogger(GameDefaultFontReader.class);
 
     // Reads only; never instantiated.
     private GameDefaultFontReader() {

@@ -58,8 +58,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`checkFontEditions`** 和 **`font-editions.lock.json`**：每次 `test` 都在该门禁之后运行；门禁会按锁文件固定的 blob SHA 获取每个版本分支的描述文件，并覆盖到安装环境自身的描述文件之上。上游发布新的语言包会使构建失败，并指出版本分支、字体以及两个 SHA，直到 **`writeFontEditionsLock`** 重写锁文件中的字体为止。锁文件以 KM 自己的名称列出每个版本分支，以及其仓库、分支、描述文件目录和语言，并为每种语言给出一段探测文本；其中的字体就是枚举中的字体。每次构建都需要网络和游戏的字体。
 - **`StarsectorFont.getBasename()`**：图集的基本文件名，日志行或失败信息以此指明字体。
 - **`StarsectorFont.VANILLA_INSIGNIA_21`** 和 **`VANILLA_INSIGNIA_25`**：正文字体的中号与较大字号，即文本从 `insignia42LTaa`（核心本地化唯一没有补上其文字的字号）向下降级、在退到游戏默认字体之前经过的各级。
-- **`SettledFaceMemo`**：记录每段文本最终落定的字体，在其所依据的文本保持不变期间一直保留。调用方指明某种字体要绘制的文本种类（使用自己的键）以及每种文本的读取器；每种文本只读取一次，每个字体与文本种类组合只解析一次，发生变动的字体只记录一次日志，指明所请求的字体、文本种类以及返回的字体。落定需要读取每段文本的每个字形，因此调用方应每个星域持有一个备忘，而不是每次绘制都重新解析，并在文本变化时调用 `discardFaces()`。`createUnsettled()` 保留每个所请求的字体，供没有文本可读的调用方使用。**`InstalledFaces.createFaceMemo(reader)`** 是基于已安装图集的备忘。
-- **用于落定字体的文本读取器**：**`SectorStarSystems.listSystemNames(sector)`**，每个星系的名称；**`SectorMarkets.listMarketNames(sector)`**，每个市场的名称；以及 **`StarsectorStrings.listCategoryStrings(modId, category)`**，某个 Mod 某一类别在当前构建语言区域下的字符串，文件无法解析时发出警告并不读取任何内容。每个读取器都读取全部内容，无论是否已被发现，因为玩家尚未见到的名称，正是之后同一星域中某个字体要绘制的名称；星域为 null 时不读取任何内容。
+- **`SettledFaceMemo`**：记录每段文本最终落定的字体，在其所依据的文本保持不变期间一直保留。调用方指明某种字体要绘制的文本种类（使用自己的键）以及每种文本的读取器；每种文本只读取一次，每个字体与文本种类组合只解析一次，发生变动的字体只记录一次日志，指明所请求的字体、文本种类以及返回的字体。落定需要读取每段文本的每个字形，因此调用方应每个星域持有一个备忘，而不是每次绘制都重新解析，并在文本变化时调用 `discardFaces()`。构造函数拒绝缺失的解析器来源或读取器；读取器对某种文本返回 null 时，该种文本视为不含任何文本。`createUnsettled()` 保留每个所请求的字体，供没有文本可读的调用方使用。**`InstalledFaces.createFaceMemo(reader)`** 是基于已安装图集的备忘，首次落定时才构建其解析器。
+- **用于落定字体的文本读取器**：**`SectorStarSystems.listSystemNames(sector)`**，每个星系的名称；**`SectorMarkets.listMarketNames(sector)`**，每个市场的名称。二者都读取全部内容，无论是否已被发现，因为玩家尚未见到的名称，正是之后同一星域中某个字体要绘制的名称；星域为 null 时不读取任何内容。**`StarsectorStrings.listCategoryStrings(category)`** 读取 `data/strings/strings.json` 中的某一类别，读取的是游戏在所有已启用 Mod 之间合并后的结果，因此替换这些字符串的翻译 Mod 所提供的内容就是读到的内容；文件或类别无法读取时发出警告并不读取任何内容。
+- **`KmlibStrings.collectTexts(items, readText)`**：按顺序取每一项给出的文本，省略 null 和空白。上述读取器以及其他任何读取"这里可能写着什么"的代码共用这一个循环。
 
 #### 势力
 
@@ -67,7 +68,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`AllianceRecord`**：扁平化为纯数据的一个联盟：它的稳定 ID、显示名称，以及按市场规模降序排列的成员。每个字段都是读取时拍下的快照，而不是指回维护该联盟之物的实时句柄。
 - **`AllianceSource`**：这些记录传入所经由的端口，使归并或权衡它们的代码无需游戏环境即可运行。之所以是端口而非快照，是因为联盟会在游戏过程中建立和解散。
 - **`NexerelinAllianceSource`**：以这些记录呈现的 Nexerelin 实时联盟，位于存在性门禁之后。为此唯一提及 `exerelin.*` 的代码位于一个由门禁延迟加载的独立类中，连方法签名都不会触及它，因此未安装该 Mod 的环境永远不会查找 Nexerelin 的类；使用方归并记录时也无需知道是哪个 Mod 产生了它们。
-- **`FactionNames`** 和 **`FactionNameForm`**：在一处读取势力的设定名称。`resolveName` 按设定原样读取简称或全称，势力不存在时为 null；`resolveFullestName` 读取全称，全称为空时读取简称，结果经过修剪且永不为空。`listEveryName` 读取每个势力的全部设定名称（简称和全称），供必须覆盖所有名称的字体使用。`FactionListingReport` 通过它读取全称。
+- **`FactionNames`** 和 **`FactionNameForm`**：在一处读取势力的设定名称。`resolveName` 按设定原样读取简称或全称，势力不存在时为 null；`resolveFullestName` 读取全称，全称为空时读取简称，结果经过修剪且永不为空。`listEveryName` 读取每个势力的全部设定名称（简称和全称），同一文本只读取一次，供必须覆盖所有名称的字体使用。`FactionListingReport` 通过它读取全称。
 - **`StarsectorFactionColours.findPalette()`**：势力的亮色与暗色配对，没有灰色后备，在星域或势力不存在时为 null；适用于对无法确定的势力不绘制任何内容的调用方。`resolvePalette` 经由它进行后备。
 
 #### 几何

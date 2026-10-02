@@ -31,7 +31,7 @@ public final class LazyFontCache {
     private static final Logger LOG = Global.getLogger(LazyFontCache.class);
 
     // Faces loaded so far, cached by path so a face already selected loads once even
-    // after switching away and back. failedPaths remembers a face that would not load, so
+    // after switching away and back. FAILED_FONT_PATHS remembers a face that would not load, so
     // its FontException is logged once, not on every call.
     private static final Map<String, LazyFont> FONT_BY_PATH = new HashMap<>();
     private static final Set<String> FAILED_FONT_PATHS = new HashSet<>();

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
  * Pins how the game's declared default face is read: the enum's face where the setting names one, the
  * declared file by its path otherwise - smoothing and all - and vanilla's face where it names nothing.
  */
-class GameDefaultFontReaderTests {
+final class GameDefaultFontReaderTests {
 
     // A language pack's own face, as a mod pointing the game's defaultFont at it would name it.
     private static final String PACK_FONT_PATH = "graphics/fonts/pack_script15.fnt";

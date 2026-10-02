@@ -2,6 +2,7 @@ package kmlib.text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Generic, Starsector-agnostic reads over strings shared across the
@@ -68,6 +69,31 @@ public final class KmlibStrings {
             throw new IllegalArgumentException(message);
         }
         return value;
+    }
+
+    /**
+     * The text {@code readText} answers for each of {@code items}, in their order, a null or blank
+     * answer left out - the one loop every read of "what may this say" over a listing would otherwise
+     * write for itself.
+     *
+     * @param items    what to read the text off
+     * @param readText reads one item's text, which may be null or blank
+     * @param <T>      the kind of item
+     * @return each item's text where it has some, never null
+     */
+    public static <T> List<String> collectTexts(Iterable<? extends T> items, Function<? super T, String> readText) {
+
+        var texts = new ArrayList<String>();
+
+        for (var item : items) {
+
+            var text = readText.apply(item);
+
+            if (hasText(text)) {
+                texts.add(text);
+            }
+        }
+        return texts;
     }
 
     /**

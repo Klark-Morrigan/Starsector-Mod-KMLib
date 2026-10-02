@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -137,18 +138,13 @@ final class StarsectorStringsTests {
         }
 
         @Test
-        void readsEveryNonBlankStringOfTheCategoryInTheModsOwnFile() throws Exception {
-            // Any other category is some other text, and a blank is nothing a caller could draw.
-            var settingsMock = mock(SettingsAPI.class);
+        void readsEveryNonBlankStringOfTheCategoryInTheMergedFile() throws Exception {
+            // The merged file, as a translation mod replacing the category leaves it; any other category
+            // is some other text, and a blank is nothing a caller could draw.
+            installMergedStrings("{ \"test_category\": { \"first\": \"Political map\", \"blank\": \"\" },"
+                + " \"other\": { \"elsewhere\": \"Another text\" } }");
 
-            when(settingsMock.loadJSON("data/strings/strings.json", "some_mod"))
-                .thenReturn(new JSONObject(
-                    "{ \"test_category\": { \"first\": \"Political map\", \"blank\": \"\" },"
-                        + " \"other\": { \"elsewhere\": \"Another text\" } }"));
-
-            Global.setSettings(settingsMock);
-
-            assertThat(StarsectorStrings.listCategoryStrings("some_mod", CATEGORY))
+            assertThat(StarsectorStrings.listCategoryStrings(CATEGORY))
                 .containsExactly("Political map");
         }
 
@@ -157,21 +153,48 @@ final class StarsectorStringsTests {
             // A caller acting on what it read would otherwise act on nothing with no trace of why.
             var settingsMock = mock(SettingsAPI.class);
 
-            when(settingsMock.loadJSON("data/strings/strings.json", "some_mod"))
+            when(settingsMock.getMergedJSON("data/strings/strings.json"))
                 .thenThrow(new IOException("missing"));
 
             Global.setSettings(settingsMock);
 
+            assertThat(readCategoryLoggingTheFailure())
+                .isEmpty();
+        }
+
+        @Test
+        void answersNothingAndSaysSoWhereNoModDeclaresTheCategory() throws Exception {
+            // A category spelt differently from the file's reads as absent, which is worth a line too.
+            installMergedStrings("{ \"other\": { \"elsewhere\": \"Another text\" } }");
+
+            assertThat(readCategoryLoggingTheFailure())
+                .isEmpty();
+        }
+
+        // Stands the merged strings file up as the given JSON.
+        private void installMergedStrings(String mergedJson) throws Exception {
+
+            var settingsMock = mock(SettingsAPI.class);
+
+            when(settingsMock.getMergedJSON("data/strings/strings.json"))
+                .thenReturn(new JSONObject(mergedJson));
+
+            Global.setSettings(settingsMock);
+        }
+
+        // Reads the test category and pins that the one line logged is the read failure's.
+        private List<String> readCategoryLoggingTheFailure() {
+
             var strings = new ArrayList<String>();
             var logFake = LogAppenderFake.captureLogOf(
                 StarsectorStrings.class,
-                () -> strings.addAll(StarsectorStrings.listCategoryStrings("some_mod", CATEGORY)));
+                () -> strings.addAll(StarsectorStrings.listCategoryStrings(CATEGORY)));
 
-            assertThat(strings)
-                .isEmpty();
             assertThat(logFake.getMessages())
-                .containsExactly("The strings of category 'test_category' in some_mod's data/strings/strings.json"
+                .containsExactly("The strings of category 'test_category' in the merged data/strings/strings.json"
                     + " could not be read");
+
+            return strings;
         }
     }
 }
