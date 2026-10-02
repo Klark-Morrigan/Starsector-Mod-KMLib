@@ -259,6 +259,23 @@ final class ChangelogOutlineTests {
         }
 
         @Test
+        void aTabIndentsToTheNextTabStop() {
+
+            // One tab is four columns, deeper than the outer item's two-space indent but level with the
+            // item indented by four spaces.
+            var outline = parseText("""
+                ## [Unreleased]
+
+                  - Outer.
+                \t- By a tab.
+                    - By four spaces.
+                """);
+
+            assertThat(outline.versions().get(0).sectionOutlines().get(0).itemCountsByDepth())
+                .containsExactly(1, 2);
+        }
+
+        @Test
         void numberedItemsAreCounted() {
 
             var outline = parseText("""

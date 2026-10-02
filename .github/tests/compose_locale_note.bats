@@ -157,7 +157,7 @@ read_output() {
 
     export DEFAULT_LOCALE="en" CHANGELOG_LIB="$TMP/changelog.sh"
     run_compose "[$ENGLISH_LOCALE]"
-    
+
     [ "$status" -eq 0 ]
     [ -z "$(read_output translations)" ]
 }
@@ -190,6 +190,17 @@ read_output() {
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"locale zh-hans has no localisation/zh-hans/CHANGELOG.md"* ]]
+}
+
+@test "fails when the changelog helpers are not where they were said to be" {
+
+    write_translated_changelog
+    export DEFAULT_LOCALE="en" CHANGELOG_LIB="$TMP/absent/changelog.sh"
+    run_compose "[$ENGLISH_LOCALE,$SIMPLIFIED_CHINESE_LOCALE]"
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"changelog helpers not found at $TMP/absent/changelog.sh"* ]]
+    [ ! -s "$GITHUB_OUTPUT" ]
 }
 
 @test "requires the default locale to tell the translated locales apart" {

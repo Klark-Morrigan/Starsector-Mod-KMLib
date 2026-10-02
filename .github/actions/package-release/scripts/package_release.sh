@@ -13,9 +13,8 @@
 # Per locale, in LOCALES order:
 #   1. ./gradlew writeLocaleFiles -Plocale=<tag>, which writes that locale's
 #      data files and merged mod_info.json into the checkout
-#   2. the runtime payload assembled into dist/<folder>/, carrying the locale's
-#      own CHANGELOG.md: a translated locale's from localisation/<tag>/, the
-#      default's from the root
+#   2. the runtime payload assembled into dist/<folder>/, with the locale's
+#      own CHANGELOG.md
 #   3. <mod-id>.version filled into the payload for that locale
 #   4. <folder>-<version>-<tag>.zip and <mod-id>-<tag>.version into OUTPUT_DIR
 # then <mod-id>.version into OUTPUT_DIR as a copy of the default locale's.
@@ -49,6 +48,9 @@ source "${ACTIONS_DIR}/_lib/mod_info.sh"
 # shellcheck source=../../_lib/json.sh
 source "${ACTIONS_DIR}/_lib/json.sh"
 
+# shellcheck source=../../_lib/localisation.sh
+source "${ACTIONS_DIR}/_lib/localisation.sh"
+
 # Called rather than restated, so a zip's version file and the one a mod without
 # locales has always shipped come out of one implementation.
 FILL_VERSION_FILE_SCRIPT="${ACTIONS_DIR}/fill-version-file-template/scripts/fill_version_file_template.sh"
@@ -57,13 +59,9 @@ DIST_ROOT="dist"
 # What a player's install needs and nothing else - no source, tests, docs/dev,
 # build caches or Gradle wrapper. Each is copied when present, so a jar-only
 # library and an asset-bearing content mod share one list.
-CHANGELOG_FILE="CHANGELOG.md"
-PAYLOAD_FILES=(README.md "${CHANGELOG_FILE}" LICENSE)
+PAYLOAD_FILES=(README.md "${LOCALISATION_CHANGELOG_FILE}" LICENSE)
 PAYLOAD_DIRECTORIES=(data graphics sounds)
 
-# Where a translated locale keeps its translation of the changelog, under its
-# own tag.
-LOCALISATION_DIRECTORY="localisation"
 MOD_ROOT="${MOD_ROOT:-.}"
 OUTPUT_DIR="${OUTPUT_DIR:?${SCRIPT_NAME}: OUTPUT_DIR is required}"
 
@@ -157,28 +155,20 @@ assemble_payload() {
   replace_changelog_with_translation "${localeTag}"
 }
 
-# Swaps the root changelog in the payload for the locale's translation of it,
-# so a player opening their download reads what changed in the language they
-# chose. The default locale's is the root one, and an unlocalised release has
-# no other. A translated locale lacking one fails rather than shipping the
-# default's under its name: the parity suite holds every translated locale to
-# carrying one, so a gap here means the checkout is not what was tested.
+# Puts a translated locale's changelog in its payload in place of the root
+# one, so the player reads it in the language they downloaded. The default
+# locale and an unlocalised release keep the root changelog.
 replace_changelog_with_translation() {
 
   local localeTag="${1}"
-  local translatedChangelog="${LOCALISATION_DIRECTORY}/${localeTag}/${CHANGELOG_FILE}"
+  local translatedChangelog
 
-  if [[ -z "${localeTag}" || "${localeTag}" == "${DEFAULT_LOCALE}" || ! -f "${CHANGELOG_FILE}" ]]; then
+  if [[ -z "${localeTag}" || "${localeTag}" == "${DEFAULT_LOCALE}" || ! -f "${LOCALISATION_CHANGELOG_FILE}" ]]; then
     return
   fi
 
-  if [[ ! -f "${translatedChangelog}" ]]; then
-    echo "${SCRIPT_NAME}: locale ${localeTag} has no ${translatedChangelog}, the translation of" \
-         "${CHANGELOG_FILE}" >&2
-    exit 1
-  fi
-
-  cp "${translatedChangelog}" "${DIST_DIR}/${CHANGELOG_FILE}"
+  translatedChangelog="$(localisation_require_translated_changelog "${localeTag}")"
+  cp "${translatedChangelog}" "${DIST_DIR}/${LOCALISATION_CHANGELOG_FILE}"
 }
 
 # Packages one locale, or the unlocalised release for an empty tag.

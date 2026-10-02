@@ -100,16 +100,12 @@ public final class LocaleParity {
     }
 
     /**
-     * The translated changelogs that do not match the mod's own point for point, and the translated locales
-     * holding none. Every locale but the default carries a full translation of the changelog, so a player
-     * reads what changed in the language of the zip they downloaded and a release can show each language's
-     * notes for a version. A translation that fell behind is what this finds: a version missing, a section
-     * added or a point dropped, merged or split. Wording, links and emphasis are the translation's own and
-     * are not compared.
+     * The translated locales whose changelog is missing or does not match the mod's own point for point.
+     * Every locale but the default carries a full translation, which its zip and its release notes show.
+     * This finds a translation that fell behind: a missing version, an extra section, a dropped point.
+     * Wording is not compared. A mod with no changelog is asked for no translation.
      *
-     * <p>Nothing is asked of a mod keeping no changelog.
-     *
-     * @return one finding per missing translation, and one per difference in a translation's shape
+     * @return one finding per missing translation, and one per difference in a translation's outline
      */
     public List<String> findChangelogMismatches() {
 
@@ -125,8 +121,7 @@ public final class LocaleParity {
 
         for (var locale : manifest.declaredLocalesByTag().values()) {
 
-            // The default's changelog is the mod's own; a locale with no directory is found once, by the
-            // check about that.
+            // The default's changelog is the root one. A locale with no directory has its own finding.
             if (locale.equals(defaultLocale) || !bundleDirectoryNames.contains(locale.localeTag())) {
                 continue;
             }

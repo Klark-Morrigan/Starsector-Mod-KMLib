@@ -14,38 +14,34 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * A Keep a Changelog file read as its shape alone: the preamble before the first version, then each version
- * under its heading line, each holding its sections by heading level and the list items each section holds
- * at each depth of nesting.
+ * The shape of a Keep a Changelog file: its versions, each version's sections, and how many list items each
+ * section holds at each nesting depth.
  *
- * <p>Text is not read, so a translation and the file it translates read alike wherever they agree point for
- * point. What that leaves to compare is what falls behind when a translation does: a version, a section or
- * a list item the original gained and the translation never did. The version headings are the exception and
- * are held as written, since a release finds a version's section by its heading and an index links each
- * version by the anchor its heading makes.
+ * <p>The text is not read. A translation therefore has the same outline as the file it translates, until
+ * one of them gains a point the other lacks. Version headings are the exception. They are kept as written,
+ * because a release finds a version's notes by its heading and the index links to the heading's anchor.
  *
- * @param preamble the title, the introduction and the index, read as a version is
- * @param versions every version, in the order the file lists them
+ * @param preamble everything before the first version: the title, the introduction and the index
+ * @param versions every version, in file order
  */
 public record ChangelogOutline(
     BlockOutline preamble,
     List<BlockOutline> versions) {
 
-    // Fenced lines are code rather than headings or items, from the line opening the fence to the one
-    // closing it.
+    // Lines inside a code fence are neither headings nor list items.
     private static final Pattern FENCE = Pattern.compile("[ \\t]*(```|~~~).*");
 
     private static final Pattern HEADING = Pattern.compile("(#{1,6})\\s+(.*)");
 
-    // A bullet or a numbered item, after whatever indent nests it.
     private static final Pattern LIST_ITEM = Pattern.compile("([ \\t]*)(?:[-*+]|\\d+[.)])\\s+.*");
 
-    // How wide a tab indents a list item: CommonMark's tab stop.
+    // CommonMark's tab stop.
     private static final int TAB_WIDTH = 4;
 
-    // Keep a Changelog opens every version, Unreleased included, with a second-level heading whose text
-    // opens with the bracketed version. A second-level heading without one - an index - is a section.
-    private static final Pattern VERSION_HEADING = Pattern.compile("## \\[.*");
+    // Keep a Changelog opens each version, Unreleased included, with "## [". Any other second-level heading,
+    // such as the index, is a section.
+    private static final int VERSION_HEADING_LEVEL = 2;
+    private static final String VERSION_HEADING_TEXT_PREFIX = "[";
 
     /**
      * Holds the versions unmodifiable, however they were built.
@@ -60,14 +56,12 @@ public record ChangelogOutline(
     }
 
     /**
-     * How this outline differs from the one it is held to, as phrases naming where and how. Versions are
-     * compared by heading first: a missing or added version, then the first one out of place once both hold
-     * the same. Then the preamble and every version both hold, each by its headings' levels in order and,
-     * where those agree, each section by its list items at each depth.
+     * How this outline differs from a reference outline. Versions are compared first, by heading. Then the
+     * preamble and each version both files hold are compared section by section.
      *
-     * @param referenceOutline the outline this one is held to
-     * @param referenceTag     what to call the reference in a phrase
-     * @return one phrase per difference, empty where the two agree point for point
+     * @param referenceOutline the outline this one should match
+     * @param referenceTag     how a phrase names the reference
+     * @return one phrase per difference; empty when the two match
      */
     public List<String> describeDifferencesFrom(ChangelogOutline referenceOutline, String referenceTag) {
 
@@ -96,8 +90,8 @@ public record ChangelogOutline(
         var versions = new ArrayList<BlockBuilder>();
         var block = preamble;
 
-        // The indents of the list items open above the line being read, outermost first: an item's depth
-        // is how many of them it sits inside. A heading or an unindented paragraph ends the list.
+        // The indents of the list items the current line is nested under, outermost first. A heading or an
+        // unindented paragraph ends the list.
         var openItemIndents = new ArrayDeque<Integer>();
         var isInsideFence = false;
 
@@ -117,14 +111,17 @@ public record ChangelogOutline(
 
                 openItemIndents.clear();
 
-                if (VERSION_HEADING.matcher(line).matches()) {
+                var headingLevel = heading.group(1).length();
+                var headingText = heading.group(2).strip();
+
+                if (headingLevel == VERSION_HEADING_LEVEL && headingText.startsWith(VERSION_HEADING_TEXT_PREFIX)) {
 
                     block = new BlockBuilder(line.strip());
                     versions.add(block);
 
                 } else {
 
-                    block.openSection(heading.group(1).length(), heading.group(2).strip());
+                    block.openSection(headingLevel, headingText);
                 }
                 continue;
             }
@@ -182,9 +179,7 @@ public record ChangelogOutline(
         return indent;
     }
 
-    // An item indented past the innermost open item nests one deeper; one back at an outer item's indent
-    // returns to that item's depth. Indents are compared rather than counted in steps, so a file nesting by
-    // two spaces and one nesting by four read alike.
+    // Indents are compared, not counted in fixed steps, so nesting by two spaces and by four read the same.
     private static int resolveItemDepth(Deque<Integer> openItemIndents, int itemIndent) {
 
         while (!openItemIndents.isEmpty() && openItemIndents.peekLast() > itemIndent) {
@@ -196,9 +191,8 @@ public record ChangelogOutline(
         return openItemIndents.size() - 1;
     }
 
-    // The versions this outline lacks or adds against the reference, or where both hold the same, the first
-    // one out of place: every version after it is likely out of place for the same reason. Lists of
-    // different lengths holding the same headings mean one declares a version twice.
+    // Order is reported only at the first misplaced version, since the ones after it usually move with it.
+    // Equal heading sets with unequal counts mean a version is declared twice.
     private List<String> describeVersionDifferences(ChangelogOutline referenceOutline, String referenceTag) {
 
         var headingLines = listVersionHeadingLines();
@@ -248,7 +242,7 @@ public record ChangelogOutline(
             .toList();
     }
 
-    // A block being read: the sections opened so far, the last one taking the items read next.
+    // Items read are counted in the last section opened.
     private static final class BlockBuilder {
 
         private final String blockName;
@@ -279,11 +273,10 @@ public record ChangelogOutline(
     }
 
     /**
-     * The preamble or one version: its sections in order, the first being whatever stands under the block's
-     * own heading before any other.
+     * The preamble or one version, as its sections in order.
      *
      * @param blockName       the version's heading line as written, or {@link #PREAMBLE_NAME}
-     * @param sectionOutlines every section, the lead first
+     * @param sectionOutlines every section; the first holds what comes before any heading of its own
      */
     public record BlockOutline(
         String blockName,
@@ -304,9 +297,8 @@ public record ChangelogOutline(
             sectionOutlines = List.copyOf(sectionOutlines);
         }
 
-        // Headings are compared by level alone, their text being translated. Only where every heading
-        // agrees are the sections paired by position and their items compared: a section missing in
-        // between would shift every pairing after it.
+        // Headings are compared by level only, because their text is translated. Items are compared only when
+        // the headings match: one missing section would shift every pairing after it.
         List<String> describeDifferencesFrom(BlockOutline referenceBlock, String referenceTag) {
 
             var headingMarks = listHeadingMarks();
@@ -334,12 +326,12 @@ public record ChangelogOutline(
             return differences;
         }
 
-        // The lead section has no heading of its own, so it is left out.
+        // The lead section has no heading, so it is left out.
         private List<String> listHeadingMarks() {
 
             return sectionOutlines.stream()
                 .filter(section -> section.headingLevel() > 0)
-                .map(section -> "#".repeat(section.headingLevel()))
+                .map(SectionOutline::formatHeadingMark)
                 .toList();
         }
     }
@@ -396,13 +388,16 @@ public record ChangelogOutline(
             itemCountsByDepth = List.copyOf(itemCountsByDepth);
         }
 
-        // Where the section stands, for a finding: under its heading as written in the file read, which is
-        // the text a reader searches that file for.
+        // Names the section by its heading as written in its own file, which is what a reader searches for.
         String describePlace() {
 
             return headingLevel == 0
                 ? "before its first heading"
-                : "under " + "#".repeat(headingLevel) + " " + headingText;
+                : "under " + formatHeadingMark() + " " + headingText;
+        }
+
+        String formatHeadingMark() {
+            return "#".repeat(headingLevel);
         }
     }
 }

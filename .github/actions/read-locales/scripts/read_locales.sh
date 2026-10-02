@@ -36,7 +36,11 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source=../../_lib/json.sh
 source "${LIB_DIR}/json.sh"
 
-MANIFEST_FILE="localisation/manifest.json"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/localisation.sh
+source "${LIB_DIR}/localisation.sh"
+
+MANIFEST_FILE="${LOCALISATION_MANIFEST_FILE}"
 
 # Lowercased BCP 47, the rule the build holds a tag to. Checked again here
 # because a tag is spliced into the release's file names, so nothing matching

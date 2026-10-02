@@ -9,9 +9,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A mod's {@code localisation/} directory: the manifest at its root, one bundle directory per locale,
- * and beside it the launcher base every locale's fragment is merged over and the changelog every
- * translated locale translates.
+ * A mod's {@code localisation/} directory: the manifest at its root and one bundle directory per locale.
+ * Two files beside it are read too: the launcher base the fragments merge over, and the mod's changelog.
  *
  * <p>Offered to every mod on these conventions because the layout is the tooling's rather than any one
  * mod's. What a mod translates is its own business, and none of it is decided here - this reads, and
@@ -24,8 +23,8 @@ import java.util.Optional;
 public final class LocalisationDirectory {
 
     /**
-     * The mod's changelog, at the mod root in the default locale and as each translated locale's
-     * translation of it in that locale's bundle directory, under the same name.
+     * The changelog's name: at the mod root for the default locale, and in each translated locale's bundle
+     * directory for its translation.
      */
     public static final String CHANGELOG_FILE_NAME = "CHANGELOG.md";
 
@@ -86,8 +85,7 @@ public final class LocalisationDirectory {
     }
 
     /**
-     * Reads the mod's own changelog beside this directory, the one written in the default locale. Absent
-     * for a mod keeping none, whose locales then have none to translate.
+     * Reads the mod's changelog, at the mod root beside this directory.
      *
      * @return its outline, or nothing where the mod keeps no changelog
      */
