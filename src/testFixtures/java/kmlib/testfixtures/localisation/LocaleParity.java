@@ -84,6 +84,7 @@ public final class LocaleParity {
                 findUndeclaredBundleDirectories(),
                 findMissingBundleFiles(),
                 findStringsKeyMismatches(),
+                findBlankStrings(),
                 findFormatArgumentMismatches(),
                 findLocalesMissingCoreLocalisation(),
                 findSettingsRowMismatches(),
@@ -93,6 +94,17 @@ public final class LocaleParity {
                 findChangelogMismatches())
             .flatMap(List::stream)
             .toList();
+    }
+
+    /**
+     * The strings that are present but blank, in any locale including the default. The key check passes
+     * them, and the game draws each one as its fallback sentinel - so a sentence a notice needs reads as
+     * {@code [REDACTED]} to the player in that locale only.
+     *
+     * @return one finding per such string
+     */
+    public List<String> findBlankStrings() {
+        return stringsParity.findBlankStrings();
     }
 
     /**

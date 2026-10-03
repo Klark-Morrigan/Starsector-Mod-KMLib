@@ -266,6 +266,46 @@ final class LocaleParityTests {
     }
 
     @Nested
+    class FindBlankStrings {
+
+        @Test
+        void wordedStringsPass(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot)).findBlankStrings())
+                .isEmpty();
+        }
+
+        @Test
+        void aBlankTranslationIsFound(@TempDir Path modRoot) throws IOException {
+            // Present, so the key check passes it, and drawn as the sentinel in that locale alone.
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "\"farewell\": \"Au revoir\"",
+                "\"farewell\": \" \"");
+
+            assertThat(createParity(localisation).findBlankStrings())
+                .containsExactly("zh-hans: strings.json kmu > farewell is blank, which draws as [REDACTED]");
+        }
+
+        @Test
+        void aBlankDefaultIsFound(@TempDir Path modRoot) throws IOException {
+            // Every other check holds a locale to the default, so a blank there would pass them all.
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeFile(
+                localisation
+                    .resolve("en")
+                    .resolve("strings.json"),
+                replaceRun(ENGLISH_STRINGS, "\"Goodbye\"", "\"\""));
+
+            assertThat(createParity(localisation).findBlankStrings())
+                .containsExactly("en: strings.json kmu > farewell is blank, which draws as [REDACTED]");
+        }
+    }
+
+    @Nested
     class FindChangelogMismatches {
 
         @Test

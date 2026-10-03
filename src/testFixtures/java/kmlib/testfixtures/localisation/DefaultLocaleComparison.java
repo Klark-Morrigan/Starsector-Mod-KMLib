@@ -4,11 +4,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
  * Reads one bundle file out of the default locale and out of every other locale holding it, and hands each
- * pair of readings to a comparison. The strings and settings checks are built on it.
+ * pair of readings to a comparison. The strings and settings checks are built on it. A check that needs no
+ * default to hold a locale to reads each locale's file on its own instead.
  */
 final class DefaultLocaleComparison {
 
@@ -57,6 +59,27 @@ final class DefaultLocaleComparison {
                 referenceReading);
 
             findings.addAll(describeMismatches.apply(readings));
+        }
+        return findings;
+    }
+
+    // Reads the file out of every locale holding it, the default included, and hands each reading to a
+    // check of that locale alone. Compares nothing when the manifest maps no such file.
+    <T> List<String> inspectEveryLocale(
+            String bundleFileName,
+            Function<LocaleBundle, T> readBundleFile,
+            BiFunction<String, T, List<String>> describeFindings) {
+
+        var manifest = directory.readManifest();
+        var findings = new ArrayList<String>();
+
+        for (var locale : manifest.declaredLocalesByTag().values()) {
+
+            var bundle = directory.openBundle(locale);
+
+            if (isFileHeld(manifest, bundle, bundleFileName)) {
+                findings.addAll(describeFindings.apply(locale.localeTag(), readBundleFile.apply(bundle)));
+            }
         }
         return findings;
     }

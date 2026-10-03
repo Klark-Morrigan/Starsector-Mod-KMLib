@@ -13,8 +13,12 @@ import static kmlib.testfixtures.starsector.json.ShippedJson.locateMember;
 
 /**
  * The strings file of every locale against the default's: its keys, and the arguments each string takes.
+ * Also every locale's strings on their own, for wording that is present but blank.
  */
 final class StringsParity {
+
+    // How the game draws a string that resolves blank, so a finding says what the player would see.
+    private static final String BLANK_STRING_DRAWN_AS = "[REDACTED]";
 
     private final DefaultLocaleComparison comparison;
 
@@ -33,6 +37,14 @@ final class StringsParity {
         return wordingsByStringKey;
     }
 
+    List<String> findBlankStrings() {
+
+        return comparison.inspectEveryLocale(
+            LocaleBundle.STRINGS_FILE_NAME,
+            bundle -> flattenStrings(bundle.readStrings()),
+            StringsParity::describeBlankStrings);
+    }
+
     List<String> findFormatArgumentMismatches() {
 
         return comparison.compareWithDefault(
@@ -47,6 +59,21 @@ final class StringsParity {
             LocaleBundle.STRINGS_FILE_NAME,
             bundle -> flattenStrings(bundle.readStrings()).keySet(),
             readings -> ComparedReadings.describeMissingAndAdded(readings, "string"));
+    }
+
+    // Blank in any locale, the default included: the key check passes it, and the player reads the sentinel.
+    private static List<String> describeBlankStrings(String localeTag, SortedMap<String, String> wordingsByKey) {
+
+        var findings = new ArrayList<String>();
+
+        wordingsByKey.forEach((stringKey, wording) -> {
+
+            if (wording == null || wording.isBlank()) {
+                findings.add(localeTag + ": " + LocaleBundle.STRINGS_FILE_NAME + " " + stringKey
+                    + " is blank, which draws as " + BLANK_STRING_DRAWN_AS);
+            }
+        });
+        return findings;
     }
 
     // A string only one side declares is the key check's finding, so only strings both declare are compared.

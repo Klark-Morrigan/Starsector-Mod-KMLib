@@ -9,13 +9,16 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 /**
  * Covers the guards that stand in for a type system this value has none of.
  *
- * <p>Three of its four components are strings, so the compiler cannot tell a mod ID from a feature
- * key from a whole sentence, and a caller handing them over in the wrong order would compose a latch
- * out of a sentence and show a player a key. What tells them apart is their shape - a key carries no
- * space and a sentence does - so these cases are the only thing standing between a transposed
- * argument and a report that reads as plausibly as the right one.
+ * <p>Its components are all strings, so the compiler cannot tell a mod ID from a feature key from a
+ * whole sentence. The two keys are checked for a key's shape, since a sentence there would become a
+ * latch. The sentences are not checked, since no shape tells a sentence from a key in every language,
+ * and refusing one costs the report it was built for.
  */
 final class CompatibilityConsumerTests {
+
+    // "The map will not respond to the cursor." (U+5730 U+56FE U+5C06 U+65E0 U+6CD5 U+54CD U+5E94
+    // U+5149 U+6807 U+3002) - a whole sentence in a language written without spaces.
+    private static final String CHINESE_LOST_FEATURE = "地图将无法响应光标。";
 
     private static final String MOD_ID = "some-mod";
 
@@ -66,20 +69,16 @@ final class CompatibilityConsumerTests {
         }
 
         @Test
-        void refusesAKeyWhereTheLostSentenceBelongs() {
+        void takesBothSentencesWrittenWithoutSpaces() {
 
-            // The other direction of the same transposition, and the one a player would see: a key
-            // in the effect row reads as a mod that lost "map-cursor".
-            assertThatIllegalArgumentException()
-                .isThrownBy(() -> new CompatibilityConsumer(MOD_ID, FEATURE_KEY, FEATURE_KEY));
-        }
+            // The value is built where a failure is being reported, so refusing a sentence would
+            // cost the player the report.
+            var consumer = new CompatibilityConsumer(MOD_ID, FEATURE_KEY, CHINESE_LOST_FEATURE, CHINESE_LOST_FEATURE);
 
-        @Test
-        void refusesAKeyWhereTheUnaffectedSentenceBelongs() {
-
-            assertThatIllegalArgumentException()
-                .isThrownBy(() ->
-                    new CompatibilityConsumer(MOD_ID, FEATURE_KEY, LOST_FEATURE, FEATURE_KEY));
+            assertThat(consumer.lostFeature())
+                .isEqualTo(CHINESE_LOST_FEATURE);
+            assertThat(consumer.unaffectedFeature())
+                .isEqualTo(CHINESE_LOST_FEATURE);
         }
 
         @Test
