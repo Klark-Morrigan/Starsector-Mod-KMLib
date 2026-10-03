@@ -45,7 +45,7 @@ final class GameReachReporterTests {
                 RUNNING_GAME_VERSION,
                 () -> buildReporter().recordReachFailure(FAILURE_SITE, BROKEN_REACH, reachFailure));
 
-            var failure = failureRecord.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
 
             assertThat(failure.subject())
                 .isEqualTo(new CompatibilitySubject("Starsector", TARGETED_GAME_VERSION, RUNNING_GAME_VERSION));
@@ -73,7 +73,7 @@ final class GameReachReporterTests {
             ModStateScopes.runWithoutGameSettings(() ->
                 buildReporter().recordReachFailure(FAILURE_SITE, BROKEN_REACH));
 
-            assertThat(failureRecord.takeNextUnreported().subject())
+            assertThat(CompatibilityFailureFixture.takeNextBindingFailure(failureRecord).subject())
                 .isEqualTo(new CompatibilitySubject("Starsector", null, null));
         }
 

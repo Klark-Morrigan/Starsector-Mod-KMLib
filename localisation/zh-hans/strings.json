@@ -2,6 +2,9 @@
   "kmlib": {
     "compatibility_notice_title": "%2$s 与 %3$s %1$s。",
     "compatibility_notice_title_error": "集成出错",
+    "compatibility_notice_feature_title": "%1$s %2$s，已关闭其中一项功能。",
+    "compatibility_notice_feature_title_error": "运行出错",
+    "compatibility_notice_feature_diagnosis": "这是 %1$s 自身的故障，并非与其他 Mod 的冲突，因此%2$s。",
     "compatibility_notice_diagnosis_older_version": "你的 %1$s %2$s，%3$s。",
     "compatibility_notice_diagnosis_newer_version": "你的 %1$s %2$s，而 %3$s %4$s这些契约，你可以%5$s。",
     "compatibility_notice_diagnosis_unknown_version": "可能的原因是你的 %s 属于以下情况之一：",
@@ -17,6 +20,7 @@
     "compatibility_notice_action_downgrade_or_wait": "将 %s 降级到 %s，或等待 %s 更新",
     "compatibility_notice_row_mod": "    Mod：         %s",
     "compatibility_notice_row_integration": "    集成：        %s",
+    "compatibility_notice_row_feature": "    功能：        %s",
     "compatibility_notice_row_targeted": "    目标版本：    %s",
     "compatibility_notice_row_detected": "    检测版本：    %s",
     "compatibility_notice_row_broken": "    已损坏：      %s",

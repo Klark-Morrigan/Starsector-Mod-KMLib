@@ -2,6 +2,9 @@
   "kmlib": {
     "compatibility_notice_title": "%s %s with %s.",
     "compatibility_notice_title_error": "Error integrating",
+    "compatibility_notice_feature_title": "%s %s and switched one of its features off.",
+    "compatibility_notice_feature_title_error": "ran into an error",
+    "compatibility_notice_feature_diagnosis": "This is a fault in %s itself rather than a clash with another mod, so %s.",
     "compatibility_notice_diagnosis_older_version": "Your %s is %s and %s.",
     "compatibility_notice_diagnosis_newer_version": "Your %s %s %s %s and you can %s.",
     "compatibility_notice_diagnosis_unknown_version": "The likely cause is that your %s is either:",
@@ -17,6 +20,7 @@
     "compatibility_notice_action_downgrade_or_wait": "either downgrade %s to %s or wait for a %s update",
     "compatibility_notice_row_mod": "    Mod:           %s",
     "compatibility_notice_row_integration": "    Integration:   %s",
+    "compatibility_notice_row_feature": "    Feature:       %s",
     "compatibility_notice_row_targeted": "    Targeted:      %s",
     "compatibility_notice_row_detected": "    Detected:      %s",
     "compatibility_notice_row_broken": "    Broken:        %s",

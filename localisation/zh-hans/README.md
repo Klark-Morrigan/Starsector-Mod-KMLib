@@ -120,6 +120,8 @@ so each phrase is one row here and the sentences number their slots to put it wh
 | KM mods | KM 系列 Mod | every mod built on KMLib |
 | integration | 集成 | |
 | Error integrating X with Y | X 与 Y 集成出错 | the heading; the phrase 集成出错 closes the sentence rather than opening it |
+| X ran into an error and switched one of its features off | X 运行出错，已关闭其中一项功能 | the heading of a feature failure; 运行出错 is the phrase |
+| a fault in X itself rather than a clash with another mod | X 自身的故障，并非与其他 Mod 的冲突 | |
 | public contracts | 公共契约 | |
 | carries changes to public contracts | 更改了公共契约 | |
 | it's new and carries changes to public contracts | 版本较新且更改了公共契约 | |
@@ -130,6 +132,7 @@ so each phrase is one row here and the sentences number their slots to put it wh
 | report this issue to the X developer | 将此问题报告给 X 的开发者 | |
 | Mod (row label) | Mod | |
 | Integration (row label) | 集成 | |
+| Feature (row label) | 功能 | one of a mod's own features |
 | Targeted (row label) | 目标版本 | the version the build was type-checked against |
 | Detected (row label) | 检测版本 | the version installed |
 | Broken (row label) | 已损坏 | |

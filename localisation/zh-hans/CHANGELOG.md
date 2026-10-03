@@ -27,6 +27,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 ### 新增
 
 - **简体中文。** 发布版本附带第二个压缩包 `KMLib-<version>-zh-hans.zip`，其中兼容性通知、设置标签页以及启动器的 Mod 列表条目均为简体中文。它需要先将[中文本地化](https://github.com/TruthOriginem/Starsector-Localization-CN)覆盖到 `starsector-core` 上：游戏自身的字体不含中文字符，没有它，所有中文字符都会绘制为 `?`。日志详细程度设置的选项保留英文，因为 LunaLib 保存的是选项的标签，这样该设置在英文与中文压缩包之间可以沿用。
+- **`FeatureFailure` 和 `CompatibilityFailures.recordFeatureFailureOnce()`**：Mod 自身的某项功能抛出异常并被关闭时，通过兼容性通知告知玩家，而不是只写进日志。一项功能悄然停止工作，玩家只会看到某样东西不见了，却没有理由去日志里找原因。通知会写明是哪个 Mod、哪项功能、什么停止工作、什么不受影响，说明这是该 Mod 自身的故障而非与其他 Mod 的冲突，并请玩家报告此问题。它与绑定一样只记录一次，因此下次读档时再次出错的功能每次游戏期间只报告一次。它与 `CompatibilityFailure` 都是 `ReportedFailure`，即两种通知界面共同绘制的密封类型。
 - **`ShownMapTab.isMapTabShowing()`**：星图是否显示在屏幕上，在无法遍历控件树时按未显示处理（失败即关闭）；这是覆盖在星图之上、必须随星图一同撤下的面板所用的读取。`CompatibilityNoticePanel` 通过它读取。
 - **`VerticalRadioSpec`**：自上而下堆叠的一列选项单元，其中一个亮起；超过两三个选项的选项组应呈现为这种形式，因为同样的选项排成一行时，文字会窄到难以区分。它不包含分段尺寸设置和尾随说明文字，二者都仅适用于行。
 - **`RadioSpec`**：`HorizontalRadio` 与 `VerticalRadio` 共同归属的密封接口，承载二者共同遵循的重选规则。处理任意单选组的读取器只需指明它，而不必分别指明每种排列方式。`HorizontalRadio` 其余部分不变，现有的每个调用点都可原样编译。
@@ -156,7 +157,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **为 `Global` 设置裸替身会使构建失败**：Starsector 约定在所有 KM 包根下，只允许在 `StubbedGlobalLogger` 中使用 `mockStatic(Global.class)`，并且任何地方都不允许使用 `openSeam(Global.class)`。若某个类的静态记录器首次在不应答记录器的替身内被解析，它将在 JVM 的剩余生命周期内一直为 null，导致后续某个测试套件在它从未写过的代码行上失败；该失败会指出应改写成的调用。匹配依照 Java 对该调用的写法，因此 Kotlin 测试套件不受此约束。
 - **列表控件夹具**：`Anomaly` 和 `AnomalySortMode`，即在列表包之外声明的选择器行和排序词汇；以及 `ListPickerBlockReads`，它深入已构建的选择器区块，读取列数选择器、排序行、排序选择器或条目列表。区块的顺序记录在这里，而不是分散在每个测试列表的测试套件中，因此向区块插入一行只会破坏一个文件。
 - **`MemoryKeyAddresses`**：两个替身地址，供在某个轴上的某一点存储值、但并不关注该轴是什么的测试套件使用。
-- **`CompatibilityFailureFixture`** 和 **`CompatibilitySlotTemplates`**：一个具有代表性的兼容性失败，用例要变动的每个槽位各有一个构建器；另有测试套件记录时所用的两个主体键和两个使用方（每个使用方都会失去另一方不会失去的东西，因此关于区分两者的用例无法凭一句同时代表两者的句子通过）；以及作为替身、暴露其槽位的通知模板，使关于记录、通知或措辞的测试套件只需指明其所关注的那一个槽位。`drainSessionRecord()` 清空进程自身的记录（其生命周期长于单个用例），供任何驱动向该记录写入的守卫的测试套件使用。
+- **`CompatibilityFailureFixture`** 和 **`CompatibilitySlotTemplates`**：一个具有代表性的兼容性失败，用例要变动的每个槽位各有一个构建器；另有测试套件记录时所用的两个主体键和两个使用方（每个使用方都会失去另一方不会失去的东西，因此关于区分两者的用例无法凭一句同时代表两者的句子通过）；以及作为替身、暴露其槽位的通知模板，使关于记录、通知或措辞的测试套件只需指明其所关注的那一个槽位。`drainSessionRecord()` 清空进程自身的记录（其生命周期长于单个用例），供任何驱动向该记录写入的守卫的测试套件使用。`createFeatureFailure()` 构建代表性使用方自身的功能失败，`takeNextBindingFailure()` 则把记录中的下一份报告作为绑定失败取出，使读取其主体或损坏信息的用例无需强制转换。
 - **`RendererModelviewMatrices`**：一次星图渲染通道的 modelview 矩阵，分别以渲染器持有它的两种布局给出，并附带平移量及其所在的列主序槽位。它是一项认知而非一个数值：哪个槽位承载平移量取决于询问的是哪个渲染器，因此测试套件自行重述它，就是在重述其所测代码存在的意义所要做对的那件事。`kmlib.opengl.FastRenderingTests` 刻意不使用它：该测试套件测试的正是转置，因此其输入仍完整写在断言旁边。
 - **`StarsectorSettingsFake.installSettingsWithModNames()` 和 `ModStateScopes.runWithModNamed()`**：一个既按启用状态、也按名称识别 Mod 的 Mod 管理器，用于显示 Mod 自身名称的被测对象。若每个 ID 都应答为空，报告找到的名称与其退而使用的 ID 就是同一个字符串，因此关键的分支与无关紧要的分支无从区分。
 - **`TooltipMakerFake`**：一个提示框元素，记录添加到其中的段落、段落间距、每段标签上高亮的文字片段以及按钮，而不进行任何布局。它是代理而非手写的替身，因为该元素的 API 过于庞大，不值得为正文所用的寥寥几个调用去实现；正因如此，关于面板由什么组成的测试套件才能在没有游戏的情况下运行。
@@ -202,6 +203,7 @@ Mod 面向玩家的文件可以按语言分别保存，每个语言区域一个�
 ### 公共契约变更（**破坏性**）
 
 - 每个深入游戏自身界面的读取都接受一个 `GameReachReporter`，即该读取失败时会有所损失的 Mod 的报告器：`CampaignMapView` 的三个星图读取及 `resolveSectorMapState()`、`MapFilterRows.resolveShownMapFilterRow()`、`MapFilterToggle.appendToRow()`、`VanillaButtonLabel.resolveLabelOf()`、`CoreUiOverlayPanels.attachOverlayPanel()`、`CoreUiDialogView.isModalDialogShowing()` 和 `resolveModalPresence()`、`CodexView.isCodexShowing()` 以及 `MapIconLayeringProbe.readLayeringOf()` 将其作为最后一个参数接受，而 `MapPresence`、`VanillaIntelScreenView` 和 `VanillaMapTooltipProbe` 在构造时接受它，其无参构造函数已移除。没有玩家可见损失的调用方传入 `GameReachReporter.UNREPORTED`。
+- `CompatibilityFailures.takeNextUnreported()` 返回 `ReportedFailure`，`CompatibilityNoticePanel.showFailure()` 也接受它，二者原先都使用 `CompatibilityFailure`。记录现在除了失效的绑定，也会保存 Mod 自身失败的功能。只显示或记录所取内容的调用方照常编译；读取 `subject()` 或 `breakage()` 的调用方需先确认它是 `CompatibilityFailure`。
 - `ReflectiveCoreUiComponentRepainter` 不再是枚举，其 `INSTANCE` 已移除：调用方用自己的报告器构造一个实例，失败的重绘将作为该调用方的损失归档。
 - `MapProbeWarnings` 更名为 `RearmableWarnings`，位于 `kmlib.logging` 中，与 `SessionWarning` 并列；`createSharedWarning()` 改为公开的 `createRearmableWarning()`。它汇集的警告来自每个按类保留一个警告的所有者，而不仅是星图探测器。重新启用这些警告的调用方需更改其导入；`rearmAllWarnings()` 不变。
 - `KmLogging` 已移除。Mod 通过 `LunaLogLevelBinding.bindLogLevel(modId, loggerRoot, fieldId)` 绑定其日志级别，它与 KMLib 其余的 LunaLib 读取一起位于 `kmlib.settings` 中，程序库的默认级别为 `LunaLogLevelBinding.DEFAULT_LEVEL`。接受后备级别的重载未被保留；未设置或无法识别的字段采用默认级别。

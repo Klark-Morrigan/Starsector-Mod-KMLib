@@ -149,7 +149,7 @@ final class WiringStepsTests {
 
             wiringSteps.runGuardedStep(buildStepRefusingToInstall(), FAILURE_MESSAGE, () -> INTEGRATION);
 
-            var failure = failureRecord.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
 
             assertThat(failure.subject().name())
                 .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);
@@ -176,7 +176,7 @@ final class WiringStepsTests {
                 FAILURE_MESSAGE,
                 () -> INTEGRATION);
 
-            var failure = failureRecord.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
 
             assertThat(failure.cause())
                 .isSameAs(linkFailure);

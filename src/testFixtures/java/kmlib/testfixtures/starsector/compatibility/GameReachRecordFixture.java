@@ -40,6 +40,6 @@ public final class GameReachRecordFixture {
      * @return the oldest failure the reporter filed, or null where it filed none
      */
     public CompatibilityFailure takeReportedFailure() {
-        return failureRecord.takeNextUnreported();
+        return CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
     }
 }

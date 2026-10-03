@@ -183,7 +183,7 @@ final class ModIntegrationTests {
                     FAILURE_SITE,
                     new IllegalStateException("routes already registered"));
 
-                var failure = failureRecord.takeNextUnreported();
+                var failure = CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
 
                 assertThat(failure.subject().name())
                     .isEqualTo(SUBJECT_MOD_NAME);

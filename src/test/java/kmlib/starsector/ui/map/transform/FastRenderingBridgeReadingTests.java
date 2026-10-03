@@ -137,7 +137,7 @@ final class FastRenderingBridgeReadingTests {
 
             bridgeReading.copyModelviewForNextRead(BRIDGE_CALL_REFUSED);
 
-            var failure = failures.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failures);
             assertThat(failure.subject().name())
                 .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
             assertThat(failure.consumer().lostFeature())

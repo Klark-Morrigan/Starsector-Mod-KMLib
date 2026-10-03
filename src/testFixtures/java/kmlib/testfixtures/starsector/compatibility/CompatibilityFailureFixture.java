@@ -6,6 +6,7 @@ import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilitySubject;
+import kmlib.starsector.compatibility.FeatureFailure;
 import kmlib.starsector.compatibility.ModIntegration;
 import kmlib.testfixtures.starsector.settings.StubbedModIds;
 
@@ -97,6 +98,9 @@ public final class CompatibilityFailureFixture {
     public static final ModIntegration MOD_INTEGRATION =
         new ModIntegration(INTEGRATED_MOD_ID, INTEGRATED_MOD_NAME, MAP_OVERLAY_CONSUMER);
 
+    /** What the representative consumer's own feature threw when it was switched off. */
+    public static final IllegalStateException FEATURE_CAUSE = new IllegalStateException("overlay draw failed");
+
     private CompatibilityFailureFixture() {
         // fixture of static builders, no instances.
     }
@@ -172,6 +176,36 @@ public final class CompatibilityFailureFixture {
             consumer,
             new CompatibilityBreakage(FAILURE_SITE, BROKEN_DETAIL),
             null);
+    }
+
+    /**
+     * @return the representative consumer's own feature, switched off after throwing
+     *         {@link #FEATURE_CAUSE}
+     */
+    public static FeatureFailure createFeatureFailure() {
+
+        return new FeatureFailure(MAP_OVERLAY_CONSUMER, FEATURE_CAUSE);
+    }
+
+    /**
+     * Takes the oldest failure off {@code failureRecord} as a binding to a third party, which is
+     * what every guard but a feature's own records.
+     *
+     * <p>A record hands over any kind of report, so a case reading a binding's subject or breakage
+     * would otherwise cast at each read. A different kind arriving is a failed case, not a cast
+     * error.
+     *
+     * @param failureRecord the record to take from
+     * @return the oldest untaken failure, or {@code null} where none is waiting
+     */
+    public static CompatibilityFailure takeNextBindingFailure(CompatibilityFailures failureRecord) {
+
+        var failure = failureRecord.takeNextUnreported();
+
+        if (failure == null || failure instanceof CompatibilityFailure) {
+            return (CompatibilityFailure) failure;
+        }
+        throw new AssertionError("Expected a binding to a third party, but the record held: " + failure);
     }
 
     /**

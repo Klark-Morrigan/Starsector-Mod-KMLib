@@ -40,7 +40,8 @@ import java.util.Objects;
  * <p>Never throws. It runs every frame on the campaign's own thread, and a dialog call that faults
  * must not take the frame with it.
  */
-public final class CompatibilityNotice implements EveryFrameScript {
+public final class CompatibilityNotice
+        implements EveryFrameScript {
 
     private static final Logger LOG = Global.getLogger(CompatibilityNotice.class);
 
@@ -142,7 +143,7 @@ public final class CompatibilityNotice implements EveryFrameScript {
     // one-button notices: the message dialog takes no size, and its fixed panel cut the last rows
     // of a block this long off below its own edge. It also answers whether it opened, where the
     // message dialog returns nothing and drops silently.
-    private void showFailure(CampaignUIAPI campaignUi, CompatibilityFailure failure) {
+    private void showFailure(CampaignUIAPI campaignUi, ReportedFailure failure) {
 
         LOG.error(failure.describeForLog(), failure.cause());
 

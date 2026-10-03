@@ -25,6 +25,9 @@ public final class CompatibilitySlotTemplates {
     private static final Map<String, String> TEMPLATES_BY_KEY = Map.ofEntries(
         Map.entry("compatibility_notice_title", "title{%s|%s|%s}"),
         Map.entry("compatibility_notice_title_error", "failed"),
+        Map.entry("compatibility_notice_feature_title", "feature-title{%s|%s}"),
+        Map.entry("compatibility_notice_feature_title_error", "erred"),
+        Map.entry("compatibility_notice_feature_diagnosis", "diagnose-feature{%s|%s}"),
         Map.entry("compatibility_notice_diagnosis_older_version", "diagnose-older{%s|%s|%s}"),
         Map.entry("compatibility_notice_diagnosis_newer_version", "diagnose-newer{%s|%s|%s|%s|%s}"),
         Map.entry("compatibility_notice_diagnosis_unknown_version", "diagnose-unknown{%s}"),
@@ -40,6 +43,7 @@ public final class CompatibilitySlotTemplates {
         Map.entry("compatibility_notice_action_downgrade_or_wait", "down %s to %s or-wait %s up"),
         Map.entry("compatibility_notice_row_mod", "mod{%s}"),
         Map.entry("compatibility_notice_row_integration", "integration{%s}"),
+        Map.entry("compatibility_notice_row_feature", "feature{%s}"),
         Map.entry("compatibility_notice_row_targeted", "targeted{%s}"),
         Map.entry("compatibility_notice_row_detected", "detected{%s}"),
         Map.entry("compatibility_notice_row_broken", "broken{%s}"),

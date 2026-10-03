@@ -143,7 +143,7 @@ final class KMLib_ModPluginTests {
                 new KMLib_ModPlugin().onApplicationLoad();
             }
 
-            var failure = CompatibilityFailures.SESSION_RECORD.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(CompatibilityFailures.SESSION_RECORD);
 
             assertThat(failure.subject().name())
                 .isEqualTo("Nexerelin");

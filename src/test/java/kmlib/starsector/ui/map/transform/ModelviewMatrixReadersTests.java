@@ -134,7 +134,7 @@ final class ModelviewMatrixReadersTests {
 
             // The sentence is the consumer's and the subject is the library's: the mod names what
             // stops working, and the library names whose code stopped holding.
-            var failure = failures.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failures);
             assertThat(failure.consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
             assertThat(failure.subject().name())
