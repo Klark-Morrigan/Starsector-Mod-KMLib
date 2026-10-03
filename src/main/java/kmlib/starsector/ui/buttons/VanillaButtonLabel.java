@@ -171,8 +171,10 @@ public final class VanillaButtonLabel {
         }
 
         var bracketed = SHORTCUT_SUFFIX.formatted(keyName);
+        var announced = words + bracketed;
 
-        label.setText(words + bracketed);
+        label.setText(announced);
+        fitLabelToWords(announced);
         lightRun(bracketed.trim());
     }
 
@@ -270,6 +272,14 @@ public final class VanillaButtonLabel {
             .findFirst()
             .map(method -> method.invokeOn(instance))
             .orElse(null);
+    }
+
+    // Widens the label to the words it now carries. The game sizes a button's label once, to the words
+    // it was built with, and wraps anything longer at that width - so a key written after them would
+    // drop onto a second line, outside the button.
+    private void fitLabelToWords(String words) {
+
+        label.autoSizeToWidth(label.computeTextWidth(words));
     }
 
     // Lights one run of the words in the colour the game lights a key in.
