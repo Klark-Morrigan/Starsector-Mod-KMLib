@@ -78,9 +78,12 @@ A mod's own reference may add rules for its own features.
   Where the code highlights part of a sentence, the highlighted run must still appear in it word for word.
   The compatibility notice is built from such runs, so its phrases are translated whole
   and placed where Chinese puts them; see [the compatibility notice](#the-compatibility-notice).
-- **Defaults read `[默认值：X]`.**
+- **Defaults read `[默认值：X]`, on a line of their own.**
   `X` is the shipped value as the English file writes it,
   except a Boolean, which reads `开启` for true and `关闭` for false.
+  The default ends the description, after a line break and with no full stop, as `[Default: X]` does in English.
+  The game highlights a run only when the characters beside it are whitespace or ASCII punctuation,
+  and `。` is neither; a line break counts as whitespace.
 
 ## Vanilla terms
 
