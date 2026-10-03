@@ -33,7 +33,6 @@ public final class ButtonLabelFake implements LabelAPI {
             + "are drawn.";
 
     private List<Color> highlightColours = List.of();
-
     private List<String> highlightedRuns = List.of();
 
     private String text;

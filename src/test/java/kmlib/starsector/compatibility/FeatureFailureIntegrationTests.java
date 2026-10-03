@@ -8,6 +8,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 
@@ -85,11 +87,14 @@ final class FeatureFailureIntegrationTests {
     @Nested
     class EmphasisedRuns {
 
-        @Test
-        void everyRunOfEveryLineIsFoundInOrderInTheShippedWording() {
+        @ParameterizedTest
+        @MethodSource("kmlib.starsector.compatibility.NoticeLineHighlights#listLocaleTags")
+        void everyRunOfEveryLineHighlightsInEveryLocale(String localeTag) {
 
-            // The engine matches each run from where the last one ended, so a run the wording does
-            // not hold, or one listed out of order, tints nothing rather than failing.
+            // The engine leaves a run plain, with no error, when the wording lacks it or a character
+            // beside it is neither whitespace nor ASCII punctuation - the case for most Chinese text.
+            NoticeLineHighlights.installLocaleStrings(localeTag);
+
             var failure = CompatibilityFailureFixture.createFeatureFailure();
 
             var lines = new ArrayList<CompatibilityNoticeLine>();
@@ -98,19 +103,8 @@ final class FeatureFailureIntegrationTests {
             lines.addAll(failure.describeRowsForPlayer());
             lines.add(failure.describeClosingForPlayer());
 
-            for (var line : lines) {
-                var searchedFrom = 0;
-
-                for (var run : line.emphasisedRuns()) {
-                    var foundAt = line.lineText().indexOf(run.runText(), searchedFrom);
-
-                    assertThat(foundAt)
-                        .as("run '%s' in line '%s'", run.runText(), line.lineText())
-                        .isNotNegative();
-
-                    searchedFrom = foundAt + run.runText().length();
-                }
-            }
+            assertThat(NoticeLineHighlights.findUnhighlightedRuns(lines))
+                .isEmpty();
         }
     }
 }

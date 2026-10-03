@@ -32,14 +32,17 @@ class HighlightedMessageTests {
 
     @Nested
     class Constructor {
+
         @Test
         void rejectsEmptyParagraphList() {
+
             assertThatThrownBy(() -> new HighlightedMessage())
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void rejectsNullParagraph() {
+
             assertThatThrownBy(() -> new HighlightedMessage(
                 new HighlightedParagraph("ok"),
                 null))
@@ -49,33 +52,39 @@ class HighlightedMessageTests {
 
     @Nested
     class GetLines {
+
         @Test
         void returnsTheConstructorParagraphsInOrder() {
+
             var first = new HighlightedParagraph("first");
             var second = new HighlightedParagraph("second");
-
             var message = new HighlightedMessage(first, second);
 
-            assertThat(message.getLines()).containsExactly(first, second);
+            assertThat(message.getLines())
+                .containsExactly(first, second);
         }
     }
 
     @Nested
     class ToMessageIntel {
+
         @Test
         void emitsOneLinePerParagraph() throws Exception {
+
             var message = new HighlightedMessage(
                 new HighlightedParagraph("first line"),
                 new HighlightedParagraph("second line"));
 
             var intel = message.toMessageIntel();
-
             var texts = readLineTexts(intel);
-            assertThat(texts).containsExactly("first line", "second line");
+
+            assertThat(texts)
+                .containsExactly("first line", "second line");
         }
 
         @Test
         void propagatesHighlightsAndColoursPerParagraph() throws Exception {
+
             var paragraph = new HighlightedParagraph(
                 "construction complete on Test Prime.",
                 Color.GRAY,
@@ -83,11 +92,13 @@ class HighlightedMessageTests {
                 Highlight.of("Test Prime", Color.YELLOW));
 
             var intel = new HighlightedMessage(paragraph).toMessageIntel();
-
             var line = readLines(intel).get(0);
+
             assertThat(readLineField(line, "text"))
                 .isEqualTo("construction complete on Test Prime.");
-            assertThat(readLineField(line, "color")).isEqualTo(Color.GRAY);
+            assertThat(readLineField(line, "color"))
+                .isEqualTo(Color.GRAY);
+
             assertThat((String[]) readLineField(line, "highlights"))
                 .containsExactly("complete", "Test Prime");
             assertThat((Color[]) readLineField(line, "colors"))
@@ -102,23 +113,32 @@ class HighlightedMessageTests {
     // just "addLine was called N times".
 
     private static List<?> readLines(MessageIntel intel) throws Exception {
+
         var lines = MessageIntel.class.getDeclaredField("lines");
+
         lines.setAccessible(true);
+
         return (List<?>) lines.get(intel);
     }
 
     private static List<String> readLineTexts(MessageIntel intel) throws Exception {
+
         var lines = readLines(intel);
         var texts = new java.util.ArrayList<String>(lines.size());
+
         for (Object line : lines) {
             texts.add((String) readLineField(line, "text"));
         }
+
         return texts;
     }
 
     private static Object readLineField(Object line, String name) throws Exception {
+
         var field = line.getClass().getDeclaredField(name);
+
         field.setAccessible(true);
+
         return field.get(line);
     }
 }

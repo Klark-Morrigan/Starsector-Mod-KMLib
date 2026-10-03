@@ -21,6 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 final class LocaleParityTests {
 
+    // A Chinese full stop (U+3002): full-width punctuation, which the game refuses beside a highlighted run.
+    private static final String CHINESE_FULL_STOP = "。";
+
     // "Chinese" (U+4E2D U+6587): text far outside Latin-1, as a translated bundle carries it.
     private static final String CHINESE_TEXT = "中文";
 
@@ -912,6 +915,65 @@ final class LocaleParityTests {
 
             assertThat(createParity(localisation).findUndeclaredBundleDirectories())
                 .containsExactly("fr: a bundle directory the manifest does not declare");
+        }
+    }
+
+    @Nested
+    class FindUnhighlightedSettingsRuns {
+
+        @Test
+        void tablesWithNoBracketedRunsPass(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot)).findUnhighlightedSettingsRuns())
+                .isEmpty();
+        }
+
+        @Test
+        void aRunBesideAChineseFullStopIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "Quelle palette",
+                "[Quelle palette]" + CHINESE_FULL_STOP);
+
+            assertThat(createParity(localisation).findUnhighlightedSettingsRuns())
+                .containsExactly("zh-hans: LunaSettings.csv row kmu_palette leaves [Quelle palette] plain "
+                    + "(after it: " + CHINESE_FULL_STOP + "); put a space or a line break beside it");
+        }
+
+        @Test
+        void aRunPaddedWithASpaceBeforeTheFullStopPasses(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedSettingsReplacing(
+                localisation,
+                "Quelle palette",
+                "[Quelle palette] " + CHINESE_FULL_STOP);
+
+            assertThat(createParity(localisation).findUnhighlightedSettingsRuns())
+                .isEmpty();
+        }
+
+        @Test
+        void theDefaultLocaleIsHeldToTheRuleToo(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeFile(
+                localisation
+                    .resolve("en")
+                    .resolve("LunaSettings.csv"),
+                replaceRun(
+                    ENGLISH_SETTINGS,
+                    "Which palette",
+                    "Which[palette]"));
+
+            assertThat(createParity(localisation).findUnhighlightedSettingsRuns())
+                .containsExactly("en: LunaSettings.csv row kmu_palette leaves [palette] plain (before it: h); "
+                    + "put a space or a line break beside it");
         }
     }
 

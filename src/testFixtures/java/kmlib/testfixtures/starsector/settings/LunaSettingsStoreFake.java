@@ -38,12 +38,15 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
 
     @Override
     public boolean hasStoreFor(String modId) {
+
         return valuesByMod.containsKey(modId);
     }
 
     @Override
     public boolean hasValue(String modId, String fieldId) {
-        return valuesByMod.containsKey(modId) && valuesByMod.get(modId).containsKey(fieldId);
+
+        return valuesByMod.containsKey(modId)
+            && valuesByMod.get(modId).containsKey(fieldId);
     }
 
     @Override
@@ -52,14 +55,19 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
         if (!valuesByMod.containsKey(modId)) {
             return false;
         }
-        valuesByMod.get(modId).put(fieldId, value);
+
+        valuesByMod
+            .get(modId)
+            .put(fieldId, value);
 
         return true;
     }
 
     @Override
     public boolean removeValue(String modId, String fieldId) {
-        return hasValue(modId, fieldId) && valuesByMod.get(modId).remove(fieldId) != null;
+
+        return hasValue(modId, fieldId)
+            && valuesByMod.get(modId).remove(fieldId) != null;
     }
 
     @Override
@@ -68,8 +76,8 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
         if (!isSavable || !valuesByMod.containsKey(modId)) {
             return false;
         }
-        saveCounts.merge(modId, 1, Integer::sum);
 
+        saveCounts.merge(modId, 1, Integer::sum);
         return true;
     }
 
@@ -106,7 +114,10 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
      * @param value   what the store holds under it
      */
     public void storeValue(String modId, String fieldId, Object value) {
-        valuesByMod.computeIfAbsent(modId, mod -> new LinkedHashMap<>()).put(fieldId, value);
+
+        valuesByMod
+            .computeIfAbsent(modId, mod -> new LinkedHashMap<>())
+            .put(fieldId, value);
     }
 
     /**
@@ -115,7 +126,12 @@ public final class LunaSettingsStoreFake implements LunaSettingsStore {
      * @return what the store holds under it, or null where it holds nothing
      */
     public Object readStoredValue(String modId, String fieldId) {
-        return hasValue(modId, fieldId) ? valuesByMod.get(modId).get(fieldId) : null;
+
+        return hasValue(modId, fieldId)
+            ? valuesByMod
+                .get(modId)
+                .get(fieldId)
+            : null;
     }
 
     /**

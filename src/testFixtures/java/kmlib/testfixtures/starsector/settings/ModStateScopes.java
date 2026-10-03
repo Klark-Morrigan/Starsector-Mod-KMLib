@@ -36,7 +36,8 @@ public final class ModStateScopes {
     public static void runWithModEnabled(String modId, boolean isModEnabled, Runnable body) {
 
         runWithSettingsInstalled(
-            () -> StarsectorSettingsFake.buildSettings()
+            () -> StarsectorSettingsFake
+                .buildSettings()
                 .answerEnabledMods(askedModId -> isModEnabled && modId.equals(askedModId))
                 .installSettings(),
             body);
@@ -72,7 +73,8 @@ public final class ModStateScopes {
             Runnable body) {
 
         runWithSettingsInstalled(
-            () -> StarsectorSettingsFake.buildSettings()
+            () -> StarsectorSettingsFake
+                .buildSettings()
                 .answerModNames(askedModId -> modId.equals(askedModId) ? modName : null)
                 .answerModVersions(askedModId -> modId.equals(askedModId) ? modVersion : null)
                 .installSettings(),
@@ -97,7 +99,8 @@ public final class ModStateScopes {
             Runnable body) {
 
         runWithSettingsInstalled(
-            () -> StarsectorSettingsFake.buildSettings()
+            () -> StarsectorSettingsFake
+                .buildSettings()
                 .answerModNames(askedModId -> modId.equals(askedModId) ? modId : null)
                 .answerModGameVersions(askedModId -> modId.equals(askedModId) ? targetedGameVersion : null)
                 .answerGameVersion(runningGameVersion)

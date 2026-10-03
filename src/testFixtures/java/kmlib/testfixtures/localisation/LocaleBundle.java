@@ -1,6 +1,7 @@
 package kmlib.testfixtures.localisation;
 
 import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
+import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake.SettingsStringSource;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
 
 import java.nio.file.Path;
@@ -91,6 +92,19 @@ public final class LocaleBundle {
      */
     public Map<String, Map<String, String>> readStrings() {
         return ShippedStrings.readStringsByCategory(resolveBundleFile(STRINGS_FILE_NAME));
+    }
+
+    /**
+     * This locale's strings in the shape the settings stand-in answers them, so text composed under it
+     * reads in this locale.
+     *
+     * @return a lookup by category and key, answering null for a string the bundle lacks
+     */
+    public SettingsStringSource readStringSource() {
+
+        var stringsByCategory = readStrings();
+
+        return (category, key) -> stringsByCategory.getOrDefault(category, Map.of()).get(key);
     }
 
     /**

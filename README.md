@@ -1746,8 +1746,14 @@ a slot taking another argument,
 a row varying what it stores,
 a tab split or merged,
 glyphs no named core localisation supplies,
-a translated changelog missing or behind the root one -
+a translated changelog missing or behind the root one,
+a bracketed settings run the game cannot highlight where it stands -
 and lists the launcher fields a locale leaves to the base without failing on them.
+[`starsector/ui/label/`](src/testFixtures/java/kmlib/testfixtures/starsector/ui/label/)
+holds `LabelHighlightRule`, the game's rule for which highlighted runs draw plain:
+a run needs whitespace or ASCII punctuation on each side, so one touching Chinese text needs a space.
+`HighlightedTooltipMock` records each paragraph a subject draws into a tooltip,
+so a suite can hold every highlight it sets to that rule, in every locale.
 `findAllMismatches()` gathers every check,
 so a mod's suite is one assertion over its own `localisation/`;
 a mod shipping no settings table opens the comparison without a field ID prefix.

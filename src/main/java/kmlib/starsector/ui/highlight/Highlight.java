@@ -15,10 +15,12 @@ import java.util.Objects;
  * parallel arrays the engine wants.
  */
 public final class Highlight {
+
     private final String text;
     private final Color colour;
 
     public Highlight(String text, Color colour) {
+
         this.text = Objects.requireNonNull(text, "text");
         this.colour = Objects.requireNonNull(colour, "colour");
     }

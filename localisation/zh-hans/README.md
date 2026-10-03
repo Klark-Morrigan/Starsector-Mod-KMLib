@@ -78,12 +78,19 @@ A mod's own reference may add rules for its own features.
   Where the code highlights part of a sentence, the highlighted run must still appear in it word for word.
   The compatibility notice is built from such runs, so its phrases are translated whole
   and placed where Chinese puts them; see [the compatibility notice](#the-compatibility-notice).
+- **A highlighted run takes an ASCII space where it touches Chinese.**
+  The game highlights a run only when the character on each side is whitespace or ASCII punctuation,
+  or the run starts or ends the text.
+  A Chinese character or full-width punctuation beside it, `。` above all, leaves it plain, with no error.
+  So a highlighted run gets a space on any side that would touch one:
+  `将此问题报告给 %s 的开发者 。`, `用 上移 和 下移 调整图层顺序`.
+  That covers a format slot the code highlights, a phrase the code highlights, and a `[...]` run in a settings description.
+  The parity suite and the suites drawing highlighted paragraphs fail a run that would draw plain.
 - **Defaults read `[默认值：X]`, on a line of their own.**
   `X` is the shipped value as the English file writes it,
   except a Boolean, which reads `开启` for true and `关闭` for false.
   The default ends the description, after a line break and with no full stop, as `[Default: X]` does in English.
-  The game highlights a run only when the characters beside it are whitespace or ASCII punctuation,
-  and `。` is neither; a line break counts as whitespace.
+  A line break counts as whitespace, so the default highlights without padding.
 
 ## Vanilla terms
 
@@ -209,6 +216,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | method handle | 方法句柄 | |
 | reflection | 反射 | as in the settings description |
+| stand-in (a test double) | 替身 | |
+| highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
+| slot (in a format string) | 槽位 | |
+| body colour (of text) | 正文颜色 | |
 
 ## Forum terms
 

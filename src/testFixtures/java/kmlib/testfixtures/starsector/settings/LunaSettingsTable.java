@@ -80,6 +80,7 @@ public final class LunaSettingsTable {
      *                      tells a field row from the spacing rows and the column-header line
      */
     public LunaSettingsTable(Path settingsCsv, String fieldIdPrefix) {
+
         this.fieldIdPrefix = Objects.requireNonNull(fieldIdPrefix, "fieldIdPrefix");
         this.settingsCsv = Objects.requireNonNull(settingsCsv, "settingsCsv");
     }
@@ -93,6 +94,7 @@ public final class LunaSettingsTable {
      * @return the offending captions' field IDs, in file order
      */
     public List<String> findHeaderRowsWhoseCaptionColumnsDisagree() {
+
         return readFieldRows()
             .stream()
             .filter(row -> HEADER_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN)))
@@ -110,6 +112,7 @@ public final class LunaSettingsTable {
      * @return the stranded rows' field IDs, in file order
      */
     public List<String> findRowsStrandedFromTheirSection() {
+
         var strandedFieldIds = new ArrayList<String>();
 
         // Empty until the first caption, so a value row ahead of every caption reads as stranded -
@@ -117,8 +120,10 @@ public final class LunaSettingsTable {
         var sectionTab = "";
 
         for (var row : readFieldRows()) {
+
             if (HEADER_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN))) {
                 sectionTab = row.get(TAB_COLUMN);
+
             } else if (isStoredValueRow(row) && !sectionTab.equals(row.get(TAB_COLUMN))) {
                 strandedFieldIds.add(row.get(FIELD_ID_COLUMN));
             }
@@ -136,6 +141,7 @@ public final class LunaSettingsTable {
      * @return the tab names declared in more than one run, in file order
      */
     public List<String> findTabsDeclaredInMoreThanOneRun() {
+
         var runsPerTab = new LinkedHashMap<String, Integer>();
 
         // Empty rather than any tab name, so the file's first row opens a run instead of joining
@@ -143,7 +149,9 @@ public final class LunaSettingsTable {
         var previousTab = "";
 
         for (var tab : readDeclaredTabs()) {
+
             if (!tab.equals(previousTab)) {
+
                 runsPerTab.merge(tab, 1, Integer::sum);
                 previousTab = tab;
             }
@@ -165,11 +173,12 @@ public final class LunaSettingsTable {
      * @return the offending prose rows' field IDs, in file order
      */
     public List<String> findTextRowsWhoseWordsAreNotDrawn() {
+
         return readFieldRows()
             .stream()
             .filter(row -> TEXT_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN)))
             .filter(row -> !row.get(FIELD_NAME_COLUMN).isEmpty()
-                    || row.get(DEFAULT_VALUE_COLUMN).isEmpty())
+                || row.get(DEFAULT_VALUE_COLUMN).isEmpty())
             .map(row -> row.get(FIELD_ID_COLUMN))
             .toList();
     }
@@ -212,6 +221,7 @@ public final class LunaSettingsTable {
      * @return those IDs, in file order
      */
     public List<String> readDeclaredFieldIds() {
+
         return readFieldRows()
             .stream()
             .map(row -> row.get(FIELD_ID_COLUMN))
@@ -225,6 +235,7 @@ public final class LunaSettingsTable {
      * @return those tab names, in file order
      */
     public List<String> readDeclaredTabs() {
+
         return readFieldRows()
             .stream()
             .map(row -> row.get(TAB_COLUMN))
@@ -265,6 +276,7 @@ public final class LunaSettingsTable {
                 if (RADIO_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN))) {
                     displayedTexts.add(row.get(OPTIONS_COLUMN));
                 }
+
             } else {
                 displayedTexts.add(row.get(DEFAULT_VALUE_COLUMN));
             }
@@ -275,6 +287,34 @@ public final class LunaSettingsTable {
     }
 
     /**
+     * The cell of each row that LunaLib draws with its bracketed runs highlighted: a value row's
+     * description, and a prose row's words. A caption is drawn as a heading, with no highlights.
+     *
+     * @return each such cell by field ID, in file order, blanks left out
+     */
+    public Map<String, String> readHighlightedTextsByFieldId() {
+
+        var highlightedTextsByFieldId = new LinkedHashMap<String, String>();
+
+        for (var row : readFieldRows()) {
+
+            var fieldType = row.get(FIELD_TYPE_COLUMN);
+
+            if (HEADER_FIELD_TYPE.equals(fieldType)) {
+                continue;
+            }
+            var highlightedText = TEXT_FIELD_TYPE.equals(fieldType)
+                ? row.get(DEFAULT_VALUE_COLUMN)
+                : row.get(FIELD_DESCRIPTION_COLUMN);
+
+            if (!highlightedText.isEmpty()) {
+                putOnce(highlightedTextsByFieldId, row.get(FIELD_ID_COLUMN), highlightedText);
+            }
+        }
+        return highlightedTextsByFieldId;
+    }
+
+    /**
      * Every row the file declares, as the pair a caller walking the file by type asks about. Two
      * cells rather than the row, so a check that wants the Boolean rows or the numeric ones says so
      * without also being handed the file's shape.
@@ -282,6 +322,7 @@ public final class LunaSettingsTable {
      * @return those pairs, in file order
      */
     public List<FieldRow> readFieldIdsAndTypes() {
+
         return readFieldRows()
             .stream()
             .map(row -> new FieldRow(row.get(FIELD_ID_COLUMN), row.get(FIELD_TYPE_COLUMN)))
@@ -317,6 +358,7 @@ public final class LunaSettingsTable {
      * @return its labels, in the order the dropdown offers them
      */
     public List<String> readOptions(String fieldId) {
+
         return Arrays
             .stream(readColumn(fieldId, OPTIONS_COLUMN, RADIO_FIELD_TYPE).split(OPTION_SEPARATOR))
             .map(String::trim)
@@ -326,6 +368,7 @@ public final class LunaSettingsTable {
 
     /** @return every Radio field the shipped file declares, in file order */
     public List<String> readRadioFieldIds() {
+
         return readFieldRows()
             .stream()
             .filter(row -> RADIO_FIELD_TYPE.equals(row.get(FIELD_TYPE_COLUMN)))
@@ -350,6 +393,7 @@ public final class LunaSettingsTable {
 
     /** @return every field the screen stores a value for, in file order */
     public List<String> readValueFieldIds() {
+
         return readFieldRows()
             .stream()
             .filter(LunaSettingsTable::isStoredValueRow)
@@ -364,7 +408,8 @@ public final class LunaSettingsTable {
 
         var fieldType = row.get(FIELD_TYPE_COLUMN);
 
-        return !HEADER_FIELD_TYPE.equals(fieldType) && !TEXT_FIELD_TYPE.equals(fieldType);
+        return !HEADER_FIELD_TYPE.equals(fieldType)
+            && !TEXT_FIELD_TYPE.equals(fieldType);
     }
 
     // A reading keyed by field ID holds one row per ID, so a second row under one would be dropped from
@@ -385,6 +430,7 @@ public final class LunaSettingsTable {
             .toList();
 
         if (rows.size() != 1) {
+
             throw new AssertionError(
                 "Expected exactly one row for field " + fieldId + " in " + settingsCsv
                     + " but found " + rows.size());
@@ -402,6 +448,7 @@ public final class LunaSettingsTable {
         var declaredType = row.get(FIELD_TYPE_COLUMN);
 
         if (!declaredType.equals(expectedFieldType)) {
+
             throw new AssertionError(
                 "Field " + fieldId + " in " + settingsCsv + " is declared " + declaredType
                     + " but was read as " + expectedFieldType);
@@ -420,6 +467,7 @@ public final class LunaSettingsTable {
     // column past - is ShippedSpreadsheet's, so it is one parser's business rather than this
     // fixture's.
     private List<List<String>> readFieldRows() {
+
         return ShippedSpreadsheet
             .readCells(settingsCsv)
             .stream()
@@ -464,6 +512,7 @@ public final class LunaSettingsTable {
                 DEFAULT_VALUE_HEADER,
                 storedDefaultValueText.orElse(""),
                 referenceBehaviour.storedDefaultValueText.orElse(""));
+
             describeDifference(differences, OPTIONS_HEADER, optionsText, referenceBehaviour.optionsText);
             describeDifference(differences, MIN_VALUE_HEADER, minValueText, referenceBehaviour.minValueText);
             describeDifference(differences, MAX_VALUE_HEADER, maxValueText, referenceBehaviour.maxValueText);
@@ -489,6 +538,8 @@ public final class LunaSettingsTable {
      * @param fieldId   the LunaLib field ID the row is stored under
      * @param fieldType the row's declared type, which is what says how its cells are read
      */
-    public record FieldRow(String fieldId, String fieldType) {
+    public record FieldRow(
+        String fieldId,
+        String fieldType) {
     }
 }

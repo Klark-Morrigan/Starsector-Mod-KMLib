@@ -71,7 +71,9 @@ final class SettingsParity {
 
         readings.reading().forEach((fieldId, behaviour) -> {
 
-            var referenceBehaviour = readings.referenceReading().get(fieldId);
+            var referenceBehaviour = readings
+                .referenceReading()
+                .get(fieldId);
 
             if (referenceBehaviour != null) {
 

@@ -309,6 +309,13 @@ because recovering positions from a substring search is exactly the ambiguity be
 and additionally carries its own `addTo` render methods -
 it is an adapter,
 not content.
+It hands its runs to the game in the order they stand in the text,
+because the game searches for each run from where the previous one matched,
+and a translation may order its slots differently.
+The game also leaves a run plain when a character beside it is anything but whitespace or ASCII punctuation,
+so a run touching Chinese text needs a space on that side;
+[`LabelHighlightRule`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/label/LabelHighlightRule.java)
+states the rule for the suites that check it.
 
 ### `ImageSpan` versus `RowSlot.Image`
 

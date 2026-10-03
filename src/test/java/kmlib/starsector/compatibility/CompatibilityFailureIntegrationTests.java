@@ -1,6 +1,5 @@
 package kmlib.starsector.compatibility;
 
-import kmlib.starsector.compatibility.CompatibilityNoticeLine.EmphasisedRun;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
@@ -9,8 +8,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * fills them in still agree. A template whose slots were reordered in {@code strings.json} would
  * pass every case written against a copy of it and reach a player with the versions swapped.
  *
- * <p>The other is that every run a line names as standing out is actually in that line, and in the
- * order given. The engine matches each run from where the last one ended, so a run the wording no
- * longer contains, or one listed before a run that precedes it, silently tints nothing.
+ * <p>The other is that every run a line names as standing out is one the engine highlights, in every
+ * locale KMLib ships. A run the wording no longer contains, or one beside a character the engine does
+ * not highlight against, silently tints nothing.
  */
 final class CompatibilityFailureIntegrationTests {
 
@@ -194,50 +196,31 @@ final class CompatibilityFailureIntegrationTests {
     @Nested
     class EmphasisedRuns {
 
-        @Test
-        void everyRunOfEveryLineIsFoundInOrderInTheShippedWording() {
+        @ParameterizedTest
+        @MethodSource("kmlib.starsector.compatibility.NoticeLineHighlights#listLocaleTags")
+        void everyRunOfEveryLineHighlightsInEveryLocale(String localeTag) {
 
-            // Walked over all five shapes a notice takes, because which runs a line names differs
-            // by shape and a run that went missing tints nothing rather than failing.
-            assertEveryRunIsFoundInOrder(
-                CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1"));
-            assertEveryRunIsFoundInOrder(
-                CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8"));
-            assertEveryRunIsFoundInOrder(
-                CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null));
-            assertEveryRunIsFoundInOrder(
-                CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8"));
-            assertEveryRunIsFoundInOrder(CompatibilityFailureFixture.createFailure());
-        }
-
-        // Walks a notice's lines the way the engine walks a line's runs: each searched from where
-        // the last one ended, which is what makes a repeated name land on its own occurrence.
-        private void assertEveryRunIsFoundInOrder(CompatibilityFailure failure) {
+            // Walked over all five shapes a notice takes, because which runs a line names differs by
+            // shape. The engine leaves a run plain, with no error, when the wording lacks it or a
+            // character beside it is neither whitespace nor ASCII punctuation.
+            NoticeLineHighlights.installLocaleStrings(localeTag);
 
             var lines = new ArrayList<CompatibilityNoticeLine>();
-            lines.add(failure.describeHeadingForPlayer());
-            lines.addAll(failure.describeDiagnosisForPlayer());
-            lines.addAll(failure.describeRowsForPlayer());
-            lines.add(failure.describeClosingForPlayer());
 
-            for (var line : lines) {
-                assertRunsAreFoundInOrder(line);
+            for (var failure : List.of(
+                    CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1"),
+                    CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.8.8"),
+                    CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", null),
+                    CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "0.8.8"),
+                    CompatibilityFailureFixture.createFailure())) {
+
+                lines.add(failure.describeHeadingForPlayer());
+                lines.addAll(failure.describeDiagnosisForPlayer());
+                lines.addAll(failure.describeRowsForPlayer());
+                lines.add(failure.describeClosingForPlayer());
             }
-        }
-
-        private void assertRunsAreFoundInOrder(CompatibilityNoticeLine line) {
-
-            var searchedFrom = 0;
-
-            for (EmphasisedRun run : line.emphasisedRuns()) {
-                var foundAt = line.lineText().indexOf(run.runText(), searchedFrom);
-
-                assertThat(foundAt)
-                    .as("run '%s' in line '%s'", run.runText(), line.lineText())
-                    .isNotNegative();
-
-                searchedFrom = foundAt + run.runText().length();
-            }
+            assertThat(NoticeLineHighlights.findUnhighlightedRuns(lines))
+                .isEmpty();
         }
     }
 }

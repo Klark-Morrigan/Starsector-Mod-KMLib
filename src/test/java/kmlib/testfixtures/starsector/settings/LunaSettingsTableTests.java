@@ -230,6 +230,21 @@ final class LunaSettingsTableTests {
     }
 
     @Nested
+    class ReadHighlightedTextsByFieldId {
+
+        @Test
+        void aValueRowsDescriptionAndAProseRowsWordsAreReadAndACaptionIsNot(@TempDir Path directory)
+                throws IOException {
+
+            assertThat(createTable(directory, ROWS).readHighlightedTextsByFieldId())
+                .containsExactly(
+                    Map.entry("kmu_note", "Prose, with a comma"),
+                    Map.entry("kmu_palette", "Which palette"),
+                    Map.entry("kmu_width", "How wide"));
+        }
+    }
+
+    @Nested
     class ReadFieldIdsAndTypes {
 
         @Test
