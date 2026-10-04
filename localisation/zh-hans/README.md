@@ -199,6 +199,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+| data file | 数据文件 | a CSV or JSON a mod ships |
+| constructor, no-arg constructor | 构造函数, 无参构造函数 | |
+| method handle | 方法句柄 | |
+| reflection | 反射 | as in the settings description |
 
 ## Forum terms
 
@@ -211,12 +215,20 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |
 | the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
 | Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
+| English edition | 英文版 | the counterpart of 简体中文版 |
+| Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
+| forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
 | pre-release | 预发布 | Fossic's word for its pre-release board |
 | testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
 | repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
 | translation (a translated build) | 汉化 | a Fossic board |
 | dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
 | attachment | 附件 | a file uploaded to a forum post |
+| mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
+| mod author | Mod 作者 | Mod kept Latin as vanilla does, with 作者, author; the posting form writes Mod作者 |
+| translation reference (the terminology reference, as a post names it) | 翻译参考 | 参考, reference, after 翻译, translation |
+| rationale (for a term's choice) | 选词理由 | 选词, choosing a word, with 理由, reason: what each row's note records |
+| translation (the act) | 翻译 | the plain word; 汉化 is a translated build, the forum's sense |
 | install mid-run | 中途安装 | 中途, partway through |
 | uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word, as KMU's strings write it; 步骤 for the steps |
 | changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |

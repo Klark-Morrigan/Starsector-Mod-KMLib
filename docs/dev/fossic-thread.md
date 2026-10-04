@@ -73,7 +73,7 @@ Every input, in the form's order (`*` is required):
 
 | Input | What it takes |
 | --- | --- |
-| 标题 `*` | 80 characters at most; the game version in brackets first, then the status tag, then the name |
+| 标题 `*` | 80 characters at most; the game version in brackets first, then the status tag, then the name. The mod version can stay out: the board list and the download panel show the form's Mod版本, and a title without it needs no edit per release |
 | Mod标识符 `*` | the mod ID from `mod_info.json` |
 | Mod中文名 `*`, Mod英文名 | the mod's names |
 | Mod作者 `*` | the forum user name first; several authors comma-separated |
@@ -93,7 +93,9 @@ Every input, in the form's order (`*` is required):
 | 滑块验证 `*` | the slider captcha |
 | 附加选项 | 禁用编辑器代码 off, or the BBCode prints as text; 禁用表情 on, so no command syntax reads as a smiley; 禁用链接识别 off; 接收回复通知 as wanted; HTML is not offered and `[img]` is fixed on |
 | 发贴本地化图片 | copies remote images onto the forum's storage; harmless, and not relied on, since it fetches from Fossic's side where GitHub is the unreliable host |
-| 回帖奖励, 主题标签, 定时发布 | reply rewards, up to five tags, and scheduled posting |
+| 回帖奖励 | left empty. Mod threads on the board run without one, and replies come from bug reports and questions anyway. A reward draws bump replies (顶) that bury those, and its whole pool comes out of the author's 积分 up front |
+| 主题标签 | up to five tags. They are free text posters make up, and sparsely used: mod发布 is the one mod threads share. Players browse by category, game version and the mod index, so a tag earns its place only as a word a player would type into search |
+| 定时发布 | scheduled posting |
 
 ## Images and attachments
 
@@ -107,14 +109,25 @@ Fossic publishes no size limit,
 but a per-file and a daily one exist per user group;
 the FAQ (thread 3316) says to ask an admin to raise them.
 
+An attachment the post text does not reference is listed under the post.
+A zip referenced by its tag is drawn as a download link where the text names it,
+which is how a dependency's zip with no release-file row of its own,
+such as KMLib's in a consumer's thread, gets a link of its own.
+The editor inserts a tag with its numeric ID when an uploaded file is clicked;
+the attachment URL a browser shows is encoded and is not linked by hand.
+
 ## Markup
 
 Fossic is Discuz! X3.5, and its BBCode differs from the Fractal Softworks forum's SMF:
-`[collapse=title]` for `[spoiler=]`,
+`[spoiler=title]` as the folded section the editor's fold button writes,
+`[align=center]` for `[center]`,
 `[size=1..7]` for point sizes,
 `[*]` list items with no `[li]`,
 `[attachimg]id[/attachimg]` for an uploaded image,
-and `[hr]` checked in the preview before it is relied on.
+`[attach]id[/attach]` for an uploaded file, drawn as an inline download link with its name, size and download count,
+and `[hr]` checked in a saved draft before it is relied on.
+The editor has no preview, and its visual mode leaves `[spoiler]` as raw text,
+so a draft saved and opened is the only way to see the post as Fossic draws it.
 Markdown is also accepted as `[md]...[/md]`,
 but a post translated from the Fractal Softworks one stays BBCode.
 
