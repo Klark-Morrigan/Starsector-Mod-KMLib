@@ -4,6 +4,18 @@ Bridge GL11 cannot serve a buffer-taking `glGetFloat`: reading `GL_MODELVIEW_MAT
 
 # Body
 
+## Resolved in v0.9.1rc1
+
+**v0.9.1rc1** (`fr.jar`, SHA-256 `cea6fc460b8d419449ee4ad78d8e2cbd4ea1ca95527b20558f448d8ef630888a`, 584591 bytes) serves `glGetFloat(GL_MODELVIEW_MATRIX, FloatBuffer)` inline on the caller thread. It answers from a new caller-side `MatrixTracker`, which every modelview call updates as it is issued, display lists included, and it writes with `storeTranspose`.
+
+It needs no `cpuMode` branch, so it is simpler than the fix suggested below. The tracker mirrors the same stack the render thread keeps, and that stack is also what GL holds while a program is bound. So the read never stalls and never answers identity in place of a transform.
+
+Every other pname, `GL_PROJECTION_MATRIX` included, throws `UnsupportedOperationException` with the pname in the message. The projection is not needed on the campaign UI, as the last section explains.
+
+The same release renamed `TransformManager` to `MatrixManager`, and `Context.transformManager` to `Context.matrixManager`. That unbinds the workaround below, which a mod no longer needs on v0.9.1rc1.
+
+The rest of this report is as filed against v0.9.0.
+
 ## Summary
 
 No bridge class implements `glGetFloat(int, FloatBuffer)`. Since the agent rewrites `org/lwjgl/opengl/GL11` to the bridge in every jar, a mod that compiled fine against real LWJGL binds to the bridge at runtime and dies the first time it reads a matrix back - from inside its render pass, so it takes the screen down with it rather than failing at load.

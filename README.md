@@ -1855,15 +1855,16 @@ Consuming mods link there rather than restating it.
 
 [docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is the worked
 example:
-the bridge serves no buffer-taking `glGetFloat`,
+through Fast Rendering `v0.9.0` the bridge serves no buffer-taking `glGetFloat`,
 so reading `GL_MODELVIEW_MATRIX` throws mid-render
 on an install that has Fast Rendering and never on one that does not -
 `UnsupportedOperationException` from its `v0.8.9`,
 where the method is declared and refuses the call,
 and `NoSuchMethodError` before that,
 where it was not declared at all.
-It is written up as an upstream report,
-and is why the matrix readers in
+It was written up as an upstream report,
+which `v0.9.1rc1` answered by serving the read inline.
+The releases before it are why the matrix readers in
 [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/)
 are behind a port with one implementation per environment.
 
