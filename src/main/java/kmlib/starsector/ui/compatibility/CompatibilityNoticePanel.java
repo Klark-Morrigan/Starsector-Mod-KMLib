@@ -8,8 +8,8 @@ import com.fs.starfarer.api.ui.PositionAPI;
 
 import kmlib.animation.TraverseDurations;
 import kmlib.animation.TraverseFraction;
-import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.GameReachReporter;
+import kmlib.starsector.compatibility.ReportedFailure;
 import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.coreui.CoreUiOverlayPanels;
@@ -117,7 +117,7 @@ public final class CompatibilityNoticePanel {
      *
      * @param failure what the notice is about
      */
-    public void showFailure(CompatibilityFailure failure) {
+    public void showFailure(ReportedFailure failure) {
 
         if (panel == null) {
             return;
@@ -233,7 +233,7 @@ public final class CompatibilityNoticePanel {
     // any length.
     private void drawNoticeInto(
             CustomPanelAPI noticePanel,
-            CompatibilityFailure failure,
+            ReportedFailure failure,
             float screenWidth,
             float screenHeight) {
 

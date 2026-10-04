@@ -96,6 +96,45 @@ final class CompatibilityFailuresTests {
     }
 
     @Nested
+    class RecordFeatureFailureOnce {
+
+        @Test
+        void queuesTheFeatureWithItsCause() {
+
+            failures.recordFeatureFailureOnce(MAP_OVERLAY, CompatibilityFailureFixture.FEATURE_CAUSE);
+
+            assertThat(failures.takeNextUnreported())
+                .isEqualTo(new FeatureFailure(MAP_OVERLAY, CompatibilityFailureFixture.FEATURE_CAUSE));
+        }
+
+        @Test
+        void keepsTheFirstRecordOfAFeatureAndIgnoresTheSecond() {
+
+            // A feature switched off on one sector fails again on the next load of it, and the
+            // player was already told the first time.
+            failures.recordFeatureFailureOnce(MAP_OVERLAY, CompatibilityFailureFixture.FEATURE_CAUSE);
+            failures.recordFeatureFailureOnce(MAP_OVERLAY, new IllegalStateException("again"));
+
+            failures.takeNextUnreported();
+
+            assertThat(failures.takeNextUnreported())
+                .isNull();
+        }
+
+        @Test
+        void recordsAFeatureApartFromABindingTheSameFeatureTook() {
+
+            // The feature's own failure and a third party breaking under it are two reports about
+            // two causes, so the first must not latch the second away.
+            failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailure());
+            failures.recordFeatureFailureOnce(MAP_OVERLAY, CompatibilityFailureFixture.FEATURE_CAUSE);
+
+            assertThat(List.of(failures.takeNextUnreported(), failures.takeNextUnreported()))
+                .hasExactlyElementsOfTypes(CompatibilityFailure.class, FeatureFailure.class);
+        }
+    }
+
+    @Nested
     class RecordOnce {
 
         @Test
@@ -104,7 +143,7 @@ final class CompatibilityFailuresTests {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailureBrokenAt("first"));
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
+            assertThat(CompatibilityFailureFixture.takeNextBindingFailure(failures).breakage().brokenDetail())
                 .isEqualTo("first");
             assertThat(failures.takeNextUnreported())
                 .isNull();
@@ -157,9 +196,9 @@ final class CompatibilityFailuresTests {
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailureBrokenAt("first"));
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, recordedAs -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
+            assertThat(CompatibilityFailureFixture.takeNextBindingFailure(failures).breakage().brokenDetail())
                 .isEqualTo("first");
-            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
+            assertThat(CompatibilityFailureFixture.takeNextBindingFailure(failures).breakage().brokenDetail())
                 .isEqualTo("second");
         }
 
@@ -346,7 +385,7 @@ final class CompatibilityFailuresTests {
             failures.recordOnce(NEXERELIN, MAP_OVERLAY, recordedAs -> createFailureBrokenAt("first"));
             failures.recordOnce(FAST_RENDERING, MAP_OVERLAY, recordedAs -> createFailureBrokenAt("second"));
 
-            assertThat(failures.takeNextUnreported().breakage().brokenDetail())
+            assertThat(CompatibilityFailureFixture.takeNextBindingFailure(failures).breakage().brokenDetail())
                 .isEqualTo("first");
         }
 

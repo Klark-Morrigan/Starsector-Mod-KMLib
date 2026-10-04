@@ -165,7 +165,7 @@ final class FastRenderingBridgeFailuresTests {
                 FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
                 BRIDGE_CALL_REFUSED);
 
-            var failure = failures.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failures);
             assertThat(failure.subject().name())
                 .isEqualTo(FastRendering.COMPATIBILITY_SUBJECT_NAME);
             assertThat(failure.consumer().lostFeature())

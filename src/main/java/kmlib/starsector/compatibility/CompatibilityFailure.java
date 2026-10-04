@@ -1,8 +1,6 @@
 package kmlib.starsector.compatibility;
 
 import kmlib.starsector.compatibility.CompatibilityNoticeLine.Emphasis;
-import kmlib.starsector.compatibility.CompatibilityNoticeLine.EmphasisedRun;
-import kmlib.starsector.settings.modmanager.InstalledMods;
 import kmlib.starsector.strings.KmlibStringKeys;
 
 import java.util.ArrayList;
@@ -14,6 +12,8 @@ import static kmlib.starsector.compatibility.CompatibilityNoticeLines.buildLine;
 import static kmlib.starsector.compatibility.CompatibilityNoticeLines.buildPhrase;
 import static kmlib.starsector.compatibility.CompatibilityNoticeLines.buildSplicedLine;
 import static kmlib.starsector.compatibility.CompatibilityNoticeLines.warn;
+import static kmlib.starsector.compatibility.NoticeParts.buildConsequenceRows;
+import static kmlib.starsector.compatibility.NoticeParts.buildRow;
 
 /**
  * One binding to third-party code that stopped holding, in the shape the notice shown to the player
@@ -42,23 +42,7 @@ public record CompatibilityFailure(
     CompatibilitySubject subject,
     CompatibilityConsumer consumer,
     CompatibilityBreakage breakage,
-    Throwable cause) {
-
-    // The log's own file name, which is where a report is written from. Not wording: it is the name
-    // of a file on disk and reads the same in every localisation.
-    private static final String LOG_FILE_NAME = "starsector.log";
-
-    // A blank line between the lines of the notice that are paragraphs rather than rows.
-    private static final String PARAGRAPH_BREAK = "\n\n";
-
-    // Between the rows of a block, which are a list rather than a paragraph.
-    private static final String ROW_BREAK = "\n";
-
-    // How a report names a mod whose display name the game could answer for.
-    private static final String NAME_WITH_ID = "%s (%s)";
-
-    // Between the mod as named and the version it is at, where the game answered one.
-    private static final String VERSION_SEPARATOR = " ";
+    Throwable cause) implements ReportedFailure {
 
     public CompatibilityFailure {
 
@@ -76,33 +60,12 @@ public record CompatibilityFailure(
     }
 
     /**
-     * The whole notice as plain text, for a surface that takes one string: the heading, the
-     * diagnosis where there is one, the rows, and the closing line, a blank line apart.
-     *
-     * @return the notice with its emphasis dropped
-     */
-    public String describeForPlayer() {
-
-        var paragraphs = new ArrayList<String>();
-        paragraphs.add(describeHeadingForPlayer().lineText());
-
-        var diagnosis = describeDiagnosisForPlayer();
-        if (!diagnosis.isEmpty()) {
-            paragraphs.add(joinLines(diagnosis));
-        }
-
-        paragraphs.add(joinLines(describeRowsForPlayer()));
-        paragraphs.add(describeClosingForPlayer().lineText());
-
-        return String.join(PARAGRAPH_BREAK, paragraphs);
-    }
-
-    /**
      * The paragraph the notice opens with: which mod could not integrate with which third party.
      *
      * @return the heading, warning on the phrase that names the failure and bringing both names
      *         forward
      */
+    @Override
     public CompatibilityNoticeLine describeHeadingForPlayer() {
 
         var failurePhrase = KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_TITLE_ERROR);
@@ -138,6 +101,7 @@ public record CompatibilityFailure(
      *
      * @return the diagnosis in reading order, empty where none can be given
      */
+    @Override
     public List<CompatibilityNoticeLine> describeDiagnosisForPlayer() {
 
         if (!subject.hasBuiltAgainstVersion()) {
@@ -160,12 +124,13 @@ public record CompatibilityFailure(
      *
      * @return the rows, never empty
      */
+    @Override
     public List<CompatibilityNoticeLine> describeRowsForPlayer() {
 
         var unknownVersion = describeUnknownVersion();
         var rows = new ArrayList<CompatibilityNoticeLine>();
 
-        rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, describeMod()));
+        rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_MOD, NoticeParts.describeMod(consumer)));
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_INTEGRATION, consumer.consumerKey()));
 
         rows.add(buildRow(
@@ -178,37 +143,9 @@ public record CompatibilityFailure(
 
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_BROKEN, breakage.brokenDetail()));
         rows.add(buildRow(KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_FAILED_WHILE, breakage.failureSite()));
-
-        // The two rows a player actually weighs, and the only two that are not neutral: what is
-        // lost warns, what is not is the one line of good news in the notice.
-        rows.add(buildEmphasisedRow(
-            KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_EFFECT,
-            consumer.lostFeature(),
-            Emphasis.WARNING));
-
-        // Left out rather than filled with a stand-in where the consumer said nothing about what
-        // still works. A row reading "No effect: -" claims less than no row at all and takes as
-        // much of the player's eye.
-        if (consumer.hasUnaffectedFeature()) {
-            rows.add(buildEmphasisedRow(
-                KmlibStringKeys.COMPATIBILITY_NOTICE_ROW_NO_EFFECT,
-                consumer.unaffectedFeature(),
-                Emphasis.REASSURANCE));
-        }
+        rows.addAll(buildConsequenceRows(consumer));
 
         return rows;
-    }
-
-    /**
-     * The line the notice closes with, pointing at the log.
-     *
-     * @return the closing line, bringing the log's name forward
-     */
-    public CompatibilityNoticeLine describeClosingForPlayer() {
-
-        return buildLine(
-            KmlibStringKeys.format(KmlibStringKeys.COMPATIBILITY_NOTICE_SEE_LOG, LOG_FILE_NAME),
-            bringForward(LOG_FILE_NAME));
     }
 
     /**
@@ -218,52 +155,16 @@ public record CompatibilityFailure(
      *
      * @return a heading and the labelled rows, newline separated
      */
+    @Override
     public String describeForLog() {
 
         return CompatibilityLogBlock.describe(this);
     }
 
-    /**
-     * Names the consuming mod for a row: its own name beside its ID and the version it is at where
-     * the game holds them, and the ID alone where it does not.
-     *
-     * <p>Resolved here rather than on {@link CompatibilityConsumer}, which stays plain data: a
-     * value that read the mod manager to be read itself could not be built without a running game,
-     * and this is the only place the answer is wanted. Resolved at report time rather than held, so
-     * the healthy path never reads the mod manager and a report composed before the game is up still
-     * names something. An ID the game lists no mod for shows as itself, which is how a misspelled or
-     * invented one surfaces.
-     *
-     * @return the mod as a row names it, never blank
-     */
-    String describeMod() {
+    // The consuming mod as a sentence names it.
+    private String describeModName() {
 
-        var modName = InstalledMods.readModName(consumer.modId());
-
-        var named = modName == null
-            ? consumer.modId()
-            : String.format(NAME_WITH_ID, modName, consumer.modId());
-
-        var modVersion = InstalledMods.readModVersion(consumer.modId());
-
-        return modVersion == null
-            ? named
-            : named + VERSION_SEPARATOR + modVersion;
-    }
-
-    /**
-     * Names the consuming mod for a sentence: its own name where the game holds one, and its ID
-     * where it does not.
-     *
-     * @return the mod as a sentence names it, never blank
-     */
-    String describeModName() {
-
-        var modName = InstalledMods.readModName(consumer.modId());
-
-        return modName == null
-            ? consumer.modId()
-            : modName;
+        return NoticeParts.describeModName(consumer);
     }
 
     // The one line for an install known to be behind: the state warns, and so does the instruction.
@@ -395,34 +296,6 @@ public record CompatibilityFailure(
     private String describeTargetedVersion() {
 
         return subject.describeBuiltAgainstVersion(describeUnknownVersion());
-    }
-
-    // One row, as the wording its key holds with its value in the slot, the value brought forward.
-    private static CompatibilityNoticeLine buildRow(String rowKey, String rowValue) {
-
-        return buildEmphasisedRow(rowKey, rowValue, Emphasis.HIGHLIGHT);
-    }
-
-    // The same, where the row's value stands out as something other than a plain answer.
-    private static CompatibilityNoticeLine buildEmphasisedRow(
-            String rowKey,
-            String rowValue,
-            Emphasis emphasis) {
-
-        return buildLine(
-            KmlibStringKeys.format(rowKey, rowValue),
-            new EmphasisedRun(rowValue, emphasis));
-    }
-
-    // Lines of one block, each on its own row.
-    private static String joinLines(List<CompatibilityNoticeLine> lines) {
-
-        return String.join(
-            ROW_BREAK,
-            lines
-                .stream()
-                .map(CompatibilityNoticeLine::lineText)
-                .toList());
     }
 
     private static String describeUnknownVersion() {

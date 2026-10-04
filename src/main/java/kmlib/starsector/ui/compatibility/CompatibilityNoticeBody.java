@@ -3,8 +3,8 @@ package kmlib.starsector.ui.compatibility;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
-import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilityNoticeLine;
+import kmlib.starsector.compatibility.ReportedFailure;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
 import kmlib.starsector.ui.highlight.Highlight;
 import kmlib.starsector.ui.highlight.HighlightedParagraph;
@@ -26,7 +26,7 @@ import java.awt.Color;
  * game ships is monospaced, so what separates a row's answer from its label on screen is its colour.
  *
  * <p>Which colour each kind of emphasis takes is decided here and nowhere else. Which runs there
- * are is {@link CompatibilityFailure}'s, so the panel and the dialog show one notice.
+ * are is the {@link ReportedFailure}'s, so the panel and the dialog show one notice.
  *
  * <p>Runs are handed over in the order the notice gives them, which the engine relies on: it
  * matches each from where the last one ended, so a name brought forward early and appearing again
@@ -69,7 +69,7 @@ final class CompatibilityNoticeBody {
      */
     static void fillNoticeBody(
             TooltipMakerAPI box,
-            CompatibilityFailure failure,
+            ReportedFailure failure,
             Object confirmButtonId,
             String confirmText) {
 

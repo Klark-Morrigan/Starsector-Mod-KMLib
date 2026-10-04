@@ -29,6 +29,12 @@ import kmlib.text.KmlibStrings;
  * <p>The sentence is the taking mod's rather than the library's, for the reason this package's
  * README sets out.
  *
+ * <p>The two keys are checked for a key's shape and the two sentences are not. A sentence has no
+ * shape that holds in every language - Chinese writes a whole one without a space - and this value is
+ * built where a failure is being reported, so refusing it costs the report. A key in a sentence slot
+ * shows on the notice as itself, which is loud enough; a missing string shows as the strings
+ * sentinel. Each mod's localisation suite holds its strings present and worded in every locale.
+ *
  * @param modId             the mod's own ID, as its {@code mod_info.json} declares it, and the half
  *                          of the key no other mod can hold
  * @param featureKey        which of that mod's features took the binding, as a short key, so a mod
@@ -71,12 +77,6 @@ public record CompatibilityConsumer(
         KmlibStrings.requireText(
             lostFeature,
             "A consumer naming nothing lost would tell the player to worry without saying about what.");
-
-        requireSentence(lostFeature);
-
-        if (KmlibStrings.hasText(unaffectedFeature)) {
-            requireSentence(unaffectedFeature);
-        }
     }
 
     /**
@@ -145,19 +145,9 @@ public record CompatibilityConsumer(
             unaffectedFeature);
     }
 
-    // The transposition the two key slots cannot catch between themselves: a sentence in a key slot
-    // is caught below, and this is a key in a sentence slot. Stated as the shape each slot has
-    // rather than as a type, there being no type for either.
-    private static void requireSentence(String sentence) {
-
-        if (!sentence.trim().contains(" ")) {
-            throw new IllegalArgumentException(
-                "A consumer's sentences must read as sentences, not as keys: " + sentence);
-        }
-    }
-
-    // Non-blank and unbroken by whitespace: what a key is and a sentence is not, which is what makes
-    // a sentence handed to a key slot fail here rather than reach a player as a latch.
+    // Non-blank and unbroken by whitespace: what a key is, which is what makes a sentence handed to a
+    // key slot fail here rather than become a latch. The keys come from code and are never translated,
+    // so the shape holds in every language.
     private static void requireKey(String key, String whyItMatters) {
 
         KmlibStrings.requireText(key, whyItMatters);

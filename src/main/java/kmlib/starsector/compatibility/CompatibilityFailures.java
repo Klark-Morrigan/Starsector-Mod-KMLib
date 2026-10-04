@@ -13,7 +13,8 @@ import java.util.function.Function;
 
 /**
  * The compatibility failures recorded this session: each binding latched on its first, held until
- * a reporter takes them.
+ * a reporter takes them. A mod's own feature that failed is recorded here too, so the player is told
+ * through the same notice.
  *
  * <p>A binding is a third party and the mod that took it, and it is latched on that pair: a failure
  * recurring every frame is reported once, while two mods over one third party are each reported.
@@ -50,7 +51,7 @@ public final class CompatibilityFailures {
     // The failures no reporter has taken yet, in the order they were recorded. Separate from the
     // latch because taking empties this and leaves that: a binding stays recorded for the session
     // however many times its failure has been reported.
-    private final Queue<CompatibilityFailure> unreportedFailures = new ConcurrentLinkedQueue<>();
+    private final Queue<ReportedFailure> unreportedFailures = new ConcurrentLinkedQueue<>();
 
     /**
      * Whether anything is waiting to be reported, as the read a per-frame reporter gates on: an
@@ -101,17 +102,27 @@ public final class CompatibilityFailures {
             describeFailure,
             "A record with nothing to describe the failure would latch a binding and report nothing.");
 
-        var recordedAs = takeLatch(subjectKey, consumer);
+        recordUnderLatch(subjectKey, consumer, describeFailure::apply);
+    }
 
-        // Null is the whole decision: another record of this binding with this sentence - on this
-        // thread or another - already passed, and there is nothing further to do or to build.
-        if (recordedAs == null) {
-            return;
-        }
+    /**
+     * Records that one of a mod's own features threw and was switched off, the first time that
+     * feature is recorded this session with that sentence, and ignores every record of it afterwards.
+     *
+     * <p>Latched like a binding, with the mod's own ID standing where a third party's key would. A
+     * mod does not bind to itself, so that pair is free for its own features, and a feature that
+     * fails on every load of a sector is reported once rather than every time.
+     *
+     * @param consumer the mod whose feature failed, with its key and its sentences
+     * @param cause    what the feature threw
+     */
+    public void recordFeatureFailureOnce(CompatibilityConsumer consumer, Throwable cause) {
 
-        unreportedFailures.add(Objects.requireNonNull(
-            describeFailure.apply(recordedAs),
-            "A description that answers nothing leaves a recorded binding with nothing to report."));
+        Objects.requireNonNull(
+            consumer,
+            "A record with no consumer could not say whose feature failed.");
+
+        recordUnderLatch(consumer.modId(), consumer, recordedAs -> new FeatureFailure(recordedAs, cause));
     }
 
     /**
@@ -119,17 +130,36 @@ public final class CompatibilityFailures {
      *
      * <p>One at a time because a reporter can only show one at a time: the game drops a message
      * dialog asked for behind another, so a reporter that took them all would be holding a second
-     * queue of what it could not yet show. Taken in record order, so the first binding to break is
-     * the first a player is told about.
+     * queue of what it could not yet show. Taken in record order, so the first failure is the first
+     * a player is told about.
      *
-     * <p>The binding taken stays latched: a take is a hand-over to whoever reports, not a reset of
-     * the latch, so a binding that fails again after its report is not reported again.
+     * <p>What was taken stays latched: a take is a hand-over to whoever reports, not a reset of the
+     * latch, so a binding that fails again after its report is not reported again.
      *
      * @return the oldest untaken failure, or {@code null} where none is waiting
      */
-    public CompatibilityFailure takeNextUnreported() {
+    public ReportedFailure takeNextUnreported() {
 
         return unreportedFailures.poll();
+    }
+
+    // Takes the latch and, where this record is the one kept, queues what the describer builds.
+    private void recordUnderLatch(
+            String subjectKey,
+            CompatibilityConsumer consumer,
+            Function<CompatibilityConsumer, ReportedFailure> describeFailure) {
+
+        var recordedAs = takeLatch(subjectKey, consumer);
+
+        // Null is the whole decision: another record of this pair with this sentence - on this
+        // thread or another - already passed, and there is nothing further to do or to build.
+        if (recordedAs == null) {
+            return;
+        }
+
+        unreportedFailures.add(Objects.requireNonNull(
+            describeFailure.apply(recordedAs),
+            "A description that answers nothing leaves a recorded failure with nothing to report."));
     }
 
     // Takes the latch for one record, as one step under the lock: whether this sentence was

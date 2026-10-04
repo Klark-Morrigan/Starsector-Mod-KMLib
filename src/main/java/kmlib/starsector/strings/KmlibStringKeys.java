@@ -41,6 +41,27 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_NOTICE_TITLE_ERROR = "compatibility_notice_title_error";
 
     /**
+     * Heading of the notice shown when one of a mod's own features threw and was switched off. Two
+     * slots: the mod's name, then the phrase below that names the failure.
+     *
+     * <p>Says the feature was switched off rather than that something broke, so the player knows
+     * the game is still safe to play and why a part of it is missing.
+     */
+    public static final String COMPATIBILITY_NOTICE_FEATURE_TITLE = "compatibility_notice_feature_title";
+
+    /** The phrase that heading names the failure with, which is the run of it that warns. No slots. */
+    public static final String COMPATIBILITY_NOTICE_FEATURE_TITLE_ERROR = "compatibility_notice_feature_title_error";
+
+    /**
+     * What the player can do about a feature failure. Two slots: the mod, then the
+     * report-to-developer phrase below.
+     *
+     * <p>Says the fault is the mod's own before asking for the report. A player who has met the
+     * compatibility notice would otherwise look for a version to change, and there is none to change.
+     */
+    public static final String COMPATIBILITY_NOTICE_FEATURE_DIAGNOSIS = "compatibility_notice_feature_diagnosis";
+
+    /**
      * What the player can do about it, where the install is behind the build. Three slots: the
      * third party, the too-old phrase below, the update phrase below.
      */
@@ -178,6 +199,12 @@ public final class KmlibStringKeys {
      * latched it under, the mod's ID and its feature key joined.
      */
     public static final String COMPATIBILITY_NOTICE_ROW_INTEGRATION = "compatibility_notice_row_integration";
+
+    /**
+     * The row naming which of a mod's own features failed. One slot: the key the record latched it
+     * under, the mod's ID and its feature key joined.
+     */
+    public static final String COMPATIBILITY_NOTICE_ROW_FEATURE = "compatibility_notice_row_feature";
 
     /**
      * The row naming what this build was type-checked against. One slot: that version.

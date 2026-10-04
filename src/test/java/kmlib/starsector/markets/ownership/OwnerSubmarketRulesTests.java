@@ -147,7 +147,7 @@ final class OwnerSubmarketRulesTests {
             assertThat(offerSubmarkets().wasExecuted())
                 .isFalse();
 
-            var failure = failureRecord.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
 
             assertThat(failure.subject().name())
                 .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);

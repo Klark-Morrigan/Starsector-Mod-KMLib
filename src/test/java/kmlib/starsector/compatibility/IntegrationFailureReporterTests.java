@@ -44,7 +44,7 @@ final class IntegrationFailureReporterTests {
             ModStateScopes.runWithoutGameSettings(() ->
                 buildReporter().recordFailure(FAILURE_SITE, integrationFailure));
 
-            var failure = failureRecord.takeNextUnreported();
+            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failureRecord);
 
             assertThat(failure.subject().name())
                 .isEqualTo(CompatibilityFailureFixture.INTEGRATED_MOD_NAME);

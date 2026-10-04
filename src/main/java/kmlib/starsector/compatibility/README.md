@@ -17,6 +17,7 @@ what it holds is the channel a binding reports through.
 - [A feature key one mod reused](#a-feature-key-one-mod-reused)
 - [A step that integrates with another mod](#a-step-that-integrates-with-another-mod)
 - [A reach into the game itself](#a-reach-into-the-game-itself)
+- [A mod's own feature failing](#a-mods-own-feature-failing)
 - [One record per session](#one-record-per-session)
 - [What a failure says](#what-a-failure-says)
 - [One dialog per frame](#one-dialog-per-frame)
@@ -310,6 +311,31 @@ Filed and not raised on screen.
 The screen notice stands in the widget tree these reaches walk,
 and this package sits below the interface packages that would raise it,
 so a report waits for the campaign's dialog.
+
+## A mod's own feature failing
+
+Not every lost feature has a third party behind it.
+A mod can catch its own feature throwing and switch it off so the game goes on,
+and then the player is left looking at something that is simply missing.
+The log has the reason, but a player has no cause to look there.
+
+[`FeatureFailure`](FeatureFailure.java) is that report,
+and `recordFeatureFailureOnce` files it on the same record.
+Both it and [`CompatibilityFailure`](CompatibilityFailure.java) are a [`ReportedFailure`](ReportedFailure.java),
+the sealed type both surfaces draw.
+[`NoticeParts`](NoticeParts.java) holds what the two word alike -
+the mod, a row, what is lost and what is not, the log pointer -
+so a player who has seen one notice reads the next in the same words.
+
+The notice has no versions to compare and no update to advise.
+It says the fault is the mod's own rather than a clash with another mod,
+and asks for a report,
+which is the one thing the player can usefully do.
+
+It is latched like a binding,
+with the mod's own ID standing where a third party's key would.
+A mod does not bind to itself, so that pair is free,
+and a feature that fails again on the next load is not reported a second time.
 
 ## One record per session
 
