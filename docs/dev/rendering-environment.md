@@ -50,7 +50,10 @@ SHA-1 `b1eafe80093381c56415731e1d64279e6140bcd0`.
 It is kept at `starsector-core\native\linux\` beside the Windows natives,
 the layout the Linux game uses.
 It links against `libX11`, `libXext`, `libXcursor`, `libXrandr`, `libXxf86vm` and the JDK's `libjawt`,
-so a machine loading it needs those installed.
+and `libjawt` in turn against the JDK's `libawt_xawt`,
+which adds `libXrender`, `libXtst` and `libXi`.
+A machine loading it needs all eight X libraries installed,
+and a full JDK rather than a headless runtime, which lacks `libjawt`.
 An install is patched by dropping the release zip's jars into `starsector-core\`,
 so a matching hash means the recorded artifact and the running one are the same file.
 
