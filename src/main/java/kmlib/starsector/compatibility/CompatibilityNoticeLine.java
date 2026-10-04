@@ -13,16 +13,16 @@ import java.util.Objects;
  * the composition already holds each one and simply says which they were. Nothing parses the
  * wording, and nothing in a value can be mistaken for a directive.
  *
- * <p><b>The runs are in reading order, and must stay that way.</b> The engine matches each run from
- * where the last one ended, so an out-of-order run either matches a later occurrence than it meant
- * or nothing at all. That same rule is what lets a run repeat: a name highlighted early and then
- * appearing again inside a later phrase is matched once each, in turn.
+ * <p>The runs are listed in the order the composition fills its slots. A translation may put those slots
+ * in another order, so a surface that tints them hands them to the engine in the order they stand in the
+ * wording: the engine matches each run from where the last one ended. A run may repeat, a name early and
+ * again inside a later phrase, and each occurrence is matched in turn.
  *
  * <p>What colour a kind of emphasis takes is not decided here. A surface that can tint reads the
  * runs and maps them; one that takes only a string reads {@link #lineText()} and drops them.
  *
  * @param lineText        the wording with its values already in place
- * @param emphasisedRuns  the runs that stand out, in the order they appear in {@code lineText}
+ * @param emphasisedRuns  the runs that stand out, in the order the composition filled them
  */
 public record CompatibilityNoticeLine(
     String lineText,

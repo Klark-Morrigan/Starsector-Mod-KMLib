@@ -33,6 +33,7 @@ public final class LocaleParity {
     private final ChangelogParity changelogParity;
     private final CoreLocalisationParity coreLocalisationParity;
     private final ModInfoParity modInfoParity;
+    private final SettingsHighlightParity settingsHighlightParity;
     private final SettingsParity settingsParity;
     private final StringsParity stringsParity;
 
@@ -59,14 +60,15 @@ public final class LocaleParity {
 
         Objects.requireNonNull(directory, "directory");
 
-        var comparison = new DefaultLocaleComparison(directory);
+        var bundleReadings = new LocaleBundleReadings(directory);
 
         this.bundleLayoutParity = new BundleLayoutParity(directory);
         this.changelogParity = new ChangelogParity(directory);
         this.modInfoParity = new ModInfoParity(directory);
-        this.settingsParity = new SettingsParity(comparison, settingsFieldIdPrefix);
-        this.stringsParity = new StringsParity(comparison);
+        this.settingsParity = new SettingsParity(bundleReadings, settingsFieldIdPrefix);
+        this.stringsParity = new StringsParity(bundleReadings);
         this.coreLocalisationParity = new CoreLocalisationParity(directory, settingsParity);
+        this.settingsHighlightParity = new SettingsHighlightParity(bundleReadings, settingsParity);
     }
 
     /**
@@ -90,6 +92,7 @@ public final class LocaleParity {
                 findSettingsRowMismatches(),
                 findSettingsBehaviourMismatches(),
                 findSettingsTabMismatches(),
+                findUnhighlightedSettingsRuns(),
                 findModInfoFragmentMismatches(),
                 findChangelogMismatches())
             .flatMap(List::stream)
@@ -229,6 +232,18 @@ public final class LocaleParity {
      */
     public List<String> findUndeclaredBundleDirectories() {
         return bundleLayoutParity.findUndeclaredBundleDirectories();
+    }
+
+    /**
+     * The bracketed runs in any locale's settings table that the game would leave plain. LunaLib asks the
+     * game to highlight each run, and the game highlights one only when the character on each side is
+     * whitespace or ASCII punctuation. A run beside a CJK character or full-width punctuation such as a
+     * Chinese full stop is drawn plain, with no error. Every locale is checked, the default included.
+     *
+     * @return one finding per run left plain
+     */
+    public List<String> findUnhighlightedSettingsRuns() {
+        return settingsHighlightParity.findUnhighlightedSettingsRuns();
     }
 
     /**

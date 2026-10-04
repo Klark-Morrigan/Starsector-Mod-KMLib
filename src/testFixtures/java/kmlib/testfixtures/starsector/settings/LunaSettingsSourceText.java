@@ -84,7 +84,9 @@ public final class LunaSettingsSourceText {
      *                       an ID literal recognisable among every other string the tree holds
      */
     public LunaSettingsSourceText(Path mainSourceRoot, String fieldIdPrefix) {
+
         Objects.requireNonNull(fieldIdPrefix, "fieldIdPrefix");
+
         this.mainSourceRoot = Objects.requireNonNull(mainSourceRoot, "mainSourceRoot");
 
         // Quoted, so a mention in prose or a comment does not count as reading the field.
@@ -170,25 +172,32 @@ public final class LunaSettingsSourceText {
      * @return those IDs
      */
     public Set<String> readFieldIdLiteralsInMainSources() {
+
         try (var sources = Files.walk(mainSourceRoot)) {
+
             return sources
                 .filter(source -> source.toString().endsWith(JAVA_SOURCE_SUFFIX))
                 .flatMap(this::findFieldIdLiterals)
                 .collect(Collectors.toSet());
-        } catch (IOException failure) {
+
+        } catch (IOException ioException) {
+
             // Surfaced for the reason the CSV read is: an unreadable source tree means the walk is
             // looking in the wrong place, not that every field is read.
             throw new UncheckedIOException(
                 "Could not walk " + mainSourceRoot.toAbsolutePath(),
-                failure);
+                ioException);
         }
     }
 
     private static String readSource(Path source) {
+
         try {
             return Files.readString(source, StandardCharsets.UTF_8);
-        } catch (IOException failure) {
-            throw new UncheckedIOException("Could not read " + source.toAbsolutePath(), failure);
+
+        } catch (IOException ioException) {
+
+            throw new UncheckedIOException("Could not read " + source.toAbsolutePath(), ioException);
         }
     }
 
@@ -211,10 +220,11 @@ public final class LunaSettingsSourceText {
 
             return declarations.get(0);
 
-        } catch (IOException failure) {
+        } catch (IOException ioException) {
+
             throw new UncheckedIOException(
                 "Could not walk " + mainSourceRoot.toAbsolutePath(),
-                failure);
+                ioException);
         }
     }
 
@@ -231,6 +241,7 @@ public final class LunaSettingsSourceText {
     }
 
     private Stream<String> findFieldIdLiterals(Path source) {
+
         return fieldIdLiteral
             .matcher(readSource(source))
             .results()
@@ -258,17 +269,21 @@ public final class LunaSettingsSourceText {
     // Every shipped source as one text, so a walk that follows a link across classes - a field ID
     // declared in one and read in another - sees both ends of it.
     private String readMainSourceText() {
+
         try (var sources = Files.walk(mainSourceRoot)) {
+
             return sources
                 .filter(source -> source.toString().endsWith(JAVA_SOURCE_SUFFIX))
                 .map(LunaSettingsSourceText::readSource)
                 .collect(Collectors.joining("\n"));
-        } catch (IOException failure) {
+
+        } catch (IOException ioException) {
+
             // Surfaced for the reason the CSV read is: an unreadable source tree means the walk is
             // looking in the wrong place, not that every fallback agrees.
             throw new UncheckedIOException(
                 "Could not walk " + mainSourceRoot.toAbsolutePath(),
-                failure);
+                ioException);
         }
     }
 
@@ -278,6 +293,7 @@ public final class LunaSettingsSourceText {
     private void requireSoleMatch(List<String> matches, String soughtDescription) {
 
         if (matches.size() != 1) {
+
             throw new AssertionError(
                 "Expected exactly one match for " + soughtDescription + " under " + mainSourceRoot
                     + " but found " + matches.size() + ": " + matches);

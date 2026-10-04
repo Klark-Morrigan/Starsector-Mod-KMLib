@@ -6,6 +6,8 @@ What a binding to third-party code that has stopped holding is reported as,
 and how that report reaches the player:
 recorded where the binding broke,
 shown from a frame that can open a dialog.
+A mod's own feature that failed and was switched off reports through the same channel -
+see [A mod's own feature failing](#a-mods-own-feature-failing).
 The package holds no binding of its own to any third party;
 what it holds is the channel a binding reports through.
 

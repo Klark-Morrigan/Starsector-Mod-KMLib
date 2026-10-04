@@ -34,7 +34,10 @@ public final class CommonDataStoreFake implements CommonDataStore {
 
     @Override
     public JSONObject readJsonFile(String fileName) {
-        return isReadable ? storedFiles.get(fileName) : null;
+
+        return isReadable
+            ? storedFiles.get(fileName)
+            : null;
     }
 
     @Override
@@ -43,6 +46,7 @@ public final class CommonDataStoreFake implements CommonDataStore {
         if (!isWritable) {
             return false;
         }
+
         writeCounts.merge(fileName, 1, Integer::sum);
         storedFiles.put(fileName, content);
 

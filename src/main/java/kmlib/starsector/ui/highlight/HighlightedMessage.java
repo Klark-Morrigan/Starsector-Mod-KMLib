@@ -33,16 +33,21 @@ import java.util.Objects;
  * here is deliberately as light as possible.
  */
 public final class HighlightedMessage {
+
     private final List<HighlightedParagraph> lines;
 
     public HighlightedMessage(HighlightedParagraph... lines) {
+
         Objects.requireNonNull(lines, "lines");
+
         if (lines.length == 0) {
             throw new IllegalArgumentException("HighlightedMessage requires at least one paragraph");
         }
+
         for (var i = 0; i < lines.length; i++) {
             Objects.requireNonNull(lines[i], "lines[" + i + "]");
         }
+
         // List.of is immutable and creates a defensive copy, so callers
         // cannot mutate the message after construction.
         this.lines = List.of(lines);
@@ -60,7 +65,9 @@ public final class HighlightedMessage {
      * for vanilla intel notifications.
      */
     public MessageIntel toMessageIntel() {
+
         var intel = new MessageIntel();
+
         for (HighlightedParagraph line : lines) {
             // getHighlightTexts / getHighlightColours return zero-length
             // arrays when the paragraph carries no highlights, which
@@ -72,6 +79,7 @@ public final class HighlightedMessage {
                 line.getHighlightTexts(),
                 line.getHighlightColours());
         }
+
         return intel;
     }
 }

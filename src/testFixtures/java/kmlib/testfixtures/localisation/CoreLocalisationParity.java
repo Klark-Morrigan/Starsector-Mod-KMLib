@@ -38,13 +38,13 @@ final class CoreLocalisationParity {
             var bundle = directory.openBundle(locale);
             var displayedTextsByFileName = new TreeMap<String, Collection<String>>();
 
-            if (DefaultLocaleComparison.isFileHeld(manifest, bundle, LocaleBundle.STRINGS_FILE_NAME)) {
+            if (LocaleBundleReadings.isFileHeld(manifest, bundle, LocaleBundle.STRINGS_FILE_NAME)) {
 
                 displayedTextsByFileName.put(
                     LocaleBundle.STRINGS_FILE_NAME,
                     StringsParity.flattenStrings(bundle.readStrings()).values());
             }
-            if (DefaultLocaleComparison.isFileHeld(manifest, bundle, LocaleBundle.SETTINGS_FILE_NAME)) {
+            if (LocaleBundleReadings.isFileHeld(manifest, bundle, LocaleBundle.SETTINGS_FILE_NAME)) {
 
                 displayedTextsByFileName.put(
                     LocaleBundle.SETTINGS_FILE_NAME,

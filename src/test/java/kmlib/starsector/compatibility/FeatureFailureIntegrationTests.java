@@ -1,5 +1,6 @@
 package kmlib.starsector.compatibility;
 
+import kmlib.testfixtures.localisation.ShippedLocales;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
@@ -8,8 +9,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,10 +67,7 @@ final class FeatureFailureIntegrationTests {
             var failure = CompatibilityFailureFixture.createFeatureFailure();
 
             assertThat(failure.describeForLog())
-                .containsSubsequence(failure.describeRowsForPlayer()
-                    .stream()
-                    .map(row -> row.emphasisedRuns().get(0).runText())
-                    .toArray(String[]::new));
+                .containsSubsequence(NoticeReadings.readNoticeRowValues(failure));
         }
 
         @Test
@@ -77,7 +75,7 @@ final class FeatureFailureIntegrationTests {
 
             var failure = CompatibilityFailureFixture.createFeatureFailure();
 
-            assertThat(failure.describeForLog().split("\n").length - 1)
+            assertThat(NoticeReadings.countLogRows(failure))
                 .isEqualTo(failure.describeRowsForPlayer().size());
         }
     }
@@ -85,32 +83,18 @@ final class FeatureFailureIntegrationTests {
     @Nested
     class EmphasisedRuns {
 
-        @Test
-        void everyRunOfEveryLineIsFoundInOrderInTheShippedWording() {
+        @ParameterizedTest
+        @MethodSource("kmlib.testfixtures.localisation.ShippedLocales#listLocaleTags")
+        void everyRunOfEveryLineHighlightsInEveryLocale(String localeTag) {
 
-            // The engine matches each run from where the last one ended, so a run the wording does
-            // not hold, or one listed out of order, tints nothing rather than failing.
-            var failure = CompatibilityFailureFixture.createFeatureFailure();
+            // The engine leaves a run plain, with no error, when the wording lacks it or a character
+            // beside it is neither whitespace nor ASCII punctuation - the case for most Chinese text.
+            ShippedLocales.installLocaleStrings(localeTag);
 
-            var lines = new ArrayList<CompatibilityNoticeLine>();
-            lines.add(failure.describeHeadingForPlayer());
-            lines.addAll(failure.describeDiagnosisForPlayer());
-            lines.addAll(failure.describeRowsForPlayer());
-            lines.add(failure.describeClosingForPlayer());
+            var lines = NoticeReadings.listNoticeLines(CompatibilityFailureFixture.createFeatureFailure());
 
-            for (var line : lines) {
-                var searchedFrom = 0;
-
-                for (var run : line.emphasisedRuns()) {
-                    var foundAt = line.lineText().indexOf(run.runText(), searchedFrom);
-
-                    assertThat(foundAt)
-                        .as("run '%s' in line '%s'", run.runText(), line.lineText())
-                        .isNotNegative();
-
-                    searchedFrom = foundAt + run.runText().length();
-                }
-            }
+            assertThat(NoticeLineHighlights.findUnhighlightedRuns(lines))
+                .isEmpty();
         }
     }
 }
