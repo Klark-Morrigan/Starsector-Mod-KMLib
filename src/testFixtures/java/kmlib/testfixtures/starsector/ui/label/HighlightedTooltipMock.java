@@ -72,8 +72,7 @@ public final class HighlightedTooltipMock {
 
             LabelHighlightRule
                 .findUnhighlightedRuns(addedParagraph.paragraphText(), List.of(runTexts.getValue()))
-                .forEach(run -> unhighlightedRuns.add("'" + run.runText() + "' in '" + addedParagraph.paragraphText()
-                    + "' (" + run.blockingNeighbours() + ")"));
+                .forEach(run -> unhighlightedRuns.add(run.describeIn(addedParagraph.paragraphText())));
         }
         return unhighlightedRuns;
     }

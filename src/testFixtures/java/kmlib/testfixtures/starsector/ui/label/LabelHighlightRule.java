@@ -197,5 +197,15 @@ public final class LabelHighlightRule {
     public record UnhighlightedRun(
         String runText,
         String blockingNeighbours) {
+
+        /**
+         * Words this run as a finding: the run, the text it was looked for in, and what blocked it.
+         *
+         * @param text the text the run was looked for in
+         * @return the finding
+         */
+        public String describeIn(String text) {
+            return "'" + runText + "' in '" + text + "' (" + blockingNeighbours + ")";
+        }
     }
 }

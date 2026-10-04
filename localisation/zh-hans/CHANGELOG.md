@@ -172,7 +172,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`LazyFontLineHeightReaderMock`**：将实时行高读取器固定住，并从 `FaceLineHeightReaderFake` 应答，用于针对每次绘制时静态组合、且未传入读取器的外观的测试套件。
 - **`GlyphCoverageReaderFake`**：根据规则给出字形覆盖。`createLatinOnlyCoverage()` 代表原版安装，每种字体只包含 Latin-1；`coveringEveryCharacter()` 扩大某一种字体的覆盖，正如本地化安装替换后的图集那样。
 - **`StoredMemoryFake`**：单独的、以映射为后备的记忆，背后没有其他东西。`SectorMemoryFake` 以游戏的方式（通过 `Global.getSector()`）访问记忆，并为此在其生命周期内保持一个静态替身处于打开状态；而已持有自己的 `Global` 替身的测试套件，或将记忆挂在行星而非星域上的测试套件，则完全无法使用它，因为为同一类型设置第二个替身会抛出异常。这样的测试套件改为设置本夹具并自行附加记忆，得到相同的存储值以及相同的写入和移除计数。`SectorMemoryFake` 基于它构建，并通过它应答每次读取，因此其自身接口不变。
-- **`LabelHighlightRule`**：按游戏的规则判断标签的高亮调用会让哪些片段保持原样。只有当片段两侧的字符是空白或 ASCII 标点，或片段位于文本开头或结尾时，片段才会高亮；每个片段都从上一个片段的匹配位置之后开始查找。因此紧挨中文文字或中文句号等全角标点的片段会以原样绘制，且不报错。接受一段文本及其片段，或接受一个 `HighlightedParagraph`，按它交出片段的方式判断。从渲染器复制而来，因为渲染器的类在运行中的游戏之外无法加载。
+- **`LabelHighlightRule`**：按游戏的规则判断标签的高亮调用会让哪些片段保持原样。只有当片段两侧的字符是空白或 ASCII 标点，或片段位于文本开头或结尾时，片段才会高亮；每个片段都从上一个片段的匹配位置之后开始查找。因此紧挨中文文字或中文句号等全角标点的片段会以原样绘制，且不报错。接受一段文本及其片段，或接受一个 `HighlightedParagraph`，按它交出片段的方式判断。从渲染器复制而来，因为渲染器的类在运行中的游戏之外无法加载。`UnhighlightedRun.describeIn()` 将以原样绘制的片段表述为一条发现项。
 - **`HighlightedTooltipMock`**：替身提示框，为添加到其中的每个段落分配各自的标签，使对象绘制到其中的每个高亮之后都能按该规则检查。
 - **`ButtonLabelFake`**：以游戏交出按钮文字时所用的标签形式呈现按钮文字，包括文字内容、其中被高亮的片段及高亮颜色。它按每个字符 `CHARACTER_WIDTH` 的宽度测量文字，并记录最近一次被调整到的宽度，使测试套件能够确认加长后的文字会重新调整宽度而不是换行。
 - **`LunaSettingsHighlights`** 和 **`LunaSettingsTable.readHighlightedTextsByFieldId()`**：按 LunaLib 绘制方式读取的设置单元格（去掉方括号，并列出其高亮的片段），以及 LunaLib 以这种方式绘制的单元格：数值行的描述与文字行的内容。
@@ -193,6 +193,7 @@ Mod 面向玩家的文件可以按语言分别保存，每个语言区域一个�
 - **`ShippedJson.requireList()` 和 `locateElement()`**：对象检查与成员定位在数组上的对应方法。
 - **`ChangelogOutline`**：Keep a Changelog 文件的结构：按标题列出的各版本、每个版本的各节、每节在每一嵌套深度上的列表项数量，以及每节的代码片段。不读取行文，因此只要没有条目只在一方被增删或改用其他标识符，译文与原文的结构就相同。
 - **`LocaleBundle.readStringSource()`**：以设置替身作答的形式提供某个语言区域的字符串，使在其下组成的文本以该语言区域呈现。
+- **`ShippedLocales`**：Mod 随附的语言区域，从其自身的 `localisation/` 目录读取，供按语言区域逐一组成文本的用例使用：`listLocaleTags()` 作为参数化来源，`installLocaleStrings()` 将某个语言区域的字符串设为游戏的字符串。
 
 ### 变更
 

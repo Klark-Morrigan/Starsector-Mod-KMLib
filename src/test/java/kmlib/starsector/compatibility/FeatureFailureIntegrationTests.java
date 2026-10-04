@@ -1,5 +1,6 @@
 package kmlib.starsector.compatibility;
 
+import kmlib.testfixtures.localisation.ShippedLocales;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
@@ -83,12 +84,12 @@ final class FeatureFailureIntegrationTests {
     class EmphasisedRuns {
 
         @ParameterizedTest
-        @MethodSource("kmlib.starsector.compatibility.NoticeLineHighlights#listLocaleTags")
+        @MethodSource("kmlib.testfixtures.localisation.ShippedLocales#listLocaleTags")
         void everyRunOfEveryLineHighlightsInEveryLocale(String localeTag) {
 
             // The engine leaves a run plain, with no error, when the wording lacks it or a character
             // beside it is neither whitespace nor ASCII punctuation - the case for most Chinese text.
-            NoticeLineHighlights.installLocaleStrings(localeTag);
+            ShippedLocales.installLocaleStrings(localeTag);
 
             var lines = NoticeReadings.listNoticeLines(CompatibilityFailureFixture.createFeatureFailure());
 
