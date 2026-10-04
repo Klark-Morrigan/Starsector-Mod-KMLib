@@ -394,7 +394,7 @@ final class CompatibilityFailureTests {
             //
             // No settings installed: the block is written from literals, so it holds on a path
             // where the game's settings may not be up yet.
-            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.8.8", "v0.9.1");
+            var failure = CompatibilityFailureFixture.createFailureBetweenVersions("v0.9.1", "v0.9.0");
 
             assertThat(failure.describeForLog())
                 .isEqualTo("Error integrating " + MOD_ID + " with Fast Rendering."
