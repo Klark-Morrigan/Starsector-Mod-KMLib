@@ -47,4 +47,20 @@ enforceReferencedTypes {
     restrictReferences namespace: gameNamespace,
         allowingPackages: publishedGameApiPackages,
         allowingTypes: stableGameTypes
+
+    // The member types kmlib.starsector.ui.coreui's walk is handed by Class's own
+    // getDeclaredFields, getDeclaredMethods and getDeclaredConstructors. They are
+    // named only in those methods' descriptors and held as Object from there on,
+    // so the game's loader is never asked for them; ReflectionBypass drives them
+    // through handles found on the bootstrap loader. A new reference to any of
+    // them that is more than a descriptor - a cast, a call, a typed local - is
+    // what the game refuses, and this allowance cannot tell the two apart.
+    restrictReferences namespace: gameRefusedNamespace,
+        inSourceSets: ['main'],
+        reason: gameRefusedNamespaceReason,
+        allowingTypes: [
+            'java.lang.reflect.Constructor',
+            'java.lang.reflect.Field',
+            'java.lang.reflect.Method',
+        ]
 }
