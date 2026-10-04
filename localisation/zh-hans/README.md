@@ -199,6 +199,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+| data file | 数据文件 | a CSV or JSON a mod ships |
+| constructor, no-arg constructor | 构造函数, 无参构造函数 | |
+| method handle | 方法句柄 | |
+| reflection | 反射 | as in the settings description |
 
 ## Forum terms
 
@@ -211,6 +215,9 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |
 | the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
 | Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
+| English edition | 英文版 | the counterpart of 简体中文版 |
+| Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
+| forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
 | pre-release | 预发布 | Fossic's word for its pre-release board |
 | testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
 | repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
