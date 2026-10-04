@@ -1,32 +1,30 @@
 package kmlib.opengl;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.util.vector.Matrix4f;
 
-import java.nio.FloatBuffer;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 /**
- * What KM code has to know about the Fast Rendering mod: whether it is in force, and how to read
- * the matrix it draws with. It replaces the game's GL calls with a batching renderer, which changes
- * what some GL calls mean, so code that reads GL state back has to account for it.
+ * What KM code has to know about the Fast Rendering mod: whether it is in force, which release first
+ * serves the one GL read KM needs from it, and which release is installed. It replaces the game's GL
+ * calls with a batching renderer, which changes what some GL calls mean, so code that reads GL state
+ * back has to account for it.
  *
- * <p>Both facts live here so one file has to be checked against
- * {@code docs/dev/rendering-environment.md}, which records them and their citations; the six bridge
- * members that page lists are checked against {@link FastRenderingBridgeDiagnostic} beside it.
- * Neither names a Fast Rendering type: this class is about the renderer, not bound to it, so it
- * stays loadable and verifiable on a stock install.
+ * <p>These facts live here so one file has to be checked against {@code docs/dev/rendering-environment.md},
+ * which records them and their citations. None names a Fast Rendering type: this class is about the
+ * renderer, not bound to it, so it stays loadable and verifiable on a stock install.
  */
 public final class FastRendering {
 
     /**
-     * The identity a binding to this renderer that stopped holding is recorded under.
+     * The identity a Fast Rendering read that failed is recorded under.
      *
-     * <p>Published rather than spelled at each binding site because a compatibility record is
-     * latched per third party and consumer: two binders spelling it differently would turn one
+     * <p>Published rather than spelled at each recording site because a compatibility record is
+     * latched per third party and consumer: two sites spelling it differently would turn one
      * renderer into two subjects and put two modals in front of a player over one mismatch. Held
-     * beside the detection because whoever binds to this renderer already asks this class whether
-     * it is in force.
+     * beside the detection because whoever reads through this renderer already asks this class
+     * whether it is in force.
      */
     public static final String COMPATIBILITY_SUBJECT_KEY = "fast-rendering";
 
@@ -39,6 +37,16 @@ public final class FastRendering {
      */
     public static final String COMPATIBILITY_SUBJECT_NAME = "Fast Rendering";
 
+    /**
+     * The first release whose bridge answers {@code glGetFloat(GL_MODELVIEW_MATRIX, FloatBuffer)}.
+     *
+     * <p>Earlier releases refuse that read mid-render, so this is the release a player on one of them
+     * is told to update to. It stands in a report where a build-time binding's version would: the
+     * read is the only thing KM takes from the renderer, so the release that serves it is the one KM
+     * targets.
+     */
+    public static final String FIRST_MODELVIEW_READ_RELEASE = "v0.9.1rc1";
+
     // The package every Fast Rendering bridge class sits under, whatever the release calls the rest
     // of the name. Matching the prefix rather than a whole class name is deliberate: the bridge has
     // moved within this package twice, neither time announced (v0.7.4 moved GL11 from
@@ -47,10 +55,16 @@ public final class FastRendering {
     // A full-name comparison answers "stock" for any release whose layout it does not know. That is
     // the one wrong answer with teeth - it routes callers into GL reads the bridge cannot serve,
     // which fail mid-render.
-    //
-    // Shared with the diagnostic beside this class, which spells the bridge's class names out from
-    // it: one place states where the bridge lives.
-    static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
+    private static final String BRIDGE_PACKAGE_PREFIX = "com.genir.renderer.";
+
+    // genir's own version constant, present from v0.8.2. A private class rather than a convention,
+    // so it is read by name through a handle: no KM build compiles against fr.jar.
+    private static final String VERSION_CLASS_NAME = BRIDGE_PACKAGE_PREFIX + "Version";
+    private static final String VERSION_METHOD_NAME = "getVersion";
+
+    // A lookup carries the access of the class that asked for it, and the version method is public,
+    // so this class's own access is all reaching it needs.
+    private static final MethodHandles.Lookup MEMBER_LOOKUP = MethodHandles.lookup();
 
     private FastRendering() {
     }
@@ -72,29 +86,21 @@ public final class FastRendering {
     }
 
     /**
-     * Copies one of Fast Rendering's matrices into the column-major layout GL states matrices in.
+     * Reads the release the installed {@code fr.jar} reports itself as.
      *
-     * <p>Two things make this more than a copy. Fast Rendering reads a {@link Matrix4f}'s fields as
-     * {@code m<row><col>} - its vertex transform takes the translation from {@code m03/m13/m23} -
-     * which is transposed from the {@code m<col><row>} LWJGL itself uses, so {@code store} would
-     * report the matrix the wrong way round and put a map's pan in the slots a projection's
-     * perspective terms belong in. Transposing is what its own GPU path does when it hands the same
-     * matrix to GL, so this is that conversion rather than a correction. And the matrix handed out
-     * is the live mutable one, so a caller that held it would watch it change mid-frame; copying is
-     * what makes the result a value.
+     * <p>For a report rather than a decision. A self-report is a lower bound on the release rather
+     * than the release - {@code v0.8.5rc1} says {@code v0.8.4} - so nothing branches on it; the read
+     * a caller needs is attempted and its failure is what decides.
      *
-     * @param matrix a matrix in Fast Rendering's row-major field layout
-     * @return {@value GlMatrix#FLOAT_COUNT} floats, column-major, owned by the caller
+     * <p>Never throws: it is called while describing a failure, and a version read that threw there
+     * would replace the report with its own trace. An unknown version is the lesser loss.
+     *
+     * @return the release string, such as {@code "v0.9.1rc1"}, or {@code null} where no Fast Rendering
+     *         is installed, or the jar predates v0.8.2 and carries no version class
      */
-    public static float[] copyAsColumnMajorFloats(Matrix4f matrix) {
-        // Matrix4f only writes into a FloatBuffer, so the transpose lands in one and is then copied
-        // into a plain array the caller owns outright.
-        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(GlMatrix.FLOAT_COUNT);
-        matrix.storeTranspose(matrixBuffer);
-        matrixBuffer.flip();
-        var columnMajorFloats = new float[GlMatrix.FLOAT_COUNT];
-        matrixBuffer.get(columnMajorFloats);
-        return columnMajorFloats;
+    public static String readInstalledVersion() {
+
+        return readInstalledVersion(FastRendering::loadThroughOwnLoader);
     }
 
     // Split from the class-literal read so the rule can be stated against names from releases this
@@ -102,5 +108,49 @@ public final class FastRendering {
     // is checkable at all - the live read reports whichever renderer happens to be underneath.
     static boolean isBridgeClassName(String glClassName) {
         return glClassName.startsWith(BRIDGE_PACKAGE_PREFIX);
+    }
+
+    // Split from the live read so a suite can answer the class name with a version class of its own:
+    // the live one reads whichever jar the machine has, which is no basis for an expectation.
+    //
+    // Over everything a handle call can throw, its invoke declaring Throwable, so a version read
+    // failing in any way costs the version and nothing else. A fault in the JVM itself is the one
+    // thing not worth trading a report for.
+    static String readInstalledVersion(ClassLookup classes) {
+
+        try {
+
+            var readVersion = MEMBER_LOOKUP.findStatic(
+                classes.loadClass(VERSION_CLASS_NAME),
+                VERSION_METHOD_NAME,
+                MethodType.methodType(String.class));
+
+            return (String) readVersion.invoke();
+
+        } catch (VirtualMachineError jvmFailure) {
+            throw jvmFailure;
+
+        } catch (Throwable readFailure) {
+            return null;
+        }
+    }
+
+    // Without initialising: only a constant is wanted, and running a third party's static initialiser
+    // from a failure path is a side effect nothing here asks for.
+    private static Class<?> loadThroughOwnLoader(String className) throws ClassNotFoundException {
+
+        return Class.forName(className, false, FastRendering.class.getClassLoader());
+    }
+
+    /** What answers a Fast Rendering class name, for the version read that takes one explicitly. */
+    @FunctionalInterface
+    interface ClassLookup {
+
+        /**
+         * @param className the binary name of a Fast Rendering class
+         * @return the class
+         * @throws ClassNotFoundException where nothing answers to the name
+         */
+        Class<?> loadClass(String className) throws ClassNotFoundException;
     }
 }

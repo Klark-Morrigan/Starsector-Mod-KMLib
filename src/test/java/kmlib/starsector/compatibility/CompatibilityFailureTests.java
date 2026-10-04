@@ -400,10 +400,9 @@ final class CompatibilityFailureTests {
                 .isEqualTo("Error integrating " + MOD_ID + " with Fast Rendering."
                     + "\n    Mod:           " + MOD_ID
                     + "\n    Integration:   " + MOD_ID + ":map-overlay"
-                    + "\n    Targeted:      0.8.8"
-                    + "\n    Detected:      0.9.1"
-                    + "\n    Broken:        GLCommand.run"
-                    + " (ClassNotFoundException: com.genir.renderer.bridge.interfaces.GLCommand)"
+                    + "\n    Targeted:      0.9.1"
+                    + "\n    Detected:      0.9.0"
+                    + "\n    Broken:        GL11.glGetFloat(GL_MODELVIEW_MATRIX, FloatBuffer)"
                     + "\n    Failed while:  resolving the binding"
                     + "\n    Effect:        " + CompatibilityFailureFixture.LOST_FEATURE
                     + "\n    No effect:     " + CompatibilityFailureFixture.UNAFFECTED_FEATURE);

@@ -13,11 +13,7 @@ apply plugin: 'java-test-fixtures'
 group = 'kmlib'
 
 // On-demand source cleanup (`gradlew formatJava`). Mechanical fixes only - it
-// never re-lays code. The wiring and the rationale live in the shared script; the
-// only thing KMLib decides here is that bridgeStubs is exempt, for the same reason
-// checkstyleBridgeStubs is disabled below - the stubs mirror a third party's
-// shape, which is not ours to restyle.
-ext.formatterExcludedSourceSets = ['bridgeStubs']
+// never re-lays code. The wiring and the rationale live in the shared script.
 apply from: "${rootDir}/../Common-Java/gradle/spotless-java.gradle"
 
 // The scripts under gradle/ are Groovy evaluated against a project, so what they decide can only be
@@ -148,11 +144,6 @@ enforceNoTestVocabulary {
     // the gate knows on sight.
     exemptSourceSet name: 'buildScriptTest'
 
-    // The hand-written bridge stubs mirror a third party's shape rather than
-    // ours, on the same grounds that exempt them from the formatter and from
-    // checkstyle below.
-    exemptSourceSet name: 'bridgestubs'
-
     // The one README that documents the shipped fixtures has to say what they
     // are for, and what they are for is stated in the words of a suite. Each
     // entry is per file and per word, so this unlocks nothing in the code
@@ -244,12 +235,6 @@ def nexerelinJars = findModJars('ExerelinCore.jar')
 // DoNotObfuscate marker, which javac must resolve to compile a cast to them.
 def starfarerObfJarFile = resolveCoreJarFile('starfarer_obf.jar')
 def fsCommonObfJarFile = resolveCoreJarFile('fs.common_obf.jar')
-
-// The one classpath entry that varies by machine: KMLib's Fast Rendering adapter compiles against
-// that mod's real bridge on a patched install and against compile-only mirrors of it elsewhere. The
-// whole decision - the stub source set it needs, the version it reports, and the properties that
-// force either leg - lives in the applied script, which is KMLib's own rather than shared.
-apply from: "${rootDir}/gradle/select-fast-rendering-binding.gradle"
 
 dependencies {
     // The suite implements a launcher SPI (see kmlib.testbootstrap), which has to be compiled

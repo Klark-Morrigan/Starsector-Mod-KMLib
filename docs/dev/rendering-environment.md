@@ -34,9 +34,23 @@ Treat the page as unproven against anything else.
 | What | Version | Identity |
 | --- | --- | --- |
 | Starsector | `0.98a-RC8` | - |
+| LWJGL (bundled with the game) | `2.9.3` | `org.lwjgl.Sys.getVersion()`; Linux x64 native `liblwjgl64.so` SHA-256 `4622966cceee1c13df9e293fbae8fa402d1be84b3e1ade7256eca57892392f08` |
 | Fast Rendering | `v0.9.1rc1` | `fr.jar` SHA-256 `cea6fc460b8d419449ee4ad78d8e2cbd4ea1ca95527b20558f448d8ef630888a`, 584591 bytes; `fr.agent.jar` SHA-256 `e8b91c9d3bebe9616c4925a5529c811555f541e3628c8952379dce86d2fe729d`, 152739 bytes |
 
-That row is the release the citations below were read out of.
+The Fast Rendering row is the release the citations below were read out of.
+
+A Windows install ships `native\windows` only.
+The Linux native,
+which a Linux machine needs to load Fast Rendering's bridge outside the game -
+`FastRenderingBridgeIntegrationTests` does,
+on `kmlib-runner` -
+comes from the official LWJGL artefact:
+[`lwjgl-platform-2.9.3-natives-linux.jar`](https://repo1.maven.org/maven2/org/lwjgl/lwjgl/lwjgl-platform/2.9.3/lwjgl-platform-2.9.3-natives-linux.jar),
+SHA-1 `b1eafe80093381c56415731e1d64279e6140bcd0`.
+It is kept at `starsector-core\native\linux\` beside the Windows natives,
+the layout the Linux game uses.
+It links against `libX11`, `libXext`, `libXcursor`, `libXrandr`, `libXxf86vm` and the JDK's `libjawt`,
+so a machine loading it needs those installed.
 An install is patched by dropping the release zip's jars into `starsector-core\`,
 so a matching hash means the recorded artifact and the running one are the same file.
 
@@ -77,8 +91,7 @@ and each is flagged where it appears:
   from `v0.9.0`.
   Through `v0.9.0rc2` it was the class `bridge.context.Executor`.
   A field links by its type,
-  so a jar compiled against either shape fails to link the field on the other -
-  the one change in this span that reached a member KMLib binds to.
+  so a jar compiled against either shape fails to link the field on the other.
 - **Game classes are patched by merging methods into them**,
   from `v0.9.0rc1`.
   Through `v0.8.10` `fr.jar` shadowed whole copies of 21 game classes instead.
@@ -100,24 +113,22 @@ and each is flagged where it appears:
   as an `UnsupportedOperationException` from `v0.8.9` and a `NoSuchMethodError` before it,
   so the modelview could not be read back through GL at all.
 
-Of the six members KMLib binds to,
-three have neither moved nor changed signature through `v0.9.1rc1`.
+KMLib binds to no bridge member.
+It reads the modelview through plain `GL11.glGetFloat`,
+which the bridge serves from `v0.9.1rc1`,
+and it guards that read so an earlier release costs the reading rather than the render pass
+(see [It defers every GL call to a render thread](#it-defers-every-gl-call-to-a-render-thread)).
+A mod that read the render-thread matrix directly would have been broken twice in two releases.
 `Context.exec` changed type in `v0.9.0` from the class `bridge.context.Executor`
 to the interface `bridge.context.executor.Executor`
-(implemented by `AsyncExecutor`; `SyncExecutor` and `SyncBatchExecutor` sit beside it unused).
-`execute(GLCommand)` is unchanged on it,
-so what breaks is the field read,
-which links by the field's type and holds on one side of `v0.9.0` only.
-`Context.transformManager` and `TransformManager.getCPUModelView` are gone in `v0.9.1rc1`.
-The same matrix is `Context.matrixManager` and `MatrixManager.getCPUModelView`,
-with the same signature and the same body,
-so only the names moved.
-KMLib binds to the `v0.9.0` shape,
-so on `v0.9.1rc1` its bridge-bound reader fails to link and degrades.
-The classes around the six have been rewritten repeatedly -
+(implemented by `AsyncExecutor`; `SyncExecutor` and `SyncBatchExecutor` sit beside it unused),
+with `execute(GLCommand)` unchanged on it.
+`Context.transformManager` and `TransformManager.getCPUModelView` are gone in `v0.9.1rc1`,
+renamed to `Context.matrixManager` and `MatrixManager.getCPUModelView`
+with the same signature and the same body.
+The classes around them have been rewritten repeatedly -
 `Context` in `v0.8.9`, `v0.9.0` and `v0.9.1rc1`,
-`VertexInterceptor` and `MatrixStack` more than once -
-without touching the facts KM reads off them.
+`VertexInterceptor` and `MatrixStack` more than once.
 
 The table that decides the bridge package name has been reshaped without notice -
 `ScriptTransformations` through `v0.8.8`,
@@ -151,13 +162,14 @@ so it identifies the Starsector build being patched and says nothing about which
 returning a release string -
 `"v0.9.1rc1"` on `v0.9.1rc1`.
 Nothing in either jar calls it,
-so it names the artifact rather than the session,
-which is what a build wants:
-KMLib's `build.gradle` loads it straight out of the jar to report
-which Fast Rendering the bridge adapter was type-checked against.
-The banner is therefore only as honest as the constant:
+so it names the artifact rather than the session.
+KMLib reads it at runtime,
+by name through a method handle
+(`FastRendering.readInstalledVersion`),
+to name the installed release when it reports a refused modelview read.
+That report is therefore only as honest as the constant:
 correct from `v0.8.6`,
-and a KMLib build bound against `v0.8.5rc1` reports `Fast Rendering: v0.8.4`.
+and `v0.8.5rc1` reports itself as `v0.8.4`.
 
 The third is the display string on the launcher and the main menu,
 `"Starsector 0.98a-RC8 FR9.1rc1"`.
@@ -229,36 +241,15 @@ The older move is the one that looks like the newer one and is not:
 while `v0.8.9` left them where they were and put a layer in front.
 So a `bridge.commands.GL11` frame means "at or after `v0.7.4`" and nothing more,
 and only a `bridge.opengl` frame dates a trace to `v0.8.9` or later.
-Every KM fact that names a bridge type -
-the detection string,
-the compile-only stubs -
-is therefore a fact about one range of releases,
+A fact that names a bridge type is therefore a fact about one range of releases,
 and the hash is what says which.
 
-The bridge's *members* have been stabler than its files:
-the code around the six KMLib names has been rewritten in nearly every release -
-trackers added and moved,
-`Context`'s constructor re-signatured twice,
-texture loading moved off the startup path,
-the shadowed game classes replaced by patches -
-and only two moves reached them:
-`Executor` in `v0.9.0`,
-and `TransformManager` in `v0.9.1rc1`.
-Byte-identity of the tree is therefore the wrong thing to check on an upgrade;
-the six members KMLib mirrors are -
-`ContextManager.getThreadContext`,
-`Context.transformManager`,
-`Context.exec` (as the `executor.Executor` interface),
-`executor.Executor.execute(GLCommand)`,
-`GLCommand.run` and `TransformManager.getCPUModelView` -
-and the real-jar build leg is what checks them.
-At runtime `FastRenderingBridgeDiagnostic` probes the same six by name and exact signature,
-through method handles rather than `java.lang.reflect`,
-once a binding has already failed:
-a `LinkageError` names the first member the JVM tripped on,
-where the probe names every one that moved,
-beside the version the installed jar reports.
-It never runs on the healthy path.
+KM code names two things in `fr.jar`,
+and both have outlived every move:
+the `com.genir.renderer.` prefix detection matches on (below),
+and the `com.genir.renderer.Version` class a report reads the installed release from.
+Everything else KM needs from the renderer goes through LWJGL's own entry points,
+which the bridge is rewritten onto and so cannot move out from under a caller.
 
 ## How to re-verify
 
@@ -546,20 +537,11 @@ For a translate-only map pass the pan lands in slots 3/7 instead of 12/13.
 
 None of this is published API.
 It is mod internals,
-and a genir refactor can break any of it,
-so code reading it should fail safe rather than assume.
-KMLib takes the binding under guard for that reason:
-a `LinkageError` raised as the bridge-bound reader initialises
-costs the reading rather than the render pass it was taken in
-(`ModelviewMatrixReaders.selectForActiveRenderer`),
-degrading onto a reader that reports no matrix at all
-and recording the failure so the player is told once, naming the renderer rather than the mod reading it.
-`v0.9.0` is the release that first exercised it:
-`Context.exec` changed type there,
-so a jar bound to either side links on that side alone and degrades on the other.
-`v0.9.1rc1` exercises it again:
-a jar bound to `Context.transformManager` links everything except the matrix read,
-which fails inside the copy command's guard.
+and a genir refactor can break any of it -
+`v0.9.0` and `v0.9.1rc1` each moved a member a direct reader would bind to.
+KMLib reads none of it.
+It asks `glGetFloat`,
+and from `v0.9.1rc1` the bridge does the transpose itself before answering.
 
 ### It defers every GL call to a render thread
 
@@ -671,74 +653,21 @@ the bridge answers `GL_VIEWPORT` inline from `attribTracker` and returns before 
 (`.../bridge/commands/GL11.java:1358-1369`).
 From `v0.9.1rc1` the modelview has the same inline path,
 through `glGetFloat` and `MatrixTracker` (above),
-and that read is current to the call rather than a frame late.
-Through `v0.9.0` it had none,
-and the rest of this section is the workaround that release range needs.
+and that read is current to the call.
+Through `v0.9.0` it had none.
+The only stall-free route then was a command enqueued through `Executor.execute`,
+which returns without waiting,
+copying the matrix on the render thread for a later frame to read.
+[issues/genir-glgetfloat.md](issues/genir-glgetfloat.md) records that workaround and what it cost.
 
-The fix there is to read **one frame late,
-without stalling**.
-`Executor.execute(GLCommand)` enqueues a command and returns immediately -
-no `wait`,
-no stall
-(`.../bridge/context/executor/AsyncExecutor.java:39-43`).
-So each frame the reader enqueues a fire-and-forget command that,
-when the render thread replays it at the caller's stream position,
-copies `getCPUModelView()` (transpose included) into a holder the reader owns;
-and it returns the copy a *prior* frame's command left there.
-The holder is published across the two threads through an `AtomicReference`,
-which also makes the cross-thread read tear-free.
-The result is a frame or two stale -
-the render thread runs a frame behind and a frame's copy is only guaranteed complete a frame later,
-so a read sees the frame-before-last's value or last's.
-That is invisible for a still map,
-since the cursor moves but the transform does not,
-and trails by a frame or two of pan velocity while panning -
-and costs zero stalls.
-
-This costs KMLib three mirrored members in its compile-only bridge stubs
-(`Context.exec`, `Executor.execute`, `GLCommand`) beyond the modelview read itself -
-see `build.gradle` and `src/bridgestubs/java`,
-and [Versions](#versions-this-was-verified-against) for the `v0.9.0` move of `Executor` that the stubs follow.
-`GLCommand` lives in `com.genir.renderer.bridge.interfaces` from `v0.7.4`,
-and its method is `run(Context, float[], int)` -
-the float array carries the packed arguments of the `execute` overloads that take them
-(`.../bridge/context/executor/AsyncExecutor.java:52-84`),
-and a command that reads nothing from it ignores both parameters.
-
-Ignoring them is also what makes the stub immune to the one change in this area.
-How those arguments are packed was re-laid-out in `v0.8.7rc1`:
-each command now gets a fixed four-float slot at `i * 4`
-(`.../bridge/context/executor/AsyncExecutor.java:180-193`),
-where earlier releases walked a variable stride whose length sat in the first float of each record.
-The *signature* did not change,
-so a command that reads neither parameter -
-KMLib's copy command -
-spans both conventions,
-while anything that had decoded the old packing would now read the wrong floats silently.
-
-One hazard the fire-and-forget hop does not remove:
-a command that **throws** on the render thread is captured,
-the rest of that frame's commands are skipped as corrupted state,
-and it is re-thrown on the game thread at the next frame swap,
-wrapped in a `RuntimeException`
-(`.../bridge/context/executor/AsyncExecutor.java:127-158`, `:170-178`, `:215-219`).
-Since `swapFrames` runs every frame,
-"fire and forget" means the exception is deferred,
-not swallowed -
-so the copy command has to be total.
-KMLib's is total by construction:
-the command body hands the matrix read to
-[`FastRenderingBridgeReading`](../../src/main/java/kmlib/starsector/ui/map/transform/FastRenderingBridgeReading.java),
-which takes it and copies it inside one catch,
-the reading included,
-since `Context.transformManager` and `getCPUModelView` can stop holding as readily as the copy can -
-as both did in `v0.9.1rc1`.
-Anything caught there latches the binding unavailable for the session and reports once,
-through the [compatibility channel](../../src/main/java/kmlib/starsector/compatibility/README.md).
-The enqueue side is guarded the same way on the game thread,
-because `getThreadContext` and `execute` are bridge calls too
-and from `v0.8.9` a declared entry point can refuse the call rather than fail to link;
-both guards share one latch.
+KMLib does not ship it.
+It reads through `glGetFloat` under either renderer,
+and under Fast Rendering takes the read under a guard
+(`FastRenderingModelviewMatrixReader`):
+a release that refuses it costs the reading for the session rather than the render pass,
+and the player is told once,
+through the [compatibility channel](../../src/main/java/kmlib/starsector/compatibility/README.md),
+which release the read needs.
 
 ### What the GL11 bridge can and cannot read back
 
