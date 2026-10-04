@@ -210,6 +210,21 @@ class VanillaButtonLabelTests {
         }
 
         @Test
+        void widensTheLabelToTheWordsItWroteTheKeyInto() {
+            // The game sized the label once, to the words it was built with, and wraps anything longer
+            // at that width: unfitted, the key drops onto a second line outside the button.
+            assertThat(announceOn(LABEL, ABSENT_KEY).readFittedWidth())
+                .contains("Map layers [Q]".length() * ButtonLabelFake.CHARACTER_WIDTH);
+        }
+
+        @Test
+        void leavesTheLabelsWidthAloneWhereTheWordsAlreadyHoldTheKey() {
+
+            assertThat(announceOn(LABEL, CONTAINED_KEY).readFittedWidth())
+                .isEmpty();
+        }
+
+        @Test
         void lightsWhatItSaysInTheColourTheGameLightsAKeyIn() {
             // A run lit without a colour draws in whatever the last caller left behind, so the two
             // travel together or the announcement reads differently from screen to screen.
