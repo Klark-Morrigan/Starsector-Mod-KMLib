@@ -43,6 +43,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`Colonies.selectColonies(test)` 和 `Colonies.hasAnyColony(test)`**：对殖民地集合的两种遍历，定义在集合本身上，而不是在其旁边手写。筛选保留集合自身的顺序，模仿原版平局规则的使用方正是按此顺序裁决争夺；判空读取在第一个通过的殖民地处停止，因为扫描时会对星域中的每个地点询问它，绘制星图时还会逐帧询问。未提供测试条件时不通过任何殖民地，宁可不予显示，也不报告一个无人要求显示的殖民地。
 - **`PersistedChoice` 和 `PersistedChoices.fromKey()`**：存档以其自身的键存储的选项，以及把存储的键读回为选项的唯一查找：在没有存储任何值，或没有选项对应该键时（无论该键是旧版本留下的还是其他 Mod 写入的）进行回退。它是 `LabeledChoice` 的对应物，用于选项自己拥有的键，而不是 LunaLib 存储的标签。`SortDirection`、`ListColumns` 和 `ListSortMode` 都是持久化选项。
 - **`SpreadsheetRows`**：游戏合并后的电子表格的行，读取为数据行，并将列表值单元格拆分为各个条目。合并器会把作者用于分隔表格的空 ID 行和用 `#` 注释掉的行与其他行一样返回，因此不识别它们的读取器会在一个本不是数据的行上失败，或把注释当作 ID 归档；这里在一处将它们排除。它接收行而不是打开文件，因为读取失败是否致命由调用方决定。`FactionSourceMods` 通过它读取 `factions.csv`。
+- **`ScriptClasses.instantiateScript(className, scriptType)`**：按调用方持有的类型，构建数据文件中指名的类（插件列、脚本键）。游戏不允许 Mod 代码使用 `java.lang.reflect`，因此常见的 `getDeclaredConstructor().newInstance()` 能够编译、通过所有测试套件，却会在游戏中首次调用时抛出异常；这里改为通过公开的方法句柄查找来获取构造函数，不涉及任何反射类型。类缺失、类型不符或没有公开的无参构造函数时会被拒绝并指出类名，因此数据中的拼写错误读起来就是数据中的拼写错误。
 - **`TooltipRow.createRow(List<LabelRun>)` 和 `LabelledRow.createRow(List<LabelRun>)`**：基于已组合成多个文本段的标签构建的裸行，供持有整句的调用方使用。它与以第一个文本段开始、再逐个接续其余文本段所得到的行相同，但只构建一份，而不是每段一份。
 - **`CampaignMonth`**：战役日历中的一个月，从调用方传入的任意时钟读取；以及 `formatKey()`，即每月一次的任务记录上次运行时所用的 `<cycle>-<month>` 拼写。该键会写入存档，因此只在一处拼写：同一个月若有两种拼写，各自都会把对方的记录读成从未运行过的月份。
 - **`Jitter.roll(jitterSize, random)`**：从调用方的 `Random` 抽取的同一区间，用于必须能按种子重放的抽取。两种形式共享同一个把抽取值映射到区间的方式，因此无论由哪个来源抽取，同一尺寸的含义都相同。区间的上端是开区间，一向如此；文档现在已注明这一点。
