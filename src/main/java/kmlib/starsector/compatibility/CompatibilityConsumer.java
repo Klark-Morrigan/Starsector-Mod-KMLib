@@ -3,8 +3,9 @@ package kmlib.starsector.compatibility;
 import kmlib.text.KmlibStrings;
 
 /**
- * The mod that took a binding to third-party code: which mod it is, which of its features the
- * binding serves, and the sentence naming what that feature loses when the binding stops holding.
+ * The mod that loses something: which mod it is, which of its features is affected, and the sentence
+ * naming what that feature loses. The loss is either a binding to third-party code that stopped
+ * holding, or the mod's own feature failing and being switched off.
  *
  * <p>The latch key is composed here rather than supplied whole. A key a caller spelled outright is a
  * key two mods can spell the same, and a record is latched on the pair of third party and consumer -
@@ -23,7 +24,7 @@ import kmlib.text.KmlibStrings;
  * <p>Plain data: the ID is not checked against the game and no name is looked up for it here. That
  * would put a mod-manager read on the healthy path, where this value is built and never looked at
  * again, and it would make a value object depend on a running game to be read at all. The report
- * resolves the name when it composes one - see {@link CompatibilityFailure#describeMod} - and an ID
+ * resolves the name when it composes one - see {@link NoticeParts#describeMod} - and an ID
  * naming no installed mod shows as itself there, which is where somebody notices.
  *
  * <p>The sentence is the taking mod's rather than the library's, for the reason this package's
@@ -102,7 +103,7 @@ public record CompatibilityConsumer(
 
     /**
      * @return the identity a record latches under: the mod and the feature, joined. Never shown to a
-     *         player as-is - {@link CompatibilityFailure#describeMod} is what a report names the
+     *         player as-is - {@link NoticeParts#describeMod} is what a report names the
      *         mod with
      */
     public String consumerKey() {

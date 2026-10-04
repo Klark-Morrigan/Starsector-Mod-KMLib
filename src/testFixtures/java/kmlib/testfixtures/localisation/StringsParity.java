@@ -20,10 +20,10 @@ final class StringsParity {
     // How the game draws a string that resolves blank, so a finding says what the player would see.
     private static final String BLANK_STRING_DRAWN_AS = "[REDACTED]";
 
-    private final DefaultLocaleComparison comparison;
+    private final LocaleBundleReadings bundleReadings;
 
-    StringsParity(DefaultLocaleComparison comparison) {
-        this.comparison = Objects.requireNonNull(comparison, "comparison");
+    StringsParity(LocaleBundleReadings bundleReadings) {
+        this.bundleReadings = Objects.requireNonNull(bundleReadings, "bundleReadings");
     }
 
     // A string is named by its category and key together, because one key may stand in two categories.
@@ -39,7 +39,7 @@ final class StringsParity {
 
     List<String> findBlankStrings() {
 
-        return comparison.inspectEveryLocale(
+        return bundleReadings.inspectEveryLocale(
             LocaleBundle.STRINGS_FILE_NAME,
             bundle -> flattenStrings(bundle.readStrings()),
             StringsParity::describeBlankStrings);
@@ -47,7 +47,7 @@ final class StringsParity {
 
     List<String> findFormatArgumentMismatches() {
 
-        return comparison.compareWithDefault(
+        return bundleReadings.compareWithDefault(
             LocaleBundle.STRINGS_FILE_NAME,
             bundle -> flattenStrings(bundle.readStrings()),
             StringsParity::describeFormatArgumentMismatches);
@@ -55,7 +55,7 @@ final class StringsParity {
 
     List<String> findStringsKeyMismatches() {
 
-        return comparison.compareWithDefault(
+        return bundleReadings.compareWithDefault(
             LocaleBundle.STRINGS_FILE_NAME,
             bundle -> flattenStrings(bundle.readStrings()).keySet(),
             readings -> ComparedReadings.describeMissingAndAdded(readings, "string"));

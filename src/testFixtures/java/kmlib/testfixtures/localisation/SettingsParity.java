@@ -17,21 +17,21 @@ import java.util.TreeSet;
  */
 final class SettingsParity {
 
-    private final DefaultLocaleComparison comparison;
+    private final LocaleBundleReadings bundleReadings;
 
     // Empty for a mod shipping no settings table, which has no field IDs to name. A table is read only where
     // the manifest maps one, and that read refuses a missing prefix.
     private final Optional<String> settingsFieldIdPrefix;
 
-    SettingsParity(DefaultLocaleComparison comparison, Optional<String> settingsFieldIdPrefix) {
+    SettingsParity(LocaleBundleReadings bundleReadings, Optional<String> settingsFieldIdPrefix) {
 
-        this.comparison = Objects.requireNonNull(comparison, "comparison");
+        this.bundleReadings = Objects.requireNonNull(bundleReadings, "bundleReadings");
         this.settingsFieldIdPrefix = Objects.requireNonNull(settingsFieldIdPrefix, "settingsFieldIdPrefix");
     }
 
     List<String> findSettingsBehaviourMismatches() {
 
-        return comparison.compareWithDefault(
+        return bundleReadings.compareWithDefault(
             LocaleBundle.SETTINGS_FILE_NAME,
             bundle -> openSettingsTable(bundle).readBehavioursByFieldId(),
             SettingsParity::describeBehaviourMismatches);
@@ -39,7 +39,7 @@ final class SettingsParity {
 
     List<String> findSettingsRowMismatches() {
 
-        return comparison.compareWithDefault(
+        return bundleReadings.compareWithDefault(
             LocaleBundle.SETTINGS_FILE_NAME,
             bundle -> openSettingsTable(bundle).readDeclaredFieldIds(),
             SettingsParity::describeRowMismatches);
@@ -47,7 +47,7 @@ final class SettingsParity {
 
     List<String> findSettingsTabMismatches() {
 
-        return comparison.compareWithDefault(
+        return bundleReadings.compareWithDefault(
             LocaleBundle.SETTINGS_FILE_NAME,
             bundle -> openSettingsTable(bundle).readTabsByFieldId(),
             SettingsParity::describeTabMismatches);

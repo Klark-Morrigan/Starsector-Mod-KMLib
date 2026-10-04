@@ -564,6 +564,7 @@ No Starsector API on the signature.
   recorded where the binding broke, once per third party and mod bound to it,
   shown on the screen it was found on where that screen can hold a panel,
   and otherwise as the game's own confirm dialog from a frame that can open one.
+  A mod's own feature that failed and was switched off is reported the same way.
   [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
@@ -1711,6 +1712,7 @@ since what separates an immediate write from a deferred one
 is how many disk writes a burst of edits costs.
 [`starsector/compatibility/`](src/testFixtures/java/kmlib/testfixtures/starsector/compatibility/)
 holds one representative compatibility failure with a builder per slot a case varies,
+one representative feature failure,
 two consumers that lose different things,
 and the notice's templates as stand-ins that expose their slots,
 so what a failure composes reads as which value landed where without the shipped wording being known.
@@ -1749,14 +1751,17 @@ glyphs no named core localisation supplies,
 a translated changelog missing or behind the root one,
 a bracketed settings run the game cannot highlight where it stands -
 and lists the launcher fields a locale leaves to the base without failing on them.
+`findAllMismatches()` gathers every check,
+so a mod's suite is one assertion over its own `localisation/`;
+a mod shipping no settings table opens the comparison without a field ID prefix.
 [`starsector/ui/label/`](src/testFixtures/java/kmlib/testfixtures/starsector/ui/label/)
 holds `LabelHighlightRule`, the game's rule for which highlighted runs draw plain:
 a run needs whitespace or ASCII punctuation on each side, so one touching Chinese text needs a space.
 `HighlightedTooltipMock` records each paragraph a subject draws into a tooltip,
 so a suite can hold every highlight it sets to that rule, in every locale.
-`findAllMismatches()` gathers every check,
-so a mod's suite is one assertion over its own `localisation/`;
-a mod shipping no settings table opens the comparison without a field ID prefix.
+`ButtonLabelFake` is a button's words as the game hands them over:
+what they say, the runs lit in them,
+and the width they were last fitted to, measured at a fixed width per character.
 [`starsector/memory/`](src/testFixtures/java/kmlib/testfixtures/starsector/memory/)
 holds the save a stored value lands in and two stand-in addresses to hold it apart under,
 and

@@ -8,15 +8,15 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Reads one bundle file out of the default locale and out of every other locale holding it, and hands each
- * pair of readings to a comparison. The strings and settings checks are built on it. A check that needs no
- * default to hold a locale to reads each locale's file on its own instead.
+ * Reads one bundle file out of every locale holding it, for the checks built on it. A check holding a
+ * locale to the default is handed each locale's reading beside the default's; a check whose rule needs no
+ * default, such as the game's own, is handed each locale's reading alone.
  */
-final class DefaultLocaleComparison {
+final class LocaleBundleReadings {
 
     private final LocalisationDirectory directory;
 
-    DefaultLocaleComparison(LocalisationDirectory directory) {
+    LocaleBundleReadings(LocalisationDirectory directory) {
         this.directory = Objects.requireNonNull(directory, "directory");
     }
 
@@ -41,6 +41,7 @@ final class DefaultLocaleComparison {
         if (!isFileHeld(manifest, referenceBundle, bundleFileName)) {
             return List.of();
         }
+
         var referenceReading = readBundleFile.apply(referenceBundle);
         var findings = new ArrayList<String>();
 
@@ -51,6 +52,7 @@ final class DefaultLocaleComparison {
             if (locale.equals(defaultLocale) || !isFileHeld(manifest, bundle, bundleFileName)) {
                 continue;
             }
+
             var readings = new ComparedReadings<>(
                 bundleFileName,
                 locale.localeTag(),
@@ -78,7 +80,10 @@ final class DefaultLocaleComparison {
             var bundle = directory.openBundle(locale);
 
             if (isFileHeld(manifest, bundle, bundleFileName)) {
-                findings.addAll(describeFindings.apply(locale.localeTag(), readBundleFile.apply(bundle)));
+
+                findings.addAll(describeFindings.apply(
+                    locale.localeTag(),
+                    readBundleFile.apply(bundle)));
             }
         }
         return findings;

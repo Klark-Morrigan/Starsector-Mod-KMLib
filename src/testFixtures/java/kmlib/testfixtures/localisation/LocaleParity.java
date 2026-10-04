@@ -60,15 +60,15 @@ public final class LocaleParity {
 
         Objects.requireNonNull(directory, "directory");
 
-        var comparison = new DefaultLocaleComparison(directory);
+        var bundleReadings = new LocaleBundleReadings(directory);
 
         this.bundleLayoutParity = new BundleLayoutParity(directory);
         this.changelogParity = new ChangelogParity(directory);
         this.modInfoParity = new ModInfoParity(directory);
-        this.settingsParity = new SettingsParity(comparison, settingsFieldIdPrefix);
-        this.stringsParity = new StringsParity(comparison);
+        this.settingsParity = new SettingsParity(bundleReadings, settingsFieldIdPrefix);
+        this.stringsParity = new StringsParity(bundleReadings);
         this.coreLocalisationParity = new CoreLocalisationParity(directory, settingsParity);
-        this.settingsHighlightParity = new SettingsHighlightParity(directory, settingsParity);
+        this.settingsHighlightParity = new SettingsHighlightParity(bundleReadings, settingsParity);
     }
 
     /**

@@ -5,6 +5,7 @@ import kmlib.testfixtures.starsector.ui.label.LabelHighlightRule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -14,43 +15,39 @@ import java.util.Objects;
  */
 final class SettingsHighlightParity {
 
-    private final LocalisationDirectory directory;
+    private final LocaleBundleReadings bundleReadings;
     private final SettingsParity settingsParity;
 
-    SettingsHighlightParity(LocalisationDirectory directory, SettingsParity settingsParity) {
+    SettingsHighlightParity(LocaleBundleReadings bundleReadings, SettingsParity settingsParity) {
 
-        this.directory = Objects.requireNonNull(directory, "directory");
+        this.bundleReadings = Objects.requireNonNull(bundleReadings, "bundleReadings");
         this.settingsParity = Objects.requireNonNull(settingsParity, "settingsParity");
     }
 
     List<String> findUnhighlightedSettingsRuns() {
 
+        return bundleReadings.inspectEveryLocale(
+            LocaleBundle.SETTINGS_FILE_NAME,
+            bundle -> settingsParity.openSettingsTable(bundle).readHighlightedTextsByFieldId(),
+            SettingsHighlightParity::describeUnhighlightedRuns);
+    }
+
+    // One finding per bracketed run the game would leave plain, naming the row and what blocked it.
+    private static List<String> describeUnhighlightedRuns(String localeTag, Map<String, String> cellTextsByFieldId) {
+
         var findings = new ArrayList<String>();
-        var manifest = directory.readManifest();
 
-        for (var locale : manifest.declaredLocalesByTag().values()) {
+        cellTextsByFieldId.forEach((fieldId, cellText) -> {
 
-            var bundle = directory.openBundle(locale);
+            var highlights = LunaSettingsHighlights.parseHighlights(cellText);
 
-            if (!DefaultLocaleComparison.isFileHeld(manifest, bundle, LocaleBundle.SETTINGS_FILE_NAME)) {
-                continue;
-            }
-
-            settingsParity
-                .openSettingsTable(bundle)
-                .readHighlightedTextsByFieldId()
-                .forEach((fieldId, cellText) -> {
-
-                    var highlights = LunaSettingsHighlights.parseHighlights(cellText);
-
-                    LabelHighlightRule
-                        .findUnhighlightedRuns(highlights.drawnText(), highlights.runTexts())
-                        .forEach(run -> findings.add(
-                            locale.localeTag() + ": " + LocaleBundle.SETTINGS_FILE_NAME
-                                + " row " + fieldId + " leaves [" + run.runText() + "] plain ("
-                                + run.blockingNeighbours() + "); put a space or a line break beside it"));
-                });
-        }
+            LabelHighlightRule
+                .findUnhighlightedRuns(highlights.drawnText(), highlights.runTexts())
+                .forEach(run -> findings.add(
+                    localeTag + ": " + LocaleBundle.SETTINGS_FILE_NAME
+                        + " row " + fieldId + " leaves [" + run.runText() + "] plain ("
+                        + run.blockingNeighbours() + "); put a space or a line break beside it"));
+        });
         return findings;
     }
 }

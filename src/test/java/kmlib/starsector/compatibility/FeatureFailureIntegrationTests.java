@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -68,10 +66,7 @@ final class FeatureFailureIntegrationTests {
             var failure = CompatibilityFailureFixture.createFeatureFailure();
 
             assertThat(failure.describeForLog())
-                .containsSubsequence(failure.describeRowsForPlayer()
-                    .stream()
-                    .map(row -> row.emphasisedRuns().get(0).runText())
-                    .toArray(String[]::new));
+                .containsSubsequence(NoticeReadings.readNoticeRowValues(failure));
         }
 
         @Test
@@ -79,7 +74,7 @@ final class FeatureFailureIntegrationTests {
 
             var failure = CompatibilityFailureFixture.createFeatureFailure();
 
-            assertThat(failure.describeForLog().split("\n").length - 1)
+            assertThat(NoticeReadings.countLogRows(failure))
                 .isEqualTo(failure.describeRowsForPlayer().size());
         }
     }
@@ -95,13 +90,7 @@ final class FeatureFailureIntegrationTests {
             // beside it is neither whitespace nor ASCII punctuation - the case for most Chinese text.
             NoticeLineHighlights.installLocaleStrings(localeTag);
 
-            var failure = CompatibilityFailureFixture.createFeatureFailure();
-
-            var lines = new ArrayList<CompatibilityNoticeLine>();
-            lines.add(failure.describeHeadingForPlayer());
-            lines.addAll(failure.describeDiagnosisForPlayer());
-            lines.addAll(failure.describeRowsForPlayer());
-            lines.add(failure.describeClosingForPlayer());
+            var lines = NoticeReadings.listNoticeLines(CompatibilityFailureFixture.createFeatureFailure());
 
             assertThat(NoticeLineHighlights.findUnhighlightedRuns(lines))
                 .isEmpty();
