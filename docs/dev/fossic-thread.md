@@ -119,12 +119,15 @@ the attachment URL a browser shows is encoded and is not linked by hand.
 ## Markup
 
 Fossic is Discuz! X3.5, and its BBCode differs from the Fractal Softworks forum's SMF:
-`[collapse=title]` for `[spoiler=]`,
+`[spoiler=title]` as the folded section the editor's fold button writes,
+`[align=center]` for `[center]`,
 `[size=1..7]` for point sizes,
 `[*]` list items with no `[li]`,
 `[attachimg]id[/attachimg]` for an uploaded image,
 `[attach]id[/attach]` for an uploaded file, drawn as an inline download link with its name, size and download count,
-and `[hr]` checked in the preview before it is relied on.
+and `[hr]` checked in a saved draft before it is relied on.
+The editor has no preview, and its visual mode leaves `[spoiler]` as raw text,
+so a draft saved and opened is the only way to see the post as Fossic draws it.
 Markdown is also accepted as `[md]...[/md]`,
 but a post translated from the Fractal Softworks one stays BBCode.
 
