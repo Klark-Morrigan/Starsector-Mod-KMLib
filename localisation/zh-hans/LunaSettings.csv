@@ -1,4 +1,11 @@
 fieldID,,,,fieldName,,fieldType,defaultValue,secondaryValue,,,fieldDescription,,,minValue,maxValue,tab
 ,,,,,,,,,,,,,,,,
 kmlib_logLevel,,,,日志详细程度,,Radio,WARN,"OFF, ERROR, WARN, INFO, DEBUG, ALL",,,"共享库自身在 starsector.log 中的输出详细程度，独立于各 Mod 自己的设置：Mod 的详细程度控制该 Mod 的日志行，此项控制其下的库代码。WARN 是正常级别；DEBUG 会增加通过反射读取游戏界面的探测器的诊断信息，即说明某个探测器为何没有响应的内容。
-[默认值：WARN]",,,,,开发
+[默认值：WARN]
+
+OFF：关闭
+ERROR：错误
+WARN：警告
+INFO：信息
+DEBUG：调试
+ALL：全部",,,,,开发

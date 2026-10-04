@@ -57,6 +57,10 @@ A mod's own reference may add rules for its own features.
   so a translated option would lose the player's setting and break the code reading it.
   Descriptions quote the English option as it appears:
   the log levels `OFF, ERROR, WARN, INFO, DEBUG, ALL`.
+  The description then ends with each option's translation,
+  one `Option：译文` line per option in the Radio's own order,
+  after a blank line below the default,
+  so a player can read what each button means.
 - **Proper nouns stay Latin.**
   Names of places, people, mods and files keep their English spelling, as the core localisation keeps them:
   `KMLib`, `LunaLib`, `Nexerelin`, `Fast Rendering`, `Random Assortment of Things`, `starsector.log`.
@@ -90,6 +94,7 @@ A mod's own reference may add rules for its own features.
   `X` is the shipped value as the English file writes it,
   except a Boolean, which reads `开启` for true and `关闭` for false.
   The default ends the description, after a line break and with no full stop, as `[Default: X]` does in English.
+  A Radio's option translations are the one thing that follows it.
   A line break counts as whitespace, so the default highlights without padding.
 
 ## Vanilla terms
@@ -173,6 +178,7 @@ so the values line up as they do in English.
 | --- | --- | --- |
 | Dev (tab) | 开发 | |
 | Log verbosity | 日志详细程度 | verbosity alone is 详细程度 |
+| OFF / ERROR / WARN / INFO / DEBUG / ALL (log levels) | 关闭 / 错误 / 警告 / 信息 / 调试 / 全部 | the usual logging words; OFF follows a switch's 关闭 |
 | probes that read the game's UI by reflection | 通过反射读取游戏界面的探测器 | reflection is 反射, a probe 探测器 |
 
 ### The changelog
