@@ -99,6 +99,16 @@ ext.gameNamespace = 'com.fs'
 // or declared one type at a time by the mod that reaches it.
 ext.publishedGameApiPackages = ['com.fs.starfarer.api']
 
+// The package the game refuses mod code. Every mod jar loads beneath a class
+// loader that throws on any class in it, so a reference compiles, passes every
+// suite on the test JVM, and throws on its first use in the game. Stated here
+// because the refusal is the game's; each mod declares the rule in its own
+// gradle/referenced-types.gradle, held to its main source set - a suite never
+// runs under that loader - and allowing what that mod names on purpose.
+ext.gameRefusedNamespace = 'java.lang.reflect'
+ext.gameRefusedNamespaceReason = ('the game refuses to load for mod code; build a class '
+    + 'a data file names through kmlib.starsector.scripts.ScriptClasses')
+
 // The game's own JSON parser, and the reader built on it, which the task scripts
 // read a mod's shipped JSON with, so a file parses at build time exactly as the game
 // parses it. Applied ahead of the metadata read below, which goes through it.
