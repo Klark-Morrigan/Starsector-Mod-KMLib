@@ -4,9 +4,10 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 /**
- * Reports the modelview GL itself holds, by reading {@code GL_MODELVIEW_MATRIX} back. The binding
- * of {@link ModelviewMatrixReader} for the stock renderer, where GL is authoritative on the
- * matrix; it concentrates that read in one class so nothing else has to name the GL static.
+ * Reports the modelview GL holds, by reading {@code GL_MODELVIEW_MATRIX} back. The binding of
+ * {@link ModelviewMatrixReader} for the stock renderer, and the read
+ * {@link FastRenderingModelviewMatrixReader} guards under Fast Rendering, whose bridge answers the
+ * same call; it concentrates that read in one class so nothing else has to name the GL static.
  *
  * <p>A single {@link #INSTANCE}: the binding is a stateless forwarder over a static GL surface, so
  * one shared value serves every caller rather than a fresh object per construction (the same

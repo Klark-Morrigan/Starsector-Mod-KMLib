@@ -122,11 +122,6 @@ Sources, one tree per audience:
 - [`src/main/java/kmlib/`](src/main/java/kmlib/) -
   the shipped library;
   see [Packages](#packages).
-- [`src/bridgestubs/java/`](src/bridgestubs/java/) -
-  compile-only mirrors of the Fast Rendering bridge members KMLib reads,
-  so an install without `fr.jar` still compiles (see [Build & Test](#build--test)).
-  Never shipped,
-  never loaded.
 - [`src/testFixtures/java/`](src/testFixtures/java/) -
   the fakes and builders a consumer's tests may take,
   published as a variant beside the jar rather than inside it.
@@ -183,12 +178,6 @@ Build:
   from `mod_info.base.json` where one is committed and `mod_info.json` otherwise,
   and publishes it to the task scripts.
   Applied by the conventions script.
-- [`gradle/select-fast-rendering-binding.gradle`](gradle/select-fast-rendering-binding.gradle) -
-  KMLib's own,
-  not shared:
-  binds the modelview reader to Fast Rendering's real bridge or to the compile-only mirrors of it,
-  and owns the stub source set and the `-PvanillaOnly` / `-PrequireFastRendering` legs.
-  See [Rendering environment](#rendering-environment).
 - [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle) -
   warns when a mod compiles against one KMLib and asks players for another.
 - [`gradle/tasks/checks/check-font-editions.gradle`](gradle/tasks/checks/check-font-editions.gradle) -
@@ -198,10 +187,6 @@ Build:
   over the game's own for the font suites,
   and rewrites the lock from the branch heads.
   See [Build & Test](#build--test).
-- [`gradle/tasks/generate/stamp-fast-rendering-version.gradle`](gradle/tasks/generate/stamp-fast-rendering-version.gradle) -
-  KMLib's own,
-  applied by the binding selection above:
-  generates the constant naming which Fast Rendering release the bridge adapter was type-checked against.
 - [`gradle/tasks/release/write-version-file.gradle`](gradle/tasks/release/write-version-file.gradle) -
   registers `writeVersionFile` for a mod that commits a template.
 - [`gradle/tasks/generate/write-locale-files.gradle`](gradle/tasks/generate/write-locale-files.gradle) -
@@ -236,9 +221,7 @@ The composite actions are what other KM mods consume;
 see [Reusable CI / release actions](#reusable-ci--release-actions):
 
 - [`workflows/ci-gradle.yml`](.github/workflows/ci-gradle.yml) -
-  the Gradle gate on the self-hosted `kmlib-runner`,
-  built twice:
-  with and without Fast Rendering's jar.
+  the Gradle gate on the self-hosted `kmlib-runner`.
 - [`workflows/ci-yaml.yml`](.github/workflows/ci-yaml.yml) and
   [`ci-bash.yml`](.github/workflows/ci-bash.yml) -
   YAML,
@@ -370,9 +353,10 @@ No Starsector API on the signature.
   polygon tessellation,
   viewport and scissor reads,
   the shape a GL matrix takes,
-  what KM code must know about Fast Rendering,
-  and - once a binding to its bridge has failed -
-  which of the mirrored members no longer holds and which release the install reports.
+  and what KM code must know about Fast Rendering:
+  whether it is in force,
+  which release first serves the modelview read,
+  and which release is installed.
   See [Rendering environment](#rendering-environment).
 - [`opengl/hatch/`](src/main/java/kmlib/opengl/hatch/) -
   hatch fills across a polygon,
@@ -488,10 +472,11 @@ No Starsector API on the signature.
   every adapter to a third-party mod,
   one package per mod and nothing else here.
   What belongs is what stands behind a presence gate,
-  so a mod this library is compiled against but cannot run without -
+  so a mod this library cannot run without,
   LunaLib under `settings/`,
-  Fast Rendering under `opengl/` -
   is not one of these.
+  Nor is Fast Rendering under `opengl/`,
+  an install patch that changes what GL calls mean rather than a mod KMLib calls into.
   How one is written,
   and which way the arrows run,
   is in
@@ -924,8 +909,10 @@ How the tiers meet is in
   and the traces that describe them.
 - [`starsector/ui/map/transform/`](src/main/java/kmlib/starsector/ui/map/transform/) -
   screen and world transform for the campaign map,
-  and the modelview matrix readers behind it for the GL and Fast Rendering paths,
-  plus the one that reports no matrix where neither can be reached.
+  and the modelview matrix readers behind it:
+  the GL read,
+  the same read guarded under Fast Rendering,
+  and one that reports no matrix.
 - [`starsector/ui/render/gl/`](src/main/java/kmlib/starsector/ui/render/gl/) -
   the GL paint layer,
   and the drawing surface itself:
@@ -1520,62 +1507,26 @@ The Starsector install root is discovered in this order:
 `-PstarsectorRoot=<path>` -> `STARSECTOR_HOME` env -> `../..` from this folder
 (the canonical layout when the mod lives at `<starsector>/mods/KMLib`).
 
-One part of the compile classpath varies by machine.
-KMLib reads the modelview from Fast Rendering's bridge when that mod is in force,
-and the bridge ships in `starsector-core/fr.jar`,
-which only an install patched by it has.
-Requiring that jar would make KMLib buildable only on a patched machine,
-so the build binds it when the install has one
-and falls back to compile-only mirrors of the six members it reads
-([src/bridgestubs/java](src/bridgestubs/java)) when it does not.
-Every build logs which of the two it used.
+Nothing KMLib compiles depends on Fast Rendering.
+KMLib reads the modelview through plain `GL11` under either renderer,
+so the same classpath compiles on a patched install and an unpatched one.
+Which release a player has is read at runtime,
+off `fr.jar`'s own `com.genir.renderer.Version`,
+and only to report a refused read.
 
-Whichever it bound is also stamped into the jar,
-as a generated constant read out of `fr.jar`'s own `com.genir.renderer.Version`
-([gradle/tasks/generate/stamp-fast-rendering-version.gradle](gradle/tasks/generate/stamp-fast-rendering-version.gradle)).
-Runtime can read only the version that is installed now,
-so the stamp is what lets a mismatch be reported as two versions rather than one.
-The vanilla binding stamps `unknown`,
-which the generated class answers as no version at all,
-and no jar is ever a reason to fail a build that would otherwise compile.
-
-The stubs are never in `KMLib.jar` and never loaded -
-they exist only so javac has a signature to resolve.
-Because a patched install compiles against genir's real bytes,
-stub drift shows up as an ordinary compile error there.
-Either leg can be built on demand,
-so neither is only ever exercised on the machine that happens to select it:
-
-```powershell
-./gradlew build -PvanillaOnly=true           # build as an unpatched install would
-./gradlew build -PrequireFastRendering=true  # fail unless the real fr.jar is bound
-```
-
-Each flag names the install it stands in for;
-the bridge stubs are how the vanilla one is arranged,
-which is why the two words are not interchangeable here.
-The CI legs carry the same two names.
-
-Both flags refuse to degrade quietly,
-in opposite directions.
-`-PrequireFastRendering` fails rather than falling back to the stubs.
-The vanilla binding -
-whether forced by `-PvanillaOnly` or reached because the install has no `fr.jar` -
-fails if the stub source set turns up empty,
-naming the directories Gradle actually read.
-Without that check an absent stub tree produces four
-`package com.genir.renderer.bridge.* does not exist` errors
-that point at the file importing the stubs rather than at the stubs that went missing.
-The case that motivated it:
-a source set named `bridgeStubs` reads `src/bridgeStubs/java` by convention,
-which is the same directory as `src/bridgestubs` on Windows and a different one on Linux.
-
-CI runs both on every PR
-(see [.github/workflows/ci-gradle.yml](.github/workflows/ci-gradle.yml)),
-which is why `kmlib-runner`'s install must be Fast-Rendering-patched.
-`-PrequireFastRendering` is what keeps that leg honest:
-without it an unpatched runner would compile the stubs
-and report green for a check that never ran.
+The test suite does depend on it.
+`FastRenderingBridgeIntegrationTests` drives the installed `fr.jar` and `fr.agent.jar`,
+by name through method handles:
+the class the agent rewrites a mod's `GL11` to must read as the bridge,
+must answer `glGetFloat(GL_MODELVIEW_MATRIX)` with the matrix the calls before it built,
+and the version class must still read.
+Setting the bridge up loads LWJGL's native library,
+so the suite also needs `starsector-core/native/<os>` -
+on Linux a native a Windows install does not ship
+(see [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md#versions-this-was-verified-against)).
+It fails rather than skipping without either,
+so building KMLib's tests needs a Fast-Rendering-patched install,
+`kmlib-runner`'s included.
 
 For double-click runs from Explorer,
 [scripts/run-tests-gradle.bat](scripts/run-tests-gradle.bat) and
@@ -1855,17 +1806,20 @@ Consuming mods link there rather than restating it.
 
 [docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is the worked
 example:
-the bridge serves no buffer-taking `glGetFloat`,
+through Fast Rendering `v0.9.0` the bridge serves no buffer-taking `glGetFloat`,
 so reading `GL_MODELVIEW_MATRIX` throws mid-render
 on an install that has Fast Rendering and never on one that does not -
 `UnsupportedOperationException` from its `v0.8.9`,
 where the method is declared and refuses the call,
 and `NoSuchMethodError` before that,
 where it was not declared at all.
-It is written up as an upstream report,
-and is why the matrix readers in
+It was written up as an upstream report,
+which `v0.9.1rc1` answered by serving the read inline.
+The releases before it are why the matrix read in
 [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/)
-are behind a port with one implementation per environment.
+sits behind a port,
+and is guarded under Fast Rendering:
+on an older release a refused read costs the hover and tells the player which release to update to.
 
 ## Caching
 

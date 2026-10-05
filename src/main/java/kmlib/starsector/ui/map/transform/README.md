@@ -9,29 +9,29 @@ so an overlay that wants to hit-test what it drew has to undo that transform its
 This is where that inversion lives,
 along with the one thing it cannot work without:
 the matrix the map was drawn under,
-which is somewhere different depending on which renderer is installed.
+which not every renderer will hand back.
 
 ## Index
 
-- [Where the matrix lives is the renderer's business](#where-the-matrix-lives-is-the-renderers-business)
+- [Whether the matrix can be read is the renderer's business](#whether-the-matrix-can-be-read-is-the-renderers-business)
 - [Three bindings](#three-bindings)
-- [Reading a deferred renderer's matrix](#reading-a-deferred-renderers-matrix)
-- [When the bridge stops holding](#when-the-bridge-stops-holding)
+- [When Fast Rendering refuses the read](#when-fast-rendering-refuses-the-read)
 - [One reader per consumer](#one-reader-per-consumer)
 - [From a pixel to a world point](#from-a-pixel-to-a-world-point)
 - [What is not here](#what-is-not-here)
 
-## Where the matrix lives is the renderer's business
+## Whether the matrix can be read is the renderer's business
 
-[`ModelviewMatrixReader`](ModelviewMatrixReader.java) is the port,
-and "read it back from GL" is one binding of that role rather than the definition of it.
-The stock renderer keeps the modelview in GL,
-so GL is authoritative under it.
-Fast Rendering tracks the matrix in a Java object and multiplies each vertex by it before submitting,
-leaving GL's own modelview as identity -
-so a GL read-back under that renderer reports a matrix describing nothing.
-Depending on the port keeps the transform maths free of that choice,
-and free of a third-party static nothing can stand in for.
+[`ModelviewMatrixReader`](ModelviewMatrixReader.java) is the port.
+Every binding that reads asks GL the same thing,
+`glGetFloat(GL_MODELVIEW_MATRIX)`,
+but not every renderer answers it.
+The stock renderer always does.
+Fast Rendering keeps the matrix in a Java object rather than in GL,
+and answers the read from a copy of it only from `v0.9.1rc1`;
+earlier releases refuse it mid-render.
+Depending on the port keeps the transform maths free of that,
+and free of a GL static nothing can stand in for.
 
 The renderer facts themselves are not here.
 They live in [`kmlib.opengl.FastRendering`](../../../../opengl/FastRendering.java),
@@ -42,109 +42,46 @@ and their citations in [`docs/dev/rendering-environment.md`](../../../../../../.
 | Binding | Reads | For |
 | --- | --- | --- |
 | [`GlModelviewMatrixReader`](GlModelviewMatrixReader.java) | `GL_MODELVIEW_MATRIX`, read back | the stock renderer |
-| [`FastRenderingModelviewMatrixReader`](FastRenderingModelviewMatrixReader.java) | the renderer's own `TransformManager`, a frame late | Fast Rendering |
-| [`UnavailableModelviewMatrixReader`](UnavailableModelviewMatrixReader.java) | nothing, on every read | a renderer whose matrix cannot be reached |
+| [`FastRenderingModelviewMatrixReader`](FastRenderingModelviewMatrixReader.java) | the same read, guarded | Fast Rendering |
+| [`UnavailableModelviewMatrixReader`](UnavailableModelviewMatrixReader.java) | nothing, on every read | a caller with no matrix to read |
 
-[`ModelviewMatrixReaders`](ModelviewMatrixReaders.java) picks between them,
-which is also what keeps the bridge-bound class unreachable on an install that cannot load it:
-the reference is resolved inside a method body,
-so a branch never taken never loads the class.
+[`ModelviewMatrixReaders`](ModelviewMatrixReaders.java) picks between the first two.
+None of them names a Fast Rendering type,
+so all three load and run on any install.
 
-That class is [`FastRenderingCopyQueue`](FastRenderingCopyQueue.java), and it is the only one here naming a renderer type.
-The reader above it names none,
-which is what lets it be built and driven where no bridge exists -
-including through the failures a live renderer will not produce on request.
+## When Fast Rendering refuses the read
 
-The third is not a fallback onto the first.
-Under a renderer that tracks the modelview on the CPU,
-GL's own copy is identity,
-so falling back to it would trade a crash for a matrix that describes nothing -
-a wrong answer rather than no answer.
-The degraded state is no reading, never a guessed one,
-and [`CampaignMapTransform`](CampaignMapTransform.java) already reads an absent matrix as "park rather than guess".
+A release before `v0.9.1rc1` refuses the read where it is asked for,
+inside a render pass:
+`UnsupportedOperationException` from `v0.8.9`,
+where the bridge declares the method and refuses the call,
+and `NoSuchMethodError` before it,
+where the method was not declared at all.
+Let out of the pass,
+either costs the game over a hover highlight.
 
-## Reading a deferred renderer's matrix
-
-Fast Rendering's matrix cannot be read where the caller stands,
-and cannot be read synchronously either.
-A `glTranslatef` on the calling thread only appends a command to a frame buffer,
-and the `TransformManager` it mutates lives on a render thread replaying that buffer a step behind,
-so an inline read samples an unrelated in-flight transform, torn field by field.
-Forcing the read to complete would read the right matrix and stall the pipeline every frame,
-which that renderer's stall detector turns into a fatal error.
-
-So the read is deferred.
-Each call enqueues a fire-and-forget command that copies the matrix on the render thread
-at the enqueuing pass's own position in the stream,
-where it is the map widget's transform and stable,
-and the call returns the copy a prior frame's command left behind.
-The result is a frame or two old,
-which is invisible for a still map and trails by a frame or two of pan velocity while panning.
-
-[`FastRenderingBridgeReading`](FastRenderingBridgeReading.java) is where that copy lands,
-along with the latch saying whether the bridge still answers at all.
-Held apart from the binding because it is the one thing both threads share:
-the render thread fills it, the game thread takes it,
-and either finding the bridge broken has to stop the other from touching it.
-
-## When the bridge stops holding
-
-None of what the bridge binding reads is published API,
-and it has been relocated between releases without notice,
-so it can stop holding in three places that fail in three different ways.
-
-**At link time**, when the binding's class initialises:
-a `LinkageError` naming a class or a member that moved,
-raised inside whichever render pass reached it first.
-`ModelviewMatrixReaders` takes the binding under one catch for all three shapes of that -
-a class that is gone, a member that is gone, a signature that changed -
-degrades onto the unavailable reader and records the failure.
-
-**At call time on the game thread**, where the reading is asked for.
-A release can declare an entry point and refuse it:
-from `v0.8.9` the bridge's facade names LWJGL's whole surface
-and throws `UnsupportedOperationException` for the parts it does not implement,
-so that breakage links cleanly and walks straight past the guard above.
-`FastRenderingModelviewMatrixReader` therefore guards its own two calls into the bridge,
-the thread's context lookup and the enqueue,
-under one catch covering both shapes.
-
-**At call time on the render thread**, inside the enqueued command,
-which is the harder one and the reason the copy is its own class.
-A command that throws where the renderer runs it is not caught where it was enqueued:
-the renderer captures it and re-throws it wrapped on the game thread at the next frame swap,
-outside every KM stack frame,
-so a guard around the enqueue never sees it and the game dies over a hover highlight.
-The only place it can be contained is inside the command body,
-so the copy is total by construction rather than by being short enough to look safe -
-and the matrix read is taken *inside* that guard rather than before it,
-the bridge member answering it being as able to stop holding as the copy is.
-
-Whichever of the three it is, the answer is the same:
-the reading latches unavailable for the session,
-no stale matrix is reported in its place,
-and one failure is recorded however many frames the map stays open.
-The two call-time sides share one latch, on the copy,
-so a binding that broke on either thread is broken on both
-and the other never reaches the bridge to find out for itself.
-All three compose their report through [`FastRenderingBridgeFailures`](FastRenderingBridgeFailures.java),
-so a player is told one thing about one renderer whichever side noticed.
+So the Fast Rendering binding takes the read under one catch for both shapes.
+The first refusal latches the reading off for the session,
+so no later frame asks again,
+and every read from then on is no reading rather than a guessed one -
+which [`CampaignMapTransform`](CampaignMapTransform.java) already reads as "park rather than guess".
+One failure is recorded however many frames the map stays open.
+It names the release the read needs,
+and the one the installed jar reports,
+so the player is told which release to update to.
 Where the report then goes is [`starsector/compatibility/`](../../../compatibility/README.md).
 
 ## One reader per consumer
 
-The sentence naming what a failed binding costs comes from the mod taking the reading, not from here.
-This package knows the renderer, both versions, the member that moved and what was thrown,
+The sentence naming what a refused read costs comes from the mod taking the reading, not from here.
+This package knows the renderer, both versions and what was thrown,
 and nothing at all about what was drawn over the reading.
 
-That is why a reader is built per consumer rather than shared.
-A reader records its own call-time failures,
-and one that could not say who it serves could record them against nobody -
+That is why a guarded reader is built per consumer rather than shared.
+It records its own failure,
+and one that could not say who it serves could record it against nobody -
 or, worse, against whichever mod happened to ask first.
-Two mods reading the map therefore hold a reader each
-and, under the bridge, enqueue a copy each:
-one small command per frame per reader,
-which is the price of a report that names the right mod.
+Two mods reading the map under Fast Rendering therefore hold a reader each.
 
 ## From a pixel to a world point
 

@@ -3,26 +3,23 @@ package kmlib.starsector.ui.map.transform;
 import kmlib.starsector.compatibility.CompatibilityConsumer;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
-import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 /**
- * Covers what the selection does when the bridge binding no longer holds: the reported crash is a
- * {@link LinkageError} out of that binding's class initialisation, taken inside a render pass, and
- * the rule it must hold is that a failed binding costs the reading and never the pass.
+ * Covers which binding each renderer gets, and that a guarded binding is held per consumer: a
+ * guarded reader records its failure against the mod it was built for, so handing one mod's reader
+ * to another would tell the wrong player what they lost.
  *
- * <p>The binding is driven through the seam because no test JVM reaches the failing branch on its
- * own - the renderer check answers "stock" there, so a suite that could not stage a failure could
- * only ever exercise the path that was never broken.
+ * <p>The renderer answer is handed in because no test JVM runs under Fast Rendering - the live check
+ * answers "stock" there, so a suite that could not state the other answer could only ever cover the
+ * stock branch.
  */
 final class ModelviewMatrixReadersTests {
 
@@ -32,30 +29,14 @@ final class ModelviewMatrixReadersTests {
 
     private static final BooleanSupplier STOCK_RENDERER = () -> false;
 
-    // Two mods over the one binding, each losing something the other does not, so a case about
-    // both being told cannot pass on one sentence standing for two.
+    // Two mods reading the map, so a case about each holding its own reader cannot pass on one
+    // consumer standing for two.
     private static final CompatibilityConsumer MAP_OVERLAY = CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER;
 
     private static final CompatibilityConsumer COLONY_PANEL = CompatibilityFailureFixture.COLONY_PANEL_CONSUMER;
 
-    // A link failure of each kind the JVM raises separately: a class that is gone, and a member
-    // that is gone or re-signatured. One catch is meant to cover both.
-    private static final ModelviewMatrixReaders.BridgeReaderBinding BRIDGE_CLASS_GONE =
-        (consumer, failureRecord) -> {
-            throw new NoClassDefFoundError("com/genir/renderer/bridge/interfaces/GLCommand");
-        };
-
-    private static final ModelviewMatrixReaders.BridgeReaderBinding BRIDGE_MEMBER_GONE =
-        (consumer, failureRecord) -> {
-            throw new NoSuchMethodError("com.genir.renderer.bridge.context.TransformManager.getCPUModelView()");
-        };
-
     // A record of its own rather than the session's, so a case reads only what it recorded itself.
     private final CompatibilityFailures failures = new CompatibilityFailures();
-
-    // How many times the binding was taken, which is what says whether the choice was held: a
-    // second selection that binds again would also probe and record again, on every frame.
-    private final AtomicInteger bindCount = new AtomicInteger();
 
     @Nested
     class SelectReaderForActiveRenderer {
@@ -63,174 +44,53 @@ final class ModelviewMatrixReadersTests {
         @Test
         void answersTheGlBindingWhereTheBridgeIsNotInForce() {
 
-            var readers = createReaders(STOCK_RENDERER, BRIDGE_CLASS_GONE);
+            var readers = new ModelviewMatrixReaders(STOCK_RENDERER, failures);
 
             assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
                 .isSameAs(GlModelviewMatrixReader.INSTANCE);
-            assertThat(failures.hasUnreported())
-                .isFalse();
         }
 
         @Test
-        void answersTheBridgeBindingWhereItHolds() {
+        void answersTheGuardedBindingWhereTheBridgeIsInForce() {
 
-            var boundReaderFake = new ModelviewMatrixReaderFake(null);
-            var readers = createReaders(BRIDGE_IN_FORCE, (consumer, failureRecord) -> boundReaderFake);
+            var readers = new ModelviewMatrixReaders(BRIDGE_IN_FORCE, failures);
 
             assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
-                .isSameAs(boundReaderFake);
-            assertThat(failures.hasUnreported())
-                .isFalse();
+                .isInstanceOf(FastRenderingModelviewMatrixReader.class);
         }
 
         @Test
-        void handsTheBindingTheConsumerAndTheRecordItWillReportThrough() {
+        void answersEachConsumerAGuardedReaderOfItsOwn() {
 
-            // What the binding is handed is what the reader it answers with reports against later,
-            // on the call-time failures the selection itself never sees.
-            var boundConsumer = new AtomicReference<CompatibilityConsumer>();
-            var boundRecord = new AtomicReference<CompatibilityFailures>();
-
-            var readers = createReaders(BRIDGE_IN_FORCE, (consumer, failureRecord) -> {
-                boundConsumer.set(consumer);
-                boundRecord.set(failureRecord);
-                return new ModelviewMatrixReaderFake(null);
-            });
-
-            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
-
-            assertThat(boundConsumer.get())
-                .isSameAs(MAP_OVERLAY);
-            assertThat(boundRecord.get())
-                .isSameAs(failures);
-        }
-
-        @Test
-        void answersNoReadingWhereTheBridgeClassIsGone() {
-
-            var readers = createReaders(BRIDGE_IN_FORCE, BRIDGE_CLASS_GONE);
-
-            assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
-                .isSameAs(UnavailableModelviewMatrixReader.INSTANCE);
-        }
-
-        @Test
-        void answersNoReadingWhereABridgeMemberIsGone() {
-
-            // The same catch: a member that moved or changed signature fails the binding exactly as
-            // a missing class does, and degrading is the same answer to both.
-            var readers = createReaders(BRIDGE_IN_FORCE, BRIDGE_MEMBER_GONE);
-
-            assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
-                .isSameAs(UnavailableModelviewMatrixReader.INSTANCE);
-        }
-
-        @Test
-        void recordsOneFailureLosingWhatTheConsumerSaysItLoses() {
-
-            var readers = createReaders(BRIDGE_IN_FORCE, BRIDGE_CLASS_GONE);
-
-            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
-
-            // The sentence is the consumer's and the subject is the library's: the mod names what
-            // stops working, and the library names whose code stopped holding.
-            var failure = CompatibilityFailureFixture.takeNextBindingFailure(failures);
-            assertThat(failure.consumer().lostFeature())
-                .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
-            assertThat(failure.subject().name())
-                .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
-
-            // Filed under this guard and not another's: three guards record through one recorder,
-            // so a site left to a default would put every mismatch under whichever was written
-            // first and the log would name the wrong one.
-            assertThat(failure.breakage().failureSite())
-                .isEqualTo(FastRenderingBridgeFailures.WHILE_RESOLVING_BINDING);
-            assertThat(failures.takeNextUnreported())
-                .isNull();
-        }
-
-        @Test
-        void tellsEachConsumerOverOneBrokenBindingWhatItLoses() {
-
-            // One renderer stopped holding and two mods lost different things by it. A selection
-            // that held one binding for the session would answer the second mod with the first
-            // one's reader, and its player would be told what somebody else's mod lost, or nothing.
-            var readers = createReaders(BRIDGE_IN_FORCE, BRIDGE_CLASS_GONE);
-
-            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
-            readers.selectReaderForActiveRenderer(COLONY_PANEL);
-
-            assertThat(failures.takeNextUnreported().consumer().lostFeature())
-                .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
-            assertThat(failures.takeNextUnreported().consumer().lostFeature())
-                .isEqualTo(CompatibilityFailureFixture.COLONY_PANEL_LOST_FEATURE);
-        }
-
-        @Test
-        void bindsOncePerConsumerRatherThanOncePerCall() {
-
-            var readers = createReaders(
-                BRIDGE_IN_FORCE,
-                (consumer, failureRecord) -> countAndBind(new ModelviewMatrixReaderFake(null)));
-
-            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
-            readers.selectReaderForActiveRenderer(COLONY_PANEL);
-            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
-            readers.selectReaderForActiveRenderer(COLONY_PANEL);
-
-            assertThat(bindCount)
-                .hasValue(2);
-        }
-
-        @Test
-        void answersEachConsumerTheReaderBoundForIt() {
-
-            // A reader records against the consumer it was built for, so handing one mod's reader
-            // to another would file the second mod's call-time failures under the first's name.
-            var readers = createReaders(
-                BRIDGE_IN_FORCE,
-                (consumer, failureRecord) -> new ModelviewMatrixReaderFake(null));
+            var readers = new ModelviewMatrixReaders(BRIDGE_IN_FORCE, failures);
 
             var mapOverlayReader = readers.selectReaderForActiveRenderer(MAP_OVERLAY);
 
             assertThat(readers.selectReaderForActiveRenderer(COLONY_PANEL))
                 .isNotSameAs(mapOverlayReader);
+        }
+
+        @Test
+        void holdsTheReaderAConsumerWasGiven() {
+
+            // The selection a map pass asks for is asked for per frame, so a reader rebuilt per call
+            // would forget its latch and ask a refusing bridge again every frame.
+            var readers = new ModelviewMatrixReaders(BRIDGE_IN_FORCE, failures);
+
+            var mapOverlayReader = readers.selectReaderForActiveRenderer(MAP_OVERLAY);
+
             assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
                 .isSameAs(mapOverlayReader);
         }
 
         @Test
-        void holdsTheBindingItTookRatherThanBindingAgain() {
+        void recordsNothingWhileSelecting() {
 
-            var boundReaderFake = new ModelviewMatrixReaderFake(null);
-            var readers = createReaders(
-                BRIDGE_IN_FORCE,
-                (consumer, failureRecord) -> countAndBind(boundReaderFake));
+            // Selecting reaches no renderer: a refused read is found where the reading is asked for.
+            var readers = new ModelviewMatrixReaders(BRIDGE_IN_FORCE, failures);
 
             readers.selectReaderForActiveRenderer(MAP_OVERLAY);
 
-            assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
-                .isSameAs(boundReaderFake);
-            assertThat(bindCount)
-                .hasValue(1);
-        }
-
-        @Test
-        void holdsTheDegradedReaderRatherThanProbingAgain() {
-
-            // The selection a map pass asks for is asked for per frame, so a failed binding that
-            // was not held would re-probe and re-record every frame the map is drawn.
-            var readers = createReaders(
-                BRIDGE_IN_FORCE,
-                (consumer, failureRecord) -> countAndFail(consumer));
-
-            readers.selectReaderForActiveRenderer(MAP_OVERLAY);
-            failures.takeNextUnreported();
-
-            assertThat(readers.selectReaderForActiveRenderer(MAP_OVERLAY))
-                .isSameAs(UnavailableModelviewMatrixReader.INSTANCE);
-            assertThat(bindCount)
-                .hasValue(1);
             assertThat(failures.hasUnreported())
                 .isFalse();
         }
@@ -238,32 +98,13 @@ final class ModelviewMatrixReadersTests {
         @Test
         void refusesASelectionMadeForNoConsumer() {
 
-            // Refused on the healthy path too, where the consumer is never read: a call that binds
+            // Refused on the stock path too, where the consumer is never read: a call that reads
             // cleanly today would otherwise fail at the one moment it must not, inside the render
-            // pass that took the first real failure.
-            var readers = createReaders(STOCK_RENDERER, BRIDGE_CLASS_GONE);
+            // pass that met the first refused read.
+            var readers = new ModelviewMatrixReaders(STOCK_RENDERER, failures);
 
             assertThatNullPointerException()
                 .isThrownBy(() -> readers.selectReaderForActiveRenderer(null));
         }
-    }
-
-    private ModelviewMatrixReaders createReaders(
-            BooleanSupplier isFastRenderingActive,
-            ModelviewMatrixReaders.BridgeReaderBinding bindFastRendering) {
-
-        return new ModelviewMatrixReaders(isFastRenderingActive, bindFastRendering, failures);
-    }
-
-    private ModelviewMatrixReader countAndBind(ModelviewMatrixReader boundReader) {
-
-        bindCount.incrementAndGet();
-        return boundReader;
-    }
-
-    private ModelviewMatrixReader countAndFail(CompatibilityConsumer consumer) {
-
-        bindCount.incrementAndGet();
-        return BRIDGE_CLASS_GONE.bindReaderFor(consumer, failures);
     }
 }

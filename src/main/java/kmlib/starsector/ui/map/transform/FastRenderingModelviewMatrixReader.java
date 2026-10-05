@@ -1,121 +1,128 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.opengl.FastRendering;
+import kmlib.starsector.compatibility.CompatibilityBreakage;
+import kmlib.starsector.compatibility.CompatibilityConsumer;
+import kmlib.starsector.compatibility.CompatibilityFailure;
+import kmlib.starsector.compatibility.CompatibilityFailures;
+import kmlib.starsector.compatibility.CompatibilitySubject;
+import kmlib.starsector.ui.compatibility.ScreenCompatibilityNotices;
+
 import java.util.Objects;
 
 /**
- * Reports the modelview Fast Rendering holds on the CPU, the binding of
- * {@link ModelviewMatrixReader} for that renderer. It tracks the modelview in a Java object and
- * multiplies each vertex by it before submitting, leaving GL's own modelview as identity, so GL is
- * not authoritative under it and {@link GlModelviewMatrixReader} would report a matrix describing
- * nothing. Reading its {@code TransformManager} is not a workaround for that: it is the same matrix
- * the vertices are transformed by, which makes it the truth this renderer draws with.
+ * Reports the modelview Fast Rendering draws with, the binding of {@link ModelviewMatrixReader} for
+ * that renderer.
  *
- * <p>That matrix cannot be read where the caller stands, and cannot be read synchronously either.
- * Fast Rendering is a deferred renderer: a {@code glTranslatef} on the calling thread only appends
- * a command to a frame buffer, and the {@code TransformManager} it mutates lives on a separate
- * render thread that replays the buffer a step behind. Reading the matrix inline from the calling
- * thread samples an unrelated in-flight transform, torn field-by-field. Forcing the read to
- * complete synchronously would read the right matrix, but it stalls the pipeline every frame, and
- * genir's stall detector kills the game once a caller stalls on enough frames in a row.
+ * <p>The read itself is the stock one. From Fast Rendering {@value FastRendering#FIRST_MODELVIEW_READ_RELEASE}
+ * the bridge answers {@code glGetFloat(GL_MODELVIEW_MATRIX)} inline, from a copy of the matrix it keeps
+ * on the calling thread, already in GL's column-major layout. What this binding adds is the guard
+ * around that read.
  *
- * <p>So the read is deferred instead. Each call enqueues a fire-and-forget command - which does not
- * stall - that copies the matrix on the render thread at this pass's own position in the stream,
- * where it is the map widget's transform and stable, and stores it in
- * {@link FastRenderingBridgeReading}. The call returns the copy a prior frame's command produced.
- * The result is a frame or two old (the render thread runs a frame behind, and a given frame's copy
- * is only guaranteed complete a frame later), which is invisible for a still map - the cursor moves
- * but the transform does not - and trails by a frame or two of pan velocity while panning.
- * {@code docs/dev/rendering-environment.md} records the mechanism and its citations.
+ * <p>Earlier releases refuse the read mid-render: {@code UnsupportedOperationException} from
+ * {@code v0.8.9}, {@code NoSuchMethodError} before it. Let out of a render pass, either costs the
+ * game over a hover highlight. So the first failure turns the reading off for the session and files
+ * one report telling the player which release the read needs. {@code docs/dev/rendering-environment.md}
+ * records the read and its history.
  *
- * <p>Enqueuing is what {@link BridgeCopyQueue} does, and every Fast Rendering type this reader
- * depends on sits behind it, in {@link FastRenderingCopyQueue}. That is what makes the guards below
- * assertable: a bridge cannot be asked to fail on demand, and on a stock install it cannot be loaded
- * to be asked at all.
- *
- * <p>None of what it reads is published API, so it fails safe: any answer it cannot get is reported
- * as no reading at all rather than as a guess, which {@link CampaignMapTransform} turns into a
- * caller that parks rather than one that resolves a wrong point. Before the first frame's command
- * has run - the map's first frame, and its first after a reopen - the stored copy is null or a
- * frame stale, which parks or self-corrects on the next frame. Where the bridge stops holding
- * outright, every read is no reading from then on and the mod that took the binding is told once.
- *
- * <p>One reader per consumer, built by {@link ModelviewMatrixReaders} where the binding is taken,
- * rather than a shared singleton. A reader that could not say who it serves could not record a
- * failure against anyone, and what a broken binding costs is the taking mod's to state; that one
- * map is on screen at a time is a fact about the map, not about how many mods draw over it.
+ * <p>One reader per consumer, built by {@link ModelviewMatrixReaders}, rather than a shared
+ * singleton. A reader that could not say who it serves could not record a failure against anyone,
+ * and what a failed read costs is the taking mod's to state.
  */
 public final class FastRenderingModelviewMatrixReader implements ModelviewMatrixReader {
 
-    // What the bridge last answered and whether it still answers, shared with the command that
-    // fills it on the render thread. Its own value because a throw on that thread can only be
-    // contained inside the command, which is the one place this class has nothing else to do - and
-    // because both sides of the binding then latch and record through one thing.
-    private final FastRenderingBridgeReading bridgeReading;
+    /** Where the read failed, as the phrase completing the report's "failed while" row. */
+    static final String FAILURE_SITE = "reading the modelview back through the bridge";
 
-    // What hands the copy command to the renderer, as the only route from here into the bridge.
-    private final BridgeCopyQueue copyQueue;
+    /** The read the bridge did not serve, as the report's "broken" row names it. */
+    static final String REFUSED_READ = "GL11.glGetFloat(GL_MODELVIEW_MATRIX, FloatBuffer)";
 
-    FastRenderingModelviewMatrixReader(FastRenderingBridgeReading bridgeReading, BridgeCopyQueue copyQueue) {
+    // Who takes the reading and where its failure is filed. Held rather than reached for, so the
+    // sentence a player reads is the taking mod's and a suite records into a record of its own.
+    private final CompatibilityConsumer consumer;
+    private final CompatibilityFailures failureRecord;
 
-        this.bridgeReading = Objects.requireNonNull(
-            bridgeReading,
-            "A reader with no reading would have nowhere to take a deferred matrix back from.");
-        this.copyQueue = Objects.requireNonNull(
-            copyQueue,
-            "A reader with no queue could not reach the render thread the matrix is copied on.");
+    // The read this binding guards. Taken rather than named, so a suite can hand in a read that
+    // refuses the call - the one thing a live renderer will not do on demand.
+    private final ModelviewMatrixReader glReader;
+
+    // Latched on the first failure and never cleared: the renderer does not change while the game
+    // runs, so a read it refused once it refuses for the session.
+    private boolean isReadRefused;
+
+    FastRenderingModelviewMatrixReader(
+            CompatibilityConsumer consumer,
+            CompatibilityFailures failureRecord,
+            ModelviewMatrixReader glReader) {
+
+        this.consumer = Objects.requireNonNull(
+            consumer,
+            "A reader with no consumer could not say whose feature a refused read costs.");
+        this.failureRecord = Objects.requireNonNull(
+            failureRecord,
+            "A reader with nowhere to record would degrade silently and tell no player why.");
+        this.glReader = Objects.requireNonNull(
+            glReader,
+            "A reader with no read to guard would have nothing to report.");
     }
 
     @Override
     public float[] readModelviewMatrix() {
-        // Checked before anything reaches the bridge: once the binding has failed on either thread,
-        // it is gone for the session, and asking again would only queue another frame's worth of
-        // the same failure.
-        if (bridgeReading.isBridgeUnavailable()) {
+
+        // Checked before the bridge is reached: asking again would only throw again, every frame the
+        // map is open.
+        if (isReadRefused) {
             return null;
         }
         try {
-            // Nothing to report for a frame the renderer had no context for. Not a failure, so it
-            // does not degrade the binding: the context is absent before the renderer is up and
-            // again after it is torn down, and both are frames the map simply does not hover on.
-            if (!copyQueue.enqueueModelviewCopy()) {
-                return null;
-            }
-        } catch (LinkageError | RuntimeException enqueueFailure) {
-            // The bridge failing on the game thread, where the reading is asked for. Distinct from
-            // the copy's own guard, which covers the same binding failing on the render thread a
-            // frame later, and not covered by the guard around the binding itself: a release that
-            // declares an entry point and refuses it links cleanly and throws only here. Losing the
-            // reading costs a hover highlight; letting it out of a render pass costs the game.
-            bridgeReading.degradeOnBridgeFailure(
-                FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD,
-                enqueueFailure);
+            return glReader.readModelviewMatrix();
+
+        } catch (LinkageError | RuntimeException readFailure) {
+            // Both shapes a refusal has taken: a method the bridge did not declare, and one it
+            // declares and refuses. A fault in the JVM itself is not caught, being the one thing not
+            // worth trading for a degraded overlay.
+            isReadRefused = true;
+            recordReadFailure(readFailure);
             return null;
         }
-        // Return the previous frame's copy: the command just enqueued has not run yet.
-        return bridgeReading.reportLatestCopy();
     }
 
-    /**
-     * What carries a modelview copy to the renderer's own thread, as the seam the bridge's
-     * game-thread failures are staged through.
-     *
-     * <p>Answers whether the copy was enqueued rather than handing back the renderer's context, so
-     * that no Fast Rendering type appears in a signature the reader names - which is what keeps the
-     * reader loadable, and its guards drivable, where the bridge is not.
-     */
-    @FunctionalInterface
-    interface BridgeCopyQueue {
+    // The slots of one failure: the renderer with the release the read needs and the one installed,
+    // what was refused and where, the consumer's own sentence, and the caught error as the cause a
+    // log line carries a trace from.
+    //
+    // Takes the installed version rather than reading it, so what fills which slot is stated against
+    // a version a suite chooses - the live read reports whichever jar the machine has.
+    static CompatibilityFailure composeReadFailure(
+            CompatibilityConsumer consumer,
+            Throwable readFailure,
+            String installedVersion) {
 
-        /**
-         * @return {@code true} where the copy was enqueued, {@code false} where the calling thread
-         *         has no render context to enqueue onto - an absent answer for this frame rather
-         *         than a binding that stopped holding
-         * @throws LinkageError      where a bridge member named by the binding is gone or
-         *                           re-signatured
-         * @throws RuntimeException  where the installed release declares the entry point and
-         *                           refuses the call, which is how a bridge gap surfaces from
-         *                           {@code v0.8.9}
-         */
-        boolean enqueueModelviewCopy();
+        return new CompatibilityFailure(
+            new CompatibilitySubject(
+                FastRendering.COMPATIBILITY_SUBJECT_NAME,
+                FastRendering.FIRST_MODELVIEW_READ_RELEASE,
+                installedVersion),
+            consumer,
+            new CompatibilityBreakage(FAILURE_SITE, REFUSED_READ),
+            readFailure);
+    }
+
+    private void recordReadFailure(Throwable readFailure) {
+
+        // Composed against the consumer the record hands back rather than the one held: the two
+        // differ only where the record found the consumer's key reused, and the report is filed
+        // under whichever key the record settled on. The version is read inside the description, so
+        // it is paid on the record that is kept and not on one the latch ignores.
+        failureRecord.recordOnce(
+            FastRendering.COMPATIBILITY_SUBJECT_KEY,
+            consumer,
+            recordedAs -> composeReadFailure(recordedAs, readFailure, FastRendering.readInstalledVersion()));
+
+        // Told on the screen it was found on. The read fails during a map pass, and the script that
+        // shows the campaign's dialog is not advanced while a core screen is up - so left to that
+        // reporter alone, the failure would be shown only once the player had left the map it was
+        // about. A raise that finds no screen leaves the record untouched and the dialog gets it.
+        ScreenCompatibilityNotices.showPendingFailureOnScreen(failureRecord);
     }
 }

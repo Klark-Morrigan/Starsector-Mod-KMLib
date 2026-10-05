@@ -1,11 +1,12 @@
 package kmlib.starsector.ui.map.transform;
 
+import kmlib.starsector.compatibility.CompatibilityFailure;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
+import kmlib.testfixtures.starsector.ui.map.transform.ModelviewMatrixReaderFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.lwjgl.util.vector.Matrix4f;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -14,46 +15,60 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 /**
- * Covers the bridge failing on the game thread, where the reading is asked for: an entry point that
- * links and then refuses the call, which walks straight past the guard around the binding because
- * nothing failed to link.
+ * Covers the guard around the modelview read under Fast Rendering: a release that serves the read
+ * passes it through, and one that refuses it mid-render costs the reading for the session and files
+ * one report, rather than throwing out of the render pass.
  *
- * <p>Driven through the queue seam because the bridge cannot be asked to fail on demand, and on the
- * install a test JVM has it cannot be loaded to be asked at all. The two staged failures are the
- * two shapes the renderer's own releases have produced - a member that moved since this jar was
- * compiled, and an entry point {@code v0.8.9}'s facade declares and refuses - and one catch covers
- * the context lookup and the enqueue alike, both being calls into the same bridge from this thread.
+ * <p>Driven through the read seam because the bridge cannot be asked to refuse on demand. The two
+ * staged refusals are the two shapes the renderer's own releases have produced: a method the bridge
+ * did not declare through {@code v0.8.8}, and one its facade declares and refuses from {@code v0.8.9}.
  */
 final class FastRenderingModelviewMatrixReaderTests {
+
+    private static final float[] SERVED_MATRIX = {
+        1f, 0f, 0f, 0f,
+        0f, 1f, 0f, 0f,
+        0f, 0f, 1f, 0f,
+        137f, 41f, 0f, 1f};
 
     // A record of its own rather than the session's, so a case reads only what it recorded itself.
     private final CompatibilityFailures failures = new CompatibilityFailures();
 
-    private final FastRenderingBridgeReading bridgeReading = new FastRenderingBridgeReading(
-        CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
-        failures);
-
-    // How many times the bridge was reached for, which is what says a degraded reader stays off it:
-    // a read runs per frame, so one that kept calling would fail for every frame the map is open.
-    private final AtomicInteger enqueueCount = new AtomicInteger();
+    // How many times the bridge was reached for, which is what says a refused reader stays off it:
+    // a read runs per frame, so one that kept asking would throw for every frame the map is open.
+    private final AtomicInteger readCount = new AtomicInteger();
 
     @Nested
     class Constructor {
 
         @Test
-        void refusesAReaderWithNoCopy() {
+        void refusesAReaderWithNoConsumer() {
 
             assertThatNullPointerException()
-                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(null, countAndEnqueue()));
+                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(
+                    null,
+                    failures,
+                    countAndServe()));
         }
 
         @Test
-        void refusesAReaderWithNoQueue() {
+        void refusesAReaderWithNoRecord() {
 
-            // A reader that could not reach the render thread would enqueue nothing and report the
-            // absent copy of a binding that is in fact working.
             assertThatNullPointerException()
-                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(bridgeReading, null));
+                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(
+                    CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                    null,
+                    countAndServe()));
+        }
+
+        @Test
+        void refusesAReaderWithNoReadToGuard() {
+
+            assertThatNullPointerException()
+                .isThrownBy(() -> new FastRenderingModelviewMatrixReader(
+                    CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+                    failures,
+                    null));
         }
     }
 
@@ -61,161 +76,164 @@ final class FastRenderingModelviewMatrixReaderTests {
     class ReadModelviewMatrix {
 
         @Test
-        void answersTheCopyAnEarlierFramesCommandLeftBehind() {
+        void answersTheMatrixTheReadServes() {
 
-            // The command enqueued by this read runs a frame later, so what the read reports is the
-            // copy an earlier one already published.
-            bridgeReading.copyModelviewForNextRead(() -> createIdentityMatrix());
-            var reader = createReader(countAndEnqueue());
+            var reader = createReader(countAndServe());
 
             assertThat(reader.readModelviewMatrix())
-                .isSameAs(bridgeReading.reportLatestCopy());
-            assertThat(enqueueCount)
-                .hasValue(1);
+                .containsExactly(SERVED_MATRIX);
             assertThat(failures.hasUnreported())
                 .isFalse();
         }
 
         @Test
-        void answersNoReadingForAFrameTheRendererHadNoContextFor() {
+        void answersNoReadingWhereTheBridgeRefusesTheCall() {
 
-            // Absent rather than broken: the renderer answers no context before it is up and again
-            // after it is torn down, which is a frame with no reading rather than a failed binding.
-            bridgeReading.copyModelviewForNextRead(() -> createIdentityMatrix());
-            var reader = createReader(countAndReportNoContext());
+            // The facade's refusal, from v0.8.9: the method links and throws when called, inside the
+            // render pass that asked - exactly where a throw must not reach.
+            var reader = createReader(countAndRefuse());
 
+            assertThatCode(reader::readModelviewMatrix)
+                .doesNotThrowAnyException();
             assertThat(reader.readModelviewMatrix())
                 .isNull();
-            assertThat(bridgeReading.isBridgeUnavailable())
-                .isFalse();
-            assertThat(failures.hasUnreported())
-                .isFalse();
         }
 
         @Test
-        void degradesWhereTheBridgeRefusesTheCall() {
+        void answersNoReadingWhereTheBridgeLacksTheMethod() {
 
-            // The failure this step exists for. It links, so the guard around the binding never
-            // sees it, and it is thrown where the reading is asked for - inside a render pass,
-            // which is exactly where a throw must not reach.
-            var reader = createReader(countAndRefuseTheCall());
-
-            assertThatCode(reader::readModelviewMatrix)
-                .doesNotThrowAnyException();
-            assertThat(bridgeReading.isBridgeUnavailable())
-                .isTrue();
-        }
-
-        @Test
-        void degradesWhereABridgeMemberIsGone() {
-
-            // The same catch: a member that moved or changed signature fails the call exactly as a
-            // refused one does, and losing the reading is the same answer to both.
-            var reader = createReader(countAndFailToFindTheMember());
+            // The same catch for the earlier shape: through v0.8.8 the method was not declared, so
+            // the call fails to link rather than throwing.
+            var reader = createReader(countAndFailToLink());
 
             assertThatCode(reader::readModelviewMatrix)
                 .doesNotThrowAnyException();
-            assertThat(bridgeReading.isBridgeUnavailable())
-                .isTrue();
+            assertThat(reader.readModelviewMatrix())
+                .isNull();
         }
 
         @Test
         void recordsWhatTheBridgeThrewAgainstTheConsumerThatTookIt() {
 
-            var reader = createReader(countAndRefuseTheCall());
+            var reader = createReader(countAndRefuse());
 
             reader.readModelviewMatrix();
 
             // The sentence is the consumer's and the subject is the library's: the mod names what
-            // stops working, and the library names whose code stopped holding.
+            // stops working, and the library names whose code refused.
             var failure = CompatibilityFailureFixture.takeNextBindingFailure(failures);
             assertThat(failure.subject().name())
-                .isEqualTo(CompatibilityFailureFixture.SUBJECT_NAME);
+                .isEqualTo("Fast Rendering");
             assertThat(failure.consumer().lostFeature())
                 .isEqualTo(CompatibilityFailureFixture.LOST_FEATURE);
-
-            // Filed as this thread's, not the renderer's: both degrade through the one latch, so
-            // the site is what keeps the log from reporting a game-thread refusal as a command
-            // that failed where the renderer ran it.
-            assertThat(failure.breakage().failureSite())
-                .isEqualTo(FastRenderingBridgeFailures.WHILE_CALLING_FROM_GAME_THREAD);
+            assertThat(failure.cause())
+                .isInstanceOf(UnsupportedOperationException.class);
         }
 
         @Test
-        void staysOffTheBridgeOnceACallHasFailed() {
+        void recordsOneFailureHoweverOftenTheMapAsks() {
 
-            var reader = createReader(countAndRefuseTheCall());
+            var reader = createReader(countAndRefuse());
 
             reader.readModelviewMatrix();
+            reader.readModelviewMatrix();
+            reader.readModelviewMatrix();
 
-            assertThat(reader.readModelviewMatrix())
+            assertThat(failures.takeNextUnreported())
+                .isNotNull();
+            assertThat(failures.takeNextUnreported())
                 .isNull();
-            assertThat(enqueueCount)
-                .hasValue(1);
         }
 
         @Test
-        void answersNoReadingWhereTheCopyDegradedOnTheRenderThread() {
+        void staysOffTheBridgeOnceAReadWasRefused() {
 
-            // The other side of the same binding: a command that failed where the renderer ran it
-            // latched the copy, and this thread is off the bridge from the next frame without
-            // having met the failure itself.
-            bridgeReading.copyModelviewForNextRead(() -> {
-                throw new UnsupportedOperationException("TransformManager.getCPUModelView()");
-            });
-            var reader = createReader(countAndEnqueue());
+            var reader = createReader(countAndRefuse());
 
-            assertThat(reader.readModelviewMatrix())
-                .isNull();
-            assertThat(enqueueCount)
-                .hasValue(0);
+            reader.readModelviewMatrix();
+            reader.readModelviewMatrix();
+
+            assertThat(readCount)
+                .hasValue(1);
         }
     }
 
-    private static Matrix4f createIdentityMatrix() {
+    @Nested
+    class ComposeReadFailure {
 
-        var matrix = new Matrix4f();
-        matrix.setIdentity();
-        return matrix;
+        @Test
+        void targetsTheFirstReleaseThatServesTheRead() {
+
+            // The release a player on an older one is told to update to.
+            var failure = composeFailureWithInstalledVersion("v0.9.0");
+
+            assertThat(failure.subject().builtAgainstVersion())
+                .isEqualTo("v0.9.1rc1");
+        }
+
+        @Test
+        void carriesTheInstalledReleaseItWasHanded() {
+
+            var failure = composeFailureWithInstalledVersion("v0.9.0");
+
+            assertThat(failure.subject().installedVersion())
+                .isEqualTo("v0.9.0");
+        }
+
+        @Test
+        void namesTheRefusedReadAndWhereItFailed() {
+
+            var failure = composeFailureWithInstalledVersion("v0.9.0");
+
+            assertThat(failure.breakage().brokenDetail())
+                .isEqualTo("GL11.glGetFloat(GL_MODELVIEW_MATRIX, FloatBuffer)");
+            assertThat(failure.breakage().failureSite())
+                .isEqualTo("reading the modelview back through the bridge");
+        }
     }
 
-    private FastRenderingModelviewMatrixReader createReader(
-            FastRenderingModelviewMatrixReader.BridgeCopyQueue copyQueue) {
+    private static CompatibilityFailure composeFailureWithInstalledVersion(String installedVersion) {
 
-        return new FastRenderingModelviewMatrixReader(bridgeReading, copyQueue);
+        return FastRenderingModelviewMatrixReader.composeReadFailure(
+            CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+            new UnsupportedOperationException("GL11.glGetFloat(int, FloatBuffer)"),
+            installedVersion);
     }
 
-    // The queue the renderer would be if it were working, and the three ways it is not. Each counts
-    // the call first, so a case can say whether the bridge was reached at all.
-    private FastRenderingModelviewMatrixReader.BridgeCopyQueue countAndEnqueue() {
+    private FastRenderingModelviewMatrixReader createReader(ModelviewMatrixReader glReader) {
 
+        return new FastRenderingModelviewMatrixReader(
+            CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
+            failures,
+            glReader);
+    }
+
+    // The read a serving release answers, and the two ways an older one does not. Each counts the
+    // call first, so a case can say whether the bridge was reached at all.
+    private ModelviewMatrixReader countAndServe() {
+
+        var servedReaderFake = new ModelviewMatrixReaderFake(SERVED_MATRIX);
         return () -> {
-            enqueueCount.incrementAndGet();
-            return true;
+            readCount.incrementAndGet();
+            return servedReaderFake.readModelviewMatrix();
         };
     }
 
-    private FastRenderingModelviewMatrixReader.BridgeCopyQueue countAndFailToFindTheMember() {
+    private ModelviewMatrixReader countAndRefuse() {
 
         return () -> {
-            enqueueCount.incrementAndGet();
-            throw new NoSuchMethodError("com.genir.renderer.bridge.context.ContextManager.getThreadContext()");
+            readCount.incrementAndGet();
+            throw new UnsupportedOperationException(
+                "UnsupportedOperationException: GL11.glGetFloat(int, FloatBuffer)");
         };
     }
 
-    private FastRenderingModelviewMatrixReader.BridgeCopyQueue countAndReportNoContext() {
+    private ModelviewMatrixReader countAndFailToLink() {
 
         return () -> {
-            enqueueCount.incrementAndGet();
-            return false;
-        };
-    }
-
-    private FastRenderingModelviewMatrixReader.BridgeCopyQueue countAndRefuseTheCall() {
-
-        return () -> {
-            enqueueCount.incrementAndGet();
-            throw new UnsupportedOperationException("com.genir.renderer.bridge.context.executor.Executor.execute()");
+            readCount.incrementAndGet();
+            throw new NoSuchMethodError(
+                "com.genir.renderer.bridge.commands.GL11.glGetFloat(ILjava/nio/FloatBuffer;)V");
         };
     }
 }

@@ -18,7 +18,7 @@ final class CompatibilityBreakageTests {
 
     private static final String FAILURE_SITE = "calling the bridge from the game thread";
 
-    private static final String BROKEN_DETAIL = "GLCommand.run (ClassNotFoundException)";
+    private static final String BROKEN_DETAIL = "GL11.glGetFloat(GL_MODELVIEW_MATRIX, FloatBuffer)";
 
     @Nested
     class Constructor {
