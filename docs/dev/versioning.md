@@ -251,6 +251,10 @@ rather than entries under `Changed`:
 the split is by what the reader has to go and do,
 not by what kind of edit was made.
 A breaking row says what a caller wrote before, what it writes after, and why.
+Where many rows share one reason, such as a batch of renames,
+the table splits by area instead:
+each area takes a `#####` heading and one sentence of why,
+over a table of before and after alone.
 
 A changelog that also carries a `## Index` of its versions must list the version being released in it.
 That index is a second place every version is written down and nothing reads it but a human,
