@@ -20,16 +20,16 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **A crash under Fast Rendering `0.9.0` and later.** [Fast Rendering now implements the missing OpenGL method](https://github.com/Halke1986/starsector-render/issues/11), the one the game itself answers when Fast Rendering is not installed. Under Fast Rendering, the map follows the cursor only from `v0.9.1rc1` on.
-- **Map layers drawn by KM mods stay above the nebulae with the campaign speed-up on.** Every layer stayed under the nebulae on every map open, and neither a save reload nor a Starscape toggle cleared it. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
+- **A crash under Fast Rendering `0.9.0` and later.** Thanks to **Genir**, [Fast Rendering now implements the missing OpenGL method](https://github.com/Halke1986/starsector-render/issues/11), the one the game itself answers when Fast Rendering is not installed. Under Fast Rendering, the map follows the cursor only from `v0.9.1rc1` on.
+- **Map layers drawn through KMLib stay above the nebulae with the campaign speed-up on.** Every layer stayed under the nebulae on every map open, and neither a save reload nor a Starscape toggle cleared it. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
   - **A layering fix that gave up is tried again on the next map open**, rather than staying off for the rest of the session.
 - **A shortcut key shown after a button's words stays on the button.** In a translation whose words lack the key's letter, or in English with the key rebound, a key such as `[M]` wrapped onto a second line outside the button.
 
 ### Added
 
 - **Simplified Chinese (简体中文).** A second zip, `KMLib-<version>-zh-hans.zip`, carries the compatibility notice, the settings tab and the mod list entry in Simplified Chinese. Install the [Chinese localisation](https://github.com/TruthOriginem/Starsector-Localization-CN) over `starsector-core` first: the game's own fonts hold no Chinese characters, so without it every one draws as `?`. The Log verbosity options stay in English, so the setting carries over between the two zips.
-- **An in-game notice says when a KM mod cannot integrate with another mod, Fast Rendering or the game itself.** It names the mod, both versions, what stops working and what does not, and whether to update, downgrade or wait. The failure costs only the feature built on that integration, and each one shows once per session.
-  - **A KM mod's own feature that fails and is switched off is reported the same way**, asking for a report to the mod's developer.
+- **An in-game notice says when a mod using KMLib cannot integrate with another mod, Fast Rendering or the game itself.** It names the mod, both versions, what stops working and what does not, and whether to update, downgrade or wait. The failure costs only the feature built on that integration, and each one shows once per session.
+  - **That mod's own feature that fails and is switched off is reported the same way**, asking for a report to the mod's developer.
   - **A failure found while a map is open can show over the map**, without waiting for the campaign screen.
 
 ### For developers
