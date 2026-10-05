@@ -20,9 +20,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ### 修复
 
-- **写在按钮文字之后的快捷键会留在按钮上。** 在文字中不含该按键字母的译文中，或在英文中改绑按键之后，形如 `[M]` 的按键会换行到按钮之外的第二行。
+- **Fast Rendering `0.9.0` 及更高版本下的崩溃。** [Fast Rendering 已实现缺失的 OpenGL 方法](https://github.com/Halke1986/starsector-render/issues/11)，即未安装 Fast Rendering 时由游戏自身应答的那个方法。在 Fast Rendering 下，星图只在 `v0.9.1rc1` 及更高版本中跟随光标。
 - **开启战役加速时，KM 系列 Mod 绘制的星图图层会留在星云之上。** 每次打开星图，所有图层都停留在星云之下，重新读取存档或切换星景都无法恢复。由 **MiniRockytheOracle** 在 [**USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170) 报告。
   - **已放弃的图层修正会在下次打开星图时重新尝试**，而不是在本次会话的剩余时间内一直停用。
+- **写在按钮文字之后的快捷键会留在按钮上。** 在文字中不含该按键字母的译文中，或在英文中改绑按键之后，形如 `[M]` 的按键会换行到按钮之外的第二行。
 
 ### 新增
 
@@ -31,13 +32,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - **KM 系列 Mod 自身的某项功能出错并被关闭时，也会以同样方式报告**，并请玩家向该 Mod 的开发者报告此问题。
   - **星图打开时发现的失败可以直接显示在星图之上**，无需等到回到战役界面。
 
-### 变更
-
-- **在 Fast Rendering 下，星图只在 `v0.9.1rc1` 及更高版本中跟随光标。** 光标读数与当前帧一致，而不会在星图平移时落后一到两帧。在更早的版本上，星图不会响应光标，并会有通知说明应更新到哪个版本。
-- **日志详细程度设置的描述以单独一行的默认值结尾**，因此默认值在中文中也能高亮。
-- **Mod 列表中该 Mod 的名称为 Klark Morrigan 的程序库 (KMLib)。** 更新检查器显示同一名称。
-- **每种语言作为独立的压缩包发布**：`KMLib-<version>-en.zip` 和 `KMLib-<version>-zh-hans.zip` 并列在发布页面上。发布说明会写明哪个压缩包对应哪种语言，更新检查器在此变更前后均可正常工作。
-
 ### 面向开发者
 
 <details>
@@ -45,8 +39,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 修复
 
-- **按钮上的快捷键：** `VanillaButtonLabel.announceShortcut()` 会把标签加宽到其所承载的文字。游戏只按创建时的文字设定一次标签宽度，更长的内容会换行。
+- **Fast Rendering 崩溃：** 星图的模型视图矩阵通过 `glGetFloat(GL_MODELVIEW_MATRIX)` 读取，`v0.9.1rc1` 会就地应答这一调用。KMLib 不针对 `fr.jar` 的任何部分编译，因此 Fast Rendering 的内部重构不会破坏这次读取。
 - **加速下的星图图层：** `MapIconReseater` 只在控件已丢弃图标后才将其放回，最多等待 `MAX_ADVANCES_DETACHED` 次推进，并在星图关闭时结束。加速会让脚本每帧推进多次，因此移除与放回落在同一帧内，控件从未重新叠放该图标。
+- **按钮上的快捷键：** `VanillaButtonLabel.announceShortcut()` 会把标签加宽到其所承载的文字。游戏只按创建时的文字设定一次标签宽度，更长的内容会换行。
 - **`GlRuns`、`GlLines`、`GlQuads` 和 `GlTriangles` 在 `finally` 块中调用 `glEnd`。** 抛出异常的绘制会让管线停留在 `glBegin` 内部，破坏其后绘制的所有内容的 GL 状态。
 - **抛出异常的 `LunaSettingsReader.runOnSettingsChange` 回调会以 ERROR 级别连同堆栈跟踪记录。** LunaLib 只在 DEBUG 级别提及它，且不附堆栈跟踪。下一次变更照常尝试，日志级别绑定也使用同一中转机制。
 - **对游戏界面的失败访问会在其边界处被捕获**，而不会终结这一帧。两种失败方式都会被捕获：以未声明方式抛出的游戏自身失败，以及游戏新版本移除的成员引发的 `LinkageError`。
@@ -297,8 +292,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 变更
 
-- **Fast Rendering 下的星图光标：** 模型视图矩阵通过 `glGetFloat(GL_MODELVIEW_MATRIX)` 读取，`v0.9.1rc1` 会就地应答这一调用。KMLib 不针对 `fr.jar` 的任何部分编译，因此 Fast Rendering 的内部重构不会破坏这次读取。
-- **Mod 列表名称：** 依赖 KMLib 的 Mod 可以在其 `dependencies` 条目中使用同一名称。启动器只在 KMLib 缺失时才显示它。
 - **`MapIconReseater` 会在日志中说明它观察到的情况**，记录在 KMLib 自己的记录器上。包的 README 列出了这些日志行。
   - 星图的打开与关闭以 DEBUG 级别跟踪，每次都附带自上次观察到图标未被遮挡以来的抬升次数。
   - 两种状态每次会话警告一次：星图显示但没有可放置的图标；以及搁置，附带导致搁置的读数。

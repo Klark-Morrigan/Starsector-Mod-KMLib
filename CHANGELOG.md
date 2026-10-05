@@ -20,9 +20,10 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **A shortcut key shown after a button's words stays on the button.** In a translation whose words lack the key's letter, or in English with the key rebound, a key such as `[M]` wrapped onto a second line outside the button.
+- **A crash under Fast Rendering `0.9.0` and later.** [Fast Rendering now implements the missing OpenGL method](https://github.com/Halke1986/starsector-render/issues/11), the one the game itself answers when Fast Rendering is not installed. Under Fast Rendering, the map follows the cursor only from `v0.9.1rc1` on.
 - **Map layers drawn by KM mods stay above the nebulae with the campaign speed-up on.** Every layer stayed under the nebulae on every map open, and neither a save reload nor a Starscape toggle cleared it. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
   - **A layering fix that gave up is tried again on the next map open**, rather than staying off for the rest of the session.
+- **A shortcut key shown after a button's words stays on the button.** In a translation whose words lack the key's letter, or in English with the key rebound, a key such as `[M]` wrapped onto a second line outside the button.
 
 ### Added
 
@@ -31,13 +32,6 @@ The reusable release workflow extracts the section matching the released version
   - **A KM mod's own feature that fails and is switched off is reported the same way**, asking for a report to the mod's developer.
   - **A failure found while a map is open can show over the map**, without waiting for the campaign screen.
 
-### Changed
-
-- **Under Fast Rendering, the map follows the cursor only from `v0.9.1rc1` on.** The cursor reading is current to the frame rather than a frame or two behind while the map pans. On an earlier release the map does not respond to the cursor, and a notice names the release to update to.
-- **The Log verbosity setting's description ends with its default on a line of its own**, so the default highlights in Chinese too.
-- **The mod list names the mod Klark Morrigan's Library (KMLib).** Update checkers show the same name.
-- **Each language ships as its own zip**: `KMLib-<version>-en.zip` and `KMLib-<version>-zh-hans.zip`, side by side on the release page. The release notes say which is which, and update checkers keep working across the change.
-
 ### For developers
 
 <details>
@@ -45,8 +39,9 @@ The reusable release workflow extracts the section matching the released version
 
 #### Fixed
 
-- **Shortcut key on a button:** `VanillaButtonLabel.announceShortcut()` widens the label to the words it carries. The game sizes a label once, to the words it was built with, and wraps anything longer.
+- **Fast Rendering crash:** the map's modelview is read through `glGetFloat(GL_MODELVIEW_MATRIX)`, which `v0.9.1rc1` answers inline. KMLib compiles against no part of `fr.jar`, so a refactor inside Fast Rendering cannot break the read.
 - **Map layers under the speed-up:** `MapIconReseater` puts an icon back only once the widget has dropped it, bounded by `MAX_ADVANCES_DETACHED` advances and ended when the map closes. The speed-up advances scripts several times a frame, so a removal and a put-back landed in one frame and the widget never re-layered the icon.
+- **Shortcut key on a button:** `VanillaButtonLabel.announceShortcut()` widens the label to the words it carries. The game sizes a label once, to the words it was built with, and wraps anything longer.
 - **`GlRuns`, `GlLines`, `GlQuads` and `GlTriangles` call `glEnd` in a `finally` block.** A draw that threw left the pipeline inside `glBegin`, spoiling the GL state of everything drawn after it.
 - **A `LunaSettingsReader.runOnSettingsChange` callback that throws is logged at error with its trace.** LunaLib reports it only at debug, without the trace. The next change is tried as usual, and the log-level binding uses the same relay.
 - **A failed reach into the game's screens is caught at its boundary** instead of ending the frame. Both ways it fails are caught: the game's own failure thrown undeclared, and a `LinkageError` from a member a new game build dropped.
@@ -297,8 +292,6 @@ These read a mod's `localisation/` layout - one bundle per locale under `localis
 
 #### Changed
 
-- **Map cursor under Fast Rendering:** the modelview is read through `glGetFloat(GL_MODELVIEW_MATRIX)`, which `v0.9.1rc1` answers inline. KMLib compiles against no part of `fr.jar`, so a refactor inside Fast Rendering cannot break the read.
-- **Mod list name:** a mod depending on KMLib may use the same name in its `dependencies` entry. The launcher shows it only when KMLib is missing.
 - **`MapIconReseater` logs what it saw**, on KMLib's own logger. The package README lists the lines.
   - Map open and close are traced at DEBUG, each with the lift count since the icon was last seen clear.
   - Two states warn once per session: a map up with no placeable icon, and a stand-down, with the readings behind it.
