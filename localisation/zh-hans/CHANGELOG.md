@@ -35,30 +35,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **Mod 列表中该 Mod 的名称为 Klark Morrigan 的程序库 (KMLib)。** 更新检查器显示同一名称。
 - **每种语言作为独立的压缩包发布**：`KMLib-<version>-en.zip` 和 `KMLib-<version>-zh-hans.zip` 并列在发布页面上。发布说明会写明哪个压缩包对应哪种语言，更新检查器在此变更前后均可正常工作。
 
-### 公共契约变更（**破坏性**）
-
-- 每个深入游戏自身界面的读取都接受一个 `GameReachReporter`，即该读取失败时会有所损失的 Mod 的报告器：`CampaignMapView` 的三个星图读取及 `resolveSectorMapState()`、`MapFilterRows.resolveShownMapFilterRow()`、`MapFilterToggle.appendToRow()`、`VanillaButtonLabel.resolveLabelOf()`、`CoreUiOverlayPanels.attachOverlayPanel()`、`CoreUiDialogView.isModalDialogShowing()` 和 `resolveModalPresence()`、`CodexView.isCodexShowing()` 以及 `MapIconLayeringProbe.readLayeringOf()` 将其作为最后一个参数接受，而 `MapPresence`、`VanillaIntelScreenView` 和 `VanillaMapTooltipProbe` 在构造时接受它，其无参构造函数已移除。没有玩家可见损失的调用方传入 `GameReachReporter.UNREPORTED`。
-- `CompatibilityFailures.takeNextUnreported()` 返回 `ReportedFailure`，`CompatibilityNoticePanel.showFailure()` 也接受它，二者原先都使用 `CompatibilityFailure`。记录现在除了失效的绑定，也会保存 Mod 自身失败的功能。只显示或记录所取内容的调用方照常编译；读取 `subject()` 或 `breakage()` 的调用方需先确认它是 `CompatibilityFailure`。
-- `ReflectiveCoreUiComponentRepainter` 不再是枚举，其 `INSTANCE` 已移除：调用方用自己的报告器构造一个实例，失败的重绘将作为该调用方的损失归档。
-- `MapProbeWarnings` 更名为 `RearmableWarnings`，位于 `kmlib.logging` 中，与 `SessionWarning` 并列；`createSharedWarning()` 改为公开的 `createRearmableWarning()`。它汇集的警告来自每个按类保留一个警告的所有者，而不仅是星图探测器。重新启用这些警告的调用方需更改其导入；`rearmAllWarnings()` 不变。
-- `KmLogging` 已移除。Mod 通过 `LunaLogLevelBinding.bindLogLevel(modId, loggerRoot, fieldId)` 绑定其日志级别，它与 KMLib 其余的 LunaLib 读取一起位于 `kmlib.settings` 中，程序库的默认级别为 `LunaLogLevelBinding.DEFAULT_LEVEL`。接受后备级别的重载未被保留；未设置或无法识别的字段采用默认级别。
-- `GlStateGuard` 已移除。它只是转发到 `GlPasses.runWithSavedState`，调用方现在直接调用后者；保存的状态以及抛出异常时的恢复保持不变。
-- `ModelviewMatrixReaders.selectForActiveRenderer()` 接受使用该读数的 `CompatibilityConsumer`；无参形式已移除。调用方现在要指明其记录锁存所用的键，以及说明其损失的句子，两者都只在绑定失败时读取。该句子由调用方提供，因为绑定失败的代价需要对基于该读数构建的功能有所了解：程序库知道渲染器、两个版本以及发生变动的成员，却对用它绘制了什么一无所知。
-- `FastRenderingModelviewMatrixReader` 不再是枚举，其 `INSTANCE` 已移除：`ModelviewMatrixReaders` 现在为提出请求的使用方构建一个实例。读取器记录它遇到的拒绝，而无法说明自己服务于哪个 Mod 的读取器只能把拒绝记在无人名下，而读取被拒绝的代价应由使用该读数的 Mod 来说明。同一时间屏幕上只有一个星图，这是关于星图的事实，与有多少个 Mod 在其上绘制无关。无论哪种方式，包外都无法构造它，因为该类只能通过选择方法访问。
-- `VerticalTableSpec` 失去其 `scrolls` 组件和 `asScrolling()` 细化方法；可滚动的部分由宿主用来容纳一段行的 `ScrollingSection` 声明。原先标记了其列表的宿主现在改为包装它：`new ScrollingSectionSpec(List.of(list))`。该表格的规范构造函数原先接受八个参数，现在接受七个。
-- `ControlSpec` 的各变体现在是新包 `kmlib.starsector.ui.controls.specs` 中的顶层类型，每个变体一个文件，均以 `Spec` 为后缀：`ControlSpec.Checkbox` 现在是 `CheckboxSpec`，`ControlSpec.Interactive` 是 `InteractiveSpec`，十二个变体均依此类推。它们嵌套在一个 878 行的文件中时，无法分别打开、审查或追溯修改记录，而且不带外围类型就读不出变体的名称。整个类型族一起迁移，因为密封类型与其允许的变体必须位于同一个包中；`ControlAction`、`ControlHoverReport`、`RadioAlignment`、`ReselectBehaviour`、`RowGeometry` 和 `SegmentSizing` 也随之迁移，使新包不依赖旧包中的任何内容。使用方需更改导入并去掉 `ControlSpec.` 前缀；规格的其他方面均未改变。
-- `RowStack.layoutRows()` 接受一个 `RowDimensions`，取代原先作为两个相邻列表传入的逐行高度和宽度，统一高度的重载已移除。这两个重载各接受五个参数，且都以三个浮点数开头，其中第三个在一个重载中是行高，在另一个中是间距，因此无论本意是哪个，调用点读起来都一样。各行高度相同的一组行现在写作 `RowDimensions.createUniform(rowHeight, rowWidths)`。
-- `ControlStripLayout.layoutControls()` 接受测量各行时所得的 `StripMeasurement`，取代其 `rowHeights` 和 `rowWidths` 列表。它们是对同一控件条的同一次读数，分开后可能来自不同的读数：两个长度不同的列表，或某个控件条的高度而宽度却从未从该控件条测得，而放置逻辑对这两种情况都无从察觉。
-- `ExtensionPoint.settleWorkOutcome()` 已移除：扩展点的工作通过 `offerWork(work)` 提交，由它自行调用已安装的实现。先调用实现、事后再结算结果的端口会让该调用处于任何边界之外，而同时提供两种方式的扩展点会让这条路一直敞开。`registerImplementation()` 接受第四个参数：当注册方的实现失败并被移除时告知注册方的内容。
-- `ColonisationRoutines.registerRoutine()`、`OwnershipTransferRoutines.registerRoutine()`、`OwnerSubmarketRules.registerRule()` 和 `ModdedSystemAccessRoutes.registerRoute()` 接受一个 `Supplier<ModIntegration>`：实现来自哪个 Mod，以及注册的 Mod 在没有它时会失去什么，仅在实现失败时才组合。
-- `mod-release.yml` 按语言区域命名已本地化 Mod 的发布资产：为其 `localisation/manifest.json` 中的每个语言区域生成 `<folder>-<version>-<locale>.zip` 和 `<mod-id>-<locale>.version`，不再有无后缀的压缩包。默认语言区域的版本文件会以 `<mod-id>.version` 再附加一次，变更之前的安装仍会轮询该文件，因此不会有更新检查失效。已提交清单的调用方，会在将其固定版本移到此版本的那次发布中改变其发布内容。
-- `StubbedGlobalLogger.answerLoggersOn()` 已移除：应答记录器的 `Global` 替身通过 `openGlobalAnsweringLoggers()` 打开，测试套件在其上为星域或设置打桩；持有多个接缝的布置将其交给 `StaticSeams.holdSeam()`。
-- `StarsectorFont.getNativeSize()` 已移除，该枚举不再声明任何尺寸：图集按 1:1 绘制时的尺寸通过 `FaceLineHeightReader` 从已加载的字体读取。为原版图集写死的数值，会使本地化安装在同一基础名下的图集被缩放绘制，在像素字体上就会模糊。调用方改写为 `InstalledFaces.createNativeFace(font)`。
-- `TextStyle.createStyle()` 接受 `TextFace`，取代 `StarsectorFont`，因为样式不再知道用来构建字体的原生尺寸。原先只指明字体的调用方传入 `InstalledFaces.createNativeFace(...)`。
-- `TextFace` 以 `atlas()` 持有一个 `FontAtlas`，取代以 `font()` 持有的 `StarsectorFont`，因此无论枚举是否列出，文本都能以游戏设置所声明的字体绘制。读取 `face.font()` 的调用方改为读取 `face.atlas()`，它应答的路径和平滑方式与之前相同；`StarsectorFont` 是一种 `FontAtlas`，因此由它构建的每个字体均可原样编译。`LazyFontCache.loadByFace()`、`FaceLineHeightReader`、`GlyphCoverageReader`、`WidgetStyle.bodyFont` 以及 `StripTextMeasurers.loadFaceMeasurers()` 接受的正文字体同样都改为 `FontAtlas`。
-- 字体包一分为三。`kmlib.starsector.ui.font` 保留字体、向字体发出询问的端口以及后备规则，这些都不加载图集，因此 `StarsectorFont`、`AtlasSmoothing` 和 `TextFace` 留在原处。`LazyFontCache` 和 `DrawableStringCache` 移至 `kmlib.starsector.ui.font.installed`，与运行中游戏图集的其他读取器放在一起。`LineWidthMeasurer`、`TextSpanMeasurer`、`LazyFontMeasurer`、`LazyFontSpanMeasurer` 和 `StripTextMeasurers` 移至 `kmlib.starsector.ui.font.measure`，夹具 `LineWidthMeasurerFake` 移至 `kmlib.testfixtures.starsector.ui.font.measure`。调用方需更改导入；这些类的其他方面均未改变。
-- `SortDirection.fromKeyOrDefault()` 和 `ListColumns.fromKeyOrDefault()` 已移除：存储的键通过 `PersistedChoices.fromKey(options, key, fallback)` 解析，这是所有带键选项集共用的唯一查找。读取存储的列数的调用方写作 `PersistedChoices.fromKey(ListColumns.values(), key, ListColumns.DEFAULT)`。
-
 ### 面向开发者
 
 <details>
@@ -326,6 +302,34 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`VoronoiCellBuilder` 把相邻单元共享的角点放在两者中的同一位置**，该位置由两个站点和延伸半径计算得出。串接的边境边之间没有缺口，线段数只决定圆弧绘制得有多平滑。
   - 在这些角点处，单元顶点最多会移动一条弦的矢高：在随附的延伸半径和默认线段数下约为八个单位。以比这更严格的精度断言的使用方需要重新建立基线。
 - **Starsector 约定通过游戏的 `json.jar` 读取 Mod 的元数据**，与启动器的方式相同，因此两者在文件能否解析上不会出现分歧。所以配置构建需要已安装的游戏。
+
+#### 公共契约变更（**破坏性**）
+
+| 之前 | 之后 | 原因 |
+| --- | --- | --- |
+| `CampaignMapView` 的三个星图读取及 `resolveSectorMapState()`、`MapFilterRows.resolveShownMapFilterRow()`、`MapFilterToggle.appendToRow()`、`VanillaButtonLabel.resolveLabelOf()`、`CoreUiOverlayPanels.attachOverlayPanel()`、`CoreUiDialogView.isModalDialogShowing()` 和 `resolveModalPresence()`、`CodexView.isCodexShowing()`、`MapIconLayeringProbe.readLayeringOf()` | 均以 `GameReachReporter` 作为最后一个参数。没有玩家可见损失时传入 `GameReachReporter.UNREPORTED`。 | 对游戏的失败访问会作为调用方 Mod 的损失报告。 |
+| `MapPresence`、`VanillaIntelScreenView` 和 `VanillaMapTooltipProbe` 的无参构造函数 | 构造时传入 `GameReachReporter`。 | 同上。 |
+| `ReflectiveCoreUiComponentRepainter.INSTANCE` | 用调用方的报告器构造一个实例。 | 失败的重绘作为调用方的损失归档。 |
+| `CompatibilityFailures.takeNextUnreported()` 和 `CompatibilityNoticePanel.showFailure()` 使用 `CompatibilityFailure` | 二者都使用 `ReportedFailure`。读取 `subject()` 或 `breakage()` 之前，先确认它是 `CompatibilityFailure`。 | 记录也会保存 Mod 自身失败的功能。 |
+| 无参的 `ModelviewMatrixReaders.selectForActiveRenderer()` | 传入使用该读数的 `CompatibilityConsumer`。 | 只有调用方知道读取被拒绝会让它损失什么。 |
+| `FastRenderingModelviewMatrixReader.INSTANCE` | `ModelviewMatrixReaders` 为每个使用方构建一个实例。 | 读取器把拒绝记在它所服务的 Mod 名下。 |
+| `ExtensionPoint.settleWorkOutcome()` | `offerWork(work)`。`registerImplementation()` 接受第四个参数：注册方的实现被移除时告知注册方的内容。 | 对实现的调用在失败边界之内运行。 |
+| `ColonisationRoutines.registerRoutine()`、`OwnershipTransferRoutines.registerRoutine()`、`OwnerSubmarketRules.registerRule()`、`ModdedSystemAccessRoutes.registerRoute()` | 均接受一个 `Supplier<ModIntegration>`。 | 出错的实现会作为其集成的失败报告。 |
+| `MapProbeWarnings` 和 `createSharedWarning()` | 位于 `kmlib.logging` 中的 `RearmableWarnings`，以及 `createRearmableWarning()`。`rearmAllWarnings()` 不变。 | 它汇集每个按类保留的警告，而不仅是星图探测器的警告。 |
+| `KmLogging` | `LunaLogLevelBinding.bindLogLevel(modId, loggerRoot, fieldId)`，默认级别为 `LunaLogLevelBinding.DEFAULT_LEVEL`。接受后备级别的重载已移除。 | 它与 KMLib 其余的 LunaLib 读取一起位于 `kmlib.settings` 中。 |
+| `GlStateGuard` | `GlPasses.runWithSavedState` | 它只是转发到后者。 |
+| `ControlSpec.Checkbox`、`ControlSpec.Interactive` 以及其余十个变体 | `CheckboxSpec`、`InteractiveSpec` 等，位于 `kmlib.starsector.ui.controls.specs` 中，`ControlAction`、`ControlHoverReport`、`RadioAlignment`、`ReselectBehaviour`、`RowGeometry` 和 `SegmentSizing` 也随之迁移。 | 每个变体一个文件，而不是一个 878 行的文件。 |
+| `VerticalTableSpec` 的 `scrolls` 和 `asScrolling()` | 包装列表：`new ScrollingSectionSpec(List.of(list))`。规范构造函数接受七个参数。 | 可滚动区段容纳任意控件，而不只是一个表格。 |
+| 接受高度与宽度列表的 `RowStack.layoutRows()`，及其统一高度的重载 | 传入 `RowDimensions`；各行高度相同时使用 `RowDimensions.createUniform(rowHeight, rowWidths)`。 | 两个重载的第三个浮点数，在一个中是行高，在另一个中是间距。 |
+| 接受 `rowHeights` 和 `rowWidths` 的 `ControlStripLayout.layoutControls()` | 传入 `StripMeasurement`。 | 两个列表来自同一次测量，因此不会不一致。 |
+| `SortDirection.fromKeyOrDefault()` 和 `ListColumns.fromKeyOrDefault()` | `PersistedChoices.fromKey(options, key, fallback)`，例如 `PersistedChoices.fromKey(ListColumns.values(), key, ListColumns.DEFAULT)`。 | 所有带键选项集共用一个查找。 |
+| `StarsectorFont.getNativeSize()` | `InstalledFaces.createNativeFace(font)`，尺寸通过 `FaceLineHeightReader` 读取。 | 本地化安装会以相同的名称、不同的尺寸替换图集。 |
+| 接受 `StarsectorFont` 的 `TextStyle.createStyle()` | 传入 `TextFace`，例如 `InstalledFaces.createNativeFace(...)`。 | 样式不再知道原生尺寸。 |
+| `TextFace.font()`，返回 `StarsectorFont` | `TextFace.atlas()`，返回 `FontAtlas`。`LazyFontCache.loadByFace()`、`FaceLineHeightReader`、`GlyphCoverageReader`、`WidgetStyle.bodyFont` 和 `StripTextMeasurers.loadFaceMeasurers()` 也改为接受它。 | 文本可以用游戏声明的默认字体绘制。由 `StarsectorFont` 构建的字体可原样编译。 |
+| 位于 `kmlib.starsector.ui.font` 中的 `LazyFontCache` 和 `DrawableStringCache` | `kmlib.starsector.ui.font.installed` | 运行中游戏图集的读取器与字体分开存放。 |
+| 位于 `kmlib.starsector.ui.font` 中的 `LineWidthMeasurer`、`TextSpanMeasurer`、`LazyFontMeasurer`、`LazyFontSpanMeasurer` 和 `StripTextMeasurers`，以及夹具 `LineWidthMeasurerFake` | `kmlib.starsector.ui.font.measure`；夹具移至 `kmlib.testfixtures.starsector.ui.font.measure`。 | 测量与字体分开存放。 |
+| `StubbedGlobalLogger.answerLoggersOn()` | `openGlobalAnsweringLoggers()`，与其他接缝一起交给 `StaticSeams.holdSeam()`。 | `Global` 只有一个替身，并与其他接缝一同关闭。 |
+| `mod-release.yml` 将带有 `localisation/manifest.json` 的 Mod 发布为一个无后缀的压缩包 | 每个语言区域发布 `<folder>-<version>-<locale>.zip` 和 `<mod-id>-<locale>.version`。仍会附加 `<mod-id>.version`，因此旧的安装会继续轮询它。 | 每种语言一个压缩包。 |
 
 </details>
 
