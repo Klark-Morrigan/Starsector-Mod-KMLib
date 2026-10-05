@@ -50,21 +50,6 @@ The reusable release workflow extracts the section matching the released version
 - **`Jitter.roll(jitterSize, random)`**: the same band drawn from a caller's `Random`, for a roll that must replay from a seed. Both forms share one mapping of the draw onto the band, so a size means the same whichever source drew it. The band's upper end is open, as it always was; the documentation now says so.
 - **`SectorMemoryString` and `SectorMemoryFlag` forms naming a sector**, and **`SectorMemoryAccess.readSectorMemory(sector)`** beneath them: every read and write taking the sector it acts on, for code handed its sector by whoever chose it rather than reading the running one. They answer as the bare forms do, the null guard included, so the difference is only which save the value lands in.
 - **`BaseExpiringIntelPlugin.findActive(sector, intelClass)`**, **`isExpired(clock)`** and a constructor taking the clock: an expiring intel opened, looked up and measured against a sector the caller holds. The bare forms read the running sector through them, so both answer by one definition of "still within the window".
-- **`FaceLineHeightReader`**: the size a face's installed atlas draws 1:1 at - its descriptor's `lineHeight` - read off the loaded face rather than stated in code. A core localisation overwriting `starsector-core` replaces several of the game's atlases under the same basenames, and each of its editions moves the line height differently, so no constant is right for every install. **`LazyFontLineHeightReader`** is the live adapter, reading LazyLib's parse of the descriptor through `LazyFontCache` and answering `NO_LINE_HEIGHT` for a face that will not load, as the span measurer answers no width for one. `FaceLineHeightReader.isFaceLoadable()` tells that reading from a loaded face's.
-- **`TextFace.createNativeFace(atlas, lineHeights)`**: a face at its installed atlas's native size, for a caller with no size of its own, and **`InstalledFaces.createNativeFace(atlas)`**, the same size read off the running game's install through LazyLib. **`InstalledFaces.createFaceResolver()`** is the resolver over the installed atlases.
-- **`GlyphCoverageReader`**: whether a face's installed atlas draws every character of a text as itself rather than as the fallback question mark. No vanilla atlas holds a CJK glyph and a core localisation's editions disagree on how many each replaced atlas holds, so only the loaded face can say. **`LazyFontGlyphCoverageReader`** is the live adapter; it counts a character as uncovered when LazyLib answers it with the face's fallback glyph, so LazyLib's own redrawing of a typographic quote as the straight one reads as drawn. Whitespace is not asked about.
-- **`FaceResolver`**: which face a text draws in. A caller names the face it would draw in and the text it draws; the resolver keeps that face where its installed atlas loads and holds every character, and otherwise walks on to the first face that does - down the face's family, each cut naming the next cut below it through **`StarsectorFont.resolveLowerResolutionFont()`**, then the face the game's settings declare as its default, then **`FaceResolver.LAST_RESORT_FONT`**, `insignia15LTaa`. Where nothing on the walk draws the text the last resort is answered, never the declared default, so no setting can make a broken or missing file KM's last word. It reads the text, never a locale, so an English build on a localised install drawing localised faction names in the one atlas no localisation replaces steps down to a cut that holds them, and on a vanilla install nothing moves. `listFallbackWalk()` states the faces a text is tried in.
-- **`GameDefaultFontReader`**: the game's own `defaultFont`, read the way vanilla's `Fonts.DEFAULT_SMALL` is. Any mod can set it, so it reads as the enum's face where it names one and as a **`DeclaredFontAtlas`** at its path otherwise - a language pack pointing it at an atlas holding its script being exactly the face such text needs. A setting naming nothing reads as `insignia15LTaa`. **`StarsectorFont.findFontByPath()`** is the mapping.
-- **`FontAtlas`**: the sealed interface over the two kinds of atlas KM draws in - a **`StarsectorFont`**, the faces KM chooses, and a **`DeclaredFontAtlas`**, the one face the game's settings declare - carrying what the loader, the measurers and the draw passes need of either: its path and its smoothing.
-- **`AtlasSmoothing.resolveFromInfoLine()`**: an atlas's smoothing read off its descriptor's first line - `aa=1` pixel-exact, anything else antialiased - for an atlas KM did not ship and so has no table of.
-- **`InstalledFaceCheck`**: every face, and the face the game's settings declare as its default, loaded once as the game starts, with one log line stating each one's installed line height or that it would not load - the reading a report of text drawn at the wrong size is read against. `KMLib_ModPlugin` runs it at application load.
-- **Font checks against every install handed in**: `test` holds each face KM draws in - on the build's own install, each localisation edition the lock names and any install `-PfontInstallRoots` names - to a header LazyLib loads, one page, a line height and the smoothing the enum states for it, and every face's walk for text in the install's own language to a face that draws it; on the Chinese editions, `insignia42LTaa` steps down to `insignia25LTaa`. A root carrying no fonts fails rather than skips.
-- **`checkFontEditions`** and **`font-editions.lock.json`**: every `test` runs after the gate, which fetches each edition's descriptors at the blob SHAs the lock pins and lays them over the install's own. A pack published upstream fails the build, naming the edition, the face and both SHAs, until **`writeFontEditionsLock`** rewrites the lock's faces. The lock lists each edition under a name of KM's own with its repository, branch, descriptor folder and language, and states a probe text per language; the faces are the enum's. Every build needs the network and the game's fonts.
-- **`StarsectorFont.getBasename()`**: the atlas's basename, how a log line or a failure names a face.
-- **`StarsectorFont.VANILLA_INSIGNIA_21`** and **`VANILLA_INSIGNIA_25`**: the body face's middle and larger cuts, the steps a text walks down from `insignia42LTaa` - the one cut a core localisation leaves without its script - before the game's default.
-- **`SettledFaceMemo`**: which face each text settles on, held for as long as the texts it was read against hold. A caller names the kinds of text a face draws - under keys of its own - and a reader for each; each kind is read once, each face and set of kinds resolved once, and a face that moves is logged once, naming the face asked for, the kinds and the face answered. Settling reads every glyph of every text, so a caller holds one memo per sector rather than resolving per paint, and `discardFaces()` when the texts change. The constructor refuses a missing resolver source or reader, and a kind the reader answers null for holds no text. `createUnsettled()` keeps every face asked for, for a caller with no texts to read. **`InstalledFaces.createFaceMemo(reader)`** is the memo over the installed atlases, building its resolver on first settling.
-- **Text readers for settling a face against**: **`SectorStarSystems.listSystemNames(sector)`**, every star system's name, and **`SectorMarkets.listMarketNames(sector)`**, every market's - each reading everything, discovered or not, a name the player has yet to see being one a face draws later in the same sector, and nothing for a null sector. **`StarsectorStrings.listCategoryStrings(category)`** reads one category of `data/strings/strings.json` as the game merges it across every enabled mod, so a translation mod replacing those strings is what is read; it warns and reads none where the file or the category will not read.
-- **`KmlibStrings.collectTexts(items, readText)`**: the text each item answers, in order, nulls and blanks left out - the one loop the readers above and any other "what may this say" read share.
 
 #### Factions
 
@@ -230,6 +215,52 @@ A mod's player-facing files can be kept per language, one bundle per locale unde
 - `TextFace` holds a `FontAtlas` as `atlas()` in place of a `StarsectorFont` as `font()`, so a text can draw in the face the game's settings declare whether or not the enum names it. A caller reading `face.font()` reads `face.atlas()`, which answers the path and the smoothing it read before; a `StarsectorFont` is a `FontAtlas`, so every face built from one compiles unchanged. `LazyFontCache.loadByFace()`, `FaceLineHeightReader`, `GlyphCoverageReader`, `WidgetStyle.bodyFont` and the body face `StripTextMeasurers.loadFaceMeasurers()` takes are a `FontAtlas` likewise.
 - The font package is split in three. `kmlib.starsector.ui.font` keeps the faces, the ports asked of them and the fallback rules, none of which loads an atlas, so `StarsectorFont`, `AtlasSmoothing` and `TextFace` stay where they were. `LazyFontCache` and `DrawableStringCache` move to `kmlib.starsector.ui.font.installed`, beside the other readers of the running game's atlases. `LineWidthMeasurer`, `TextSpanMeasurer`, `LazyFontMeasurer`, `LazyFontSpanMeasurer` and `StripTextMeasurers` move to `kmlib.starsector.ui.font.measure`, and the fixture `LineWidthMeasurerFake` to `kmlib.testfixtures.starsector.ui.font.measure`. A caller changes its imports; nothing else about the classes changed.
 - `SortDirection.fromKeyOrDefault()` and `ListColumns.fromKeyOrDefault()` are gone: a stored key resolves through `PersistedChoices.fromKey(options, key, fallback)`, the one lookup every keyed option set shares. A caller reading a stored column count writes `PersistedChoices.fromKey(ListColumns.values(), key, ListColumns.DEFAULT)`.
+
+### For developers
+
+<details>
+<summary>API, build tooling and test fixtures</summary>
+
+#### Added
+
+##### Fonts
+
+Text falls back to a face that holds every character of it, so a localised install draws its script rather than `?`.
+
+- **`FaceResolver`**: picks the face a text draws in. It keeps the face asked for where its atlas holds every character, and otherwise walks down to the first face that does.
+  - `StarsectorFont.resolveLowerResolutionFont()`: the next smaller cut of a face's family, one step of that walk.
+  - `FaceResolver.LAST_RESORT_FONT`: `insignia15LTaa`, answered where nothing on the walk draws the text.
+  - `listFallbackWalk()`: the faces a text is tried in, in order.
+  - `InstalledFaces.createFaceResolver()`: the resolver over the running game's atlases.
+- **`SettledFaceMemo`**: the face each kind of text settles on, resolved once and held until `discardFaces()`. Hold one per sector rather than resolving per paint.
+  - `createUnsettled()`: keeps every face as asked, for a caller with no texts to read.
+  - `InstalledFaces.createFaceMemo(reader)`: the memo over the running game's atlases.
+- **Text readers** to settle a face against.
+  - `SectorStarSystems.listSystemNames(sector)` and `SectorMarkets.listMarketNames(sector)`: every star system's and market's name, discovered or not.
+  - `StarsectorStrings.listCategoryStrings(category)`: one category of `data/strings/strings.json`, as the game merges it across enabled mods.
+  - `KmlibStrings.collectTexts(items, readText)`: each item's text in order, nulls and blanks left out.
+- **`FontAtlas`**: the sealed type over the atlases text draws in - a `StarsectorFont` KM names, or a `DeclaredFontAtlas`.
+  - `DeclaredFontAtlas`: the atlas the game's `defaultFont` setting names, where no `StarsectorFont` does.
+  - `AtlasSmoothing.resolveFromInfoLine()`: an atlas's smoothing, read off its descriptor's first line.
+- **`StarsectorFont`**:
+  - `getBasename()`: the atlas's basename, how a log line names a face.
+  - `findFontByPath()`: the face at an atlas path, if the enum names one.
+  - `VANILLA_INSIGNIA_21` and `VANILLA_INSIGNIA_25`: the body face's middle and larger cuts, the steps down from `insignia42LTaa`.
+- **`GameDefaultFontReader`**: the game's own `defaultFont`, read the way vanilla's `Fonts.DEFAULT_SMALL` is, as a `StarsectorFont` or a `DeclaredFontAtlas`.
+- **Installed-atlas readers**: ports that ask the loaded atlas, since a localisation replaces atlases under vanilla's file names.
+  - `FaceLineHeightReader`: the line height an atlas draws 1:1 at; `isFaceLoadable()` says whether it loaded.
+  - `LazyFontLineHeightReader`: its live adapter, answering `NO_LINE_HEIGHT` for a face that will not load.
+  - `GlyphCoverageReader`: whether an atlas draws every character of a text as itself rather than as `?`.
+  - `LazyFontGlyphCoverageReader`: its live adapter.
+- **Native faces**: a face at its atlas's own 1:1 size, for a caller with no size of its own.
+  - `TextFace.createNativeFace(atlas, lineHeights)`: from line heights the caller holds.
+  - `InstalledFaces.createNativeFace(atlas)`: sized off the running game's install.
+- **`InstalledFaceCheck`**: loads every face once at start-up and logs each one's line height, or that it would not load. `KMLib_ModPlugin` runs it.
+- **Font build gates**: every build needs the network and the game's fonts.
+  - `test` checks every face on the build's install, on each localisation edition the lock pins and on any install `-PfontInstallRoots` names.
+  - `checkFontEditions` fails the build when an edition publishes new descriptors, against the SHAs in `font-editions.lock.json`; `writeFontEditionsLock` updates the lock.
+
+</details>
 
 ## [0.4.0] - 2026-09-15
 

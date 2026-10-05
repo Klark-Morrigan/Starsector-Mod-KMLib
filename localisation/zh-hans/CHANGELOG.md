@@ -50,21 +50,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`Jitter.roll(jitterSize, random)`**：从调用方的 `Random` 抽取的同一区间，用于必须能按种子重放的抽取。两种形式共享同一个把抽取值映射到区间的方式，因此无论由哪个来源抽取，同一尺寸的含义都相同。区间的上端是开区间，一向如此；文档现在已注明这一点。
 - **指明星域的 `SectorMemoryString` 和 `SectorMemoryFlag` 形式**，以及其下的 **`SectorMemoryAccess.readSectorMemory(sector)`**：每次读写都接收其作用的星域，供由选择星域的一方传入星域、而不是读取当前运行星域的代码使用。它们的行为与无星域参数的形式相同，包括空值守卫，因此区别仅在于值落入哪个存档。
 - **`BaseExpiringIntelPlugin.findActive(sector, intelClass)`**、**`isExpired(clock)`** 以及接收时钟的构造函数：针对调用方持有的星域打开、查找并度量的限时情报。无参形式通过它们读取当前运行的星域，因此二者对"仍在时间窗口内"遵循同一定义。
-- **`FaceLineHeightReader`**：字体的已安装图集按 1:1 绘制时的尺寸，即其描述文件的 `lineHeight`，从已加载的字体读取，而不是写死在代码中。覆盖 `starsector-core` 的核心本地化会以相同的基本文件名替换游戏的若干图集，而它的各个版本分支对行高的改动各不相同，因此没有一个常量能适用于每个安装环境。**`LazyFontLineHeightReader`** 是运行时适配器，通过 `LazyFontCache` 读取 LazyLib 对描述文件的解析结果，对无法加载的字体返回 `NO_LINE_HEIGHT`，正如文本跨度测量器对这类字体不返回宽度。`FaceLineHeightReader.isFaceLoadable()` 将这一结果与已加载字体的读数区分开来。
-- **`TextFace.createNativeFace(atlas, lineHeights)`**：按已安装图集原生尺寸构建的字体，供本身没有指定尺寸的调用方使用；以及 **`InstalledFaces.createNativeFace(atlas)`**，通过 LazyLib 从当前运行游戏的安装环境读取同一尺寸。**`InstalledFaces.createFaceResolver()`** 是基于已安装图集的解析器。
-- **`GlyphCoverageReader`**：字体的已安装图集能否把一段文本的每个字符都按其本身绘制，而不是绘制为后备问号。原版图集都不含 CJK 字形，而核心本地化的各个版本分支对每个被替换图集包含多少字形各不相同，因此只有已加载的字体才能回答。**`LazyFontGlyphCoverageReader`** 是运行时适配器；当 LazyLib 以字体的后备字形回应某个字符时，它将该字符计为未覆盖，因此 LazyLib 自己把排版引号重绘为直引号的情况会被视为已绘制。空白字符不在检查之列。
-- **`FaceResolver`**：决定文本用哪种字体绘制。调用方指明它想用的字体以及要绘制的文本；如果该字体的已安装图集能加载且包含每个字符，解析器就保留该字体，否则继续查找第一个能绘制的字体：先沿字体家族向下，每个字号通过 **`StarsectorFont.resolveLowerResolutionFont()`** 指向下一个更小的字号，然后是游戏设置声明为默认的字体，最后是 **`FaceResolver.LAST_RESORT_FONT`**，即 `insignia15LTaa`。当回退路径上没有任何字体能绘制该文本时，返回的是最后手段字体，而绝不是声明的默认字体，因此任何设置都无法让损坏或缺失的文件成为 KM 的最终答案。它读取的是文本而不是语言区域，因此在已本地化的安装环境上运行的英文版本，在唯一一个没有任何本地化替换的图集中绘制本地化的势力名称时，会降到一个包含这些字符的字号；而在原版安装环境上则不会有任何变化。`listFallbackWalk()` 给出一段文本依次尝试的字体。
-- **`GameDefaultFontReader`**：游戏自身的 `defaultFont`，按原版 `Fonts.DEFAULT_SMALL` 的方式读取。任何 Mod 都可以设置它，因此当它指向枚举中的某个字体时读取为该字体，否则读取为指向该路径的 **`DeclaredFontAtlas`**：语言包将其指向包含其文字的图集时，那正是这类文本所需要的字体。未指向任何内容的设置读取为 `insignia15LTaa`。**`StarsectorFont.findFontByPath()`** 负责这一映射。
-- **`FontAtlas`**：KM 绘制所用两类图集之上的密封接口：一类是 **`StarsectorFont`**，即 KM 选择的字体；另一类是 **`DeclaredFontAtlas`**，即游戏设置声明的那一个字体。它承载加载器、测量器和绘制通道对二者所需的信息：路径和平滑方式。
-- **`AtlasSmoothing.resolveFromInfoLine()`**：从图集描述文件的第一行读取其平滑方式（`aa=1` 为像素精确，其他均为抗锯齿），用于 KM 并未随附、因而没有对照表的图集。
-- **`InstalledFaceCheck`**：在游戏启动时将每种字体以及游戏设置声明为默认的字体各加载一次，并为每种字体输出一行日志，说明其已安装的行高或无法加载；排查"文字以错误尺寸绘制"类报告时，正是对照这一读数。`KMLib_ModPlugin` 在应用加载时运行它。
-- **针对传入的每个安装环境的字体检查**：`test` 会检查 KM 绘制所用的每种字体（在构建自身的安装环境上、在锁文件列出的每个本地化版本分支上，以及在 `-PfontInstallRoots` 指定的任何安装环境上），要求其头部能被 LazyLib 加载、只有一页、具有行高以及枚举为其声明的平滑方式，并要求每种字体针对该安装环境自身语言文本的回退路径都落在能绘制该文本的字体上；在中文版本分支上，`insignia42LTaa` 会降到 `insignia25LTaa`。不含任何字体的根目录会失败，而不是被跳过。
-- **`checkFontEditions`** 和 **`font-editions.lock.json`**：每次 `test` 都在该门禁之后运行；门禁会按锁文件固定的 blob SHA 获取每个版本分支的描述文件，并覆盖到安装环境自身的描述文件之上。上游发布新的语言包会使构建失败，并指出版本分支、字体以及两个 SHA，直到 **`writeFontEditionsLock`** 重写锁文件中的字体为止。锁文件以 KM 自己的名称列出每个版本分支，以及其仓库、分支、描述文件目录和语言，并为每种语言给出一段探测文本；其中的字体就是枚举中的字体。每次构建都需要网络和游戏的字体。
-- **`StarsectorFont.getBasename()`**：图集的基本文件名，日志行或失败信息以此指明字体。
-- **`StarsectorFont.VANILLA_INSIGNIA_21`** 和 **`VANILLA_INSIGNIA_25`**：正文字体的中号与较大字号，即文本从 `insignia42LTaa`（核心本地化唯一没有补上其文字的字号）向下降级、在退到游戏默认字体之前经过的各级。
-- **`SettledFaceMemo`**：记录每段文本最终落定的字体，在其所依据的文本保持不变期间一直保留。调用方指明某种字体要绘制的文本种类（使用自己的键）以及每种文本的读取器；每种文本只读取一次，每个字体与文本种类组合只解析一次，发生变动的字体只记录一次日志，指明所请求的字体、文本种类以及返回的字体。落定需要读取每段文本的每个字形，因此调用方应每个星域持有一个备忘，而不是每次绘制都重新解析，并在文本变化时调用 `discardFaces()`。构造函数拒绝缺失的解析器来源或读取器；读取器对某种文本返回 null 时，该种文本视为不含任何文本。`createUnsettled()` 保留每个所请求的字体，供没有文本可读的调用方使用。**`InstalledFaces.createFaceMemo(reader)`** 是基于已安装图集的备忘，首次落定时才构建其解析器。
-- **用于落定字体的文本读取器**：**`SectorStarSystems.listSystemNames(sector)`**，每个星系的名称；**`SectorMarkets.listMarketNames(sector)`**，每个市场的名称。二者都读取全部内容，无论是否已被发现，因为玩家尚未见到的名称，正是之后同一星域中某个字体要绘制的名称；星域为 null 时不读取任何内容。**`StarsectorStrings.listCategoryStrings(category)`** 读取 `data/strings/strings.json` 中的某一类别，读取的是游戏在所有已启用 Mod 之间合并后的结果，因此替换这些字符串的翻译 Mod 所提供的内容就是读到的内容；文件或类别无法读取时发出警告并不读取任何内容。
-- **`KmlibStrings.collectTexts(items, readText)`**：按顺序取每一项给出的文本，省略 null 和空白。上述读取器以及其他任何读取"这里可能写着什么"的代码共用这一个循环。
 
 #### 势力
 
@@ -230,6 +215,52 @@ Mod 面向玩家的文件可以按语言分别保存，每个语言区域一个�
 - `TextFace` 以 `atlas()` 持有一个 `FontAtlas`，取代以 `font()` 持有的 `StarsectorFont`，因此无论枚举是否列出，文本都能以游戏设置所声明的字体绘制。读取 `face.font()` 的调用方改为读取 `face.atlas()`，它应答的路径和平滑方式与之前相同；`StarsectorFont` 是一种 `FontAtlas`，因此由它构建的每个字体均可原样编译。`LazyFontCache.loadByFace()`、`FaceLineHeightReader`、`GlyphCoverageReader`、`WidgetStyle.bodyFont` 以及 `StripTextMeasurers.loadFaceMeasurers()` 接受的正文字体同样都改为 `FontAtlas`。
 - 字体包一分为三。`kmlib.starsector.ui.font` 保留字体、向字体发出询问的端口以及后备规则，这些都不加载图集，因此 `StarsectorFont`、`AtlasSmoothing` 和 `TextFace` 留在原处。`LazyFontCache` 和 `DrawableStringCache` 移至 `kmlib.starsector.ui.font.installed`，与运行中游戏图集的其他读取器放在一起。`LineWidthMeasurer`、`TextSpanMeasurer`、`LazyFontMeasurer`、`LazyFontSpanMeasurer` 和 `StripTextMeasurers` 移至 `kmlib.starsector.ui.font.measure`，夹具 `LineWidthMeasurerFake` 移至 `kmlib.testfixtures.starsector.ui.font.measure`。调用方需更改导入；这些类的其他方面均未改变。
 - `SortDirection.fromKeyOrDefault()` 和 `ListColumns.fromKeyOrDefault()` 已移除：存储的键通过 `PersistedChoices.fromKey(options, key, fallback)` 解析，这是所有带键选项集共用的唯一查找。读取存储的列数的调用方写作 `PersistedChoices.fromKey(ListColumns.values(), key, ListColumns.DEFAULT)`。
+
+### 面向开发者
+
+<details>
+<summary>API、构建工具与测试夹具</summary>
+
+#### 新增
+
+##### 字体
+
+文本会回退到包含其全部字符的字体，因此已本地化的安装环境会绘制其自身的文字，而不是 `?`。
+
+- **`FaceResolver`**：选择文本所用的字体。所请求字体的图集包含每个字符时保留该字体，否则沿回退路径向下，取第一个能绘制的字体。
+  - `StarsectorFont.resolveLowerResolutionFont()`：字体家族中下一个更小的字号，即回退路径上的一步。
+  - `FaceResolver.LAST_RESORT_FONT`：`insignia15LTaa`，在回退路径上没有任何字体能绘制该文本时返回。
+  - `listFallbackWalk()`：一段文本依次尝试的字体。
+  - `InstalledFaces.createFaceResolver()`：基于当前运行游戏图集的解析器。
+- **`SettledFaceMemo`**：每种文本最终落定的字体，只解析一次，并保留到 `discardFaces()` 为止。每个星域持有一个，而不是每次绘制都重新解析。
+  - `createUnsettled()`：保留每个所请求的字体，供没有文本可读的调用方使用。
+  - `InstalledFaces.createFaceMemo(reader)`：基于当前运行游戏图集的备忘。
+- **用于落定字体的文本读取器**。
+  - `SectorStarSystems.listSystemNames(sector)` 和 `SectorMarkets.listMarketNames(sector)`：每个星系和每个市场的名称，无论是否已被发现。
+  - `StarsectorStrings.listCategoryStrings(category)`：`data/strings/strings.json` 中的某一类别，即游戏在所有已启用 Mod 之间合并后的结果。
+  - `KmlibStrings.collectTexts(items, readText)`：按顺序取每一项的文本，省略 null 和空白。
+- **`FontAtlas`**：文本绘制所用图集之上的密封类型：KM 指名的 `StarsectorFont`，或 `DeclaredFontAtlas`。
+  - `DeclaredFontAtlas`：游戏 `defaultFont` 设置所指、且没有任何 `StarsectorFont` 对应的图集。
+  - `AtlasSmoothing.resolveFromInfoLine()`：从图集描述文件第一行读取的平滑方式。
+- **`StarsectorFont`**：
+  - `getBasename()`：图集的基本文件名，日志行以此指明字体。
+  - `findFontByPath()`：图集路径对应的字体（若枚举中有）。
+  - `VANILLA_INSIGNIA_21` 和 `VANILLA_INSIGNIA_25`：正文字体的中号与较大字号，即从 `insignia42LTaa` 向下降级的各级。
+- **`GameDefaultFontReader`**：游戏自身的 `defaultFont`，按原版 `Fonts.DEFAULT_SMALL` 的方式读取，结果为 `StarsectorFont` 或 `DeclaredFontAtlas`。
+- **已安装图集读取器**：向已加载图集询问的端口，因为本地化会以原版的文件名替换图集。
+  - `FaceLineHeightReader`：图集按 1:1 绘制时的行高；`isFaceLoadable()` 说明它是否已加载。
+  - `LazyFontLineHeightReader`：其运行时适配器，对无法加载的字体返回 `NO_LINE_HEIGHT`。
+  - `GlyphCoverageReader`：图集能否把一段文本的每个字符都按其本身绘制，而不是绘制为 `?`。
+  - `LazyFontGlyphCoverageReader`：其运行时适配器。
+- **原生字体**：按图集自身 1:1 尺寸构建的字体，供本身没有指定尺寸的调用方使用。
+  - `TextFace.createNativeFace(atlas, lineHeights)`：使用调用方持有的行高。
+  - `InstalledFaces.createNativeFace(atlas)`：尺寸从当前运行游戏的安装环境读取。
+- **`InstalledFaceCheck`**：在启动时将每种字体加载一次，并记录每种字体的行高或其无法加载。`KMLib_ModPlugin` 运行它。
+- **字体构建门禁**：每次构建都需要网络和游戏的字体。
+  - `test` 会检查每种字体：在构建自身的安装环境上、在锁文件固定的每个本地化版本分支上，以及在 `-PfontInstallRoots` 指定的任何安装环境上。
+  - 上游版本分支发布新的描述文件时，`checkFontEditions` 会对照 `font-editions.lock.json` 中的 SHA 使构建失败；`writeFontEditionsLock` 负责更新锁文件。
+
+</details>
 
 ## [0.4.0] - 2026-09-15
 
