@@ -253,6 +253,8 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | translation (a translated build) | 汉化 | a Fossic board |
 | dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
 | attachment | 附件 | a file uploaded to a forum post |
+| download panel | 下载面板 | the posting form's word, from its 插入Mod文件下载面板到帖子正文中 button |
+| zip (a release archive) | 压缩包 | the plain word for an archive file |
 | mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
 | mod author | Mod 作者 | Mod kept Latin as vanilla does, with 作者, author; the posting form writes Mod作者 |
 | translation reference (the terminology reference, as a post names it) | 翻译参考 | 参考, reference, after 翻译, translation |
