@@ -7,6 +7,7 @@ The reusable release workflow extracts the section matching the released version
 ## Index
 
 - [Unreleased](#unreleased)
+- [0.5.0](#050---2026-10-05)
 - [0.4.0](#040---2026-09-15)
 - [0.3.1](#031---2026-09-15)
 - [0.3.0](#030---2026-09-15)
@@ -14,6 +15,8 @@ The reusable release workflow extracts the section matching the released version
 - [0.1.0](#010---2026-09-14)
 
 ## [Unreleased]
+
+## [0.5.0] - 2026-10-05
 
 ### Fixed
 
