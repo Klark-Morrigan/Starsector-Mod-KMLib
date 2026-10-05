@@ -29,7 +29,7 @@
 # config job and stops.
 #
 # Job chain (each downstream job is gated on version-updated == true):
-#   config -> {ci-bash, ci-gradle} -> prepare-artifact -> create-tag -> create-release
+#   config -> {ci-bash, ci-gradle, ci-yaml} -> prepare-artifact -> create-tag -> create-release
 name: mod-release
 
 on:
@@ -207,12 +207,17 @@ jobs:
       sibling-checkouts: ${{ needs.config.outputs.sibling-checkouts }}
     secrets: inherit
 
+  ci-yaml:
+    needs: config
+    if: needs.config.outputs.version-updated == 'true'
+    uses: Klark-Morrigan/Common-Automation/.github/workflows/ci-yaml.yml@master
+
   # Assemble the runtime payload and zip it. Runs on the mod's runner so the
   # jar rebuild has the Starsector install on hand. Uses the same one-level-down
   # layout as ci-gradle above, for the same reason: the build reads shared
   # Gradle scripts from repos that have to sit beside the checkout.
   prepare-artifact:
-    needs: [config, ci-bash, ci-gradle]
+    needs: [config, ci-bash, ci-gradle, ci-yaml]
     if: needs.config.outputs.version-updated == 'true'
     runs-on: ${{ fromJSON(needs.config.outputs.runner-json) }}
     steps:
