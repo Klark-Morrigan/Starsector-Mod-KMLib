@@ -23,106 +23,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ### 新增
 
-- **简体中文。** 发布版本附带第二个压缩包 `KMLib-<version>-zh-hans.zip`，其中兼容性通知、设置标签页以及启动器的 Mod 列表条目均为简体中文。它需要先将[中文本地化](https://github.com/TruthOriginem/Starsector-Localization-CN)覆盖到 `starsector-core` 上：游戏自身的字体不含中文字符，没有它，所有中文字符都会绘制为 `?`。日志详细程度设置的选项保留英文，因为 LunaLib 保存的是选项的标签，这样该设置在英文与中文压缩包之间可以沿用。
-- **`FeatureFailure` 和 `CompatibilityFailures.recordFeatureFailureOnce()`**：Mod 自身的某项功能抛出异常并被关闭时，通过兼容性通知告知玩家，而不是只写进日志。一项功能悄然停止工作，玩家只会看到某样东西不见了，却没有理由去日志里找原因。通知会写明是哪个 Mod、哪项功能、什么停止工作、什么不受影响，说明这是该 Mod 自身的故障而非与其他 Mod 的冲突，并请玩家报告此问题。它与绑定一样只记录一次，因此下次读档时再次出错的功能每次游戏期间只报告一次。它与 `CompatibilityFailure` 都是 `ReportedFailure`，即两种通知界面共同绘制的密封类型。
-- **`ShownMapTab.isMapTabShowing()`**：星图是否显示在屏幕上，在无法遍历控件树时按未显示处理（失败即关闭）；这是覆盖在星图之上、必须随星图一同撤下的面板所用的读取。`CompatibilityNoticePanel` 通过它读取。
-- **`VerticalRadioSpec`**：自上而下堆叠的一列选项单元，其中一个亮起；超过两三个选项的选项组应呈现为这种形式，因为同样的选项排成一行时，文字会窄到难以区分。它不包含分段尺寸设置和尾随说明文字，二者都仅适用于行。
-- **`RadioSpec`**：`HorizontalRadio` 与 `VerticalRadio` 共同归属的密封接口，承载二者共同遵循的重选规则。处理任意单选组的读取器只需指明它，而不必分别指明每种排列方式。`HorizontalRadio` 其余部分不变，现有的每个调用点都可原样编译。
-- **`ScrollingSectionSpec`**：正文中可滚动的一段，容纳任意控件，而不是某一个控件的属性。标题、其下的列表以及旁边的行现在会在高度受限的布局留给它们的视口内一起移动，而此前只有单个列表可以滚动。
-- **`Control.isScrolled()`**：已布局的控件是否被放在该区段内；裁剪渲染器和受视口限制的命中测试读取的正是这一个值。未带此值构建的 `Control` 是固定的，因此现有的三参数构造方式不变。
-- **`MemoryKeyAddress`、`AddressedMemoryFlag`、`AddressedMemoryString`**：存储值按使用方声明的轴上的每个点各保存一份，而不是每个存档一份。持有者声明其基础键，并指明每次读写所指的地址；键在一处组合，因此任何持有者都不会以不同方式拼写各段，也不会漏掉一段而悄悄与另一持有者共用一个槽位。
-- **`KmlibStringKeys.get()` 和 `format()`**：绑定到 KMLib 自身类别的查找，因此调用点只需写出键，不必在旁边重复类别。
-- **`KmlibStrings.requireText()`**：`Objects.requireNonNull` 的拒绝空白版本，用于作为名称或句子的组成部分。
-- **`GlMatrix.FLOAT_COUNT`**：一个 GL 矩阵所占的十六个浮点数，为每个据此确定缓冲区大小或拒绝错误大小数组的读取器和写入器统一声明一次。`ModelviewMatrixReader.MATRIX_FLOAT_COUNT` 现在取自它。
-- **`GlMatrix.createIdentity()`**：不做任何变换的矩阵，每次调用都返回独立的数组。它因两个互不相关的原因被读取，此前每处都各自写出：一是作为模型视图矩阵不对应任何渲染通道的标志，二是作为组合变换的基础。它以对角线形式写成，而不是十六个字面量，因为对布局的误读正藏在后者之中。
-- **`CampaignCountdown`**：从起始时间戳开始的一段战役天数，对照运行中的时钟读取剩余天数以及是否已完成。它带有完成余量，因此由不均匀的帧步长驱动的倒计时可以在玩家预期的那一帧完成，而不是晚上零点几天，并且对它的每次读取都对完成时刻达成一致。时钟在每次读取时传入而不是被持有，因此倒计时只是普通数字，不指向任何星域。`BaseExpiringIntelPlugin` 通过一个无余量的倒计时读取其时间窗口。
-- **`Colonies.selectColonies(test)` 和 `Colonies.hasAnyColony(test)`**：对殖民地集合的两种遍历，定义在集合本身上，而不是在其旁边手写。筛选保留集合自身的顺序，模仿原版平局规则的使用方正是按此顺序裁决争夺；判空读取在第一个通过的殖民地处停止，因为扫描时会对星域中的每个地点询问它，绘制星图时还会逐帧询问。未提供测试条件时不通过任何殖民地，宁可不予显示，也不报告一个无人要求显示的殖民地。
-- **`PersistedChoice` 和 `PersistedChoices.fromKey()`**：存档以其自身的键存储的选项，以及把存储的键读回为选项的唯一查找：在没有存储任何值，或没有选项对应该键时（无论该键是旧版本留下的还是其他 Mod 写入的）进行回退。它是 `LabeledChoice` 的对应物，用于选项自己拥有的键，而不是 LunaLib 存储的标签。`SortDirection`、`ListColumns` 和 `ListSortMode` 都是持久化选项。
-- **`SpreadsheetRows`**：游戏合并后的电子表格的行，读取为数据行，并将列表值单元格拆分为各个条目。合并器会把作者用于分隔表格的空 ID 行和用 `#` 注释掉的行与其他行一样返回，因此不识别它们的读取器会在一个本不是数据的行上失败，或把注释当作 ID 归档；这里在一处将它们排除。它接收行而不是打开文件，因为读取失败是否致命由调用方决定。`FactionSourceMods` 通过它读取 `factions.csv`。
-- **`ScriptClasses.instantiateScript(className, scriptType)`**：按调用方持有的类型，构建数据文件中指名的类（插件列、脚本键）。游戏不允许 Mod 代码使用 `java.lang.reflect`，因此常见的 `getDeclaredConstructor().newInstance()` 能够编译、通过所有测试套件，却会在游戏中首次调用时抛出异常；这里改为通过公开的方法句柄查找来获取构造函数，不涉及任何反射类型。类缺失、类型不符或没有公开的无参构造函数时会被拒绝并指出类名，因此数据中的拼写错误读起来就是数据中的拼写错误。
-- **`TooltipRow.createRow(List<LabelRun>)` 和 `LabelledRow.createRow(List<LabelRun>)`**：基于已组合成多个文本段的标签构建的裸行，供持有整句的调用方使用。它与以第一个文本段开始、再逐个接续其余文本段所得到的行相同，但只构建一份，而不是每段一份。
-- **`CampaignMonth`**：战役日历中的一个月，从调用方传入的任意时钟读取；以及 `formatKey()`，即每月一次的任务记录上次运行时所用的 `<cycle>-<month>` 拼写。该键会写入存档，因此只在一处拼写：同一个月若有两种拼写，各自都会把对方的记录读成从未运行过的月份。
-- **`Jitter.roll(jitterSize, random)`**：从调用方的 `Random` 抽取的同一区间，用于必须能按种子重放的抽取。两种形式共享同一个把抽取值映射到区间的方式，因此无论由哪个来源抽取，同一尺寸的含义都相同。区间的上端是开区间，一向如此；文档现在已注明这一点。
-- **指明星域的 `SectorMemoryString` 和 `SectorMemoryFlag` 形式**，以及其下的 **`SectorMemoryAccess.readSectorMemory(sector)`**：每次读写都接收其作用的星域，供由选择星域的一方传入星域、而不是读取当前运行星域的代码使用。它们的行为与无星域参数的形式相同，包括空值守卫，因此区别仅在于值落入哪个存档。
-- **`BaseExpiringIntelPlugin.findActive(sector, intelClass)`**、**`isExpired(clock)`** 以及接收时钟的构造函数：针对调用方持有的星域打开、查找并度量的限时情报。无参形式通过它们读取当前运行的星域，因此二者对"仍在时间窗口内"遵循同一定义。
-
-#### 势力
-
-- **`FactionAlliances`**：哪些势力站在一起，表示为每个结盟势力所属的联盟，并在其上提供 `areFactionsAllied`，以及用 `buildFrom` 将一组记录反转为该结构。原版不保存这种关系，因此这就是它从维护它的任一 Mod 传来时的形态。它只说明谁与谁站在一起，仅此而已；联盟意味着什么由使用方决定，因为保守秘密、发动战争和共享市场会出于不同目的读取同一份成员关系。
-- **`AllianceRecord`**：扁平化为纯数据的一个联盟：它的稳定 ID、显示名称，以及按市场规模降序排列的成员。每个字段都是读取时拍下的快照，而不是指回维护该联盟之物的实时句柄。
-- **`AllianceSource`**：这些记录传入所经由的端口，使归并或权衡它们的代码无需游戏环境即可运行。之所以是端口而非快照，是因为联盟会在游戏过程中建立和解散。
-- **`NexerelinAllianceSource`**：以这些记录呈现的 Nexerelin 实时联盟，位于存在性门禁之后。为此唯一提及 `exerelin.*` 的代码位于一个由门禁延迟加载的独立类中，连方法签名都不会触及它，因此未安装该 Mod 的环境永远不会查找 Nexerelin 的类；使用方归并记录时也无需知道是哪个 Mod 产生了它们。
-- **`FactionNames`** 和 **`FactionNameForm`**：在一处读取势力的设定名称。`resolveName` 按设定原样读取简称或全称，势力不存在时为 null；`resolveFullestName` 读取全称，全称为空时读取简称，结果经过修剪且永不为空。`listEveryName` 读取每个势力的全部设定名称（简称和全称），同一文本只读取一次，供必须覆盖所有名称的字体使用。`FactionListingReport` 通过它读取全称。
-- **`StarsectorFactionColours.findPalette()`**：势力的亮色与暗色配对，没有灰色后备，在星域或势力不存在时为 null；适用于对无法确定的势力不绘制任何内容的调用方。`resolvePalette` 经由它进行后备。
-
-#### 几何
-
-- **`VertexWelder`**：按容差判断哪些角点报告属于同一个角点，使分别计算出的边可以作为精确 ID 比较，而不必在每一步都比较距离。原先是 `EdgeRings` 中的私有实现，在第二个调用方需要相同功能后被提升出来。按边长为一个容差的网格分桶，因此一次查找只扫描九个方格而非整个集合；保留的是某个角点的第一次报告，因为取平均会在边已经焊接到该角点之后移动它。
-- **`Disk.measureSagitta(radius, segments)`**：近似圆盘的多边形在最坏处向内偏离圆盘多远。这就是针对该圆盘绘制的任何内容的实际分辨率，因此也是使用方据以焊接或丢弃小特征的数值。它由半径和线段数直接得出，因此是读取而非重复表述；使用方 Mod 中对它的四处重复表述本应同步变动，却没有。它是静态方法，接受这两个参数：圆盘中心的位置与之无关，而且每个持有这两个值的调用方都是将其作为可调参数持有，而不是作为一个可供询问的圆盘。
-- **`Segment.readStart()` 和 `readEnd()`**：以 `{x, y}` 点的形式给出线段的两端，是按角色命名两端的值与旁边接受数组的点运算之间唯一的转换处。每次读取都返回独立的数组，因此将其保存为角点的调用方不会遇到它被暗中改动。
-- **`Segment.joinPoints(start, end)`**：从一个 `{x, y}` 点到另一个点的线段，是与上述两个出口相对应的入口，因此调用方无需从两个数组中逐一写出四个坐标。线段持有的是值，因此调用方之后复用其数组不会移动它。
-- **`PolygonRegions.countSelfCrossings(ring)`**：一个环与自身相交的次数，这决定了它究竟能否绘制：折叠的环填充出的形状不同于其轮廓，描边时会有一条线穿过自身内部。返回计数而非标志，以便区分变差了的夹具和从未干净过的夹具。相邻的边不参与判断，因为它们按构造共享端点；相隔更远、仅在一点相接的两条边则计入，因为被挤压到与自身接触的环并不比穿过自身的环更简单。每一对边都会比较，因此开销是环长度的平方，应当用于测试或探测器中，而不是每帧绘制的代码中。
-- **`PolygonOffsets.removeReversedLoops(polygon, isCounterClockwise, windowVertexCount)`**：被告知环本应绕向的折叠拼接器，供知道绕向的调用方使用。一旦折叠超过主体，净有符号面积就不再是正确的依据：一个两端被内缩超过自身宽度、中间却没有的环，会变成两个大的反向环路围绕一个绕向正确的较小主体，而按净面积判断，被移除的会是主体。按构建时的绕向询问，剩下的部分就能说明内缩吞掉了整个环还是只吞掉了两端。两种形式现在都会拼接跨越环起点的折叠，即围绕交点的环路，而非两条边之间的那个；此前，折叠落入哪个环路取决于环恰好从哪里开始。并且两者都只拼接不自交的环路，先处理最内层的折叠：一个两端都折叠的环，在任一交点处切开时，会分成该端的折叠和仍带着另一端折叠的主体，而此前被移除的正是主体。这项简单性检查对每个候选环路都要计算一次交点数，与环路角点数呈二次关系；在窗口限制下这只是常数因子，而比较每一对时则不是。
-- **`Points.measurePathLength(points)`**：经过给定各点的路径从头到尾的长度，路径不闭合；这正是此前每个读取一段路径长度的代码都在自行编写的逐段求和。
-- **`PolygonOffsets.hasInsetCollapsed(rawRing, insetRing)`**：判断斜接内缩是否把环折叠了，而不是对其偏移：剩余角点太少、面积趋于零或符号翻转，或者外环变大了。原本是某个使用方的私有检查，在第二个由逐边斜接塑形的主体需要同样的判定后被提升出来。须在任何边界解析之前询问，因为单独一个绕向错误的环交给细分处理后，会被调整绕向作为填充交回，连同其中所有的洞，而不是被丢弃；只有原始环还在可供比较时，才能识别出折叠。
-- **`PolygonShapes.computeRegularVertices`**：根据中心、半径、边数和起始角计算正多边形的顶点，形式为 `{x, y}` 对或 `Vector2f`。这是绕中心逐个步进顶点的唯一实现；`LabelledPolygon.createRegularPolygon` 通过它从正 x 轴开始生成其裁剪形状，而以一个顶点立着的形状则传入自己的起始角。
-- **三种度量的 `Vector2f` 形式**：`Points.computeMeanOfVectors`、`PolygonRegions.isPointInsideRing(ring, point)` 和 `Rectangle.computeEnclosingRectangle`，供在游戏的浮点界面坐标中布置形状的调用方使用。每个都通过与其 `{x, y}` 形式相同的遍历读取点，而不是把点复制过去，因此两者不会产生分歧。包围盒以 `Rectangle` 而非 `Bounds` 返回，因为屏幕上布置的盒子是按一个角和尺寸来放置的。均值方法另起名称而非重载，因为 `List<Vector2f>` 和 `List<double[]>` 擦除后是同一个参数类型。
-
-#### 第三方兼容性
-
-对第三方代码的绑定一旦失效，现在损失的是本次游戏期间基于它构建的功能，而不是渲染通道或加载过程；玩家会在游戏内收到一次通知，以一组带标签的行列出失去功能的 Mod、两个版本、损失了什么以及没有损失什么，其标题会指引玩家查看日志了解技术细节。两类绑定通过同一渠道报告：被 Fast Rendering 桥接层拒绝的读取，以及与另一个 Mod 集成的启动步骤。[`starsector/compatibility/`](../../src/main/java/kmlib/starsector/compatibility/README.md) 阐述了其工作方式以及为何如此设计；下面的条目只说明新增内容。
-
-- **`FastRendering.FIRST_MODELVIEW_READ_RELEASE`** 和 **`FastRendering.readInstalledVersion()`**：首个支持模型视图矩阵读取的发布版本，以及已安装的 `fr.jar` 自报的版本，后者通过方法句柄按名称读取。被拒绝的读取就是在这两个版本之间报告的。
-- **`CompatibilitySubject`** 和 **`CompatibilityFailure`**：报告所涉及的第三方及其两个版本，以及对它的一个已失效的绑定。主体还会按数字段比较已安装版本与目标版本的关系（落后、领先、相同或无法比较），而这只影响措辞，因此第三方自报版本有误，代价只是一句话而不是行为。失败会以 `CompatibilityNoticeLine` 的形式提供给玩家的通知：一个标题，写明哪个 Mod 无法与哪个第三方集成；一段诊断，视版本情况建议更新、降级或等待（若两者指向同一发布版本，则请求向该 Mod 自己的开发者报告，因为没有可以切换到的版本，而集成中的故障恰恰在版本匹配时依然存在）；各行内容；以及一行指向日志的结束语。每一行都带有其文本以及其中需要突出显示的片段，按阅读顺序排列。日志中的区块以相同的标签、相同的顺序承载相同的行，取自字面量。四个组成部分属于四种不同的类型，因此任意两个都不会被调换；未读到的版本会显示为明确的未知，而不是 `null`。
-- **`CompatibilityBreakage`**：哪个守卫捕获了绑定，以及什么不再成立，合为一个值。两者单独都无法诊断任何问题。
-- **`CompatibilityConsumer`**：采用绑定的 Mod：其 Mod ID、该绑定服务于它的哪个功能，以及说明该功能损失了什么、没有损失什么的句子。锁存键由 ID 和功能组合而成，而不是整体提供，因此两个 Mod 不会拼出同一个键。两句话都属于采用绑定的 Mod，绝不属于程序库；ID 仅在撰写报告时才对照 Mod 管理器解析。
-  - **`resolveConsumerAtPosition()`**：同一个 Mod 和同样的句子，但功能键带有编号；当一个 Mod 在同一个键下登记了两个功能时，记录交给描述器的就是它。
-- **`CompatibilityFailures`**：本次会话的记录，按第三方、使用方 Mod 和功能损失句子锁存，可从任意线程写入，并由报告器逐个取出失败。失败由描述器构建，而描述器只会在被保留的记录上调用，因此反射探测或版本读取对每个绑定只付出一次代价，而不是每帧一次。
-  - **被一个 Mod 重复使用的功能键会报告两个功能**：锁存由主体、使用方键和功能损失句子共同构成，因此一个 Mod 若为两个功能写了同一个功能键，两个功能都会被报告，第二个以 `<feature>-2` 报告。区分第二个功能与同一功能再次记录的是那句句子，而日志中带编号的键会在作者能看到的地方指出这种重复使用。
-  - **`CompatibilityFailures.SESSION_RECORD`**：每个绑定都写入的那一份记录，按会话而非按星域持有。`KMLib_ModPlugin` 在每次加载游戏时安装取出它的通知。
-- **`InstalledMods.readModName()`** 和 **`readModVersion()`**：游戏为某个 Mod ID 保存的显示名称，以及该 Mod 声明的版本；游戏无法回答时则不返回任何内容。与旁边的 `ModPresence` 一样受守卫保护，因为调用其中任一方法的调用方都是在撰写报告。
-- **`WiringSteps`**：Mod 启动接线中单个步骤运行时所处的守卫，位于 `starsector/startup/`。抛出异常的步骤只损失它自己的注册，而不是其后的每个步骤或在其后加载的每个 Mod。无法链接其绑定目标的步骤也是如此，第三方契约的变更正是以这种方式出现的：以 `LinkageError` 的形式，而非异常。它以执行接线的 Mod 自己的日志记录器构造，而不是自持一个，因为通过 `LunaLogLevelBinding` 设置的级别作用于一个包子树。一个方法运行不绑定任何玩家可处理之物的步骤，并记录堆栈跟踪；另一个方法接受集成，在报告的同时以一行记录日志，把堆栈跟踪留给报告。
-- **`ModIntegration`**：启动步骤所绑定的第三方 Mod，以及该步骤未能生效时执行接线的 Mod 所损失的内容；它记录根据所抛出之物构建的失败，并回答记录是否保留了它。版本对的方向与渲染器补丁的绑定相反：没有任何代码针对可选 Mod 编译，因此目标版本一行显示为未知，而已安装版本则从 Mod 管理器读取。它以提供器的形式交给守卫，因此在没有任何故障的安装环境中，措辞和版本读取都不会出现在加载路径上。
-- **`KmlibMod.MOD_ID`**：程序库自身的 ID，与插件分开保存，这样类可以表明自己的归属，而无需为了一个字符串加载 `BaseModPlugin` 子类。程序库以它登记，作为自身兼容性渠道的使用方。
-- **`NexerelinPresence.MOD_NAME`**、**`RandomAssortmentOfThingsPresence.MOD_NAME`**、**`KmlibLunaSettings.LUNALIB_MOD_ID`** 和 **`LUNALIB_MOD_NAME`**：每个第三方的身份都放在绑定它的代码旁边，因此按 ID 锁存的记录和点名该 Mod 的报告不会偏离成两个不同的 Mod。LunaLib 的这些常量位于 `settings/` 而非 `mods/` 下：该目录树用于使用方可以不运行的 Mod，而 LunaLib 是声明的依赖项。
-- **未能集成的启动步骤会被报告，而不只是记录到日志**：`KMLib_ModPlugin` 将其 LunaLib 设置绑定、Nexerelin 例程以及 Random Assortment of Things 访问路径，以程序库自己的 Mod ID 登记到兼容性渠道。在此之前，抛出异常的注册会被吞进日志，启用了某个 Mod 的玩家只有在缺少它的情况下玩过一段游戏后，才会发现它没有集成。兼容性通知自身的安装仍然只记录日志：报告器安装失败时，没有地方可以报告。
-- **首次调用时才失效的集成，与安装时失效的集成一样会被报告**：可选 Mod 的适配器只在首次被调用时才接触该 Mod 的类型，因此底层已变动的 Mod 会在建立殖民地、移交、计数器决策、可达性读取或联盟读取时被碰到，而不是在加载时。每一处都运行在一个边界之后，该边界在本次游戏期间移除出错的适配器并报告一次，与安装失败归入同一份报告。链接失败时，程序库会以自己的流程代替运行，因为适配器的工作尚未执行；而在建立、移交或计数器决策中途抛出的异常则会转交给调用方，因为此时殖民地处于两种流程都不会产生的状态。联盟读取失败时返回没有联盟，与未安装 Nexerelin 时相同，并归入一个单独的功能。
-  - **`IntegrationFailureReporter`**：无论由哪个边界捕获，都将绑定的失败作为其集成的报告登记，且绝不抛出异常，因为描述器属于绑定方 Mod，和绑定本身一样可能失败。它还决定堆栈跟踪的去向：边界记录一行日志，报告的区块承载堆栈跟踪，只有在不会有区块的情况下（无法撰写的报告，或已报告绑定的再次失败），报告器才自行记录堆栈跟踪。
-  - **`describeIntegration()`**（位于 `NexerelinIntegration` 和 `RandomAssortmentOfThingsIntegration` 上）以及 **`KmlibLunaSettings.describeLunaLibIntegration()`**：每个集成的报告，与绑定它的代码放在一起，因此守护安装的守卫与其注册的适配器以同一份描述报告，属于同一份报告。`describeLunaLibIntegration(CompatibilityConsumer)` 将 LunaLib 的 ID 和名称与另一个 Mod 的使用方配对，因此报告自己 LunaLib 绑定的 Mod 只需写明自身及其损失。
-  - **`ExtensionPoint.offerWork()`**：在该边界内将工作交给已安装的实现，并处理其结果。被移除的实现保留其注册时的后备策略，因此禁止后备的实现会继续拒绝运行，而不会放行常规流程。
-- **在星图界面上发现的失败就在那里告知**：`ScreenCompatibilityNotices` 在发现失败的那一帧，于核心界面自身的控件树中立起一个面板，凡它不接手的都交给对话框。挂在该树中的面板由持有它的界面推进，而星域上的瞬态脚本在核心界面打开期间完全不会被推进，这就是从地图渲染通道中发出的报告需要自己的显示面的原因。两者都从同一份记录中取出，因此不会互相重复，也不会在两者之间丢失任何内容。只有游戏自身线程运行的守卫才会尝试弹出。
-  - **`CompatibilityNoticePanel`**：即该面板。它由游戏自身的控件构建，并通过 `CoreUiOverlayPanels` 立起，自行绘制背景和框体，用游戏为自身对话框加框的基础颜色为框体加框，并截获其控件未处理的事件，因为以这种方式添加的面板背后，游戏不会进行任何变暗处理。它以游戏自身提示窗口相同的节奏淡入淡出，因此其下方自行变淡的内容会沿同一曲线变化，而不是被切掉再突然恢复；按下时它将界面交还，并在淡出期间继续绘制，此时不截获任何事件。有四种关闭方式：按钮、Escape、Enter 和空格键，与游戏自身的单按钮对话框一致，后者把键盘确认和键盘取消都绑定到唯一的选项上。
-  - **`ModalOverlays`**（位于 `starsector/ui/coreui/`）：本程序库在核心界面上弹出、且在显示期间占据该界面的叠加层。`CoreUiDialogView` 将它与游戏自身的模态基础一同读取，因此任何为游戏对话框让步的东西（侧边栏的输入、针对模态的淡化）都会在同一次读取中为本程序库的面板让步，其自身无需任何改动。叠加层在淡出过程中与占据界面时同样计入，因此跟随者能获得完整的曲线直到结束。
-  - **`OverlayPresence.isShowing()`**：叠加层是否有任何部分显示在屏幕上，范围比它是否占据界面更宽。跟随淡化的内容询问这个；路由输入的代码询问那个标志。
-  - **通知中的强调按含义命名，而非用标记书写**：名称、版本和日志的文件名被突出显示；出问题的部分以警告显示，包括说明失败的短语、安装所处的状态以及修复的指示；无论如何都会继续工作的部分以平和样式显示；其余部分按普通文本显示。Mod 在任何被提及之处都会突出显示，包括警告内部，因此降级或等待的指示会被拆分成多个片段，而不是整体以警告显示；其中的版本仍属于警告的一部分，因为那是告诉玩家要切换到的版本，而不是不匹配的一方。每个突出显示的片段都是填入模板的值，因此组合时就已掌握它，无需解析措辞；需要突出显示的短语有自己的字符串键。片段按阅读顺序给出，因为引擎会从上一个片段结束的位置开始匹配每一个片段，这也使得一个名称可以先作为突出内容出现，然后再次出现在警告短语中。游戏自带的字体没有一个是等宽的（在 `victor14` 中，`i` 前进两个像素，而 `M` 前进七个像素），因此在屏幕上区分一行的值与其标签靠的是颜色。
-- **`CompatibilityNotice`**：每帧运行的瞬态脚本，从该记录中取出失败，并以带单个按钮的游戏自身确认对话框显示每一个失败，在请求对话框之前先写入报告行。对话框的尺寸按通知可能出现的最长形态确定，而不是凭目测，因为它无法随内容增大：已安装版本无法读取时，其诊断会达到三行，在该宽度下以游戏默认字体换行后共十九行。尺寸过小会静默截掉结束行，而那正是指向日志的一行。每帧一个对话框。使用确认对话框而非消息对话框，因为游戏正是以此弹出自身的单按钮通知，而且两者中只有它接受尺寸参数并能回答是否已打开；被拒绝时会记录日志，因此玩家从未看到的模态窗口也会留下痕迹。
-- **`UnavailableModelviewMatrixReader`**：第三个 `ModelviewMatrixReader`，其每次读取都没有读数。这不是新的调用方契约：`CampaignMapTransform` 在缺少读数时本就会原地停留。
-- **`FastRendering.COMPATIBILITY_SUBJECT_KEY`** 和 **`COMPATIBILITY_SUBJECT_NAME`**：被拒绝的读取所记录的身份，以及报告为该渲染器显示的名称，公开出来以便每个记录处都以相同方式书写。
-- **被 Fast Rendering 拒绝的模型视图矩阵读取只损失读数，而不会终止游戏**：`v0.9.1rc1` 之前的发布版本在读取地图的模型视图矩阵时会在渲染中途抛出异常：`v0.8.9` 起为 `UnsupportedOperationException`，此前为 `NoSuchMethodError`。`FastRenderingModelviewMatrixReader` 会捕获这两者，因此本次游戏期间损失的是地图的光标读数，而不是渲染通道。不会以过时的矩阵代替报告，且无论地图保持打开多少帧，都只记录一次失败，并告知玩家将 Fast Rendering 更新到 `v0.9.1rc1`。其机制详见 [docs/dev/rendering-environment.md](../../docs/dev/rendering-environment.md)。
-- **每个遇到被拒绝读取的 Mod 都会被告知其损失**：`ModelviewMatrixReaders.selectForActiveRenderer()` 按使用方分别解析，因此读取地图的第二个 Mod 会收到报告，而不是被交给第一个 Mod 的读取器。此前第一个调用方的选择会在本次游戏期间一直保持，之后每个 Mod 的玩家都不会被告知任何事情。
-- **对游戏自身代码的访问失效时会被报告，以游戏作为第三方**：地图视图状态背后的控件遍历和具体类读取、情报信息界面的地图、筛选栏及其按钮、立于核心界面之上的面板、界面之上的模态窗口或数据百科、地图的提示框及其重绘，以及地图绘制图标的顺序，各自都会通过因此受损的 Mod 的报告器登记失败。报告会列出该 Mod 声明的游戏版本与正在运行的版本，因此运行的游戏版本并非该 Mod 所适配的玩家，会被告知更新或降级游戏，或等待该 Mod 更新。访问结果为空时，只有在该界面上空结果绝非正常答复的情况下才会登记（打开的情报标签页中没有事件面板，地图标签页中没有图标地图），因此单纯不显示地图的界面绝不会被报告为故障。只登记而不在界面上弹出：通知面板立于这些访问所遍历的同一控件树中，因此报告会等待战役的对话框。
-  - **`GameReachReporter`**：单个使用方的报告器，接受该 Mod 的使用方作为一个仅在失败时才组合的描述器，只登记一次且绝不抛出异常。`COMPATIBILITY_SUBJECT_KEY` 和 `COMPATIBILITY_SUBJECT_NAME` 是游戏作为主体的身份。`UNREPORTED` 不登记任何内容，用于诊断性读取或自带后备的显示面。
-  - **`InstalledMods.readModGameVersion()`**：某个 Mod 声明其所适配的游戏版本，与旁边的读取方法一样受守卫保护。
-
-#### 控件行
-
-- **`InteractiveSpec.isSegmented()`** 和 **`reselectBehaviour()`**：控件对自身的回答，取代了两串分别从外部推断这些信息的类型判断链。控件的单元是否分别命中，以及重新选择已点亮的单元时会发生什么，各自都是一条规则，有两个读取方：解析单元的命中测试，以及决定按下时是否生效的收窄判断；若在两侧分别表述，控件就可能被当作一排分段来命中，却作为整行来按下，或者反过来。现在每个交互变体都会回答这两个问题，因此不会有哪个变体遗漏其中之一。
-- **`RowDimensions`**：每一行的高度与宽度，合为一个值。若作为两个列表传递，它们可能来自不同的读取：两个长度不同的列表，或者高度来自宽度从未测量过的那一组行，而堆叠器无从察觉。放在一起时，它们会在声明处相互校验。
-  - **`ControlStripLayout.StripMeasurement.rowDimensions()`** 以这种形态返回一次测量的各行。
-
-#### 本地化构建与发布
-
-此处是测试夹具一节所述按语言区域划分的语言包的构建与发布部分，该节的本地化夹具会检查这些步骤写出的内容。
-
-- **`writeLocaleFiles`**：将一个语言区域的语言包写入游戏读取的文件，由共享的 Starsector 约定为提交了 `localisation/manifest.json` 的 Mod 注册。`-Plocale=<tag>` 用于选择，否则构建清单中的默认语言区域。每个映射文件逐字节复制；若 Mod 提交了 `mod_info.base.json`，则将该语言区域的启动器片段合并到其上，仅限文本字段，任何功能性字段都会被拒绝。位于 Mod 根目录之外的映射，以及缺少某个映射文件的语言包，都会使构建失败。清单和片段通过 `shipped-json-reader.gradle` 读取，它是 `ShippedJson` 在构建时的对应物，基于同一个 `json.jar`，因此构建与检查对何者可解析的判断一致。`jar` 依赖于它，`test` 将其输出作为输入，因此切换语言区域会让两者重新运行。`test` 还将 `localisation/` 和根目录的 `CHANGELOG.md` 作为输入，因此只编辑译文也会重新运行一致性测试套件。
-- **`mod_info.base.json`**：按语言区域保存启动器文本的 Mod 提交该基础文件，并在 gitignore 中忽略由其写出的 `mod_info.json`，因为有基础文件时，后者是构建产物：在全新检出时不存在，否则则是最后一次写出的那个语言区域的版本。每个构建脚本和每个发布 Action 都会在提交了基础文件时读取它，未提交时读取 `mod_info.json`。
-  - **`mod-info-reader.gradle`**：在构建配置期间读取一次元数据，将其发布为 `modInfo`，将其来源文件发布为 `modInfoFile`，并提供用于读取另一个检出的 `readModInfo(File)`，均遵循该规则。约定会应用它，`writeVersionFile` 和 KMLib 版本报告都通过它读取，而不是自行解析该文件。
-- **按语言区域发布**：对于提交了 `localisation/manifest.json` 的 Mod，`mod-release.yml` 会为每个语言区域发布一个压缩包，每个都带有自己的版本文件，所有语言区域的版本文件都附在压缩包旁边。jar 只构建一次，因为它在各语言区域间完全相同。未提交清单的 Mod 发布方式与以前完全一样。
-  - **`read-locales`**：从清单中读取 Mod 发布的语言区域（标签、显示名称和核心本地化，默认语言区域排在首位）及其默认语言区域。未提交清单的 Mod 得到空列表。
-  - **`package-release`**：将每个语言区域写入检出目录，组装并压缩其内容，填写其版本文件，并把所有资产收集到一个目录中。之所以是一个 Action，是因为这项工作是循环，而工作流无法循环 `uses:` 步骤，因此所有版本文件都由同一个脚本填写。每个压缩包都带有本语言区域的更新日志：已翻译语言区域的 `CHANGELOG.md` 取自其语言包目录，默认语言区域的取自根目录。
-  - **`compose-locale-note`**：组成发布说明的两个部分。*Builds by language* 列表列出每个语言区域的压缩包，并链接该语言区域需要覆盖安装到 `starsector-core` 上的核心本地化，启动器无法检查这一依赖。在依赖行下方，每个已翻译语言区域中该版本的说明折叠在其显示名称之下。译文缺少该版本的章节会使发布失败。
-  - **`fill-version-file-template` 接受可选的 `locale`**：下载 URL 指向该语言区域的压缩包，`masterVersionFile` 指向该语言区域自己的副本，因此安装后轮询的是指回其自身语言的副本。若模板的主地址不以 `<mod-id>.version` 结尾，则它指向的并非发布版本发布语言区域副本之处，此时会失败，而不是让安装指向不存在的位置。
-- **KMLib 按语言区域保存自己的文本**：其字符串和设置表位于 `localisation/<locale>/` 下，启动器元数据位于 `mod_info.base.json` 中，游戏读取的副本由构建写出。`localisation/zh-hans/CHANGELOG.md` 翻译了本更新日志，涵盖每个版本和每个章节。`LocaleParityIntegrationTests` 以默认语言区域为准校验其声明的每个语言区域，正如每个使用方 Mod 的测试套件对其自身目录所做的那样。中文语言包的 `README.md` 是基础术语参考，收录程序库自身文本涉及的原版用词及其自有术语，每个使用方 Mod 的参考都以它为基础。
+- **简体中文。** 第二个压缩包 `KMLib-<version>-zh-hans.zip` 中的兼容性通知、设置标签页以及 Mod 列表条目均为简体中文。请先将[中文本地化](https://github.com/TruthOriginem/Starsector-Localization-CN)覆盖到 `starsector-core` 上：游戏自身的字体不含中文字符，没有它，所有中文字符都会绘制为 `?`。日志详细程度设置的选项保留英文，因此该设置在两个压缩包之间可以沿用。
+- **当 KM 系列 Mod 无法与另一个 Mod、Fast Rendering 或游戏本身集成时，游戏内会弹出通知。** 通知会写明是哪个 Mod、两个版本、什么停止工作、什么不受影响，以及应当更新、降级还是等待。这类失败只会损失基于该集成构建的功能，并且每个失败在本次游戏期间只显示一次。
+  - **KM 系列 Mod 自身的某项功能出错并被关闭时，也会以同样方式报告**，并请玩家向该 Mod 的开发者报告此问题。
+  - **星图打开时发现的失败可以直接显示在星图之上**，无需等到回到战役界面。
 
 ### 测试夹具
 
@@ -225,6 +129,51 @@ Mod 面向玩家的文件可以按语言分别保存，每个语言区域一个�
 
 #### 新增
 
+##### 兼容性
+
+游戏内通知背后的 API。[`starsector/compatibility/`](../../src/main/java/kmlib/starsector/compatibility/README.md) 阐述了其工作方式以及为何如此设计。
+
+- **`CompatibilityFailures`**：本次会话的失败记录，按第三方、使用方 Mod 和功能损失句子锁存。可从任意线程写入，并由报告器逐个取出失败。
+  - `CompatibilityFailures.SESSION_RECORD`：每个绑定都写入的那一份记录。`KMLib_ModPlugin` 安装取出它的通知。
+  - `recordFeatureFailureOnce()`：将 Mod 自身出错的功能记录为 `FeatureFailure`。
+  - 一个 Mod 若为两个功能使用同一个功能键，两个功能都会被报告，第二个以 `<feature>-2` 报告。
+- **`ReportedFailure`**：通知所绘制的密封类型。
+  - `CompatibilityFailure`：对第三方的一个已失效的绑定。它以 `CompatibilityNoticeLine` 的形式组合通知的标题、诊断、各行内容和结束语。
+  - `FeatureFailure`：Mod 自身抛出异常并被关闭的功能。
+- **报告的组成部分**：
+  - `CompatibilitySubject`：第三方，及其目标版本、已安装版本和两者的比较结果。
+  - `CompatibilityBreakage`：哪个守卫捕获了绑定，以及什么不再成立。
+  - `CompatibilityConsumer`：采用绑定的 Mod、该绑定服务的功能，以及说明它损失了什么、没有损失什么的句子。`resolveConsumerAtPosition()` 为重复使用的功能键编号。
+- **启动接线**：
+  - `WiringSteps`：在守卫之后运行单个启动步骤，位于 `starsector/startup/`。抛出异常或无法链接的步骤只损失它自己的注册。
+  - `ModIntegration`：步骤所绑定的第三方 Mod，以及缺少它时执行接线的 Mod 所损失的内容。
+  - `KMLib_ModPlugin` 以 KMLib 自己的 Mod ID，通过该渠道报告其 LunaLib、Nexerelin 和 Random Assortment of Things 接线。
+- **首次调用时才失效的集成**：可选 Mod 的适配器若在建立殖民地、移交、计数器决策、可达性读取或联盟读取时失败，会在本次游戏期间被移除并报告一次。
+  - `IntegrationFailureReporter`：无论由哪个边界捕获，都登记该失败，且绝不抛出异常。
+  - `ExtensionPoint.offerWork()`：在该边界内将工作交给已安装的实现。
+  - `describeIntegration()`（位于 `NexerelinIntegration` 和 `RandomAssortmentOfThingsIntegration` 上）以及 `KmlibLunaSettings.describeLunaLibIntegration()`：每个集成的报告，与绑定它的代码放在一起。
+- **对游戏自身代码的访问**：星图、情报界面、筛选栏、叠加层、数据百科、提示框和图标顺序背后的控件遍历与类读取，会以游戏作为第三方，通过因此受损的 Mod 报告。
+  - `GameReachReporter`：单个 Mod 的报告器。`UNREPORTED` 不登记任何内容，用于诊断性读取。
+  - `InstalledMods.readModGameVersion()`：某个 Mod 声明的游戏版本。
+- **被 Fast Rendering 拒绝的读取**：`v0.9.1rc1` 之前的发布版本在读取模型视图矩阵时会抛出异常。`FastRenderingModelviewMatrixReader` 会捕获它并记录一次失败；其机制详见 [docs/dev/rendering-environment.md](../../docs/dev/rendering-environment.md)。
+  - `FastRendering.FIRST_MODELVIEW_READ_RELEASE` 和 `readInstalledVersion()`：报告被拒绝的读取时对比的两个版本。
+  - `FastRendering.COMPATIBILITY_SUBJECT_KEY` 和 `COMPATIBILITY_SUBJECT_NAME`：该渲染器在报告中的身份。
+  - `UnavailableModelviewMatrixReader`：每次读取都没有读数的读取器。
+  - `ModelviewMatrixReaders.selectForActiveRenderer()` 按使用方分别解析，因此每个遇到被拒绝读取的 Mod 都会被告知其损失。
+- **通知的显示面**：
+  - `CompatibilityNotice`：以游戏自身的单按钮确认对话框显示每个失败。
+  - `ScreenCompatibilityNotices`：在星图界面上发现的失败，就在那里以 `CompatibilityNoticePanel` 显示。
+  - `CompatibilityNoticePanel`：立于核心界面的控件树中，与游戏自身的提示窗口一样淡入淡出，可通过按钮、Escape、Enter 或空格键关闭。
+  - `ShownMapTab.isMapTabShowing()`：星图是否显示在屏幕上，失败时按未显示处理。面板借此随星图一同撤下。
+  - `ModalOverlays`：KMLib 用来占据核心界面的叠加层，位于 `starsector/ui/coreui/`。`CoreUiDialogView` 将它与游戏自身的模态窗口一同读取。
+  - `OverlayPresence.isShowing()`：叠加层是否有任何部分显示在屏幕上，淡出过程也算在内。
+  - 通知中的强调来自填入其模板的值，绝不通过解析措辞得出。
+- **Mod 身份**，各自放在绑定它的代码旁边：
+  - `KmlibMod.MOD_ID`：KMLib 自身的 ID，无需加载其插件类即可读取。
+  - `NexerelinPresence.MOD_NAME` 和 `RandomAssortmentOfThingsPresence.MOD_NAME`。
+  - `KmlibLunaSettings.LUNALIB_MOD_ID` 和 `LUNALIB_MOD_NAME`。
+  - `InstalledMods.readModName()` 和 `readModVersion()`：游戏所保存的 Mod 显示名称和其声明的版本。
+
 ##### 字体
 
 文本会回退到包含其全部字符的字体，因此已本地化的安装环境会绘制其自身的文字，而不是 `?`。
@@ -261,6 +210,97 @@ Mod 面向玩家的文件可以按语言分别保存，每个语言区域一个�
 - **字体构建门禁**：每次构建都需要网络和游戏的字体。
   - `test` 会检查每种字体：在构建自身的安装环境上、在锁文件固定的每个本地化版本分支上，以及在 `-PfontInstallRoots` 指定的任何安装环境上。
   - 上游版本分支发布新的描述文件时，`checkFontEditions` 会对照 `font-editions.lock.json` 中的 SHA 使构建失败；`writeFontEditionsLock` 负责更新锁文件。
+
+##### 势力
+
+- **联盟**：哪些势力站在一起，来自维护这种关系的任一 Mod。原版不保存这种关系。
+  - `FactionAlliances`：每个结盟势力所属的联盟，提供 `areFactionsAllied` 和 `buildFrom`。
+  - `AllianceRecord`：以纯数据表示的一个联盟：ID、显示名称，以及按市场规模降序排列的成员。
+  - `AllianceSource`：这些记录传入所经由的端口。
+  - `NexerelinAllianceSource`：Nexerelin 的实时联盟，位于存在性门禁之后。
+- **`FactionNames`** 和 **`FactionNameForm`**：在一处读取势力的设定名称。
+  - `resolveName`：按设定原样读取简称或全称。
+  - `resolveFullestName`：全称，全称为空时为简称。
+  - `listEveryName`：每个势力的全部名称，同一文本只读取一次。
+- **`StarsectorFactionColours.findPalette()`**：势力的亮色与暗色配对，没有灰色后备，势力不存在时为 null。`resolvePalette` 经由它进行后备。
+
+##### 几何
+
+- **`VertexWelder`**：按容差合并同一角点的多次报告，使分别计算出的边可以按精确 ID 比较。从 `EdgeRings` 中移出。
+- **`Disk.measureSagitta(radius, segments)`**：近似圆盘的多边形在最坏处向内偏离圆盘多远，即针对该圆盘绘制的任何内容的实际分辨率。
+- **`Segment`** 与 `{x, y}` 点：
+  - `readStart()` 和 `readEnd()`：线段的两端，每次都是独立的数组。
+  - `joinPoints(start, end)`：两点之间的线段。
+- **多边形检查**：
+  - `PolygonRegions.countSelfCrossings(ring)`：一个环与自身相交的次数。开销为二次方，因此用于测试和探测器。
+  - `PolygonOffsets.hasInsetCollapsed(rawRing, insetRing)`：斜接内缩是否把环折叠了，而不是对其偏移。
+  - `PolygonOffsets.removeReversedLoops(polygon, isCounterClockwise, windowVertexCount)`：被告知预期绕向的折叠拼接器，用于折叠超过主体的环。两种形式都会拼接跨越环起点的折叠，并且只拼接不自交的环路，先处理最内层。
+- **`Points.measurePathLength(points)`**：不闭合路径从头到尾的长度。
+- **`PolygonShapes.computeRegularVertices`**：根据中心、半径、边数和起始角计算正多边形的顶点，形式为 `{x, y}` 对或 `Vector2f`。`LabelledPolygon.createRegularPolygon` 通过它生成其裁剪形状。
+- **`Vector2f` 形式**，用于在游戏的浮点界面坐标中布置形状：
+  - `Points.computeMeanOfVectors`
+  - `PolygonRegions.isPointInsideRing(ring, point)`
+  - `Rectangle.computeEnclosingRectangle`：返回按一个角和尺寸放置的 `Rectangle`。
+
+##### 控件
+
+- **单选组**：
+  - `RadioSpec`：横向与纵向单选组之上的密封接口，承载重选规则。现有的 `HorizontalRadio` 调用点可原样编译。
+  - `VerticalRadioSpec`：一列选项单元，其中一个亮起，用于一行放不下的选项组。
+- **滚动**：
+  - `ScrollingSectionSpec`：一起滚动的一段控件，例如标题、其下的列表以及旁边的行。
+  - `Control.isScrolled()`：已布局的控件是否位于该区段内。未带此值构建的 `Control` 是固定的。
+- **`InteractiveSpec.isSegmented()`** 和 **`reselectBehaviour()`**：控件自行说明其单元是否分别命中，以及重新选择已点亮的单元时会发生什么，使命中测试与按下行为保持一致。
+- **`RowDimensions`**：每一行的高度与宽度，合为一个经过校验的值。
+  - `ControlStripLayout.StripMeasurement.rowDimensions()`：以这种形态返回一次测量的各行。
+- **`TooltipRow.createRow(List<LabelRun>)`** 和 **`LabelledRow.createRow(List<LabelRun>)`**：基于已组合成多个文本段的标签构建的行。
+
+##### 战役与存档
+
+- **按地址保存的内存值**：存储值按 Mod 声明的轴上的每个点各保存一份，而不是每个存档一份。
+  - `MemoryKeyAddress`：在一处组合键，因此任何两个持有者都不会意外共用一个槽位。
+  - `AddressedMemoryFlag` 和 `AddressedMemoryString`：持有者。
+- **指明星域的形式**，供被传入星域、而不是读取当前运行星域的代码使用：
+  - `SectorMemoryString` 和 `SectorMemoryFlag`：每次读写，基于 `SectorMemoryAccess.readSectorMemory(sector)`。
+  - `BaseExpiringIntelPlugin.findActive(sector, intelClass)`、`isExpired(clock)` 以及接收时钟的构造函数。
+- **日历**：
+  - `CampaignCountdown`：从起点开始的一段战役天数，可带完成余量，使其在玩家预期的那一帧完成。`BaseExpiringIntelPlugin` 通过它读取其时间窗口。
+  - `CampaignMonth`：战役日历中的一个月。`formatKey()` 将其拼写为 `<cycle>-<month>`，即每月任务保存上次运行时所用的键。
+- **`Colonies.selectColonies(test)`** 和 **`Colonies.hasAnyColony(test)`**：按集合自身顺序筛选殖民地，或在第一个匹配处停止。未提供测试条件时不通过任何殖民地。
+- **`PersistedChoice`** 和 **`PersistedChoices.fromKey()`**：存档以其自身的键存储的选项，以及带回退的反向查找。`SortDirection`、`ListColumns` 和 `ListSortMode` 都是持久化选项。
+
+##### 核心工具
+
+- **字符串**：
+  - `KmlibStringKeys.get()` 和 `format()`：在 KMLib 自身类别中的查找。
+  - `KmlibStrings.requireText()`：拒绝为 null 或空白的名称或句子。
+- **`GlMatrix`**：
+  - `FLOAT_COUNT`：一个 GL 矩阵所占的十六个浮点数。`ModelviewMatrixReader.MATRIX_FLOAT_COUNT` 取自它。
+  - `createIdentity()`：每次调用都返回一个新的单位矩阵。
+- **数据文件**：
+  - `SpreadsheetRows`：合并后电子表格的数据行，排除空 ID 分隔行和 `#` 注释行，并拆分列表值单元格。`FactionSourceMods` 通过它读取 `factions.csv`。
+  - `ScriptClasses.instantiateScript(className, scriptType)`：不借助 `java.lang.reflect`（游戏不允许 Mod 代码使用它）构建数据文件中指名的类。错误的类名会被拒绝并指出类名。
+- **`Jitter.roll(jitterSize, random)`**：从调用方的 `Random` 抽取的抖动，可按种子重放。区间的上端是开区间。
+
+##### 构建与发布
+
+按语言划分的压缩包在构建与发布方面的部分。测试夹具一节中的本地化夹具会检查这些步骤写出的内容。
+
+- **`writeLocaleFiles`**：为提交了 `localisation/manifest.json` 的 Mod，将一个语言区域的语言包写入游戏读取的文件。`-Plocale=<tag>` 用于选择语言区域，否则构建清单中的默认语言区域。
+  - 若 Mod 提交了 `mod_info.base.json`，则将该语言区域的启动器片段合并到其上，仅限文本字段。
+  - JSON 通过 `shipped-json-reader.gradle` 读取，与 `ShippedJson` 基于同一个 `json.jar`。
+  - 切换语言区域时 `jar` 和 `test` 会重新运行。`localisation/` 或根目录的 `CHANGELOG.md` 变化时，`test` 也会重新运行。
+- **`mod_info.base.json`**：按语言区域保存启动器文本的 Mod 提交该基础文件，并在 gitignore 中忽略由其写出的 `mod_info.json`。每个构建脚本和发布 Action 都会在基础文件存在时读取它。
+  - `mod-info-reader.gradle`：读取一次该元数据，发布为 `modInfo` 和 `modInfoFile`，并提供用于读取另一个检出的 `readModInfo(File)`。
+- **按语言区域发布**：对于提交了 `localisation/manifest.json` 的 Mod，`mod-release.yml` 用同一个 jar 为每个语言区域发布一个压缩包和一个版本文件。未提交清单的 Mod 发布方式不变。
+  - `read-locales`：Mod 发布的语言区域，默认语言区域排在首位。
+  - `package-release`：为每个语言区域写出、压缩并填写版本文件。每个压缩包都带有本语言区域的 `CHANGELOG.md`。
+  - `compose-locale-note`：发布说明中的 *Builds by language* 列表（链接每个语言区域所需的核心本地化），以及折叠在各自名称之下的每份译文说明。译文缺少该版本的章节会使发布失败。
+  - `fill-version-file-template` 接受可选的 `locale`，使安装轮询其自身语言的版本文件。
+- **KMLib 按语言区域保存自己的文本**：字符串和设置位于 `localisation/<locale>/` 下，启动器文本位于 `mod_info.base.json` 中。
+  - `localisation/zh-hans/CHANGELOG.md` 完整翻译了本更新日志。
+  - `LocaleParityIntegrationTests` 以默认语言区域为准校验每个语言区域。
+  - 中文语言包的 `README.md` 是基础术语参考，每个使用方 Mod 的参考都以它为基础。
 
 #### 变更
 

@@ -23,106 +23,10 @@ The reusable release workflow extracts the section matching the released version
 
 ### Added
 
-- **Simplified Chinese (简体中文).** The release carries a second zip, `KMLib-<version>-zh-hans.zip`, with the compatibility notice, the settings tab and the launcher's mod list entry in Simplified Chinese. It needs the [Chinese localisation](https://github.com/TruthOriginem/Starsector-Localization-CN) laid over `starsector-core` first: the game's own fonts hold no Chinese characters, and without it every one of them draws as `?`. The log-verbosity setting keeps its options in English, because LunaLib saves the option's label - so the setting carries over between the English and Chinese zips.
-- **`FeatureFailure` and `CompatibilityFailures.recordFeatureFailureOnce()`**: a mod's own feature that threw and was switched off, told to the player through the compatibility notice rather than left to the log. A feature that simply stops working leaves the player looking at something missing, with no reason to look in the log for why. The notice names the mod, the feature, what stops working and what does not, says the fault is the mod's own rather than a clash with another mod, and asks for a report. It is latched like a binding, so a feature that fails again on the next load is reported once per session. Both it and `CompatibilityFailure` are a `ReportedFailure`, the sealed type both notice surfaces draw.
-- **`ShownMapTab.isMapTabShowing()`**: whether a map is on screen, failing closed where the widget tree cannot be walked - the read for a panel that stands over a map and has to come down with it. `CompatibilityNoticePanel` reads through it.
-- **`VerticalRadioSpec`**: a column of option cells stacked top to bottom, one lit - the shape an option set of more than two or three reads as, where the same options laid across a row letter too narrow to tell apart. Carries no segment sizing and no trailing caption, both being row-only.
-- **`RadioSpec`**: the sealed interface `HorizontalRadio` and `VerticalRadio` sit under, carrying the re-pick rule both answer. A reader acting on any radio names it rather than each alignment. `HorizontalRadio` is otherwise unchanged and every existing call site compiles as it stands.
-- **`ScrollingSectionSpec`**: the run of a body that scrolls, holding any controls rather than being a property of one. A heading, the list under it and the row beside it now travel together inside the viewport the capped layout leaves them, where only a single list could scroll before.
-- **`Control.isScrolled()`**: whether a laid-out control was placed inside that section - the one value the clipping renderer and the viewport-limited hit-test both read. A `Control` built without it is pinned, so existing three-argument construction is unchanged.
-- **`MemoryKeyAddress`, `AddressedMemoryFlag`, `AddressedMemoryString`**: a stored value held once per point on an axis the consumer declares rather than once per save. The holder states its base key and names the address each read and write means; the key is composed in one place, so no holder can spell the segments differently or drop one and quietly share a slot with another.
-- **`KmlibStringKeys.get()` and `format()`**: lookups bound to KMLib's own category, so a call site names a key alone rather than repeating the category beside it.
-- **`KmlibStrings.requireText()`**: the blank-rejecting counterpart of `Objects.requireNonNull`, for a component that is a name or a sentence.
-- **`GlMatrix.FLOAT_COUNT`**: the sixteen floats a GL matrix takes, stated once for every reader and writer that sizes a buffer or rejects a wrong-sized array by it. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` now reads off it.
-- **`GlMatrix.createIdentity()`**: the matrix that transforms nothing, as its own array each call. Read for two unrelated reasons and previously written out for each: as the tell that a modelview describes no render pass, and as the base a transform is composed onto. Written as a diagonal rather than as sixteen literals, those being what a misread layout hides in.
-- **`CampaignCountdown`**: a span of campaign days from a start timestamp, read against the running clock for the days left and for whether it is complete. It carries a completion slack, so a countdown driven by uneven frame steps can finish on the frame the player expects rather than a fraction of a day late, and every read of it agrees on when that is. The clock is handed to each read rather than held, so a countdown is plain numbers and names no sector. `BaseExpiringIntelPlugin` reads its window through one with no slack.
-- **`Colonies.selectColonies(test)` and `Colonies.hasAnyColony(test)`**: the two walks over a colony set, stated on the set rather than hand-rolled beside it. The selection keeps the set's own order, which a consumer mirroring vanilla's tie rules settles a contest by; the emptiness read stops at the first colony that passes, being asked of every place in the sector on a scan and per frame while a map is drawn. An absent test passes nothing, which withholds rather than reporting a colony nobody asked to be shown.
-- **`PersistedChoice` and `PersistedChoices.fromKey()`**: an option a save stores by a key of its own, and the one lookup that reads a stored key back to it - falling back where nothing is stored or no option answers to the key, whether left by an older build or written by another mod. The counterpart of `LabeledChoice`, for a key the option owns rather than a label LunaLib stores. `SortDirection`, `ListColumns` and `ListSortMode` are persisted choices.
-- **`SpreadsheetRows`**: the rows of a spreadsheet the game has merged, read as the data rows and a list-valued cell split into its entries. The merger hands back the blank-ID rows authors space a table with and the `#` rows they comment out like any other row, so a reader that does not recognise them fails on a row that was never data or files a comment as an ID; these leave them out in one place. Takes the rows rather than opening the file, since whether a failed read is fatal is the caller's to decide. `FactionSourceMods` reads `factions.csv` through it.
-- **`ScriptClasses.instantiateScript(className, scriptType)`**: a class a data file names - a plugin column, a script key - built as the type the caller holds it as. The game refuses mod code `java.lang.reflect`, so the usual `getDeclaredConstructor().newInstance()` compiles, passes every suite and throws on its first call in the game; the constructor is found through a public method-handle lookup instead, which names no reflection type. A missing class, one of the wrong type or one without a public no-arg constructor is refused naming the class, so a typo in the data reads as a typo in the data.
-- **`TooltipRow.createRow(List<LabelRun>)` and `LabelledRow.createRow(List<LabelRun>)`**: the bare row over a label already composed as runs, for a caller holding a whole sentence. The same row the first run continued with each of the rest comes to, built in one copy rather than one per run.
-- **`CampaignMonth`**: one month of the campaign calendar, read off whichever clock the caller hands it, and `formatKey()`, the `<cycle>-<month>` spelling a once-a-month job records its last run under. The key goes into saves, so it is spelt in one place: two spellings of one month would each read the other's record as a month never run.
-- **`Jitter.roll(jitterSize, random)`**: the same band drawn from a caller's `Random`, for a roll that must replay from a seed. Both forms share one mapping of the draw onto the band, so a size means the same whichever source drew it. The band's upper end is open, as it always was; the documentation now says so.
-- **`SectorMemoryString` and `SectorMemoryFlag` forms naming a sector**, and **`SectorMemoryAccess.readSectorMemory(sector)`** beneath them: every read and write taking the sector it acts on, for code handed its sector by whoever chose it rather than reading the running one. They answer as the bare forms do, the null guard included, so the difference is only which save the value lands in.
-- **`BaseExpiringIntelPlugin.findActive(sector, intelClass)`**, **`isExpired(clock)`** and a constructor taking the clock: an expiring intel opened, looked up and measured against a sector the caller holds. The bare forms read the running sector through them, so both answer by one definition of "still within the window".
-
-#### Factions
-
-- **`FactionAlliances`**: which factions stand together, as the alliance each allied faction belongs to, with `areFactionsAllied` over it and `buildFrom` to invert a list of records into it. Vanilla keeps no such arrangement, so this is the shape one arrives in whichever mod maintains it. It says who stands with whom and no more - what an alliance is worth is the consumer's, since keeping a secret, fighting a war and sharing a market read the same membership to different ends.
-- **`AllianceRecord`**: one alliance flattened to plain data - its stable ID, its display name, and its members ranked by descending market size. Every field is a snapshot taken at read time rather than a live handle back into whatever maintains the alliance.
-- **`AllianceSource`**: the port those records arrive through, so whatever folds or weighs them runs with no game around it. A port rather than a snapshot, alliances forming and dissolving in play.
-- **`NexerelinAllianceSource`**: Nexerelin's live alliances as those records, behind the presence gate. The only code naming `exerelin.*` for them sits in a class of its own that the gate defers, not even reached by a method signature, so an install without the mod never seeks a Nexerelin class - and a consumer folds records without learning which mod produced them.
-- **`FactionNames`** and **`FactionNameForm`**: a faction's authored names read in one place. `resolveName` reads the short or the long one as authored, null for an absent faction; `resolveFullestName` reads the long one, the short one where the long is blank, trimmed and never blank. `listEveryName` reads every faction's authored names, short and long, each text once, for a face held to all of them. `FactionListingReport` reads its long name through it.
-- **`StarsectorFactionColours.findPalette()`**: a faction's bright and dark pair with no grey fallback, null where the sector or the faction is absent - for a caller that draws nothing for a faction it cannot name. `resolvePalette` falls back through it.
-
-#### Geometry
-
-- **`VertexWelder`**: which reports of a corner are one corner, by a tolerance, so edges computed apart can be compared as exact IDs rather than by distance at every hop. Promoted out of `EdgeRings`, where it had been private, once a second caller needed the same thing. Bucketed by a grid one tolerance across, so a lookup scans nine squares rather than the whole set, and the first report of a corner is the one kept - averaging would move a corner after edges had already been welded to it.
-- **`Disk.measureSagitta(radius, segments)`**: how far the polygon approximating a disk falls inside it at its worst. The resolution anything drawn against that disk is really at, and so the figure a consumer welds by or discards small features by. It falls out of the radius and the segment count, so it is read rather than restated - four restatements of it across the consumer mods had to move together and did not. Static, taking the two: where the disk is centred has nothing to do with it, and every caller holding the two holds them as knobs rather than as a disk it could ask.
-- **`Segment.readStart()` and `readEnd()`**: a segment's ends as `{x, y}` points, the one crossing between a value that names its ends by role and the point arithmetic beside it that takes arrays. Each read is its own array, so a caller keeping one as a corner cannot have it move under them.
-- **`Segment.joinPoints(start, end)`**: the segment from one `{x, y}` point to another, the way in to match those two ways out, so no caller spells four coordinates out of two arrays. The segment holds the values, so a caller reusing its arrays afterwards does not move it.
-- **`PolygonRegions.countSelfCrossings(ring)`**: how many times a ring crosses itself, which is whether it is drawable at all - a folded ring fills to something other than its outline and strokes a line through its own interior. A count rather than a flag, so a fixture that got worse can be told from one that was never clean. Consecutive edges are not asked about, sharing an endpoint by construction; two further apart that merely meet at a point do count, a ring pinched to touch itself being no more simple than one that passes through. Every pair is compared, so it costs the square of the ring's length and belongs in a test or a probe rather than in anything drawing per frame.
-- **`PolygonOffsets.removeReversedLoops(polygon, isCounterClockwise, windowVertexCount)`**: the fold splicer told which way the ring was meant to wind, for a caller that knows. The net signed area is the wrong guide once the folds outweigh the body: a ring inset past its own width at both ends but not in the middle comes back as two large reversed loops round a smaller body of the right winding, and read off the net area it is the body that goes. Asked for the winding it was built with, what is left says whether the inset consumed the ring or only its ends. Both forms now splice a fold that straddles the ring's start, which is the loop round the crossing rather than the one between its edges; before, which loop a fold fell in depended on where the ring happened to begin. And both splice only a loop that does not cross itself, taking the innermost fold first: a ring folded at both ends cuts, at either crossing, into that end's fold and the body with the other fold still in it, and the body was what went. That simplicity check costs a crossing count per candidate loop, quadratic in the loop's corners, which under a window is a constant factor and with every pair compared is not.
-- **`Points.measurePathLength(points)`**: how long a path through the given points is, end to end, open - the one step sum every reader of a run's length was writing for itself.
-- **`PolygonOffsets.hasInsetCollapsed(rawRing, insetRing)`**: whether a miter inset folded a ring over rather than offsetting it - too few corners left, a vanishing or sign-flipped area, or an outer ring that grew. Promoted from a consumer's private check once a second body shaped by the per-edge miter needed the same verdict. Asked before any boundary resolve, because a tessellation handed a lone ring wound the wrong way hands it back re-wound as a fill rather than dropping it, holes and all; the fold can only be told while the raw ring is still there to compare against.
-- **`PolygonShapes.computeRegularVertices`**: the vertices of a regular polygon from a centre, a radius, a side count and a start angle, as `{x, y}` pairs or as `Vector2f`s. The one walk that steps a vertex round a centre; `LabelledPolygon.createRegularPolygon` seeds its clips through it from the positive x-axis, and a shape standing on a point passes its own start angle.
-- **`Vector2f` forms of three measures**: `Points.computeMeanOfVectors`, `PolygonRegions.isPointInsideRing(ring, point)` and `Rectangle.computeEnclosingRectangle`, for a caller laying shapes out in the game's float UI coordinates. Each reads its points through the same walk as its `{x, y}` form rather than copying them across, so the two cannot disagree. The enclosing box comes back as a `Rectangle` rather than a `Bounds`, a corner and a size being what a box laid out on screen is placed by. The mean is named apart rather than overloaded, a `List<Vector2f>` and a `List<double[]>` erasing to the same parameter type.
-
-#### Third-party compatibility
-
-A binding to third-party code that stops holding now costs the feature built over it for the session rather than the render pass or the load, and the player is told once, in-game, as a block of labelled rows naming the mod that lost something, both versions, what it costs and what it does not - under a heading that points at the log for the mechanics. Two kinds of binding report through the one channel: a read Fast Rendering's bridge refuses, and a start-up step that integrates with another mod. [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/README.md) sets out how it works and why it is shaped this way; the entries below say only what is new.
-
-- **`FastRendering.FIRST_MODELVIEW_READ_RELEASE`** and **`FastRendering.readInstalledVersion()`**: the release that first serves the modelview read, and the one the installed `fr.jar` reports, read by name through a method handle. They are the two versions a refused read is reported between.
-- **`CompatibilitySubject`** and **`CompatibilityFailure`**: the third party a report is about with both versions, and one binding to it that stopped holding. The subject also reads how the installed version stands to the targeted one - behind, ahead, the same, or not comparable - by runs of digits, and answers only wording, so a self-report that lies costs a sentence rather than behaviour. A failure answers the player's notice as `CompatibilityNoticeLine`s: a heading naming which mod could not integrate with which third party, a diagnosis advising an update, a downgrade or a wait as the versions decide - and where the two name one release, asking for a report to the mod's own developer, there being no version to move to and a match being exactly what a fault in the integration survives - the rows, and a closing line pointing at the log. Each line carries its wording and the runs of it that stand out, in reading order. The log's block carries the same rows under the same labels in the same order, from literals. Four components of four distinct types, so no two can be transposed, and an unread version renders as an explicit unknown rather than as `null`.
-- **`CompatibilityBreakage`**: which guard caught a binding and what no longer holds, as one value. Neither diagnoses anything alone.
-- **`CompatibilityConsumer`**: the mod that took a binding - its mod ID, which of its features the binding serves, and the sentences naming what that feature loses and what it does not. The latch key is composed from the ID and the feature rather than supplied whole, so two mods cannot spell one key. Both sentences are the taking mod's, never the library's, and the ID is resolved against the mod manager only when a report is composed.
-  - **`resolveConsumerAtPosition()`**: the same mod and sentences under the feature key numbered, which is what the record hands a describer where one mod filed two features under one key.
-- **`CompatibilityFailures`**: the session's record, latched per third party, consuming mod and lost-feature sentence, written from any thread and drained by a reporter one failure at a time. The failure is built by a describer invoked only on the record that is kept, so a reflective probe or a version read is paid once per binding rather than once per frame.
-  - **A feature key one mod reused reports both features**: the latch is the subject, the consumer key and the lost-feature sentence together, so a mod that spells one feature key for two features has both reported, the second under `<feature>-2`. The sentence is what separates a second feature from the same one recording again, and a numbered key in the log names the reuse where its author will see it.
-  - **`CompatibilityFailures.SESSION_RECORD`**: the one record every binding writes into, held per session rather than per sector. `KMLib_ModPlugin` installs the notice that drains it on every game load.
-- **`InstalledMods.readModName()`** and **`readModVersion()`**: the display name the game holds for a mod ID and the version that mod declares, or nothing where the game cannot answer. Guarded like `ModPresence` beside it, a caller asking either being one composing a report.
-- **`WiringSteps`**: the guard one step of a mod's start-up wiring runs behind, in `starsector/startup/`. A step that throws costs its own registration rather than every step after it or every mod loading behind it. So does a step that cannot link what it binds to, which is how a third party's changed contract arrives: as a `LinkageError`, not an exception. Constructed with the wiring mod's own logger rather than holding one, because a level set through `LunaLogLevelBinding` scopes to a package subtree. One method runs a step that binds to nothing a player could act on, logging the trace; the other takes the integration and reports as well as logs, in one line, leaving the trace to the report.
-- **`ModIntegration`**: a third-party mod a start-up step binds to and what the wiring mod loses where the step does not take, recording the failure it composes from what was thrown and answering whether the record kept it. The version pair runs the other way round from a binding to a renderer patch: nothing was compiled against an optional mod, so the built-for row stands at its unknown wording while the installed one is read off the mod manager. Supplied to the guard as a supplier, so the wording and the version read stay off the load path of every install where nothing broke.
-- **`KmlibMod.MOD_ID`**: the library's own ID, held apart from the plugin so a class can say who it belongs to without loading a `BaseModPlugin` subclass for a string. The library files under it as a consumer of its own compatibility channel.
-- **`NexerelinPresence.MOD_NAME`**, **`RandomAssortmentOfThingsPresence.MOD_NAME`**, **`KmlibLunaSettings.LUNALIB_MOD_ID`** and **`LUNALIB_MOD_NAME`**: each third party's identity beside the code that binds to it, so a record latched under an ID and a report naming the mod cannot drift into two mods. LunaLib's sit under `settings/` rather than `mods/`: that tree is for the mods a consumer may run without, and LunaLib is a declared dependency.
-- **A start-up step that does not integrate is reported, not just logged**: `KMLib_ModPlugin` files its LunaLib settings binding, its Nexerelin routines and its Random Assortment of Things access routes through the compatibility channel under the library's own mod ID. Before this, a registration that threw was swallowed into the log, and a player who enabled a mod found out it had not integrated by playing a session without it. The compatibility notice's own install stays logged alone - a failure to install the reporter has nowhere to be reported to.
-- **An integration that breaks when first called is reported like one that breaks at install**: an optional-mod adapter reaches its mod's types only when first called, so a mod that changed underneath it is met at a founding, a hand-over, a counters decision, a reachability read or an alliance read rather than at load. Each runs behind a boundary that takes the failing adapter out for the session and reports it once, under the same report as a failure to install it. A link failure runs the library's own sequence in its place, none of the adapter's work having run; a throw partway through a founding, a hand-over or a counters decision is passed on to the caller instead, the colony being in a state neither sequence produces. A failed alliance read answers no alliances, as an install without Nexerelin does, and files under a feature of its own.
-  - **`IntegrationFailureReporter`**: files a failure of a binding as its integration's report from whichever boundary caught it, never throwing, the describer being the binding mod's own and as able to fail as the binding was. It also decides where the trace goes: a boundary logs one line, the report's block carries the trace, and the reporter logs it itself only where no block will - a report that could not be composed, or a second failure of a binding already reported.
-  - **`describeIntegration()`** on `NexerelinIntegration` and `RandomAssortmentOfThingsIntegration`, and **`KmlibLunaSettings.describeLunaLibIntegration()`**: each integration's report, held beside the code that binds it, so the guard over an install and the adapters it registers report under one description and are one report. `describeLunaLibIntegration(CompatibilityConsumer)` pairs LunaLib's ID and name with another mod's consumer, so a mod reporting its own LunaLib bindings names only itself and what it loses.
-  - **`ExtensionPoint.offerWork()`**: offers the work to the installed implementation inside that boundary and settles what came of it. An implementation taken out keeps the fallback policy it was registered with, so one that forbade the fallback goes on refusing runs rather than letting the ordinary sequence through.
-- **A failure found on a map screen is told there**: `ScreenCompatibilityNotices` stands a panel in the core UI's own widget tree on the frame the failure is found, and the dialog takes whatever it declines. A panel hung in that tree is advanced by the screen holding it, where a transient script on the sector is not advanced at all while a core screen is up - which is why a report raised from a map pass needs a surface of its own. Both drain the one record, so neither repeats the other and nothing is lost between them. Only the guards the game's own thread runs attempt a raise.
-  - **`CompatibilityNoticePanel`**: that panel. Built from the game's own widgets and stood up through `CoreUiOverlayPanels`, it paints its own backdrop and box, frames the box in the base colour the game frames its own dialogs with, and claims the events its widgets have not taken, because the game dims nothing behind a panel added this way. It fades in and out at the pace the game's own prompts do, so whatever thins itself underneath rides the same curve rather than being cut away and snapped back; it hands the screen back on the press and paints on for the length of the fall, claiming nothing for it. Four ways out - the button, escape, enter and space, matching the game's own one-button dialog, which binds both its keyboard confirm and its keyboard cancel to the single option.
-  - **`ModalOverlays`**, in `starsector/ui/coreui/`: the overlays this library has raised over a core screen and that hold it while up. `CoreUiDialogView` reads it beside the game's own modal base, so anything that stands aside for a game dialog - a sidebar's input, a fade against a modal - stands aside for a panel of ours on the same read, with no change on its side. An overlay counts while it is still fading as well as while it holds the screen, so a rider has the curve all the way down.
-  - **`OverlayPresence.isShowing()`**: whether any of an overlay is on screen, which is wider than whether it holds it. What rides a fade asks this; what routes input asks the flag.
-  - **Emphasis in the notice is named, not marked up**: names, versions and the log's file name are brought forward, what is wrong warns - the phrase naming the failure, the state the install is in, and the instruction for fixing it - what goes on working regardless is set at ease, and everything else reads plain. A mod is brought forward wherever it is named, inside a warning included, so the instruction to downgrade or wait is split into runs rather than warned whole; the version inside it stays part of the warning, being what the player is told to move to rather than a party to the mismatch. Every run that stands out is a value filled into a template, so the composition already holds it and nothing parses the wording; a phrase meant to stand out has a string key of its own. Runs are given in reading order because the engine matches each from where the last one ended, which is also what lets a name appear once brought forward and again inside a warned phrase. No font the game ships is monospaced - in `victor14` an `i` advances two pixels where an `M` advances seven - so colour is what separates a row's answer from its label on screen.
-- **`CompatibilityNotice`**: the transient per-frame script that drains that record and shows each failure as the game's own confirm dialog, carrying a single button, writing the report line before asking for the dialog. The dialog is sized off the longest shape the notice takes rather than by eye, having no way to grow to its content: an unreadable installed version, whose diagnosis runs to three lines, wraps to nineteen lines of the game's default font at that width. Too small silently cuts the closing line, which is the one pointing at the log. One dialog per frame. A confirm dialog rather than a message dialog, which is how the game puts up its own one-button notices and is the only one of the two that takes a size and answers whether it opened; a refusal is logged, so a modal the player never saw still leaves a trace.
-- **`UnavailableModelviewMatrixReader`**: the third `ModelviewMatrixReader`, whose every read is no reading. Not a new caller contract: `CampaignMapTransform` already parks on an absent reading.
-- **`FastRendering.COMPATIBILITY_SUBJECT_KEY`** and **`COMPATIBILITY_SUBJECT_NAME`**: the identity a refused read is recorded under and the name a report shows for this renderer, published so that every recording site spells them the same.
-- **A modelview read Fast Rendering refuses costs the reading, not the game**: a release before `v0.9.1rc1` throws mid-render when the map's modelview is read - `UnsupportedOperationException` from `v0.8.9`, `NoSuchMethodError` before it. `FastRenderingModelviewMatrixReader` catches both, so the map's cursor reading is lost for the session rather than the render pass. No stale matrix is reported in its place, and one failure is recorded however many frames the map stays open, telling the player to update Fast Rendering to `v0.9.1rc1`. The mechanism is set out in [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md).
-- **Each mod over a refused read is told what it lost**: `ModelviewMatrixReaders.selectForActiveRenderer()` resolves per consumer, so a second mod reading the map is reported to rather than handed the first one's reader. Before this the first caller's choice was held for the session, and every later mod's player was told nothing.
-- **A reach into the game's own code that stops holding is reported, with the game as the third party**: the widget walks and concrete-class reads behind the map's view state, the intel screen's map, the filter row and its buttons, a panel stood over a core screen, a modal or the codex over the screen, the map's tooltip and its repaint, and the order the map draws its icons in each file a failure through the reporter of the mod that loses something by it. The report states the game version that mod declares against the one running, so a player on a game release the mod was not made for is told to update or downgrade the game or wait for the mod. A reach that answers nothing files only where nothing is never an ordinary answer on that screen - an open intel tab holding no events panel, a map tab holding no icon map - so a screen that simply shows no map is never reported as a break. Filed and not raised on screen: the notice panel stands in the same widget tree these reaches walk, so the report waits for the campaign's dialog.
-  - **`GameReachReporter`**: one consumer's reporter, taking that mod's consumer as a describer composed only on a failure, filing once and never throwing. `COMPATIBILITY_SUBJECT_KEY` and `COMPATIBILITY_SUBJECT_NAME` are the game's identity as a subject. `UNREPORTED` files nothing, for a diagnostic read or a surface with a fallback of its own.
-  - **`InstalledMods.readModGameVersion()`**: the game version a mod declares it was made for, guarded like the reads beside it.
-
-#### Control rows
-
-- **`InteractiveSpec.isSegmented()`** and **`reselectBehaviour()`**: what a control answers about itself, replacing two chains of type tests that each worked it out from outside. Whether a control's cells are hit separately and what a re-pick of a lit cell does are each one rule with two readers, the hit-test that resolves a cell and the narrowing that decides whether pressing it acts; stated on either side, a control would be hit as a row of segments and pressed as a whole row, or the other way about. Every interactive variant now answers both, so neither can be forgotten for one.
-- **`RowDimensions`**: each row's height beside its width, as one value. Handed over as two lists they could arrive from different readings, two lists of different lengths or the heights of a run the widths were never measured from, and a stacker had no way to notice. Held together they are checked against each other where they are stated.
-  - **`ControlStripLayout.StripMeasurement.rowDimensions()`** answers a measurement's rows in that shape.
-
-#### Localisation build and release
-
-The build and release half of the per-locale bundles described under Test fixtures, whose localisation fixtures check what these write.
-
-- **`writeLocaleFiles`**: writes one locale's bundle into the files the game reads, registered by the shared Starsector conventions for a mod that commits `localisation/manifest.json`. `-Plocale=<tag>` selects, and the manifest's default is built otherwise. Each mapped file is copied byte for byte, and where the mod commits `mod_info.base.json` the locale's launcher fragment is merged over it - text fields only, any functional field refused. A mapping outside the mod root and a bundle missing a mapped file both fail the build. The manifest and the fragments are read through `shipped-json-reader.gradle`, the build-time counterpart of `ShippedJson` over the same `json.jar`, so the build and the checks agree on what parses. `jar` depends on it and `test` takes its outputs as inputs, so a locale switch re-runs both. `test` also takes `localisation/` and the root `CHANGELOG.md` as inputs, so editing only a translation re-runs the parity suite.
-- **`mod_info.base.json`**: a mod keeping its launcher text per locale commits the base and gitignores the `mod_info.json` written from it, since beside the base that file is a build output - absent on a fresh checkout, and on whichever locale was last written otherwise. Every build script and every release action reads the base where one is committed and `mod_info.json` where none is.
-  - **`mod-info-reader.gradle`**: reads the metadata once while the build configures and publishes it as `modInfo`, the file it came from as `modInfoFile`, and `readModInfo(File)` for another checkout's, all by that rule. The conventions apply it, and `writeVersionFile` and the KMLib version report read through it rather than parsing the file themselves.
-- **Per-locale releases**: `mod-release.yml` releases a mod committing `localisation/manifest.json` as one zip per locale, each carrying its own version file, with every locale's version file attached beside the zips. The jar is built once, being identical across locales. A mod committing no manifest releases exactly as before.
-  - **`read-locales`**: the locales a mod releases in, from its manifest - tag, display name and core localisation, the default first - and its default. An empty list for a mod committing no manifest.
-  - **`package-release`**: writes each locale into the checkout, assembles and zips its payload and fills its version file, collecting every asset in one directory. An action because the work is a loop and a workflow cannot loop a `uses:` step, so every version file is filled by the one script. Each zip carries its own locale's changelog: a translated locale's `CHANGELOG.md` from its bundle directory, the default's from the root.
-  - **`compose-locale-note`**: two parts of the release body. A *Builds by language* list names each locale's zip and links the core localisation a locale needs installed over `starsector-core`, which the launcher cannot check for. Below the dependency line, each translated locale's notes for the version are collapsed under its display name. A translation without the version's section fails the release.
-  - **`fill-version-file-template` takes an optional `locale`**: the download URL names that locale's zip and `masterVersionFile` that locale's own copy, so an install polls the copy leading back to its own language. A template whose master address does not end in `<mod-id>.version` names nowhere the release publishes locale copies to, and fails rather than point an install at nothing.
-- **KMLib keeps its own text per locale**: its strings and its settings table live under `localisation/<locale>/`, its launcher metadata in `mod_info.base.json`, and the copies the game reads are written by the build. `localisation/zh-hans/CHANGELOG.md` translates this changelog, every version and every section. `LocaleParityIntegrationTests` holds every locale it declares to the default, as each consumer mod's suite does over its own directory. The Chinese bundle's `README.md` is the base terminology reference, the vanilla words the library's own text touches and its own terms, which each consumer mod's reference builds on.
+- **Simplified Chinese (简体中文).** A second zip, `KMLib-<version>-zh-hans.zip`, carries the compatibility notice, the settings tab and the mod list entry in Simplified Chinese. Install the [Chinese localisation](https://github.com/TruthOriginem/Starsector-Localization-CN) over `starsector-core` first: the game's own fonts hold no Chinese characters, so without it every one draws as `?`. The Log verbosity options stay in English, so the setting carries over between the two zips.
+- **An in-game notice says when a KM mod cannot integrate with another mod, Fast Rendering or the game itself.** It names the mod, both versions, what stops working and what does not, and whether to update, downgrade or wait. The failure costs only the feature built on that integration, and each one shows once per session.
+  - **A KM mod's own feature that fails and is switched off is reported the same way**, asking for a report to the mod's developer.
+  - **A failure found while a map is open can show over the map**, without waiting for the campaign screen.
 
 ### Test fixtures
 
@@ -225,6 +129,51 @@ A mod's player-facing files can be kept per language, one bundle per locale unde
 
 #### Added
 
+##### Compatibility
+
+The API behind the in-game notice. [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/README.md) sets out how it works and why.
+
+- **`CompatibilityFailures`**: the session's record of failures, latched per third party, consuming mod and lost-feature sentence. Any thread writes it, and a reporter drains it one failure at a time.
+  - `CompatibilityFailures.SESSION_RECORD`: the one record every binding writes into. `KMLib_ModPlugin` installs the notice that drains it.
+  - `recordFeatureFailureOnce()`: records a mod's own failed feature as a `FeatureFailure`.
+  - A mod that reuses one feature key for two features has both reported, the second under `<feature>-2`.
+- **`ReportedFailure`**: the sealed type the notice draws.
+  - `CompatibilityFailure`: one binding to a third party that stopped holding. It composes the notice's heading, diagnosis, rows and closing line as `CompatibilityNoticeLine`s.
+  - `FeatureFailure`: a mod's own feature that threw and was switched off.
+- **What a report is made of**:
+  - `CompatibilitySubject`: the third party, with the targeted and installed versions and how they compare.
+  - `CompatibilityBreakage`: which guard caught a binding and what no longer holds.
+  - `CompatibilityConsumer`: the mod that took the binding, the feature it serves, and the sentences naming what it loses and what it does not. `resolveConsumerAtPosition()` numbers a reused feature key.
+- **Start-up wiring**:
+  - `WiringSteps`: runs one start-up step behind a guard, in `starsector/startup/`. A step that throws or fails to link costs only its own registration.
+  - `ModIntegration`: the third-party mod a step binds to, and what the wiring mod loses without it.
+  - `KMLib_ModPlugin` reports its LunaLib, Nexerelin and Random Assortment of Things wiring through the channel, under KMLib's own mod ID.
+- **Integrations that break on first call**: an optional-mod adapter that fails at a founding, a hand-over, a counters decision, a reachability read or an alliance read is taken out for the session and reported once.
+  - `IntegrationFailureReporter`: files that failure from whichever boundary caught it, never throwing.
+  - `ExtensionPoint.offerWork()`: offers work to the installed implementation inside that boundary.
+  - `describeIntegration()` on `NexerelinIntegration` and `RandomAssortmentOfThingsIntegration`, and `KmlibLunaSettings.describeLunaLibIntegration()`: each integration's report, beside the code that binds it.
+- **Reaches into the game's own code**: the widget walks and class reads behind the map, the intel screen, the filter row, overlays, the codex, tooltips and icon order report through the mod that loses something, with the game as the third party.
+  - `GameReachReporter`: one mod's reporter. `UNREPORTED` files nothing, for diagnostic reads.
+  - `InstalledMods.readModGameVersion()`: the game version a mod declares.
+- **Fast Rendering's refused read**: a release before `v0.9.1rc1` throws on the modelview read. `FastRenderingModelviewMatrixReader` catches it and records one failure; [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md) sets out the mechanism.
+  - `FastRendering.FIRST_MODELVIEW_READ_RELEASE` and `readInstalledVersion()`: the two versions a refused read is reported between.
+  - `FastRendering.COMPATIBILITY_SUBJECT_KEY` and `COMPATIBILITY_SUBJECT_NAME`: the renderer's identity in a report.
+  - `UnavailableModelviewMatrixReader`: the reader whose every read is no reading.
+  - `ModelviewMatrixReaders.selectForActiveRenderer()` resolves per consumer, so each mod over a refused read is told what it lost.
+- **Notice surfaces**:
+  - `CompatibilityNotice`: shows each failure as the game's own one-button confirm dialog.
+  - `ScreenCompatibilityNotices`: shows a failure found on a map screen there, in a `CompatibilityNoticePanel`.
+  - `CompatibilityNoticePanel`: stands in the core UI's widget tree, fades like the game's own prompts, and closes on the button, escape, enter or space.
+  - `ShownMapTab.isMapTabShowing()`: whether a map is on screen, failing closed. The panel comes down with the map through it.
+  - `ModalOverlays`: the overlays KMLib holds a core screen with, in `starsector/ui/coreui/`. `CoreUiDialogView` reads it beside the game's own modals.
+  - `OverlayPresence.isShowing()`: whether any of an overlay is on screen, fading included.
+  - Emphasis in the notice comes from the values filled into its templates, never from parsing its wording.
+- **Mod identities**, each beside the code that binds to it:
+  - `KmlibMod.MOD_ID`: KMLib's own ID, readable without loading its plugin class.
+  - `NexerelinPresence.MOD_NAME` and `RandomAssortmentOfThingsPresence.MOD_NAME`.
+  - `KmlibLunaSettings.LUNALIB_MOD_ID` and `LUNALIB_MOD_NAME`.
+  - `InstalledMods.readModName()` and `readModVersion()`: a mod's display name and declared version, as the game holds them.
+
 ##### Fonts
 
 Text falls back to a face that holds every character of it, so a localised install draws its script rather than `?`.
@@ -261,6 +210,97 @@ Text falls back to a face that holds every character of it, so a localised insta
 - **Font build gates**: every build needs the network and the game's fonts.
   - `test` checks every face on the build's install, on each localisation edition the lock pins and on any install `-PfontInstallRoots` names.
   - `checkFontEditions` fails the build when an edition publishes new descriptors, against the SHAs in `font-editions.lock.json`; `writeFontEditionsLock` updates the lock.
+
+##### Factions
+
+- **Alliances**: which factions stand together, from whichever mod keeps them. Vanilla keeps none.
+  - `FactionAlliances`: the alliance each allied faction belongs to, with `areFactionsAllied` and `buildFrom`.
+  - `AllianceRecord`: one alliance as plain data: ID, display name, and members by descending market size.
+  - `AllianceSource`: the port the records arrive through.
+  - `NexerelinAllianceSource`: Nexerelin's live alliances, behind the presence gate.
+- **`FactionNames`** and **`FactionNameForm`**: a faction's authored names, read in one place.
+  - `resolveName`: the short or the long name, as authored.
+  - `resolveFullestName`: the long name, or the short one where the long is blank.
+  - `listEveryName`: every faction's names, each text once.
+- **`StarsectorFactionColours.findPalette()`**: a faction's bright and dark pair with no grey fallback, null where the faction is absent. `resolvePalette` falls back through it.
+
+##### Geometry
+
+- **`VertexWelder`**: merges reports of a corner within a tolerance, so edges computed apart compare by exact ID. Moved out of `EdgeRings`.
+- **`Disk.measureSagitta(radius, segments)`**: how far a disk's polygon falls inside the disk at worst - the resolution anything drawn against it really has.
+- **`Segment`** and `{x, y}` points:
+  - `readStart()` and `readEnd()`: a segment's ends, each a fresh array.
+  - `joinPoints(start, end)`: the segment between two points.
+- **Polygon checks**:
+  - `PolygonRegions.countSelfCrossings(ring)`: how many times a ring crosses itself. Quadratic, so for tests and probes.
+  - `PolygonOffsets.hasInsetCollapsed(rawRing, insetRing)`: whether a miter inset folded a ring over rather than offsetting it.
+  - `PolygonOffsets.removeReversedLoops(polygon, isCounterClockwise, windowVertexCount)`: the fold splicer told the intended winding, for a ring whose folds outweigh its body. Both forms splice a fold that straddles the ring's start, and only a loop that does not cross itself, innermost first.
+- **`Points.measurePathLength(points)`**: an open path's length, end to end.
+- **`PolygonShapes.computeRegularVertices`**: a regular polygon's vertices from a centre, radius, side count and start angle, as `{x, y}` pairs or `Vector2f`s. `LabelledPolygon.createRegularPolygon` seeds its clips through it.
+- **`Vector2f` forms**, for shapes laid out in the game's float UI coordinates:
+  - `Points.computeMeanOfVectors`
+  - `PolygonRegions.isPointInsideRing(ring, point)`
+  - `Rectangle.computeEnclosingRectangle`: answers a `Rectangle`, placed by a corner and a size.
+
+##### Controls
+
+- **Radios**:
+  - `RadioSpec`: the sealed interface over horizontal and vertical radios, carrying the re-pick rule. Existing `HorizontalRadio` call sites compile unchanged.
+  - `VerticalRadioSpec`: a column of option cells, one lit, for option sets too long for a row.
+- **Scrolling**:
+  - `ScrollingSectionSpec`: a run of controls that scrolls together, such as a heading, its list and the row beside it.
+  - `Control.isScrolled()`: whether a laid-out control sits in that section. A `Control` built without it is pinned.
+- **`InteractiveSpec.isSegmented()`** and **`reselectBehaviour()`**: a control states whether its cells are hit separately and what re-picking a lit cell does, so the hit-test and the press agree.
+- **`RowDimensions`**: each row's height and width as one checked value.
+  - `ControlStripLayout.StripMeasurement.rowDimensions()`: a measurement's rows in that shape.
+- **`TooltipRow.createRow(List<LabelRun>)`** and **`LabelledRow.createRow(List<LabelRun>)`**: a row over a label already composed as runs.
+
+##### Campaign and saves
+
+- **Memory per address**: a stored value held once per point on an axis the mod declares, rather than once per save.
+  - `MemoryKeyAddress`: composes the key in one place, so no two holders share a slot by accident.
+  - `AddressedMemoryFlag` and `AddressedMemoryString`: the holders.
+- **Forms naming a sector**, for code handed its sector rather than reading the running one:
+  - `SectorMemoryString` and `SectorMemoryFlag`: every read and write, over `SectorMemoryAccess.readSectorMemory(sector)`.
+  - `BaseExpiringIntelPlugin.findActive(sector, intelClass)`, `isExpired(clock)` and a constructor taking the clock.
+- **Calendar**:
+  - `CampaignCountdown`: a span of campaign days from a start, with an optional completion slack so it finishes on the frame the player expects. `BaseExpiringIntelPlugin` reads its window through one.
+  - `CampaignMonth`: one month of the campaign calendar. `formatKey()` spells it `<cycle>-<month>`, the key a monthly job saves its last run under.
+- **`Colonies.selectColonies(test)`** and **`Colonies.hasAnyColony(test)`**: filter a colony set in its own order, or stop at the first match. An absent test passes nothing.
+- **`PersistedChoice`** and **`PersistedChoices.fromKey()`**: an option a save stores by its own key, and the lookup back with a fallback. `SortDirection`, `ListColumns` and `ListSortMode` are persisted choices.
+
+##### Core utilities
+
+- **Strings**:
+  - `KmlibStringKeys.get()` and `format()`: lookups in KMLib's own category.
+  - `KmlibStrings.requireText()`: rejects a null or blank name or sentence.
+- **`GlMatrix`**:
+  - `FLOAT_COUNT`: the sixteen floats a GL matrix takes. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` reads off it.
+  - `createIdentity()`: a fresh identity matrix each call.
+- **Data files**:
+  - `SpreadsheetRows`: a merged spreadsheet's data rows, without blank-ID spacers and `#` comments, with list-valued cells split. `FactionSourceMods` reads `factions.csv` through it.
+  - `ScriptClasses.instantiateScript(className, scriptType)`: builds a class a data file names without `java.lang.reflect`, which the game refuses mod code. A bad name is refused naming the class.
+- **`Jitter.roll(jitterSize, random)`**: a jitter drawn from a caller's `Random`, to replay from a seed. The band's upper end is open.
+
+##### Build and release
+
+The build and release side of the per-language zips. The localisation fixtures under Test fixtures check what these write.
+
+- **`writeLocaleFiles`**: writes one locale's bundle into the files the game reads, for a mod committing `localisation/manifest.json`. `-Plocale=<tag>` picks the locale, and the manifest's default is built otherwise.
+  - Where the mod commits `mod_info.base.json`, the locale's launcher fragment is merged over it, text fields only.
+  - JSON is read through `shipped-json-reader.gradle`, over the same `json.jar` as `ShippedJson`.
+  - `jar` and `test` re-run on a locale switch. `test` also re-runs when `localisation/` or the root `CHANGELOG.md` changes.
+- **`mod_info.base.json`**: a mod with per-locale launcher text commits the base and gitignores the `mod_info.json` written from it. Every build script and release action reads the base where one exists.
+  - `mod-info-reader.gradle`: reads that metadata once, as `modInfo` and `modInfoFile`, with `readModInfo(File)` for another checkout.
+- **Per-locale releases**: `mod-release.yml` releases a mod committing `localisation/manifest.json` as one zip and one version file per locale, from one jar. A mod with no manifest releases as before.
+  - `read-locales`: the locales a mod releases in, default first.
+  - `package-release`: writes, zips and fills the version file for each locale. Each zip carries its own locale's `CHANGELOG.md`.
+  - `compose-locale-note`: the release body's *Builds by language* list, linking each locale's core localisation, and each translation's notes collapsed under its name. A translation missing the version's section fails the release.
+  - `fill-version-file-template` takes an optional `locale`, so an install polls its own language's version file.
+- **KMLib's own text per locale**: strings and settings under `localisation/<locale>/`, launcher text in `mod_info.base.json`.
+  - `localisation/zh-hans/CHANGELOG.md` translates this changelog in full.
+  - `LocaleParityIntegrationTests` holds every locale to the default.
+  - The Chinese bundle's `README.md` is the base terminology reference each consumer mod's builds on.
 
 #### Changed
 
