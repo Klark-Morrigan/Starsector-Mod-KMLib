@@ -17,14 +17,9 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **A key written after a button's words stays on the button.** `VanillaButtonLabel.announceShortcut()` writes a key the words do not hold after them, as `" [M]"`, but the game sizes a button's label once, to the words it was built with, and wraps anything longer at that width. The key dropped onto a second line outside the button: in any translation whose words lack the letter, and in English for a key rebound to one the words lack. The label is now widened to the words it carries.
-- **`MapIconReseater` lifts an icon under the campaign's speed-up.** With the speed-up toggled on, the campaign advances its scripts several times per rendered frame, map open or not, so a removal and a put-back on consecutive advances landed in one frame and the widget never rendered without the icon: every layer stayed under the nebulae on every open, unmoved by a save reload or a Starscape toggle. The put-back now waits until the widget has dropped the icon, bounded by `MAX_ADVANCES_DETACHED` advances and ended at once when the map goes down. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
-- **A stood-down lift is tried again on the next map open.** The attempt bound abandons a lift for the rest of the open rather than for the session: the next open is a fresh widget with a fresh seeding, and a stand-down that outlived its cause read, from outside, as the lever having stopped working.
-- **`GlRuns`, `GlLines`, `GlQuads` and `GlTriangles` close the primitive they open when a draw throws.** A run that faulted part-way left the pipeline inside `glBegin`, where every later state call is refused, the attribute restore of a `GlPasses` pass around it among them, so one failed draw spoiled the state of everything drawn after it. `glEnd` now runs in a `finally` block.
-- **A settings change that fails to apply is logged.** LunaLib contains a listener that throws but says so only at debug and without the trace, below what a player's log keeps, so a callback given to `LunaSettingsReader.runOnSettingsChange` that failed left no line at all. It is logged at error with its trace, and the next change is tried as usual. The log-level binding is built on the same relay.
-- **A failed reach into the game's own screens stays inside its boundary.** `CoreUiTree` hands on the game's own failure wrapped in a checked exception and thrown undeclared, and a member a new game build dropped as a `LinkageError`, and either one escaping ends the frame. The screen check the notice panel and a panel standing over a map both make catches both, as `ShownMapTab.isMapTabShowing()`. `CoreUiTree.readHopIfOffered` asks for the method name inside the catch that makes it answer null. `CampaignMapView` catches a `LinkageError` from the game's campaign-UI-data class, whose reads run from render passes with no catch of their own, and answers the map as not showing, with one warning. `VanillaIntelScreenView` does the same for the intel panel's fader, the one member it reads off the game's panel by a direct call, and answers no visor.
-- **Every class-wide warning about a reach into the game's widgets speaks again when a diagnostic is switched on.** Only the map probes' warnings were gathered for re-arming, so the filter-row control's, its label's and `CampaignMapView`'s stayed spent: a reader who switched a trace on after one of those broke was told nothing.
-- **`HighlightedParagraph` hands its runs to the game in the order they stand in the text.** The game searches for each run from where the previous one matched, so a run given after one standing later in the text was never found. Ordering them is also what lets a translation number its slots in another order. A run named twice takes its next occurrence each time, and one the text lacks goes last.
+- **A shortcut key shown after a button's words stays on the button.** In a translation whose words lack the key's letter, or in English with the key rebound, a key such as `[M]` wrapped onto a second line outside the button.
+- **Map layers drawn by KM mods stay above the nebulae with the campaign speed-up on.** Every layer stayed under the nebulae on every map open, and neither a save reload nor a Starscape toggle cleared it. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
+  - **A layering fix that gave up is tried again on the next map open**, rather than staying off for the rest of the session.
 
 ### Added
 
@@ -180,17 +175,10 @@ A mod's player-facing files can be kept per language, one bundle per locale unde
 
 ### Changed
 
-- **Under Fast Rendering the map's modelview is read through `glGetFloat`, and needs Fast Rendering `v0.9.1rc1`.** That release answers `glGetFloat(GL_MODELVIEW_MATRIX)` inline, from a copy of the matrix it keeps on the calling thread, so the cursor reading is current to the frame rather than a frame or two behind while the map pans. The copy KMLib used to enqueue on the renderer's own thread is gone, and so is every binding to the renderer's internals: KMLib compiles against no part of `fr.jar`, and a refactor inside it can no longer break the read. On an earlier release the map does not respond to the cursor, and the player is told which release to update to.
-- **The log level setting's description ends with its default on a line of its own.** The game highlights a run only where the characters beside it are whitespace or ASCII punctuation, so a default closing a sentence in a language whose full stop is neither could not highlight. A line break counts as whitespace.
-- **The mod list names the mod Klark Morrigan's Library (KMLib)**, so the abbreviation used everywhere else sits beside the full name. Update checkers show the same name. A mod depending on KMLib may give its `dependencies` entry the same name; the launcher shows it only when KMLib is missing.
-- **The release zip is named for its language:** `KMLib-<version>-en.zip` and `KMLib-<version>-zh-hans.zip`, with `kmlib-<locale>.version` attached beside `kmlib.version`. Each language KMLib is translated into ships as a zip of its own on the same release page, and the release notes name which zip is which. Update checkers keep working across the change: an install of an earlier version is still told about this release.
-- **`MapIconReseater` says in the log what it saw.** A layering that degrades over a session cannot be diagnosed from the picture, and the moves alone do not say why one stopped taking. The map coming and going is traced at DEBUG, each edge carrying the count of lifts the icon has not been seen clear since and, on the close, whether it was seen clear at all while the map was up. Two states are reported at WARN, each once per session so a failure that does not heal costs one line rather than one per open: a map that stays up with the entity in its location and no icon placeable for it, the map read and the placement read then disagreeing about what is on screen; and the stand-down, carrying the readings that led to it so it says whether the lifts were never observed or observed and undone. All on the library's own logger, which `KmlibLunaSettings` binds to KMLib's verbosity field; the package README lists the lines.
-- **`VoronoiCellBuilder` lays the corners its cells share.** Where a neighbour's border meets the radius bound, both cells now put that corner in the same place, worked out from the two sites and the reach rather than from either cell's own seed - so they agree exactly rather than to a tolerance. The seed is a polygon inscribed in the bound, and its flat sides used to move such a corner, or at a coarse segment count cut it away altogether; a consumer chaining adjacent cells' frontier edges into one outline found a gap at every one of those, wide enough at a low count to leak one enclosed region into the next. A corner that is cut away is now put back, by breaking the span it should have stood on and running the boundary through it.
-
-  The segment count therefore decides how smoothly an arc is drawn and nothing else. The corners a cell offers are the same at any count, which is what anything laid against a cell needs. Where three cells meet inside the bound their shared corner is one corner, not two with an empty span between them.
-
-  Cell geometry moves by up to a chord's sagitta at those corners - about eight units at the shipped reach and default count, and four times that at half the count. Consumers asserting cell vertices to tighter than that will need re-baselining.
-- **The Starsector conventions read a mod's metadata as the launcher does**: through the game's own parser in `json.jar`, where `JsonSlurper` read it before, so the build and the launcher cannot disagree on whether the file parses. Configuring the build therefore needs the install, and a machine without one is told where `json.jar` was looked for as the build configures rather than when it compiles.
+- **Under Fast Rendering, the map follows the cursor only from `v0.9.1rc1` on.** The cursor reading is current to the frame rather than a frame or two behind while the map pans. On an earlier release the map does not respond to the cursor, and a notice names the release to update to.
+- **The Log verbosity setting's description ends with its default on a line of its own**, so the default highlights in Chinese too.
+- **The mod list names the mod Klark Morrigan's Library (KMLib).** Update checkers show the same name.
+- **Each language ships as its own zip**: `KMLib-<version>-en.zip` and `KMLib-<version>-zh-hans.zip`, side by side on the release page. The release notes say which is which, and update checkers keep working across the change.
 
 ### Public contracts changed (**breaking**)
 
@@ -220,6 +208,20 @@ A mod's player-facing files can be kept per language, one bundle per locale unde
 
 <details>
 <summary>API, build tooling and test fixtures</summary>
+
+#### Fixed
+
+- **Shortcut key on a button:** `VanillaButtonLabel.announceShortcut()` widens the label to the words it carries. The game sizes a label once, to the words it was built with, and wraps anything longer.
+- **Map layers under the speed-up:** `MapIconReseater` puts an icon back only once the widget has dropped it, bounded by `MAX_ADVANCES_DETACHED` advances and ended when the map closes. The speed-up advances scripts several times a frame, so a removal and a put-back landed in one frame and the widget never re-layered the icon.
+- **`GlRuns`, `GlLines`, `GlQuads` and `GlTriangles` call `glEnd` in a `finally` block.** A draw that threw left the pipeline inside `glBegin`, spoiling the GL state of everything drawn after it.
+- **A `LunaSettingsReader.runOnSettingsChange` callback that throws is logged at error with its trace.** LunaLib reports it only at debug, without the trace. The next change is tried as usual, and the log-level binding uses the same relay.
+- **A failed reach into the game's screens is caught at its boundary** instead of ending the frame. Both ways it fails are caught: the game's own failure thrown undeclared, and a `LinkageError` from a member a new game build dropped.
+  - `ShownMapTab.isMapTabShowing()`: the screen check the notice panel and any panel over a map make.
+  - `CoreUiTree.readHopIfOffered`: asks for the method name inside the catch that answers null.
+  - `CampaignMapView`: answers the map as not showing, with one warning.
+  - `VanillaIntelScreenView`: answers no visor where the intel panel's fader will not link.
+- **Switching a diagnostic on re-arms every class-wide warning about a reach into the game's widgets**: the filter-row control's, its label's and `CampaignMapView`'s as well as the map probes'.
+- **`HighlightedParagraph` hands its runs to the game in text order**, so a translation may number its slots in any order. A run named twice takes its next occurrence each time, and one the text lacks goes last.
 
 #### Added
 
@@ -259,6 +261,17 @@ Text falls back to a face that holds every character of it, so a localised insta
 - **Font build gates**: every build needs the network and the game's fonts.
   - `test` checks every face on the build's install, on each localisation edition the lock pins and on any install `-PfontInstallRoots` names.
   - `checkFontEditions` fails the build when an edition publishes new descriptors, against the SHAs in `font-editions.lock.json`; `writeFontEditionsLock` updates the lock.
+
+#### Changed
+
+- **Map cursor under Fast Rendering:** the modelview is read through `glGetFloat(GL_MODELVIEW_MATRIX)`, which `v0.9.1rc1` answers inline. KMLib compiles against no part of `fr.jar`, so a refactor inside Fast Rendering cannot break the read.
+- **Mod list name:** a mod depending on KMLib may use the same name in its `dependencies` entry. The launcher shows it only when KMLib is missing.
+- **`MapIconReseater` logs what it saw**, on KMLib's own logger. The package README lists the lines.
+  - Map open and close are traced at DEBUG, each with the lift count since the icon was last seen clear.
+  - Two states warn once per session: a map up with no placeable icon, and a stand-down, with the readings behind it.
+- **`VoronoiCellBuilder` puts a corner adjacent cells share in the same place in both**, worked out from the two sites and the reach. Chained frontier edges meet without gaps, and the segment count sets only how smoothly an arc is drawn.
+  - Cell vertices move by up to a chord's sagitta at those corners: about eight units at the shipped reach and default count. Re-baseline any assertion tighter than that.
+- **The Starsector conventions read a mod's metadata through the game's `json.jar`**, as the launcher does, so the two agree on whether it parses. Configuring the build therefore needs the install.
 
 </details>
 
