@@ -155,10 +155,12 @@ This is the conventional reading of pre-1.0 SemVer
 and avoids spending MAJOR before APIs have stabilised.
 
 KMU starts at `0.1.0`.
-KMLib's first stable tag is `1.0.0`,
-cut once it has at least one external consumer pinning it -
-which KMU does,
-through the `kmlib` dependency in its `mod_info.json` that [validate-versioning](../../.github/actions/validate-versioning/action.yml)
+KMLib and KMU reach `1.0.0` together,
+once KMU is judged ready for it.
+Until then KMLib stays on `0.x.y`,
+however many consumers pin it.
+KMU pins it through the `kmlib` dependency in its `mod_info.json`,
+which [validate-versioning](../../.github/actions/validate-versioning/action.yml)
 holds to a well-formed SemVer pin at release time.
 
 ## Tag format
@@ -184,34 +186,75 @@ so the format must be consistent across repositories:
 ## [Unreleased]
 
 ## [1.0.0] - 2026-05-18
-### Added
+
+### Fixed
 - ...
-### Test fixtures
+### Added
 - ...
 ### Changed
 - ...
-### Fixed
+
+### For developers
+
+<details>
+<summary>API, build tooling and test fixtures</summary>
+
+#### Fixed
 - ...
+#### Added
+##### <area>
+- ...
+##### Test fixtures
+- ...
+#### Changed
+- ...
+#### Public contracts changed (**breaking**)
+| Before | After | Why |
+| --- | --- | --- |
+
+</details>
 ```
 
 A missing section for the released version fails the release pipeline,
 so release notes are never silently dropped.
 
-**Test fixtures take a section of their own,
-apart from `Added`.** They ship in the main jar and are public API by the table above,
+**The top-level sections are for players.**
+They hold only what a player notices in game.
+Everything a modder needs - API, build tooling, test fixtures and breaking changes -
+goes in the collapsed `For developers` block.
+This section becomes a GitHub release body,
+and a player reading one should not have to wade through internals to find what changed for them.
+
+**A developer entry extends a player entry; it never repeats it.**
+Where one change has both sides,
+the developer bullet opens with a short label naming the player line,
+then adds only the API and the cause.
+
+**Entries are short.**
+One or two sentences: what changed, plus a clause of why where it is needed.
+Design reasoning lives in javadoc and package READMEs.
+Related entries nest under one parent bullet rather than running on in one.
+
+**Test fixtures are an area of their own,
+apart from production additions.**
+They ship in the main jar and are public API by the table above,
 so a new one is still MINOR -
 but what a reader does about one differs.
 A production addition is something a consumer's shipped code may now call;
 a fixture is something a consumer's *test* code may now stand on,
 and often something it may now delete a copy of.
-Mixed into one list the two have to be told apart entry by entry,
-and this section becomes a GitHub release body,
-where nobody is reading closely enough to do that.
+Mixed into one list the two have to be told apart entry by entry.
 
-The same reasoning is why `Public contracts changed` and `Dependency changes` are sections
+The same reasoning is why breaking changes are a table of their own,
+and `Dependency changes` a section of its own,
 rather than entries under `Changed`:
 the split is by what the reader has to go and do,
 not by what kind of edit was made.
+A breaking row says what a caller wrote before, what it writes after, and why.
+Where many rows share one reason, such as a batch of renames,
+the table splits by area instead:
+each area takes a `#####` heading and one sentence of why,
+over a table of before and after alone.
 
 A changelog that also carries a `## Index` of its versions must list the version being released in it.
 That index is a second place every version is written down and nothing reads it but a human,
