@@ -7,6 +7,7 @@ The reusable release workflow extracts the section matching the released version
 ## Index
 
 - [Unreleased](#unreleased)
+- [0.5.1](#051---2026-10-06)
 - [0.5.0](#050---2026-10-05)
 - [0.4.0](#040---2026-09-15)
 - [0.3.1](#031---2026-09-15)
@@ -16,13 +17,12 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-06
+
 ### Fixed
 
 - **[KMU] Occasional drawing of every map label letter as a solid filled rectangle** caused by failed load of the map label font on an install with Fast Rendering and VRAM Optimiser. _Reported by **lChronosl** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1556768476436111471)._
-
-### Changed
-
-- **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`.
+- **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`. _Reported by **NH4CI** [at **Fossic**](https://www.fossic.org/forum.php?mod=redirect&goto=findpost&ptid=21517&pid=405627)._
 
 ### For developers
 
