@@ -240,7 +240,7 @@ The build and release side of the per-language zips. The localisation fixtures u
 - **Per-locale releases**: `mod-release.yml` releases a mod committing `localisation/manifest.json` as one zip and one version file per locale, from one jar. A mod with no manifest releases as before.
   - `read-locales`: the locales a mod releases in, default first.
   - `package-release`: writes, zips and fills the version file for each locale. Each zip carries its own locale's `CHANGELOG.md`.
-  - `compose-locale-note`: the release body's *Builds by language* list, linking each locale's core localisation, and each translation's notes collapsed under its name. A translation missing the version's section fails the release.
+  - `compose-locale-note`: the release body's _Builds by language_ list, linking each locale's core localisation, and each translation's notes collapsed under its name. A translation missing the version's section fails the release.
   - `fill-version-file-template` takes an optional `locale`, so an install polls its own language's version file.
 - **KMLib's own text per locale**: strings and settings under `localisation/<locale>/`, launcher text in `mod_info.base.json`.
   - `localisation/zh-hans/CHANGELOG.md` translates this changelog in full.
