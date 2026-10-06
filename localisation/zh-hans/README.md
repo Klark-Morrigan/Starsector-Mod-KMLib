@@ -198,6 +198,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | Dependency changes | 依赖变更 | |
 | Public contracts changed (**breaking**) | 公共契约变更（**破坏性**） | from 公共契约 |
 | Test fixtures | 测试夹具 | |
+| For developers | 面向开发者 | |
+| No player-facing changes. | 没有面向玩家的变更。 | opens a version whose changes are all under `For developers` |
 | Reported by X at USC | 由 X 在 USC 报告 | closes the entry as a sentence of its own |
 | Requested by X at USC | 由 X 在 USC 提出请求 | |
 | release (a published version) | 发布版本 | |
@@ -226,6 +228,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | slot (in a format string) | 槽位 | |
 | body colour (of text) | 正文颜色 | |
+| pull request | 拉取请求 | GitHub's own Chinese interface word |
+| gate (a CI check a change must pass) | 门禁 | |
+| runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
+| lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
 
 ## Forum terms
 

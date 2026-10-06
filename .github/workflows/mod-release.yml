@@ -29,7 +29,7 @@
 # config job and stops.
 #
 # Job chain (each downstream job is gated on version-updated == true):
-#   config -> {ci-bash, ci-gradle} -> prepare-artifact -> create-tag -> create-release
+#   config -> {ci-bash, ci-gradle, ci-yaml} -> prepare-artifact -> create-tag -> create-release
 name: mod-release
 
 on:
@@ -192,10 +192,10 @@ jobs:
     with:
       # Build on the mod's own runner: it carries STARSECTOR_HOME and the
       # install that starfarer.api.jar resolves against, which a hosted
-      # runner lacks. setup-java is off because that runner provides the JDK.
+      # runner lacks. It also provides the JDK, so setup-java stays at its
+      # default of off.
       runner: ${{ needs.config.outputs.runner-json }}
       gradle-tasks: coverage
-      setup-java: false
       # The build applies shared Gradle scripts from neighbouring repos by
       # paths relative to its own root, so the checkout cannot sit at the
       # workspace root: it goes one level down with the neighbours cloned
@@ -207,12 +207,18 @@ jobs:
       sibling-checkouts: ${{ needs.config.outputs.sibling-checkouts }}
     secrets: inherit
 
+  ci-yaml:
+    needs: config
+    if: needs.config.outputs.version-updated == 'true'
+    uses: Klark-Morrigan/Common-Automation/.github/workflows/ci-yaml.yml@master
+
   # Assemble the runtime payload and zip it. Runs on the mod's runner so the
-  # jar rebuild has the Starsector install on hand. Uses the same one-level-down
-  # layout as ci-gradle above, for the same reason: the build reads shared
-  # Gradle scripts from repos that have to sit beside the checkout.
+  # jar rebuild has the Starsector install and the JDK ci-gradle tested with
+  # on hand. Uses the same one-level-down layout as ci-gradle above, for the
+  # same reason: the build reads shared Gradle scripts from repos that have to
+  # sit beside the checkout.
   prepare-artifact:
-    needs: [config, ci-bash, ci-gradle]
+    needs: [config, ci-bash, ci-gradle, ci-yaml]
     if: needs.config.outputs.version-updated == 'true'
     runs-on: ${{ fromJSON(needs.config.outputs.runner-json) }}
     steps:
@@ -237,12 +243,6 @@ jobs:
         with:
           siblings: ${{ needs.config.outputs.sibling-checkouts }}
           token: ${{ secrets.sibling_checkout_token || github.token }}
-
-      - name: Set up Java 17
-        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
-        with:
-          java-version: '17'
-          distribution: temurin
 
       - name: Make Gradle wrapper executable
         working-directory: ${{ needs.config.outputs.mod-id }}
@@ -376,7 +376,7 @@ jobs:
       # release, which pins no KMLib; the action then emits an empty note and
       # create-github-release treats that as absent, publishing the changelog
       # section alone. The short display name is stated here rather than read
-      # from mod_info.json, whose dependency entry carries the long one.
+      # from the mod's metadata, whose dependency entry carries the long one.
       - name: Compose the dependency line for the release body
         id: dependency-note
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/compose-dependency-note@master

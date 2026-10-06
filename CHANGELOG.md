@@ -16,6 +16,20 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+No player-facing changes.
+
+### For developers
+
+<details>
+<summary>API, build tooling and test fixtures</summary>
+
+#### Changed
+
+- **`mod-release.yml` re-runs every PR gate before it packages**: `ci-yaml` runs beside `ci-bash` and `ci-gradle`, so a YAML lint error that fails a pull request also fails the release.
+- **`mod-release.yml` packages with the JDK on the mod's runner**, the one `ci-gradle` tests with, rather than downloading a Temurin JDK on every release.
+
+</details>
+
 ## [0.5.0] - 2026-10-05
 
 ### Fixed

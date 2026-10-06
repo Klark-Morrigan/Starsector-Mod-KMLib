@@ -2,10 +2,13 @@
 # shellchecks production bash (.github/actions/), runner bash
 # (scripts/), and git hooks; verifies the +x bit on every tracked
 # *.sh; and runs every *.bats suite under the repo. Empty surfaces
-# auto-skip with ::notice::. For this PowerShell module the only bash
-# surface is the runner shims under scripts/ (run-lint.sh,
-# fix-permissions.sh) - the workflow shellchecks those so the shims
-# stay held to the same strict bar as every other repo.
+# auto-skip with ::notice::. For KMLib the bash surface is the release
+# actions' scripts and their bats suites under .github/, the runner shims
+# under scripts/ and the git hooks.
+#
+# PR-only: KMLib's own release re-runs this same gate through
+# mod-release.yml, which calls Common-Automation's ci-bash directly
+# rather than routing back through this caller.
 name: Common-Automation
 
 on:
