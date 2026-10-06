@@ -16,9 +16,9 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
-### Fixed
+### Changed
 
-- **Third-party mod installers recognise KMLib as itself rather than as LazyLib.** `mod_info.json` lists KMLib's own fields before its dependencies, so an installer taking the first `id` in the file finds KMLib's.
+- **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`.
 
 ### For developers
 

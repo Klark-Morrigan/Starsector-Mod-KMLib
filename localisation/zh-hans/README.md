@@ -233,6 +233,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
 | lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
 | field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, as the developer notes write it |
+| object-holding array (in JSON) | 对象数组 | 对象, object, before 数组, array: an array whose elements are objects |
+| root, nested record (of a JSON file) | 根层级, 嵌套的记录 | 层级, level, so 根 reads as the file's top level rather than a root directory |
 
 ## Forum terms
 

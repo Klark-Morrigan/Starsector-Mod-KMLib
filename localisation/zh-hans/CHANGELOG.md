@@ -16,9 +16,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
-### 修复
+### 变更
 
-- **第三方 Mod 安装工具会将 KMLib 识别为 KMLib 本身，而不是 LazyLib。** `mod_info.json` 先列出 KMLib 自身的字段，再列出其前置，因此读取文件中第一个 `id` 的安装工具会找到 KMLib 自己的那个。
+- **`mod_info.json` 中含有对象数组的 JSON 字段会放在文件末尾**。有些第三方 Mod 安装工具只是简单地读取第一次出现的 `id` 字段，而不管它位于根层级，还是位于 `dependencies` 下嵌套的记录中。
+
 ### 面向开发者
 
 <details>
