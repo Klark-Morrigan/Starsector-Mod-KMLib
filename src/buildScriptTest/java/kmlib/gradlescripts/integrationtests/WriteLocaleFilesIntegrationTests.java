@@ -333,7 +333,7 @@ final class WriteLocaleFilesIntegrationTests {
             runWriteLocaleFiles(projectDirectory, "-Plocale=zh-hans");
 
             assertThat(readProjectFile(projectDirectory, "data/strings/strings.json"))
-                .isEqualTo("{\"kmx\":{\"greeting\":\"zh-hans\"}}");                
+                .isEqualTo("{\"kmx\":{\"greeting\":\"zh-hans\"}}");
             assertThat(readProjectFile(projectDirectory, "data/config/LunaSettings.csv"))
                 .isEqualTo("fieldID,fieldName\nkmx_row,zh-hans\n");
         }

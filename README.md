@@ -1474,7 +1474,8 @@ The parity suite holds the translation to the root one point for point.
   the locale's `mod_info.json` fragment is laid over it -
   `name`, `description`, `author` and dependency names only,
   any other field refused -
-  and the result is written to the repo root with its keys sorted.
+  and the result is written to the repo root with its keys sorted and the dependency list last,
+  so an installer scanning the text for the first `id` finds the mod's own.
   Such a mod gitignores `mod_info.json` and edits the base.
 - The manifest and the fragments are read the way the game reads JSON,
   through [shipped-json-reader.gradle](gradle/shipped-json-reader.gradle):

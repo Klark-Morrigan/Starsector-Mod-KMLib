@@ -27,7 +27,7 @@ The reusable release workflow extracts the section matching the released version
 
 #### Fixed
 
-- **`writeLocaleFiles` writes the members of `mod_info.json` that hold objects last**, after the sorted rest. A dependency carries its own `id` and `version`, so a dependency list sorted first held the first match for an installer scanning the text.
+- **`writeLocaleFiles` writes the members of `mod_info.json` that hold objects last**, after the sorted rest.
 
 #### Changed
 

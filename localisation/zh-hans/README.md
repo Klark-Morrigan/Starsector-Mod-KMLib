@@ -233,7 +233,6 @@ A version heading is never translated; see [translating the changelog](#translat
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
 | lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
 | field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, as the developer notes write it |
-| scan (read as text rather than parse) | 按文本扫描 | 按文本, as text, so it is not read as 解析, parse |
 
 ## Forum terms
 

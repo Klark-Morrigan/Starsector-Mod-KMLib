@@ -26,7 +26,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 修复
 
-- **`writeLocaleFiles` 将 `mod_info.json` 中含有对象的成员写在最后**，排在其余已排序的成员之后。前置带有自己的 `id` 与 `version`，因此排在最前的前置列表会成为按文本扫描的安装工具找到的第一个匹配项。
+- **`writeLocaleFiles` 将 `mod_info.json` 中含有对象的成员写在最后**，排在其余已排序的成员之后。
 
 #### 变更
 
