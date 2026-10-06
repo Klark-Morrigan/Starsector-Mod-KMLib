@@ -20,6 +20,7 @@ Consumer repositories (KMU, KMO, ...) should link here rather than restate any o
   - [It defers every GL call to a render thread](#it-defers-every-gl-call-to-a-render-thread)
   - [What the GL11 bridge can and cannot read back](#what-the-gl11-bridge-can-and-cannot-read-back)
   - [Its reach goes past the GL bridge](#its-reach-goes-past-the-gl-bridge)
+  - [It uploads VRAM Optimizer's textures lazily](#it-uploads-vram-optimizers-textures-lazily)
 - [The campaign UI's GL setup](#the-campaign-uis-gl-setup)
   - [Projection, viewport, and two coordinate spaces](#projection-viewport-and-two-coordinate-spaces)
   - [The modelview around a map render](#the-modelview-around-a-map-render)
@@ -964,6 +965,69 @@ list the donors with:
 ```plaintext
 Glob "**/overrides/**/*.java" in <starsector>/.sources-cache/starsector-core/fr
 ```
+
+### It uploads VRAM Optimizer's textures lazily
+
+With the VRAM Optimizer mod enabled,
+Fast Rendering loads every image that mod has converted from its DDS cache
+(`starsector-core/fr/com/genir/renderer/overrides/loading/textures/DDSIntegration.java:44-51`, `:116-122`).
+Such a texture is not uploaded when it loads.
+`DDSIntegration.commitTexture` makes a texture name,
+binds it,
+and registers it with the `TextureManager` as unloaded
+(`:61-69`).
+The first bridged `glBindTexture` of that name uploads it
+(`.../bridge/context/TextureManager.java:55-65`).
+Without VRAM Optimizer the path never runs,
+and every texture uploads as it loads.
+
+The laziness has an end.
+`ResourceLoaderState.initEpilogue` runs every mod's `onApplicationLoad`,
+and only then calls `assetLoadingFinished`
+(`.../overrides/loading/ResourceLoaderState.java:156-160`, `:175`).
+After that a DDS texture uploads as it loads too
+(`.../bridge/context/TextureManager.java:38-42`).
+So the window is the asset loading screen,
+and every `onApplicationLoad` falls inside it.
+
+A texture can be dropped inside that window without ever uploading.
+A bridged call that writes image data -
+`glTexImage1D`,
+`glTexImage2D`,
+`glCompressedTexImage2D`,
+`glCopyTexImage2D` or `glTexStorage2D` -
+calls `TextureManager.textureModified`
+(`.../bridge/commands/GL11.java:996`, `:1012`, `:1028`, `:1149`; `.../GL13.java:36`; `.../GL42.java:42`).
+That reads whichever texture is bound on the render thread,
+marks it as not managed
+and throws its loader away
+(`.../bridge/context/TextureManager.java:122-133`).
+A lazy texture is still bound after its own registration,
+so a later upload made without binding a texture first lands on it.
+From then on a bind does nothing,
+and the texture never gets an image.
+
+A text atlas dropped this way draws every glyph as a solid quad in the text colour.
+KMLib's map label face was dropped like this when it loaded in `onApplicationLoad`,
+by a call never identified among a player's mods.
+So a texture is loaded after the window:
+`KMLib_ModPlugin` loads its font faces on the first game load.
+
+The log tells the paths apart
+(`.../overrides/loading/textures/TextureLoader.java:107-110`):
+
+- `Loading image [path]` is a texture that uploaded as it loaded.
+- `Loading DDS texture n/N [path]` is a lazy texture uploading on its first bind.
+  The count is how many have uploaded so far out of how many were registered.
+- **No line at all** for a texture that is drawn means it was registered and then dropped.
+
+GL state cannot confirm an upload.
+`glGetTexLevelParameteri` answers the width,
+height and format from `TextureTracker`
+(see [What the GL11 bridge can and cannot read back](#what-the-gl11-bridge-can-and-cannot-read-back)),
+and `commitTexture` fills that cache at registration
+(`.../overrides/loading/textures/DDSIntegration.java:67`).
+A dropped texture reports its full size.
 
 ## The campaign UI's GL setup
 
