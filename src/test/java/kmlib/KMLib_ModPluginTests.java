@@ -11,6 +11,7 @@ import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
+import kmlib.starsector.ui.font.installed.InstalledFaceCheck;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -99,6 +101,22 @@ final class KMLib_ModPluginTests {
                 fastRenderingMock.verify(FastRendering::isFastRenderingActive);
                 nexerelinMock.verify(NexerelinIntegration::installRoutines);
                 ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+            }
+        }
+
+        @Test
+        void leavesTheInstalledFacesUnloaded() {
+            // Fast Rendering defers a texture loaded while assets still load, and a font atlas loaded
+            // then never uploads: every glyph draws as a solid block.
+            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
+                    var fastRenderingMock = mockStatic(FastRendering.class);
+                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
+                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class);
+                    var faceCheckMock = mockStatic(InstalledFaceCheck.class)) {
+
+                new KMLib_ModPlugin().onApplicationLoad();
+
+                faceCheckMock.verifyNoInteractions();
             }
         }
 
@@ -171,6 +189,24 @@ final class KMLib_ModPluginTests {
 
             verify(sectorMock)
                 .addTransientScript(any(CompatibilityNotice.class));
+        }
+
+        @Test
+        void loadsTheInstalledFacesOnceAcrossTwoGameLoads() {
+            // The faces are the process's: a second save loaded in one session finds them loaded, and
+            // loading them again would only repeat the log line.
+            var plugin = new KMLib_ModPlugin();
+
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+                    var faceCheckMock = mockStatic(InstalledFaceCheck.class)) {
+                globalMock.when(Global::getSector)
+                    .thenReturn(mock(SectorAPI.class));
+
+                plugin.onGameLoad(false);
+                plugin.onGameLoad(false);
+
+                faceCheckMock.verify(InstalledFaceCheck::loadEveryFace, times(1));
+            }
         }
     }
 
