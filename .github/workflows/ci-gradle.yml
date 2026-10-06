@@ -1,8 +1,8 @@
 # KMLib's Gradle CI gate. Delegates to Common-Java's reusable engine.
 # Runs on the self-hosted kmlib-runner because the build resolves
 # starfarer.api.jar from a Starsector install (STARSECTOR_HOME, set on
-# the runner) - a hosted runner has no Starsector binaries. This is the
-# self-hosted gate the old ci.yml deferred to in its header comment.
+# the runner) - a hosted runner has no Starsector binaries. The runner
+# also provides the JDK, so setup-java stays at its default of off.
 #
 # The runner's install must be Fast-Rendering-patched and carry LWJGL's
 # Linux native in starsector-core/native/linux: the suite drives the real
@@ -20,7 +20,6 @@ jobs:
     with:
       runner: '["self-hosted", "kmlib-runner"]'
       gradle-tasks: coverage
-      setup-java: false
       # gradle/starsector-mod.gradle applies Common-Java's java-conventions by a
       # path relative to this repo's root, so Common-Java has to be cloned as a
       # neighbour and the checkout has to sit one level down to leave room for

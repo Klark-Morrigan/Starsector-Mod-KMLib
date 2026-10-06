@@ -16,6 +16,19 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
+没有面向玩家的变更。
+
+### 面向开发者
+
+<details>
+<summary>API、构建工具与测试夹具</summary>
+
+#### 变更
+
+- **`mod-release.yml` 使用 Mod 运行器上的 JDK 打包**，即 `ci-gradle` 运行测试所用的 JDK，而不是在每次发布时下载一个 Temurin JDK。
+
+</details>
+
 ## [0.5.0] - 2026-10-05
 
 ### 修复

@@ -198,6 +198,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | Dependency changes | 依赖变更 | |
 | Public contracts changed (**breaking**) | 公共契约变更（**破坏性**） | from 公共契约 |
 | Test fixtures | 测试夹具 | |
+| For developers | 面向开发者 | |
+| No player-facing changes. | 没有面向玩家的变更。 | opens a version whose changes are all under `For developers` |
 | Reported by X at USC | 由 X 在 USC 报告 | closes the entry as a sentence of its own |
 | Requested by X at USC | 由 X 在 USC 提出请求 | |
 | release (a published version) | 发布版本 | |
