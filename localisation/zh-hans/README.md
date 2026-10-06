@@ -232,6 +232,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | gate (a CI check a change must pass) | 门禁 | |
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
 | lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
+| field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, as the developer notes write it |
+| scan (read as text rather than parse) | 按文本扫描 | 按文本, as text, so it is not read as 解析, parse |
 
 ## Forum terms
 
@@ -261,6 +263,7 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | rationale (for a term's choice) | 选词理由 | 选词, choosing a word, with 理由, reason: what each row's note records |
 | translation (the act) | 翻译 | the plain word; 汉化 is a translated build, the forum's sense |
 | install mid-run | 中途安装 | 中途, partway through |
+| mod installer (a third-party tool) | Mod 安装工具 | 安装, install, with 工具, tool; Mod kept Latin as in Mod 作者 |
 | uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word, as KMU's strings write it; 步骤 for the steps |
 | changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
 

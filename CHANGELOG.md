@@ -16,12 +16,18 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
-No player-facing changes.
+### Fixed
+
+- **Third-party mod installers recognise KMLib as itself rather than as LazyLib.** `mod_info.json` lists KMLib's own fields before its dependencies, so an installer taking the first `id` in the file finds KMLib's.
 
 ### For developers
 
 <details>
 <summary>API, build tooling and test fixtures</summary>
+
+#### Fixed
+
+- **`writeLocaleFiles` writes the members of `mod_info.json` that hold objects last**, after the sorted rest. A dependency carries its own `id` and `version`, so a dependency list sorted first held the first match for an installer scanning the text.
 
 #### Changed
 

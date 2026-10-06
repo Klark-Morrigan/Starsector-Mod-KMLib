@@ -133,6 +133,7 @@ final class WriteLocaleFilesIntegrationTests {
 
             writeProjectFile(projectDirectory, "localisation/" + localeTag + "/strings.json",
                 "{\"kmx\":{\"greeting\":\"" + localeTag + "\"}}");
+
             writeProjectFile(projectDirectory, "localisation/" + localeTag + "/LunaSettings.csv",
                 "fieldID,fieldName\nkmx_row," + localeTag + "\n");
         }
@@ -332,7 +333,7 @@ final class WriteLocaleFilesIntegrationTests {
             runWriteLocaleFiles(projectDirectory, "-Plocale=zh-hans");
 
             assertThat(readProjectFile(projectDirectory, "data/strings/strings.json"))
-                .isEqualTo("{\"kmx\":{\"greeting\":\"zh-hans\"}}");
+                .isEqualTo("{\"kmx\":{\"greeting\":\"zh-hans\"}}");                
             assertThat(readProjectFile(projectDirectory, "data/config/LunaSettings.csv"))
                 .isEqualTo("fieldID,fieldName\nkmx_row,zh-hans\n");
         }
@@ -445,6 +446,13 @@ final class WriteLocaleFilesIntegrationTests {
                 .isEqualTo(String.join(
                     "\n",
                     "{",
+                    "    \"description\": \"Shared code.\",",
+                    "    \"id\": \"kmx\",",
+                    "    \"jars\": [",
+                    "        \"jars/KMX.jar\"",
+                    "    ],",
+                    "    \"name\": \"" + TRANSLATED_MOD_NAME + "\",",
+                    "    \"version\": \"1.2.3\",",
                     "    \"dependencies\": [",
                     "        {",
                     "            \"id\": \"lw_lazylib\",",
@@ -454,14 +462,42 @@ final class WriteLocaleFilesIntegrationTests {
                     "            \"id\": \"lunalib\",",
                     "            \"name\": \"Luna\"",
                     "        }",
-                    "    ],",
-                    "    \"description\": \"Shared code.\",",
+                    "    ]",
+                    "}",
+                    ""));
+        }
+
+        /**
+         * Installers that scan the text for the first {@code id} and {@code version}, rather than parse
+         * it, read the mod's own: a dependency listed first makes one install the mod over that dependency.
+         */
+        @Test
+        void writesTheModsOwnMembersBeforeItsDependencies(@TempDir Path workspace) throws IOException {
+
+            var projectDirectory = writeTwoLocaleProject(workspace);
+
+            writeProjectFile(projectDirectory, "mod_info.base.json", String.join(
+                "\n",
+                "{",
+                "  \"dependencies\": [ { \"id\": \"kmlib\", \"version\": \"0.5.0\" } ],",
+                "  \"id\": \"kmx\",",
+                "  \"version\": \"1.2.3\"",
+                "}"));
+
+            runWriteLocaleFiles(projectDirectory);
+
+            assertThat(readProjectFile(projectDirectory, "mod_info.json"))
+                .isEqualTo(String.join(
+                    "\n",
+                    "{",
                     "    \"id\": \"kmx\",",
-                    "    \"jars\": [",
-                    "        \"jars/KMX.jar\"",
-                    "    ],",
-                    "    \"name\": \"" + TRANSLATED_MOD_NAME + "\",",
-                    "    \"version\": \"1.2.3\"",
+                    "    \"version\": \"1.2.3\",",
+                    "    \"dependencies\": [",
+                    "        {",
+                    "            \"id\": \"kmlib\",",
+                    "            \"version\": \"0.5.0\"",
+                    "        }",
+                    "    ]",
                     "}",
                     ""));
         }

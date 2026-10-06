@@ -295,10 +295,25 @@ if (manifestFile.isFile()) {
         return mergedModInfo
     }
 
-    // Key order is sorted, the parse having kept none.
+    def holdsObjects = { Object value ->
+        value instanceof Map || (value instanceof List && value.any { element -> element instanceof Map })
+    }
+
+    // Sorted, the parse having kept no order, with members holding objects last. A
+    // dependency carries its own id and version, and third-party installers scan the
+    // text for the first "id" rather than parse it: a dependency list sorted first
+    // has them install the mod over that dependency.
+    def orderModInfoMembers = { Map modInfo ->
+
+        return modInfo.sort { first, second ->
+            (holdsObjects(first.value) <=> holdsObjects(second.value)) ?: (first.key <=> second.key)
+        }
+    }
+
     def writeModInfo = { Map mergedModInfo ->
 
-        def modInfoText = JsonOutput.prettyPrint(modInfoJsonGenerator.toJson(mergedModInfo), true)
+        def modInfoJson = modInfoJsonGenerator.toJson(orderModInfoMembers(mergedModInfo))
+        def modInfoText = JsonOutput.prettyPrint(modInfoJson, true)
 
         Files.writeString(modInfoFile.toPath(), modInfoText + '\n', StandardCharsets.UTF_8)
     }

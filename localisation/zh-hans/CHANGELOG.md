@@ -16,12 +16,17 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
-没有面向玩家的变更。
+### 修复
 
+- **第三方 Mod 安装工具会将 KMLib 识别为 KMLib 本身，而不是 LazyLib。** `mod_info.json` 先列出 KMLib 自身的字段，再列出其前置，因此读取文件中第一个 `id` 的安装工具会找到 KMLib 自己的那个。
 ### 面向开发者
 
 <details>
 <summary>API、构建工具与测试夹具</summary>
+
+#### 修复
+
+- **`writeLocaleFiles` 将 `mod_info.json` 中含有对象的成员写在最后**，排在其余已排序的成员之后。前置带有自己的 `id` 与 `version`，因此排在最前的前置列表会成为按文本扫描的安装工具找到的第一个匹配项。
 
 #### 变更
 
