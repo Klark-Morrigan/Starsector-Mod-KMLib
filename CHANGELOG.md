@@ -16,12 +16,18 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
-No player-facing changes.
+### Changed
+
+- **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`.
 
 ### For developers
 
 <details>
 <summary>API, build tooling and test fixtures</summary>
+
+#### Fixed
+
+- **`writeLocaleFiles` writes the members of `mod_info.json` that hold objects last**, after the sorted rest.
 
 #### Changed
 

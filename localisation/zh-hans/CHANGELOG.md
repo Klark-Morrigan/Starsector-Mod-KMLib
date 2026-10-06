@@ -16,12 +16,18 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
-没有面向玩家的变更。
+### 变更
+
+- **`mod_info.json` 中含有对象数组的 JSON 字段会放在文件末尾**。有些第三方 Mod 安装工具只是简单地读取第一次出现的 `id` 字段，而不管它位于根层级，还是位于 `dependencies` 下嵌套的记录中。
 
 ### 面向开发者
 
 <details>
 <summary>API、构建工具与测试夹具</summary>
+
+#### 修复
+
+- **`writeLocaleFiles` 将 `mod_info.json` 中含有对象的成员写在最后**，排在其余已排序的成员之后。
 
 #### 变更
 
