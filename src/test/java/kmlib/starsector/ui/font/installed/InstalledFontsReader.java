@@ -12,7 +12,7 @@ import java.util.Optional;
 
 /**
  * Reads an install's {@link InstalledFonts} off its files: the localisation marker, the game's settings,
- * and the descriptor of every face KM text may draw in.
+ * and the descriptor of every face KMLib draws text in.
  *
  * <p>The edition is the {@code branch} a core localisation records in
  * {@code starsector-core/localization_version.json}, the pack version that file's {@code version}, and the
@@ -44,7 +44,7 @@ final class InstalledFontsReader {
 
     /**
      * Reads the install at {@code starsectorRoot}: its edition, the default face its settings name, and
-     * every face KM text may draw in that it carries a descriptor for. A face it lacks is left out rather
+     * every face KMLib draws text in that it carries a descriptor for. A face it lacks is left out rather
      * than read as empty, which is how a missing atlas is told from one declaring no glyphs. Settings
      * naming no default - or no settings file at all - read as vanilla's default, as the running game's
      * would.

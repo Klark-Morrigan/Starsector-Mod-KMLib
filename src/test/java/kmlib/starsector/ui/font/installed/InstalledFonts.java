@@ -13,8 +13,8 @@ import java.util.Optional;
 
 /**
  * An install's font atlases: which edition of the game's fonts it carries, and what its descriptor states
- * for every face KM text may draw in. A localisation replaces several atlases under the same basenames and
- * each of its editions replaces them differently, so the checks on what KM text needs of an atlas are run
+ * for every face KMLib draws text in. A localisation replaces several atlases under the same basenames and
+ * each of its editions replaces them differently, so the checks on what KMLib's text needs of an atlas are run
  * against every install the build hands them - the editions it laid out as well as installed ones.
  * {@link InstalledFontsReader} reads one off an install.
  *

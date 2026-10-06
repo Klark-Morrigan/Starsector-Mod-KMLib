@@ -11,8 +11,7 @@ import org.apache.log4j.Logger;
 import java.util.StringJoiner;
 
 /**
- * Loads every face KM text may draw in once, on the first game load, and states in the log what the install
- * holds under each.
+ * Loads every face KMLib draws text in, and states in the log what the install holds under each.
  *
  * <p>Up front rather than on first draw, so the log states what the install holds before any text is drawn,
  * a face that will not load is logged once there by {@link LazyFontCache}, and no first draw pays for a

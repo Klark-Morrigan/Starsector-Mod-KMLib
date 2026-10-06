@@ -83,7 +83,7 @@ apply from: "${rootDir}/gradle/tasks/checks/check-font-editions.gradle"
     tasks.named(taskName) { dependsOn tasks.named('classes') }
 }
 
-// The installs the font suites hold every face KM text may draw in to: the one the build located, each
+// The installs the font suites hold every face KMLib draws text in to: the one the build located, each
 // edition the lock pins, and any others -PfontInstallRoots names, separated by the platform's path
 // separator - which is how a machine holding the editions installed checks them as installed.
 // Properties rather than paths the suites work out, so the suites and the build agree on which installs
