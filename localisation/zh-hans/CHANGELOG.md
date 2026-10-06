@@ -25,6 +25,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 变更
 
+- **`mod-release.yml` 在打包前会重新运行每个拉取请求门禁**：`ci-yaml` 与 `ci-bash`、`ci-gradle` 一同运行，因此会让拉取请求失败的 YAML 检查问题同样会让发布失败。
 - **`mod-release.yml` 使用 Mod 运行器上的 JDK 打包**，即 `ci-gradle` 运行测试所用的 JDK，而不是在每次发布时下载一个 Temurin JDK。
 
 </details>

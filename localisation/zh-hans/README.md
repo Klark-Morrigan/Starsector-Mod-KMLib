@@ -228,6 +228,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | slot (in a format string) | 槽位 | |
 | body colour (of text) | 正文颜色 | |
+| pull request | 拉取请求 | GitHub's own Chinese interface word |
+| gate (a CI check a change must pass) | 门禁 | |
+| runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
+| lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
 
 ## Forum terms
 

@@ -1547,21 +1547,23 @@ The Gradle build and JUnit tests are no part of them -
 they run through Gradle,
 see [Build & Test](#build--test).
 
-Two delegating workflows run on every pull request:
-[ci-yaml.yml](.github/workflows/ci-yaml.yml) calls Common-Automation's reusable `ci-yaml.yml`
-(actionlint, action-validator, yamllint, ansible-lint),
-and [ci-bash.yml](.github/workflows/ci-bash.yml) calls its reusable `ci-bash.yml`
-(shellcheck, check-sh-executable, bats).
-Each step auto-skips when its surface is absent,
-so a mod with no shell scripts still passes the Bash workflow.
+Two workflows run on every pull request,
+each calling Common-Automation's reusable workflow of the same name:
+[ci-yaml.yml](.github/workflows/ci-yaml.yml) and [ci-bash.yml](.github/workflows/ci-bash.yml).
+Common-Automation's README lists the tools each one runs:
+[ci-yaml](https://github.com/Klark-Morrigan/Common-Automation/blob/master/README.md#reusable-workflow-ci-yaml)
+and [ci-bash](https://github.com/Klark-Morrigan/Common-Automation/blob/master/README.md#reusable-workflow-ci-bash).
+A release re-runs both through [mod-release.yml](.github/workflows/mod-release.yml).
 
 Three shims in [`scripts/`](scripts/) reproduce that surface locally
 through Git Bash and Docker,
-each a thin delegate to Common-Automation's orchestrator -
+each a thin delegate to Common-Automation's runner scripts -
 so all three need a Common-Automation checkout as a SIBLING directory
 (`..\Common-Automation`).
 Each has a `.sh` and a `.bat` face,
-the latter for `cmd` / PowerShell:
+the latter for `cmd` / PowerShell.
+[Common-Automation's README](https://github.com/Klark-Morrigan/Common-Automation/blob/master/README.md#running-checks-and-tests-locally)
+lists what each half runs:
 
 - `run-ci-yaml-and-bash` -
   the MAIN entry,
@@ -1569,8 +1571,7 @@ the latter for `cmd` / PowerShell:
   the lint suite AND the bats tests in one go,
   the full local equivalent of ci-yaml.yml + ci-bash.yml.
 - `run-lint-yaml-and-bash` -
-  the lint half only
-  (shellcheck, actionlint, action-validator, yamllint, ansible-lint);
+  the lint half only;
   no bats.
 - `run-tests-bash` -
   the bats tests only.
@@ -1600,8 +1601,10 @@ The `version` is required,
 not decoration:
 the game compares it for exact equality rather than as a minimum,
 and [validate-versioning](.github/actions/validate-versioning/action.yml)
-holds a consumer's pin to a well-formed SemVer at release time,
-checking the named release exists before anything is built.
+holds a consumer's pin to a well-formed SemVer at release time.
+[check-dependency-release](.github/actions/check-dependency-release/action.yml)
+then checks the named release exists,
+both before anything is built.
 A consumer's workflow pin
 (`uses: <owner>/Starsector-Mod-KMLib/.github/workflows/mod-release.yml@<tag>`)
 must name the same version,

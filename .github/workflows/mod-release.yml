@@ -376,7 +376,7 @@ jobs:
       # release, which pins no KMLib; the action then emits an empty note and
       # create-github-release treats that as absent, publishing the changelog
       # section alone. The short display name is stated here rather than read
-      # from mod_info.json, whose dependency entry carries the long one.
+      # from the mod's metadata, whose dependency entry carries the long one.
       - name: Compose the dependency line for the release body
         id: dependency-note
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/compose-dependency-note@master

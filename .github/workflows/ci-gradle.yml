@@ -23,7 +23,7 @@ jobs:
       # gradle/starsector-mod.gradle applies Common-Java's java-conventions by a
       # path relative to this repo's root, so Common-Java has to be cloned as a
       # neighbour and the checkout has to sit one level down to leave room for
-      # it. The release path derives the same set from mod_info.json; here it is
+      # it. The release path derives the same set from mod_info.base.json; here it is
       # spelled out because this workflow never runs for another mod.
       checkout-path: Starsector-Mod-KMLib
       working-directory: Starsector-Mod-KMLib

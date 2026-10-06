@@ -25,6 +25,7 @@ No player-facing changes.
 
 #### Changed
 
+- **`mod-release.yml` re-runs every PR gate before it packages**: `ci-yaml` runs beside `ci-bash` and `ci-gradle`, so a YAML lint error that fails a pull request also fails the release.
 - **`mod-release.yml` packages with the JDK on the mod's runner**, the one `ci-gradle` tests with, rather than downloading a Temurin JDK on every release.
 
 </details>
