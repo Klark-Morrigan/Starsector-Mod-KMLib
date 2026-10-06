@@ -22,7 +22,7 @@ The reusable release workflow extracts the section matching the released version
 ### Fixed
 
 - **[KMU] Occasional drawing of every map label letter as a solid filled rectangle** caused by failed load of the map label font on an install with Fast Rendering and VRAM Optimiser. _Reported by **lChronosl** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1556768476436111471)._
-- **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`.
+- **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`. _Reported by **NH4CI** [at **Fossic**](https://www.fossic.org/forum.php?mod=redirect&goto=findpost&ptid=21517&pid=405627)._
 
 ### For developers
 

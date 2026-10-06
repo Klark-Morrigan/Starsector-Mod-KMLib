@@ -22,7 +22,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 ### 修复
 
 - **[KMU] 星图标签的每个字形偶尔被绘制为实心矩形**，原因是在安装了 Fast Rendering 与 VRAM Optimizer 的游戏中，星图标签字体加载失败。_由 **lChronosl** 在 [**USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1556768476436111471) 报告。_
-- **`mod_info.json` 中含有对象数组的 JSON 字段会放在文件末尾**。有些第三方 Mod 安装工具只是简单地读取第一次出现的 `id` 字段，而不管它位于根层级，还是位于 `dependencies` 下嵌套的记录中。
+- **`mod_info.json` 中含有对象数组的 JSON 字段会放在文件末尾**。有些第三方 Mod 安装工具只是简单地读取第一次出现的 `id` 字段，而不管它位于根层级，还是位于 `dependencies` 下嵌套的记录中。由 **NH4CI** 在 [**Fossic**](https://www.fossic.org/forum.php?mod=redirect&goto=findpost&ptid=21517&pid=405627) 报告。
 
 ### 面向开发者
 
