@@ -87,7 +87,7 @@ Every input, in the form's order (`*` is required):
 | Mod简短介绍 `*` | a short description |
 | Mod下载地址, 网盘提取码/解压密码 | empty when the download is the attachment, which the form itself recommends |
 | Mod语言 `*` | 中文, 英文, 其它 or 无文本 |
-| Mod发布文件 | one row per release zip, added after the upload: file, game version, mod version and display name. The 插入Mod文件下载面板到帖子正文中 button then puts the download panel into the body. Only the mod's own zips go here, since each row's version must match `mod_info.json` |
+| Mod发布文件 | one row per release zip, added after the upload: file, game version, mod version and display name. The 插入Mod文件下载面板到帖子正文中 button then puts the download panel into the body. Every row is a release of the thread's mod, so its version is that mod's `mod_info.json` version. A dependency with no thread of its own, such as KMLib in a consumer's thread, gets a row carrying the consumer's version, with its own version in the display name |
 | Mod允许直链下载 `*` | 是 lets a mod manager fetch the zip without opening the thread |
 | Mod索引隐藏, Mod索引备注 | whether the index lists the mod, and a short note shown after its version there |
 | 滑块验证 `*` | the slider captcha |
@@ -110,9 +110,7 @@ but a per-file and a daily one exist per user group;
 the FAQ (thread 3316) says to ask an admin to raise them.
 
 An attachment the post text does not reference is listed under the post.
-A zip referenced by its tag is drawn as a download link where the text names it,
-which is how a dependency's zip with no release-file row of its own,
-such as KMLib's in a consumer's thread, gets a link of its own.
+A zip referenced by its tag is drawn as a download link where the text names it.
 The editor inserts a tag with its numeric ID when an uploaded file is clicked;
 the attachment URL a browser shows is encoded and is not linked by hand.
 
