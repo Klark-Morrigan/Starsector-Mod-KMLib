@@ -11,6 +11,7 @@ import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
+import kmlib.starsector.ui.font.installed.InstalledFaceCheck;
 import kmlib.testfixtures.starsector.StubbedGlobalLogger;
 import kmlib.testfixtures.starsector.compatibility.CompatibilityFailureFixture;
 import kmlib.testfixtures.starsector.compatibility.CompatibilitySlotTemplates;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,14 +34,16 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Pins the composition the entry point names: which steps a launch is made of, which third party
- * each of them integrates with, and the wiring it owns for the compatibility notice - that a game
- * load puts one on the loaded sector, that it is transient and exactly one, and that it drains the
- * session's record rather than one of its own.
+ * each of them integrates with, that the installed faces load once and on a game load rather than at
+ * launch, and the wiring it owns for the compatibility notice - that a game load puts one on the
+ * loaded sector, that it is transient and exactly one, and that it drains the session's record rather
+ * than one of its own.
  *
  * <p>What each launch step does is pinned beside that step, what the notice does on a frame beside
  * the notice, and what a transient install clears and adds beside {@code SectorScripts}. None is
@@ -88,17 +92,30 @@ final class KMLib_ModPluginTests {
             // and nothing else says so - the setting still reads, the integration still compiles.
             // Held over every step at once, so a step dropped from the wiring fails here rather
             // than in play.
-            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
-                    var fastRenderingMock = mockStatic(FastRendering.class);
-                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
-                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
+            try (var stepMocks = new LaunchStepMocks()) {
 
                 new KMLib_ModPlugin().onApplicationLoad();
 
-                lunaSettingsMock.verify(KmlibLunaSettings::installBindings);
-                fastRenderingMock.verify(FastRendering::isFastRenderingActive);
-                nexerelinMock.verify(NexerelinIntegration::installRoutines);
-                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+                stepMocks.lunaSettingsMock
+                    .verify(KmlibLunaSettings::installBindings);
+                stepMocks.fastRenderingMock
+                    .verify(FastRendering::isFastRenderingActive);
+                stepMocks.nexerelinMock
+                    .verify(NexerelinIntegration::installRoutines);
+                stepMocks.ratMock
+                    .verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+            }
+        }
+
+        @Test
+        void leavesTheInstalledFacesUnloaded() {
+            // A font atlas loaded this early can be left never uploaded under Fast Rendering, and every
+            // glyph then draws as a solid block.
+            try (var stepMocks = new LaunchStepMocks()) {
+
+                new KMLib_ModPlugin().onApplicationLoad();
+
+                stepMocks.faceCheckMock.verifyNoInteractions();
             }
         }
 
@@ -108,18 +125,17 @@ final class KMLib_ModPluginTests {
             // first failing install aborted the rest would leave the library half composed, and
             // every step after the failure looks installed from its own suite. Failed at the first
             // step, that being the one with every other step behind it.
-            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
-                    var fastRenderingMock = mockStatic(FastRendering.class);
-                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
-                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
+            try (var stepMocks = new LaunchStepMocks()) {
 
-                lunaSettingsMock.when(KmlibLunaSettings::installBindings)
+                stepMocks.lunaSettingsMock.when(KmlibLunaSettings::installBindings)
                     .thenThrow(new IllegalStateException("no settings library to bind to"));
 
                 new KMLib_ModPlugin().onApplicationLoad();
 
-                nexerelinMock.verify(NexerelinIntegration::installRoutines);
-                ratMock.verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
+                stepMocks.nexerelinMock
+                    .verify(NexerelinIntegration::installRoutines);
+                stepMocks.ratMock
+                    .verify(RandomAssortmentOfThingsIntegration::installModdedSystemAccessRoutes);
             }
         }
 
@@ -128,16 +144,14 @@ final class KMLib_ModPluginTests {
             // A different step from the case above, because the session's record latches per third
             // party and consumer for the run: two cases failing one step would leave whichever ran
             // second recording nothing.
-            try (var lunaSettingsMock = mockStatic(KmlibLunaSettings.class);
-                    var fastRenderingMock = mockStatic(FastRendering.class);
-                    var nexerelinMock = mockStatic(NexerelinIntegration.class);
-                    var ratMock = mockStatic(RandomAssortmentOfThingsIntegration.class)) {
+            try (var stepMocks = new LaunchStepMocks()) {
 
-                nexerelinMock.when(NexerelinIntegration::installRoutines)
+                stepMocks.nexerelinMock.when(NexerelinIntegration::installRoutines)
                     .thenThrow(new IllegalStateException("no routines to register with"));
+
                 // The report is composed from the integration's own description, which a class
                 // stood in for whole would answer with nothing.
-                nexerelinMock.when(NexerelinIntegration::describeIntegration)
+                stepMocks.nexerelinMock.when(NexerelinIntegration::describeIntegration)
                     .thenCallRealMethod();
 
                 new KMLib_ModPlugin().onApplicationLoad();
@@ -162,7 +176,10 @@ final class KMLib_ModPluginTests {
 
             var sectorMock = mock(SectorAPI.class);
 
-            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers()) {
+            // The face check stood in for, so the case loads no fonts.
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+                    var faceCheckMock = mockStatic(InstalledFaceCheck.class)) {
+
                 globalMock.when(Global::getSector)
                     .thenReturn(sectorMock);
 
@@ -171,6 +188,26 @@ final class KMLib_ModPluginTests {
 
             verify(sectorMock)
                 .addTransientScript(any(CompatibilityNotice.class));
+        }
+
+        @Test
+        void loadsTheInstalledFacesOnceAcrossTwoGameLoads() {
+            // The faces are the process's: a second save loaded in one session finds them loaded, and
+            // loading them again would only repeat the log line.
+            var plugin = new KMLib_ModPlugin();
+
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+                    var faceCheckMock = mockStatic(InstalledFaceCheck.class)) {
+
+                globalMock
+                    .when(Global::getSector)
+                    .thenReturn(mock(SectorAPI.class));
+
+                plugin.onGameLoad(false);
+                plugin.onGameLoad(false);
+
+                faceCheckMock.verify(InstalledFaceCheck::loadEveryFace, times(1));
+            }
         }
     }
 
@@ -206,6 +243,7 @@ final class KMLib_ModPluginTests {
                 .hasSize(1)
                 .first()
                 .isInstanceOf(CompatibilityNotice.class);
+
             verify(sectorMock, never())
                 .addScript(any());
         }
@@ -215,7 +253,6 @@ final class KMLib_ModPluginTests {
 
             KMLib_ModPlugin.installCompatibilityNotice(sectorMock);
             var firstNotice = transientScripts.get(0);
-
             KMLib_ModPlugin.installCompatibilityNotice(sectorMock);
 
             assertThat(transientScripts)
@@ -228,15 +265,18 @@ final class KMLib_ModPluginTests {
         void drainsTheSessionRecordRatherThanOneOfItsOwn() {
 
             var campaignUiMock = mock(CampaignUIAPI.class);
+
             when(sectorMock.getCampaignUI())
                 .thenReturn(campaignUiMock);
-            CompatibilitySlotTemplates.installSlotTemplates();
 
+            CompatibilitySlotTemplates.installSlotTemplates();
             KMLib_ModPlugin.installCompatibilityNotice(sectorMock);
+
             CompatibilityFailures.SESSION_RECORD.recordOnce(
                 SUBJECT_KEY,
                 CompatibilityFailureFixture.MAP_OVERLAY_CONSUMER,
                 recordedAs -> CompatibilityFailureFixture.createFailure());
+
             transientScripts.get(0).advance(ONE_FRAME);
 
             verify(campaignUiMock)
@@ -259,5 +299,35 @@ final class KMLib_ModPluginTests {
             .removeTransientScriptsOfClass(any());
 
         return sectorMock;
+    }
+
+    // Every step a launch is made of stood in for at once, so a case stubs or reads the one it is about
+    // and no step reaches the game. The face check is among them so a case can show a launch leaves it be.
+    private static final class LaunchStepMocks implements AutoCloseable {
+
+        final MockedStatic<InstalledFaceCheck> faceCheckMock =
+            mockStatic(InstalledFaceCheck.class);
+
+        final MockedStatic<FastRendering> fastRenderingMock =
+            mockStatic(FastRendering.class);
+
+        final MockedStatic<KmlibLunaSettings> lunaSettingsMock =
+            mockStatic(KmlibLunaSettings.class);
+
+        final MockedStatic<NexerelinIntegration> nexerelinMock =
+            mockStatic(NexerelinIntegration.class);
+
+        final MockedStatic<RandomAssortmentOfThingsIntegration> ratMock =
+            mockStatic(RandomAssortmentOfThingsIntegration.class);
+
+        @Override
+        public void close() {
+
+            faceCheckMock.close();
+            fastRenderingMock.close();
+            lunaSettingsMock.close();
+            nexerelinMock.close();
+            ratMock.close();
+        }
     }
 }

@@ -16,6 +16,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### 修复
+
+- **[KMU] 星图标签的每个字形偶尔被绘制为实心矩形**，原因是在安装了 Fast Rendering 与 VRAM Optimizer 的游戏中，星图标签字体加载失败。_由 **lChronosl** 在 [**USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1556768476436111471) 报告。_
+
 ### 变更
 
 - **`mod_info.json` 中含有对象数组的 JSON 字段会放在文件末尾**。有些第三方 Mod 安装工具只是简单地读取第一次出现的 `id` 字段，而不管它位于根层级，还是位于 `dependencies` 下嵌套的记录中。
@@ -240,7 +244,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **按语言区域发布**：对于提交了 `localisation/manifest.json` 的 Mod，`mod-release.yml` 用同一个 jar 为每个语言区域发布一个压缩包和一个版本文件。未提交清单的 Mod 发布方式不变。
   - `read-locales`：Mod 发布的语言区域，默认语言区域排在首位。
   - `package-release`：为每个语言区域写出、压缩并填写版本文件。每个压缩包都带有本语言区域的 `CHANGELOG.md`。
-  - `compose-locale-note`：发布说明中的 *Builds by language* 列表（链接每个语言区域所需的核心本地化），以及折叠在各自名称之下的每份译文说明。译文缺少该版本的章节会使发布失败。
+  - `compose-locale-note`：发布说明中的 _Builds by language_ 列表（链接每个语言区域所需的核心本地化），以及折叠在各自名称之下的每份译文说明。译文缺少该版本的章节会使发布失败。
   - `fill-version-file-template` 接受可选的 `locale`，使安装轮询其自身语言的版本文件。
 - **KMLib 按语言区域保存自己的文本**：字符串和设置位于 `localisation/<locale>/` 下，启动器文本位于 `mod_info.base.json` 中。
   - `localisation/zh-hans/CHANGELOG.md` 完整翻译了本更新日志。

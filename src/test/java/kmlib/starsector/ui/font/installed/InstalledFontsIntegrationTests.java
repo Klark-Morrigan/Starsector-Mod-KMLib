@@ -14,7 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Holds every install the build hands it to what KM text needs of its atlases: the build's own, each core
+ * Holds every install the build hands it to what KMLib's text needs of its atlases: the build's own, each core
  * localisation edition the build laid over it at the descriptors its lock pins, and any others
  * {@code -PfontInstallRoots} names - which is how a machine holding the editions installed checks them as
  * installed.

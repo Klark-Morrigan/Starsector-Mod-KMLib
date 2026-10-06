@@ -16,6 +16,10 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+### Fixed
+
+- **[KMU] Occasional drawing of every map label letter as a solid filled rectangle** caused by failed load of the map label font on an install with Fast Rendering and VRAM Optimiser. _Reported by **lChronosl** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1556768476436111471)._
+
 ### Changed
 
 - **JSON fields carrying object-holding arrays in `mod_info.json` are put at the bottom of the file**. There are third-party mod installers that naively read the first occurrence of the `id` field whether it's at the root or at records nested under `dependencies`.
@@ -240,7 +244,7 @@ The build and release side of the per-language zips. The localisation fixtures u
 - **Per-locale releases**: `mod-release.yml` releases a mod committing `localisation/manifest.json` as one zip and one version file per locale, from one jar. A mod with no manifest releases as before.
   - `read-locales`: the locales a mod releases in, default first.
   - `package-release`: writes, zips and fills the version file for each locale. Each zip carries its own locale's `CHANGELOG.md`.
-  - `compose-locale-note`: the release body's *Builds by language* list, linking each locale's core localisation, and each translation's notes collapsed under its name. A translation missing the version's section fails the release.
+  - `compose-locale-note`: the release body's _Builds by language_ list, linking each locale's core localisation, and each translation's notes collapsed under its name. A translation missing the version's section fails the release.
   - `fill-version-file-template` takes an optional `locale`, so an install polls its own language's version file.
 - **KMLib's own text per locale**: strings and settings under `localisation/<locale>/`, launcher text in `mod_info.base.json`.
   - `localisation/zh-hans/CHANGELOG.md` translates this changelog in full.

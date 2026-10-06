@@ -228,6 +228,9 @@ A version heading is never translated; see [translating the changelog](#translat
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | slot (in a format string) | 槽位 | |
 | body colour (of text) | 正文颜色 | |
+| solid filled rectangle (a glyph drawn without its atlas) | 实心矩形 | 实心, filled, with 矩形, rectangle |
+| map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
+| failed load (of a font) | 加载失败 | the noun form of 无法加载 |
 | pull request | 拉取请求 | GitHub's own Chinese interface word |
 | gate (a CI check a change must pass) | 门禁 | |
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |

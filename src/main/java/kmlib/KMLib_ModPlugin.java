@@ -19,8 +19,8 @@ import org.apache.log4j.Logger;
 /**
  * KMLib's entry point, for the little the library has to do on its own behalf rather than on a
  * consuming mod's: applying its own log verbosity from its own setting, loading the font faces every
- * mod drawing KM text shares, standing up the adapters for whichever optional mods this install has,
- * and telling the player when a binding it holds to third-party code has stopped holding.
+ * mod drawing text through KMLib shares, standing up the adapters for whichever optional mods this
+ * install has, and telling the player when a binding it holds to third-party code has stopped holding.
  *
  * <p>Everything else here is called into by whichever mod wants it. Those are the exceptions
  * because no consuming mod can do them for it: a level has to be applied to the {@code kmlib}
@@ -44,6 +44,9 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // switch a reader chasing the library's output turns up.
     private static final WiringSteps WIRING_STEPS = new WiringSteps(LOG);
 
+    // The faces are the process's, not a save's, so a second game load in one session finds them loaded.
+    private boolean hasLoadedInstalledFaces;
+
     @Override
     public void onApplicationLoad() {
 
@@ -52,7 +55,6 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             "Failed to install KMLib LunaLib settings bindings",
             KmlibLunaSettings::describeLunaLibIntegration);
         logActiveRenderer();
-        loadInstalledFaces();
         installOptionalModIntegrations();
     }
 
@@ -60,6 +62,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     public void onGameLoad(boolean newGame) {
 
         super.onGameLoad(newGame);
+        loadInstalledFacesOnce();
         installCompatibilityNotice(Global.getSector());
     }
 
@@ -106,20 +109,6 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             RandomAssortmentOfThingsIntegration::describeIntegration);
     }
 
-    // Loads every face KM text may draw in as the game starts, so the log states what the install holds
-    // under each before any text is drawn, and no first draw pays for a load. The library's to do rather
-    // than a consumer's: the faces and the cache are shared by every mod drawing KM text, and one load
-    // serves them all.
-    //
-    // Guarded without an integration named: LazyLib is a declared dependency, not an optional mod, so a
-    // failure here is logged for whoever reads the log rather than reported as a mod that did not
-    // integrate.
-    private static void loadInstalledFaces() {
-        WIRING_STEPS.runGuardedStep(
-            InstalledFaceCheck::loadEveryFace,
-            "Failed to load the installed font faces");
-    }
-
     // Which GL implementation every KM draw call reaches, stated once at load. It changes what a
     // GL hint does and what a state read answers, so it is the standing condition any rendering
     // report is read under - and a report that does not say which stack produced it cannot be
@@ -131,5 +120,28 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     private static void logActiveRenderer() {
         LOG.info("Active GL renderer resolved; fastRendering="
             + FastRendering.isFastRenderingActive());
+    }
+
+    // Loads every face KMLib draws text in, so the log states what the install holds under each before any
+    // campaign text is drawn, and no first draw pays for a load. The library's to do rather than a
+    // consumer's: the faces and their cache are shared by every mod drawing text through KMLib.
+    //
+    // Not at application load. With VRAM Optimizer installed, Fast Rendering defers a texture loaded before
+    // every mod's onApplicationLoad has run, and a font atlas LazyFont loaded in that window has been seen
+    // never to upload: every glyph then draws as a solid quad in the text colour. After that window Fast
+    // Rendering uploads a texture as it loads.
+    //
+    // Guarded without an integration named: LazyLib is a declared dependency, not an optional mod, so a
+    // failure here is logged for whoever reads the log rather than reported as a mod that did not
+    // integrate.
+    private void loadInstalledFacesOnce() {
+
+        if (hasLoadedInstalledFaces) {
+            return;
+        }
+        hasLoadedInstalledFaces = true;
+        WIRING_STEPS.runGuardedStep(
+            InstalledFaceCheck::loadEveryFace,
+            "Failed to load the installed font faces");
     }
 }

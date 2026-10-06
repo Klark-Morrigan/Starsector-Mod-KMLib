@@ -11,10 +11,9 @@ import org.apache.log4j.Logger;
 import java.util.StringJoiner;
 
 /**
- * Loads every face KM text may draw in once, as the game starts, and states in the log what the install
- * holds under each.
+ * Loads every face KMLib draws text in, and states in the log what the install holds under each.
  *
- * <p>At start rather than on first draw, so the log states what the install holds before any text is drawn,
+ * <p>Up front rather than on first draw, so the log states what the install holds before any text is drawn,
  * a face that will not load is logged once there by {@link LazyFontCache}, and no first draw pays for a
  * load. Whether a face loads is not decided here: {@link FaceResolver} asks on every walk, so a face that
  * will not load is passed over with or without this check. Every face the enum names is loaded, and so is
