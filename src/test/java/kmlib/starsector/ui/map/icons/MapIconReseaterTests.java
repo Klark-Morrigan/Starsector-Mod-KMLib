@@ -136,9 +136,11 @@ class MapIconReseaterTests {
                 mapWidgetFake::readLayeringOf);
 
             for (var frame = 0; frame < 3; frame++) {
+
                 for (var advance = 0; advance < SPED_UP_ADVANCES_PER_FRAME; advance++) {
                     reseater.advance(ONE_FRAME);
                 }
+
                 mapWidgetFake.renderFrame();
             }
 
@@ -146,8 +148,43 @@ class MapIconReseaterTests {
                 .removeEntity(entityMock);
             verify(locationMock)
                 .addEntity(entityMock);
+
             assertThat(mapWidgetFake.readLayeringOf(entityMock))
                 .isEqualTo(MapIconLayering.CLEAR_OF_NEBULAE);
+        }
+
+        @Test
+        void tracesTheLiftsReadingsOnThePutBackAtDebug() {
+            // The put-back line is where the log shows a lift ran under the speed-up: the wait
+            // between the removal and the put-back happens only when advances share a frame.
+            var locationMock = mock(LocationAPI.class);
+            var entityMock = buildEntityIn(locationMock);
+            var mapWidgetFake = new MapWidgetFake(
+                locationMock,
+                entityMock,
+                MapIconLayering.CLEAR_OF_NEBULAE);
+
+            var reseater = new MapIconReseater(
+                MAP_SHOWING,
+                mapWidgetFake::findEntity,
+                mapWidgetFake::readLayeringOf);
+
+            var logAppenderFake = LogAppenderFake.captureLogOf(MapIconReseater.class, () -> {
+
+                for (var advance = 0; advance < SPED_UP_ADVANCES_PER_FRAME; advance++) {
+                    reseater.advance(ONE_FRAME);
+                }
+
+                mapWidgetFake.renderFrame();
+                reseater.advance(ONE_FRAME);
+            });
+
+            assertThat(logAppenderFake.getEvents())
+                .extracting(event -> event.getLevel() + " " + event.getMessage())
+                .filteredOn(line -> line.startsWith("DEBUG Map icon reseat: reattached"))
+                .singleElement()
+                .asString()
+                .endsWith("[#1 ICON_BURIED -> REMOVE, #2 ICON_NOT_YET_DROPPED -> NONE, #3 PUT_BACK_OWED -> ADD]");
         }
 
         @Test
@@ -168,6 +205,7 @@ class MapIconReseaterTests {
                 MAP_SHOWING,
                 mapWidgetFake::findEntity,
                 entityAskedAbout -> {
+
                     entitiesAskedAbout.add(entityAskedAbout);
                     return mapWidgetFake.readLayeringOf(entityAskedAbout);
                 });
@@ -252,6 +290,7 @@ class MapIconReseaterTests {
                 ICON_UNPLACEABLE);
 
             var logAppenderFake = LogAppenderFake.captureLogOf(MapIconReseater.class, () -> {
+
                 driveUnplaceableAdvances(reseater);
                 closeAndReopenTheMap(reseater, isMapShowing);
                 driveUnplaceableAdvances(reseater);
@@ -275,6 +314,7 @@ class MapIconReseaterTests {
                 ICON_UNPLACEABLE);
 
             var logAppenderFake = LogAppenderFake.captureLogOf(MapIconReseater.class, () -> {
+
                 reseater.advance(ONE_FRAME);
                 isMapShowing[0] = false;
                 reseater.advance(ONE_FRAME);
@@ -333,6 +373,7 @@ class MapIconReseaterTests {
                 MAP_SHOWING,
                 () -> entityMock,
                 entityAskedAbout -> {
+
                     entitiesAskedAbout.add(entityAskedAbout);
                     return MapIconLayering.BURIED_UNDER_NEBULAE;
                 });
@@ -357,6 +398,7 @@ class MapIconReseaterTests {
             var reseater = new MapIconReseater(
                 MAP_SHOWING,
                 () -> {
+
                     entityReadCount[0]++;
                     return entityMock;
                 },
@@ -462,9 +504,11 @@ class MapIconReseaterTests {
             var isEntityReadable = new boolean[] { true };
 
             Supplier<SectorEntityToken> findEntityUntilTheSectorFaults = () -> {
+
                 if (!isEntityReadable[0]) {
                     throw new IllegalStateException("the sector cannot be read on this frame");
                 }
+
                 return entityMock;
             };
 
@@ -621,14 +665,18 @@ class MapIconReseaterTests {
             this.reseededLayering = reseededLayering;
 
             doAnswer(removal -> {
+
                     isEntityInLocation = false;
                     return null;
+
                 }).when(locationMock)
                 .removeEntity(entityMock);
 
             doAnswer(addition -> {
+
                     isEntityInLocation = true;
                     return null;
+
                 }).when(locationMock)
                 .addEntity(entityMock);
         }

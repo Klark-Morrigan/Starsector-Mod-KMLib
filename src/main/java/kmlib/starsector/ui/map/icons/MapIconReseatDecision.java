@@ -3,7 +3,10 @@ package kmlib.starsector.ui.map.icons;
 import kmlib.starsector.ui.map.MapIconLayering;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -63,6 +66,12 @@ final class MapIconReseatDecision {
     // happened; the ordinary frame, with no map up, records nothing.
     private final Deque<ReseatReading> recentReadings = new ArrayDeque<>();
 
+    // The latest lift's readings alone, from its removal to the advance that ended its wait, for the
+    // line reporting the put-back. Apart from the ring above, which a map left up fills with clear
+    // readings, and which a wait longer than its capacity would push the removal out of. Bounded by
+    // the wait bound, being restarted by every removal.
+    private final List<ReseatReading> latestLiftReadings = new ArrayList<>();
+
     // Which advance this is, counted from construction. Stamped on each reading so a gap between two
     // of them reads as the frames nothing was recorded on.
     private long advanceCount;
@@ -118,8 +127,23 @@ final class MapIconReseatDecision {
         if (mapShowingEdge == MapShowingEdge.CLOSED) {
             openTally = new MapOpenTally();
         }
+
         wasMapShowing = isMapShowing;
         return action;
+    }
+
+    /**
+     * The latest lift's readings, from its removal to the advance that ended its wait, oldest first,
+     * as one bracketed list for a log line - empty brackets before any lift.
+     *
+     * <p>A wait between the removal and the put-back is the widget still showing the icon on an
+     * advance after the removal, which happens only when several advances share a rendered frame:
+     * the campaign's speed-up. So the list says whether a lift ran under it, and that it waited.
+     *
+     * @return each reading of the lift as its advance, what was found and what was ordered
+     */
+    String describeLatestLiftReadings() {
+        return joinReadings(latestLiftReadings);
     }
 
     /**
@@ -130,9 +154,7 @@ final class MapIconReseatDecision {
      *         and what was ordered
      */
     String describeRecentReadings() {
-        return recentReadings.stream()
-            .map(ReseatReading::describe)
-            .collect(Collectors.joining(", ", "[", "]"));
+        return joinReadings(recentReadings);
     }
 
     /**
@@ -185,32 +207,51 @@ final class MapIconReseatDecision {
 
         var layering = readIconLayering.get();
         if (layering == MapIconLayering.CLEAR_OF_NEBULAE) {
+
             // The one reading that says a lift worked. Everything else - no map, no icon yet, a
             // tree that cannot be read - leaves the count alone rather than forgiving attempts on
             // the strength of an answer nobody got.
             openTally.attemptsSinceLastClear = 0;
             openTally.wasIconSeenClear = true;
             openTally.unplaceableRun = 0;
+
             return recordReading(ReseatObservation.ICON_CLEAR, ReseatAction.NONE);
         }
+
         if (layering == MapIconLayering.UNREADABLE) {
+
             noteUnplaceableReading(isEntityPresent);
             return recordReading(ReseatObservation.ICON_UNPLACEABLE, ReseatAction.NONE);
         }
 
         openTally.unplaceableRun = 0;
+
         if (!isEntityPresent.getAsBoolean()) {
             return recordReading(ReseatObservation.ENTITY_ABSENT, ReseatAction.NONE);
         }
 
         openTally.attemptsSinceLastClear++;
+
         if (openTally.attemptsSinceLastClear > MAX_ATTEMPTS) {
+
             openTally.hasStoodDown = true;
             return recordReading(ReseatObservation.ICON_BURIED, ReseatAction.NONE);
         }
+
         isEntityDetached = true;
         advancesDetached = 0;
-        return recordReading(ReseatObservation.ICON_BURIED, ReseatAction.REMOVE);
+
+        latestLiftReadings.clear();
+        return recordLiftReading(ReseatObservation.ICON_BURIED, ReseatAction.REMOVE);
+    }
+
+    // One list for a log line, shared so the two descriptions word a reading alike.
+    private static String joinReadings(Collection<ReseatReading> readings) {
+
+        return readings
+            .stream()
+            .map(ReseatReading::describe)
+            .collect(Collectors.joining(", ", "[", "]"));
     }
 
     // What an advance with the entity out owes it: the put-back once the widget has dropped the
@@ -228,27 +269,30 @@ final class MapIconReseatDecision {
         isEntityDetached = false;
 
         if (isEntityPresent.getAsBoolean()) {
-            return recordReading(ReseatObservation.ENTITY_RESTORED_WHILE_OUT, ReseatAction.NONE);
+            return recordLiftReading(ReseatObservation.ENTITY_RESTORED_WHILE_OUT, ReseatAction.NONE);
         }
+
         // Put back regardless of the placement once no map is up. The removal is a means, never a
         // state to leave standing: a map closed mid-sequence would otherwise strand the entity out
         // of its location until whatever put it there runs again.
         if (!isMapShowing) {
-            return recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+            return recordLiftReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
         }
+
         // An icon that can no longer be placed is one the widget has dropped, which is the frame
         // this waited for; a widget that cannot be read at all answers the same and is put back
         // for the same reason, nothing further being learnable from waiting.
         if (readIconLayering.get() == MapIconLayering.UNREADABLE) {
-            return recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+            return recordLiftReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
         }
 
         advancesDetached++;
         if (advancesDetached >= MAX_ADVANCES_DETACHED) {
-            return recordReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
+            return recordLiftReading(ReseatObservation.PUT_BACK_OWED, ReseatAction.ADD);
         }
+
         isEntityDetached = true;
-        return recordReading(ReseatObservation.ICON_NOT_YET_DROPPED, ReseatAction.NONE);
+        return recordLiftReading(ReseatObservation.ICON_NOT_YET_DROPPED, ReseatAction.NONE);
     }
 
     // Counts an advance with a map up and no icon placeable while the entity is there, which is the
@@ -256,9 +300,18 @@ final class MapIconReseatDecision {
     // from the frame before the widget has seeded the icon. An absent entity ends the count, that
     // being the ordinary state before whatever seeds it has run.
     private void noteUnplaceableReading(BooleanSupplier isEntityPresent) {
+
         openTally.unplaceableRun = isEntityPresent.getAsBoolean()
             ? openTally.unplaceableRun + 1
             : 0;
+    }
+
+    // Keeps a reading of the lift in progress in its own record as well as in the ring.
+    private ReseatAction recordLiftReading(ReseatObservation observation, ReseatAction action) {
+
+        recordReading(observation, action);
+        latestLiftReadings.add(recentReadings.getLast());
+        return action;
     }
 
     // Keeps the reading behind an action, dropping the oldest once the capacity is reached, and
@@ -270,6 +323,7 @@ final class MapIconReseatDecision {
         if (recentReadings.size() > RECENT_READINGS_CAPACITY) {
             recentReadings.removeFirst();
         }
+
         return action;
     }
 
@@ -279,7 +333,10 @@ final class MapIconReseatDecision {
         if (isMapShowing == wasMapShowing) {
             return MapShowingEdge.NONE;
         }
-        return isMapShowing ? MapShowingEdge.OPENED : MapShowingEdge.CLOSED;
+
+        return isMapShowing
+            ? MapShowingEdge.OPENED
+            : MapShowingEdge.CLOSED;
     }
 
     /**
@@ -329,8 +386,10 @@ final class MapIconReseatDecision {
 
             if (hasReportedDisagreement
                     || unplaceableRun < UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT) {
+                        
                 return false;
             }
+
             hasReportedDisagreement = true;
             return true;
         }

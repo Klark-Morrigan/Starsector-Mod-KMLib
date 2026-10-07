@@ -245,6 +245,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | put back (an entity taken out of its location) | 放回 | the counterpart of 移出 |
 | placement (of a map icon among the others), unplaceable | 叠放情况, 无法定位 | 叠放, stacking, as the `0.5.0` entry's 重新叠放; 定位, to locate, kept apart from 位置 for a location |
 | supplier (a function a caller hands in) | 供应器 | |
+| lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
+| reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
+| log line | 日志行 | as the settings description and the `0.5.0` entries write it |
+| wait (an advance spent with the entity out) | 等待 | the plain word |
 
 ## Forum terms
 

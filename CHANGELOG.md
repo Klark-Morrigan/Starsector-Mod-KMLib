@@ -30,6 +30,10 @@ The reusable release workflow extracts the section matching the released version
 
 - **Map layers under the speed-up:** while an entity is out of its location, `MapIconReseater` asks where the icon sits about the entity it holds, not the caller's supplier. A supplier that walks the location answers null for an entity taken out, and a placement read about null reads unplaceable, so the put-back was ordered on the very next advance whatever the widget had rendered.
 
+#### Added
+
+- **The `Map icon reseat` reattach line carries the lift's readings**, from the removal to the put-back. A wait between the two shows the campaign ran several advances per frame, which is how the log tells that a lift ran under the speed-up.
+
 </details>
 
 ## [0.5.1] - 2026-10-06

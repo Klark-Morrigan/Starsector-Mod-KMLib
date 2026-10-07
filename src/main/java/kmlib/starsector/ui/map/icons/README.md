@@ -112,6 +112,10 @@ Every line starts `Map icon reseat:`.
 At DEBUG:
 
 - each move, as the entity is detached and reattached;
+- with the reattach, the lift's [readings](ReseatReading.java) from the removal on.
+  A wait among them is the widget still showing the icon after the removal,
+  which happens only when several advances share a frame,
+  so it is how the log shows a lift ran under the speed-up and waited it out;
 - the map opening and closing, each carrying the count of lifts since the icon was last seen clear,
   and the closing line whether it was seen clear at all while the map was up.
 

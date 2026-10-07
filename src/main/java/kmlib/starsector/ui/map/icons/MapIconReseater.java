@@ -202,8 +202,12 @@ public final class MapIconReseater implements EveryFrameScript {
             .location()
             .addEntity(detachedMapIcon.entity());
 
+        // With the lift's readings, because a wait among them is the one sign in the log that the
+        // campaign ran several advances per frame - its speed-up - and that the lift waited it out.
         LOG.debug("Map icon reseat: reattached " + describeEntity(detachedMapIcon.entity())
-            + "; its icon re-enters at the tail on the next frame that draws a map");
+            + "; its icon re-enters at the tail on the next frame that draws a map. The lift's readings, "
+            + "oldest first, a wait among them meaning several advances per frame: "
+            + reseatDecision.describeLatestLiftReadings());
 
         detachedMapIcon = null;
     }
