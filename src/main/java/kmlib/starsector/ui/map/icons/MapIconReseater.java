@@ -30,10 +30,9 @@ import java.util.function.Supplier;
  * a stale instance nothing draws.
  *
  * <p>The placement port is asked <em>about</em> an entity rather than standing for one, so it cannot
- * be pointed at a different entity from the one moved. Stated as two independent readings it would
- * be the caller's job to aim both at the same thing, which is a rule nothing could check and one a
- * reader of the wiring would have to be told. Within an advance the entity is read once and handed
- * to both, so the pairing costs a walk rather than three.
+ * be pointed at a different entity from the one moved. Within an advance the entity is read once and
+ * handed to both. While the entity is out of its location, the placement is asked about the entity
+ * held, which a location that no longer holds it cannot name.
  *
  * <p>It says in the log what it saw, on this library's own logger rather than the calling mod's, so
  * following a layering problem means turning KMLib's verbosity up rather than the mod's: each move
@@ -79,11 +78,8 @@ public final class MapIconReseater implements EveryFrameScript {
      * @param isMapShowing whether a map whose icon order matters is on screen; it scopes the move to
      *        the maps the caller cares about rather than triggering it
      * @param findEntityToReseat the entity to move, or null when its location holds none
-     * @param readIconLayeringOf where an entity's icon currently sits; {@code MapIconLayeringProbe}
-     *        answers it from the live widget, and a caller wires that in rather than this reaching
-     *        for it - this package writes to the map's draw order and reads nothing, which is what
-     *        keeps it independent of the probes that only read. Asked about an entity rather than
-     *        standing for one, so it cannot be pointed at a different entity from the one moved
+     * @param readIconLayeringOf where an entity's icon currently sits, asked about the entity being
+     *        moved; {@code MapIconLayeringProbe} answers it from the live widget
      */
     public MapIconReseater(
             BooleanSupplier isMapShowing,
@@ -123,6 +119,7 @@ public final class MapIconReseater implements EveryFrameScript {
         } catch (RuntimeException | LinkageError reseatFailure) {
             reportReseatFailureOnce(reseatFailure);
         }
+
         returnAStrandedEntity();
     }
 
@@ -135,17 +132,34 @@ public final class MapIconReseater implements EveryFrameScript {
 
         var action = reseatDecision.decideReseatAction(
             isMapShowing.getAsBoolean(),
-            () -> readIconLayeringOf.apply(entityThisAdvance.resolveEntity()),
+            () -> readIconLayeringOf.apply(resolveEntityToPlace(entityThisAdvance)),
             () -> entityThisAdvance.resolveEntity() != null);
 
         switch (action) {
+
             case REMOVE -> detachMapIcon(entityThisAdvance.resolveEntity());
             case ADD -> attachMapIcon();
             case NONE -> {
                 // Nothing owed the location this advance.
             }
         }
+
         reportAdvanceDiagnostics(entityThisAdvance);
+    }
+
+    // The entity whose icon is placed this advance: the one held out while there is one, and the
+    // caller's answer otherwise.
+    //
+    // The caller's answer cannot stand for an entity this took out. A supplier that walks what a
+    // location holds answers nothing for it, and a placement read about nothing reads unplaceable -
+    // the reading that orders the put-back - before the widget has rendered a frame without the icon.
+    // Under the campaign's speed-up the put-back then lands in the frame that took the entity out,
+    // the widget drops nothing, and every lift of the open is spent achieving nothing.
+    private SectorEntityToken resolveEntityToPlace(EntityThisAdvance entityThisAdvance) {
+
+        return detachedMapIcon != null
+            ? detachedMapIcon.entity()
+            : entityThisAdvance.resolveEntity();
     }
 
     private void detachMapIcon(SectorEntityToken entity) {
@@ -177,10 +191,17 @@ public final class MapIconReseater implements EveryFrameScript {
         if (detachedMapIcon == null) {
             return;
         }
-        detachedMapIcon.location().addEntity(detachedMapIcon.entity());
 
+        detachedMapIcon
+            .location()
+            .addEntity(detachedMapIcon.entity());
+
+        // With the lift's readings, because a wait among them is the one sign in the log that the
+        // campaign ran several advances per frame - its speed-up - and that the lift waited it out.
         LOG.debug("Map icon reseat: reattached " + describeEntity(detachedMapIcon.entity())
-            + "; its icon re-enters at the tail on the next frame that draws a map");
+            + "; its icon re-enters at the tail on the next frame that draws a map. The lift's readings, "
+            + "oldest first, a wait among them meaning several advances per frame: "
+            + reseatDecision.describeLatestLiftReadings());
 
         detachedMapIcon = null;
     }
@@ -204,13 +225,13 @@ public final class MapIconReseater implements EveryFrameScript {
         try {
             attachMapIcon();
 
-        } catch (RuntimeException | LinkageError putBackError) {
+        } catch (RuntimeException | LinkageError exception) {
 
             LOG.debug(
                 "Map icon reseat: "
                     + "could not return a detached entity; "
                     + "holding it for the next advance",
-                putBackError);
+                exception);
         }
     }
 
@@ -223,6 +244,7 @@ public final class MapIconReseater implements EveryFrameScript {
         var notes = reseatDecision.readNotesOfLastAdvance();
 
         switch (notes.mapShowingEdge()) {
+
             case OPENED -> LOG.debug("Map icon reseat: a map this lifts for opened; "
                 + describeLiftCount(notes));
             case CLOSED -> LOG.debug("Map icon reseat: the map closed; icon seen clear while it "
@@ -231,9 +253,11 @@ public final class MapIconReseater implements EveryFrameScript {
                 // The map is as it was, so there is no moment to mark.
             }
         }
+
         if (notes.isDisagreementToReport()) {
             reportDisagreementOnce(entityThisAdvance);
         }
+
         reportStandingDownOnce(entityThisAdvance);
     }
 
@@ -246,6 +270,7 @@ public final class MapIconReseater implements EveryFrameScript {
         if (disagreementWarning.hasWarnedThisSession()) {
             return;
         }
+
         disagreementWarning.warnOnce("Map icon reseat: a map has been showing for "
             + MapIconReseatDecision.UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT + " advances with "
             + describeEntity(entityThisAdvance.resolveEntity())
@@ -263,6 +288,7 @@ public final class MapIconReseater implements EveryFrameScript {
         if (standDownWarning.hasWarnedThisSession() || !reseatDecision.hasStoodDown()) {
             return;
         }
+
         standDownWarning.warnOnce("Map icon reseat: gave up lifting "
             + describeEntity(entityThisAdvance.resolveEntity())
             + " past the map's nebulae after " + MapIconReseatDecision.MAX_ATTEMPTS
@@ -274,6 +300,7 @@ public final class MapIconReseater implements EveryFrameScript {
 
     // The count both edges carry, worded once so the two lines agree on what it is.
     private static String describeLiftCount(ReseatAdvanceNotes notes) {
+
         return "lifts since the icon was last seen clear=" + notes.attemptsSinceLastClear()
             + (notes.hasStoodDown() ? ", stood down" : "");
     }
@@ -285,7 +312,9 @@ public final class MapIconReseater implements EveryFrameScript {
         if (hasLoggedReseatError) {
             return;
         }
+
         hasLoggedReseatError = true;
+
         LOG.error(
             "Could not reseat a map icon on this advance; "
                 + "later advances keep trying, and further faults are not reported.",
@@ -295,11 +324,16 @@ public final class MapIconReseater implements EveryFrameScript {
     // Names what a reader can match against the icon-order trace, which reports the plugin class
     // rather than an entity ID - the ID being absent on the decorative entities this tends to move.
     private static String describeEntity(SectorEntityToken entity) {
-        return entity == null ? "no entity" : entity.getClass().getSimpleName();
+
+        return entity == null
+            ? "no entity"
+            : entity.getClass().getSimpleName();
     }
 
     // An entity out of its location, with the location owed it back.
-    private record DetachedMapIcon(SectorEntityToken entity, LocationAPI location) {
+    private record DetachedMapIcon(
+        SectorEntityToken entity,
+        LocationAPI location) {
     }
 
     // One advance's entity, asked for at most once and answered from what came back after that.
@@ -329,6 +363,7 @@ public final class MapIconReseater implements EveryFrameScript {
                 hasAsked = true;
                 entity = findEntity.get();
             }
+
             return entity;
         }
     }

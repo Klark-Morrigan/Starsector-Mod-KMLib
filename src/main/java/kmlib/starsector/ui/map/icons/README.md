@@ -74,6 +74,10 @@ unmoved by a save reload or a Starscape toggle.
 The put-back therefore waits until the placement reads unplaceable,
 which is the widget having dropped the icon,
 and that reading is the same walk every map-open advance already pays for.
+While the entity is out,
+the placement is asked about the entity held rather than the caller's answer:
+a location that no longer holds the entity cannot name it,
+and a placement asked about no entity reads unplaceable whatever the widget has rendered.
 The wait ends at once when the map goes down,
 and after `MAX_ADVANCES_DETACHED` advances regardless,
 so a map that has stopped rendering cannot keep the entity out.
@@ -107,6 +111,13 @@ Every line starts `Map icon reseat:`.
 At DEBUG:
 
 - each move, as the entity is detached and reattached;
+- with the reattach, the lift's [readings](ReseatReading.java) from the removal on,
+  kept by the [reading log](ReseatReadingLog.java).
+  A wait among them is the widget still showing the icon after the removal,
+  which happens only when several advances share a frame,
+  so it is how the log shows a lift ran under the speed-up and waited it out.
+  The put-back names what ended the wait:
+  the icon dropped, the map going down, or the wait running to its bound;
 - the map opening and closing, each carrying the count of lifts since the icon was last seen clear,
   and the closing line whether it was seen clear at all while the map was up.
 

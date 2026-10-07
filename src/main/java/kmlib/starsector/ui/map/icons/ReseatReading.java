@@ -4,7 +4,8 @@ import kmlib.starsector.ui.map.icons.MapIconReseatDecision.ReseatAction;
 
 /**
  * One advance the decision had something to read: which advance it was, what it found, and what it
- * ordered. The unit a stand-down report is made of.
+ * ordered. The unit both reports are made of: the readings leading to a stand-down, and those of one
+ * lift on the line reporting its put-back.
  *
  * @param advanceOrdinal which advance since the decision was made, so a gap between two readings
  *                       reads as the frames nothing was recorded on - a closed map between two

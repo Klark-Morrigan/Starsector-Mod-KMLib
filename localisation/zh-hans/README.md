@@ -238,6 +238,18 @@ A version heading is never translated; see [translating the changelog](#translat
 | field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, as the developer notes write it |
 | object-holding array (in JSON) | 对象数组 | 对象, object, before 数组, array: an array whose elements are objects |
 | root, nested record (of a JSON file) | 根层级, 嵌套的记录 | 层级, level, so 根 reads as the file's top level rather than a root directory |
+| campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game jar, which the cached core localisation does not hold, so it is unchecked |
+| 2nd fix (another fix for a bug an earlier version claimed fixed) | 第二次修复 | 第二次, the second time, before 修复 as in the Fixed heading |
+| location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |
+| advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
+| put back (an entity taken out of its location) | 放回 | the counterpart of 移出 |
+| placement (of a map icon among the others), unplaceable | 叠放情况, 无法定位 | 叠放, stacking, as the `0.5.0` entry's 重新叠放; 定位, to locate, kept apart from 位置 for a location |
+| supplier (a function a caller hands in) | 供应器 | |
+| lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
+| reseat (the removal and put-back a lift is made of) | 重新安置 | as the `0.3.0` entries write it |
+| reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
+| log line | 日志行 | as the settings description and the `0.5.0` entries write it |
+| wait (an advance spent with the entity out) | 等待 | the plain word |
 
 ## Forum terms
 

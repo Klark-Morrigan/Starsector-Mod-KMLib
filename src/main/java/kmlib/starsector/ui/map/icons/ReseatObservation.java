@@ -10,8 +10,20 @@ package kmlib.starsector.ui.map.icons;
  */
 enum ReseatObservation {
 
-    /** The entity is out of its location and the widget has dropped its icon, or no map is up. */
-    PUT_BACK_OWED,
+    /**
+     * The entity is out of its location and no icon can be placed for it: the widget has dropped the
+     * icon, or cannot be read at all. Either way the wait is over and the entity goes back.
+     */
+    ICON_DROPPED,
+
+    /** The entity is out of its location and no map is up, so it goes back without a placement read. */
+    MAP_DOWN,
+
+    /**
+     * The entity is out of its location and the widget still shows its icon, but the wait has run to its
+     * bound, so it goes back regardless. A lift that ends here is one no rendered frame took.
+     */
+    WAIT_EXPIRED,
 
     /** The entity is out of its location and the widget still shows its icon: no frame rendered without it yet. */
     ICON_NOT_YET_DROPPED,
