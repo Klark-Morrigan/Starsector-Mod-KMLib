@@ -17,6 +17,21 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+### Fixed
+
+- **[KMU]** 2nd fix for **map layers not being drawn above the nebulae with the campaign speed-up on**. - _Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170)._
+
+### For developers
+
+<details>
+<summary>API, build tooling and test fixtures</summary>
+
+#### Fixed
+
+- **Map layers under the speed-up:** while an entity is out of its location, `MapIconReseater` asks where the icon sits about the entity it holds, not the caller's supplier. A supplier that walks the location answers null for an entity taken out, and a placement read about null reads unplaceable, so the put-back was ordered on the very next advance whatever the widget had rendered.
+
+</details>
+
 ## [0.5.1] - 2026-10-06
 
 ### Fixed

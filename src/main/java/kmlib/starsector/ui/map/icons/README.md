@@ -74,6 +74,11 @@ unmoved by a save reload or a Starscape toggle.
 The put-back therefore waits until the placement reads unplaceable,
 which is the widget having dropped the icon,
 and that reading is the same walk every map-open advance already pays for.
+While the entity is out,
+the placement is asked about the entity held rather than the caller's answer.
+A location that no longer holds the entity cannot name it,
+and a placement asked about no entity reads unplaceable at once,
+which ordered the put-back on the next advance whatever the widget had rendered.
 The wait ends at once when the map goes down,
 and after `MAX_ADVANCES_DETACHED` advances regardless,
 so a map that has stopped rendering cannot keep the entity out.
