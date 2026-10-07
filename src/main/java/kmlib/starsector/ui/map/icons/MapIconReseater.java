@@ -30,12 +30,9 @@ import java.util.function.Supplier;
  * a stale instance nothing draws.
  *
  * <p>The placement port is asked <em>about</em> an entity rather than standing for one, so it cannot
- * be pointed at a different entity from the one moved. Stated as two independent readings it would
- * be the caller's job to aim both at the same thing, which is a rule nothing could check and one a
- * reader of the wiring would have to be told. Within an advance the entity is read once and handed
- * to both, so the pairing costs a walk rather than three. While the entity is out of its location,
- * the placement is asked about the entity held rather than the caller's answer, which a location
- * that no longer holds it cannot give.
+ * be pointed at a different entity from the one moved. Within an advance the entity is read once and
+ * handed to both. While the entity is out of its location, the placement is asked about the entity
+ * held, which a location that no longer holds it cannot name.
  *
  * <p>It says in the log what it saw, on this library's own logger rather than the calling mod's, so
  * following a layering problem means turning KMLib's verbosity up rather than the mod's: each move
@@ -81,11 +78,8 @@ public final class MapIconReseater implements EveryFrameScript {
      * @param isMapShowing whether a map whose icon order matters is on screen; it scopes the move to
      *        the maps the caller cares about rather than triggering it
      * @param findEntityToReseat the entity to move, or null when its location holds none
-     * @param readIconLayeringOf where an entity's icon currently sits; {@code MapIconLayeringProbe}
-     *        answers it from the live widget, and a caller wires that in rather than this reaching
-     *        for it - this package writes to the map's draw order and reads nothing, which is what
-     *        keeps it independent of the probes that only read. Asked about an entity rather than
-     *        standing for one, so it cannot be pointed at a different entity from the one moved
+     * @param readIconLayeringOf where an entity's icon currently sits, asked about the entity being
+     *        moved; {@code MapIconLayeringProbe} answers it from the live widget
      */
     public MapIconReseater(
             BooleanSupplier isMapShowing,

@@ -184,7 +184,7 @@ class MapIconReseaterTests {
                 .filteredOn(line -> line.startsWith("DEBUG Map icon reseat: reattached"))
                 .singleElement()
                 .asString()
-                .endsWith("[#1 ICON_BURIED -> REMOVE, #2 ICON_NOT_YET_DROPPED -> NONE, #3 PUT_BACK_OWED -> ADD]");
+                .endsWith("[#1 ICON_BURIED -> REMOVE, #2 ICON_NOT_YET_DROPPED -> NONE, #3 ICON_DROPPED -> ADD]");
         }
 
         @Test
@@ -272,7 +272,7 @@ class MapIconReseaterTests {
                 .singleElement()
                 .asString()
                 .contains("ICON_BURIED -> REMOVE, ")
-                .contains("PUT_BACK_OWED -> ADD, ")
+                .contains("ICON_DROPPED -> ADD, ")
                 .endsWith("ICON_BURIED -> NONE]");
         }
 

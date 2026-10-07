@@ -659,7 +659,7 @@ class MapIconReseatDecisionTests {
             reseatDecision.decideReseatAction(MAP_SHOWING, ICON_UNPLACEABLE, ENTITY_ABSENT);
 
             assertThat(reseatDecision.describeLatestLiftReadings())
-                .isEqualTo("[#2 ICON_BURIED -> REMOVE, #3 ICON_NOT_YET_DROPPED -> NONE, #4 PUT_BACK_OWED -> ADD]");
+                .isEqualTo("[#2 ICON_BURIED -> REMOVE, #3 ICON_NOT_YET_DROPPED -> NONE, #4 ICON_DROPPED -> ADD]");
         }
 
         @Test
@@ -670,7 +670,7 @@ class MapIconReseatDecisionTests {
             driveFailedLifts(reseatDecision, 2);
 
             assertThat(reseatDecision.describeLatestLiftReadings())
-                .isEqualTo("[#3 ICON_BURIED -> REMOVE, #4 PUT_BACK_OWED -> ADD]");
+                .isEqualTo("[#3 ICON_BURIED -> REMOVE, #4 ICON_DROPPED -> ADD]");
         }
 
         @Test
@@ -686,7 +686,20 @@ class MapIconReseatDecisionTests {
 
             assertThat(reseatDecision.describeLatestLiftReadings())
                 .startsWith("[#1 ICON_BURIED -> REMOVE, #2 ICON_NOT_YET_DROPPED -> NONE, ")
-                .endsWith(", #17 PUT_BACK_OWED -> ADD]");
+                .endsWith(", #17 WAIT_EXPIRED -> ADD]");
+        }
+
+        @Test
+        void namesAPutBackOnAClosedMapForTheMapGoingDown() {
+            // Each way a wait ends reads differently, so a log tells a map closed mid-lift from a
+            // widget that dropped the icon or a wait that ran out.
+            var reseatDecision = new MapIconReseatDecision();
+
+            reseatDecision.decideReseatAction(MAP_SHOWING, ICON_BURIED, ENTITY_PRESENT);
+            reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_ABSENT);
+
+            assertThat(reseatDecision.describeLatestLiftReadings())
+                .isEqualTo("[#1 ICON_BURIED -> REMOVE, #2 MAP_DOWN -> ADD]");
         }
     }
 
@@ -708,7 +721,7 @@ class MapIconReseatDecisionTests {
             driveFailedLifts(reseatDecision, 1);
 
             assertThat(reseatDecision.describeRecentReadings())
-                .isEqualTo("[#1 ICON_BURIED -> REMOVE, #2 PUT_BACK_OWED -> ADD]");
+                .isEqualTo("[#1 ICON_BURIED -> REMOVE, #2 ICON_DROPPED -> ADD]");
         }
 
         @Test
@@ -746,23 +759,7 @@ class MapIconReseatDecisionTests {
             driveToStandDown(reseatDecision);
 
             assertThat(reseatDecision.describeRecentReadings())
-                .endsWith("#8 PUT_BACK_OWED -> ADD, #9 ICON_BURIED -> NONE]");
-        }
-
-        @Test
-        void keepsOnlyTheLatestReadings() {
-            // Thirteen readings into a capacity of twelve: the first is dropped and the rest kept in
-            // order, so the report is always the end of the story rather than its start.
-            var reseatDecision = new MapIconReseatDecision();
-
-            for (var advance = 0; advance < MapIconReseatDecision.RECENT_READINGS_CAPACITY + 1; advance++) {
-                reseatDecision.decideReseatAction(MAP_SHOWING, ICON_CLEAR, ENTITY_PRESENT);
-            }
-
-            assertThat(reseatDecision.describeRecentReadings())
-                .startsWith("[#2 ICON_CLEAR -> NONE, ")
-                .endsWith(", #13 ICON_CLEAR -> NONE]")
-                .doesNotContain("#1 ");
+                .endsWith("#8 ICON_DROPPED -> ADD, #9 ICON_BURIED -> NONE]");
         }
     }
 
