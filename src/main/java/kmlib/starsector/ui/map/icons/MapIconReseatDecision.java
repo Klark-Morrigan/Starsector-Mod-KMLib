@@ -347,7 +347,7 @@ final class MapIconReseatDecision {
 
             if (hasReportedDisagreement
                     || unplaceableRun < UNPLACEABLE_ADVANCES_BEFORE_DISAGREEMENT) {
-                        
+
                 return false;
             }
 

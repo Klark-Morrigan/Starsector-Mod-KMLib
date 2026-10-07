@@ -794,7 +794,7 @@ class MapIconReseatDecisionTests {
     // An advance with no map up: the one before the first open, or the one that closes a map. The
     // placement is not there to be read on either, and the supplier says so by faulting.
     private static void advanceWithNoMapShowing(MapIconReseatDecision reseatDecision) {
-        
+
         reseatDecision.decideReseatAction(NO_MAP_SHOWING, PLACEMENT_NOT_TO_BE_READ, ENTITY_PRESENT);
     }
 }
