@@ -19,7 +19,7 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **[KMU]** 2nd fix for **map layers not being drawn above the nebulae with the campaign speed-up on**. - _Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170)._
+- **[KMU]** 2nd fix for **map layers not being drawn above the nebulae with the campaign speed-up on**. - _Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1557070590379032719)._
 
 ### For developers
 
