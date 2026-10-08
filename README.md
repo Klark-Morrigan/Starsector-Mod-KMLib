@@ -232,11 +232,7 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   delegating to [`mod-release.yml`](.github/workflows/mod-release.yml),
   the reusable pipeline this repo hosts for the whole KM series.
 - [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
-  derives mod ID,
-  version,
-  runner label,
-  dist dir,
-  zip name and jar source from a caller's metadata.
+  derives the values every workflow here reads from a caller's metadata.
 - [`actions/read-locales/`](.github/actions/read-locales/) -
   reads the locales a caller releases in from its `localisation/manifest.json`.
 - [`actions/check-version/`](.github/actions/check-version/) -

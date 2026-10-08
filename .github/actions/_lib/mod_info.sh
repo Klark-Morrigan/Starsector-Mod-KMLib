@@ -175,7 +175,7 @@ mod_info_derive_zip_name() {
 # keeping no locales releases unsuffixed. It matches any text rather than the
 # tags a mod ships today, so a new locale matches the day it ships.
 #
-# Written for jq's test. The constructs used read the same in bash's =~.
+# Written for jq's test.
 mod_info_derive_zip_name_regex() {
 
   local jarSource="${1}"

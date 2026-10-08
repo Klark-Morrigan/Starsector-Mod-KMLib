@@ -8,14 +8,13 @@
 # tested with bats. Composite actions themselves are not unit-testable.
 name: Read mod info
 description: >-
-  Reads mod_info.json from the caller checkout and emits the mod id, version,
-  runner label, dist directory, zip name, jar source path, and sibling
-  checkout set as outputs.
+  Reads the caller checkout's mod metadata and emits the values KMLib's
+  reusable workflows derive from it.
 
-# TODO: drop mod-folder-name, dist-dir, zip-name and version-file-name once no
-# caller pins mod-release.yml at 0.4.0 or earlier. The current workflow reads
-# none of them - package-release derives each per locale - but a workflow
-# pinned by tag still runs this action from master, and reads all four.
+# TODO: drop dist-dir, zip-name and version-file-name once no caller pins
+# mod-release.yml at 0.4.0 or earlier. The current workflow reads none of
+# them - package-release derives each per locale - but a workflow pinned by
+# tag still runs this action from master, and reads all three.
 outputs:
   mod-id:
     description: "Mod id from mod_info.json (.id), verbatim."

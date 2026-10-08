@@ -299,6 +299,17 @@ match_zip_name_regex() {
     [ "$output" = "false" ]
 }
 
+@test "mod_info_derive_zip_name_regex rejects a version that is not SemVer" {
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-1.2.zip'
+
+    [ "$output" = "false" ]
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-1.2.3a.zip'
+
+    [ "$output" = "false" ]
+}
+
 @test "mod_info_derive_zip_name_regex rejects .zip spelled with another character in place of the dot" {
 
     run match_zip_name_regex 'jars/KMU.jar' 'KMU-0.2.0xzip'

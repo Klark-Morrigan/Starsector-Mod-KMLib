@@ -264,6 +264,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | as the `0.5.0` entries write 遍历; 计数, count |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
+| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
 | drop roller, drop list | 掉落抽取器, 掉落列表 | as the `SalvageEntityMock` entry writes 掉落抽取器; 掉落, drop, is the plain word, unchecked against the game jar |
 | random drop, value drop, drop group | 随机掉落, 价值掉落, 掉落组 | from 掉落 |
 | roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
