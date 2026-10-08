@@ -47,14 +47,14 @@ class StarsectorFactionColoursTests {
         }
 
         @Test
-        void fallsBackToGrayForNullSector() {
+        void fallsBackToGreyForNullSector() {
 
             assertThat(StarsectorFactionColours.resolveNeutralColour(null))
                 .isEqualTo(Color.GRAY);
         }
 
         @Test
-        void fallsBackToGrayWhenNeutralFactionAbsent() {
+        void fallsBackToGreyWhenNeutralFactionAbsent() {
             // A sector with no "neutral" faction (a bare double, or a stripped
             // modded launcher) must not NPE - the grey fallback stands in.
             var sectorMock = mock(SectorAPI.class);
@@ -90,14 +90,14 @@ class StarsectorFactionColoursTests {
         }
 
         @Test
-        void fallsBackToGrayPairForNullSector() {
+        void fallsBackToGreyPairForNullSector() {
 
             assertThat(StarsectorFactionColours.resolvePalette(null, FACTION_ID))
                 .isEqualTo(new FactionPalette(Color.GRAY, Color.GRAY));
         }
 
         @Test
-        void fallsBackToGrayPairWhenFactionAbsent() {
+        void fallsBackToGreyPairWhenFactionAbsent() {
 
             var sectorMock = mock(SectorAPI.class);
 

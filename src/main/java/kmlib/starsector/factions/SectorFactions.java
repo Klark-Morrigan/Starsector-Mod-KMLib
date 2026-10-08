@@ -7,7 +7,7 @@ import kmlib.text.KmlibStrings;
 
 /**
  * Looks a faction up by its ID, so the guards every faction read needs before it reaches the sector are
- * stated once - the faction counterpart of {@link kmlib.starsector.markets.SectorMarkets}.
+ * stated once. The sector-wide listing of faction names is {@link FactionNames#listEveryName}.
  *
  * <p>The sector is absent until the engine has built it, and an ID can name a faction a mod removed or
  * nothing at all. Each of these is no faction rather than a fault, so a caller holding a faction ID has

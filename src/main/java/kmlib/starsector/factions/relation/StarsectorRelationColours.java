@@ -23,16 +23,13 @@ import java.awt.Color;
  * has no pair left to ask about. Where a pair is in hand, {@link StarsectorFactionRelations} is the
  * read: a faction may paint a particular pair in a shade of its own that the number alone cannot
  * report, and the relation it hands back carries that shade already resolved.
- *
- * <p>Stateless - every entry point is a static method, no instance needed.
  */
 public final class StarsectorRelationColours {
 
     // The share of each colour channel a derived dark shade keeps. Vanilla dims an authored
-    // interface colour into its darker companion at this factor (Misc.getDesignTypeColorDim), so a
-    // pair derived here sits apart by about as much as a faction's own authored bright and dark
-    // shades do - which is what lets relation shades drop into the slots faction shades came out of
-    // without borders and partings reading flatter than they did.
+    // interface colour into its darker companion at this factor (Misc.getDesignTypeColorDim).
+    // A pair derived here therefore sits apart by about as much as a faction's own bright and dark
+    // shades do, so it contrasts as strongly wherever a faction pair would be painted.
     private static final float DARK_SHADE_FACTOR = 0.53f;
 
     private StarsectorRelationColours() {
@@ -55,8 +52,8 @@ public final class StarsectorRelationColours {
      * darkened form of it as secondary.
      *
      * <p>Answered as the same pair a faction's own authored shades arrive in, so anything that
-     * paints an owner in two shades - fills against their borders, cells against their partings -
-     * takes relation shades without knowing they were derived rather than authored.
+     * paints in a faction's two shades takes relation shades without knowing they were derived
+     * rather than authored.
      *
      * @param relationship the raw relationship the engine keeps, -1 through 0 to +1
      * @return the two shades, the darker one scaled off the brighter
@@ -78,8 +75,7 @@ public final class StarsectorRelationColours {
      * which have already turned an absent faction into an absent relation before they reach here -
      * published, this would be the one entry point that could be handed nobody. It also has no
      * consumer outside: a caller holding a pair wants the relation, which carries this shade
-     * already, and a caller holding a number wants the ramp above. It opens up when something needs
-     * a pair's own shade and nothing else.
+     * already, and a caller holding a number wants the ramp above.
      *
      * @param observer     the faction whose palette is asked first
      * @param subjectId    the faction the colour is asked about

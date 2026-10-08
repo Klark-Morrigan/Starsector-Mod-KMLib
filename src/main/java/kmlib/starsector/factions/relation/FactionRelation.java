@@ -19,6 +19,12 @@ import java.awt.Color;
  *
  * <p>Holds no absent case of its own: a faction that answers no relation is reported by handing
  * back none, which is what keeps "nothing was read" off the scale this value sits on.
+ *
+ * <p>A reputation of nought is not absence. Nought sits in the middle of the band the scale calls
+ * indifference, where every faction with no history reads. Used to signal absence, it would make a
+ * pair nobody can look up and a pair that does not care arrive as the same fact. A caller folding
+ * relations across several factions has to be able to skip the first without dragging the scale's
+ * centre into its answer.
  */
 public record FactionRelation(
     RepLevel level,

@@ -32,6 +32,9 @@ import static org.mockito.Mockito.when;
  */
 final class NexerelinColoniserTests {
 
+    // An owner ID with no text, which names nobody however the sector would answer it.
+    private static final String BLANK_FACTION_ID = " ";
+
     // The owner a founding is posed under whenever the case is not about who holds the colony.
     private static final String FACTION_OWNER_ID = "hegemony";
 
@@ -128,6 +131,22 @@ final class NexerelinColoniserTests {
                     buildWorldMarket(),
                     null,
                     COLONY_SIZE)));
+        }
+
+        @Test
+        void declinesAFoundingUnderABlankOwnerAsAnOwnerNoFactionAnswersTo() {
+            // The sector is posed answering the blank ID, so the decline can only come from the ID
+            // being turned away before the sector is asked.
+            ModStateScopes.runWithModEnabled(
+                NEXERELIN,
+                true,
+                () -> assertDeclinedBecauseOf(
+                    NexerelinColoniser.establishColony(
+                        buildSectorHolding(BLANK_FACTION_ID),
+                        buildWorldMarket(),
+                        BLANK_FACTION_ID,
+                        COLONY_SIZE),
+                    "no faction with id '" + BLANK_FACTION_ID + "'"));
         }
 
         @Test

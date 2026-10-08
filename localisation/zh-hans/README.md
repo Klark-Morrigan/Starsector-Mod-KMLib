@@ -117,6 +117,7 @@ the typeface editions share its text.
 | Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
 | Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
 | Colony | 殖民地 | `starfarer_obf.jar` |
+| Market | 市场 | `starfarer_obf.jar` |
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
 | Faction | 势力 | `starfarer.api.jar` |
 | Alliance | 联盟 | vanilla's word for the Persean League, taken for Nexerelin's alliances |
@@ -254,9 +255,11 @@ A version heading is never translated; see [translating the changelog](#translat
 | reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | wait (an advance spent with the entity out) | 等待 | the plain word |
-| long name (of a faction) | 长名称 | 长, long, before 名称, name; the player-facing choice between the two forms is KMU's 全称 / 简称 |
+| long name (of a faction) | 长名称 | 长, long, before 名称, name |
 | row (one line of a list or hover box) | 行 | as 日志行 writes it |
 | blank (text holding only whitespace) | 空白 | |
+| walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | as the `0.5.0` entries write 遍历; 计数, count |
+| map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
 
 ## Forum terms
 
@@ -287,7 +290,7 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | translation (the act) | 翻译 | the plain word; 汉化 is a translated build, the forum's sense |
 | install mid-run | 中途安装 | 中途, partway through |
 | mod installer (a third-party tool) | Mod 安装工具 | 安装, install, with 工具, tool; Mod kept Latin as in Mod 作者 |
-| uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word, as KMU's strings write it; 步骤 for the steps |
+| uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word; 步骤 for the steps |
 | changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
 
 ## Adding a string

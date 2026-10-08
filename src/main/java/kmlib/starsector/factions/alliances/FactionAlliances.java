@@ -51,7 +51,8 @@ public record FactionAlliances(
      * named by two records resolves to the later one in list order, keeping the fold total and
      * deterministic per input.
      *
-     * @param allianceRecords the alliances standing, as a source reported them; null allies nobody
+     * @param allianceRecords the alliances standing, as a source reported them; null allies nobody,
+     *                        and a null record in it is passed over
      * @return the alliance each member faction belongs to
      */
     public static FactionAlliances buildFrom(List<AllianceRecord> allianceRecords) {
@@ -59,9 +60,15 @@ public record FactionAlliances(
         if (allianceRecords == null) {
             return NONE;
         }
+
         var allianceIdByFactionId = new HashMap<String, String>();
 
         for (var allianceRecord : allianceRecords) {
+
+            // A list with a hole in it is still read for the records it does hold.
+            if (allianceRecord == null) {
+                continue;
+            }
 
             var allianceId = allianceRecord.allianceId();
 
@@ -70,10 +77,12 @@ public record FactionAlliances(
             if (allianceId == null) {
                 continue;
             }
+
             for (var memberFactionId : allianceRecord.membersSortedDescending()) {
                 allianceIdByFactionId.put(memberFactionId, allianceId);
             }
         }
+
         return new FactionAlliances(allianceIdByFactionId);
     }
 
@@ -96,6 +105,7 @@ public record FactionAlliances(
         if (factionId == null || otherFactionId == null) {
             return false;
         }
+
         var allianceId = allianceIdByFactionId.get(factionId);
 
         return allianceId != null

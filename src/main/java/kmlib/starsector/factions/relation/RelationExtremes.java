@@ -17,17 +17,25 @@ import java.util.Optional;
  * rule is stated as iteration order rather than left to whichever one a fold happens to keep -
  * which makes a caller's own ordering the thing that settles them.
  *
- * <p>An empty set answers no relation rather than a reputation of nought. Nought is not a spare
- * value to signal absence with - it sits in the middle of the band the scale calls indifference,
- * which every faction nobody has any history with reads at - so a set with nobody in it and a set
- * of factions who do not care would arrive as the same fact. The same distinction a single pair
- * read draws by handing back no relation at all.
- *
- * <p>Stateless - every entry point is a static method, no instance needed.
+ * <p>An empty set answers no relation rather than a reputation of nought, for the reason
+ * {@link FactionRelation} gives.
  */
 public final class RelationExtremes {
 
     private RelationExtremes() {
+    }
+
+    /**
+     * Resolves the friendliest of several relations.
+     *
+     * <p>The named form, for a caller whose direction is fixed rather than chosen.
+     *
+     * @param relations the relations to take the friendly end of
+     * @return the friendliest relation, or none where there is nothing to decide between
+     */
+    public static Optional<FactionRelation> resolveBest(Collection<FactionRelation> relations) {
+
+        return resolveExtreme(RelationDirection.FRIENDLIEST, relations);
     }
 
     /**
@@ -55,19 +63,6 @@ public final class RelationExtremes {
             }
         }
         return Optional.ofNullable(deciding);
-    }
-
-    /**
-     * Resolves the friendliest of several relations.
-     *
-     * <p>The named form, for a caller whose direction is fixed rather than chosen.
-     *
-     * @param relations the relations to take the friendly end of
-     * @return the friendliest relation, or none where there is nothing to decide between
-     */
-    public static Optional<FactionRelation> resolveBest(Collection<FactionRelation> relations) {
-
-        return resolveExtreme(RelationDirection.FRIENDLIEST, relations);
     }
 
     /**

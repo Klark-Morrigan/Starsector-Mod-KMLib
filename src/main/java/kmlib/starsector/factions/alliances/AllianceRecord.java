@@ -23,9 +23,12 @@ public record AllianceRecord(
 
     /**
      * Defensively snapshots the member list into an immutable copy, so a record handed on cannot
-     * change under its reader after the read.
+     * change under its reader after the read. An absent list reads as no members, so an alliance a
+     * source reported without a roster folds like an empty one.
      */
     public AllianceRecord {
-        membersSortedDescending = List.copyOf(membersSortedDescending);
+        membersSortedDescending = membersSortedDescending == null
+            ? List.of()
+            : List.copyOf(membersSortedDescending);
     }
 }

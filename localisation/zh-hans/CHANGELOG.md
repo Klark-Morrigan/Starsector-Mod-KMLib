@@ -18,14 +18,22 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
+没有面向玩家的变更。
+
 ### 面向开发者
 
 <details>
 <summary>API、构建工具与测试夹具</summary>
 
+#### 修复
+
+- **空白的势力 ID 视为没有势力**：`StarsectorFactionRelations.createDispositionReader(SectorAPI)`、`NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` 和 `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)` 不再把它交给星域查询。
+- **`FactionAlliances.buildFrom(List)` 会跳过为 null 的记录**，`AllianceRecord(String, String, List)` 也把为 null 的成员列表读作空列表，与 `FactionAlliances` 读取为 null 的映射的方式一致。
+- **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 会把它遍历的市场计入星域遍历计数。**
+
 #### 新增
 
-- **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。`StarsectorFactionColours` 经由它查找势力。
+- **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 
 </details>

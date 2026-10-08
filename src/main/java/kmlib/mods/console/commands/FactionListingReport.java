@@ -4,7 +4,6 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.starsector.factions.FactionFlags;
-import kmlib.starsector.factions.FactionNameForm;
 import kmlib.starsector.factions.FactionNames;
 import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
 import kmlib.starsector.factions.relation.StarsectorPlayerRelations;
@@ -12,7 +11,6 @@ import kmlib.starsector.factions.relation.StarsectorRelationFormatter;
 import kmlib.starsector.markets.colonies.Colony;
 import kmlib.starsector.markets.colonies.SectorColonies;
 import kmlib.starsector.settings.modmanager.ModSource;
-import kmlib.text.KmlibStrings;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -122,16 +120,15 @@ final class FactionListingReport {
         var coloniesByFactionId = groupColoniesByFactionId(SectorColonies.readColonies(sector));
         var playerFactionId = readPlayerFactionId(sector);
         var isHoldingsShown = !options.contains(ListingOption.OMIT_HOLDINGS);
-
         var report = new StringBuilder(isHoldingsShown
             ? HEADER
             : HEADER_WITHOUT_HOLDINGS);
 
         var keyword = filter.getKeyword();
-
         if (keyword != null) {
             report.append(" (").append(keyword).append(')');
         }
+
         report.append(':');
 
         var listedCount = 0;
@@ -144,6 +141,7 @@ final class FactionListingReport {
             if (!filter.shouldList(holdings)) {
                 continue;
             }
+
             listedCount++;
 
             appendFactionLine(report, faction, playerFactionId);
@@ -154,9 +152,11 @@ final class FactionListingReport {
                 appendHoldingsLine(report, holdings);
             }
         }
+
         if (listedCount == 0) {
             report.append(NO_FACTIONS_LINE);
         }
+
         return report.toString();
     }
 
@@ -241,9 +241,11 @@ final class FactionListingReport {
         if (source == null) {
             return UNATTRIBUTED_SOURCE;
         }
+
         if (!source.hasModId()) {
             return source.sourceName();
         }
+
         return source.sourceName() + " [" + source.modId() + "]";
     }
 
@@ -255,7 +257,9 @@ final class FactionListingReport {
         if (Objects.equals(faction.getId(), playerFactionId)) {
             return SELF_ATTITUDE;
         }
-        return StarsectorPlayerRelations.readPlayerRelation(faction)
+
+        return StarsectorPlayerRelations
+            .readPlayerRelation(faction)
             .map(StarsectorRelationFormatter::formatRelation)
             .orElse(null);
     }
@@ -270,8 +274,11 @@ final class FactionListingReport {
         // known, at the cost of repeating it on a faction whose display name is itself one of the
         // placeholders.
         var shortName = StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId());
-        var longName = FactionNames.resolveName(faction, FactionNameForm.LONG);
+        var trimmedShortName = shortName.trim();
 
+        // The trimmed long name, or the short one where the long is blank - so a blank long name
+        // reads as the same name rather than as a second one.
+        var longName = FactionNames.resolveLabel(faction, trimmedShortName);
         var identity = new StringBuilder()
             .append('[')
             .append(faction.getId())
@@ -280,14 +287,19 @@ final class FactionListingReport {
         // Both names only where the long one says something the short one does not. Most factions
         // declare no long name or the same one twice, and "Hegemony / Hegemony" on eighty lines
         // costs more width than the pair is worth.
-        if (KmlibStrings.hasText(longName) && !longName.equals(shortName)) {
-            identity.append(longName).append(NAME_SEPARATOR);
+        if (!longName.equals(trimmedShortName)) {
+
+            identity
+                .append(longName)
+                .append(NAME_SEPARATOR);
         }
+
         identity.append(shortName);
 
         if (FactionFlags.isTerritorial(faction)) {
             identity.append(TERRITORIAL_MARK);
         }
+
         return identity.toString();
     }
 
@@ -297,7 +309,9 @@ final class FactionListingReport {
     private static List<FactionAPI> collectFactionsSortedById(SectorAPI sector) {
 
         var factions = new ArrayList<FactionAPI>(sector.getAllFactions());
+
         factions.sort(Comparator.comparing(FactionAPI::getId));
+
         return factions;
     }
 
@@ -313,12 +327,14 @@ final class FactionListingReport {
                 .computeIfAbsent(colony.market().getFaction().getId(), id -> new ArrayList<>())
                 .add(colony);
         }
+
         return coloniesByFactionId;
     }
 
     private static String readPlayerFactionId(SectorAPI sector) {
 
         var playerFaction = sector.getPlayerFaction();
+
         return playerFaction == null
             ? null
             : playerFaction.getId();

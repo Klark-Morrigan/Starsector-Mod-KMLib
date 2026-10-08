@@ -16,9 +16,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -46,6 +48,7 @@ final class FactionSourceModsTests {
 
     @AfterEach
     void tearDown() {
+
         Global.setSettings(null);
     }
 
@@ -62,6 +65,7 @@ final class FactionSourceModsTests {
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
+
             data.install();
 
             assertThat(FactionSourceMods.readSourcesByFactionId())
@@ -91,6 +95,7 @@ final class FactionSourceModsTests {
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\some_unlisted_mod",
                 "data/world/factions/unlisted.faction",
                 "unlisted");
+
             data.install();
 
             assertThat(FactionSourceMods.readSourcesByFactionId())
@@ -108,6 +113,7 @@ final class FactionSourceModsTests {
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/tahlan_cieveFaction.faction",
                 "tahlan_cieve");
+
             data.install();
 
             assertThat(FactionSourceMods.readSourcesByFactionId())
@@ -124,6 +130,7 @@ final class FactionSourceModsTests {
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
+
             data.installWithoutModManager();
 
             assertThat(FactionSourceMods.readSourcesByFactionId())
@@ -140,6 +147,7 @@ final class FactionSourceModsTests {
             data.declareFactionWithoutSourceColumn(
                 "data/world/factions/hegemony.faction",
                 "hegemony");
+
             data.install();
 
             assertThat(FactionSourceMods.readSourcesByFactionId())
@@ -168,10 +176,82 @@ final class FactionSourceModsTests {
             data.declareUnreadableFaction(
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/broken.faction");
+
             data.install();
 
             assertThat(FactionSourceMods.readSourcesByFactionId())
                 .isEmpty();
+        }
+
+        @Test
+        void skipsAFactionFileDeclaringNoId() {
+            // The loader keys a faction by the ID its file declares, so a file declaring none
+            // became no faction there is anything to attribute to.
+            var data = new GameDataFixture();
+
+            data.declareFactionWithoutId(
+                "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
+                "data/world/factions/anonymous.faction");
+
+            data.install();
+
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .isEmpty();
+        }
+
+        @Test
+        void namesAModCarryingABlankNameByItsFolder() {
+            // A blank name would print as nothing; the folder is what a player would go and look
+            // in, so it stands in while the mod's own ID still rides along.
+            var data = new GameDataFixture();
+
+            data.enableMod("tahlan", "  ", "tahlan_shipworks");
+            data.declareFaction(
+                "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
+                "data/world/factions/tahlan_greathouses.faction",
+                "tahlan_greathouses");
+
+            data.install();
+
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(modEntry("tahlan_greathouses", "tahlan", "tahlan_shipworks"));
+        }
+
+        @Test
+        void ignoresAnEnabledModInstalledInNoFolder() {
+            // A mod reporting no folder has nothing a row could be matched against, so it claims
+            // no row and leaves the mods that do report one to be matched as usual.
+            var data = new GameDataFixture();
+
+            data.enableMod("", "Folderless Mod", "folderless_mod");
+            data.enableMod("tahlan", "Tahlan Shipworks", "tahlan_shipworks");
+            data.declareFaction(
+                "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
+                "data/world/factions/tahlan_greathouses.faction",
+                "tahlan_greathouses");
+
+            data.install();
+
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(modEntry("tahlan_greathouses", "Tahlan Shipworks", "tahlan_shipworks"));
+        }
+
+        @Test
+        void matchesFoldersWrittenWithTrailingSeparators() {
+            // Both sides are cut to their last segment, and a trailing separator would otherwise
+            // leave that segment empty - reading a mod's row as the base game's.
+            var data = new GameDataFixture();
+
+            data.enableMod("mods\\tahlan\\", "Tahlan Shipworks", "tahlan_shipworks");
+            data.declareFaction(
+                "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan\\\\",
+                "data/world/factions/tahlan_greathouses.faction",
+                "tahlan_greathouses");
+
+            data.install();
+
+            assertThat(FactionSourceMods.readSourcesByFactionId())
+                .containsExactly(modEntry("tahlan_greathouses", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
         @Test
@@ -224,6 +304,7 @@ final class FactionSourceModsTests {
         private final List<JSONObject> declarationRows = new ArrayList<>();
         private final List<ModSpecAPI> enabledMods = new ArrayList<>();
         private final Map<String, String> factionIdsByFilePath = new LinkedHashMap<>();
+        private final Set<String> idlessFactionFilePaths = new HashSet<>();
 
         private void declareBaseGameFaction(String factionFilePath, String factionId) {
             declareFaction(null, factionFilePath, factionId);
@@ -238,6 +319,13 @@ final class FactionSourceModsTests {
             declarationRows.add(buildRow(sourceFolderPath, factionFilePath));
         }
 
+        // A row naming a file that opens but declares no ID.
+        private void declareFactionWithoutId(String sourceFolderPath, String factionFilePath) {
+
+            idlessFactionFilePaths.add(factionFilePath);
+            declarationRows.add(buildRow(sourceFolderPath, factionFilePath));
+        }
+
         // A row the merger never stamped its source column onto.
         private void declareFactionWithoutSourceColumn(String factionFilePath, String factionId) {
 
@@ -248,20 +336,24 @@ final class FactionSourceModsTests {
             try {
                 row.put("faction", factionFilePath);
 
-            } catch (JSONException putFailed) {
+            } catch (JSONException jsonException) {
+
                 // The put call declares it for keys and values this never poses.
-                throw new IllegalStateException(putFailed);
+                throw new IllegalStateException(jsonException);
             }
+
             declarationRows.add(row);
         }
 
         // A row whose file column is blank, as a spreadsheet's trailing empty line arrives.
         private void declareNothing(String sourceFolderPath) {
+
             declarationRows.add(buildRow(sourceFolderPath, ""));
         }
 
         // A row naming a file no read will answer for, which is what a malformed .faction is.
         private void declareUnreadableFaction(String sourceFolderPath, String factionFilePath) {
+
             declarationRows.add(buildRow(sourceFolderPath, factionFilePath));
         }
 
@@ -304,10 +396,12 @@ final class FactionSourceModsTests {
                 row.put("faction", factionFilePath);
                 row.put("fs_rowSource", sourceFolderPath + "/" + FACTIONS_CSV_PATH);
 
-            } catch (JSONException putFailed) {
+            } catch (JSONException jsonException) {
+
                 // The put calls declare it for keys and values this never poses.
-                throw new IllegalStateException(putFailed);
+                throw new IllegalStateException(jsonException);
             }
+
             return row;
         }
 
@@ -317,18 +411,23 @@ final class FactionSourceModsTests {
 
             try {
                 if (isSpreadsheetReadable) {
+
                     when(settingsMock.getMergedSpreadsheetData(anyString(), anyString()))
                         .thenAnswer(call -> new JSONArray(declarationRows));
+
                 } else {
+
                     when(settingsMock.getMergedSpreadsheetData(anyString(), anyString()))
                         .thenThrow(new IOException("the spreadsheet will not open"));
                 }
+
                 when(settingsMock.getMergedJSON(anyString()))
                     .thenAnswer(call -> readFactionFile(call.getArgument(0)));
 
-            } catch (Exception stubbingFailed) {
+            } catch (Exception exception) {
+
                 // The stubbed calls declare checked kinds; none is thrown while stubbing them.
-                throw new IllegalStateException(stubbingFailed);
+                throw new IllegalStateException(exception);
             }
             return settingsMock;
         }
@@ -344,17 +443,22 @@ final class FactionSourceModsTests {
                 when(settings.getModManager())
                     .thenReturn(modManagerMock);
             }
+
             Global.setSettings(settings);
         }
 
         private JSONObject readFactionFile(String factionFilePath)
                 throws IOException, JSONException {
 
-            var factionId = factionIdsByFilePath.get(factionFilePath);
+            if (idlessFactionFilePaths.contains(factionFilePath)) {
+                return new JSONObject();
+            }
 
+            var factionId = factionIdsByFilePath.get(factionFilePath);
             if (factionId == null) {
                 throw new IOException("the faction file will not open");
             }
+
             var factionFile = new JSONObject();
 
             factionFile.put("id", factionId);

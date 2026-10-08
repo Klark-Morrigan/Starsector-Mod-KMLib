@@ -9,6 +9,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import kmlib.extensions.DeclinedWork;
 import kmlib.extensions.ExecutedWork;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.factions.SectorFactions;
 
 import exerelin.campaign.intel.colony.ColonyExpeditionIntel;
 
@@ -84,9 +85,8 @@ public final class NexerelinColoniser {
             return new DeclinedWork("Nexerelin is not enabled on this install");
         }
 
-        if (sector == null || market == null || factionId == null) {
-            return new DeclinedWork("the founding was stated without a sector, a market or an "
-                + "owner");
+        if (sector == null || market == null) {
+            return new DeclinedWork("the founding was stated without a sector or a market");
         }
 
         // The body has to be a planet: the routine dereferences it to rename a world still carrying
@@ -101,8 +101,9 @@ public final class NexerelinColoniser {
 
         // The faction is looked up rather than passed on as an ID: the routine reads that mod's
         // own configuration and tariffs off the faction object, so an ID the sector does not know
-        // is a decline rather than a founding that dies partway through.
-        var faction = sector.getFaction(factionId);
+        // is a decline rather than a founding that dies partway through. A null or blank ID names
+        // nobody and declines the same way.
+        var faction = SectorFactions.findFaction(sector, factionId);
 
         if (faction == null) {
             return new DeclinedWork("the sector answers for no faction with id '" + factionId

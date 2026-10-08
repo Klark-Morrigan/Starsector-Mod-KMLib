@@ -14,6 +14,7 @@ import static kmlib.starsector.factions.relation.StarsectorFactionRelations.isDi
 import static kmlib.starsector.factions.relation.StarsectorFactionRelations.readRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -164,6 +165,19 @@ class StarsectorFactionRelationsTests {
 
             assertThat(createDispositionReader(sectorMock).test("ghost_faction", "tritachyon"))
                 .isFalse();
+        }
+
+        @Test
+        void readsABlankFirstIdAsNotAboveNeutralWithoutAskingTheSector() {
+            // An ID with no text names nobody, so it is turned away before the sector is asked -
+            // a live sector is free to fault on one.
+            var sectorMock = mock(SectorAPI.class);
+
+            assertThat(createDispositionReader(sectorMock).test(" ", "tritachyon"))
+                .isFalse();
+
+            verify(sectorMock, never())
+                .getFaction(any());
         }
 
         @Test

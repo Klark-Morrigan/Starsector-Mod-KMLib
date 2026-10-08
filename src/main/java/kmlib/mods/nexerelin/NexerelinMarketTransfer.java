@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import kmlib.extensions.DeclinedWork;
 import kmlib.extensions.ExecutedWork;
 import kmlib.extensions.WorkOutcome;
+import kmlib.starsector.factions.SectorFactions;
 
 import java.util.List;
 
@@ -89,7 +90,7 @@ public final class NexerelinMarketTransfer {
      *                  declined
      * @param market    the colony changing hands; null is declined, as is one flying no flag at all,
      *                  the mod's routine reading the outgoing owner's ID off it
-     * @param factionId the incoming owner's faction ID; null is declined, and so is an ID no
+     * @param factionId the incoming owner's faction ID; null or blank is declined, and so is an ID no
      *                  faction answers to - the routine reads that mod's own configuration and
      *                  tariffs off the faction rather than off an ID
      * @return the hand-over performed by Nexerelin, or a decline naming what about this call it
@@ -106,12 +107,12 @@ public final class NexerelinMarketTransfer {
             return new DeclinedWork("Nexerelin is not enabled on this install");
         }
 
-        if (sector == null || market == null || factionId == null) {
-            return new DeclinedWork("the hand-over was stated without a sector, a colony or an "
-                + "incoming owner");
+        if (sector == null || market == null) {
+            return new DeclinedWork("the hand-over was stated without a sector or a colony");
         }
 
-        var incomingOwner = sector.getFaction(factionId);
+        // A null or blank ID names nobody, so it declines as an ID no faction answers to.
+        var incomingOwner = SectorFactions.findFaction(sector, factionId);
 
         if (incomingOwner == null) {
             return new DeclinedWork("the sector answers for no faction with id '" + factionId

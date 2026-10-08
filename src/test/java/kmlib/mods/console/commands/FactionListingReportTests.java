@@ -309,6 +309,41 @@ final class FactionListingReportTests {
         }
 
         @Test
+        void namesOneNameWhereTheLongOneIsTheShortOnePadded() {
+            // Authored whitespace is not a second name, so it is read trimmed as everywhere else a
+            // faction is named.
+            var sector = new FactionListingFixture();
+
+            sector.addFaction(buildNamedFaction("hegemony", "  Hegemony ", "Hegemony"));
+
+            assertThat(readReport(sector, FactionListingFilter.ALL))
+                .contains("[hegemony] Hegemony - Neutral (0 / 100)")
+                .doesNotContain("Hegemony /");
+        }
+
+        @Test
+        void namesADistinctPaddedLongNameTrimmed() {
+
+            var sector = new FactionListingFixture();
+
+            sector.addFaction(buildNamedFaction("tritachyon", " Tri-Tachyon Corporation  ", "Tri-Tachyon"));
+
+            assertThat(readReport(sector, FactionListingFilter.ALL))
+                .contains("[tritachyon] Tri-Tachyon Corporation / Tri-Tachyon - Neutral (0 / 100)");
+        }
+
+        @Test
+        void namesOneNameWhereTheLongOneIsBlank() {
+
+            var sector = new FactionListingFixture();
+
+            sector.addFaction(buildNamedFaction("hegemony", "   ", "Hegemony"));
+
+            assertThat(readReport(sector, FactionListingFilter.ALL))
+                .contains("[hegemony] Hegemony - Neutral (0 / 100)");
+        }
+
+        @Test
         void namesTheModAFactionWasDeclaredByWithItsId() {
             // The ID alone says nothing about where a faction came from, which on a heavily
             // modded install is most of what a reader opens this listing to find out. The mod ID
