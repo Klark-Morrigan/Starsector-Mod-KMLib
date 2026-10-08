@@ -25,6 +25,7 @@ The reusable release workflow extracts the section matching the released version
 
 #### Added
 
+- **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know. `StarsectorFactionColours` looks factions up through it.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 
 </details>

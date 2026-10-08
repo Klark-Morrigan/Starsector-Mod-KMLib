@@ -25,6 +25,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 新增
 
+- **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。`StarsectorFactionColours` 经由它查找势力。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 
 </details>

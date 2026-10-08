@@ -592,6 +592,7 @@ No Starsector API on the signature.
   so the inversion is made in one place.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) -
   what a faction is in itself:
+  its lookup by ID,
   player-faction lifecycle,
   faction names,
   colours,

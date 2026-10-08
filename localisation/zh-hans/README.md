@@ -13,6 +13,8 @@ so this is the base reference:
 its rules hold for every KM mod's bundle,
 and a mod built on KMLib keeps a reference of its own beside its bundle,
 building on this one with the terms of its features.
+A term listed here is not repeated there,
+so the two can never disagree.
 
 ## Index
 
@@ -118,6 +120,8 @@ the typeface editions share its text.
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
 | Faction | 势力 | `starfarer.api.jar` |
 | Alliance | 联盟 | vanilla's word for the Persean League, taken for Nexerelin's alliances |
+| Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
+| Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
 
 ## KMLib terms
 
@@ -250,6 +254,9 @@ A version heading is never translated; see [translating the changelog](#translat
 | reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | wait (an advance spent with the entity out) | 等待 | the plain word |
+| long name (of a faction) | 长名称 | 长, long, before 名称, name; the player-facing choice between the two forms is KMU's 全称 / 简称 |
+| row (one line of a list or hover box) | 行 | as 日志行 writes it |
+| blank (text holding only whitespace) | 空白 | |
 
 ## Forum terms
 

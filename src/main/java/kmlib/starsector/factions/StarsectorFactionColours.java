@@ -32,14 +32,12 @@ public final class StarsectorFactionColours {
      *         sector or its neutral faction is absent
      */
     public static Color resolveNeutralColour(SectorAPI sector) {
-        if (sector == null) {
-            return NEUTRAL_FALLBACK_COLOUR;
-        }
-        var neutral = sector.getFaction(Factions.NEUTRAL);
-        if (neutral == null) {
-            return NEUTRAL_FALLBACK_COLOUR;
-        }
-        return neutral.getBaseUIColor();
+
+        var neutral = SectorFactions.findFaction(sector, Factions.NEUTRAL);
+
+        return neutral == null
+            ? NEUTRAL_FALLBACK_COLOUR
+            : neutral.getBaseUIColor();
     }
 
     /**
@@ -73,9 +71,7 @@ public final class StarsectorFactionColours {
      */
     public static FactionPalette findPalette(SectorAPI sector, String factionId) {
 
-        var faction = sector == null
-            ? null
-            : sector.getFaction(factionId);
+        var faction = SectorFactions.findFaction(sector, factionId);
 
         return faction == null
             ? null
