@@ -593,7 +593,8 @@ No Starsector API on the signature.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) -
   what a faction is in itself:
   player-faction lifecycle,
-  faction colours,
+  faction names,
+  colours,
   crests and flags.
   See [Player Faction Resolution](#player-faction-resolution).
   Where a faction stands against another is a package in,

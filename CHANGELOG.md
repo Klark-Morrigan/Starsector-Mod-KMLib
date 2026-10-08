@@ -18,6 +18,17 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+### For developers
+
+<details>
+<summary>API, build tooling and test fixtures</summary>
+
+#### Added
+
+- **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
+
+</details>
+
 ## [0.5.2] - 2026-10-07
 
 ### Fixed

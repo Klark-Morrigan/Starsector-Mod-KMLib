@@ -18,6 +18,17 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### 面向开发者
+
+<details>
+<summary>API、构建工具与测试夹具</summary>
+
+#### 新增
+
+- **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
+
+</details>
+
 ## [0.5.2] - 2026-10-07
 
 ### 修复
