@@ -174,7 +174,7 @@ so the values line up as they do in English.
 | the game's own rules | 游戏自身的规则 | |
 | routes (Random Assortment of Things' own) | 路径 | |
 | read as cut off | 视为无法到达 | |
-| fleet | 舰队 | |
+| fleet | 舰队 | the [vanilla term](#vanilla-terms) |
 
 ### Settings
 
