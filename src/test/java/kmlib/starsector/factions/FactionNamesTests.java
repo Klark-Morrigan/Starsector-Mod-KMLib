@@ -15,10 +15,12 @@ import static org.mockito.Mockito.when;
 /**
  * Pins how a faction's two authored names are read: the form picks the name, a null faction reads
  * as null, and the fullest-name read prefers the long name, falls back to the short one only where
- * the long is blank, trims both and never answers blank.
+ * the long is blank, trims both and never answers blank. A row's label is the long name or, where the
+ * faction carries none, the ID it was asked about.
  */
 final class FactionNamesTests {
 
+    private static final String HEGEMONY_ID = "hegemony";
     private static final String SHORT_NAME = "Hegemony";
     private static final String LONG_NAME = "The Hegemony";
 
@@ -159,6 +161,35 @@ final class FactionNamesTests {
 
             assertThat(FactionNames.resolveFullestName(null))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class ResolveLabel {
+
+        @Test
+        void readsTheTrimmedLongName() {
+
+            var factionMock = createNamedFaction(SHORT_NAME, " The Hegemony ");
+
+            assertThat(FactionNames.resolveLabel(factionMock, HEGEMONY_ID))
+                .isEqualTo("The Hegemony");
+        }
+
+        @Test
+        void fallsBackToTheIdWhenTheLongNameIsBlank() {
+
+            var factionMock = createNamedFaction(SHORT_NAME, " ");
+
+            assertThat(FactionNames.resolveLabel(factionMock, HEGEMONY_ID))
+                .isEqualTo("hegemony");
+        }
+
+        @Test
+        void fallsBackToTheIdForANullFaction() {
+
+            assertThat(FactionNames.resolveLabel(null, HEGEMONY_ID))
+                .isEqualTo("hegemony");
         }
     }
 }

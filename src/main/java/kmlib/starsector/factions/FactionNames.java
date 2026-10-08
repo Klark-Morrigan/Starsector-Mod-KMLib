@@ -88,4 +88,22 @@ public final class FactionNames {
             ? shortName.trim()
             : null;
     }
+
+    /**
+     * What a row naming one faction shows: its long name, or the ID it was asked about where it carries
+     * none - for a surface that must name something on every row, even for an ID the sector has lost.
+     * A bare ID reads better there than a blank where the name belongs.
+     *
+     * @param faction   the faction to name; null where the ID would not resolve
+     * @param factionId the ID the row was asked to name, shown where the faction has no long name
+     * @return the trimmed long name, else {@code factionId}
+     */
+    public static String resolveLabel(FactionAPI faction, String factionId) {
+
+        var longName = resolveName(faction, FactionNameForm.LONG);
+
+        return KmlibStrings.hasText(longName)
+            ? longName.trim()
+            : factionId;
+    }
 }
