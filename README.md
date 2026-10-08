@@ -1115,6 +1115,9 @@ its `outputs:` block is the statement of that convention:
   and the `<mod-folder-name>-<version>.zip` release name,
   all named after that jar rather than after the mod ID,
   so a zip install and a hand-deployed one share one folder layout.
+- `zip-name-regex`,
+  which that zip's name matches in every release whatever its version and locale,
+  so a release listing can be narrowed to the mod's zips.
 - `version-file-name` goes the other way,
   `<mod-id>.version`,
   because the hand-written `version_files.csv` points at it by that name.

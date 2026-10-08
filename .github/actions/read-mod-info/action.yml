@@ -37,6 +37,12 @@ outputs:
   zip-name:
     description: "Release zip filename: <mod-folder-name>-<version>.zip."
     value: ${{ steps.read.outputs.zip-name }}
+  zip-name-regex:
+    description: >-
+      Regex over a whole asset name that every release's zip matches, whatever
+      its version and locale, and no version file does. Oniguruma syntax, as
+      jq's test reads it.
+    value: ${{ steps.read.outputs.zip-name-regex }}
   version-file-name:
     description: >-
       VersionChecker file: <mod-id>.version. Named after the mod id, not the

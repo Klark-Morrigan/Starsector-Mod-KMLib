@@ -15,10 +15,12 @@
 LIB="$BATS_TEST_DIRNAME/../actions/_lib/mod_info.sh"
 
 setup() {
+
     WORK_DIR="$(mktemp -d)"
 }
 
 teardown() {
+
     rm -rf "$WORK_DIR"
 }
 
@@ -210,6 +212,118 @@ run_in_lib() {
 
     [ "$status" -eq 0 ]
     [ "$output" = "KMU-0.2.0-zh-hans.zip" ]
+}
+
+# Derives the zip-name regex for a jars[0] value and runs it over one asset
+# name through jq's test, the reader the regex is written for. Prints true or
+# false.
+match_zip_name_regex() {
+
+    local jarSource="$1" assetName="$2"
+    local regex
+
+    regex="$(bash -c "source '$LIB'; mod_info_derive_zip_name_regex '$jarSource'")"
+
+    jq -nr --arg regex "$regex" --arg name "$assetName" '$name | test($regex)'
+}
+
+@test "mod_info_derive_zip_name_regex anchors the folder name, any version and an optional locale" {
+
+    run_in_lib "read_mod_info" "mod_info_derive_zip_name_regex 'jars/KMU.jar'"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = '^KMU-[0-9]+\.[0-9]+\.[0-9]+(-.+)?\.zip$' ]
+}
+
+@test "mod_info_derive_zip_name_regex escapes metacharacters in the folder name" {
+
+    run_in_lib "read_mod_info" "mod_info_derive_zip_name_regex 'jars/K.M+U.jar'"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = '^K\.M\+U-[0-9]+\.[0-9]+\.[0-9]+(-.+)?\.zip$' ]
+}
+
+@test "mod_info_derive_zip_name_regex matches a folder name holding metacharacters only as itself" {
+
+    run match_zip_name_regex 'jars/K.M+U.jar' 'K.M+U-1.0.0.zip'
+
+    [ "$output" = "true" ]
+
+    # Unescaped, the dot would match any character and the plus repeat the M.
+    run match_zip_name_regex 'jars/K.M+U.jar' 'KxMMU-1.0.0.zip'
+
+    [ "$output" = "false" ]
+}
+
+@test "mod_info_derive_zip_name_regex matches the unlocalised zip" {
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-0.1.0.zip'
+
+    [ "$output" = "true" ]
+}
+
+@test "mod_info_derive_zip_name_regex matches every localised zip" {
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-0.2.0-en.zip'
+
+    [ "$output" = "true" ]
+
+    # The tag carries a hyphen of its own, past the one joining it on.
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-0.2.0-zh-hans.zip'
+
+    [ "$output" = "true" ]
+}
+
+@test "mod_info_derive_zip_name_regex rejects every version file form" {
+
+    # A jar named like the mod id, so the version files share the zip's
+    # prefix and only the pattern's shape keeps them out.
+    run match_zip_name_regex 'jars/kmu.jar' 'kmu.version'
+
+    [ "$output" = "false" ]
+
+    run match_zip_name_regex 'jars/kmu.jar' 'kmu-zh-hans.version'
+
+    [ "$output" = "false" ]
+}
+
+@test "mod_info_derive_zip_name_regex rejects another mod's zip" {
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMLib-0.5.2.zip'
+
+    [ "$output" = "false" ]
+
+    # A folder name that starts with this one is still another mod.
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-Core-0.2.0.zip'
+
+    [ "$output" = "false" ]
+}
+
+@test "mod_info_derive_zip_name_regex rejects .zip spelled with another character in place of the dot" {
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-0.2.0xzip'
+
+    [ "$output" = "false" ]
+
+    run match_zip_name_regex 'jars/KMU.jar' 'KMU-0.2.0-enxzip'
+
+    [ "$output" = "false" ]
+}
+
+@test "mod_info_escape_regex_text escapes every metacharacter" {
+
+    run_in_lib "read_mod_info" "mod_info_escape_regex_text '.^\$|?*+()[]{}\\'"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = '\.\^\$\|\?\*\+\(\)\[\]\{\}\\' ]
+}
+
+@test "mod_info_escape_regex_text leaves letters, digits and hyphens alone" {
+
+    run_in_lib "read_mod_info" "mod_info_escape_regex_text 'KMU-Core2'"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "KMU-Core2" ]
 }
 
 @test "mod_info_derive_version_file_name names the file after the mod id" {

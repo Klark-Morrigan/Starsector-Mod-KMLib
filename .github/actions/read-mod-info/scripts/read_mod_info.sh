@@ -12,6 +12,8 @@
 #   mod-folder-name    - jars[0] basename without .jar
 #   dist-dir           - dist/<mod-folder-name>/
 #   zip-name           - <mod-folder-name>-<version>.zip
+#   zip-name-regex     - regex every release's zip name matches, whatever its
+#                        version and locale
 #   version-file-name  - <mod-id>.version
 #   jar-source         - jars[0]
 #   sibling-checkouts  - JSON array of repos to clone beside the checkout
@@ -67,6 +69,7 @@ VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
 MOD_FOLDER_NAME=$(mod_info_derive_mod_folder_name "${JAR_SOURCE}")
 DIST_DIR="${DIST_ROOT}/${MOD_FOLDER_NAME}/"
 ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}")
+ZIP_NAME_REGEX=$(mod_info_derive_zip_name_regex "${JAR_SOURCE}")
 
 # Which neighbours a build needs follows from the mod id alone, so no caller
 # has to restate the list: a mod applies KMLib's gradle/starsector-mod.gradle,
@@ -109,6 +112,7 @@ SIBLING_CHECKOUTS=$(jq -cn \
   echo "mod-folder-name=${MOD_FOLDER_NAME}"
   echo "dist-dir=${DIST_DIR}"
   echo "zip-name=${ZIP_NAME}"
+  echo "zip-name-regex=${ZIP_NAME_REGEX}"
   echo "version-file-name=${VERSION_FILE_NAME}"
   echo "jar-source=${JAR_SOURCE}"
   echo "sibling-checkouts=${SIBLING_CHECKOUTS}"

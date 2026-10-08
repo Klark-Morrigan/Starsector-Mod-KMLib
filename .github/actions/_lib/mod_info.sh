@@ -41,11 +41,18 @@ MOD_INFO_FILE=""
 # TriOS strips letters out of a mod_info.json version entirely, so a
 # suffixed version like 1.2.3a is silently mangled by both rather than
 # rejected by either.
-SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+#
+# The pattern is kept apart from its anchors so a regex over a whole file name
+# can embed it.
+SEMVER_PATTERN='[0-9]+\.[0-9]+\.[0-9]+'
+SEMVER_REGEX="^${SEMVER_PATTERN}\$"
 
 JAR_EXTENSION=".jar"
 ZIP_EXTENSION=".zip"
 VERSION_FILE_EXTENSION=".version"
+
+# Joins the folder name and the version in a release zip name.
+ZIP_NAME_VERSION_SEPARATOR="-"
 
 # Joins a locale tag onto a release file name. A tag is lowercased BCP 47
 # (en, zh-hans), which carries hyphens of its own, so a reader splits a name on
@@ -135,6 +142,7 @@ mod_info_require_fields() {
 mod_info_derive_mod_folder_name() {
 
   local jarSource="${1}"
+
   basename "${jarSource}" "${JAR_EXTENSION}"
 }
 
@@ -155,7 +163,42 @@ mod_info_derive_zip_name() {
   modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
   localeSuffix=$(mod_info_format_locale_suffix "${localeTag}")
 
-  printf '%s\n' "${modFolderName}-${version}${localeSuffix}${ZIP_EXTENSION}"
+  printf '%s\n' "${modFolderName}${ZIP_NAME_VERSION_SEPARATOR}${version}${localeSuffix}${ZIP_EXTENSION}"
+}
+
+# Emits the regex a whole release zip name matches for a jars[0] value,
+# whatever its version and locale, so a release listing can be narrowed to the
+# mod's zips and away from its version files.
+#
+# Built from the constants mod_info_derive_zip_name joins, so the name and its
+# pattern cannot drift apart. The locale suffix is optional because a mod
+# keeping no locales releases unsuffixed. It matches any text rather than the
+# tags a mod ships today, so a new locale matches the day it ships.
+#
+# Written for jq's test. The constructs used read the same in bash's =~.
+mod_info_derive_zip_name_regex() {
+
+  local jarSource="${1}"
+  local modFolderName folderPattern versionSeparatorPattern localeSeparatorPattern extensionPattern
+
+  modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
+  folderPattern=$(mod_info_escape_regex_text "${modFolderName}")
+  versionSeparatorPattern=$(mod_info_escape_regex_text "${ZIP_NAME_VERSION_SEPARATOR}")
+  localeSeparatorPattern=$(mod_info_escape_regex_text "${LOCALE_SEPARATOR}")
+  extensionPattern=$(mod_info_escape_regex_text "${ZIP_EXTENSION}")
+
+  printf '%s\n' \
+    "^${folderPattern}${versionSeparatorPattern}${SEMVER_PATTERN}(${localeSeparatorPattern}.+)?${extensionPattern}\$"
+}
+
+# Emits the given text with every regex metacharacter backslash-escaped, so
+# the result matches only that text. A folder name is a jar's basename, which
+# may carry a dot or a plus as freely as a letter.
+mod_info_escape_regex_text() {
+
+  local text="${1}"
+
+  printf '%s\n' "${text}" | sed 's/[][\.^$|?*+(){}]/\\&/g'
 }
 
 # Emits the VersionChecker file name for a mod id and, for a mod releasing
