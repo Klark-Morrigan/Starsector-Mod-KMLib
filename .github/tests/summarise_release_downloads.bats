@@ -36,7 +36,7 @@ STUB
     GH_ARGS_FILE="$TMP/gh.args"
     PATH="$TMP/bin:$PATH"
     GITHUB_REPOSITORY="$REPO_UNDER_TEST"
-    
+
     export GH_ARGS_FILE PATH GITHUB_REPOSITORY
 
     # Cleared per case so one test's stub setup cannot leak into the next.
@@ -52,6 +52,7 @@ teardown() {
 
 # Writes a mod_info.json fixture holding the one field the script reads.
 write_mod_info() {
+
     cat > "$1/mod_info.json" <<EOF
 {
   "id": "kmu",
@@ -67,23 +68,23 @@ EOF
 release() {
 
     local tag="$1" publishedAt="$2"
-    
+
     shift 2
-    
+
     local isDraft=false
-    
+
     if [ "$publishedAt" = "draft" ]; then
         isDraft=true
         publishedAt=""
     fi
-    
+
     local assets="[]" pair
-    
+
     for pair in "$@"; do
         assets=$(jq -c --arg name "${pair%:*}" --argjson count "${pair##*:}" \
             '. + [{name: $name, download_count: $count}]' <<< "$assets")
     done
-    
+
     jq -cn --arg tag "$tag" --arg publishedAt "$publishedAt" \
         --argjson draft "$isDraft" --argjson assets "$assets" \
         '{tag_name: $tag,

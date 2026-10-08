@@ -52,13 +52,7 @@ REPOSITORY="${GITHUB_REPOSITORY:?${SCRIPT_NAME}: GITHUB_REPOSITORY is required}"
 # level down, and Actions permits no working-directory on a `uses:` step.
 MOD_ROOT="${1:-.}"
 
-if [[ ! -d "${MOD_ROOT}" ]]; then
-  echo "${SCRIPT_NAME}: mod root ${MOD_ROOT} not found in ${PWD}" >&2
-  exit 1
-fi
-
-cd "${MOD_ROOT}"
-
+mod_info_enter_mod_root "${MOD_ROOT}"
 mod_info_locate_file
 
 JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
