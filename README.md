@@ -544,6 +544,13 @@ No Starsector API on the signature.
   counted where the sector is actually walked,
   so a caller states how much it touched without having written a profiling line,
   and a second traversal shows on the row that made it.
+- [`starsector/commodities/`](src/main/java/kmlib/starsector/commodities/) -
+  what a commodity costs as the game's data holds it:
+  its own base price,
+  or the price its demand-class peer carries where it has none,
+  as vanilla's lobster leaves its price on luxury goods.
+  An answer of no price is the caller's to settle,
+  since what to divide by instead is a judgement about the caller's formula.
 - [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/) -
   what a binding to third-party code that has stopped holding is reported as,
   and how that report reaches the player:
