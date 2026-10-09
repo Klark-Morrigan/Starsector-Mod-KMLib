@@ -50,4 +50,53 @@ final class FactionSetFriendlinessTests {
             }
         }
     }
+
+    @Nested
+    class CountFactionsAtOddsWith {
+
+        @Test
+        void countsEveryOneOfTheOtherSetOneFactionFallsShortOf() {
+            // The far side of the same walk: how much of the other set one faction quarrels with.
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of("hegemony:tritachyon"));
+
+            assertThat(friendliness.countFactionsAtOddsWith(
+                    "hegemony",
+                    Set.of("tritachyon", "persean", "luddic_church")))
+                .isEqualTo(2);
+        }
+
+        @Test
+        void countsNoneWhereTheFactionIsFriendlyWithAllOfThem() {
+
+            var friendliness = buildFriendlinessAboveNeutralOn(
+                List.of("hegemony:tritachyon", "hegemony:persean"));
+
+            assertThat(friendliness.countFactionsAtOddsWith(
+                    "hegemony",
+                    Set.of("tritachyon", "persean")))
+                .isZero();
+        }
+
+        @Test
+        void readsThePairFromTheFactionItIsCountingFor() {
+            // The direction every rule here shares. A table warm one way only leaves this counting
+            // the faction's own view, so a faction sorted friendly cannot then be counted at odds -
+            // which asking the pair from the other set's end would allow.
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of("hegemony:tritachyon"));
+
+            assertThat(friendliness.countFactionsAtOddsWith("hegemony", Set.of("tritachyon")))
+                .isZero();
+            assertThat(friendliness.countFactionsAtOddsWith("tritachyon", Set.of("hegemony")))
+                .isOne();
+        }
+    }
+
+    // A rule whose faction-level answer is above neutral for exactly the named pairs, each written
+    // "<faction>:<other faction>" so a case states its whole disposition table in one line.
+    private static FactionSetFriendliness buildFriendlinessAboveNeutralOn(List<String> aboveNeutralPairs) {
+
+        return new FactionSetFriendliness(
+            (factionId, otherFactionId) ->
+                aboveNeutralPairs.contains(factionId + ":" + otherFactionId));
+    }
 }

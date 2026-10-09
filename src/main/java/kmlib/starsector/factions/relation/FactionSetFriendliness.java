@@ -50,4 +50,25 @@ public final class FactionSetFriendliness {
     public static FactionSetFriendliness createForSector(SectorAPI sector) {
         return new FactionSetFriendliness(FactionRelations.createDispositionReader(sector));
     }
+    /**
+     * How many of a set's factions one faction is not friendly with - the far side of the walk
+     * {@link #countMembersAtOddsWith} counts the near side of.
+     *
+     * @param factionId       the faction being counted for
+     * @param otherFactionIds the set it is measured against
+     * @return how many of that set it falls short of friendly with
+     */
+    public int countFactionsAtOddsWith(String factionId, Set<String> otherFactionIds) {
+
+        var atOddsCount = 0;
+
+        for (var otherFactionId : otherFactionIds) {
+
+            if (!factionFriendliness.test(factionId, otherFactionId)) {
+                atOddsCount++;
+            }
+        }
+        return atOddsCount;
+    }
+
 }
