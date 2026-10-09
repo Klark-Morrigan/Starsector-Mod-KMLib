@@ -126,6 +126,7 @@ the typeface editions share its text.
 | Commodity | 商品 | `starfarer_obf.jar`, `CommodityPanel` |
 | Blueprint | 蓝图 | `special_items.csv` `ship_bp`: "Base Ship Blueprint" is 基础舰船蓝图 |
 | ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
+| Credits | 星币 | `rules.csv` `oyaTanaicaAskSampleBack2`: "It's your credits." is 反正是你的星币 |
 
 ## KMLib terms
 
@@ -263,6 +264,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | as the `0.5.0` entries write 遍历; 计数, count |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
+| drop roller, drop list | 掉落抽取器, 掉落列表 | as the `SalvageEntityMock` entry writes 掉落抽取器; 掉落, drop, is the plain word, unchecked against the game jar |
+| random drop, value drop, drop group | 随机掉落, 价值掉落, 掉落组 | from 掉落 |
+| roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
+| weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
 
 ## Forum terms

@@ -729,6 +729,11 @@ No Starsector API on the signature.
   the holder states its base key and names the address it means,
   and the key is composed in one place,
   so no holder can spell the segments differently or drop one and quietly share a slot.
+- [`starsector/salvage/`](src/main/java/kmlib/starsector/salvage/) -
+  drop lists for the game's salvage roller,
+  random drops by weight and value drops by credit budget,
+  and the roll itself with every multiplier but the overall one held neutral,
+  so a caller states its loot table rather than a run of setters and unit literals.
 - [`starsector/scripts/`](src/main/java/kmlib/starsector/scripts/) -
   sector script registration,
   one shape per lifetime:
