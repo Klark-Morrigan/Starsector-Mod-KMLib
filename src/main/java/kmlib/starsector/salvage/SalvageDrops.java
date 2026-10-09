@@ -16,7 +16,23 @@ public final class SalvageDrops {
 
     private static final int NO_VALUE = 0;
 
+    // The roller's value, random and fuel multipliers, and a drop's own value multiplier, at the setting that leaves
+    // the roll as the data describes it.
+    private static final float NEUTRAL_MULT = 1f;
+
     private SalvageDrops() {
+    }
+
+    /**
+     * A random drop at its full value.
+     *
+     * @param group   the drop group
+     * @param chances the drop's weight against the other random drops
+     * @return the drop
+     */
+    public static DropData buildRandomDrop(String group, int chances) {
+
+        return buildRandomDrop(group, chances, NEUTRAL_MULT);
     }
 
     /**
