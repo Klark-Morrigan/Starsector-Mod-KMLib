@@ -123,6 +123,8 @@ the typeface editions share its text.
 | Alliance | 联盟 | vanilla's word for the Persean League, taken for Nexerelin's alliances |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Blueprint | 蓝图 | `special_items.csv` `ship_bp`: "Base Ship Blueprint" is 基础舰船蓝图 |
+| ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
 
 ## KMLib terms
 
@@ -260,6 +262,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | as the `0.5.0` entries write 遍历; 计数, count |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
+| teach (what an item gives a faction to know), know | 传授, 掌握 | |
 
 ## Forum terms
 
