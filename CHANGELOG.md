@@ -38,6 +38,8 @@ No player-facing changes.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
+- **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
+  - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 

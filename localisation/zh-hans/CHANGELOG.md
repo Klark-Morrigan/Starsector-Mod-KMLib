@@ -38,6 +38,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的船体插件。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
+- **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
+  - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 
