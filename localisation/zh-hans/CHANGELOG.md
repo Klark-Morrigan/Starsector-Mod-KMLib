@@ -27,14 +27,32 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 修复
 
-- **空白的势力 ID 视为没有势力**：`StarsectorFactionRelations.createDispositionReader(SectorAPI)`、`NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` 和 `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)` 不再把它交给星域查询。
+- **空白的势力 ID 视为没有势力**：`FactionRelations.createDispositionReader(SectorAPI)`、`NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` 和 `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)` 不再把它交给星域查询。
 - **`FactionAlliances.buildFrom(List)` 会跳过为 null 的记录**，`AllianceRecord(String, String, List)` 也把为 null 的成员列表读作空列表，与 `FactionAlliances` 读取为 null 的映射的方式一致。
-- **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 会把它遍历的市场计入星域遍历计数。**
+- **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
 
 #### 新增
 
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
+- **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
+- **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
+- **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按类别分支的读取方使用。
+
+#### 公共契约变更（**破坏性**）
+
+| 之前 | 之后 | 原因 |
+| --- | --- | --- |
+| `StarsectorPlayerFactionResolver.isPlayerFactionEstablished()` | `isPlayerFactionEstablished(SectorAPI)` | 该规则读取传入的星域，从不读取 `Global`。 |
+| `StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(Set)` 和 `getUnestablishedPlayerFactionNames()` | 已移除，没有替代。 | 该规则不读取任何名称。 |
+| `StarsectorPlayerFactionResolver.resolveDisplayName(FactionAPI, String)` | `FactionNames.resolveDisplayName(SectorAPI, FactionAPI, String)` | 它只在星域记录玩家势力已设立之前隐去玩家势力的名称。 |
+| `FactionNames.listEveryName(SectorAPI)` | `SectorFactions.listFactionNames(SectorAPI)` | `FactionNames` 读取单个势力，`SectorFactions` 承担整个星域范围的读取。 |
+| `StarsectorFactionColours.findPalette(SectorAPI, String)` 和 `resolvePalette(SectorAPI, String)` | `FactionColours.findPalette(FactionAPI)` 和 `resolvePalette(FactionAPI)`。用 `SectorFactions.findFaction(SectorAPI, String)` 查找势力。 | 按 ID 查找只存在于 `SectorFactions` 中。 |
+| 位于 `kmlib.starsector.factions` 中的 `FactionPalette` | 位于 `kmlib.colour` 中的 `ColourPair` | 关系色调也会填入它，因此它并不专属于势力。 |
+| `RelationExtremes.resolveBest(Collection)` 和 `resolveWorst(Collection)` | `resolveBestRelation(Collection)` 和 `resolveWorstRelation(Collection)` | 名称说明它们解析的是什么。 |
+| `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | 由调用方决定读取哪份设置。 |
+| `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | 它向该星域询问玩家势力是否已设立。 |
+| `StarsectorFactionColours`、`StarsectorFactionRelations`、`StarsectorPlayerRelations`、`StarsectorRelationColours` 和 `StarsectorRelationFormatter` | `FactionColours`、`FactionRelations`、`PlayerRelations`、`RelationColours` 和 `RelationFormatter` | `kmlib.starsector.factions` 中统一为一种命名形式，其包名已经点明了游戏。 |
 
 </details>
 

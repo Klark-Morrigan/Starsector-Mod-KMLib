@@ -8,7 +8,7 @@ import java.util.Locale;
  * colony tooltip and an intel row print.
  *
  * <p>Takes the relation rather than the faction, so it holds prose and nothing else: reading a
- * relation off the game is {@link StarsectorFactionRelations}' work, and a pair with none to read
+ * relation off the game is {@link FactionRelations}' work, and a pair with none to read
  * never reaches here. That is what keeps one absent case in the package instead of two - a formatter
  * that took the faction would have to invent a second way of saying "nothing was read", and a caller
  * would have to learn which of the two it was holding.
@@ -17,12 +17,12 @@ import java.util.Locale;
  * one faction's relation to another words it the way the game words the player's. Lives in KMLib so
  * every mod that surfaces a relation words it the same way.
  */
-public final class StarsectorRelationFormatter {
+public final class RelationFormatter {
 
     private static final int MAX_REPUTATION = 100;
     private static final String RELATION_DESCRIPTION_FORMAT = "%s (%d / %d)";
 
-    private StarsectorRelationFormatter() {
+    private RelationFormatter() {
     }
 
     /**

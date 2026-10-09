@@ -142,10 +142,10 @@ final class TransferMarketCommandTests {
         }
 
         @Test
-        void namesThePlayerFactionByIdWhileItStillReportsAPlaceholder() {
-            // A player faction with no identity of its own reports "Independent", which in this
+        void namesThePlayerFactionByIdBeforeItIsSetUp() {
+            // A player faction the sector does not record as set up reports its spec's "Your", which in this
             // sentence reads as having handed the colony to somebody else.
-            answerWithFaction(PLAYER_FACTION_ID, "Independent");
+            answerWithFaction(PLAYER_FACTION_ID, "Your");
 
             command.runCommand("", CommandContext.CAMPAIGN_MAP);
 

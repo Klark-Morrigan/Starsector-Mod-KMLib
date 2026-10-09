@@ -1,9 +1,10 @@
 package kmlib.mods.console.commands.targets;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
+import kmlib.starsector.factions.FactionNames;
 
 /**
  * The pair every command that changes who holds a place is aimed at: the place, and the faction
@@ -21,17 +22,12 @@ public record MarketOwnerTarget(
     FactionAPI owner) {
 
     /**
-     * What to call the owner in something the player reads.
+     * What to call the owner in something the player reads: {@link FactionNames#resolveDisplayNameOrId}.
      *
-     * <p>Not {@code getDisplayName()}, because the player's own faction reports a placeholder
-     * until it has an identity of its own - "Independent" before the first colony, and the
-     * literal "player" on a stock Nexerelin setup - either of which reads in a sentence as
-     * somebody else entirely. The ID stands in until then, that being what was typed to name the
-     * faction in the first place.
-     *
+     * @param sector the sector the command acts in
      * @return the owner's name for prose
      */
-    public String readOwnerName() {
-        return StarsectorPlayerFactionResolver.resolveDisplayName(owner, owner.getId());
+    public String readOwnerName(SectorAPI sector) {
+        return FactionNames.resolveDisplayNameOrId(sector, owner);
     }
 }

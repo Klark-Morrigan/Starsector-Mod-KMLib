@@ -1,5 +1,7 @@
 package kmlib.mods.console.commands;
 
+import com.fs.starfarer.api.Global;
+
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.output.GameLogCommandOutput;
 import kmlib.mods.console.commands.parsing.Parameter;
@@ -89,7 +91,7 @@ public final class ListFactionsCommand extends BaseKmlibCommand {
         var report = new FactionListingReport(
             filter,
             options,
-            FactionSourceMods.readSourcesByFactionId())
+            FactionSourceMods.readSourcesByFactionId(Global.getSettings()))
             .describeFactions(readActiveSector());
 
         // The log keeps what the console scrolls away, which is what a listing this

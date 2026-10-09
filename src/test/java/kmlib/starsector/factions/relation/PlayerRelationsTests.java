@@ -14,13 +14,13 @@ import org.mockito.Mockito;
 
 import java.awt.Color;
 
-import static kmlib.starsector.factions.relation.StarsectorPlayerRelations.readPlayerRelation;
+import static kmlib.starsector.factions.relation.PlayerRelations.readPlayerRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class StarsectorPlayerRelationsTests {
+class PlayerRelationsTests {
 
     private static final Color BLUE = new Color(50, 90, 200);
     private static final Color GREEN = new Color(60, 180, 60);

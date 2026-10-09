@@ -105,21 +105,21 @@ class RelationExtremesTests {
 
             // The friendly end of a set with no friend in it is still a real reading: it is the
             // best on offer, not an absence.
-            assertThat(RelationExtremes.resolveBest(createRelationsAt(-80, -20, -55)))
+            assertThat(RelationExtremes.resolveBestRelation(createRelationsAt(-80, -20, -55)))
                 .hasValueSatisfying(relation -> assertThat(relation.reputation()).isEqualTo(-20));
         }
 
         @Test
         void resolvesTheWarmestOfAWhollyFriendlySet() {
 
-            assertThat(RelationExtremes.resolveBest(createRelationsAt(15, 90, 60)))
+            assertThat(RelationExtremes.resolveBestRelation(createRelationsAt(15, 90, 60)))
                 .hasValueSatisfying(relation -> assertThat(relation.reputation()).isEqualTo(90));
         }
 
         @Test
         void resolvesNothingFromAnEmptySet() {
 
-            assertThat(RelationExtremes.resolveBest(List.of()))
+            assertThat(RelationExtremes.resolveBestRelation(List.of()))
                 .isEmpty();
         }
     }
@@ -130,7 +130,7 @@ class RelationExtremesTests {
         @Test
         void resolvesTheDeepestOfAWhollyHostileSet() {
 
-            assertThat(RelationExtremes.resolveWorst(createRelationsAt(-80, -20, -55)))
+            assertThat(RelationExtremes.resolveWorstRelation(createRelationsAt(-80, -20, -55)))
                 .hasValueSatisfying(relation -> assertThat(relation.reputation()).isEqualTo(-80));
         }
 
@@ -139,14 +139,14 @@ class RelationExtremesTests {
 
             // Nothing hostile is present, so the hostile end reports the nearest thing to it - the
             // read answers where a set stands, not whether anybody in it is an enemy.
-            assertThat(RelationExtremes.resolveWorst(createRelationsAt(15, 90, 60)))
+            assertThat(RelationExtremes.resolveWorstRelation(createRelationsAt(15, 90, 60)))
                 .hasValueSatisfying(relation -> assertThat(relation.reputation()).isEqualTo(15));
         }
 
         @Test
         void resolvesNothingFromAnEmptySet() {
 
-            assertThat(RelationExtremes.resolveWorst(List.of()))
+            assertThat(RelationExtremes.resolveWorstRelation(List.of()))
                 .isEmpty();
         }
     }

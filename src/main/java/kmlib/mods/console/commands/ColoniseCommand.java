@@ -1,5 +1,7 @@
 package kmlib.mods.console.commands;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
+
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.targets.MarketOwnerTarget;
 import kmlib.mods.console.commands.targets.MarketOwnerTargetResolver;
@@ -80,7 +82,7 @@ public final class ColoniseCommand extends BaseKmlibCommand {
 
         MarketColoniser.establishColony(sector, found.market(), found.owner().getId());
 
-        output.showMessage(describeFoundedColony(found));
+        output.showMessage(describeFoundedColony(sector, found));
         return CommandResult.SUCCESS;
     }
 
@@ -88,12 +90,12 @@ public final class ColoniseCommand extends BaseKmlibCommand {
     // only after the founding, never before it: survey data goes by whatever name its placeholder
     // happened to hold, and the colony takes the body's - or, where a mod founded it, whatever
     // name that mod gave the place.
-    private static String describeFoundedColony(MarketOwnerTarget target) {
+    private static String describeFoundedColony(SectorAPI sector, MarketOwnerTarget target) {
 
         return "Founded a colony on "
             + target.market().getName()
             + " for "
-            + target.readOwnerName()
+            + target.readOwnerName(sector)
             + '.';
     }
 }

@@ -157,19 +157,20 @@ final class FactionListingReportTests {
 
             sector.addFaction(playerFactionMock);
             sector.setPlayerFaction(playerFactionMock);
+            sector.recordPlayerFactionSetUp();
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
                 .contains("[player] Sindrian Diktat - (self)");
         }
 
         @Test
-        void namesAFactionCarryingAPlaceholderDisplayNameByItsId() {
-            // A stock Nexerelin player.faction reports the literal "player" as its
-            // display name, and vanilla reports "Independent" before the first colony.
+        void namesThePlayerFactionByItsIdBeforeItIsSetUp() {
+            // Before the sector records the faction set up, the player faction reports its spec's
+            // name: "Your" in vanilla, the literal "player" under Nexerelin.
             // Repeating the ID says no more than is known, which is the point.
             var sector = new FactionListingFixture();
 
-            sector.addFaction(buildFaction("player", "player"));
+            sector.addFaction(buildFaction("player", "Your"));
 
             assertThat(readReport(sector, FactionListingFilter.ALL))
                 .contains("[player] player");

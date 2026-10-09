@@ -1,5 +1,7 @@
 package kmlib.mods.console.commands;
 
+import com.fs.starfarer.api.campaign.SectorAPI;
+
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.targets.MarketOwnerTarget;
 import kmlib.mods.console.commands.targets.MarketOwnerTargetResolver;
@@ -87,33 +89,33 @@ public final class TransferMarketCommand extends BaseKmlibCommand {
         // resolved.
         if (Markets.isOwnedBy(found.market(), found.owner().getId())) {
 
-            output.showMessage(describeUnchangedOwnership(found));
+            output.showMessage(describeUnchangedOwnership(sector, found));
             return CommandResult.ERROR;
         }
 
         MarketOwnershipTransfer.transferOwnership(sector, found.market(), found.owner().getId());
 
-        output.showMessage(describeTransferredColony(found));
+        output.showMessage(describeTransferredColony(sector, found));
         return CommandResult.SUCCESS;
     }
 
     // What the player is told about the colony that has changed hands.
-    private static String describeTransferredColony(MarketOwnerTarget target) {
+    private static String describeTransferredColony(SectorAPI sector, MarketOwnerTarget target) {
 
         return "Transferred "
             + target.market().getName()
             + " to "
-            + target.readOwnerName()
+            + target.readOwnerName(sector)
             + '.';
     }
 
     // Why a run that named the colony's own owner did nothing. Worded as a statement about the
     // colony rather than about the argument, the mistake being a belief about who holds the place.
-    private static String describeUnchangedOwnership(MarketOwnerTarget target) {
+    private static String describeUnchangedOwnership(SectorAPI sector, MarketOwnerTarget target) {
 
         return target.market().getName()
             + " is already owned by "
-            + target.readOwnerName()
+            + target.readOwnerName(sector)
             + '.';
     }
 }

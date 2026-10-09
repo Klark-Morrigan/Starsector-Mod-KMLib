@@ -8,9 +8,11 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.characters.RelationshipAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.starsector.factions.FactionCustomFixture;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyPlacementFixture;
+import kmlib.testfixtures.starsector.memory.StoredMemoryFake;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +103,17 @@ final class FactionListingFixture {
         systems.add(systemMock);
     }
 
+    // The sector's memory records the faction-naming dialog as shown, so the player faction is named.
+    void recordPlayerFactionSetUp() {
+
+        var memoryFake = new StoredMemoryFake();
+
+        memoryFake.storeValue("$shownFactionConfigDialog", true);
+
+        when(sectorMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryFake.getMemory());
+    }
+
     void setHyperspaceHolding(MarketAPI... locationColonies) {
 
         var hyperspaceMock = mock(LocationAPI.class);
@@ -150,6 +163,8 @@ final class FactionListingFixture {
             .thenReturn(relationshipMock);
         when(factionMock.getCustom())
             .thenReturn(custom);
+        when(factionMock.isPlayerFaction())
+            .thenReturn(Factions.PLAYER.equals(id));
 
         return factionMock;
     }

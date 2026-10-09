@@ -2,6 +2,7 @@ package kmlib.mods.console.commands;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.mods.console.commands.targets.MarketOwnerTarget;
 import kmlib.mods.console.commands.targets.ResolvedTarget;
@@ -46,7 +47,7 @@ final class CommandTargetFixture {
     }
 
     // The faction the target is held by: an ID and a display name, which is all any report here
-    // reads off one.
+    // reads off one, and whether it is the player's, which the game decides by that ID.
     private static FactionAPI buildFaction(String factionId, String displayName) {
 
         var factionMock = mock(FactionAPI.class);
@@ -55,6 +56,8 @@ final class CommandTargetFixture {
             .thenReturn(factionId);
         when(factionMock.getDisplayName())
             .thenReturn(displayName);
+        when(factionMock.isPlayerFaction())
+            .thenReturn(Factions.PLAYER.equals(factionId));
 
         return factionMock;
     }

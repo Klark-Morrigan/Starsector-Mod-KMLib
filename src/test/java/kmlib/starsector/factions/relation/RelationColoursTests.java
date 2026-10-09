@@ -2,7 +2,7 @@ package kmlib.starsector.factions.relation;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
 
-import kmlib.starsector.factions.FactionPalette;
+import kmlib.colour.ColourPair;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.factions.relation.StarsectorRelationColours.resolveRelationColour;
-import static kmlib.starsector.factions.relation.StarsectorRelationColours.resolveRelationPalette;
+import static kmlib.starsector.factions.relation.RelationColours.resolveRelationColour;
+import static kmlib.starsector.factions.relation.RelationColours.resolveRelationPalette;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class StarsectorRelationColoursTests {
+class RelationColoursTests {
 
     private static final String TRITACHYON = "tritachyon";
 
@@ -128,7 +128,7 @@ class StarsectorRelationColoursTests {
         void pairsTheRampShadeWithADarkenedFormOfItself() {
 
             assertThat(resolveRelationPalette(1f))
-                .isEqualTo(new FactionPalette(
+                .isEqualTo(new ColourPair(
                     POSITIVE_HIGHLIGHT,
                     new Color(32, 95, 32, 255)));
         }
@@ -141,7 +141,7 @@ class StarsectorRelationColoursTests {
             // The two lesser channels land a hair under the half-way mark rather than on it, the
             // factor being a float slightly short of 0.53 - so they round down, not up.
             assertThat(resolveRelationPalette(-1f))
-                .isEqualTo(new FactionPalette(
+                .isEqualTo(new ColourPair(
                     NEGATIVE_HIGHLIGHT,
                     new Color(106, 26, 26, 255)));
         }
@@ -150,7 +150,7 @@ class StarsectorRelationColoursTests {
         void darkensTheCentreGreyForAnIndifferentRelationship() {
 
             assertThat(resolveRelationPalette(0f))
-                .isEqualTo(new FactionPalette(
+                .isEqualTo(new ColourPair(
                     RAMP_CENTRE,
                     new Color(66, 66, 66, 255)));
         }

@@ -36,6 +36,17 @@ public sealed interface FactionClaimStanding
     boolean isTerritorial();
 
     /**
+     * Whether the mechanic weighed a market for the faction - true of a {@link WeighedClaimStanding},
+     * false of a {@link PresenceOnlyClaimStanding}.
+     *
+     * <p>For a reader that only branches on the kind, such as one choosing how to word a row. A reader
+     * that has to reach the standing market still routes on the type, which is what hands it over.
+     *
+     * @return whether the standing rests on a market the contest scored
+     */
+    boolean isWeighed();
+
+    /**
      * @return what the contest weighs the faction's presence at
      */
     int score();

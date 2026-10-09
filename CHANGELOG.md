@@ -27,14 +27,32 @@ No player-facing changes.
 
 #### Fixed
 
-- **A blank faction ID reads as no faction** in `StarsectorFactionRelations.createDispositionReader(SectorAPI)`, `NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` and `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)`, rather than being handed to the sector.
+- **A blank faction ID reads as no faction** in `FactionRelations.createDispositionReader(SectorAPI)`, `NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` and `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)`, rather than being handed to the sector.
 - **`FactionAlliances.buildFrom(List)` skips a null record**, and `AllianceRecord(String, String, List)` reads a null member list as empty, as `FactionAlliances` already reads a null map.
-- **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` counts the markets it walks** in the sector walk counters.
+- **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` follows the game's own rule**: whether the sector's memory holds `$shownFactionConfigDialog`, which `Misc.isPlayerFactionSetUp()` reads. Its list of placeholder names never held vanilla's unnamed `"Your"`, so an unnamed player faction read as established.
 
 #### Added
 
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
+- **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
+- **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
+- **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
+
+#### Public contracts changed (**breaking**)
+
+| Before | After | Why |
+| --- | --- | --- |
+| `StarsectorPlayerFactionResolver.isPlayerFactionEstablished()` | `isPlayerFactionEstablished(SectorAPI)` | The rule reads the sector it is handed, never `Global`. |
+| `StarsectorPlayerFactionResolver.setUnestablishedPlayerFactionNames(Set)` and `getUnestablishedPlayerFactionNames()` | Removed, with nothing in their place. | The rule reads no names. |
+| `StarsectorPlayerFactionResolver.resolveDisplayName(FactionAPI, String)` | `FactionNames.resolveDisplayName(SectorAPI, FactionAPI, String)` | It holds back only the player faction's name, until the sector records it as set up. |
+| `FactionNames.listEveryName(SectorAPI)` | `SectorFactions.listFactionNames(SectorAPI)` | `FactionNames` reads one faction, and `SectorFactions` holds the sector-wide reads. |
+| `StarsectorFactionColours.findPalette(SectorAPI, String)` and `resolvePalette(SectorAPI, String)` | `FactionColours.findPalette(FactionAPI)` and `resolvePalette(FactionAPI)`. Look the faction up with `SectorFactions.findFaction(SectorAPI, String)`. | The ID lookup lives in `SectorFactions` alone. |
+| `FactionPalette` in `kmlib.starsector.factions` | `ColourPair` in `kmlib.colour` | Relation shades fill it too, so it is not a faction's. |
+| `RelationExtremes.resolveBest(Collection)` and `resolveWorst(Collection)` | `resolveBestRelation(Collection)` and `resolveWorstRelation(Collection)` | The names say what they resolve. |
+| `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | The caller decides which settings are read. |
+| `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | It asks that sector whether the player faction is set up. |
+| `StarsectorFactionColours`, `StarsectorFactionRelations`, `StarsectorPlayerRelations`, `StarsectorRelationColours` and `StarsectorRelationFormatter` | `FactionColours`, `FactionRelations`, `PlayerRelations`, `RelationColours` and `RelationFormatter` | One naming shape across `kmlib.starsector.factions`, whose package already names the game. |
 
 </details>
 

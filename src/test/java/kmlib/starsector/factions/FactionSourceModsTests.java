@@ -1,6 +1,5 @@
 package kmlib.starsector.factions;
 
-import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ModManagerAPI;
 import com.fs.starfarer.api.ModSpecAPI;
 import com.fs.starfarer.api.SettingsAPI;
@@ -10,7 +9,6 @@ import kmlib.starsector.settings.modmanager.ModSource;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -46,12 +44,6 @@ final class FactionSourceModsTests {
 
     private static final String FACTIONS_CSV_PATH = "data/world/factions/factions.csv";
 
-    @AfterEach
-    void tearDown() {
-
-        Global.setSettings(null);
-    }
-
     @Nested
     class ReadSourcesByFactionId {
 
@@ -66,9 +58,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(modEntry("tahlan_greathouses", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
@@ -79,9 +69,7 @@ final class FactionSourceModsTests {
             var data = new GameDataFixture();
 
             data.declareBaseGameFaction("data/world/factions/hegemony.faction", "hegemony");
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(unidentifiedEntry("hegemony", "vanilla"));
         }
 
@@ -96,9 +84,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/unlisted.faction",
                 "unlisted");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(unidentifiedEntry("unlisted", "some_unlisted_mod"));
         }
 
@@ -114,9 +100,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/tahlan_cieveFaction.faction",
                 "tahlan_cieve");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(modEntry("tahlan_cieve", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
@@ -131,9 +115,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
 
-            data.installWithoutModManager();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettingsWithoutModManager()))
                 .containsExactly(unidentifiedEntry("tahlan_greathouses", "tahlan"));
         }
 
@@ -148,9 +130,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/hegemony.faction",
                 "hegemony");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(unidentifiedEntry("hegemony", "vanilla"));
         }
 
@@ -161,9 +141,7 @@ final class FactionSourceModsTests {
             var data = new GameDataFixture();
 
             data.declareNothing("C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan");
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .isEmpty();
         }
 
@@ -177,9 +155,7 @@ final class FactionSourceModsTests {
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/broken.faction");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .isEmpty();
         }
 
@@ -193,9 +169,7 @@ final class FactionSourceModsTests {
                 "C:\\Games\\Starsector\\starsector-core\\..\\mods\\tahlan",
                 "data/world/factions/anonymous.faction");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .isEmpty();
         }
 
@@ -211,9 +185,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(modEntry("tahlan_greathouses", "tahlan", "tahlan_shipworks"));
         }
 
@@ -230,9 +202,7 @@ final class FactionSourceModsTests {
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(modEntry("tahlan_greathouses", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
@@ -248,17 +218,15 @@ final class FactionSourceModsTests {
                 "data/world/factions/tahlan_greathouses.faction",
                 "tahlan_greathouses");
 
-            data.install();
-
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(data.buildGameSettings()))
                 .containsExactly(modEntry("tahlan_greathouses", "Tahlan Shipworks", "tahlan_shipworks"));
         }
 
         @Test
-        void reportsNothingBeforeTheGameSettingsAreUp() {
+        void reportsNothingForNoSettings() {
             // A read taken outside a running game, which has no data to consult and must answer
             // rather than throw.
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(null))
                 .isEmpty();
         }
 
@@ -266,9 +234,9 @@ final class FactionSourceModsTests {
         void reportsNothingWhenTheSpreadsheetWillNotOpen() {
             // The listing this feeds is worth less without it and is not worth taking down over
             // it.
-            new GameDataFixture().installWithUnreadableSpreadsheet();
+            var settings = new GameDataFixture().buildGameSettingsWithUnreadableSpreadsheet();
 
-            assertThat(FactionSourceMods.readSourcesByFactionId())
+            assertThat(FactionSourceMods.readSourcesByFactionId(settings))
                 .isEmpty();
         }
     }
@@ -373,16 +341,16 @@ final class FactionSourceModsTests {
             enabledMods.add(modSpecMock);
         }
 
-        private void install() {
-            installSettings(buildSettings(true), true);
+        private SettingsAPI buildGameSettings() {
+            return attachModManager(buildSettings(true), true);
         }
 
-        private void installWithoutModManager() {
-            installSettings(buildSettings(true), false);
+        private SettingsAPI buildGameSettingsWithoutModManager() {
+            return attachModManager(buildSettings(true), false);
         }
 
-        private void installWithUnreadableSpreadsheet() {
-            installSettings(buildSettings(false), true);
+        private SettingsAPI buildGameSettingsWithUnreadableSpreadsheet() {
+            return attachModManager(buildSettings(false), true);
         }
 
         // The row the merger writes: the file the row names, plus the folder it was read from
@@ -432,7 +400,7 @@ final class FactionSourceModsTests {
             return settingsMock;
         }
 
-        private void installSettings(SettingsAPI settings, boolean carriesModManager) {
+        private SettingsAPI attachModManager(SettingsAPI settings, boolean carriesModManager) {
 
             if (carriesModManager) {
 
@@ -444,7 +412,7 @@ final class FactionSourceModsTests {
                     .thenReturn(modManagerMock);
             }
 
-            Global.setSettings(settings);
+            return settings;
         }
 
         private JSONObject readFactionFile(String factionFilePath)
