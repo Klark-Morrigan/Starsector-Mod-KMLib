@@ -269,6 +269,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
 | weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
+| friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
 
 ## Forum terms
 

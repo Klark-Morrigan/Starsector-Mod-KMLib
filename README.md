@@ -632,6 +632,10 @@ No Starsector API on the signature.
   whether a disposition clears the scale's own step from indifference to goodwill,
   asked of a faction in hand or as a pair test over IDs bound to one sector,
   so a caller composing dispositions takes the read rather than writing the lookup;
+  whether one set of factions is friendly with another -
+  every pair across them above that step,
+  with how many of either set fall short -
+  so a statement over a group never holds of only some of it;
   the continuous relation ramp -
   a relationship value as the shade the engine paints it,
   or as the bright and dark pair a map owner draws in;
