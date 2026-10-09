@@ -123,6 +123,7 @@ the typeface editions share its text.
 | Alliance | 联盟 | vanilla's word for the Persean League, taken for Nexerelin's alliances |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Commodity | 商品 | `starfarer_obf.jar`, `CommodityPanel` |
 | Blueprint | 蓝图 | `special_items.csv` `ship_bp`: "Base Ship Blueprint" is 基础舰船蓝图 |
 | ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
 
