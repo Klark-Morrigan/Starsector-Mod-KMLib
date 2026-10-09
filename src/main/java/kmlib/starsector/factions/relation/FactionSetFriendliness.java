@@ -50,6 +50,24 @@ public final class FactionSetFriendliness {
     public static FactionSetFriendliness createForSector(SectorAPI sector) {
         return new FactionSetFriendliness(FactionRelations.createDispositionReader(sector));
     }
+
+    /**
+     * Whether two sets are friendly - true only where every pair drawn across them is.
+     *
+     * @param factionIds      one set, each faction asked as the first of a pair
+     * @param otherFactionIds the other set
+     * @return true where every pair is above neutral
+     */
+    public boolean areSetsFriendly(Set<String> factionIds, Set<String> otherFactionIds) {
+
+        // Friendliness is a positive statement, so a set of nobody leaves nothing to make it of:
+        // answered false rather than as the vacuous truth no pairs would report. The other side being
+        // empty needs no guard of its own: nobody is friendly with nobody, so every member is
+        // counted at odds below.
+        return !factionIds.isEmpty()
+            && countMembersAtOddsWith(factionIds, otherFactionIds) == 0;
+    }
+
     /**
      * How many of one set's factions are not friendly with the whole of another.
      *

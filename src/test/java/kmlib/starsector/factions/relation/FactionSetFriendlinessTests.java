@@ -52,6 +52,71 @@ final class FactionSetFriendlinessTests {
     }
 
     @Nested
+    class AreSetsFriendly {
+
+        @Test
+        void isTrueWhereEveryPairAcrossTheTwoSetsIsAboveNeutral() {
+
+            var friendliness = buildFriendlinessAboveNeutralOn(
+                List.of(
+                    "hegemony:tritachyon",
+                    "hegemony:persean",
+                    "luddic_church:tritachyon",
+                    "luddic_church:persean"));
+
+            assertThat(friendliness.areSetsFriendly(
+                    Set.of("hegemony", "luddic_church"),
+                    Set.of("tritachyon", "persean")))
+                .isTrue();
+        }
+
+        @Test
+        void isFalseWhereNoPairIsAboveNeutral() {
+
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of());
+
+            assertThat(friendliness.areSetsFriendly(
+                    Set.of("hegemony", "luddic_church"),
+                    Set.of("tritachyon")))
+                .isFalse();
+        }
+
+        @Test
+        void isFalseWhereOnePairAmongManyIsSour() {
+            // Unanimity, not a majority: three warm pairs do not carry a statement the fourth makes
+            // false.
+            var friendliness = buildFriendlinessAboveNeutralOn(
+                List.of("hegemony:tritachyon", "hegemony:persean", "luddic_church:tritachyon"));
+
+            assertThat(friendliness.areSetsFriendly(
+                    Set.of("hegemony", "luddic_church"),
+                    Set.of("tritachyon", "persean")))
+                .isFalse();
+        }
+
+        @Test
+        void readsOneFactionAgainstOneAsThatSinglePair() {
+            // What the rule degenerates to for two lone factions.
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of("hegemony:tritachyon"));
+
+            assertThat(friendliness.areSetsFriendly(Set.of("hegemony"), Set.of("tritachyon")))
+                .isTrue();
+        }
+
+        @Test
+        void isFalseWhereEitherSetIsEmpty() {
+            // Friendliness is a positive statement, and walking no pairs at all would report the
+            // vacuous truth about a set nothing is known about.
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of("hegemony:tritachyon"));
+
+            assertThat(friendliness.areSetsFriendly(Set.of(), Set.of("tritachyon")))
+                .isFalse();
+            assertThat(friendliness.areSetsFriendly(Set.of("hegemony"), Set.of()))
+                .isFalse();
+        }
+    }
+
+    @Nested
     class CountMembersAtOddsWith {
 
         @Test
