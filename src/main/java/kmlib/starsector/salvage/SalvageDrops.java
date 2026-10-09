@@ -14,6 +14,7 @@ import java.util.Random;
  */
 public final class SalvageDrops {
 
+    private static final int NO_CHANCES = 0;
     private static final int NO_VALUE = 0;
 
     // The roller's value, random and fuel multipliers, and a drop's own value multiplier, at the setting that leaves
@@ -46,6 +47,18 @@ public final class SalvageDrops {
     public static DropData buildRandomDrop(String group, int chances, float valueMult) {
 
         return buildDrop(group, chances, NO_VALUE, valueMult);
+    }
+
+    /**
+     * A value drop: a credit budget the roller spends on {@code group}.
+     *
+     * @param group the drop group
+     * @param value the credit budget
+     * @return the drop
+     */
+    public static DropData buildValueDrop(String group, int value) {
+
+        return buildDrop(group, NO_CHANCES, value, NEUTRAL_MULT);
     }
 
     private static DropData buildDrop(String group, int chances, int value, float valueMult) {

@@ -47,4 +47,23 @@ final class SalvageDropsTests {
                 .isEqualTo(0.1f);
         }
     }
+
+    @Nested
+    class BuildValueDrop {
+
+        @Test
+        void carriesTheGroupAndBudgetWithNoWeight() {
+
+            var drop = SalvageDrops.buildValueDrop("basic", 10_000);
+
+            assertThat(drop.group)
+                .isEqualTo("basic");
+            assertThat(drop.value)
+                .isEqualTo(10_000);
+            assertThat(drop.chances)
+                .isEqualTo(0);
+            assertThat(drop.valueMult)
+                .isEqualTo(1f);
+        }
+    }
 }
