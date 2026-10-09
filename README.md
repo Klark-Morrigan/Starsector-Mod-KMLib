@@ -592,6 +592,7 @@ No Starsector API on the signature.
   so the inversion is made in one place.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) -
   what a faction is in itself:
+  its lookup by ID,
   player-faction lifecycle,
   faction names,
   colours,
@@ -599,6 +600,12 @@ No Starsector API on the signature.
   See [Player Faction Resolution](#player-faction-resolution).
   Where a faction stands against another is a package in,
   since that reading is held of a pair rather than of either side alone.
+- [`starsector/factions/alliances/`](src/main/java/kmlib/starsector/factions/alliances/) -
+  which factions stand together,
+  as plain data folded from whichever mod keeps alliances,
+  since vanilla keeps none.
+  It answers only whether two factions are on the same side;
+  what an alliance is worth is the asker's question.
 - [`starsector/factions/relation/`](src/main/java/kmlib/starsector/factions/relation/) -
   where one faction stands with another,
   as one value:

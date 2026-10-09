@@ -32,6 +32,9 @@ import static org.mockito.Mockito.when;
  */
 final class NexerelinMarketTransferTests {
 
+    // An owner ID with no text, which names nobody however the sector would answer it.
+    private static final String BLANK_FACTION_ID = " ";
+
     @Nested
     class TransferOwnership {
 
@@ -95,6 +98,19 @@ final class NexerelinMarketTransferTests {
                         buildSectorHolding(Factions.PLAYER),
                         buildColonyHeldByAFaction(),
                         null)));
+        }
+
+        @Test
+        void declinesABlankIncomingOwnerAsAnOwnerNoFactionAnswersTo() {
+            // The sector is posed answering the blank ID, so the decline can only come from the ID
+            // being turned away before the sector is asked.
+            ModStateScopes.runWithModEnabled(NEXERELIN, true, () ->
+                assertDeclinedBecauseOf(
+                    NexerelinMarketTransfer.transferOwnership(
+                        buildSectorHolding(BLANK_FACTION_ID),
+                        buildColonyHeldByAFaction(),
+                        BLANK_FACTION_ID),
+                    "no faction with id '" + BLANK_FACTION_ID + "'"));
         }
 
         @Test

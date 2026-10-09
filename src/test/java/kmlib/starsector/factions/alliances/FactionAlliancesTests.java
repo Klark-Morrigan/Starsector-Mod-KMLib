@@ -3,6 +3,7 @@ package kmlib.starsector.factions.alliances;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -196,10 +197,34 @@ final class FactionAlliancesTests {
             assertThat(alliances.areFactionsAllied(HEGEMONY, ASTRAL_ARMADA))
                 .isFalse();
         }
+
+        @Test
+        void skipsAnAbsentRecordAndFoldsTheRest() {
+            // A hole in a source's list costs that entry, not every alliance beside it.
+            var allianceRecords = new ArrayList<AllianceRecord>();
+
+            allianceRecords.add(null);
+            allianceRecords.add(buildAlliedPowers());
+
+            var alliances = FactionAlliances.buildFrom(allianceRecords);
+
+            assertThat(alliances.areFactionsAllied(HEGEMONY, ASTRAL_ARMADA))
+                .isTrue();
+        }
+
+        @Test
+        void readsNobodyAsAlliedForARecordReportedWithoutARoster() {
+
+            var alliances = FactionAlliances.buildFrom(List.of(
+                new AllianceRecord("alliance-1", "Allied Powers", null)));
+
+            assertThat(alliances)
+                .isEqualTo(FactionAlliances.NONE);
+        }
     }
 
     @Nested
-    class AllianceIdByFactionId {
+    class Constructor {
 
         @Test
         void keepsTheMembershipsItWasBuiltWithWhenTheSourceMapChangesLater() {

@@ -19,8 +19,7 @@ import java.util.Optional;
  * read carrying a branch about the player.
  *
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} or
- * {@link RelationshipAPI} propagates to the caller rather than degrading silently. Stateless - the
- * single entry point is a static method, no instance needed.
+ * {@link RelationshipAPI} propagates to the caller rather than degrading silently.
  */
 public final class StarsectorPlayerRelations {
 

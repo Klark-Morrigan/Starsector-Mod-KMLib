@@ -6,7 +6,7 @@ import kmlib.text.KmlibStrings;
 
 /**
  * Reads a faction's crest into the sprite path a UI row draws, confining the {@code FactionAPI} crest
- * lookup the KM mods share to one place and treating a blank crest the same as an absent one.
+ * lookup to one place and treating a blank crest the same as an absent one.
  *
  * <p>Sibling to {@link StarsectorFactionColours}, which confines the faction colour lookup: this reads
  * the faction's crest. A faction with no authored crest - a null faction, or a null or blank crest

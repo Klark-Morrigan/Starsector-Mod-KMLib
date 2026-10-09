@@ -23,24 +23,6 @@ public final class FactionNames {
     }
 
     /**
-     * One of a faction's two names, as authored.
-     *
-     * @param faction the faction to name; null yields null
-     * @param form    which of its names to read
-     * @return the name in that form, exactly as authored and possibly blank; null for a null faction
-     */
-    public static String resolveName(FactionAPI faction, FactionNameForm form) {
-
-        if (faction == null) {
-            return null;
-        }
-
-        return form == FactionNameForm.SHORT
-            ? faction.getDisplayName()
-            : faction.getDisplayNameLong();
-    }
-
-    /**
      * Every name the sector's factions are authored with, both forms, blanks left out and each name once
      * - for a caller that has to know what a faction may be called before it names one, such as settling
      * the face a faction's name is drawn in. A faction authoring one text as both its names is read once,
@@ -78,15 +60,11 @@ public final class FactionNames {
      */
     public static String resolveFullestName(FactionAPI faction) {
 
-        var longName = resolveName(faction, FactionNameForm.LONG);
-        if (KmlibStrings.hasText(longName)) {
-            return longName.trim();
-        }
+        var longName = findTrimmedName(faction, FactionNameForm.LONG);
 
-        var shortName = resolveName(faction, FactionNameForm.SHORT);
-        return KmlibStrings.hasText(shortName)
-            ? shortName.trim()
-            : null;
+        return longName == null
+            ? findTrimmedName(faction, FactionNameForm.SHORT)
+            : longName;
     }
 
     /**
@@ -100,10 +78,39 @@ public final class FactionNames {
      */
     public static String resolveLabel(FactionAPI faction, String factionId) {
 
-        var longName = resolveName(faction, FactionNameForm.LONG);
+        var longName = findTrimmedName(faction, FactionNameForm.LONG);
 
-        return KmlibStrings.hasText(longName)
-            ? longName.trim()
-            : factionId;
+        return longName == null
+            ? factionId
+            : longName;
+    }
+
+    /**
+     * One of a faction's two names, as authored.
+     *
+     * @param faction the faction to name; null yields null
+     * @param form    which of its names to read
+     * @return the name in that form, exactly as authored and possibly blank; null for a null faction
+     */
+    public static String resolveName(FactionAPI faction, FactionNameForm form) {
+
+        if (faction == null) {
+            return null;
+        }
+
+        return form == FactionNameForm.SHORT
+            ? faction.getDisplayName()
+            : faction.getDisplayNameLong();
+    }
+
+    // One name in one form, trimmed, or null where there is none to show. The single statement of
+    // what a blank name reads as, so the readers built on it cannot disagree about one.
+    private static String findTrimmedName(FactionAPI faction, FactionNameForm form) {
+
+        var name = resolveName(faction, form);
+
+        return KmlibStrings.hasText(name)
+            ? name.trim()
+            : null;
     }
 }

@@ -18,13 +18,22 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
+No player-facing changes.
+
 ### For developers
 
 <details>
 <summary>API, build tooling and test fixtures</summary>
 
+#### Fixed
+
+- **A blank faction ID reads as no faction** in `StarsectorFactionRelations.createDispositionReader(SectorAPI)`, `NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` and `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)`, rather than being handed to the sector.
+- **`FactionAlliances.buildFrom(List)` skips a null record**, and `AllianceRecord(String, String, List)` reads a null member list as empty, as `FactionAlliances` already reads a null map.
+- **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` counts the markets it walks** in the sector walk counters.
+
 #### Added
 
+- **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 
 </details>
@@ -77,7 +86,7 @@ The reusable release workflow extracts the section matching the released version
 
 ### Fixed
 
-- **A crash under Fast Rendering `0.9.0` and later.** Thanks to **Genir**, [Fast Rendering now implements the missing OpenGL method](https://github.com/Halke1986/starsector-render/issues/11), the one the game itself answers when Fast Rendering is not installed. Under Fast Rendering, the map follows the cursor only from `v0.9.1rc1` on.
+- **A crash under Fast Rendering `0.9.0` and later.** Thanks to **Genir**, [Fast Rendering now implements the missing OpenGL method](https://github.com/Halke1986/starsector-render/issues/11), the one the game itself answers when Fast Rendering is not installed. Under Fast Rendering, the map follows the cursor only from `0.9.1rc1` on.
 - **Map layers drawn through KMLib stay above the nebulae with the campaign speed-up on.** Every layer stayed under the nebulae on every map open, and neither a save reload nor a Starscape toggle cleared it. - Reported by **MiniRockytheOracle** [at **USC**](https://discord.com/channels/187635036525166592/1549091275167240272/1551829173037957170).
   - **A layering fix that gave up is tried again on the next map open**, rather than staying off for the rest of the session.
 - **A shortcut key shown after a button's words stays on the button.** In a translation whose words lack the key's letter, or in English with the key rebound, a key such as `[M]` wrapped onto a second line outside the button.
@@ -96,14 +105,14 @@ The reusable release workflow extracts the section matching the released version
 
 #### Fixed
 
-- **Fast Rendering crash:** the map's modelview is read through `glGetFloat(GL_MODELVIEW_MATRIX)`, which `v0.9.1rc1` answers inline. KMLib compiles against no part of `fr.jar`, so a refactor inside Fast Rendering cannot break the read.
+- **Fast Rendering crash:** the map's modelview is read through `glGetFloat(GL_MODELVIEW_MATRIX)`, which `0.9.1rc1` answers inline. KMLib compiles against no part of `fr.jar`, so a refactor inside Fast Rendering cannot break the read.
 - **Map layers under the speed-up:** `MapIconReseater` puts an icon back only once the widget has dropped it, bounded by `MAX_ADVANCES_DETACHED` advances and ended when the map closes. The speed-up advances scripts several times a frame, so a removal and a put-back landed in one frame and the widget never re-layered the icon.
-- **Shortcut key on a button:** `VanillaButtonLabel.announceShortcut()` widens the label to the words it carries. The game sizes a label once, to the words it was built with, and wraps anything longer.
+- **Shortcut key on a button:** `VanillaButtonLabel.announceShortcut(String)` widens the label to the words it carries. The game sizes a label once, to the words it was built with, and wraps anything longer.
 - **`GlRuns`, `GlLines`, `GlQuads` and `GlTriangles` call `glEnd` in a `finally` block.** A draw that threw left the pipeline inside `glBegin`, spoiling the GL state of everything drawn after it.
-- **A `LunaSettingsReader.runOnSettingsChange` callback that throws is logged at error with its trace.** LunaLib reports it only at debug, without the trace. The next change is tried as usual, and the log-level binding uses the same relay.
+- **A `LunaSettingsReader.runOnSettingsChange(String, Runnable)` callback that throws is logged at error with its trace.** LunaLib reports it only at debug, without the trace. The next change is tried as usual, and the log-level binding uses the same relay.
 - **A failed reach into the game's screens is caught at its boundary** instead of ending the frame. Both ways it fails are caught: the game's own failure thrown undeclared, and a `LinkageError` from a member a new game build dropped.
   - `ShownMapTab.isMapTabShowing()`: the screen check the notice panel and any panel over a map make.
-  - `CoreUiTree.readHopIfOffered`: asks for the method name inside the catch that answers null.
+  - `CoreUiTree.readHopIfOffered(Object, String)`: asks for the method name inside the catch that answers null.
   - `CampaignMapView`: answers the map as not showing, with one warning.
   - `VanillaIntelScreenView`: answers no visor where the intel panel's fader will not link.
 - **Switching a diagnostic on re-arms every class-wide warning about a reach into the game's widgets**: the filter-row control's, its label's and `CampaignMapView`'s as well as the map probes'.
@@ -117,7 +126,7 @@ The API behind the in-game notice. [`starsector/compatibility/`](src/main/java/k
 
 - **`CompatibilityFailures`**: the session's record of failures, latched per third party, consuming mod and lost-feature sentence. Any thread writes it, and a reporter drains it one failure at a time.
   - `CompatibilityFailures.SESSION_RECORD`: the one record every binding writes into. `KMLib_ModPlugin` installs the notice that drains it.
-  - `recordFeatureFailureOnce()`: records a mod's own failed feature as a `FeatureFailure`.
+  - `recordFeatureFailureOnce(CompatibilityConsumer, Throwable)`: records a mod's own failed feature as a `FeatureFailure`.
   - A mod that reuses one feature key for two features has both reported, the second under `<feature>-2`.
 - **`ReportedFailure`**: the sealed type the notice draws.
   - `CompatibilityFailure`: one binding to a third party that stopped holding. It composes the notice's heading, diagnosis, rows and closing line as `CompatibilityNoticeLine`s.
@@ -125,23 +134,23 @@ The API behind the in-game notice. [`starsector/compatibility/`](src/main/java/k
 - **What a report is made of**:
   - `CompatibilitySubject`: the third party, with the targeted and installed versions and how they compare.
   - `CompatibilityBreakage`: which guard caught a binding and what no longer holds.
-  - `CompatibilityConsumer`: the mod that took the binding, the feature it serves, and the sentences naming what it loses and what it does not. `resolveConsumerAtPosition()` numbers a reused feature key.
+  - `CompatibilityConsumer`: the mod that took the binding, the feature it serves, and the sentences naming what it loses and what it does not. `resolveConsumerAtPosition(int)` numbers a reused feature key.
 - **Start-up wiring**:
   - `WiringSteps`: runs one start-up step behind a guard, in `starsector/startup/`. A step that throws or fails to link costs only its own registration.
   - `ModIntegration`: the third-party mod a step binds to, and what the wiring mod loses without it.
   - `KMLib_ModPlugin` reports its LunaLib, Nexerelin and Random Assortment of Things wiring through the channel, under KMLib's own mod ID.
 - **Integrations that break on first call**: an optional-mod adapter that fails at a founding, a hand-over, a counters decision, a reachability read or an alliance read is taken out for the session and reported once.
   - `IntegrationFailureReporter`: files that failure from whichever boundary caught it, never throwing.
-  - `ExtensionPoint.offerWork()`: offers work to the installed implementation inside that boundary.
+  - `ExtensionPoint.offerWork(Function)`: offers work to the installed implementation inside that boundary.
   - `describeIntegration()` on `NexerelinIntegration` and `RandomAssortmentOfThingsIntegration`, and `KmlibLunaSettings.describeLunaLibIntegration()`: each integration's report, beside the code that binds it.
 - **Reaches into the game's own code**: the widget walks and class reads behind the map, the intel screen, the filter row, overlays, the codex, tooltips and icon order report through the mod that loses something, with the game as the third party.
   - `GameReachReporter`: one mod's reporter. `UNREPORTED` files nothing, for diagnostic reads.
-  - `InstalledMods.readModGameVersion()`: the game version a mod declares.
-- **Fast Rendering's refused read**: a release before `v0.9.1rc1` throws on the modelview read. `FastRenderingModelviewMatrixReader` catches it and records one failure; [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md) sets out the mechanism.
+  - `InstalledMods.readModGameVersion(String)`: the game version a mod declares.
+- **Fast Rendering's refused read**: a release before `0.9.1rc1` throws on the modelview read. `FastRenderingModelviewMatrixReader` catches it and records one failure; [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md) sets out the mechanism.
   - `FastRendering.FIRST_MODELVIEW_READ_RELEASE` and `readInstalledVersion()`: the two versions a refused read is reported between.
   - `FastRendering.COMPATIBILITY_SUBJECT_KEY` and `COMPATIBILITY_SUBJECT_NAME`: the renderer's identity in a report.
   - `UnavailableModelviewMatrixReader`: the reader whose every read is no reading.
-  - `ModelviewMatrixReaders.selectForActiveRenderer()` resolves per consumer, so each mod over a refused read is told what it lost.
+  - `ModelviewMatrixReaders.selectForActiveRenderer(CompatibilityConsumer)` resolves per consumer, so each mod over a refused read is told what it lost.
 - **Notice surfaces**:
   - `CompatibilityNotice`: shows each failure as the game's own one-button confirm dialog.
   - `ScreenCompatibilityNotices`: shows a failure found on a map screen there, in a `CompatibilityNoticePanel`.
@@ -154,7 +163,7 @@ The API behind the in-game notice. [`starsector/compatibility/`](src/main/java/k
   - `KmlibMod.MOD_ID`: KMLib's own ID, readable without loading its plugin class.
   - `NexerelinPresence.MOD_NAME` and `RandomAssortmentOfThingsPresence.MOD_NAME`.
   - `KmlibLunaSettings.LUNALIB_MOD_ID` and `LUNALIB_MOD_NAME`.
-  - `InstalledMods.readModName()` and `readModVersion()`: a mod's display name and declared version, as the game holds them.
+  - `InstalledMods.readModName(String)` and `readModVersion(String)`: a mod's display name and declared version, as the game holds them.
 
 ##### Fonts
 
@@ -163,31 +172,31 @@ Text falls back to a face that holds every character of it, so a localised insta
 - **`FaceResolver`**: picks the face a text draws in. It keeps the face asked for where its atlas holds every character, and otherwise walks down to the first face that does.
   - `StarsectorFont.resolveLowerResolutionFont()`: the next smaller cut of a face's family, one step of that walk.
   - `FaceResolver.LAST_RESORT_FONT`: `insignia15LTaa`, answered where nothing on the walk draws the text.
-  - `listFallbackWalk()`: the faces a text is tried in, in order.
+  - `listFallbackWalk(StarsectorFont)`: the faces a text is tried in, in order.
   - `InstalledFaces.createFaceResolver()`: the resolver over the running game's atlases.
 - **`SettledFaceMemo`**: the face each kind of text settles on, resolved once and held until `discardFaces()`. Hold one per sector rather than resolving per paint.
   - `createUnsettled()`: keeps every face as asked, for a caller with no texts to read.
-  - `InstalledFaces.createFaceMemo(reader)`: the memo over the running game's atlases.
+  - `InstalledFaces.createFaceMemo(Function)`: the memo over the running game's atlases.
 - **Text readers** to settle a face against.
-  - `SectorStarSystems.listSystemNames(sector)` and `SectorMarkets.listMarketNames(sector)`: every star system's and market's name, discovered or not.
-  - `StarsectorStrings.listCategoryStrings(category)`: one category of `data/strings/strings.json`, as the game merges it across enabled mods.
-  - `KmlibStrings.collectTexts(items, readText)`: each item's text in order, nulls and blanks left out.
+  - `SectorStarSystems.listSystemNames(SectorAPI)` and `SectorMarkets.listMarketNames(SectorAPI)`: every star system's and market's name, discovered or not.
+  - `StarsectorStrings.listCategoryStrings(String)`: one category of `data/strings/strings.json`, as the game merges it across enabled mods.
+  - `KmlibStrings.collectTexts(Iterable, Function)`: each item's text in order, nulls and blanks left out.
 - **`FontAtlas`**: the sealed type over the atlases text draws in - a `StarsectorFont` KM names, or a `DeclaredFontAtlas`.
   - `DeclaredFontAtlas`: the atlas the game's `defaultFont` setting names, where no `StarsectorFont` does.
-  - `AtlasSmoothing.resolveFromInfoLine()`: an atlas's smoothing, read off its descriptor's first line.
+  - `AtlasSmoothing.resolveFromInfoLine(String)`: an atlas's smoothing, read off its descriptor's first line.
 - **`StarsectorFont`**:
   - `getBasename()`: the atlas's basename, how a log line names a face.
-  - `findFontByPath()`: the face at an atlas path, if the enum names one.
+  - `findFontByPath(String)`: the face at an atlas path, if the enum names one.
   - `VANILLA_INSIGNIA_21` and `VANILLA_INSIGNIA_25`: the body face's middle and larger cuts, the steps down from `insignia42LTaa`.
 - **`GameDefaultFontReader`**: the game's own `defaultFont`, read the way vanilla's `Fonts.DEFAULT_SMALL` is, as a `StarsectorFont` or a `DeclaredFontAtlas`.
 - **Installed-atlas readers**: ports that ask the loaded atlas, since a localisation replaces atlases under vanilla's file names.
-  - `FaceLineHeightReader`: the line height an atlas draws 1:1 at; `isFaceLoadable()` says whether it loaded.
+  - `FaceLineHeightReader`: the line height an atlas draws 1:1 at; `isFaceLoadable(double)` says whether it loaded.
   - `LazyFontLineHeightReader`: its live adapter, answering `NO_LINE_HEIGHT` for a face that will not load.
   - `GlyphCoverageReader`: whether an atlas draws every character of a text as itself rather than as `?`.
   - `LazyFontGlyphCoverageReader`: its live adapter.
 - **Native faces**: a face at its atlas's own 1:1 size, for a caller with no size of its own.
-  - `TextFace.createNativeFace(atlas, lineHeights)`: from line heights the caller holds.
-  - `InstalledFaces.createNativeFace(atlas)`: sized off the running game's install.
+  - `TextFace.createNativeFace(FontAtlas, FaceLineHeightReader)`: from line heights the caller holds.
+  - `InstalledFaces.createNativeFace(FontAtlas)`: sized off the running game's install.
 - **`InstalledFaceCheck`**: loads every face once at start-up and logs each one's line height, or that it would not load. `KMLib_ModPlugin` runs it.
 - **Font build gates**: every build needs the network and the game's fonts.
   - `test` checks every face on the build's install, on each localisation edition the lock pins and on any install `-PfontInstallRoots` names.
@@ -196,33 +205,33 @@ Text falls back to a face that holds every character of it, so a localised insta
 ##### Factions
 
 - **Alliances**: which factions stand together, from whichever mod keeps them. Vanilla keeps none.
-  - `FactionAlliances`: the alliance each allied faction belongs to, with `areFactionsAllied` and `buildFrom`.
+  - `FactionAlliances`: the alliance each allied faction belongs to, with `areFactionsAllied(String, String)` and `buildFrom(List)`.
   - `AllianceRecord`: one alliance as plain data: ID, display name, and members by descending market size.
   - `AllianceSource`: the port the records arrive through.
   - `NexerelinAllianceSource`: Nexerelin's live alliances, behind the presence gate.
 - **`FactionNames`** and **`FactionNameForm`**: a faction's authored names, read in one place.
-  - `resolveName`: the short or the long name, as authored.
-  - `resolveFullestName`: the long name, or the short one where the long is blank.
-  - `listEveryName`: every faction's names, each text once.
-- **`StarsectorFactionColours.findPalette()`**: a faction's bright and dark pair with no grey fallback, null where the faction is absent. `resolvePalette` falls back through it.
+  - `resolveName(FactionAPI, FactionNameForm)`: the short or the long name, as authored.
+  - `resolveFullestName(FactionAPI)`: the long name, or the short one where the long is blank.
+  - `listEveryName(SectorAPI)`: every faction's names, each text once.
+- **`StarsectorFactionColours.findPalette(SectorAPI, String)`**: a faction's bright and dark pair with no grey fallback, null where the faction is absent. `resolvePalette(SectorAPI, String)` falls back through it.
 
 ##### Geometry
 
 - **`VertexWelder`**: merges reports of a corner within a tolerance, so edges computed apart compare by exact ID. Moved out of `EdgeRings`.
-- **`Disk.measureSagitta(radius, segments)`**: how far a disk's polygon falls inside the disk at worst - the resolution anything drawn against it really has.
+- **`Disk.measureSagitta(double, int)`**: how far a disk's polygon falls inside the disk at worst - the resolution anything drawn against it really has.
 - **`Segment`** and `{x, y}` points:
   - `readStart()` and `readEnd()`: a segment's ends, each a fresh array.
-  - `joinPoints(start, end)`: the segment between two points.
+  - `joinPoints(double[], double[])`: the segment between two points.
 - **Polygon checks**:
-  - `PolygonRegions.countSelfCrossings(ring)`: how many times a ring crosses itself. Quadratic, so for tests and probes.
-  - `PolygonOffsets.hasInsetCollapsed(rawRing, insetRing)`: whether a miter inset folded a ring over rather than offsetting it.
-  - `PolygonOffsets.removeReversedLoops(polygon, isCounterClockwise, windowVertexCount)`: the fold splicer told the intended winding, for a ring whose folds outweigh its body. Both forms splice a fold that straddles the ring's start, and only a loop that does not cross itself, innermost first.
-- **`Points.measurePathLength(points)`**: an open path's length, end to end.
-- **`PolygonShapes.computeRegularVertices`**: a regular polygon's vertices from a centre, radius, side count and start angle, as `{x, y}` pairs or `Vector2f`s. `LabelledPolygon.createRegularPolygon` seeds its clips through it.
+  - `PolygonRegions.countSelfCrossings(List)`: how many times a ring crosses itself. Quadratic, so for tests and probes.
+  - `PolygonOffsets.hasInsetCollapsed(List, List)`: whether a miter inset folded a ring over rather than offsetting it.
+  - `PolygonOffsets.removeReversedLoops(List, boolean, int)`: the fold splicer told the intended winding, for a ring whose folds outweigh its body. Both forms splice a fold that straddles the ring's start, and only a loop that does not cross itself, innermost first.
+- **`Points.measurePathLength(List)`**: an open path's length, end to end.
+- **`PolygonShapes.computeRegularVertices(double, double, double, int, double)`** and **`PolygonShapes.computeRegularVertices(Vector2f, float, int, double)`**: a regular polygon's vertices from a centre, radius, side count and start angle, as `{x, y}` pairs or `Vector2f`s. `LabelledPolygon.createRegularPolygon(Disk, int)` seeds its clips through it.
 - **`Vector2f` forms**, for shapes laid out in the game's float UI coordinates:
-  - `Points.computeMeanOfVectors`
-  - `PolygonRegions.isPointInsideRing(ring, point)`
-  - `Rectangle.computeEnclosingRectangle`: answers a `Rectangle`, placed by a corner and a size.
+  - `Points.computeMeanOfVectors(List)`
+  - `PolygonRegions.isPointInsideRing(List, Vector2f)`
+  - `Rectangle.computeEnclosingRectangle(List)`: answers a `Rectangle`, placed by a corner and a size.
 
 ##### Controls
 
@@ -235,7 +244,7 @@ Text falls back to a face that holds every character of it, so a localised insta
 - **`InteractiveSpec.isSegmented()`** and **`reselectBehaviour()`**: a control states whether its cells are hit separately and what re-picking a lit cell does, so the hit-test and the press agree.
 - **`RowDimensions`**: each row's height and width as one checked value.
   - `ControlStripLayout.StripMeasurement.rowDimensions()`: a measurement's rows in that shape.
-- **`TooltipRow.createRow(List<LabelRun>)`** and **`LabelledRow.createRow(List<LabelRun>)`**: a row over a label already composed as runs.
+- **`TooltipRow.createRow(List)`** and **`LabelledRow.createRow(List)`**: a row over a label already composed as runs.
 
 ##### Campaign and saves
 
@@ -243,26 +252,26 @@ Text falls back to a face that holds every character of it, so a localised insta
   - `MemoryKeyAddress`: composes the key in one place, so no two holders share a slot by accident.
   - `AddressedMemoryFlag` and `AddressedMemoryString`: the holders.
 - **Forms naming a sector**, for code handed its sector rather than reading the running one:
-  - `SectorMemoryString` and `SectorMemoryFlag`: every read and write, over `SectorMemoryAccess.readSectorMemory(sector)`.
-  - `BaseExpiringIntelPlugin.findActive(sector, intelClass)`, `isExpired(clock)` and a constructor taking the clock.
+  - `SectorMemoryString` and `SectorMemoryFlag`: every read and write, over `SectorMemoryAccess.readSectorMemory(SectorAPI)`.
+  - `BaseExpiringIntelPlugin.findActive(SectorAPI, Class)`, `isExpired(CampaignClockAPI)` and a constructor taking the clock.
 - **Calendar**:
   - `CampaignCountdown`: a span of campaign days from a start, with an optional completion slack so it finishes on the frame the player expects. `BaseExpiringIntelPlugin` reads its window through one.
   - `CampaignMonth`: one month of the campaign calendar. `formatKey()` spells it `<cycle>-<month>`, the key a monthly job saves its last run under.
-- **`Colonies.selectColonies(test)`** and **`Colonies.hasAnyColony(test)`**: filter a colony set in its own order, or stop at the first match. An absent test passes nothing.
-- **`PersistedChoice`** and **`PersistedChoices.fromKey()`**: an option a save stores by its own key, and the lookup back with a fallback. `SortDirection`, `ListColumns` and `ListSortMode` are persisted choices.
+- **`Colonies.selectColonies(Predicate)`** and **`Colonies.hasAnyColony(Predicate)`**: filter a colony set in its own order, or stop at the first match. An absent test passes nothing.
+- **`PersistedChoice`**, **`PersistedChoices.fromKey(PersistedChoice[], String, PersistedChoice)`** and **`PersistedChoices.fromKey(Iterable, String, PersistedChoice)`**: an option a save stores by its own key, and the lookup back with a fallback. `SortDirection`, `ListColumns` and `ListSortMode` are persisted choices.
 
 ##### Core utilities
 
 - **Strings**:
-  - `KmlibStringKeys.get()` and `format()`: lookups in KMLib's own category.
-  - `KmlibStrings.requireText()`: rejects a null or blank name or sentence.
+  - `KmlibStringKeys.get(String)` and `format(String, Object...)`: lookups in KMLib's own category.
+  - `KmlibStrings.requireText(String, String)`: rejects a null or blank name or sentence.
 - **`GlMatrix`**:
   - `FLOAT_COUNT`: the sixteen floats a GL matrix takes. `ModelviewMatrixReader.MATRIX_FLOAT_COUNT` reads off it.
   - `createIdentity()`: a fresh identity matrix each call.
 - **Data files**:
   - `SpreadsheetRows`: a merged spreadsheet's data rows, without blank-ID spacers and `#` comments, with list-valued cells split. `FactionSourceMods` reads `factions.csv` through it.
-  - `ScriptClasses.instantiateScript(className, scriptType)`: builds a class a data file names without `java.lang.reflect`, which the game refuses mod code. A bad name is refused naming the class.
-- **`Jitter.roll(jitterSize, random)`**: a jitter drawn from a caller's `Random`, to replay from a seed. The band's upper end is open.
+  - `ScriptClasses.instantiateScript(String, Class)`: builds a class a data file names without `java.lang.reflect`, which the game refuses mod code. A bad name is refused naming the class.
+- **`Jitter.roll(float, Random)`**: a jitter drawn from a caller's `Random`, to replay from a seed. The band's upper end is open.
 
 ##### Build and release
 
@@ -291,37 +300,37 @@ The build and release side of the per-language zips. The localisation fixtures u
   - Every test task opens `java.util`, `java.lang.reflect`, `java.text` and `java.awt.font` to unnamed modules, as the game's `vmparams` does. XStream 1.4.10 needs them.
   - `mockStatic(Global.class)` outside `StubbedGlobalLogger`, or any `openSeam(Global.class)`, fails the build. A stand-in answering no logger leaves a static logger null for the rest of the JVM.
 - **Static seams**:
-  - `StaticSeams`: the seams one arrangement has open, closed innermost first. `openSeam()` opens one, and `holdSeam()` takes one a fixture opened, such as `StubbedGlobalLogger.openGlobalAnsweringLoggers()`'s.
+  - `StaticSeams`: the seams one arrangement has open, closed innermost first. `openSeam(Class)` opens one, and `holdSeam(MockedStatic)` takes one a fixture opened, such as `StubbedGlobalLogger.openGlobalAnsweringLoggers()`'s.
   - `SalvageEntityMock`: vanilla's drop roller held still, capturing each roll and pinning the roll count. Seven-argument roller only.
 - **Game and mod state**:
-  - `StarsectorSettingsFake`: `answerGameVersion()` and `answerModGameVersions()` answer game versions, and `installSettingsWithModNames()` knows mods by name.
-  - `ModStateScopes.runWithGameVersions()` and `runWithModNamed()`: stand those up for one mod.
+  - `StarsectorSettingsFake`: `answerGameVersion(String)` and `answerModGameVersions(ModGameVersionsSource)` answer game versions, and `installSettingsWithModNames(ModNamesSource)` knows mods by name.
+  - `ModStateScopes.runWithGameVersions(String, String, String, Runnable)` and `runWithModNamed(String, String, Runnable)`: stand those up for one mod.
   - `IntelManagerFake`: holds the intel added to it, by the game's rules for what it keeps.
   - `StoredMemoryFake`: map-backed memory with nothing behind it, for a suite that already stands in for `Global` or hangs memory off a planet. `SectorMemoryFake` is built from it.
   - `MemoryKeyAddresses`: two stand-in addresses.
 - **Compatibility**:
-  - `CompatibilityFailureFixture`: a representative failure with a builder per slot, two subject keys, and two consumers that lose different things. `drainSessionRecord()`, `createFeatureFailure()` and `takeNextBindingFailure()` reset and read records.
+  - `CompatibilityFailureFixture`: a representative failure with a builder per slot, two subject keys, and two consumers that lose different things. `drainSessionRecord()`, `createFeatureFailure()` and `takeNextBindingFailure(CompatibilityFailures)` reset and read records.
   - `CompatibilitySlotTemplates`: the notice's templates as stand-ins exposing their slots.
   - `CoreUiReachFailures`: the two ways a reach through `CoreUiTree` fails on an unknown game build, for a boundary that must catch both.
   - `GameReachRecordFixture`: a game-reach reporter filing into a record of the case's own.
 - **Logging**:
   - `LogAppenderFake.getThrowables()`: the throwables a capture's entries were logged with.
-  - `LogAppenderFake.captureLogOf(loggingClass, capturedLevel, work)`: a capture at a stated level, for what a level lets through.
+  - `LogAppenderFake.captureLogOf(Class, Level, Runnable)`: a capture at a stated level, for what a level lets through.
 - **UI**:
   - `TooltipMakerFake`: a tooltip element recording paragraphs, spacing, highlighted runs and buttons, without layout.
   - `HighlightedTooltipMock`: a tooltip giving each paragraph its own label, so its highlights can be checked.
-  - `LabelHighlightRule`: which runs the game's highlight call leaves plain - any run not bordered by whitespace, ASCII punctuation or the text's ends, such as one touching Chinese text. `UnhighlightedRun.describeIn()` words one as a finding.
+  - `LabelHighlightRule`: which runs the game's highlight call leaves plain - any run not bordered by whitespace, ASCII punctuation or the text's ends, such as one touching Chinese text. `UnhighlightedRun.describeIn(String)` words one as a finding.
   - `ButtonLabelFake`: a button's label, measured at `CHARACTER_WIDTH` per character, recording the width it was fitted to.
   - `Anomaly`, `AnomalySortMode` and `ListPickerBlockReads`: a picker row, a sort vocabulary, and reads into a built picker block.
 - **Fonts**:
-  - `FaceLineHeightReaderFake`: line heights from a table. `createVanillaLineHeights()` answers vanilla's, and `answeringLineHeight()` states another atlas under one basename.
+  - `FaceLineHeightReaderFake`: line heights from a table. `createVanillaLineHeights()` answers vanilla's, and `answeringLineHeight(FontAtlas, double)` states another atlas under one basename.
   - `LazyFontLineHeightReaderMock`: the live line-height reader, answering from a `FaceLineHeightReaderFake`.
-  - `GlyphCoverageReaderFake`: glyph coverage by rule. `createLatinOnlyCoverage()` is a vanilla install, and `coveringEveryCharacter()` widens one face.
+  - `GlyphCoverageReaderFake`: glyph coverage by rule. `createLatinOnlyCoverage()` is a vanilla install, and `coveringEveryCharacter(FontAtlas)` widens one face.
 - **Shipped files**, each read the way the game reads it:
   - `ShippedJson`: the engine's `#` comment strip in front of the game's own `json.jar`. It refuses what the game refuses, a duplicate key and a byte-order mark included, and its shape checks fail a misspelt field.
   - `ShippedStrings`: a mod's `data/strings/strings.json`, published as `STRINGS_JSON`, and the string IDs its holder class names.
   - `ShippedSpreadsheet`: a mod's CSVs by header, by ID column, by one column or by position, with quoted commas parsed right. It brings Apache Commons CSV as an `api` dependency, and `LunaSettingsTable` reads through it.
-  - `StringTemplates.countFormatArguments()`: how many arguments `String.format` takes from a template, counting a repeated position once and `%%` and `%n` not at all.
+  - `StringTemplates.countFormatArguments(String)`: how many arguments `String.format` takes from a template, counting a repeated position once and `%%` and `%n` not at all.
   - `LunaSettingsHighlights` and `LunaSettingsTable.readHighlightedTextsByFieldId()`: a settings cell as LunaLib draws it, brackets removed and highlighted runs listed.
 
 ##### Localisation fixtures
@@ -338,14 +347,14 @@ These read a mod's `localisation/` layout - one bundle per locale under `localis
   - `LocaleManifest`: the locales, the default, and where each bundle file lands. An unknown key is refused, so a misspelt `coreLocalization` fails.
   - `DeclaredLocale`: a lowercased BCP 47 tag, the locale's own name, and the core localisation its players install over `starsector-core`.
   - `LocaleBundle`: one locale's directory. `readStringSource()` stands its strings up for the settings stand-in.
-  - `ModInfoFragment`: the launcher text a locale translates: `name`, `description`, `author` and dependency names. `listFallbackFieldNames()` names the fields left to the base.
+  - `ModInfoFragment`: the launcher text a locale translates: `name`, `description`, `author` and dependency names. `listFallbackFieldNames(ModInfoBase)` names the fields left to the base.
   - `ModInfoBase`: what a fragment reaches of `mod_info.base.json`.
 - **Comparison readers**:
   - `ChangelogOutline`: a Keep a Changelog file's versions, sections, list items per depth and code spans, without its prose.
-  - `LunaSettingsTable.readBehavioursByFieldId()`, `readDisplayedTexts()` and `readTabsByFieldId()`: a settings row split into what it does, as a `FieldBehaviour` that `describeDifferencesFrom()` compares, what it says, and its tab.
-  - `StringTemplates.readArgumentConversions()`: which argument each slot takes and as what.
-  - `ShippedJson.requireList()` and `locateElement()`: the array counterparts of the object check and the member location.
-- **`ShippedLocales`**: the locales a mod ships, for a case run once per locale. `listLocaleTags()` is a parameterised source, and `installLocaleStrings()` stands one locale's strings up as the game's.
+  - `LunaSettingsTable.readBehavioursByFieldId()`, `readDisplayedTexts()` and `readTabsByFieldId()`: a settings row split into what it does, as a `FieldBehaviour` that `describeDifferencesFrom(FieldBehaviour)` compares, what it says, and its tab.
+  - `StringTemplates.readArgumentConversions(String)`: which argument each slot takes and as what.
+  - `ShippedJson.requireList(Object, String)` and `locateElement(String, int)`: the array counterparts of the object check and the member location.
+- **`ShippedLocales`**: the locales a mod ships, for a case run once per locale. `listLocaleTags()` is a parameterised source, and `installLocaleStrings(String)` stands one locale's strings up as the game's.
 
 #### Changed
 
@@ -360,28 +369,28 @@ These read a mod's `localisation/` layout - one bundle per locale under `localis
 
 | Before | After | Why |
 | --- | --- | --- |
-| `CampaignMapView`'s three map reads and `resolveSectorMapState()`, `MapFilterRows.resolveShownMapFilterRow()`, `MapFilterToggle.appendToRow()`, `VanillaButtonLabel.resolveLabelOf()`, `CoreUiOverlayPanels.attachOverlayPanel()`, `CoreUiDialogView.isModalDialogShowing()` and `resolveModalPresence()`, `CodexView.isCodexShowing()`, `MapIconLayeringProbe.readLayeringOf()` | Each takes a `GameReachReporter` as its last argument. Pass `GameReachReporter.UNREPORTED` where nothing player-visible is lost. | A failed reach into the game is reported as the calling mod's loss. |
+| `CampaignMapView`'s three map reads and `resolveSectorMapState()`, `MapFilterRows.resolveShownMapFilterRow()`, `MapFilterToggle.appendToRow(MapFilterRow, String, Runnable)`, `VanillaButtonLabel.resolveLabelOf(Object, String)`, `CoreUiOverlayPanels.attachOverlayPanel(UIComponentAPI)`, `CoreUiDialogView.isModalDialogShowing()` and `resolveModalPresence()`, `CodexView.isCodexShowing()`, `MapIconLayeringProbe.readLayeringOf(SectorEntityToken)` | Each takes a `GameReachReporter` as its last argument. Pass `GameReachReporter.UNREPORTED` where nothing player-visible is lost. | A failed reach into the game is reported as the calling mod's loss. |
 | No-argument constructors of `MapPresence`, `VanillaIntelScreenView` and `VanillaMapTooltipProbe` | Construct each with a `GameReachReporter`. | The same. |
 | `ReflectiveCoreUiComponentRepainter.INSTANCE` | Construct one with the caller's reporter. | A failed repaint is filed as the caller's loss. |
-| `CompatibilityFailures.takeNextUnreported()` and `CompatibilityNoticePanel.showFailure()` use `CompatibilityFailure` | Both use `ReportedFailure`. Check for a `CompatibilityFailure` before reading `subject()` or `breakage()`. | The record also holds a mod's own failed features. |
+| `CompatibilityFailures.takeNextUnreported()` and `CompatibilityNoticePanel.showFailure(CompatibilityFailure)` use `CompatibilityFailure` | Both use `ReportedFailure`. Check for a `CompatibilityFailure` before reading `subject()` or `breakage()`. | The record also holds a mod's own failed features. |
 | `ModelviewMatrixReaders.selectForActiveRenderer()` with no argument | Pass the `CompatibilityConsumer` taking the reading. | Only the caller knows what a refused read costs it. |
 | `FastRenderingModelviewMatrixReader.INSTANCE` | `ModelviewMatrixReaders` builds one per consumer. | A reader records a refusal against the mod it serves. |
-| `ExtensionPoint.settleWorkOutcome()` | `offerWork(work)`. `registerImplementation()` takes a fourth argument: what the registrant is told when its implementation is taken out. | The call into the implementation runs inside the failure boundary. |
-| `ColonisationRoutines.registerRoutine()`, `OwnershipTransferRoutines.registerRoutine()`, `OwnerSubmarketRules.registerRule()`, `ModdedSystemAccessRoutes.registerRoute()` | Each takes a `Supplier<ModIntegration>`. | A failing implementation is reported as its integration's. |
-| `MapProbeWarnings` and `createSharedWarning()` | `RearmableWarnings` in `kmlib.logging`, and `createRearmableWarning()`. `rearmAllWarnings()` is unchanged. | It gathers every per-class warning, not only the map probes'. |
-| `KmLogging` | `LunaLogLevelBinding.bindLogLevel(modId, loggerRoot, fieldId)`, defaulting to `LunaLogLevelBinding.DEFAULT_LEVEL`. The fallback-level overload is gone. | It sits in `kmlib.settings` with KMLib's other LunaLib reads. |
-| `GlStateGuard` | `GlPasses.runWithSavedState` | It only forwarded there. |
+| `ExtensionPoint.settleWorkOutcome(WorkOutcome)` | `offerWork(Function)`. `registerImplementation(String, Object, FallbackToDefaults, Consumer)` takes a fourth argument: what the registrant is told when its implementation is taken out. | The call into the implementation runs inside the failure boundary. |
+| `ColonisationRoutines.registerRoutine(String, ColonisationRoutine, FallbackToDefaults)`, `OwnershipTransferRoutines.registerRoutine(String, OwnershipTransferRoutine, FallbackToDefaults)`, `OwnerSubmarketRules.registerRule(String, OwnerSubmarketRule, FallbackToDefaults)`, `ModdedSystemAccessRoutes.registerRoute(String, ModdedSystemAccessRoute)` | Each takes a `Supplier<ModIntegration>`. | A failing implementation is reported as its integration's. |
+| `MapProbeWarnings` and `createSharedWarning(Logger)` | `RearmableWarnings` in `kmlib.logging`, and `createRearmableWarning(Logger)`. `rearmAllWarnings()` is unchanged. | It gathers every per-class warning, not only the map probes'. |
+| `KmLogging` | `LunaLogLevelBinding.bindLogLevel(String, String, String)`, defaulting to `LunaLogLevelBinding.DEFAULT_LEVEL`. The fallback-level overload is gone. | It sits in `kmlib.settings` with KMLib's other LunaLib reads. |
+| `GlStateGuard` | `GlPasses.runWithSavedState(Runnable)` | It only forwarded there. |
 | `ControlSpec.Checkbox`, `ControlSpec.Interactive` and the other ten variants | `CheckboxSpec`, `InteractiveSpec` and so on, in `kmlib.starsector.ui.controls.specs`, with `ControlAction`, `ControlHoverReport`, `RadioAlignment`, `ReselectBehaviour`, `RowGeometry` and `SegmentSizing`. | One file per variant, instead of one 878-line file. |
 | `VerticalTableSpec`'s `scrolls` and `asScrolling()` | Wrap the list: `new ScrollingSectionSpec(List.of(list))`. The canonical constructor takes seven arguments. | A scrolling section holds any controls, not one table. |
-| `RowStack.layoutRows()` with height and width lists, and its uniform-height overload | Pass a `RowDimensions`, or `RowDimensions.createUniform(rowHeight, rowWidths)` for one height. | The overloads' third float was a row height in one and the gap in the other. |
-| `ControlStripLayout.layoutControls()` with `rowHeights` and `rowWidths` | Pass the `StripMeasurement`. | The two lists come from one measurement, so they cannot disagree. |
-| `SortDirection.fromKeyOrDefault()` and `ListColumns.fromKeyOrDefault()` | `PersistedChoices.fromKey(options, key, fallback)`, such as `PersistedChoices.fromKey(ListColumns.values(), key, ListColumns.DEFAULT)`. | One lookup for every keyed option set. |
-| `StarsectorFont.getNativeSize()` | `InstalledFaces.createNativeFace(font)`, sized through `FaceLineHeightReader`. | A localised install replaces atlases under the same names at other sizes. |
-| `TextStyle.createStyle()` with a `StarsectorFont` | Pass a `TextFace`, such as `InstalledFaces.createNativeFace(...)`. | The style no longer knows a native size. |
-| `TextFace.font()`, a `StarsectorFont` | `TextFace.atlas()`, a `FontAtlas`. `LazyFontCache.loadByFace()`, `FaceLineHeightReader`, `GlyphCoverageReader`, `WidgetStyle.bodyFont` and `StripTextMeasurers.loadFaceMeasurers()` take one too. | Text can draw in the game's declared default face. A face built from a `StarsectorFont` compiles unchanged. |
+| `RowStack.layoutRows(float, float, float, List, List)` with height and width lists, and its uniform-height overload | Pass a `RowDimensions`, or `RowDimensions.createUniform(float, List)` for one height. | The overloads' third float was a row height in one and the gap in the other. |
+| `ControlStripLayout.layoutControls(Rectangle, List, List, List, StripTextMeasurers)` with `rowHeights` and `rowWidths` | Pass the `StripMeasurement`. | The two lists come from one measurement, so they cannot disagree. |
+| `SortDirection.fromKeyOrDefault(String, SortDirection)` and `ListColumns.fromKeyOrDefault(String)` | `PersistedChoices.fromKey(PersistedChoice[], String, PersistedChoice)`, such as `PersistedChoices.fromKey(ListColumns.values(), key, ListColumns.DEFAULT)`. | One lookup for every keyed option set. |
+| `StarsectorFont.getNativeSize()` | `InstalledFaces.createNativeFace(FontAtlas)`, sized through `FaceLineHeightReader`. | A localised install replaces atlases under the same names at other sizes. |
+| `TextStyle.createStyle(StarsectorFont)` with a `StarsectorFont` | Pass a `TextFace`, such as `InstalledFaces.createNativeFace(FontAtlas)`. | The style no longer knows a native size. |
+| `TextFace.font()`, a `StarsectorFont` | `TextFace.atlas()`, a `FontAtlas`. `LazyFontCache.loadByFace(FontAtlas)`, `FaceLineHeightReader`, `GlyphCoverageReader`, `WidgetStyle.bodyFont` and `StripTextMeasurers.loadFaceMeasurers(TextFace, FontAtlas)` take one too. | Text can draw in the game's declared default face. A face built from a `StarsectorFont` compiles unchanged. |
 | `LazyFontCache` and `DrawableStringCache` in `kmlib.starsector.ui.font` | `kmlib.starsector.ui.font.installed` | Readers of the running game's atlases live apart from the faces. |
 | `LineWidthMeasurer`, `TextSpanMeasurer`, `LazyFontMeasurer`, `LazyFontSpanMeasurer` and `StripTextMeasurers` in `kmlib.starsector.ui.font`, and the fixture `LineWidthMeasurerFake` | `kmlib.starsector.ui.font.measure`, and `kmlib.testfixtures.starsector.ui.font.measure` for the fixture. | Measuring lives apart from the faces. |
-| `StubbedGlobalLogger.answerLoggersOn()` | `openGlobalAnsweringLoggers()`, handed to `StaticSeams.holdSeam()` alongside other seams. | One stand-in for `Global`, closed with the other seams. |
+| `StubbedGlobalLogger.answerLoggersOn(MockedStatic)` | `openGlobalAnsweringLoggers()`, handed to `StaticSeams.holdSeam(MockedStatic)` alongside other seams. | One stand-in for `Global`, closed with the other seams. |
 | `mod-release.yml` releasing a mod with `localisation/manifest.json` as one unsuffixed zip | `<folder>-<version>-<locale>.zip` and `<mod-id>-<locale>.version` per locale. `<mod-id>.version` is still attached, so older installs keep polling it. | One zip per language. |
 
 </details>
@@ -399,7 +408,7 @@ These read a mod's `localisation/` layout - one bundle per locale under `localis
 ### Public contracts changed (**breaking**)
 
 - `check-version` takes a required `version` input and no longer emits `version`. It asks git about the version it is given rather than reading `mod_info.json` itself, so the gate and the rest of the pipeline cannot rule on different strings. Callers of the reusable `mod-release.yml` need no change; a workflow calling the action directly must now pass `version`.
-- `Hatching.computeHatchRun()` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
+- `Hatching.computeHatchRun(float[], HatchPattern)` takes a `HatchPattern` - the new record carrying the spacing, angle and join tolerance a cut is made to - in place of those three loose doubles. A caller can now also hold what shapes its hatch geometry apart from how it strokes the result, and cache against it.
 
 ## [0.3.1] - 2026-09-15
 

@@ -15,8 +15,7 @@ import java.util.Locale;
  *
  * <p>The wording is the player's own screens', and the value is any pair's, so a surface reporting
  * one faction's relation to another words it the way the game words the player's. Lives in KMLib so
- * every mod that surfaces a relation words it the same way. Stateless - the single entry point is a
- * static method, no instance needed.
+ * every mod that surfaces a relation words it the same way.
  */
 public final class StarsectorRelationFormatter {
 
