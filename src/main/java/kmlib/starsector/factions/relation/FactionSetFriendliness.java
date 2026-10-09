@@ -51,6 +51,29 @@ public final class FactionSetFriendliness {
         return new FactionSetFriendliness(FactionRelations.createDispositionReader(sector));
     }
     /**
+     * How many of one set's factions are not friendly with the whole of another.
+     *
+     * <p>Counted per member rather than per pair, so a faction at odds with two of the other set
+     * counts once: what is asked is how much of this set the statement is false of.
+     *
+     * @param factionIds      the set being counted
+     * @param otherFactionIds the set it is measured against, whole
+     * @return how many members fall short of friendly
+     */
+    public int countMembersAtOddsWith(Set<String> factionIds, Set<String> otherFactionIds) {
+
+        var atOddsCount = 0;
+
+        for (var factionId : factionIds) {
+
+            if (!isFactionFriendlyWithAll(factionId, otherFactionIds)) {
+                atOddsCount++;
+            }
+        }
+        return atOddsCount;
+    }
+
+    /**
      * How many of a set's factions one faction is not friendly with - the far side of the walk
      * {@link #countMembersAtOddsWith} counts the near side of.
      *
@@ -71,4 +94,13 @@ public final class FactionSetFriendliness {
         return atOddsCount;
     }
 
+    // Whether one faction is above neutral with every one of a set - the reading every public answer
+    // is composed from, so no two of them are worked out of pairs read in opposite directions. An
+    // empty set is nobody to be friendly with, which is why this is not simply the count reaching
+    // nought.
+    private boolean isFactionFriendlyWithAll(String factionId, Set<String> otherFactionIds) {
+
+        return !otherFactionIds.isEmpty()
+            && countFactionsAtOddsWith(factionId, otherFactionIds) == 0;
+    }
 }

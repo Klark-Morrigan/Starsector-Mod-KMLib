@@ -52,6 +52,56 @@ final class FactionSetFriendlinessTests {
     }
 
     @Nested
+    class CountMembersAtOddsWith {
+
+        @Test
+        void countsNoneWhereEveryMemberIsFriendlyWithTheWholeOtherSet() {
+
+            var friendliness = buildFriendlinessAboveNeutralOn(
+                List.of("hegemony:tritachyon", "luddic_church:tritachyon"));
+
+            assertThat(friendliness.countMembersAtOddsWith(
+                    Set.of("hegemony", "luddic_church"),
+                    Set.of("tritachyon")))
+                .isZero();
+        }
+
+        @Test
+        void countsAMemberOnceHoweverManyOfTheOtherSetItQuarrelsWith() {
+            // Counted per member and not per pair: one faction at odds with both of the other set is
+            // still one member of two.
+            var friendliness = buildFriendlinessAboveNeutralOn(
+                List.of("hegemony:tritachyon", "hegemony:persean"));
+
+            assertThat(friendliness.countMembersAtOddsWith(
+                    Set.of("hegemony", "luddic_church"),
+                    Set.of("tritachyon", "persean")))
+                .isOne();
+        }
+
+        @Test
+        void countsEveryMemberWhereNoneIsFriendly() {
+
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of());
+
+            assertThat(friendliness.countMembersAtOddsWith(
+                    Set.of("hegemony", "luddic_church"),
+                    Set.of("tritachyon")))
+                .isEqualTo(2);
+        }
+
+        @Test
+        void countsEveryMemberWhereTheOtherSetIsEmpty() {
+            // The same positive statement the yes-or-no is: nobody is friendly with nobody, which is what
+            // leaves that answer needing no guard of its own for this side.
+            var friendliness = buildFriendlinessAboveNeutralOn(List.of("hegemony:tritachyon"));
+
+            assertThat(friendliness.countMembersAtOddsWith(Set.of("hegemony"), Set.of()))
+                .isOne();
+        }
+    }
+
+    @Nested
     class CountFactionsAtOddsWith {
 
         @Test
