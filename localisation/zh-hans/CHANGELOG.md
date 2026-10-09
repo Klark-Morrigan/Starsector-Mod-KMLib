@@ -41,6 +41,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
+  - `rollDrops(Random, float, List, List)`：执行抽取，除总倍率外的所有倍率均保持中性。
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 

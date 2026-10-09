@@ -66,4 +66,69 @@ final class SalvageDropsTests {
                 .isEqualTo(1f);
         }
     }
+
+    @Nested
+    class RollDrops {
+
+        private SalvageEntityMock salvageMock;
+
+        @BeforeEach
+        void setUp() {
+
+            salvageMock = SalvageEntityMock.install();
+        }
+
+        @AfterEach
+        void tearDown() {
+
+            salvageMock.close();
+        }
+
+        @Test
+        void handsTheRollerTheOverallMultiplierWithTheOtherScalarsNeutral() {
+
+            SalvageDrops.rollDrops(new Random(), 0.7f, List.of(), List.of());
+
+            var scalars = salvageMock.captureScalars();
+
+            assertThat(scalars.valueMult())
+                .isEqualTo(1f);
+            assertThat(scalars.randomMult())
+                .isEqualTo(1f);
+            assertThat(scalars.overallMult())
+                .isEqualTo(0.7f);
+            assertThat(scalars.fuelMult())
+                .isEqualTo(1f);
+        }
+
+        @Test
+        void handsTheRollerTheListsAndRandomItIsGiven() {
+
+            var random = new Random();
+            var valueDrops = List.of(new DropData());
+            var randomDrops = List.of(new DropData());
+
+            SalvageDrops.rollDrops(random, 1f, valueDrops, randomDrops);
+
+            var drops = salvageMock.captureDropLists();
+
+            assertThat(drops.valueDrops())
+                .isSameAs(valueDrops);
+            assertThat(drops.randomDrops())
+                .isSameAs(randomDrops);
+            assertThat(salvageMock.captureRandoms())
+                .containsExactly(random);
+        }
+
+        @Test
+        void returnsTheRolledCargo() {
+
+            var cargoMock = mock(CargoAPI.class);
+
+            salvageMock.stubRoll(cargoMock);
+
+            assertThat(SalvageDrops.rollDrops(new Random(), 1f, List.of(), List.of()))
+                .isSameAs(cargoMock);
+        }
+    }
 }

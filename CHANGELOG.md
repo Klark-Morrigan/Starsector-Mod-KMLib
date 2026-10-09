@@ -41,6 +41,7 @@ No player-facing changes.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
+  - `rollDrops(Random, float, List, List)`: the roll, with every multiplier but the overall one neutral.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 

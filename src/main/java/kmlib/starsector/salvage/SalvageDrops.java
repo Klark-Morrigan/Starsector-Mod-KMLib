@@ -61,6 +61,32 @@ public final class SalvageDrops {
         return buildDrop(group, NO_CHANCES, value, NEUTRAL_MULT);
     }
 
+    /**
+     * Rolls the drop lists through {@link SalvageEntity#generateSalvage}, with only {@code overallMult} away from
+     * neutral, so the roller's own randomness is the only other source of variance.
+     *
+     * @param random      the source the roller draws from
+     * @param overallMult the multiplier on the whole roll
+     * @param valueDrops  the value drops
+     * @param randomDrops the random drops
+     * @return the rolled cargo
+     */
+    public static CargoAPI rollDrops(
+            Random random,
+            float overallMult,
+            List<DropData> valueDrops,
+            List<DropData> randomDrops) {
+
+        return SalvageEntity.generateSalvage(
+            random,
+            NEUTRAL_MULT,
+            NEUTRAL_MULT,
+            overallMult,
+            NEUTRAL_MULT,
+            valueDrops,
+            randomDrops);
+    }
+
     private static DropData buildDrop(String group, int chances, int value, float valueMult) {
 
         var drop = new DropData();
