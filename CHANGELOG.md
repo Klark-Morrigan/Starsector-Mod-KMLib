@@ -38,6 +38,7 @@ No player-facing changes.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
+- **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
 
 #### Public contracts changed (**breaking**)
 

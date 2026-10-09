@@ -597,7 +597,10 @@ No Starsector API on the signature.
   whether the player faction is set up,
   one faction's names,
   colours,
-  crests and flags.
+  crests and flags,
+  and what it already knows of what an item teaches -
+  a blueprint's ships, weapons, fighters and industries,
+  or a modspec's hullmod.
   See [Player Faction Resolution](#player-faction-resolution).
   Where a faction stands against another is a package in,
   since that reading is held of a pair rather than of either side alone.
