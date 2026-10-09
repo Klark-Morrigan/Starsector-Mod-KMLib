@@ -5,8 +5,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.text.KmlibStrings;
 
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.Objects;
 
 /**
  * Reads a faction's authored names, so the choice between its two forms and what an absent faction
@@ -15,6 +14,11 @@ import java.util.List;
  * <p>A faction declares a short display name and a long one, and either may be blank: plenty of
  * modded factions declare no long name, or the same text twice. Which form a surface wants is its
  * own choice; what this settles is how the two are read.
+ *
+ * <p>The player faction's short name is the one read that depends on the sector: until the player sets
+ * the faction up, it is a spec's placeholder that reads as a real name in prose. The display-name reads
+ * hold it back until then, by the rule {@link StarsectorPlayerFactionResolver} states. The sector-wide
+ * listing of names is {@link SectorFactions#listFactionNames}.
  */
 public final class FactionNames {
 
@@ -23,31 +27,50 @@ public final class FactionNames {
     }
 
     /**
-     * Every name the sector's factions are authored with, both forms, blanks left out and each name once
-     * - for a caller that has to know what a faction may be called before it names one, such as settling
-     * the face a faction's name is drawn in. A faction authoring one text as both its names is read once,
-     * a second copy saying nothing the first did not.
+     * The short name a faction is shown by in prose: its display name, held back for the player faction
+     * until the sector records it as set up.
      *
-     * <p>Counts no sector walk: the faction list is a few dozen entries, whatever the size of the sector,
-     * so it is not what a read's duration is judged against.
+     * <p>Any faction's name is read the same way, so a host, an occupier and the player are named by one
+     * rule wherever a surface substitutes a faction's name into a sentence.
      *
-     * @param sector the sector whose factions are read; null yields an empty list
-     * @return every short name, then every long name not already read, in the sector's faction order
+     * @param sector   the sector the faction belongs to, asked whether its player faction is set up
+     * @param faction  the faction to name; null yields {@code fallback}
+     * @param fallback what to show where there is no name to show; never null
+     * @return the faction's display name, or {@code fallback} when the faction is absent, its name is
+     *         blank, or it is the player faction and the sector has not recorded it as set up
      */
-    public static List<String> listEveryName(SectorAPI sector) {
+    public static String resolveDisplayName(SectorAPI sector, FactionAPI faction, String fallback) {
 
-        if (sector == null) {
-            return List.of();
+        Objects.requireNonNull(fallback, "fallback");
+
+        if (faction == null) {
+            return fallback;
         }
 
-        var factions = sector.getAllFactions();
-        var names = new LinkedHashSet<String>();
-
-        for (var form : FactionNameForm.values()) {
-            names.addAll(KmlibStrings.collectTexts(factions, faction -> resolveName(faction, form)));
+        if (faction.isPlayerFaction() && !StarsectorPlayerFactionResolver.isPlayerFactionEstablished(sector)) {
+            return fallback;
         }
 
-        return List.copyOf(names);
+        var displayName = resolveName(faction, FactionNameForm.SHORT);
+
+        return KmlibStrings.hasText(displayName)
+            ? displayName
+            : fallback;
+    }
+
+    /**
+     * {@link #resolveDisplayName} with the faction's own ID as the fallback - for a surface addressed by
+     * ID, where the ID is what a reader typed to name the faction in the first place.
+     *
+     * @param sector  the sector the faction belongs to
+     * @param faction the faction to name; null yields null
+     * @return the faction's display name, or its ID where {@link #resolveDisplayName} would fall back
+     */
+    public static String resolveDisplayNameOrId(SectorAPI sector, FactionAPI faction) {
+
+        return faction == null
+            ? null
+            : resolveDisplayName(sector, faction, faction.getId());
     }
 
     /**

@@ -1,7 +1,10 @@
 package kmlib.mods.console.commands.targets;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+
+import kmlib.testfixtures.starsector.memory.StoredMemoryFake;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,8 +15,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins how the owner of a resolved target is named in something the player reads: by the faction's
- * own name where it has one, and by its ID where the name is a placeholder standing in for an
- * identity the faction has not been given yet.
+ * own name where it has one, and by its ID where it has none or is the player faction before the sector
+ * records it as set up.
  *
  * <p>Cases live under a {@link Nested} group named for the method under test.
  */
@@ -29,18 +32,27 @@ final class MarketOwnerTargetTests {
 
             var target = buildTargetOwnedBy("hegemony", "Hegemony");
 
-            assertThat(target.readOwnerName())
+            assertThat(target.readOwnerName(createSector(false)))
                 .isEqualTo("Hegemony");
         }
 
         @Test
-        void namesThePlayerFactionByIdWhileItReportsTheVanillaPlaceholder() {
-            // "Independent" is what the player's faction reports before its first colony, and in
-            // a sentence about who now holds a place it reads as somebody else entirely.
-            var target = buildTargetOwnedBy(PLAYER_FACTION_ID, "Independent");
+        void namesThePlayerFactionByIdBeforeItIsSetUp() {
+            // "Your" is the unnamed player faction's spec name, and in a sentence about who now holds
+            // a place it reads as somebody else entirely.
+            var target = buildPlayerTarget("Your");
 
-            assertThat(target.readOwnerName())
+            assertThat(target.readOwnerName(createSector(false)))
                 .isEqualTo(PLAYER_FACTION_ID);
+        }
+
+        @Test
+        void namesThePlayerFactionByItsNameOnceItIsSetUp() {
+
+            var target = buildPlayerTarget("Concord");
+
+            assertThat(target.readOwnerName(createSector(true)))
+                .isEqualTo("Concord");
         }
 
         @Test
@@ -48,9 +60,20 @@ final class MarketOwnerTargetTests {
 
             var target = buildTargetOwnedBy("some_mod_faction", "");
 
-            assertThat(target.readOwnerName())
+            assertThat(target.readOwnerName(createSector(false)))
                 .isEqualTo("some_mod_faction");
         }
+    }
+
+    // A target held by the player faction under the given display name.
+    private static MarketOwnerTarget buildPlayerTarget(String displayName) {
+
+        var target = buildTargetOwnedBy(PLAYER_FACTION_ID, displayName);
+
+        when(target.owner().isPlayerFaction())
+            .thenReturn(true);
+
+        return target;
     }
 
     // A target held by a faction under the given ID and display name, the market being beside the
@@ -65,5 +88,22 @@ final class MarketOwnerTargetTests {
             .thenReturn(displayName);
 
         return new MarketOwnerTarget(mock(MarketAPI.class), factionMock);
+    }
+
+    // A sector whose memory records the faction-naming dialog as shown or not.
+    private static SectorAPI createSector(boolean hasShownNamingDialog) {
+
+        var memoryFake = new StoredMemoryFake();
+
+        if (hasShownNamingDialog) {
+            memoryFake.storeValue("$shownFactionConfigDialog", true);
+        }
+
+        var sectorMock = mock(SectorAPI.class);
+
+        when(sectorMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryFake.getMemory());
+
+        return sectorMock;
     }
 }

@@ -3,10 +3,10 @@ package kmlib.starsector.factions;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.memory.StoredMemoryFake;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -16,13 +16,15 @@ import static org.mockito.Mockito.when;
  * Pins how a faction's two authored names are read: the form picks the name, a null faction reads
  * as null, and the fullest-name read prefers the long name, falls back to the short one only where
  * the long is blank, trims both and never answers blank. A row's label is the long name or, where the
- * faction carries none, the ID it was asked about.
+ * faction carries none, the ID it was asked about. The display-name reads show any faction's name, but
+ * hold the player faction's back until its sector records it as set up.
  */
 final class FactionNamesTests {
 
     private static final String HEGEMONY_ID = "hegemony";
     private static final String SHORT_NAME = "Hegemony";
     private static final String LONG_NAME = "The Hegemony";
+    private static final String PLAYER_FACTION_ID = "player";
 
     // A faction whose two names are the ones given.
     private static FactionAPI createNamedFaction(String shortName, String longName) {
@@ -37,15 +39,119 @@ final class FactionNamesTests {
         return factionMock;
     }
 
-    // A sector holding the given factions, in that order.
-    private static SectorAPI createSectorOf(FactionAPI... factionMocks) {
+    // The player faction under the given display name.
+    private static FactionAPI createPlayerFaction(String displayName) {
+
+        var factionMock = createNamedFaction(displayName, null);
+
+        when(factionMock.getId())
+            .thenReturn(PLAYER_FACTION_ID);
+        when(factionMock.isPlayerFaction())
+            .thenReturn(true);
+
+        return factionMock;
+    }
+
+    // A sector whose memory records the faction-naming dialog as shown or not.
+    private static SectorAPI createSector(boolean hasShownNamingDialog) {
+
+        var memoryFake = new StoredMemoryFake();
+
+        if (hasShownNamingDialog) {
+            memoryFake.storeValue("$shownFactionConfigDialog", true);
+        }
 
         var sectorMock = mock(SectorAPI.class);
 
-        when(sectorMock.getAllFactions())
-            .thenReturn(List.of(factionMocks));
+        when(sectorMock.getMemoryWithoutUpdate())
+            .thenReturn(memoryFake.getMemory());
 
         return sectorMock;
+    }
+
+    @Nested
+    class ResolveDisplayName {
+
+        @Test
+        void readsAnotherFactionsNameWhateverTheSectorRecords() {
+
+            var factionMock = createNamedFaction(SHORT_NAME, LONG_NAME);
+
+            assertThat(FactionNames.resolveDisplayName(createSector(false), factionMock, "fallback"))
+                .isEqualTo("Hegemony");
+        }
+
+        @Test
+        void fallsBackForThePlayerFactionBeforeItIsSetUp() {
+
+            var factionMock = createPlayerFaction("Your");
+
+            assertThat(FactionNames.resolveDisplayName(createSector(false), factionMock, "fallback"))
+                .isEqualTo("fallback");
+        }
+
+        @Test
+        void readsThePlayerFactionsNameOnceItIsSetUp() {
+
+            var factionMock = createPlayerFaction("Concord");
+
+            assertThat(FactionNames.resolveDisplayName(createSector(true), factionMock, "fallback"))
+                .isEqualTo("Concord");
+        }
+
+        @Test
+        void fallsBackForThePlayerFactionWithNoSector() {
+
+            var factionMock = createPlayerFaction("Concord");
+
+            assertThat(FactionNames.resolveDisplayName(null, factionMock, "fallback"))
+                .isEqualTo("fallback");
+        }
+
+        @Test
+        void fallsBackForABlankName() {
+
+            var factionMock = createNamedFaction("   ", LONG_NAME);
+
+            assertThat(FactionNames.resolveDisplayName(createSector(true), factionMock, "fallback"))
+                .isEqualTo("fallback");
+        }
+
+        @Test
+        void fallsBackForANullFaction() {
+
+            assertThat(FactionNames.resolveDisplayName(createSector(true), null, "fallback"))
+                .isEqualTo("fallback");
+        }
+    }
+
+    @Nested
+    class ResolveDisplayNameOrId {
+
+        @Test
+        void readsTheNameWhereThereIsOneToShow() {
+
+            var factionMock = createPlayerFaction("Concord");
+
+            assertThat(FactionNames.resolveDisplayNameOrId(createSector(true), factionMock))
+                .isEqualTo("Concord");
+        }
+
+        @Test
+        void fallsBackToTheIdForThePlayerFactionBeforeItIsSetUp() {
+
+            var factionMock = createPlayerFaction("Your");
+
+            assertThat(FactionNames.resolveDisplayNameOrId(createSector(false), factionMock))
+                .isEqualTo("player");
+        }
+
+        @Test
+        void answersNullForANullFaction() {
+
+            assertThat(FactionNames.resolveDisplayNameOrId(createSector(true), null))
+                .isNull();
+        }
     }
 
     @Nested
@@ -83,37 +189,6 @@ final class FactionNamesTests {
 
             assertThat(FactionNames.resolveName(null, FactionNameForm.SHORT))
                 .isNull();
-        }
-    }
-
-    @Nested
-    class ListEveryName {
-
-        @Test
-        void readsEveryFactionsShortAndLongNameLeavingBlanksOut() {
-            // Plenty of modded factions declare no long name; a blank is nothing a caller could draw.
-            var sectorMock = createSectorOf(
-                createNamedFaction(SHORT_NAME, LONG_NAME),
-                createNamedFaction("Pather", " "));
-
-            assertThat(FactionNames.listEveryName(sectorMock))
-                .containsExactly("Hegemony", "Pather", "The Hegemony");
-        }
-
-        @Test
-        void readsANameAuthoredAsBothFormsOnce() {
-            // A second copy says nothing the first did not, and would only be read again.
-            var sectorMock = createSectorOf(createNamedFaction("Tri-Tachyon", "Tri-Tachyon"));
-
-            assertThat(FactionNames.listEveryName(sectorMock))
-                .containsExactly("Tri-Tachyon");
-        }
-
-        @Test
-        void answersNothingForANullSector() {
-
-            assertThat(FactionNames.listEveryName(null))
-                .isEmpty();
         }
     }
 

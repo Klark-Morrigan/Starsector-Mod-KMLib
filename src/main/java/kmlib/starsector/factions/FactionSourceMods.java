@@ -62,13 +62,13 @@ public final class FactionSourceMods {
     /**
      * Every faction the game's data declares, keyed by the ID the loader builds it under.
      *
-     * @return the source per faction ID; empty where the game is not up far enough to hold data
-     *         and where the spreadsheet will not open, both of which leave a caller with nothing
-     *         to say rather than with a wrong answer
+     * @param settings the settings the merged game data is read through; null where the game is not
+     *                 up far enough to hold data
+     * @return the source per faction ID; empty where there are no settings and where the spreadsheet
+     *         will not open, both of which leave a caller with nothing to say rather than with a
+     *         wrong answer
      */
-    public static Map<String, ModSource> readSourcesByFactionId() {
-
-        var settings = Global.getSettings();
+    public static Map<String, ModSource> readSourcesByFactionId(SettingsAPI settings) {
 
         if (settings == null) {
             return Map.of();

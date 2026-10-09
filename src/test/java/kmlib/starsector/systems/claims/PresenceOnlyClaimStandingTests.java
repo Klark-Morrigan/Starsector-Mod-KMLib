@@ -37,6 +37,22 @@ final class PresenceOnlyClaimStandingTests {
     private static final int NO_SIBLING_MARKETS = 0;
 
     @Nested
+    class IsWeighed {
+
+        @Test
+        void answersFalse() {
+
+            var standing = new PresenceOnlyClaimStanding(
+                CRUSADER_PLAN,
+                IS_TERRITORIAL,
+                List.of(buildMarket("Cinis Beta", FIRST_LISTED, 6, ContestAdmission.HIDDEN)));
+
+            assertThat(standing.isWeighed())
+                .isFalse();
+        }
+    }
+
+    @Nested
     class Score {
 
         @Test

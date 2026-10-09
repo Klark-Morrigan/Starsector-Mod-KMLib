@@ -302,6 +302,7 @@ No Starsector API on the signature.
 - [`colour/`](src/main/java/kmlib/colour/) -
   AWT Color to normalised GL channels folding in an alpha multiplier
   so one factor fades a palette,
+  a bright and dark pair of shades painted together,
   plus darkening,
   blends,
   flattening onto a backdrop,
@@ -592,9 +593,9 @@ No Starsector API on the signature.
   so the inversion is made in one place.
 - [`starsector/factions/`](src/main/java/kmlib/starsector/factions/) -
   what a faction is in itself:
-  its lookup by ID,
-  player-faction lifecycle,
-  faction names,
+  its lookup by ID and the sector-wide listing of names,
+  whether the player faction is set up,
+  one faction's names,
   colours,
   crests and flags.
   See [Player Faction Resolution](#player-faction-resolution).
@@ -1889,58 +1890,34 @@ absent from `mod_info.json`.
 
 ## Player Faction Resolution
 
+The player faction always reports a display name,
+but until the player names it that name is its spec's placeholder:
+`"Your"` in vanilla,
+its translation under a localised core,
+and `"player"` under Nexerelin.
+Put into prose,
+such as "Production from a local player settlement...",
+a placeholder reads as a real name.
+
 [StarsectorPlayerFactionResolver](src/main/java/kmlib/starsector/factions/StarsectorPlayerFactionResolver.java)
-centralises faction-display-name normalisation across consuming mods.
-The player faction's `getDisplayName()` is always non-empty but varies by environment:
-vanilla pre-first-colony reports `"Independent"`,
-Nexerelin's stock `player.faction` reports the literal `"player"`,
-and the user can edit either to a custom name later.
-Substituting the raw value into prose -
-"Production from a local player settlement...",
-"player leader in orbit" -
-reads poorly before the player has settled on an identity.
-Two rules share one placeholder set
-(`Independent` / `player` / `Player`):
+answers whether the player has set the faction up
+by the rule the game itself uses:
+the sector's memory holds `$shownFactionConfigDialog`,
+the key `Misc.isPlayerFactionSetUp()` reads.
+Vanilla sets it when the first outpost opens the faction-naming dialog,
+and mods that open the same dialog set it too.
+No list of names could do this,
+since the placeholder changes with the locale and the mod set.
 
-- `isPlayerFactionEstablished()` returns `true`
-  when the display name is NOT in the placeholder set
-  OR `Misc.getPlayerMarkets(false)` is non-empty
-  (`false` so Nex commission / governorship markets do not count -
-  those put the player under another flag,
-  not their own).
-  The OR is deliberate:
-  requiring both signals would mis-classify
-  both Nex's custom-faction-at-game-start flow
-  and vanilla's keeps-Independent-through-rename flow.
-  `isPlayerFactionEstablished(sector)` is the same rule
-  with both signals read off a named sector -
-  the display name off its player faction,
-  the market off its own economy,
-  applying the test `Misc.getPlayerMarkets(false)` applies.
-  It exists because that helper is bound to `Global.getSector()`:
-  a caller drawing anything but the running sector
-  would otherwise be told about the wrong one.
-- `resolveDisplayName(faction, fallback)` returns the live display name
-  when populated and not in the placeholder set,
-  else the caller's `fallback`.
-  Generic -
-  operates on any faction,
-  not just the player -
-  so host-faction-in-contested-prose,
-  remote-management-fee tooltip,
-  and any other faction-substituting surface share one policy.
-
-The established-check itself is one rule over two inputs -
-the player faction,
-and whether any market is player-owned -
-and where those come from is a `PlayerFactionSource`.
-Both public forms delegate to a package-private overload taking one:
-the no-arg form reads `Global` / `Misc`,
-the sector-bound form reads the sector.
-A caller already holding the two inputs -
-a unit test among them,
-which is how the live reads are stubbed without `mockStatic` -
-passes its own.
+- `isPlayerFactionEstablished(SectorAPI)` reads the key off the sector it is handed,
+  so a caller drawing a sector the game is not running is told about that sector.
+- `findEstablishedPlayerFactionId(SectorAPI)` gives the player faction's ID once it is set up,
+  for a caller that recognises the player by ID.
+- [FactionNames](src/main/java/kmlib/starsector/factions/FactionNames.java)`.resolveDisplayName(SectorAPI, FactionAPI, String)`
+  shows any faction's display name,
+  but falls back for the player faction until its sector says it is set up.
+  `resolveDisplayNameOrId(SectorAPI, FactionAPI)` falls back to the faction's ID,
+  for a surface addressed by ID such as the console commands.
 
 ## UI Colour Palette
 

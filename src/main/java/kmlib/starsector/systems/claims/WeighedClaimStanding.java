@@ -48,6 +48,16 @@ public record WeighedClaimStanding(
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p>Always true: the standing is the market the contest weighed.
+     */
+    @Override
+    public boolean isWeighed() {
+        return true;
+    }
+
+    /**
      * The faction's score in the contest: what its standing market is worth.
      *
      * <p>Derived rather than stored, so it cannot drift from the terms printed beneath it - a

@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.factions.relation.StarsectorFactionRelations.createDispositionReader;
-import static kmlib.starsector.factions.relation.StarsectorFactionRelations.isDispositionAboveNeutral;
-import static kmlib.starsector.factions.relation.StarsectorFactionRelations.readRelation;
+import static kmlib.starsector.factions.relation.FactionRelations.createDispositionReader;
+import static kmlib.starsector.factions.relation.FactionRelations.isDispositionAboveNeutral;
+import static kmlib.starsector.factions.relation.FactionRelations.readRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
  * read a level through one rule and a case proving only the indifferent half would hold whether or
  * not they did.
  */
-class StarsectorFactionRelationsTests {
+class FactionRelationsTests {
 
     private static final Color GREEN = new Color(60, 180, 60);
     private static final Color RED = new Color(200, 50, 50);

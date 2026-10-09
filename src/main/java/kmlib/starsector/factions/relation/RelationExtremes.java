@@ -33,7 +33,7 @@ public final class RelationExtremes {
      * @param relations the relations to take the friendly end of
      * @return the friendliest relation, or none where there is nothing to decide between
      */
-    public static Optional<FactionRelation> resolveBest(Collection<FactionRelation> relations) {
+    public static Optional<FactionRelation> resolveBestRelation(Collection<FactionRelation> relations) {
 
         return resolveExtreme(RelationDirection.FRIENDLIEST, relations);
     }
@@ -75,7 +75,7 @@ public final class RelationExtremes {
      * @param relations the relations to take the hostile end of
      * @return the most hostile relation, or none where there is nothing to decide between
      */
-    public static Optional<FactionRelation> resolveWorst(Collection<FactionRelation> relations) {
+    public static Optional<FactionRelation> resolveWorstRelation(Collection<FactionRelation> relations) {
 
         return resolveExtreme(RelationDirection.MOST_HOSTILE, relations);
     }

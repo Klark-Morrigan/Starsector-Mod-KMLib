@@ -9,7 +9,7 @@ import java.util.Optional;
 
 /**
  * Reads where a faction stands with the player, as the player-fixed binding of
- * {@link StarsectorFactionRelations#readRelation}.
+ * {@link FactionRelations#readRelation}.
  *
  * <p>Kept as its own entry point because the player pair is the one Starsector exposes a live
  * {@link RelationshipAPI} for, and that object is the most authoritative source there is: it picks
@@ -21,9 +21,9 @@ import java.util.Optional;
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} or
  * {@link RelationshipAPI} propagates to the caller rather than degrading silently.
  */
-public final class StarsectorPlayerRelations {
+public final class PlayerRelations {
 
-    private StarsectorPlayerRelations() {
+    private PlayerRelations() {
     }
 
     /**
@@ -38,12 +38,11 @@ public final class StarsectorPlayerRelations {
         if (faction == null) {
             return Optional.empty();
         }
-        var relationship = faction.getRelToPlayer();
 
+        var relationship = faction.getRelToPlayer();
         if (relationship != null) {
 
             var level = relationship.getLevel();
-
             if (level != null) {
 
                 return Optional.of(new FactionRelation(
@@ -56,7 +55,7 @@ public final class StarsectorPlayerRelations {
         // Without a relationship object naming a level there is nothing the player tier can add, so
         // the relation comes off the general read against the player ID - the same faction and raw
         // number the object would have been carrying.
-        return StarsectorFactionRelations.readRelation(faction, Factions.PLAYER);
+        return FactionRelations.readRelation(faction, Factions.PLAYER);
     }
 
     /**
@@ -69,13 +68,16 @@ public final class StarsectorPlayerRelations {
      * take would put its two facets at odds.
      */
     private static Color resolvePlayerRelationColour(
-            FactionAPI faction, RelationshipAPI relationship) {
+            FactionAPI faction,
+            RelationshipAPI relationship) {
 
         var relationshipColour = relationship.getRelColor();
 
         return relationshipColour == null
-            ? StarsectorRelationColours.resolveRelationColour(
-                faction, Factions.PLAYER, relationship.getRel())
+            ? RelationColours.resolveRelationColour(
+                faction,
+                Factions.PLAYER,
+                relationship.getRel())
             : relationshipColour;
     }
 }

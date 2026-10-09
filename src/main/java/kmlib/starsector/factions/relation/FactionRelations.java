@@ -27,9 +27,9 @@ import java.util.function.BiPredicate;
  * <p>Reads are bare: any {@link RuntimeException} from a modded {@link FactionAPI} propagates to
  * the caller rather than degrading silently.
  */
-public final class StarsectorFactionRelations {
+public final class FactionRelations {
 
-    private StarsectorFactionRelations() {
+    private FactionRelations() {
     }
 
     /**
@@ -110,7 +110,7 @@ public final class StarsectorFactionRelations {
         return Optional.of(new FactionRelation(
             resolveRelationLevel(observer, subjectId, relationship),
             RepLevel.getRepInt(relationship),
-            StarsectorRelationColours.resolveRelationColour(observer, subjectId, relationship)));
+            RelationColours.resolveRelationColour(observer, subjectId, relationship)));
     }
 
     // Whether there is a pair to read at all. Stated once, so the whole-relation read and the

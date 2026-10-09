@@ -5,9 +5,8 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.FactionNames;
-import kmlib.starsector.factions.StarsectorPlayerFactionResolver;
-import kmlib.starsector.factions.relation.StarsectorPlayerRelations;
-import kmlib.starsector.factions.relation.StarsectorRelationFormatter;
+import kmlib.starsector.factions.relation.PlayerRelations;
+import kmlib.starsector.factions.relation.RelationFormatter;
 import kmlib.starsector.markets.colonies.Colony;
 import kmlib.starsector.markets.colonies.SectorColonies;
 import kmlib.starsector.settings.modmanager.ModSource;
@@ -144,7 +143,7 @@ final class FactionListingReport {
 
             listedCount++;
 
-            appendFactionLine(report, faction, playerFactionId);
+            appendFactionLine(report, sector, faction, playerFactionId);
 
             // Left off, the listing is one line per faction, which is what makes a sector's worth
             // of them scannable side by side.
@@ -168,12 +167,13 @@ final class FactionListingReport {
     // separator hanging off whichever end went.
     private void appendFactionLine(
             StringBuilder report,
+            SectorAPI sector,
             FactionAPI faction,
             String playerFactionId) {
 
         var segments = new ArrayList<String>();
 
-        segments.add(describeIdentity(faction));
+        segments.add(describeIdentity(sector, faction));
 
         if (!options.contains(ListingOption.OMIT_ATTITUDE)) {
 
@@ -258,22 +258,18 @@ final class FactionListingReport {
             return SELF_ATTITUDE;
         }
 
-        return StarsectorPlayerRelations
+        return PlayerRelations
             .readPlayerRelation(faction)
-            .map(StarsectorRelationFormatter::formatRelation)
+            .map(RelationFormatter::formatRelation)
             .orElse(null);
     }
 
     // Which faction this is: the ID it is addressed by, the names it is known by, and whether it
     // treats the space around its holdings as its own.
-    private static String describeIdentity(FactionAPI faction) {
+    private static String describeIdentity(SectorAPI sector, FactionAPI faction) {
 
-        // Through the resolver rather than getDisplayName(), because a placeholder name reads as a
-        // real one: the player faction reports "Independent" before its first colony and the
-        // literal "player" on a stock Nexerelin setup. Falling back to the ID says no more than is
-        // known, at the cost of repeating it on a faction whose display name is itself one of the
-        // placeholders.
-        var shortName = StarsectorPlayerFactionResolver.resolveDisplayName(faction, faction.getId());
+        // See FactionNames.resolveDisplayNameOrId for why not getDisplayName().
+        var shortName = FactionNames.resolveDisplayNameOrId(sector, faction);
         var trimmedShortName = shortName.trim();
 
         // The trimmed long name, or the short one where the long is blank - so a blank long name

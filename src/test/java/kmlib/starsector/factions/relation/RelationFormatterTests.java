@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
 
-import static kmlib.starsector.factions.relation.StarsectorRelationFormatter.formatRelation;
+import static kmlib.starsector.factions.relation.RelationFormatter.formatRelation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class StarsectorRelationFormatterTests {
+class RelationFormatterTests {
 
     private static final Color RED = new Color(200, 50, 50);
 

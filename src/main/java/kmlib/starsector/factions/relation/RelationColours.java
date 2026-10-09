@@ -3,8 +3,8 @@ package kmlib.starsector.factions.relation;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import kmlib.colour.ColourPair;
 import kmlib.colour.Colours;
-import kmlib.starsector.factions.FactionPalette;
 
 import java.awt.Color;
 
@@ -20,11 +20,11 @@ import java.awt.Color;
  *
  * <p>Answers about a number rather than about a faction pair, which is what a surface wants once it
  * has decided which relation a thing is painted at - an aggregate over several factions, say, which
- * has no pair left to ask about. Where a pair is in hand, {@link StarsectorFactionRelations} is the
+ * has no pair left to ask about. Where a pair is in hand, {@link FactionRelations} is the
  * read: a faction may paint a particular pair in a shade of its own that the number alone cannot
  * report, and the relation it hands back carries that shade already resolved.
  */
-public final class StarsectorRelationColours {
+public final class RelationColours {
 
     // The share of each colour channel a derived dark shade keeps. Vanilla dims an authored
     // interface colour into its darker companion at this factor (Misc.getDesignTypeColorDim).
@@ -32,7 +32,7 @@ public final class StarsectorRelationColours {
     // shades do, so it contrasts as strongly wherever a faction pair would be painted.
     private static final float DARK_SHADE_FACTOR = 0.53f;
 
-    private StarsectorRelationColours() {
+    private RelationColours() {
     }
 
     /**
@@ -58,11 +58,11 @@ public final class StarsectorRelationColours {
      * @param relationship the raw relationship the engine keeps, -1 through 0 to +1
      * @return the two shades, the darker one scaled off the brighter
      */
-    public static FactionPalette resolveRelationPalette(float relationship) {
+    public static ColourPair resolveRelationPalette(float relationship) {
 
         var relationColour = resolveRelationColour(relationship);
 
-        return new FactionPalette(
+        return new ColourPair(
             relationColour,
             Colours.darken(relationColour, DARK_SHADE_FACTOR));
     }

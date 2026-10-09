@@ -54,6 +54,16 @@ public record PresenceOnlyClaimStanding(
     /**
      * {@inheritDoc}
      *
+     * <p>Always false: the contest weighed none of the faction's colonies here.
+     */
+    @Override
+    public boolean isWeighed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * <p>Nought however large the colonies behind it: the mechanic never weighed any of them, so
      * there is no sum to report and the size of what is present says nothing about the contest.
      */

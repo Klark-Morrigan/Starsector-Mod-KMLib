@@ -38,6 +38,23 @@ final class WeighedClaimStandingTests {
     private static final boolean IS_TERRITORIAL = true;
 
     @Nested
+    class IsWeighed {
+
+        @Test
+        void answersTrue() {
+
+            var standing = new WeighedClaimStanding(
+                HEGEMONY,
+                IS_TERRITORIAL,
+                buildMarket("Chicomoztoc", FIRST_LISTED, 5, 1, OptionalInt.empty()),
+                List.of());
+
+            assertThat(standing.isWeighed())
+                .isTrue();
+        }
+    }
+
+    @Nested
     class Score {
 
         @Test
