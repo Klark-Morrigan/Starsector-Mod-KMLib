@@ -271,6 +271,11 @@ A version heading is never translated; see [translating the changelog](#translat
 | weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
 | friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
+| reusable workflow | 可复用工作流 | GitHub's own Chinese documentation words |
+| branch (of a git repository) | 分支 | the usual git word |
+| endpoint file (the data a shields badge reads) | 端点文件 | 端点, endpoint, as shields names the service; shields itself stays in English |
+| download count | 下载量 | |
+| poll (an update checker asking for a version file) | 轮询 | the usual computing word |
 
 ## Forum terms
 

@@ -1,8 +1,7 @@
 # Reusable download-badge pipeline for a Starsector mod laid out the way
 # KMLib's release pipeline expects. Publishes shields endpoint files to an
 # orphan `badges` branch of the caller's repository, counting the mod's
-# release zips only. Shields' own downloads badge counts every asset, and the
-# .version files update checkers poll on every game start dwarf the zips.
+# release zips only.
 #
 # A consumer mod ships a small caller that runs on a schedule and on
 # workflow_dispatch and delegates here:
@@ -46,6 +45,15 @@ jobs:
     # branch, so the caller's repository rulesets fence every other branch.
     permissions:
       contents: write
+    # A scheduled run, a dispatch and a release-time refresh can overlap. The
+    # publish is leased, so the loser would fail red over nothing; queued, it
+    # runs after. Concurrency groups are per repository, so each mod has its own.
+    concurrency:
+      group: publish-download-badges
+      cancel-in-progress: false
+    # One API listing and one push. Bounds a hung call well short of the
+    # six-hour default.
+    timeout-minutes: 10
     steps:
       # The caller's checkout, for its mod_info.json alone. The token is not
       # left in .git/config: nothing later pushes from this checkout, and the
