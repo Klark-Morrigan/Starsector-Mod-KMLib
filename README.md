@@ -231,6 +231,9 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   the release entry point,
   delegating to [`mod-release.yml`](.github/workflows/mod-release.yml),
   the reusable pipeline this repo hosts for the whole KM series.
+- [`workflows/publish-download-badges.yml`](.github/workflows/publish-download-badges.yml) -
+  the reusable pipeline behind a mod's download badges,
+  counting its release zips and not the version files update checkers poll.
 - [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
   derives the values every workflow here reads from a caller's metadata.
 - [`actions/read-locales/`](.github/actions/read-locales/) -
