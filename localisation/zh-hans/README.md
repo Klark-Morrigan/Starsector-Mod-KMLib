@@ -5,6 +5,9 @@ the words the Chinese core localisation already uses for the vanilla concepts KM
 and the translations settled for KMLib's own.
 Check a term here before translating a new string,
 and add a row when a new term is settled.
+Every table keeps its rows in alphabetical order of the English column, ignoring case.
+A long section splits its table by topic;
+a term that fits no topic opens a new one, with its own heading and index entry.
 How bundles are built and checked is in the root README's
 [Build & Test](../../README.md#build--test) section.
 
@@ -23,10 +26,27 @@ so the two can never disagree.
 - [Vanilla terms](#vanilla-terms)
 - [KMLib terms](#kmlib-terms)
   - [The compatibility notice](#the-compatibility-notice)
+    - [Names and terms](#names-and-terms)
+    - [Headings](#headings)
+    - [Phrases](#phrases)
+    - [Row labels](#row-labels)
   - [What a failed binding costs](#what-a-failed-binding-costs)
   - [Settings](#settings)
   - [The changelog](#the-changelog)
+    - [Headings and entry wording](#headings-and-entry-wording)
+    - [Code and tests](#code-and-tests)
+    - [CI and git](#ci-and-git)
+    - [Releases and badges](#releases-and-badges)
+    - [Data files](#data-files)
+    - [Localisation](#localisation)
+    - [Text and rendering](#text-and-rendering)
+    - [Campaign scripts](#campaign-scripts)
+    - [Factions](#factions)
+    - [Salvage drops](#salvage-drops)
 - [Forum terms](#forum-terms)
+  - [The forum](#the-forum)
+  - [Editions and translation](#editions-and-translation)
+  - [Mods](#mods)
 - [Adding a string](#adding-a-string)
 - [Translating the changelog](#translating-the-changelog)
 
@@ -34,10 +54,10 @@ so the two can never disagree.
 
 | File | What it is |
 | --- | --- |
-| [strings.json](strings.json) | Every string KMLib draws in game: the compatibility notice, the sentences its own failed bindings cost, and the jump-point label. |
+| [CHANGELOG.md](CHANGELOG.md) | A full translation of the root [CHANGELOG.md](../../CHANGELOG.md): every version, every section. The Chinese zip ships it, and each release's notes show its section for the version. |
 | [LunaSettings.csv](LunaSettings.csv) | KMLib's row on the LunaLib settings screen: the tab name, the setting's name and its description. |
 | [mod_info.json](mod_info.json) | The launcher's mod list entry: `name` and `description` only, merged over the base. |
-| [CHANGELOG.md](CHANGELOG.md) | A full translation of the root [CHANGELOG.md](../../CHANGELOG.md): every version, every section. The Chinese zip ships it, and each release's notes show its section for the version. |
+| [strings.json](strings.json) | Every string KMLib draws in game: the compatibility notice, the sentences its own failed bindings cost, and the jump-point label. |
 
 Players of this bundle are expected to have the
 [Chinese core localisation](https://github.com/TruthOriginem/Starsector-Localization-CN)
@@ -110,23 +130,23 @@ the typeface editions share its text.
 
 | English | 简体中文 | Source |
 | --- | --- | --- |
-| Jump-point | 跳跃点 | `descriptions.csv` `jump_point_normal` is 跳跃点，前往超空间; `strings.json` `approach` is 驶向了跳跃点 |
-| Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
-| Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
-| Cancel | 取消 | the same pair |
-| Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
-| Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
-| Colony | 殖民地 | `starfarer_obf.jar` |
-| Market | 市场 | `starfarer_obf.jar` |
-| Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
-| Faction | 势力 | `starfarer.api.jar` |
 | Alliance | 联盟 | vanilla's word for the Persean League, taken for Nexerelin's alliances |
-| Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
-| Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
-| Commodity | 商品 | `starfarer_obf.jar`, `CommodityPanel` |
 | Blueprint | 蓝图 | `special_items.csv` `ship_bp`: "Base Ship Blueprint" is 基础舰船蓝图 |
-| ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
+| Cancel | 取消 | `starfarer.api.jar`, `SetFlagship`: the pair with Ok |
+| Colony | 殖民地 | `starfarer_obf.jar` |
+| Commodity | 商品 | `starfarer_obf.jar`, `CommodityPanel` |
 | Credits | 星币 | `rules.csv` `oyaTanaicaAskSampleBack2`: "It's your credits." is 反正是你的星币 |
+| Faction | 势力 | `starfarer.api.jar` |
+| Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
+| Jump-point | 跳跃点 | `descriptions.csv` `jump_point_normal` is 跳跃点，前往超空间; `strings.json` `approach` is 驶向了跳跃点 |
+| Market | 市场 | `starfarer_obf.jar` |
+| Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
+| ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
+| Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
+| Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
+| Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
+| Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
 
 ## KMLib terms
 
@@ -137,34 +157,51 @@ KMLib's own concepts, settled when the bundle was first written.
 The notice is composed from phrases, each a highlighted run the sentence around it must carry verbatim,
 so each phrase is one row here and the sentences number their slots to put it where Chinese wants it.
 
+#### Names and terms
+
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| Klark Morrigan's Library (KMLib) (the mod's name) | Klark Morrigan 的程序库 (KMLib) | `KMLib` is the brand: kept in every locale, never translated |
-| the shared library | 共享库 | KMLib as the notice and the settings row name it |
-| KM mods | KM 系列 Mod | every mod built on KMLib |
 | integration | 集成 | |
-| Error integrating X with Y | X 与 Y 集成出错 | the heading; the phrase 集成出错 closes the sentence rather than opening it |
-| X ran into an error and switched one of its features off | X 运行出错，已关闭其中一项功能 | the heading of a feature failure; 运行出错 is the phrase |
-| a fault in X itself rather than a clash with another mod | X 自身的故障，并非与其他 Mod 的冲突 | |
+| Klark Morrigan's Library (KMLib) (the mod's name) | Klark Morrigan 的程序库 (KMLib) | `KMLib` is the brand: kept in every locale, never translated |
+| KM mods | KM 系列 Mod | every mod built on KMLib |
 | public contracts | 公共契约 | |
+| the shared library | 共享库 | KMLib as the notice and the settings row name it |
+
+#### Headings
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| Error integrating X with Y | X 与 Y 集成出错 | the phrase 集成出错 closes the sentence rather than opening it |
+| X ran into an error and switched one of its features off | X 运行出错，已关闭其中一项功能 | a feature failure's; 运行出错 is the phrase |
+
+#### Phrases
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| a fault in X itself rather than a clash with another mod | X 自身的故障，并非与其他 Mod 的冲突 | |
 | carries changes to public contracts | 更改了公共契约 | |
-| it's new and carries changes to public contracts | 版本较新且更改了公共契约 | |
 | depends on | 依赖于 | the sentence completes it with 这些契约 |
-| too old | 版本过旧 | |
-| needs to be updated to at least X | 需要更新到至少 X | |
 | either downgrade X to V or wait for a Y update | 将 X 降级到 V，或等待 Y 更新 | |
+| it's new and carries changes to public contracts | 版本较新且更改了公共契约 | |
+| needs to be updated to at least X | 需要更新到至少 X | |
 | report this issue to the X developer | 将此问题报告给 X 的开发者 | |
-| Mod (row label) | Mod | |
-| Integration (row label) | 集成 | |
-| Feature (row label) | 功能 | one of a mod's own features |
-| Targeted (row label) | 目标版本 | the version the build was type-checked against |
-| Detected (row label) | 检测版本 | the version installed |
-| Broken (row label) | 已损坏 | |
-| Failed while (row label) | 失败于 | |
-| Effect (row label) | 影响 | |
-| No effect (row label) | 不受影响 | |
-| unknown (a version nothing could read) | 未知 | |
 | See X for more details | 详情请见 X | |
+| too old | 版本过旧 | |
+
+#### Row labels
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| Broken | 已损坏 | |
+| Detected | 检测版本 | the version installed |
+| Effect | 影响 | |
+| Failed while | 失败于 | |
+| Feature | 功能 | one of a mod's own features |
+| Integration | 集成 | |
+| Mod | Mod | |
+| No effect | 不受影响 | |
+| Targeted | 目标版本 | the version the build was type-checked against |
+| unknown (a version nothing could read) | 未知 | |
 
 The row labels are padded with ASCII spaces after the full-width colon,
 so the values line up as they do in English.
@@ -173,13 +210,13 @@ so the values line up as they do in English.
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| this session | 本次游戏期间 | opens every sentence stating a loss |
 | and on your save | 以及你的存档 | closes every sentence stating what is unaffected |
-| founded or handed over (colonies) | 建立或移交 | |
-| the game's own rules | 游戏自身的规则 | |
-| routes (Random Assortment of Things' own) | 路径 | |
-| read as cut off | 视为无法到达 | |
 | fleet | 舰队 | the [vanilla term](#vanilla-terms) |
+| founded or handed over (colonies) | 建立或移交 | |
+| read as cut off | 视为无法到达 | |
+| routes (Random Assortment of Things' own) | 路径 | |
+| the game's own rules | 游戏自身的规则 | |
+| this session | 本次游戏期间 | opens every sentence stating a loss |
 
 ### Settings
 
@@ -196,86 +233,133 @@ The headings every KM mod's translated changelog shares,
 and the words its entries lean on most.
 A version heading is never translated; see [translating the changelog](#translating-the-changelog).
 
+#### Headings and entry wording
+
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| Changelog (the title) | 更新日志 | |
-| Index | 索引 | |
-| Unreleased (index entry) | 未发布 | the index's link text only; the heading stays `## [Unreleased]` |
+| 2nd fix (another fix for a bug an earlier version claimed fixed) | 第二次修复 | 第二次, the second time, before 修复 as in the Fixed heading |
 | Added | 新增 | |
 | Changed | 变更 | |
-| Fixed | 修复 | |
+| Changelog (the title) | 更新日志 | |
 | Dependency changes | 依赖变更 | |
-| Public contracts changed (**breaking**) | 公共契约变更（**破坏性**） | from 公共契约 |
-| Test fixtures | 测试夹具 | |
+| Fixed | 修复 | |
 | For developers | 面向开发者 | |
+| Index | 索引 | |
 | No player-facing changes. | 没有面向玩家的变更。 | opens a version whose changes are all under `For developers` |
+| Public contracts changed (**breaking**) | 公共契约变更（**破坏性**） | from 公共契约 |
 | Reported by X at USC | 由 X 在 USC 报告 | closes the entry as a sentence of its own |
 | Requested by X at USC | 由 X 在 USC 提出请求 | |
+| Test fixtures | 测试夹具 | |
+| Unreleased (index entry) | 未发布 | the index's link text only; the heading stays `## [Unreleased]` |
+
+#### Code and tests
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| adapter | 适配器 | |
+| binding | 绑定 | |
+| blank (text holding only whitespace) | 空白 | |
+| caller | 调用方 | |
+| constructor, no-arg constructor | 构造函数, 无参构造函数 | |
+| consumer mod | 使用方 Mod | |
+| library | 程序库 | |
+| log line | 日志行 | as the settings description and the `0.5.0` entries write it |
+| map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
+| method handle | 方法句柄 | |
+| reflection | 反射 | as in the settings description |
+| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
+| seam | 接缝 | |
+| stand-in (a test double) | 替身 | |
+| supplier (a function a caller hands in) | 供应器 | |
+| test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+
+#### CI and git
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| branch (of a git repository) | 分支 | the usual git word |
+| gate (a CI check a change must pass) | 门禁 | |
+| lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
+| pull request | 拉取请求 | GitHub's own Chinese interface word |
+| reusable workflow | 可复用工作流 | GitHub's own Chinese documentation words |
+| runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
+
+#### Releases and badges
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| download count | 下载量 | |
+| endpoint file (the data a shields badge reads) | 端点文件 | 端点, endpoint, as shields names the service; shields itself stays in English |
+| poll (an update checker asking for a version file) | 轮询 | the usual computing word |
 | release (a published version) | 发布版本 | |
 | release notes | 发布说明 | |
 | release zip | 压缩包 | |
-| version file | 版本文件 | |
 | update checker | 更新检查器 | |
-| locale | 语言区域 | |
-| bundle | 语言包 | |
-| core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
-| library | 程序库 | |
-| consumer mod | 使用方 Mod | |
-| caller | 调用方 | |
-| binding | 绑定 | |
-| adapter | 适配器 | |
-| seam | 接缝 | |
-| renderer, render pass | 渲染器, 渲染通道 | |
-| font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
-| line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
-| test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+| version file | 版本文件 | |
+
+#### Data files
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
 | data file | 数据文件 | a CSV or JSON a mod ships |
-| constructor, no-arg constructor | 构造函数, 无参构造函数 | |
-| method handle | 方法句柄 | |
-| reflection | 反射 | as in the settings description |
-| stand-in (a test double) | 替身 | |
-| highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
-| slot (in a format string) | 槽位 | |
-| body colour (of text) | 正文颜色 | |
-| solid filled rectangle (a glyph drawn without its atlas) | 实心矩形 | 实心, filled, with 矩形, rectangle |
-| map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
-| failed load (of a font) | 加载失败 | the noun form of 无法加载 |
-| pull request | 拉取请求 | GitHub's own Chinese interface word |
-| gate (a CI check a change must pass) | 门禁 | |
-| runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
-| lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
 | field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, as the developer notes write it |
 | object-holding array (in JSON) | 对象数组 | 对象, object, before 数组, array: an array whose elements are objects |
 | root, nested record (of a JSON file) | 根层级, 嵌套的记录 | 层级, level, so 根 reads as the file's top level rather than a root directory |
-| campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game jar, which the cached core localisation does not hold, so it is unchecked |
-| 2nd fix (another fix for a bug an earlier version claimed fixed) | 第二次修复 | 第二次, the second time, before 修复 as in the Fixed heading |
-| location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |
-| advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
-| put back (an entity taken out of its location) | 放回 | the counterpart of 移出 |
-| placement (of a map icon among the others), unplaceable | 叠放情况, 无法定位 | 叠放, stacking, as the `0.5.0` entry's 重新叠放; 定位, to locate, kept apart from 位置 for a location |
-| supplier (a function a caller hands in) | 供应器 | |
-| lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
-| reseat (the removal and put-back a lift is made of) | 重新安置 | as the `0.3.0` entries write it |
-| reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
-| log line | 日志行 | as the settings description and the `0.5.0` entries write it |
-| wait (an advance spent with the entity out) | 等待 | the plain word |
-| long name (of a faction) | 长名称 | 长, long, before 名称, name |
+
+#### Localisation
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| bundle | 语言包 | |
+| core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
+| locale | 语言区域 | |
+
+#### Text and rendering
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| body colour (of text) | 正文颜色 | |
+| failed load (of a font) | 加载失败 | the noun form of 无法加载 |
+| font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
+| highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
+| line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
+| map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
+| renderer, render pass | 渲染器, 渲染通道 | |
 | row (one line of a list or hover box) | 行 | as 日志行 writes it |
-| blank (text holding only whitespace) | 空白 | |
+| slot (in a format string) | 槽位 | |
+| solid filled rectangle (a glyph drawn without its atlas) | 实心矩形 | 实心, filled, with 矩形, rectangle |
+
+#### Campaign scripts
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
+| campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game jar, which the cached core localisation does not hold, so it is unchecked |
+| lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
+| location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |
+| placement (of a map icon among the others), unplaceable | 叠放情况, 无法定位 | 叠放, stacking, as the `0.5.0` entry's 重新叠放; 定位, to locate, kept apart from 位置 for a location |
+| put back (an entity taken out of its location) | 放回 | the counterpart of 移出 |
+| reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
+| reseat (the removal and put-back a lift is made of) | 重新安置 | as the `0.3.0` entries write it |
+| wait (an advance spent with the entity out) | 等待 | the plain word |
 | walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | as the `0.5.0` entries write 遍历; 计数, count |
-| map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
-| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
+
+#### Factions
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
+| long name (of a faction) | 长名称 | 长, long, before 名称, name |
+| teach (what an item gives a faction to know), know | 传授, 掌握 | |
+
+#### Salvage drops
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
 | drop roller, drop list | 掉落抽取器, 掉落列表 | as the `SalvageEntityMock` entry writes 掉落抽取器; 掉落, drop, is the plain word, unchecked against the game jar |
 | random drop, value drop, drop group | 随机掉落, 价值掉落, 掉落组 | from 掉落 |
 | roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
 | weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
-| teach (what an item gives a faction to know), know | 传授, 掌握 | |
-| friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
-| reusable workflow | 可复用工作流 | GitHub's own Chinese documentation words |
-| branch (of a git repository) | 分支 | the usual git word |
-| endpoint file (the data a shields badge reads) | 端点文件 | 端点, endpoint, as shields names the service; shields itself stays in English |
-| download count | 下载量 | |
-| poll (an update checker asking for a version file) | 轮询 | the usual computing word |
 
 ## Forum terms
 
@@ -283,31 +367,43 @@ The words of a KM mod's thread on [Fossic](https://www.fossic.org/), the Chinese
 and of its release notes.
 How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thread.md).
 
+### The forum
+
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |
-| the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
-| Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
-| English edition | 英文版 | the counterpart of 简体中文版 |
-| Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
-| forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
-| pre-release | 预发布 | Fossic's word for its pre-release board |
-| testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
-| repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
-| translation (a translated build) | 汉化 | a Fossic board |
-| dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
 | attachment | 附件 | a file uploaded to a forum post |
 | download panel | 下载面板 | the posting form's word, from its 插入Mod文件下载面板到帖子正文中 button |
-| zip (a release archive) | 压缩包 | the plain word for an archive file |
+| forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
+| Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
 | mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
-| mod author | Mod 作者 | Mod kept Latin as vanilla does, with 作者, author; the posting form writes Mod作者 |
-| translation reference (the terminology reference, as a post names it) | 翻译参考 | 参考, reference, after 翻译, translation |
+| pre-release | 预发布 | Fossic's word for its pre-release board |
+| repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
+| testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
+| translation (a translated build) | 汉化 | a Fossic board |
+
+### Editions and translation
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| English edition | 英文版 | the counterpart of 简体中文版 |
 | rationale (for a term's choice) | 选词理由 | 选词, choosing a word, with 理由, reason: what each row's note records |
+| Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
+| the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
 | translation (the act) | 翻译 | the plain word; 汉化 is a translated build, the forum's sense |
+| translation reference (the terminology reference, as a post names it) | 翻译参考 | 参考, reference, after 翻译, translation |
+
+### Mods
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
+| dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
 | install mid-run | 中途安装 | 中途, partway through |
+| mod author | Mod 作者 | Mod kept Latin as vanilla does, with 作者, author; the posting form writes Mod作者 |
 | mod installer (a third-party tool) | Mod 安装工具 | 安装, install, with 工具, tool; Mod kept Latin as in Mod 作者 |
 | uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word; 步骤 for the steps |
-| changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
+| vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |
+| zip (a release archive) | 压缩包 | the plain word for an archive file |
 
 ## Adding a string
 
