@@ -108,7 +108,7 @@ Two places pin KMLib and they must agree:
     The pin names the precise KMLib the consumer was built against,
     and any other installed KMLib is reported as a mismatch.
 
-2. **Workflow pin** in `.github/workflows/*.yml`:
+2. **Workflow pin** in `.github/workflows/release.yml`:
 
     ```yaml
     uses: <owner>/Starsector-Mod-KMLib/.github/workflows/mod-release.yml@1.0.0
@@ -144,6 +144,11 @@ and only the first means the pin needs changing.
 
 **Do not pin to `@master`.** A pin to `master` lets an unrelated KMLib commit break a consumer release retroactively.
 Always pin a tag.
+
+The one exception is `publish-download-badges.yml`,
+which a consumer calls at `@master`.
+It publishes download figures and cannot affect a release,
+so a tag pin would only delay its fixes until the consumer's next KMLib bump.
 
 ## Pre-1.0 phase
 

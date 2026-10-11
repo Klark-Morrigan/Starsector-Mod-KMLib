@@ -41,11 +41,18 @@ MOD_INFO_FILE=""
 # TriOS strips letters out of a mod_info.json version entirely, so a
 # suffixed version like 1.2.3a is silently mangled by both rather than
 # rejected by either.
-SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+#
+# The pattern is kept apart from its anchors so a regex over a whole file name
+# can embed it.
+SEMVER_PATTERN='[0-9]+\.[0-9]+\.[0-9]+'
+SEMVER_REGEX="^${SEMVER_PATTERN}\$"
 
 JAR_EXTENSION=".jar"
 ZIP_EXTENSION=".zip"
 VERSION_FILE_EXTENSION=".version"
+
+# Joins the folder name and the version in a release zip name.
+ZIP_NAME_VERSION_SEPARATOR="-"
 
 # Joins a locale tag onto a release file name. A tag is lowercased BCP 47
 # (en, zh-hans), which carries hyphens of its own, so a reader splits a name on
@@ -59,6 +66,23 @@ LOCALE_SEPARATOR="-"
 # reached only one of them would leave the pipeline quietly half-right.
 KMLIB_MOD_ID="kmlib"
 
+# Moves into the given mod root, the directory holding the mod's metadata.
+# Fails the run naming that directory when it is not there.
+#
+# Checked rather than left to cd: a wrong root would otherwise surface as a
+# missing mod_info.json, the same symptom from a different cause.
+mod_info_enter_mod_root() {
+
+  local modRoot="${1}"
+
+  if [[ ! -d "${modRoot}" ]]; then
+    echo "${SCRIPT_NAME}: mod root ${modRoot} not found in ${PWD}" >&2
+    exit 1
+  fi
+
+  cd "${modRoot}" || exit 1
+}
+
 # Points MOD_INFO_FILE at the file holding the mod's metadata in the working
 # directory, which is the caller's checkout root when a composite action
 # invokes these scripts: the committed base when there is one, else
@@ -69,6 +93,7 @@ KMLIB_MOD_ID="kmlib"
 # built otherwise. The two differ only in text a locale translates, and the
 # base's is the text every locale falls back to.
 mod_info_locate_file() {
+
   if [[ -f "${MOD_INFO_BASE_FILE}" ]]; then
     MOD_INFO_FILE="${MOD_INFO_BASE_FILE}"
   elif [[ -f "${MOD_INFO_LAUNCHER_FILE}" ]]; then
@@ -87,14 +112,19 @@ mod_info_locate_file() {
 # ("jars[0]", not "jarSource"). Splitting on the first colon leaves values
 # holding colons - URLs, mostly - intact.
 mod_info_require_fields() {
+
   local pair field value
+
   for pair in "$@"; do
+
     field="${pair%%:*}"
     value="${pair#*:}"
+
     if [[ -z "${value}" ]] || [[ "${value}" == "null" ]]; then
       echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} is missing required field '${field}'" >&2
       exit 1
     fi
+
   done
 }
 
@@ -110,7 +140,9 @@ mod_info_require_fields() {
 # layout, including on case-sensitive filesystems where mods/kmlib and
 # mods/KMLib are two different directories.
 mod_info_derive_mod_folder_name() {
+
   local jarSource="${1}"
+
   basename "${jarSource}" "${JAR_EXTENSION}"
 }
 
@@ -124,11 +156,49 @@ mod_info_derive_mod_folder_name() {
 # a 404 the same spelling, and only a player following the link would find
 # out.
 mod_info_derive_zip_name() {
+
   local jarSource="${1}" version="${2}" localeTag="${3:-}"
   local modFolderName localeSuffix
+
   modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
   localeSuffix=$(mod_info_format_locale_suffix "${localeTag}")
-  printf '%s\n' "${modFolderName}-${version}${localeSuffix}${ZIP_EXTENSION}"
+
+  printf '%s\n' "${modFolderName}${ZIP_NAME_VERSION_SEPARATOR}${version}${localeSuffix}${ZIP_EXTENSION}"
+}
+
+# Emits the regex a whole release zip name matches for a jars[0] value,
+# whatever its version and locale, so a release listing can be narrowed to the
+# mod's zips and away from its version files.
+#
+# Built from the constants mod_info_derive_zip_name joins, so the name and its
+# pattern cannot drift apart. The locale suffix is optional because a mod
+# keeping no locales releases unsuffixed. It matches any text rather than the
+# tags a mod ships today, so a new locale matches the day it ships.
+#
+# Written for jq's test.
+mod_info_derive_zip_name_regex() {
+
+  local jarSource="${1}"
+  local modFolderName folderPattern versionSeparatorPattern localeSeparatorPattern extensionPattern
+
+  modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
+  folderPattern=$(mod_info_escape_regex_text "${modFolderName}")
+  versionSeparatorPattern=$(mod_info_escape_regex_text "${ZIP_NAME_VERSION_SEPARATOR}")
+  localeSeparatorPattern=$(mod_info_escape_regex_text "${LOCALE_SEPARATOR}")
+  extensionPattern=$(mod_info_escape_regex_text "${ZIP_EXTENSION}")
+
+  printf '%s\n' \
+    "^${folderPattern}${versionSeparatorPattern}${SEMVER_PATTERN}(${localeSeparatorPattern}.+)?${extensionPattern}\$"
+}
+
+# Emits the given text with every regex metacharacter backslash-escaped, so
+# the result matches only that text. A folder name is a jar's basename, which
+# may carry a dot or a plus as freely as a letter.
+mod_info_escape_regex_text() {
+
+  local text="${1}"
+
+  printf '%s\n' "${text}" | sed 's/[][\.^$|?*+(){}]/\\&/g'
 }
 
 # Emits the VersionChecker file name for a mod id and, for a mod releasing
@@ -141,16 +211,21 @@ mod_info_derive_zip_name() {
 # localised zip carries it under, since the CSV is one file for every locale;
 # with a tag it names that locale's copy served as a release asset.
 mod_info_derive_version_file_name() {
+
   local modId="${1}" localeTag="${2:-}"
   local localeSuffix
+
   localeSuffix=$(mod_info_format_locale_suffix "${localeTag}")
+
   printf '%s\n' "${modId}${localeSuffix}${VERSION_FILE_EXTENSION}"
 }
 
 # Emits the suffix a locale's release files carry, or nothing for no tag -
 # which is what a mod keeping no locales releases under.
 mod_info_format_locale_suffix() {
+
   local localeTag="${1:-}"
+
   if [[ -n "${localeTag}" ]]; then
     printf '%s' "${LOCALE_SEPARATOR}${localeTag}"
   fi
@@ -165,7 +240,9 @@ mod_info_format_locale_suffix() {
 # version is a mistake worth failing on. A single "empty means absent" read
 # would flatten those into one state and lose the error.
 mod_info_has_dependency() {
+
   local dependencyId="${1}"
+
   # `.dependencies // []` covers a mod_info.json with no dependencies key at
   # all, which is otherwise a jq error rather than an empty result.
   jq --arg id "${dependencyId}" \
@@ -180,7 +257,9 @@ mod_info_has_dependency() {
 # is malformed input either way, and picking a match keeps this a pure read -
 # the callers decide what an unusable answer means for them.
 mod_info_read_dependency_version() {
+
   local dependencyId="${1}"
+
   jq -r --arg id "${dependencyId}" \
     '[.dependencies // [] | .[] | select(.id == $id)][0].version // ""' \
     "${MOD_INFO_FILE}"

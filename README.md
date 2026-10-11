@@ -217,7 +217,7 @@ all with a `.sh` and a `.bat` face:
 
 CI and release,
 under [`.github/`](.github/).
-The composite actions are what other KM mods consume;
+The reusable workflows are what other KM mods consume;
 see [Reusable CI / release actions](#reusable-ci--release-actions):
 
 - [`workflows/ci-gradle.yml`](.github/workflows/ci-gradle.yml) -
@@ -231,12 +231,14 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   the release entry point,
   delegating to [`mod-release.yml`](.github/workflows/mod-release.yml),
   the reusable pipeline this repo hosts for the whole KM series.
+- [`workflows/publish-download-badges.yml`](.github/workflows/publish-download-badges.yml) -
+  the reusable pipeline behind a mod's download badges,
+  counting its release zips and not the version files update checkers poll.
+- [`workflows/download-badges.yml`](.github/workflows/download-badges.yml) -
+  KMLib's own badges,
+  refreshed daily and on demand through that pipeline.
 - [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
-  derives mod ID,
-  version,
-  runner label,
-  dist dir,
-  zip name and jar source from a caller's metadata.
+  derives the values every workflow here reads from a caller's metadata.
 - [`actions/read-locales/`](.github/actions/read-locales/) -
   reads the locales a caller releases in from its `localisation/manifest.json`.
 - [`actions/check-version/`](.github/actions/check-version/) -
@@ -1079,8 +1081,10 @@ and KMLib uses them for nothing but reading and calling the game's own live UI o
 
 ## Reusable CI / release actions
 
-KMLib hosts six composite actions and the release workflow other KM mods consume,
-via `uses: <owner>/KMLib/.github/actions/<name>@<tag>`.
+KMLib hosts the reusable workflows other KM mods call -
+`mod-release.yml` for releases and `publish-download-badges.yml` for download badges -
+and the composite actions those workflows run.
+A mod calls a workflow and never an action directly.
 Each action delegates to a shell script under its own `scripts/` directory,
 so the logic stays unit-testable with bats-core.
 
@@ -1115,6 +1119,9 @@ its `outputs:` block is the statement of that convention:
   and the `<mod-folder-name>-<version>.zip` release name,
   all named after that jar rather than after the mod ID,
   so a zip install and a hand-deployed one share one folder layout.
+- `zip-name-regex`,
+  which that zip's name matches in every release whatever its version and locale,
+  so a release listing can be narrowed to the mod's zips.
 - `version-file-name` goes the other way,
   `<mod-id>.version`,
   because the hand-written `version_files.csv` points at it by that name.
@@ -1288,7 +1295,7 @@ so no version number is restated by hand outside that file.
   so a caller writing into the checkout and one writing beside it
   each state the path they would state anyway.
 
-Four of the nine read the caller's metadata and a fifth names release files,
+Four of these actions read the caller's metadata and a fifth names release files,
 so which file holds the metadata, what shape its fields take and what follows from them live once in
 [_lib/mod_info.sh](.github/actions/_lib/mod_info.sh),
 which they source:
@@ -1334,7 +1341,7 @@ a workflow always reaching its own repository.
 Cutting the release itself -
 extracting the `## [<version>]` section for the body and attaching the assets -
 is delegated to Common-Automation's stack-agnostic `create-github-release`;
-only the nine actions above live in KMLib.
+only the actions above live in KMLib.
 The body is the changelog section,
 then the locale list, the dependency line
 and each translated locale's notes, collapsed -
@@ -1355,6 +1362,22 @@ A mod keeping no locales releases one unsuffixed zip and one `<mod-id>.version`.
 GitHub excludes prereleases from `releases/latest`,
 so a mod marked prerelease would publish a URL resolving to an earlier release or to nothing -
 which is why nothing in this pipeline can mark one.
+
+[publish-download-badges.yml](.github/workflows/publish-download-badges.yml) counts what players download:
+the release zips,
+without the version files above that update checkers poll on every game start.
+It reads the caller's metadata through `read-mod-info`,
+and hands `zip-name-regex` and the folder name to Common-Automation's `publish-download-badges` action,
+which counts, renders and publishes the endpoint files to the caller's `badges` branch.
+Only the publishing job holds `contents: write`,
+and a caller has to grant the same,
+since a reusable workflow's permissions are capped by its caller.
+No token can be scoped to one branch,
+so the caller's repository rulesets fence every branch but `badges`.
+A caller runs it on a daily `schedule` and on `workflow_dispatch`,
+as KMLib's own [download-badges.yml](.github/workflows/download-badges.yml) does.
+The first run creates the `badges` branch,
+so dispatch it by hand once the caller is merged rather than waiting for the schedule.
 
 ## Build & Test
 

@@ -68,18 +68,12 @@ OUTPUT_DIR="${OUTPUT_DIR:?${SCRIPT_NAME}: OUTPUT_DIR is required}"
 LOCALES="${LOCALES:-[]}"
 DEFAULT_LOCALE="${DEFAULT_LOCALE:-}"
 
-if [[ ! -d "${MOD_ROOT}" ]]; then
-  echo "${SCRIPT_NAME}: mod root ${MOD_ROOT} not found in ${PWD}" >&2
-  exit 1
-fi
-
 # Made absolute before the move below, so it keeps naming the directory the
 # caller stated it from.
 mkdir -p "${OUTPUT_DIR}"
 OUTPUT_DIR="$(cd "${OUTPUT_DIR}" && pwd)"
 
-cd "${MOD_ROOT}"
-
+mod_info_enter_mod_root "${MOD_ROOT}"
 mod_info_locate_file
 
 MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")

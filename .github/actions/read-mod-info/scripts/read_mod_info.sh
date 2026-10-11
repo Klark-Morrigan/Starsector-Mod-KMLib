@@ -5,19 +5,8 @@
 # pass nothing: whatever varies between mods is either stated in that file or
 # follows from it by a convention this script defines.
 #
-# Emits the following keys to $GITHUB_OUTPUT (one "key=value" per line):
-#   mod-id             - .id verbatim
-#   version            - .version verbatim
-#   runner-label       - <mod-id>-runner
-#   mod-folder-name    - jars[0] basename without .jar
-#   dist-dir           - dist/<mod-folder-name>/
-#   zip-name           - <mod-folder-name>-<version>.zip
-#   version-file-name  - <mod-id>.version
-#   jar-source         - jars[0]
-#   sibling-checkouts  - JSON array of repos to clone beside the checkout
-#   kmlib-dependency-version - the kmlib dependency's pinned version, or
-#                        empty when the mod declares no such dependency
-#   kmlib-repo         - the repository publishing KMLib
+# Writes one "key=value" line per output to $GITHUB_OUTPUT. The outputs block
+# of ../action.yml states what each key holds.
 #
 # A thin script (rather than inline action steps) so bats can exercise it
 # in isolation - composite actions are not unit-testable directly.
@@ -61,12 +50,13 @@ RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 # same file.
 VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
 
-# Both names follow from jars[0], and the rules for deriving them live in the
+# These follow from jars[0], and the rules for deriving them live in the
 # shared lib: the version file the release generates carries the zip name in
 # its download URL, so that name cannot be spelled once here and once there.
 MOD_FOLDER_NAME=$(mod_info_derive_mod_folder_name "${JAR_SOURCE}")
 DIST_DIR="${DIST_ROOT}/${MOD_FOLDER_NAME}/"
 ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}")
+ZIP_NAME_REGEX=$(mod_info_derive_zip_name_regex "${JAR_SOURCE}")
 
 # Which neighbours a build needs follows from the mod id alone, so no caller
 # has to restate the list: a mod applies KMLib's gradle/starsector-mod.gradle,
@@ -109,6 +99,7 @@ SIBLING_CHECKOUTS=$(jq -cn \
   echo "mod-folder-name=${MOD_FOLDER_NAME}"
   echo "dist-dir=${DIST_DIR}"
   echo "zip-name=${ZIP_NAME}"
+  echo "zip-name-regex=${ZIP_NAME_REGEX}"
   echo "version-file-name=${VERSION_FILE_NAME}"
   echo "jar-source=${JAR_SOURCE}"
   echo "sibling-checkouts=${SIBLING_CHECKOUTS}"

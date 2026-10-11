@@ -1,0 +1,30 @@
+# KMLib's own download-badge entry point. Runs daily and on demand, and
+# delegates to the reusable publish-download-badges workflow this same repo
+# hosts, which reads everything it needs from mod_info.base.json - so this
+# caller passes no inputs.
+#
+# The ref is local (./) rather than @master or a tag, as in release.yml: a
+# workflow calling its own repository runs it as it stands on the commit
+# being run, so there is no pin to keep in step.
+#
+# No release or pull-request trigger. The figures only move when players
+# download, and a release made with GITHUB_TOKEN raises no event that could
+# start this run anyway.
+name: Download badges
+
+on:
+  # Daily, off the top of the hour, when GitHub's scheduler is busiest and
+  # most likely to delay or drop a run. Times are UTC.
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+# A reusable workflow's permissions are capped by its caller, so the push to
+# the badges branch needs the grant repeated here. No token can be scoped to
+# one branch; the repository's rulesets fence every other one.
+permissions:
+  contents: write
+
+jobs:
+  download-badges:
+    uses: ./.github/workflows/publish-download-badges.yml

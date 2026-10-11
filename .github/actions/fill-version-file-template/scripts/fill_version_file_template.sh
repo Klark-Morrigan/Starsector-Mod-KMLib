@@ -91,12 +91,7 @@ LOCALE_TAG="${4:-}"
 # directory the caller stated it from.
 CALLER_DIR="${PWD}"
 
-if [[ ! -d "${MOD_ROOT}" ]]; then
-  echo "${SCRIPT_NAME}: mod root ${MOD_ROOT} not found in ${PWD}" >&2
-  exit 1
-fi
-cd "${MOD_ROOT}"
-
+mod_info_enter_mod_root "${MOD_ROOT}"
 mod_info_locate_file
 
 MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")

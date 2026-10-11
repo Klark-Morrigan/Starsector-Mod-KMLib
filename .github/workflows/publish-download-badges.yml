@@ -1,0 +1,80 @@
+# Reusable download-badge pipeline for a Starsector mod laid out the way
+# KMLib's release pipeline expects. Publishes shields endpoint files to an
+# orphan `badges` branch of the caller's repository, counting the mod's
+# release zips only.
+#
+# A consumer mod ships a small caller that runs on a schedule and on
+# workflow_dispatch and delegates here:
+#
+# jobs:
+#   download-badges:
+#     uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/workflows/publish-download-badges.yml@master
+#     permissions:
+#       contents: write
+#
+# Only what is Starsector-specific lives here: which assets count and what the
+# badge is called, both read from the caller's metadata by read-mod-info.
+# Counting, rendering and publishing belong to Common-Automation's
+# publish-download-badges action, which knows nothing of mods.
+name: publish-download-badges
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: >-
+          Optional runs-on override, as a JSON label array (e.g.
+          `["ubuntu-latest"]`). The job talks only to the GitHub API and needs
+          no Starsector install, so the hosted default suits every mod and no
+          CI_*_RUNNER variable is read.
+        required: false
+        type: string
+        default: '["ubuntu-latest"]'
+
+# Read-only by default; only the publishing job is raised to write. Listing a
+# permission sets every unlisted one to none. A reusable workflow's
+# permissions are capped by the caller, so each caller must also grant
+# contents: write.
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    # Pushes the badges branch. contents: write cannot be scoped to one
+    # branch, so the caller's repository rulesets fence every other branch.
+    permissions:
+      contents: write
+    # A scheduled run, a dispatch and a release-time refresh can overlap. The
+    # publish is leased, so the loser would fail red over nothing; queued, it
+    # runs after. Concurrency groups are per repository, so each mod has its own.
+    concurrency:
+      group: publish-download-badges
+      cancel-in-progress: false
+    # One API listing and one push. Bounds a hung call well short of the
+    # six-hour default.
+    timeout-minutes: 10
+    steps:
+      # The caller's checkout, for its mod_info.json alone. The token is not
+      # left in .git/config: nothing later pushes from this checkout, and the
+      # publishing action authenticates its own push.
+      - name: Check out consumer repo
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      # Registry form at @master, as mod-release.yml names it, for the same
+      # reason: the action lives in this workflow's home repo, not in the
+      # caller's checkout.
+      - name: Derive mod values from the mod's metadata
+        id: read
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-mod-info@master
+
+      # The write token reaches this action at @master, so whatever merges
+      # there runs with write access to the caller's repository. That is the
+      # trust mod-release.yml already extends to create-github-release.
+      - name: Publish download badges
+        uses: Klark-Morrigan/Common-Automation/.github/actions/publish-download-badges@master
+        with:
+          asset-name-regex: ${{ steps.read.outputs.zip-name-regex }}
+          label: ${{ steps.read.outputs.mod-folder-name }}
