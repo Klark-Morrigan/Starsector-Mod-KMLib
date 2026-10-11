@@ -269,7 +269,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | method handle | 方法句柄 | |
 | reflection | 反射 | as in the settings description |
 | regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
-| seam | 接缝 | |
+| seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
 | supplier (a function a caller hands in) | 供应器 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
