@@ -9,7 +9,7 @@
 #
 # The run holds a write token, so only the schedule and someone with write
 # access can start it: no push or pull-request trigger.
-name: Download badges
+name: Publish badges
 
 on:
   # Daily at 04:23 UTC. Off the top of the hour, where GitHub's scheduler is
@@ -25,5 +25,5 @@ permissions:
   contents: write
 
 jobs:
-  download-badges:
+  publish-badges:
     uses: ./.github/workflows/publish-download-badges.yml
