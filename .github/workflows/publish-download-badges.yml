@@ -4,9 +4,9 @@
 # release zips only.
 #
 # A consumer mod calls it from a workflow of its own, on a schedule and on
-# workflow_dispatch, granting contents: write. KMLib's download-badges.yml is
-# that caller for KMLib itself; a consumer names this file at @master instead
-# of the local ref.
+# workflow_dispatch, granting contents: write. KMLib's
+# download-count-badges.yml is that caller for KMLib itself; a consumer names
+# this file at @master instead of the local ref.
 #
 # Only what is Starsector-specific lives here: which assets count and what the
 # badge is called, both read from the caller's metadata by read-mod-info.
