@@ -7,14 +7,13 @@
 # workflow calling its own repository runs it as it stands on the commit
 # being run, so there is no pin to keep in step.
 #
-# No release or pull-request trigger. The figures only move when players
-# download, and a release made with GITHUB_TOKEN raises no event that could
-# start this run anyway.
+# The run holds a write token, so only the schedule and someone with write
+# access can start it: no push or pull-request trigger.
 name: Download badges
 
 on:
-  # Daily, off the top of the hour, when GitHub's scheduler is busiest and
-  # most likely to delay or drop a run. Times are UTC.
+  # Daily at 04:23 UTC. Off the top of the hour, where GitHub's scheduler is
+  # busiest and most likely to delay or drop a run.
   schedule:
     - cron: '23 4 * * *'
   workflow_dispatch:
