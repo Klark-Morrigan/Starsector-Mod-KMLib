@@ -47,6 +47,7 @@ so the two can never disagree.
   - [The forum](#the-forum)
   - [Editions and translation](#editions-and-translation)
   - [Mods](#mods)
+  - [Support replies](#support-replies)
 - [Adding a string](#adding-a-string)
 - [Translating the changelog](#translating-the-changelog)
 
@@ -404,6 +405,21 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word; 步骤 for the steps |
 | vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |
 | zip (a release archive) | 压缩包 | the plain word for an archive file |
+
+### Support replies
+
+The words of a reply to a player's crash or bug report in the thread.
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| code (source code) | 代码 | the usual computing word |
+| crash (the game closing on an error) | 崩溃 | the usual software word |
+| fallback value (what a read uses when its key is missing) | 回退值 | 回退, fall back, with 值, value |
+| log (a log file such as `starsector.log`) | 日志 | the usual word; 日志行 and 日志详细程度 build on it |
+| memory (RAM), out of memory, ask for memory | 内存, 内存不足, 申请内存 | 不足, insufficient; 申请, request, the usual word for an allocation |
+| mod list (the mods a player has enabled) | Mod 列表 | Mod kept Latin as in Mod 作者, with 列表, list |
+| pop-up (an error dialog) | 弹窗 | the players' word for a dialog that pops up |
+| setting (one entry on a settings screen) | 设置项 | 项, item, after 设置; 设置 alone is the settings as a whole |
 
 ## Adding a string
 
