@@ -234,7 +234,7 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
 - [`workflows/publish-download-badges.yml`](.github/workflows/publish-download-badges.yml) -
   the reusable pipeline behind a mod's download badges,
   counting its release zips and not the version files update checkers poll.
-- [`workflows/download-count-badges.yml`](.github/workflows/download-count-badges.yml) -
+- [`workflows/publish-badges.yml`](.github/workflows/publish-badges.yml) -
   KMLib's own badges,
   refreshed daily and on demand through that pipeline.
 - [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
@@ -1375,7 +1375,7 @@ since a reusable workflow's permissions are capped by its caller.
 No token can be scoped to one branch,
 so the caller's repository rulesets fence every branch but `badges`.
 A caller runs it on a daily `schedule` and on `workflow_dispatch`,
-as KMLib's own [download-count-badges.yml](.github/workflows/download-count-badges.yml) does.
+as KMLib's own [publish-badges.yml](.github/workflows/publish-badges.yml) does.
 The first run creates the `badges` branch,
 so dispatch it by hand once the caller is merged rather than waiting for the schedule.
 
