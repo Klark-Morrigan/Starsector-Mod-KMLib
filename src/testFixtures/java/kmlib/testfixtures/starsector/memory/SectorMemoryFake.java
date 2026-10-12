@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  */
 public final class SectorMemoryFake implements AutoCloseable {
 
-    private final StoredMemoryFake storedMemory = new StoredMemoryFake();
+    private final StoredMemoryFake storedMemoryFake = new StoredMemoryFake();
 
     // The stand-in for the game's static entry point, held so the sector below is what a production read
     // finds. Closing it puts the real one back.
@@ -45,7 +45,7 @@ public final class SectorMemoryFake implements AutoCloseable {
         var sectorMock = mock(SectorAPI.class);
 
         when(sectorMock.getMemoryWithoutUpdate())
-            .thenReturn(storedMemory.getMemory());
+            .thenReturn(storedMemoryFake.getMemory());
 
         globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
         globalMock
@@ -63,7 +63,7 @@ public final class SectorMemoryFake implements AutoCloseable {
      * @return how many times {@code key} has been removed, for the reason the write count exists
      */
     public int countRemovalsOf(String key) {
-        return storedMemory.countRemovalsOf(key);
+        return storedMemoryFake.countRemovalsOf(key);
     }
 
     /**
@@ -72,12 +72,12 @@ public final class SectorMemoryFake implements AutoCloseable {
      *         than only that the value ended up unchanged
      */
     public int countWritesTo(String key) {
-        return storedMemory.countWritesTo(key);
+        return storedMemoryFake.countWritesTo(key);
     }
 
     /** The memory the posed sector carries, for a caller that has to hand one over directly. */
     public MemoryAPI getMemory() {
-        return storedMemory.getMemory();
+        return storedMemoryFake.getMemory();
     }
 
     /**
@@ -85,7 +85,7 @@ public final class SectorMemoryFake implements AutoCloseable {
      * @return whether memory holds anything under {@code key}
      */
     public boolean hasStoredValue(String key) {
-        return storedMemory.hasStoredValue(key);
+        return storedMemoryFake.hasStoredValue(key);
     }
 
     /**
@@ -93,7 +93,7 @@ public final class SectorMemoryFake implements AutoCloseable {
      * @return what memory holds under {@code key}, or null where it holds nothing
      */
     public Object readStoredValue(String key) {
-        return storedMemory.readStoredValue(key);
+        return storedMemoryFake.readStoredValue(key);
     }
 
     /**
@@ -115,6 +115,6 @@ public final class SectorMemoryFake implements AutoCloseable {
      * @param value what the save holds under it
      */
     public void storeValue(String key, Object value) {
-        storedMemory.storeValue(key, value);
+        storedMemoryFake.storeValue(key, value);
     }
 }

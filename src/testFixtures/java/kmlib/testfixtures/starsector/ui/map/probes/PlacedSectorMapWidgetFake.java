@@ -25,7 +25,7 @@ import java.util.List;
  */
 public final class PlacedSectorMapWidgetFake extends BaseSectorMapFake implements UIComponentAPI {
 
-    private final CoreUiWidgetFake widget;
+    private final CoreUiWidgetFake widgetFake;
 
     /**
      * @param position the box the layout placed it in, or null for a map that was never positioned
@@ -33,40 +33,40 @@ public final class PlacedSectorMapWidgetFake extends BaseSectorMapFake implement
      * @param children what hangs under it, which a walk descends into
      */
     public PlacedSectorMapWidgetFake(PositionAPI position, float opacity, Object... children) {
-        widget = new CoreUiWidgetFake(position, opacity, children);
+        widgetFake = new CoreUiWidgetFake(position, opacity, children);
     }
 
     public List<Object> getChildrenCopy() {
-        return widget.getChildrenCopy();
+        return widgetFake.getChildrenCopy();
     }
 
     @Override
     public float getOpacity() {
-        return widget.getOpacity();
+        return widgetFake.getOpacity();
     }
 
     @Override
     public PositionAPI getPosition() {
-        return widget.getPosition();
+        return widgetFake.getPosition();
     }
 
     @Override
     public void setOpacity(float opacity) {
-        widget.setOpacity(opacity);
+        widgetFake.setOpacity(opacity);
     }
 
     @Override
     public void advance(float amount) {
-        widget.advance(amount);
+        widgetFake.advance(amount);
     }
 
     @Override
     public void processInput(List<InputEventAPI> events) {
-        widget.processInput(events);
+        widgetFake.processInput(events);
     }
 
     @Override
     public void render(float alphaMult) {
-        widget.render(alphaMult);
+        widgetFake.render(alphaMult);
     }
 }

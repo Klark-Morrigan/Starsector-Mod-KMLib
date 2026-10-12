@@ -66,7 +66,7 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
 
     private final List<Object> buttons = new ArrayList<>();
 
-    private final PositionAPI position;
+    private final PositionAPI positionFake;
 
     private int clickCount;
 
@@ -75,7 +75,7 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
     private float nextButtonX;
 
     private MapFilterRowFake(Rectangle rowBox, float buttonWidth, String... buttonLabels) {
-        position = new PositionFake(rowBox);
+        positionFake = new PositionFake(rowBox);
         nextButtonX = rowBox.x();
         for (var buttonLabel : buttonLabels) {
             o00000(o00000(buttonLabel, null), buttonWidth, rowBox.height());
@@ -138,7 +138,7 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
 
     @Override
     public PositionAPI getPosition() {
-        return position;
+        return positionFake;
     }
 
     @Override
@@ -187,7 +187,7 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
     // The row's appender, which the game names the same as its factory below. It places the button
     // as well as holding it, the game's row doing both in the same member.
     private void o00000(MapFilterButtonFake button, float width, float height) {
-        button.layOutAt(new Rectangle(nextButtonX, position.getY(), width, height));
+        button.layOutAt(new Rectangle(nextButtonX, positionFake.getY(), width, height));
         nextButtonX += width + BUTTON_GAP;
         buttons.add(button);
     }

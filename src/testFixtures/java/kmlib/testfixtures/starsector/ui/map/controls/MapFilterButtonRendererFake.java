@@ -18,14 +18,14 @@ import kmlib.testfixtures.starsector.ui.label.ButtonLabelFake;
  */
 public final class MapFilterButtonRendererFake {
 
-    private final MapFilterButtonTitleFake title;
+    private final MapFilterButtonTitleFake titleFake;
 
     MapFilterButtonRendererFake(ButtonLabelFake label) {
-        this.title = new MapFilterButtonTitleFake(label);
+        this.titleFake = new MapFilterButtonTitleFake(label);
     }
 
     /** The hop the game gives a regenerated name, so nothing can reach past it by knowing one. */
     public MapFilterButtonTitleFake o00000() {
-        return title;
+        return titleFake;
     }
 }
