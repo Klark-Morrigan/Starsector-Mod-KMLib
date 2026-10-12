@@ -236,7 +236,7 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   counting its release zips and not the version files update checkers poll.
 - [`workflows/publish-badges.yml`](.github/workflows/publish-badges.yml) -
   KMLib's own badges,
-  refreshed daily and on demand through that pipeline.
+  refreshed every 30 minutes and on demand through that pipeline.
 - [`actions/read-mod-info/`](.github/actions/read-mod-info/) -
   derives the values every workflow here reads from a caller's metadata.
 - [`actions/read-locales/`](.github/actions/read-locales/) -
@@ -1374,7 +1374,7 @@ and a caller has to grant the same,
 since a reusable workflow's permissions are capped by its caller.
 No token can be scoped to one branch,
 so the caller's repository rulesets fence every branch but `badges`.
-A caller runs it on a daily `schedule` and on `workflow_dispatch`,
+A caller runs it on a `schedule` and on `workflow_dispatch`,
 as KMLib's own [publish-badges.yml](.github/workflows/publish-badges.yml) does.
 The first run creates the `badges` branch,
 so dispatch it by hand once the caller is merged rather than waiting for the schedule.

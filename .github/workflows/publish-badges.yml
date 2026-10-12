@@ -1,7 +1,7 @@
-# KMLib's own download-badge entry point. Runs daily and on demand, and
-# delegates to the reusable publish-download-badges workflow this same repo
-# hosts, which reads everything it needs from mod_info.base.json - so this
-# caller passes no inputs.
+# KMLib's own download-badge entry point. Runs every 30 minutes and on demand,
+# and delegates to the reusable publish-download-badges workflow this same
+# repo hosts, which reads everything it needs from mod_info.base.json - so
+# this caller passes no inputs.
 #
 # The ref is local (./) rather than @master or a tag, as in release.yml: a
 # workflow calling its own repository runs it as it stands on the commit
@@ -12,10 +12,11 @@
 name: Publish badges
 
 on:
-  # Daily at 04:23 UTC. Off the top of the hour, where GitHub's scheduler is
-  # busiest and most likely to delay or drop a run.
+  # Every 30 minutes, often enough to show a new release's early adoption.
+  # Off the top of the hour, where GitHub's scheduler is busiest and most
+  # likely to delay or drop a run.
   schedule:
-    - cron: '23 4 * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
 
 # A reusable workflow's permissions are capped by its caller, so the push to
