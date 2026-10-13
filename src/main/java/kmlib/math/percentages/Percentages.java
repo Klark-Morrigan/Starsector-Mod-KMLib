@@ -56,4 +56,15 @@ public final class Percentages {
 
         return Math.round(fraction * PERCENT_PER_FRACTION);
     }
+
+    /**
+     * Converts a percent to a {@code [0, 1]} fraction: {@code 12.5} returns {@code 0.125}.
+     *
+     * @param percent the percent to convert, e.g. {@code 20} for 20%
+     * @return the fraction
+     */
+    public static double convertPercentToFraction(double percent) {
+
+        return percent / PERCENT_PER_FRACTION;
+    }
 }

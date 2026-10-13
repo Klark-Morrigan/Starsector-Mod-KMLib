@@ -102,4 +102,22 @@ class PercentagesTests {
                 .isEqualTo(-5);
         }
     }
+
+    @Nested
+    class ConvertPercentToFraction {
+
+        @Test
+        void returnsTheFractionOfAPercent() {
+
+            assertThat(Percentages.convertPercentToFraction(12.5))
+                .isEqualTo(0.125);
+        }
+
+        @Test
+        void returnsOneForAHundred() {
+
+            assertThat(Percentages.convertPercentToFraction(100.0))
+                .isEqualTo(1.0);
+        }
+    }
 }

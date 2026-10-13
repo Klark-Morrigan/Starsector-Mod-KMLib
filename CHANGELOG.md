@@ -42,6 +42,7 @@ No player-facing changes.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
+  - `convertPercentToFraction(double)`: a percent, such as a settings slider holds, as a fraction.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
