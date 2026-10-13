@@ -214,30 +214,30 @@ run_in_lib() {
     [ "$output" = "KMU-0.2.0-zh-hans.zip" ]
 }
 
-# Derives the zip-name regex for a jars[0] value and runs it over one asset
-# name through jq's test, the reader the regex is written for. Prints true or
-# false.
-match_zip_name_regex() {
+# Derives the zip-name regex for a jars[0] value and runs the given jq filter
+# over one asset name, with the regex bound to $regex. jq is the reader the
+# regex is written for.
+apply_zip_name_regex() {
 
-    local jarSource="$1" assetName="$2"
+    local jarSource="$1" assetName="$2" filter="$3"
     local regex
 
     regex="$(bash -c "source '$LIB'; mod_info_derive_zip_name_regex '$jarSource'")"
 
-    jq -nr --arg regex "$regex" --arg name "$assetName" '$name | test($regex)'
+    jq -nr --arg regex "$regex" --arg name "$assetName" "\$name | ${filter}"
 }
 
-# Derives the zip-name regex for a jars[0] value and captures one asset name
-# through jq's capture, the reader the locale group is written for. Prints the
-# captured locale, or null when the group took no part in the match.
+# Prints true or false.
+match_zip_name_regex() {
+
+    apply_zip_name_regex "$1" "$2" 'test($regex)'
+}
+
+# Prints the captured locale, or null when the group took no part in the
+# match.
 capture_zip_name_locale() {
 
-    local jarSource="$1" assetName="$2"
-    local regex
-
-    regex="$(bash -c "source '$LIB'; mod_info_derive_zip_name_regex '$jarSource'")"
-
-    jq -nr --arg regex "$regex" --arg name "$assetName" '$name | capture($regex) | .locale'
+    apply_zip_name_regex "$1" "$2" 'capture($regex) | .locale'
 }
 
 @test "mod_info_derive_zip_name_regex anchors the folder name, any version and an optional locale" {
