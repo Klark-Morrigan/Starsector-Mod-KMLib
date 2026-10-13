@@ -54,7 +54,7 @@ No player-facing changes.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
-- **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does.
+- **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does. Its named group `locale` holds a localised zip's locale tag.
 - **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll.
 
 #### Public contracts changed (**breaking**)

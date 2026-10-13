@@ -66,6 +66,13 @@ jobs:
         id: read
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-mod-info@master
 
+      # An unsuffixed zip names no locale, so it counts under the manifest's
+      # default. A mod without a manifest has no default, so its unsuffixed
+      # zips fail the run rather than count under a guessed locale.
+      - name: Read the locales the mod releases in
+        id: locales
+        uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-locales@master
+
       # The write token reaches this action at @master, so whatever merges
       # there runs with write access to the caller's repository. That is the
       # trust mod-release.yml already extends to create-github-release.
@@ -73,4 +80,5 @@ jobs:
         uses: Klark-Morrigan/Common-Automation/.github/actions/publish-download-badges@master
         with:
           asset-name-regex: ${{ steps.read.outputs.zip-name-regex }}
+          default-locale: ${{ steps.locales.outputs.default-locale }}
           label: ${{ steps.read.outputs.mod-folder-name }}
