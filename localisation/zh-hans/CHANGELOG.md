@@ -29,6 +29,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 - **空白的势力 ID 视为没有势力**：`FactionRelations.createDispositionReader(SectorAPI)`、`NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` 和 `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)` 不再把它交给星域查询。
 - **`FactionAlliances.buildFrom(List)` 会跳过为 null 的记录**，`AllianceRecord(String, String, List)` 也把为 null 的成员列表读作空列表，与 `FactionAlliances` 读取为 null 的映射的方式一致。
+- **`StarsectorFormat.formatPercent(float)` 四舍五入到最接近的整数百分比**，不再截断。浮点数把 `0.53` 存为 `0.52999997`，此前会显示为 52%。
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
 
 #### 新增

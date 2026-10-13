@@ -29,6 +29,7 @@ No player-facing changes.
 
 - **A blank faction ID reads as no faction** in `FactionRelations.createDispositionReader(SectorAPI)`, `NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` and `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)`, rather than being handed to the sector.
 - **`FactionAlliances.buildFrom(List)` skips a null record**, and `AllianceRecord(String, String, List)` reads a null member list as empty, as `FactionAlliances` already reads a null map.
+- **`StarsectorFormat.formatPercent(float)` rounds to the nearest whole percent** rather than truncating. A float stores `0.53` as `0.52999997`, which showed as 52%.
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` follows the game's own rule**: whether the sector's memory holds `$shownFactionConfigDialog`, which `Misc.isPlayerFactionSetUp()` reads. Its list of placeholder names never held vanilla's unnamed `"Your"`, so an unnamed player faction read as established.
 
 #### Added

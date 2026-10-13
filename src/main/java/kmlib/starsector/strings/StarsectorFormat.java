@@ -16,14 +16,14 @@ public final class StarsectorFormat {
     /**
      * Formats a {@code [0, 1]} fraction as a whole percent with a trailing percent sign: {@code 0.01f} returns
      * {@code "1%"} and {@code 0.20f} returns {@code "20%"}. Rounds as
-     * {@link Percentages#computeWholePercent(float)} does.
+     * {@link Percentages#convertFractionToWholePercent(float)} does.
      *
      * @param fraction the fraction to format, e.g. {@code 0.20f} for 20%
      * @return the rendered whole-percent string, never {@code null}
      */
     public static String formatPercent(float fraction) {
 
-        return Percentages.computeWholePercent(fraction) + "%";
+        return Percentages.convertFractionToWholePercent(fraction) + "%";
     }
 
     /**
