@@ -40,6 +40,7 @@ No player-facing changes.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 - **`FactionSetFriendliness`** in `kmlib.starsector.factions.relation`: whether one set of factions is friendly with another, every pair across them above neutral, with how many of either set fall short. `createForSector(SectorAPI)` binds it to that sector's relations.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
+  - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.

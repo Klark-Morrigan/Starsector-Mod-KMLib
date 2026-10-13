@@ -16,6 +16,17 @@ public final class Percentages {
     }
 
     /**
+     * Converts a {@code [0, 1]} fraction to a percent, keeping every digit: {@code 0.125} returns {@code 12.5}.
+     *
+     * @param fraction the fraction to convert, e.g. {@code 0.20} for 20%
+     * @return the percent
+     */
+    public static double convertFractionToPercent(double fraction) {
+
+        return fraction * PERCENT_PER_FRACTION;
+    }
+
+    /**
      * Converts a {@code [0, 1]} fraction to the nearest whole percent: {@code 0.20f} returns {@code 20}.
      *
      * <p>Rounds rather than truncates. A float rarely holds the decimal it was written as - {@code 0.53f} is

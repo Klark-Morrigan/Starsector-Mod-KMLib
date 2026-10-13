@@ -12,6 +12,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PercentagesTests {
 
     @Nested
+    class ConvertFractionToPercent {
+
+        @Test
+        void keepsTheDigitsPastAWholePercent() {
+
+            assertThat(Percentages.convertFractionToPercent(0.125))
+                .isEqualTo(12.5);
+        }
+
+        @Test
+        void returnsZeroForZero() {
+
+            assertThat(Percentages.convertFractionToPercent(0.0))
+                .isEqualTo(0.0);
+        }
+    }
+
+    @Nested
     class ConvertFractionToWholePercentFromFloat {
 
         @Test
