@@ -26,8 +26,7 @@ class StarsectorFormatTests {
 
         @Test
         void rendersSmallFractionAsOnePercent() {
-            // 0.01f is the KMU/KMO baseline magnitude for per-instance
-            // bonuses; rendering it as 1% is the everyday case.
+            // 0.01f is the everyday magnitude of a per-instance bonus.
             assertThat(StarsectorFormat.formatPercent(0.01f))
                 .isEqualTo("1%");
         }
@@ -48,6 +47,39 @@ class StarsectorFormatTests {
 
             assertThat(StarsectorFormat.formatPercent(0f))
                 .isEqualTo("0%");
+        }
+    }
+
+    @Nested
+    class FormatTrimmedNumber {
+
+        @Test
+        void dropsTheDecimalOfAWholeFigure() {
+
+            assertThat(StarsectorFormat.formatTrimmedNumber(2f))
+                .isEqualTo("2");
+        }
+
+        @Test
+        void keepsTheDecimalOfAFraction() {
+
+            assertThat(StarsectorFormat.formatTrimmedNumber(1.5f))
+                .isEqualTo("1.5");
+        }
+
+        // Float.toString switches to scientific notation from ten million up.
+        @Test
+        void rendersALargeFigureInFull() {
+
+            assertThat(StarsectorFormat.formatTrimmedNumber(20_000_000f))
+                .isEqualTo("20000000");
+        }
+
+        @Test
+        void rendersZeroAsZero() {
+
+            assertThat(StarsectorFormat.formatTrimmedNumber(0f))
+                .isEqualTo("0");
         }
     }
 }

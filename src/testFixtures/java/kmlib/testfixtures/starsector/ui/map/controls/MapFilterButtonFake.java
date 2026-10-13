@@ -55,13 +55,13 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     private boolean isShortcutSpelledOut;
 
-    private final ButtonLabelFake label;
+    private final ButtonLabelFake labelFake;
 
-    private final MapFilterButtonRendererFake renderer;
+    private final MapFilterButtonRendererFake rendererFake;
 
     private MapFilterActionListenerFake listener;
 
-    private PositionAPI position;
+    private PositionAPI positionFake;
 
     private int shortcutKeycode = NO_SHORTCUT_KEYCODE;
 
@@ -73,8 +73,8 @@ public final class MapFilterButtonFake implements ButtonAPI {
      */
     public MapFilterButtonFake(MapFilterActionListenerFake listener, String label) {
         this.listener = listener;
-        this.label = new ButtonLabelFake(label);
-        this.renderer = new MapFilterButtonRendererFake(this.label);
+        this.labelFake = new ButtonLabelFake(label);
+        this.rendererFake = new MapFilterButtonRendererFake(this.labelFake);
     }
 
     /**
@@ -82,7 +82,7 @@ public final class MapFilterButtonFake implements ButtonAPI {
      *         reading or rewriting them has to go
      */
     public ButtonLabelFake readLabel() {
-        return label;
+        return labelFake;
     }
 
     /**
@@ -101,7 +101,7 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     /** What draws it, which is the only route from the button to the words it wears. */
     public MapFilterButtonRendererFake getRenderer() {
-        return renderer;
+        return rendererFake;
     }
 
     // Answers nothing, exactly as the game's own filter-row button does: the published text
@@ -128,7 +128,7 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     @Override
     public PositionAPI getPosition() {
-        return position;
+        return positionFake;
     }
 
     /** Reports a click the way the game's own button does, so a diverted listener can be observed. */
@@ -145,7 +145,7 @@ public final class MapFilterButtonFake implements ButtonAPI {
      * @param box where on the row it stands, in the UI units a layout is measured in
      */
     public void layOutAt(Rectangle box) {
-        position = new PositionFake(box);
+        positionFake = new PositionFake(box);
     }
 
     @Override

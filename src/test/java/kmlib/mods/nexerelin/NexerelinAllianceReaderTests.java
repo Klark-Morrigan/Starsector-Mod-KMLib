@@ -87,16 +87,16 @@ final class NexerelinAllianceReaderTests {
     // member ranking stated rather than summed off an economy no test JVM runs.
     private static Alliance buildAllianceNamed(String name) {
 
-        var alliance = spy(new Alliance(
+        var allianceMock = spy(new Alliance(
             name,
             Alliance.Alignment.CORPORATE,
             DOMINANT_MEMBER,
             LESSER_MEMBER));
 
         doReturn(List.of(DOMINANT_MEMBER, LESSER_MEMBER))
-            .when(alliance)
+            .when(allianceMock)
             .getMembersSorted();
 
-        return alliance;
+        return allianceMock;
     }
 }
