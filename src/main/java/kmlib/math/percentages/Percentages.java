@@ -27,6 +27,19 @@ public final class Percentages {
     }
 
     /**
+     * Converts a {@code [0, 1]} fraction to the nearest whole percent: {@code 0.20} returns {@code 20}.
+     *
+     * <p>Rounds rather than truncates, for the reason given at {@link #convertFractionToWholePercent(float)}.
+     *
+     * @param fraction the fraction to convert, e.g. {@code 0.20} for 20%
+     * @return the nearest whole percent
+     */
+    public static int convertFractionToWholePercent(double fraction) {
+
+        return (int) Math.round(convertFractionToPercent(fraction));
+    }
+
+    /**
      * Converts a {@code [0, 1]} fraction to the nearest whole percent: {@code 0.20f} returns {@code 20}.
      *
      * <p>Rounds rather than truncates. A float rarely holds the decimal it was written as - {@code 0.53f} is

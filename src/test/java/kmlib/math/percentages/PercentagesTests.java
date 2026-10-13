@@ -30,6 +30,31 @@ class PercentagesTests {
     }
 
     @Nested
+    class ConvertFractionToWholePercentFromDouble {
+
+        @Test
+        void returnsWholePercentOfOneSignificantFigureFraction() {
+
+            assertThat(Percentages.convertFractionToWholePercent(0.20))
+                .isEqualTo(20);
+        }
+
+        @Test
+        void roundsUpFromAboveHalf() {
+
+            assertThat(Percentages.convertFractionToWholePercent(0.019))
+                .isEqualTo(2);
+        }
+
+        @Test
+        void roundsDownFromBelowHalf() {
+
+            assertThat(Percentages.convertFractionToWholePercent(0.014))
+                .isEqualTo(1);
+        }
+    }
+
+    @Nested
     class ConvertFractionToWholePercentFromFloat {
 
         @Test
