@@ -44,6 +44,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
   - `rollDrops(Random, float, List, List)`：执行抽取，除总倍率外的所有倍率均保持中性。
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
+- **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`read-mod-info` 输出 `zip-name-regex`**：一个正则表达式，每个发布版本的压缩包名称都与之匹配，无论版本号和语言区域如何，而任何版本文件都不与之匹配。
 - **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。

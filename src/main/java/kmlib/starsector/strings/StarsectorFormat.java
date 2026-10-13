@@ -1,5 +1,7 @@
 package kmlib.starsector.strings;
 
+import java.math.BigDecimal;
+
 /**
  * Number-to-string helpers for Starsector mod copy. Lives next to
  * {@link StarsectorStrings} because the typical caller is a tooltip /
@@ -7,17 +9,18 @@ package kmlib.starsector.strings;
  * {@code StarsectorStrings.format(...)} and just needs the numeric
  * argument shaped to match the {@code %s} slot.
  *
- * <p>The helpers exist for one reason: a mod's {@code KmoSettings}-style
- * configuration object usually stores percentages as {@code [0, 1]}
- * fractions ({@code 0.20f} for 20%) so the math sites read naturally,
- * but the player-facing copy wants a {@code "20%"} string. Doing that
- * conversion in one place keeps the truncate-vs-round choice consistent
- * across every tooltip in the KM* mod family.
+ * <p>A mod's settings usually store a percentage as a {@code [0, 1]}
+ * fraction ({@code 0.20f} for 20%) so the arithmetic reads naturally,
+ * while the player-facing copy wants {@code "20%"}. Doing such
+ * conversions in one place keeps every KM* mod's tooltips rendering a
+ * figure the same way.
  *
  * <p>The class is final and has no public constructor: it is a pure
  * static utility, mirroring the {@link StarsectorStrings} shape.
  */
 public final class StarsectorFormat {
+
+    private static final float PERCENT_PER_FRACTION = 100f;
 
     private StarsectorFormat() {
     }
@@ -41,5 +44,18 @@ public final class StarsectorFormat {
         return ((int) (fraction * PERCENT_PER_FRACTION)) + "%";
     }
 
-    private static final float PERCENT_PER_FRACTION = 100f;
+    /**
+     * Formats a figure with no trailing zeros: {@code 2f} returns {@code "2"} rather than {@code "2.0"}, while
+     * {@code 1.5f} keeps its decimal. A setting that ships whole reads cleanly, and one retuned to a fraction still
+     * reads honestly. Never in scientific notation, however large the figure.
+     *
+     * @param value the figure to format
+     * @return the rendered figure, never {@code null}
+     */
+    public static String formatTrimmedNumber(float value) {
+
+        return new BigDecimal(Float.toString(value))
+            .stripTrailingZeros()
+            .toPlainString();
+    }
 }
