@@ -29,6 +29,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 - **空白的势力 ID 视为没有势力**：`FactionRelations.createDispositionReader(SectorAPI)`、`NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` 和 `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)` 不再把它交给星域查询。
 - **`FactionAlliances.buildFrom(List)` 会跳过为 null 的记录**，`AllianceRecord(String, String, List)` 也把为 null 的成员列表读作空列表，与 `FactionAlliances` 读取为 null 的映射的方式一致。
+- **`HighlightedMessage` 按片段在文本中出现的顺序将每行的片段交给游戏**，与 `HighlightedParagraph` 在其他各处的做法一致。此前，调换了槽位顺序的译文会在战役消息中丢失这些高亮。
 - **`StarsectorFormat.formatPercent(float)` 四舍五入到最接近的整数百分比**，不再截断。浮点数把 `0.53` 存为 `0.52999997`，此前会显示为 52%。
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
 
@@ -40,6 +41,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
+- **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
+- **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
@@ -68,6 +71,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | 由调用方决定读取哪份设置。 |
 | `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | 它向该星域询问玩家势力是否已设立。 |
 | `StarsectorFactionColours`、`StarsectorFactionRelations`、`StarsectorPlayerRelations`、`StarsectorRelationColours` 和 `StarsectorRelationFormatter` | `FactionColours`、`FactionRelations`、`PlayerRelations`、`RelationColours` 和 `RelationFormatter` | `kmlib.starsector.factions` 中统一为一种命名形式，其包名已经点明了游戏。 |
+| `HighlightedParagraph.getHighlightTexts()` 和 `getHighlightColours()` | `getHighlights()`，从每个高亮读取 `Highlight.getText()` 和 `getColour()` | 只有测试读取它们，而渲染方法会把按文本顺序排列的数组直接交给游戏。 |
 
 </details>
 

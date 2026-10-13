@@ -227,6 +227,7 @@ so the values line up as they do in English.
 | Log verbosity | 日志详细程度 | verbosity alone is 详细程度 |
 | OFF / ERROR / WARN / INFO / DEBUG / ALL (log levels) | 关闭 / 错误 / 警告 / 信息 / 调试 / 全部 | the usual logging words; OFF follows a switch's 关闭 |
 | probes that read the game's UI by reflection | 通过反射读取游戏界面的探测器 | reflection is 反射, a probe 探测器 |
+| settings slider | 设置滑块 | 滑块 as KMU's settings descriptions write it |
 
 ### The changelog
 
@@ -327,8 +328,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
 | fraction (a share in `[0, 1]`, such as `0.20` for 20%) | 比例 | not 分数, which reads as a ratio of two integers such as 1/5 |
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
+| highlight colour | 高亮颜色 | |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
+| paragraph | 段落 | |
 | renderer, render pass | 渲染器, 渲染通道 | |
 | round, truncate (a figure) | 四舍五入, 截断 | 四舍五入, four down and five up, is rounding half up, the rule `Math.round` follows; 截断, cut off, drops the fraction outright |
 | row (one line of a list or hover box) | 行 | as 日志行 writes it |
@@ -342,6 +345,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
+| campaign message (a `MessageIntel` notification) | 战役消息 | 战役, campaign, as 战役加速 writes it, with 消息, message |
 | campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game jar, which the cached core localisation does not hold, so it is unchecked |
 | lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
 | location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |
