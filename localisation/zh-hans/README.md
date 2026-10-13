@@ -345,6 +345,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
+| campaign message (a `MessageIntel` notification) | 战役消息 | 战役, campaign, as 战役加速 writes it, with 消息, message |
 | campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game jar, which the cached core localisation does not hold, so it is unchecked |
 | lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
 | location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |

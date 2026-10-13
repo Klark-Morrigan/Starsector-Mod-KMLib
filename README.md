@@ -1997,14 +1997,15 @@ binding them once removes the alignment risk.
 [HighlightedParagraph](src/main/java/kmlib/starsector/ui/highlight/HighlightedParagraph.java)
 is one line of text plus a base colour and its highlights,
 with render methods for `TextPanelAPI`,
-`TooltipMakerAPI` and `LabelAPI`.
+`TooltipMakerAPI`,
+`MessageIntel` and `LabelAPI`.
 Its `createUniformlyHighlightedParagraph` builds one whose runs all share a colour,
 the usual shape of a line stating a few figures.
 
 [HighlightedMessage](src/main/java/kmlib/starsector/ui/highlight/HighlightedMessage.java)
 extends the family to the campaign side panel:
 an ordered list of paragraphs
-whose `toMessageIntel()` maps one paragraph per `MessageIntel.addLine(...)`,
+whose `toMessageIntel()` adds each paragraph as one line,
 for vanilla-spaced multi-line notifications.
 Callers dispatch that `MessageIntel` themselves through
 `Global.getSector().getCampaignUI().addMessage(...)`,

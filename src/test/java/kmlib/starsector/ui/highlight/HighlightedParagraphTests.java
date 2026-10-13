@@ -1,6 +1,7 @@
 package kmlib.starsector.ui.highlight;
 
 import com.fs.starfarer.api.campaign.TextPanelAPI;
+import com.fs.starfarer.api.impl.campaign.intel.MessageIntel;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
@@ -60,10 +61,24 @@ class HighlightedParagraphTests {
 
             var paragraph = HighlightedParagraph.createUniformlyHighlightedParagraph("2 and 3", Color.ORANGE, "2", "3");
 
-            assertThat(paragraph.getHighlightTexts())
+            assertThat(paragraph.getHighlights())
+                .extracting(Highlight::getText)
                 .containsExactly("2", "3");
-            assertThat(paragraph.getHighlightColours())
+            assertThat(paragraph.getHighlights())
+                .extracting(Highlight::getColour)
                 .containsExactly(Color.ORANGE, Color.ORANGE);
+        }
+
+        @Test
+        void treatsNullRunsAsNone() {
+
+            var paragraph = HighlightedParagraph.createUniformlyHighlightedParagraph(
+                "2",
+                Color.ORANGE,
+                (String[]) null);
+
+            assertThat(paragraph.getHighlights())
+                .isEmpty();
         }
 
         @Test
@@ -249,6 +264,48 @@ class HighlightedParagraphTests {
 
             assertThat(colours.getValue())
                 .containsExactly(Color.RED, Color.YELLOW);
+        }
+    }
+
+    @Nested
+    class AddToMessageIntel {
+
+        @Test
+        void addsAPlainLineForAParagraphWithNoHighlights() {
+
+            var intelMock = mock(MessageIntel.class);
+            var paragraph = new HighlightedParagraph("text", Color.GRAY);
+
+            paragraph.addTo(intelMock);
+
+            verify(intelMock)
+                .addLine("text", Color.GRAY);
+            verify(intelMock, never())
+                .addLine(anyString(), any(Color.class), any(String[].class), any(Color[].class));
+        }
+
+        @Test
+        void handsTheRunsOverInTheOrderTheyStandInTheText() {
+
+            var intelMock = mock(MessageIntel.class);
+            var paragraph = new HighlightedParagraph(
+                "beta, then alpha",
+                Color.GRAY,
+                new Highlight("alpha", Color.RED),
+                new Highlight("beta", Color.WHITE));
+
+            paragraph.addTo(intelMock);
+
+            var texts = ArgumentCaptor.forClass(String[].class);
+            var colours = ArgumentCaptor.forClass(Color[].class);
+
+            verify(intelMock)
+                .addLine(eq("beta, then alpha"), eq(Color.GRAY), texts.capture(), colours.capture());
+
+            assertThat(texts.getValue())
+                .containsExactly("beta", "alpha");
+            assertThat(colours.getValue())
+                .containsExactly(Color.WHITE, Color.RED);
         }
     }
 

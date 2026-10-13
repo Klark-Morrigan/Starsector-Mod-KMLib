@@ -13,10 +13,9 @@ import java.util.Objects;
  *
  * <p>Lives alongside {@link HighlightedParagraph} because it is the
  * same "describe text + highlights once, render to a specific
- * Starsector surface" pattern - the paragraph type handles
- * {@code TextPanelAPI} / {@code TooltipMakerAPI} / {@code LabelAPI},
- * and this type extends the family to the campaign side panel via
- * {@link MessageIntel}. Keeping all four render targets in one
+ * Starsector surface" pattern - the paragraph type renders one
+ * paragraph to each surface, and this type stacks several of them into
+ * one {@link MessageIntel}. Keeping all four render targets in one
  * package means a new contributor finds them together when grepping
  * for "highlight".
  *
@@ -69,15 +68,7 @@ public final class HighlightedMessage {
         var intel = new MessageIntel();
 
         for (HighlightedParagraph line : lines) {
-            // getHighlightTexts / getHighlightColours return zero-length
-            // arrays when the paragraph carries no highlights, which
-            // MessageIntel.addLine accepts as "no highlights on this
-            // line" - no special-casing needed here.
-            intel.addLine(
-                line.getText(),
-                line.getBaseColour(),
-                line.getHighlightTexts(),
-                line.getHighlightColours());
+            line.addTo(intel);
         }
 
         return intel;

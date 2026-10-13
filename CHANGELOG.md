@@ -29,6 +29,7 @@ No player-facing changes.
 
 - **A blank faction ID reads as no faction** in `FactionRelations.createDispositionReader(SectorAPI)`, `NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` and `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)`, rather than being handed to the sector.
 - **`FactionAlliances.buildFrom(List)` skips a null record**, and `AllianceRecord(String, String, List)` reads a null member list as empty, as `FactionAlliances` already reads a null map.
+- **`HighlightedMessage` hands each line's runs to the game in text order**, as `HighlightedParagraph` does on every other surface. A translation that reordered its slots lost those highlights in campaign messages.
 - **`StarsectorFormat.formatPercent(float)` rounds to the nearest whole percent** rather than truncating. A float stores `0.53` as `0.52999997`, which showed as 52%.
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` follows the game's own rule**: whether the sector's memory holds `$shownFactionConfigDialog`, which `Misc.isPlayerFactionSetUp()` reads. Its list of placeholder names never held vanilla's unnamed `"Your"`, so an unnamed player faction read as established.
 
@@ -40,6 +41,7 @@ No player-facing changes.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 - **`FactionSetFriendliness`** in `kmlib.starsector.factions.relation`: whether one set of factions is friendly with another, every pair across them above neutral, with how many of either set fall short. `createForSector(SectorAPI)` binds it to that sector's relations.
+- **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
@@ -69,6 +71,7 @@ No player-facing changes.
 | `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | The caller decides which settings are read. |
 | `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | It asks that sector whether the player faction is set up. |
 | `StarsectorFactionColours`, `StarsectorFactionRelations`, `StarsectorPlayerRelations`, `StarsectorRelationColours` and `StarsectorRelationFormatter` | `FactionColours`, `FactionRelations`, `PlayerRelations`, `RelationColours` and `RelationFormatter` | One naming shape across `kmlib.starsector.factions`, whose package already names the game. |
+| `HighlightedParagraph.getHighlightTexts()` and `getHighlightColours()` | `getHighlights()`, reading `Highlight.getText()` and `getColour()` from each | Only tests read them, and the render methods hand the game its own text-ordered arrays. |
 
 </details>
 
