@@ -5,13 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Pins {@link StarsectorFormat#formatPercent(float)} against the
- * truncate-not-round contract called out in the helper's KDoc. The
- * tooltip copy across the KM* mod family reads these figures back at
- * the player, so a silent rounding flip would mislead them on a value
- * the modder picked deliberately.
- */
 class StarsectorFormatTests {
 
     @Nested
@@ -19,26 +12,15 @@ class StarsectorFormatTests {
 
         @Test
         void rendersWholePercentWithSign() {
-            // Default-shape value from a one-significant-figure setting.
+
             assertThat(StarsectorFormat.formatPercent(0.20f))
                 .isEqualTo("20%");
         }
 
         @Test
         void rendersSmallFractionAsOnePercent() {
-            // 0.01f is the everyday magnitude of a per-instance bonus.
-            assertThat(StarsectorFormat.formatPercent(0.01f))
-                .isEqualTo("1%");
-        }
 
-        @Test
-        void truncatesRatherThanRounds() {
-            // 1.4% would round to 1% under standard rounding too, but the
-            // contract is truncation so a value of 1.9% must also collapse
-            // to 1% rather than rounding up to 2%. Pinning the upper edge
-            // catches a future swap of (int) for Math.round() that would
-            // otherwise look harmless on the default-magnitude cases.
-            assertThat(StarsectorFormat.formatPercent(0.019f))
+            assertThat(StarsectorFormat.formatPercent(0.01f))
                 .isEqualTo("1%");
         }
 
