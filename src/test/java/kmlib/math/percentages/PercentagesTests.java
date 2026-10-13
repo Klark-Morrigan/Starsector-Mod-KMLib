@@ -6,18 +6,18 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Pins the round-to-nearest contract of {@link Percentages#computeWholePercent(float)}. The float cases are the ones
- * a truncating conversion puts one percent low.
+ * Pins the conversions between fractions and percents. The whole-percent float cases are the ones a truncating
+ * conversion puts one percent low.
  */
 class PercentagesTests {
 
     @Nested
-    class ComputeWholePercent {
+    class ConvertFractionToWholePercentFromFloat {
 
         @Test
         void returnsWholePercentOfOneSignificantFigureSetting() {
 
-            assertThat(Percentages.computeWholePercent(0.20f))
+            assertThat(Percentages.convertFractionToWholePercent(0.20f))
                 .isEqualTo(20);
         }
 
@@ -25,7 +25,7 @@ class PercentagesTests {
         @Test
         void returnsTypedPercentWhenFloatFallsJustUnder() {
 
-            assertThat(Percentages.computeWholePercent(0.53f))
+            assertThat(Percentages.convertFractionToWholePercent(0.53f))
                 .isEqualTo(53);
         }
 
@@ -33,28 +33,29 @@ class PercentagesTests {
         @Test
         void returnsWholePercentWhenComputedFractionFallsJustUnder() {
 
-            assertThat(Percentages.computeWholePercent(0.06f - 0.01f))
+            assertThat(Percentages.convertFractionToWholePercent(0.06f - 0.01f))
                 .isEqualTo(5);
         }
 
+        // Widened to double, 0.015f lands just under 1.5 and would round down.
         @Test
-        void roundsUpFromAboveHalf() {
+        void roundsUpAtAHalfTheFloatProductHolds() {
 
-            assertThat(Percentages.computeWholePercent(0.019f))
+            assertThat(Percentages.convertFractionToWholePercent(0.015f))
                 .isEqualTo(2);
         }
 
         @Test
         void roundsDownFromBelowHalf() {
 
-            assertThat(Percentages.computeWholePercent(0.014f))
+            assertThat(Percentages.convertFractionToWholePercent(0.014f))
                 .isEqualTo(1);
         }
 
         @Test
         void returnsNegativeWholePercentForNegativeFraction() {
 
-            assertThat(Percentages.computeWholePercent(-0.05f))
+            assertThat(Percentages.convertFractionToWholePercent(-0.05f))
                 .isEqualTo(-5);
         }
     }

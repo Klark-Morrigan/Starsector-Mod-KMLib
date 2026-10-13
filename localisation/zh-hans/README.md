@@ -262,6 +262,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | caller | 调用方 | |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
+| conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
+| float (a Java `float`) | 浮点数 | the usual computing word |
 | consumer mod | 使用方 Mod | |
 | library | 程序库 | |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
@@ -320,15 +322,20 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | body colour (of text) | 正文颜色 | |
+| digits (of a figure) | 位数 | how many digits a figure carries, as in 保留全部位数, every digit kept; one digit on its own is 数字 |
 | failed load (of a font) | 加载失败 | the noun form of 无法加载 |
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
+| fraction (a share in `[0, 1]`, such as `0.20` for 20%) | 比例 | not 分数, which reads as a ratio of two integers such as 1/5 |
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
 | renderer, render pass | 渲染器, 渲染通道 | |
+| round, truncate (a figure) | 四舍五入, 截断 | 四舍五入, four down and five up, is rounding half up, the rule `Math.round` follows; 截断, cut off, drops the fraction outright |
 | row (one line of a list or hover box) | 行 | as 日志行 writes it |
+| scientific notation, trailing zero (of a figure) | 科学计数法, 末尾零 | |
 | slot (in a format string) | 槽位 | |
 | solid filled rectangle (a glyph drawn without its atlas) | 实心矩形 | 实心, filled, with 矩形, rectangle |
+| whole percent | 整数百分比 | 整数, integer, before 百分比, percent, which alone says nothing about decimals |
 
 #### Campaign scripts
 

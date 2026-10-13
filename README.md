@@ -341,7 +341,7 @@ No Starsector API on the signature.
   which keyed positions moved between two observations,
   over a movement threshold.
 - [`math/percentages/`](src/main/java/kmlib/math/percentages/) -
-  a fraction as the nearest whole percent.
+  conversions between fractions and percents.
 - [`math/random/`](src/main/java/kmlib/math/random/) -
   bounded jitter around a value,
   drawn from the shared generator or from a caller's own source where the roll must replay from a seed.
