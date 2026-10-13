@@ -59,6 +59,10 @@ ZIP_NAME_VERSION_SEPARATOR="-"
 # the version rather than on this.
 LOCALE_SEPARATOR="-"
 
+# Names the group of the zip-name regex holding the locale tag. Common-
+# Automation's publish-download-badges action reads the group by this name.
+ZIP_NAME_LOCALE_GROUP="locale"
+
 # KMLib's mod id, as it appears both as .id in KMLib's own mod_info.json and
 # as a dependency entry's .id in every consumer's. One string here because
 # the scripts sourcing this file test it for opposite reasons - one asks "am
@@ -175,20 +179,26 @@ mod_info_derive_zip_name() {
 # keeping no locales releases unsuffixed. It matches any text rather than the
 # tags a mod ships today, so a new locale matches the day it ships.
 #
-# Written for jq's test.
+# The tag sits in a named group, so a reader takes each zip's locale from its
+# name rather than restating where the tag sits. An unsuffixed zip leaves the
+# group empty, and the reader decides which locale that is.
+#
+# Written for jq's test and capture. The named group is Oniguruma syntax, which
+# bash's =~ does not read.
 mod_info_derive_zip_name_regex() {
 
   local jarSource="${1}"
-  local modFolderName folderPattern versionSeparatorPattern localeSeparatorPattern extensionPattern
+  local modFolderName folderPattern versionSeparatorPattern localeSeparatorPattern extensionPattern localePattern
 
   modFolderName=$(mod_info_derive_mod_folder_name "${jarSource}")
   folderPattern=$(mod_info_escape_regex_text "${modFolderName}")
   versionSeparatorPattern=$(mod_info_escape_regex_text "${ZIP_NAME_VERSION_SEPARATOR}")
   localeSeparatorPattern=$(mod_info_escape_regex_text "${LOCALE_SEPARATOR}")
   extensionPattern=$(mod_info_escape_regex_text "${ZIP_EXTENSION}")
+  localePattern="(${localeSeparatorPattern}(?<${ZIP_NAME_LOCALE_GROUP}>.+))?"
 
   printf '%s\n' \
-    "^${folderPattern}${versionSeparatorPattern}${SEMVER_PATTERN}(${localeSeparatorPattern}.+)?${extensionPattern}\$"
+    "^${folderPattern}${versionSeparatorPattern}${SEMVER_PATTERN}${localePattern}${extensionPattern}\$"
 }
 
 # Emits the given text with every regex metacharacter backslash-escaped, so

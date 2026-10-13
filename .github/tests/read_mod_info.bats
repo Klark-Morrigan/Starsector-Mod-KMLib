@@ -77,7 +77,7 @@ read_output_value() {
     grep -qx "version-file-name=kmu.version"     "$GITHUB_OUTPUT"
     grep -qx "jar-source=jars/KMU.jar"           "$GITHUB_OUTPUT"
 
-    [ "$(read_output_value "zip-name-regex")" = '^KMU-[0-9]+\.[0-9]+\.[0-9]+(-.+)?\.zip$' ]
+    [ "$(read_output_value "zip-name-regex")" = '^KMU-[0-9]+\.[0-9]+\.[0-9]+(-(?<locale>.+))?\.zip$' ]
 }
 
 @test "names the shipped folder after the jar, not after the mod id" {

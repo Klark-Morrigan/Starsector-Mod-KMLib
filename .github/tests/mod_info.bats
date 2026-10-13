@@ -227,12 +227,25 @@ match_zip_name_regex() {
     jq -nr --arg regex "$regex" --arg name "$assetName" '$name | test($regex)'
 }
 
+# Derives the zip-name regex for a jars[0] value and captures one asset name
+# through jq's capture, the reader the locale group is written for. Prints the
+# captured locale, or null when the group took no part in the match.
+capture_zip_name_locale() {
+
+    local jarSource="$1" assetName="$2"
+    local regex
+
+    regex="$(bash -c "source '$LIB'; mod_info_derive_zip_name_regex '$jarSource'")"
+
+    jq -nr --arg regex "$regex" --arg name "$assetName" '$name | capture($regex) | .locale'
+}
+
 @test "mod_info_derive_zip_name_regex anchors the folder name, any version and an optional locale" {
 
     run_in_lib "read_mod_info" "mod_info_derive_zip_name_regex 'jars/KMU.jar'"
 
     [ "$status" -eq 0 ]
-    [ "$output" = '^KMU-[0-9]+\.[0-9]+\.[0-9]+(-.+)?\.zip$' ]
+    [ "$output" = '^KMU-[0-9]+\.[0-9]+\.[0-9]+(-(?<locale>.+))?\.zip$' ]
 }
 
 @test "mod_info_derive_zip_name_regex escapes metacharacters in the folder name" {
@@ -240,7 +253,26 @@ match_zip_name_regex() {
     run_in_lib "read_mod_info" "mod_info_derive_zip_name_regex 'jars/K.M+U.jar'"
 
     [ "$status" -eq 0 ]
-    [ "$output" = '^K\.M\+U-[0-9]+\.[0-9]+\.[0-9]+(-.+)?\.zip$' ]
+    [ "$output" = '^K\.M\+U-[0-9]+\.[0-9]+\.[0-9]+(-(?<locale>.+))?\.zip$' ]
+}
+
+@test "mod_info_derive_zip_name_regex captures a localised zip's locale" {
+
+    run capture_zip_name_locale 'jars/KMU.jar' 'KMU-0.2.0-en.zip'
+
+    [ "$output" = "en" ]
+
+    # The whole tag, its own hyphen included.
+    run capture_zip_name_locale 'jars/KMU.jar' 'KMU-0.2.0-zh-hans.zip'
+
+    [ "$output" = "zh-hans" ]
+}
+
+@test "mod_info_derive_zip_name_regex captures no locale from the unlocalised zip" {
+
+    run capture_zip_name_locale 'jars/KMU.jar' 'KMU-0.1.0.zip'
+
+    [ "$output" = "null" ]
 }
 
 @test "mod_info_derive_zip_name_regex matches a folder name holding metacharacters only as itself" {

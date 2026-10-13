@@ -1124,6 +1124,7 @@ its `outputs:` block is the statement of that convention:
 - `zip-name-regex`,
   which that zip's name matches in every release whatever its version and locale,
   so a release listing can be narrowed to the mod's zips.
+  Its named group `locale` holds a localised zip's locale tag.
 - `version-file-name` goes the other way,
   `<mod-id>.version`,
   because the hand-written `version_files.csv` points at it by that name.
@@ -1371,6 +1372,11 @@ without the version files above that update checkers poll on every game start.
 It reads the caller's metadata through `read-mod-info`,
 and hands `zip-name-regex` and the folder name to Common-Automation's `publish-download-badges` action,
 which counts, renders and publishes the endpoint files to the caller's `badges` branch.
+Each zip counts under the locale its name carries.
+An unsuffixed zip counts under the default locale of the caller's `localisation/manifest.json`,
+read through `read-locales`.
+A mod without a manifest has no default locale,
+so its unsuffixed zips fail the run, naming the zip.
 Only the publishing job holds `contents: write`,
 and a caller has to grant the same,
 since a reusable workflow's permissions are capped by its caller.

@@ -271,6 +271,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
 | method handle | 方法句柄 | |
 | reflection | 反射 | as in the settings description |
+| named group (of a regex) | 命名分组 | the usual computing word |
 | regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
@@ -317,6 +318,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | bundle | 语言包 | |
 | core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
 | locale | 语言区域 | |
+| locale tag (such as `zh-hans`) | 语言区域标签 | 标签, tag |
+| translation (the translated text of a string) | 译文 | as the `0.5.0` entry on highlight order writes it; kept apart from 汉化, a translated build |
 
 #### Text and rendering
 

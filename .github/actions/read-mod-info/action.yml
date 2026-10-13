@@ -39,8 +39,9 @@ outputs:
   zip-name-regex:
     description: >-
       Regex over a whole asset name that every release's zip matches, whatever
-      its version and locale, and no version file does. Oniguruma syntax, as
-      jq's test reads it.
+      its version and locale, and no version file does. Its named group
+      `locale` holds a localised zip's locale tag. Oniguruma syntax, as jq's
+      test and capture read it.
     value: ${{ steps.read.outputs.zip-name-regex }}
   version-file-name:
     description: >-
