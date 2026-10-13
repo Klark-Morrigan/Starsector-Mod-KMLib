@@ -53,6 +53,38 @@ class HighlightedParagraphTests {
     }
 
     @Nested
+    class CreateUniformlyHighlightedParagraph {
+
+        @Test
+        void tintsEveryRunInTheOneColour() {
+
+            var paragraph = HighlightedParagraph.createUniformlyHighlightedParagraph("2 and 3", Color.ORANGE, "2", "3");
+
+            assertThat(paragraph.getHighlightTexts())
+                .containsExactly("2", "3");
+            assertThat(paragraph.getHighlightColours())
+                .containsExactly(Color.ORANGE, Color.ORANGE);
+        }
+
+        @Test
+        void keepsTheDefaultTextColourAsBase() {
+
+            var paragraph = HighlightedParagraph.createUniformlyHighlightedParagraph("2", Color.ORANGE, "2");
+
+            assertThat(paragraph.getBaseColour())
+                .isEqualTo(Color.WHITE);
+        }
+
+        @Test
+        void rejectsANullHighlightColour() {
+
+            assertThatThrownBy(() -> HighlightedParagraph.createUniformlyHighlightedParagraph("2", null, "2"))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("highlightColour");
+        }
+    }
+
+    @Nested
     class GetBaseColour {
 
         @Test

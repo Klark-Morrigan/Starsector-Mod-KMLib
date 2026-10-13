@@ -60,6 +60,31 @@ public final class HighlightedParagraph {
         this(text, StarsectorUiColour.VANILLA_TEXT.resolve(), highlights);
     }
 
+    /**
+     * A paragraph in the default text colour whose runs all share one highlight colour - the common shape of a line
+     * that states a few figures, each picked out the same way.
+     *
+     * @param text            the paragraph text
+     * @param highlightColour the colour every run is tinted with
+     * @param highlightTexts  the runs to tint, as they stand in the text
+     * @return the paragraph
+     */
+    public static HighlightedParagraph createUniformlyHighlightedParagraph(
+            String text,
+            Color highlightColour,
+            String... highlightTexts) {
+
+        Objects.requireNonNull(highlightColour, "highlightColour");
+
+        var highlights = new Highlight[highlightTexts.length];
+
+        for (var i = 0; i < highlightTexts.length; i++) {
+            highlights[i] = Highlight.of(highlightTexts[i], highlightColour);
+        }
+
+        return new HighlightedParagraph(text, highlights);
+    }
+
     public String getText() {
         return text;
     }

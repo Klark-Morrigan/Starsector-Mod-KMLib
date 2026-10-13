@@ -1998,6 +1998,8 @@ binding them once removes the alignment risk.
 is one line of text plus a base colour and its highlights,
 with render methods for `TextPanelAPI`,
 `TooltipMakerAPI` and `LabelAPI`.
+Its `createUniformlyHighlightedParagraph` builds one whose runs all share a colour,
+the usual shape of a line stating a few figures.
 
 [HighlightedMessage](src/main/java/kmlib/starsector/ui/highlight/HighlightedMessage.java)
 extends the family to the campaign side panel:
