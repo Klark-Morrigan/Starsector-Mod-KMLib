@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Pins the box a point cloud is enclosed by and the overlap test that reads it.
+ * Pins the box a point cloud or a set of boxes is enclosed by, and the overlap test that reads it.
  *
  * <p>The overlap cases are what the type exists for: a box stands in for the shape inside it while
  * something decides what is worth measuring properly, so the answer has to be right at the two
@@ -37,6 +37,7 @@ final class BoundsTests {
 
         @Test
         void enclosesASinglePointAsABoxWithNoArea() {
+
             assertThat(Bounds.computeEnclosingBounds(List.of(new double[] {4, 6})))
                 .isEqualTo(new Bounds(4, 6, 4, 6));
         }
@@ -51,16 +52,47 @@ final class BoundsTests {
     }
 
     @Nested
+    class ComputeUnionBounds {
+
+        @Test
+        void enclosesTheExtremesOfTheBoxesRatherThanTheirOrder() {
+            // The extremes come from three different boxes, so a walk that read the first and
+            // last box, or that took a max from a min side, would come back with a smaller box.
+            assertThat(Bounds.computeUnionBounds(List.of(
+                    new Bounds(0, -2, 5, 1),
+                    new Bounds(-3, 0, 1, 7),
+                    new Bounds(1, 1, 2, 2))))
+                .isEqualTo(new Bounds(-3, -2, 5, 7));
+        }
+
+        @Test
+        void enclosesASingleBoxAsItself() {
+
+            assertThat(Bounds.computeUnionBounds(List.of(UNIT_BOX)))
+                .isEqualTo(UNIT_BOX);
+        }
+
+        @Test
+        void refusesToEncloseNoBoxesAtAll() {
+
+            assertThatThrownBy(() -> Bounds.computeUnionBounds(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     class Overlaps {
 
         @Test
         void reportsTwoBoxesSharingAreaAsOverlapping() {
+
             assertThat(UNIT_BOX.overlaps(new Bounds(5, 5, 15, 15)))
                 .isTrue();
         }
 
         @Test
         void reportsAnEnclosedBoxAsOverlapping() {
+
             assertThat(UNIT_BOX.overlaps(new Bounds(2, 2, 3, 3)))
                 .isTrue();
         }
@@ -75,6 +107,7 @@ final class BoundsTests {
 
         @Test
         void reportsBoxesApartAlongTheXAxisAsMissing() {
+
             assertThat(UNIT_BOX.overlaps(new Bounds(11, 0, 20, 10)))
                 .isFalse();
         }
@@ -89,6 +122,7 @@ final class BoundsTests {
 
         @Test
         void answersTheSameWhicheverBoxIsAsked() {
+
             assertThat(new Bounds(5, 5, 15, 15).overlaps(UNIT_BOX))
                 .isTrue();
         }

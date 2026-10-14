@@ -40,6 +40,38 @@ public record Bounds(
     }
 
     /**
+     * Measures the box a set of boxes fits inside.
+     *
+     * <p>Named apart from {@link #computeEnclosingBounds(List)} rather than overloaded, because a
+     * {@code List<Bounds>} and a {@code List<double[]>} erase to the same parameter type.
+     *
+     * @param boxes the boxes to enclose; must be non-empty
+     * @return the smallest box holding every one of them
+     * @throws IllegalArgumentException if {@code boxes} is empty (a box is undefined with
+     *         nothing to enclose)
+     */
+    public static Bounds computeUnionBounds(List<Bounds> boxes) {
+
+        if (boxes.isEmpty()) {
+            throw new IllegalArgumentException("Cannot enclose no boxes");
+        }
+
+        var minX = Double.POSITIVE_INFINITY;
+        var minY = Double.POSITIVE_INFINITY;
+        var maxX = Double.NEGATIVE_INFINITY;
+        var maxY = Double.NEGATIVE_INFINITY;
+
+        for (var box : boxes) {
+
+            minX = Math.min(minX, box.minX());
+            minY = Math.min(minY, box.minY());
+            maxX = Math.max(maxX, box.maxX());
+            maxY = Math.max(maxY, box.maxY());
+        }
+        return new Bounds(minX, minY, maxX, maxY);
+    }
+
+    /**
      * Whether two boxes share any area at all.
      *
      * <p>Touching counts as overlapping. The shapes inside two boxes that meet along an edge may
