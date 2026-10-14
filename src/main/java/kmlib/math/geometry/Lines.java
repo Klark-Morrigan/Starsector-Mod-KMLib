@@ -1,15 +1,15 @@
 package kmlib.math.geometry;
 
 /**
- * Operations on infinite 2D lines - each given as a point and a direction (or
- * normal) that extends both ways without end.
+ * Operations on infinite 2D lines - each given as two points on it, or as a point and
+ * a direction or normal - that extend both ways without end.
  *
  * <p>The home for the line math the polygon passes lean on where the answer can
  * lie anywhere on the infinite line, not just between two endpoints: the miter
  * join and arc centre take a crossing that can sit far past the edges that
  * spawned it, and the half-plane clip only cares which side of a line a point
  * falls on. That unbounded character is what separates these from {@link
- * Segment}, whose operations stay within its two endpoints.
+ * Segments}, whose operations stay within a segment's two endpoints.
  */
 public final class Lines {
 
@@ -64,23 +64,17 @@ public final class Lines {
 
     // Perpendicular distance from {@code point} to the infinite line through
     // {@code lineA} and {@code lineB} - the height a corner rises above the chord
-    // joining its neighbours. Twice the triangle's signed area (the cross product)
-    // over the base length is that height. Falls back to the distance to
+    // joining its neighbours. The orientation's magnitude is twice the triangle's
+    // area, so over the base length it is that height. Falls back to the distance to
     // {@code lineA} when the two line points coincide and give no direction.
     static double computePerpendicularDistance(double[] point, double[] lineA, double[] lineB) {
 
-        var baseX = lineB[0] - lineA[0];
-        var baseY = lineB[1] - lineA[1];
-        var baseLength = Points.computeVectorLength(baseX, baseY);
+        var baseLength = Points.computeDistance(lineA, lineB);
 
         if (baseLength < Limits.MIN_EDGE_LENGTH) {
             return Points.computeDistance(point, lineA);
         }
-
-        var twiceArea = (point[0] - lineA[0]) * baseY
-            - (point[1] - lineA[1]) * baseX;
-
-        return Math.abs(twiceArea) / baseLength;
+        return Math.abs(computeOrientation(lineA, lineB, point)) / baseLength;
     }
 
     // The signed offset of {@code point} from {@code boundary}'s line: (point - boundary
