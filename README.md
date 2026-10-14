@@ -495,6 +495,10 @@ No Starsector API on the signature.
 - [`mods/console/commands/`](src/main/java/kmlib/mods/console/commands/) -
   the Console Commands base class and KMLib's own commands,
   listed under [Console commands](#console-commands).
+  Beside them a timing report a mod subclasses,
+  naming its own command word,
+  the label its notices carry,
+  and the frame its per-frame view divides by.
 - [`mods/console/commands/input/`](src/main/java/kmlib/mods/console/commands/input/) -
   one command invocation,
   its context,

@@ -264,6 +264,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | binding | 绑定 | |
 | blank (text holding only whitespace) | 空白 | |
 | caller | 调用方 | |
+| command word (what a console command is typed as) | 命令词 | 命令, command, with 词, word |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
 | float (a Java `float`) | 浮点数 | the usual computing word |
@@ -273,6 +274,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
 | method handle | 方法句柄 | |
+| profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reflection | 反射 | as in the settings description |
 | named group (of a regex) | 命名分组 | the usual computing word |
 | regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |

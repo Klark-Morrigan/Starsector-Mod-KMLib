@@ -35,6 +35,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 新增
 
+- **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台命令。子类指定自己的命令词、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都没有时为 `NO_BASE_PRICE`。

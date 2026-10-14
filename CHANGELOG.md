@@ -35,6 +35,7 @@ No player-facing changes.
 
 #### Added
 
+- **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, else `NO_BASE_PRICE`.
