@@ -49,6 +49,11 @@ No player-facing changes.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
   - `convertPercentToFraction(double)`: a percent, such as a settings slider holds, as a fraction.
+- **`PolygonRegions`** ring reads:
+  - `findRingHolding(List, double, double)`: the first ring holding a point, or `NO_RING`.
+  - `findSmallestEnclosingRing(List, double, double)`: the holding ring of smallest area, so nested rings resolve to the innermost.
+  - `isPointInsideAnyRing(List, double, double)`: whether any one ring holds the point, rather than an even-odd count across them.
+  - `orientRing(List, boolean)`: a copy of a ring wound counter-clockwise or clockwise.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
@@ -75,6 +80,7 @@ No player-facing changes.
 | `StarsectorFactionColours`, `StarsectorFactionRelations`, `StarsectorPlayerRelations`, `StarsectorRelationColours` and `StarsectorRelationFormatter` | `FactionColours`, `FactionRelations`, `PlayerRelations`, `RelationColours` and `RelationFormatter` | One naming shape across `kmlib.starsector.factions`, whose package already names the game. |
 | `HighlightedParagraph.getHighlightTexts()` and `getHighlightColours()` | `getHighlights()`, reading `Highlight.getText()` and `getColour()` from each | Only tests read them, and the render methods hand the game its own text-ordered arrays. |
 | `PulsePhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation` | `PhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation.cycles` | Cycles nobody triggered live apart from the animations a caller triggers, and `Pulse` names only the triggered envelopes. |
+| `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` measures rings, and where a line stays inside a region is a question of its own. |
 
 </details>
 

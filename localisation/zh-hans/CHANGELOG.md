@@ -49,6 +49,11 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
   - `convertPercentToFraction(double)`：百分比（例如设置滑块所存的值）对应的比例。
+- **`PolygonRegions`** 中关于环的读取：
+  - `findRingHolding(List, double, double)`：第一个包含该点的环，没有时为 `NO_RING`。
+  - `findSmallestEnclosingRing(List, double, double)`：包含该点且面积最小的环，因此嵌套的环解析为最内层。
+  - `isPointInsideAnyRing(List, double, double)`：是否有任何一个环单独包含该点，而不是对所有环做奇偶计数。
+  - `orientRing(List, boolean)`：按逆时针或顺时针方向绕行的环的副本。
 - **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
@@ -75,6 +80,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `StarsectorFactionColours`、`StarsectorFactionRelations`、`StarsectorPlayerRelations`、`StarsectorRelationColours` 和 `StarsectorRelationFormatter` | `FactionColours`、`FactionRelations`、`PlayerRelations`、`RelationColours` 和 `RelationFormatter` | `kmlib.starsector.factions` 中统一为一种命名形式，其包名已经点明了游戏。 |
 | `HighlightedParagraph.getHighlightTexts()` 和 `getHighlightColours()` | `getHighlights()`，从每个高亮读取 `Highlight.getText()` 和 `getColour()` | 只有测试读取它们，而渲染方法会把按文本顺序排列的数组直接交给游戏。 |
 | 位于 `kmlib.animation` 中的 `PulsePhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 位于 `kmlib.animation.cycles` 中的 `PhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 无人触发的循环与调用方触发的动画分开存放，`Pulse` 只用于被触发的包络。 |
+| `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` 测量环，而一条直线在区域内停留在哪里是另一个问题。 |
 
 </details>
 

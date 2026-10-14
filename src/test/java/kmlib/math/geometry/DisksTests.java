@@ -240,7 +240,7 @@ final class DisksTests {
                 // A line through the centre reports the piece's interior as parameter
                 // spans measured from that centre, so a span with ends of opposite sign
                 // is one covering it. None may: the centre is withheld from every piece.
-                assertThat(PolygonRegions.findLineInteriorSpans(
+                assertThat(RegionSpans.findLineInteriorSpans(
                         List.of(piece),
                         new DirectedLine(centre[0], centre[1], 1, 0)))
                     .allSatisfy(span -> assertThat(span[0] * span[1])

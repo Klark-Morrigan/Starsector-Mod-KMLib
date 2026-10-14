@@ -38,22 +38,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * of every edge measures to the corner rather than to an edge's extended line, a point on
  * the boundary is zero, and a ring with no vertices has no boundary to measure to.
  *
+ * <p>And of the ring-set questions: {@link PolygonRegions#findRingHolding} answers the first
+ * holding ring in list order, {@link PolygonRegions#findSmallestEnclosingRing} the holding ring
+ * of smallest area by magnitude with the earlier winning a tie, both answer -1 when nothing holds
+ * the point, and {@link PolygonRegions#isPointInsideAnyRing} asks each ring on its own rather than
+ * by parity. {@link PolygonRegions#orientRing} reverses only a ring wound against the asked way,
+ * keeps a zero-area ring as it is, and never changes the ring it was given.
+ *
  * <p>And of {@link PolygonRegions#groupRingsIntoRegions}: an outer ring alone is a region
  * with nothing cut out of it, two disjoint bodies each keep their own hole, a hole goes to
  * the ring containing it rather than the one listed first, an island in a lake takes its own
  * hole back off the landmass around it, and a hole no ring contains - or a ring too short to
  * enclose area - bounds nothing and is dropped.
- *
- * <p>And of {@link PolygonRegions#findLineInteriorSpans}: a convex ring yields one
- * span, a concave ring the line exits and re-enters yields separate spans (no chord
- * bridges the notch), a hole splits a span around it, and a miss, a corner graze, or
- * a degenerate direction yields nothing.
- *
- * <p>And of {@link PolygonRegions#findBandInteriorSpans}: a band clear of every
- * border keeps its whole span, a band splits around a parallel border its centreline
- * clears (its edge crosses the intrusion), a band wider than the region empties, a
- * zero-thickness band reduces to the line test, and a degenerate direction yields
- * nothing.
  */
 final class PolygonRegionsTests {
 
@@ -321,6 +317,208 @@ final class PolygonRegionsTests {
     }
 
     @Nested
+    class FindRingHolding {
+
+        @Test
+        void answersTheRingThePointIsInside() {
+            // (55, 5) misses the square at the origin and falls in the one at x = 50.
+            assertThat(PolygonRegions.findRingHolding(
+                    List.of(buildSquareAt(0, 0, 10), buildSquareAt(50, 0, 10)),
+                    55,
+                    5))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void answersTheFirstOfNestedRings() {
+            // Both rings hold (5, 5); list order decides, not size.
+            assertThat(PolygonRegions.findRingHolding(
+                    List.of(buildSquareAt(0, 0, 100), buildSquareAt(0, 0, 10)),
+                    5,
+                    5))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void answersNoRingForAPointOutsideEveryRing() {
+            assertThat(PolygonRegions.findRingHolding(
+                    List.of(buildSquareAt(0, 0, 10)),
+                    20,
+                    20))
+                .isEqualTo(-1);
+        }
+
+        @Test
+        void answersNoRingForNoRings() {
+            assertThat(PolygonRegions.findRingHolding(List.of(), 0, 0))
+                .isEqualTo(-1);
+        }
+    }
+
+    @Nested
+    class FindSmallestEnclosingRing {
+
+        @Test
+        void answersTheInnermostOfNestedRings() {
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(0, 0, 100), buildSquareAt(0, 0, 10)),
+                    5,
+                    5))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void comparesAClockwiseRingByTheAreaItEncloses() {
+            // The small ring winds clockwise, so its signed area is negative (-100). Compared by
+            // magnitude it is still the smaller of the two.
+            var clockwiseSmall = new ArrayList<>(buildSquareAt(0, 0, 10));
+            Collections.reverse(clockwiseSmall);
+
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(clockwiseSmall, buildSquareAt(0, 0, 100)),
+                    5,
+                    5))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void passesOverASmallerRingThePointIsOutside() {
+            // The side-5 square at x = 50 is the smallest ring, but (5, 5) is not inside it.
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(50, 0, 5), buildSquareAt(0, 0, 100)),
+                    5,
+                    5))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void answersTheEarlierOfTwoRingsOfEqualArea() {
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(0, 0, 10), buildSquareAt(0, 0, 10)),
+                    5,
+                    5))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void answersNoRingForAPointOutsideEveryRing() {
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(0, 0, 10)),
+                    20,
+                    20))
+                .isEqualTo(-1);
+        }
+    }
+
+    @Nested
+    class IsPointInsideAnyRing {
+
+        @Test
+        void isTrueWhenOneRingHoldsThePoint() {
+            assertThat(PolygonRegions.isPointInsideAnyRing(
+                    List.of(buildSquareAt(0, 0, 10), buildSquareAt(50, 0, 10)),
+                    55,
+                    5))
+                .isTrue();
+        }
+
+        @Test
+        void isTrueInsideBothAnOuterRingAndItsHole() {
+            // Each ring is asked on its own, so the parity a region with holes is read by does
+            // not apply: a point in the hole is still inside the outer ring.
+            assertThat(PolygonRegions.isPointInsideAnyRing(
+                    List.of(buildSquareAt(0, 0, 100), buildSquareAt(40, 40, 20)),
+                    50,
+                    50))
+                .isTrue();
+        }
+
+        @Test
+        void isFalseOutsideEveryRing() {
+            assertThat(PolygonRegions.isPointInsideAnyRing(
+                    List.of(buildSquareAt(0, 0, 10)),
+                    20,
+                    20))
+                .isFalse();
+        }
+
+        @Test
+        void isFalseForNoRings() {
+            assertThat(PolygonRegions.isPointInsideAnyRing(List.of(), 0, 0))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class OrientRing {
+
+        @Test
+        void reversesAClockwiseRingAskedToRunCounterClockwise() {
+            var clockwise = List.of(
+                new double[] {0, 0},
+                new double[] {0, 10},
+                new double[] {10, 10},
+                new double[] {10, 0});
+
+            assertThat(PolygonRegions.orientRing(clockwise, true))
+                .containsExactly(
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {0, 10},
+                    new double[] {0, 0});
+        }
+
+        @Test
+        void reversesACounterClockwiseRingAskedToRunClockwise() {
+            assertThat(PolygonRegions.orientRing(buildSquareAt(0, 0, 10), false))
+                .containsExactly(
+                    new double[] {0, 10},
+                    new double[] {10, 10},
+                    new double[] {10, 0},
+                    new double[] {0, 0});
+        }
+
+        @Test
+        void keepsTheOrderOfARingAlreadyWoundTheAskedWay() {
+            assertThat(PolygonRegions.orientRing(buildSquareAt(0, 0, 10), true))
+                .containsExactly(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {0, 10});
+        }
+
+        @Test
+        void keepsTheOrderOfARingEnclosingNoArea() {
+            // Collinear vertices wind neither way, so there is nothing to disagree with.
+            var flat = List.of(
+                new double[] {0, 0},
+                new double[] {5, 0},
+                new double[] {10, 0});
+
+            assertThat(PolygonRegions.orientRing(flat, false))
+                .containsExactly(
+                    new double[] {0, 0},
+                    new double[] {5, 0},
+                    new double[] {10, 0});
+        }
+
+        @Test
+        void leavesTheGivenRingUnchanged() {
+            var counterClockwise = new ArrayList<>(buildSquareAt(0, 0, 10));
+
+            PolygonRegions.orientRing(counterClockwise, false);
+
+            assertThat(counterClockwise)
+                .containsExactly(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {0, 10});
+        }
+    }
+
+    @Nested
     class GroupRingsIntoRegions {
 
         @Test
@@ -442,235 +640,14 @@ final class PolygonRegionsTests {
         }
     }
 
-    @Nested
-    class FindLineInteriorSpans {
+    // A counter-clockwise axis-aligned square spanning [minX, minX + side] x [minY, minY + side],
+    // for the ring-set questions that need squares placed apart or nested.
+    private static List<double[]> buildSquareAt(double minX, double minY, double side) {
 
-        @Test
-        void interiorSpansYieldOneSpanAcrossAConvexRing() {
-            // A horizontal line through the centre of the side-10 square enters at
-            // x=0 and leaves at x=10: one span, parameters measured from the
-            // through-point at x=5.
-            var spans = PolygonRegions.findLineInteriorSpans(
-                List.of(buildSquare(10)),
-                new DirectedLine(5, 5, 1, 0));
-
-            assertThat(spans)
-                .hasSize(1);
-            assertThat(spans.get(0)[0])
-                .isCloseTo(-5.0, buildAssertionSlack());
-            assertThat(spans.get(0)[1])
-                .isCloseTo(5.0, buildAssertionSlack());
-        }
-
-        @Test
-        void interiorSpansSplitWhereTheLineExitsAndReentersAConcaveRing() {
-            // A U shape (side-10 square with a notch cut down from the top between
-            // x=4 and x=6): a horizontal line at y=7 crosses both arms but the
-            // stretch between them lies in the notch, outside the region - so two
-            // spans come back, never one chord bridging the gap.
-            var uShape = Arrays.asList(
-                new double[] {0, 0},
-                new double[] {10, 0},
-                new double[] {10, 10},
-                new double[] {6, 10},
-                new double[] {6, 4},
-                new double[] {4, 4},
-                new double[] {4, 10},
-                new double[] {0, 10});
-
-            var spans = PolygonRegions.findLineInteriorSpans(
-                List.of(uShape),
-                new DirectedLine(5, 7, 1, 0));
-
-            assertThat(spans)
-                .hasSize(2);
-
-            assertThat(spans.get(0)[0])
-                .isCloseTo(-5.0, buildAssertionSlack());
-            assertThat(spans.get(0)[1])
-                .isCloseTo(-1.0, buildAssertionSlack());
-            assertThat(spans.get(1)[0])
-                .isCloseTo(1.0, buildAssertionSlack());
-            assertThat(spans.get(1)[1])
-                .isCloseTo(5.0, buildAssertionSlack());
-        }
-
-        @Test
-        void interiorSpansSplitAroundAHoleRing() {
-            // A side-20 square with a hole from x=8..12: the line through the middle
-            // is interior only outside the hole, so the hole splits the single span
-            // in two.
-            var hole = Arrays.asList(
-                new double[] {8, 8},
-                new double[] {12, 8},
-                new double[] {12, 12},
-                new double[] {8, 12});
-
-            var spans = PolygonRegions.findLineInteriorSpans(
-                List.of(
-                    buildSquare(20), hole),
-                new DirectedLine(10, 10, 1, 0));
-
-            assertThat(spans)
-                .hasSize(2);
-
-            assertThat(spans.get(0)[0])
-                .isCloseTo(-10.0, buildAssertionSlack());
-            assertThat(spans.get(0)[1])
-                .isCloseTo(-2.0, buildAssertionSlack());
-            assertThat(spans.get(1)[0])
-                .isCloseTo(2.0, buildAssertionSlack());
-            assertThat(spans.get(1)[1])
-                .isCloseTo(10.0, buildAssertionSlack());
-        }
-
-        @Test
-        void interiorSpansAreEmptyWhenTheLineMissesTheRing() {
-
-            var spans = PolygonRegions.findLineInteriorSpans(
-                List.of(buildSquare(10)),
-                new DirectedLine(5, 50, 1, 0));
-
-            assertThat(spans)
-                .isEmpty();
-        }
-
-        @Test
-        void interiorSpansAreEmptyWhenTheLineOnlyGrazesACorner() {
-            // A diagonal through the square's corner touches at a single point: the
-            // two crossings coincide, so the zero-length interval between them is no
-            // span.
-            var spans = PolygonRegions.findLineInteriorSpans(
-                List.of(buildSquare(10)),
-                new DirectedLine(0, 0, 1, -1));
-
-            assertThat(spans)
-                .isEmpty();
-        }
-
-        @Test
-        void interiorSpansAreEmptyForADegenerateDirection() {
-            // A zero direction defines no line to cross, so there is nothing to span.
-            var spans = PolygonRegions.findLineInteriorSpans(
-                List.of(buildSquare(10)),
-                new DirectedLine(5, 5, 0, 0));
-
-            assertThat(spans)
-                .isEmpty();
-        }
-    }
-
-    @Nested
-    class FindBandInteriorSpans {
-
-        @Test
-        void bandInsideAConvexRingKeepsItsWholeSpan() {
-            // A horizontal band through the side-20 square, its rails from y=7 to
-            // y=13, stays clear of the vertical walls, so the band span equals the
-            // line span: x=0..20, parameters from the through-point at x=10.
-            var spans = PolygonRegions.findBandInteriorSpans(
-                List.of(buildSquare(20)),
-                new DirectedLine(10, 10, 1, 0), 3);
-
-            assertThat(spans)
-                .hasSize(1);
-
-            assertThat(spans.get(0)[0])
-                .isCloseTo(-10.0, buildAssertionSlack());
-            assertThat(spans.get(0)[1])
-                .isCloseTo(10.0, buildAssertionSlack());
-        }
-
-        @Test
-        void bandSplitsAroundAParallelBorderTheCentrelineClears() {
-            // A 20-wide, 10-tall room with a rectangular notch bitten down from the
-            // top to y=6 over x=8..12. A horizontal centreline at y=5 clears the notch
-            // whole, but a band of half-thickness 2.5 lifts its upper rails to y=6.25
-            // and y=7.5 - inside the bite over x=8..12 - so the band span splits into
-            // the two clear stretches [-10, -2] and [2, 10] the centreline alone missed.
-            var notchedRoom = Arrays.asList(
-                new double[] {0, 0},
-                new double[] {20, 0},
-                new double[] {20, 10},
-                new double[] {12, 10},
-                new double[] {12, 6},
-                new double[] {8, 6},
-                new double[] {8, 10},
-                new double[] {0, 10});
-
-            var spans = PolygonRegions.findBandInteriorSpans(
-                List.of(notchedRoom),
-                new DirectedLine(10, 5, 1, 0), 2.5);
-
-            assertThat(spans)
-                .hasSize(2);
-
-            assertThat(spans.get(0)[0])
-                .isCloseTo(-10.0, buildAssertionSlack());
-            assertThat(spans.get(0)[1])
-                .isCloseTo(-2.0, buildAssertionSlack());
-            assertThat(spans.get(1)[0])
-                .isCloseTo(2.0, buildAssertionSlack());
-            assertThat(spans.get(1)[1])
-                .isCloseTo(10.0, buildAssertionSlack());
-        }
-
-        @Test
-        void bandIsEmptyWhenWiderThanTheRegion() {
-            // Half-thickness 6 in a side-10 square lifts the outer rails to y=-1 and
-            // y=11, both outside; a rail with no interior empties the whole band.
-            var spans = PolygonRegions.findBandInteriorSpans(List.of(
-                buildSquare(10)),
-                new DirectedLine(5, 5, 1, 0), 6);
-
-            assertThat(spans)
-                .isEmpty();
-        }
-
-        @Test
-        void bandWithZeroHalfThicknessMatchesTheLineTest() {
-            // Every rail collapses onto the centreline, so the band test reduces
-            // exactly to the line test on the same concave U shape.
-            var uShape = Arrays.asList(
-                new double[] {0, 0},
-                new double[] {10, 0},
-                new double[] {10, 10},
-                new double[] {6, 10},
-                new double[] {6, 4},
-                new double[] {4, 4},
-                new double[] {4, 10},
-                new double[] {0, 10});
-
-            var bandSpans = PolygonRegions.findBandInteriorSpans(
-                List.of(uShape),
-                new DirectedLine(5, 7, 1, 0), 0);
-
-            var lineSpans = PolygonRegions.findLineInteriorSpans(
-                List.of(uShape),
-                new DirectedLine(5, 7, 1, 0));
-
-            assertThat(bandSpans)
-                .hasSize(lineSpans.size());
-
-            for (var i = 0; i < lineSpans.size(); i++) {
-
-                assertThat(bandSpans.get(i)[0])
-                    .isCloseTo(lineSpans.get(i)[0], buildAssertionSlack());
-
-                assertThat(bandSpans.get(i)[1])
-                    .isCloseTo(lineSpans.get(i)[1], buildAssertionSlack());
-            }
-        }
-
-        @Test
-        void bandIsEmptyForADegenerateDirection() {
-
-            var spans = PolygonRegions.findBandInteriorSpans(
-                List.of(buildSquare(10)),
-                new DirectedLine(5, 5, 0, 0), 2);
-
-            assertThat(spans)
-                .isEmpty();
-        }
+        return List.of(
+            new double[] {minX, minY},
+            new double[] {minX + side, minY},
+            new double[] {minX + side, minY + side},
+            new double[] {minX, minY + side});
     }
 }

@@ -1,8 +1,8 @@
 package kmlib.starsector.ui.label;
 
 import kmlib.math.geometry.LineBlockers;
-import kmlib.math.geometry.PolygonRegions;
 import kmlib.math.geometry.RegionChord;
+import kmlib.math.geometry.RegionSpans;
 import kmlib.math.geometry.Segment;
 import kmlib.math.geometry.Spans;
 import kmlib.math.solving.Bisection;
@@ -176,7 +176,7 @@ public final class LabelBoxFitter {
 
         bandFitCount++;
 
-        var interiorSpans = PolygonRegions.findBandInteriorSpans(
+        var interiorSpans = RegionSpans.findBandInteriorSpans(
             sizingChord.chord().rings(),
             sizingChord.chord().line(),
             halfThickness);
