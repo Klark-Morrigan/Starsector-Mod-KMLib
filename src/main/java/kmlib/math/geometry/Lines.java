@@ -11,9 +11,29 @@ package kmlib.math.geometry;
  * falls on. That unbounded character is what separates these from {@link
  * Segment}, whose operations stay within its two endpoints.
  */
-final class Lines {
+public final class Lines {
 
     private Lines() {
+    }
+
+    /**
+     * Which side of the directed line from {@code from} to {@code to} a point falls on, as the
+     * cross product {@code (to - from) x (point - from)}.
+     *
+     * <p>The sign is the answer: positive when the point lies to the left of the line as it runs
+     * from {@code from} towards {@code to}, negative to the right, and zero on the line. The
+     * magnitude is twice the area of the triangle the three points make, so it scales with the
+     * line's length; compare signs, not raw values.
+     *
+     * @param from  the line's first point, as {x, y}
+     * @param to    a second point on the line, setting its direction, as {x, y}
+     * @param point the point to place, as {x, y}
+     * @return positive left of the line, negative right of it, zero on it
+     */
+    public static double measureSide(double[] from, double[] to, double[] point) {
+
+        return (to[0] - from[0]) * (point[1] - from[1])
+            - (to[1] - from[1]) * (point[0] - from[0]);
     }
 
     // Intersection of the line through {@code pointA} with direction

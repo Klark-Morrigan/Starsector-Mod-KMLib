@@ -43,6 +43,7 @@ so the two can never disagree.
     - [Campaign scripts](#campaign-scripts)
     - [Factions](#factions)
     - [Salvage drops](#salvage-drops)
+    - [Geometry](#geometry)
 - [Forum terms](#forum-terms)
   - [The forum](#the-forum)
   - [Editions and translation](#editions-and-translation)
@@ -378,6 +379,12 @@ A version heading is never translated; see [translating the changelog](#translat
 | random drop, value drop, drop group | 随机掉落, 价值掉落, 掉落组 | from 掉落 |
 | roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
 | weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
+
+#### Geometry
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| directed line, even-odd count | 有向直线, 奇偶计数 | the usual geometry words |
 
 ## Forum terms
 

@@ -44,6 +44,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
+- **`Lines`** 改为公开，新增 **`measureSide(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
