@@ -46,6 +46,9 @@ enforcePackageLayering {
 
     // Group bans:
 
+    forbidImport under: 'kmlib.animation.cycles',
+                 of: [[under: 'kmlib.animation', except: 'kmlib.animation.cycles']]
+
     forbidImport under: 'kmlib.profiling.budget',
                  of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
 
@@ -81,6 +84,9 @@ enforcePackageLayering {
                  of: 'kmlib.starsector.ui.font.measure'
 
     // Exact bans:
+
+    forbidImport exactly: 'kmlib.animation',
+                 of: 'kmlib.animation.cycles'
 
     forbidImport exactly: 'kmlib.profiling',
                  of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
