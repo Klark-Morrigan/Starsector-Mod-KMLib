@@ -47,7 +47,7 @@ because a `List<Vector2f>` and a `List<double[]>` erase to the same parameter ty
 | Type | Holds |
 | --- | --- |
 | `Rectangle`, `Rectangles` | an axis-aligned box as a corner and a size, and lookup across a collection of them |
-| `Bounds` | an axis-aligned box as its two extreme corners: what a point cloud fits inside |
+| `Bounds` | an axis-aligned box as its two extreme corners: what a point cloud, or a set of boxes, fits inside |
 | `Segment`, `DirectedLine`, `HalfPlane`, `BoxEdge` | a finite edge, an infinite oriented line, a clip side, a box's side |
 | `Disk` | a centre, a radius, and the segment count it is approximated at |
 | `CornerRounding` | the radius, segment count, bevel threshold and rounding threshold a rounding pass uses |
