@@ -3,6 +3,7 @@ package kmlib.math.geometry;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.ToDoubleFunction;
 
@@ -14,7 +15,9 @@ import java.util.function.ToDoubleFunction;
  * #computeSignedArea} reports a ring's area and winding sign, the fold-guard a
  * caller keys on, and {@link #countSelfCrossings} says whether what came back is
  * drawable at all. {@link #isPointInsideRing} answers whether a single point falls
- * within a ring. {@link #groupRingsIntoRegions} sorts a flat ring soup into the
+ * within a ring; {@link #findRingHolding}, {@link #findSmallestEnclosingRing} and {@link
+ * #isPointInsideAnyRing} ask it of a set of rings, one ring at a time. {@link #orientRing}
+ * hands a ring back wound the way a caller needs. {@link #groupRingsIntoRegions} sorts a flat ring soup into the
  * {@link RingRegion}s it bounds, which is the form the two span passes below already
  * take their rings in. {@link #findLineInteriorSpans} and {@link
  * #findBandInteriorSpans} answer where a label's baseline - a zero-width line, or a
@@ -22,6 +25,13 @@ import java.util.function.ToDoubleFunction;
  * than straddling a border.
  */
 public final class PolygonRegions {
+
+    /**
+     * What {@link #findRingHolding} and {@link #findSmallestEnclosingRing} answer when no ring
+     * holds the point - a verdict rather than a failure, since a point outside every ring is a
+     * case the caller usually wants to hear about.
+     */
+    public static final int NO_RING = -1;
 
     // How many parallel rails sample a band's width in findBandInteriorSpans: the
     // centreline, both edges, and two between. Odd, so the centreline is always a
@@ -180,6 +190,106 @@ public final class PolygonRegions {
     }
 
     /**
+     * Which of a set of rings holds a point - the first one, in list order, whose interior the
+     * point falls within.
+     *
+     * <p>Each ring is asked on its own by {@link #isPointInsideRing(List, double, double)}, with
+     * its even-odd rule and its boundary caveat. That is a different question from the even-odd
+     * parity over all the rings together that a region with holes is read by: here a point inside
+     * an outer ring and its hole is held by both, and the first of them is the answer.
+     *
+     * @param rings closed polygon rings as {x, y} vertex lists, in any winding
+     * @param x     the point's x coordinate
+     * @param y     the point's y coordinate
+     * @return the index of the first ring holding the point, or {@link #NO_RING} when none does
+     */
+    public static int findRingHolding(List<List<double[]>> rings, double x, double y) {
+
+        for (var index = 0; index < rings.size(); index++) {
+            if (isPointInsideRing(rings.get(index), x, y)) {
+                return index;
+            }
+        }
+        return NO_RING;
+    }
+
+    /**
+     * Which ring most tightly holds a point - the one of smallest enclosed area among those whose
+     * interior the point falls within.
+     *
+     * <p>Smallest rather than first because nested rings all hold a point inside the innermost,
+     * and the innermost is usually the one that point belongs to. Area is compared by magnitude,
+     * so a ring wound either way competes on the area it encloses. Where two holding rings
+     * enclose exactly the same area, the earlier one in the list wins.
+     *
+     * @param rings closed polygon rings as {x, y} vertex lists, in any winding
+     * @param x     the point's x coordinate
+     * @param y     the point's y coordinate
+     * @return the index of the smallest ring holding the point, or {@link #NO_RING} when none
+     *         does
+     */
+    public static int findSmallestEnclosingRing(List<List<double[]>> rings, double x, double y) {
+
+        var smallestIndex = NO_RING;
+        var smallestArea = Double.MAX_VALUE;
+
+        for (var index = 0; index < rings.size(); index++) {
+
+            var ring = rings.get(index);
+            if (!isPointInsideRing(ring, x, y)) {
+                continue;
+            }
+            var area = Math.abs(computeSignedArea(ring));
+
+            if (area < smallestArea) {
+                smallestArea = area;
+                smallestIndex = index;
+            }
+        }
+        return smallestIndex;
+    }
+
+    /**
+     * Whether any of a set of rings holds a point - {@link #findRingHolding} for a caller that
+     * only needs the yes or no.
+     *
+     * @param rings closed polygon rings as {x, y} vertex lists, in any winding
+     * @param x     the point's x coordinate
+     * @param y     the point's y coordinate
+     * @return true when at least one ring holds the point; false for none, and for no rings
+     */
+    public static boolean isPointInsideAnyRing(List<List<double[]>> rings, double x, double y) {
+        return findRingHolding(rings, x, y) != NO_RING;
+    }
+
+    /**
+     * A ring wound the asked way round - the same vertices, reversed when the ring's winding
+     * disagrees with the one asked for.
+     *
+     * <p>Winding is read from the sign of {@link #computeSignedArea}: positive is
+     * counter-clockwise. A ring enclosing no area winds neither way and comes back in its own
+     * order. Reversing changes which way the path runs, never where its vertices are.
+     *
+     * @param ring               closed polygon vertices as {x, y} pairs
+     * @param isCounterClockwise true for a counter-clockwise ring, false for a clockwise one
+     * @return a new list holding the ring's vertices in the asked winding; the input is not
+     *         changed, and the vertex arrays are shared with it
+     */
+    public static List<double[]> orientRing(List<double[]> ring, boolean isCounterClockwise) {
+
+        var oriented = new ArrayList<>(ring);
+        var signedArea = computeSignedArea(ring);
+        var isWoundAgainst = isCounterClockwise
+            ? signedArea < 0
+            : signedArea > 0;
+
+        if (isWoundAgainst) {
+            Collections.reverse(oriented);
+        }
+        return oriented;
+    }
+
+    /**
      * Groups a flat ring soup into the regions it bounds - each outer ring paired with the
      * holes cut out of it.
      *
@@ -230,7 +340,7 @@ public final class PolygonRegions {
         }
         for (var holeRing : holeRings) {
             var outerIndex = findSmallestContainingOuterRingIndex(outerRings, holeRing);
-            if (outerIndex >= 0) {
+            if (outerIndex != NO_RING) {
                 holeRingsByOuterIndex.get(outerIndex).add(holeRing);
             }
         }
@@ -385,33 +495,17 @@ public final class PolygonRegions {
         return bandSpans;
     }
 
-    // The index of the smallest outer ring enclosing the hole, or -1 when none does. A hole
-    // is tested by its first vertex: a hole lies strictly within the body it is cut from, so
-    // any one of its vertices decides containment, and boundary points - the case the
+    // The index of the smallest outer ring enclosing the hole, or NO_RING when none does. A
+    // hole is tested by its first vertex: a hole lies strictly within the body it is cut from,
+    // so any one of its vertices decides containment, and boundary points - the case the
     // point-in-ring test leaves undefined - do not arise between a hole and its own outer.
     private static int findSmallestContainingOuterRingIndex(
             List<List<double[]>> outerRings,
             List<double[]> holeRing) {
 
         var vertex = holeRing.get(0);
-        var smallestIndex = -1;
-        var smallestArea = Double.MAX_VALUE;
 
-        for (var i = 0; i < outerRings.size(); i++) {
-            var outerRing = outerRings.get(i);
-            if (!isPointInsideRing(outerRing, vertex[0], vertex[1])) {
-                continue;
-            }
-            // Outer rings are positive by construction here, so the raw signed area orders
-            // them by size without an absolute value.
-            var area = computeSignedArea(outerRing);
-
-            if (area < smallestArea) {
-                smallestArea = area;
-                smallestIndex = i;
-            }
-        }
-        return smallestIndex;
+        return findSmallestEnclosingRing(outerRings, vertex[0], vertex[1]);
     }
 
     // The parameters (distances from the origin along the unit direction) at which the

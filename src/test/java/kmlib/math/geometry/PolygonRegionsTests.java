@@ -38,6 +38,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * of every edge measures to the corner rather than to an edge's extended line, a point on
  * the boundary is zero, and a ring with no vertices has no boundary to measure to.
  *
+ * <p>And of the ring-set questions: {@link PolygonRegions#findRingHolding} answers the first
+ * holding ring in list order, {@link PolygonRegions#findSmallestEnclosingRing} the holding ring
+ * of smallest area by magnitude with the earlier winning a tie, both answer -1 when nothing holds
+ * the point, and {@link PolygonRegions#isPointInsideAnyRing} asks each ring on its own rather than
+ * by parity. {@link PolygonRegions#orientRing} reverses only a ring wound against the asked way,
+ * keeps a zero-area ring as it is, and never changes the ring it was given.
+ *
  * <p>And of {@link PolygonRegions#groupRingsIntoRegions}: an outer ring alone is a region
  * with nothing cut out of it, two disjoint bodies each keep their own hole, a hole goes to
  * the ring containing it rather than the one listed first, an island in a lake takes its own
@@ -317,6 +324,208 @@ final class PolygonRegionsTests {
                     List.of(),
                     new double[] {0, 0}))
                 .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    class FindRingHolding {
+
+        @Test
+        void answersTheRingThePointIsInside() {
+            // (55, 5) misses the square at the origin and falls in the one at x = 50.
+            assertThat(PolygonRegions.findRingHolding(
+                    List.of(buildSquareAt(0, 0, 10), buildSquareAt(50, 0, 10)),
+                    55,
+                    5))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void answersTheFirstOfNestedRings() {
+            // Both rings hold (5, 5); list order decides, not size.
+            assertThat(PolygonRegions.findRingHolding(
+                    List.of(buildSquareAt(0, 0, 100), buildSquareAt(0, 0, 10)),
+                    5,
+                    5))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void answersNoRingForAPointOutsideEveryRing() {
+            assertThat(PolygonRegions.findRingHolding(
+                    List.of(buildSquareAt(0, 0, 10)),
+                    20,
+                    20))
+                .isEqualTo(-1);
+        }
+
+        @Test
+        void answersNoRingForNoRings() {
+            assertThat(PolygonRegions.findRingHolding(List.of(), 0, 0))
+                .isEqualTo(-1);
+        }
+    }
+
+    @Nested
+    class FindSmallestEnclosingRing {
+
+        @Test
+        void answersTheInnermostOfNestedRings() {
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(0, 0, 100), buildSquareAt(0, 0, 10)),
+                    5,
+                    5))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void comparesAClockwiseRingByTheAreaItEncloses() {
+            // The small ring winds clockwise, so its signed area is negative (-100). Compared by
+            // magnitude it is still the smaller of the two.
+            var clockwiseSmall = new ArrayList<>(buildSquareAt(0, 0, 10));
+            Collections.reverse(clockwiseSmall);
+
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(clockwiseSmall, buildSquareAt(0, 0, 100)),
+                    5,
+                    5))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void passesOverASmallerRingThePointIsOutside() {
+            // The side-5 square at x = 50 is the smallest ring, but (5, 5) is not inside it.
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(50, 0, 5), buildSquareAt(0, 0, 100)),
+                    5,
+                    5))
+                .isEqualTo(1);
+        }
+
+        @Test
+        void answersTheEarlierOfTwoRingsOfEqualArea() {
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(0, 0, 10), buildSquareAt(0, 0, 10)),
+                    5,
+                    5))
+                .isEqualTo(0);
+        }
+
+        @Test
+        void answersNoRingForAPointOutsideEveryRing() {
+            assertThat(PolygonRegions.findSmallestEnclosingRing(
+                    List.of(buildSquareAt(0, 0, 10)),
+                    20,
+                    20))
+                .isEqualTo(-1);
+        }
+    }
+
+    @Nested
+    class IsPointInsideAnyRing {
+
+        @Test
+        void isTrueWhenOneRingHoldsThePoint() {
+            assertThat(PolygonRegions.isPointInsideAnyRing(
+                    List.of(buildSquareAt(0, 0, 10), buildSquareAt(50, 0, 10)),
+                    55,
+                    5))
+                .isTrue();
+        }
+
+        @Test
+        void isTrueInsideBothAnOuterRingAndItsHole() {
+            // Each ring is asked on its own, so the parity a region with holes is read by does
+            // not apply: a point in the hole is still inside the outer ring.
+            assertThat(PolygonRegions.isPointInsideAnyRing(
+                    List.of(buildSquareAt(0, 0, 100), buildSquareAt(40, 40, 20)),
+                    50,
+                    50))
+                .isTrue();
+        }
+
+        @Test
+        void isFalseOutsideEveryRing() {
+            assertThat(PolygonRegions.isPointInsideAnyRing(
+                    List.of(buildSquareAt(0, 0, 10)),
+                    20,
+                    20))
+                .isFalse();
+        }
+
+        @Test
+        void isFalseForNoRings() {
+            assertThat(PolygonRegions.isPointInsideAnyRing(List.of(), 0, 0))
+                .isFalse();
+        }
+    }
+
+    @Nested
+    class OrientRing {
+
+        @Test
+        void reversesAClockwiseRingAskedToRunCounterClockwise() {
+            var clockwise = List.of(
+                new double[] {0, 0},
+                new double[] {0, 10},
+                new double[] {10, 10},
+                new double[] {10, 0});
+
+            assertThat(PolygonRegions.orientRing(clockwise, true))
+                .containsExactly(
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {0, 10},
+                    new double[] {0, 0});
+        }
+
+        @Test
+        void reversesACounterClockwiseRingAskedToRunClockwise() {
+            assertThat(PolygonRegions.orientRing(buildSquareAt(0, 0, 10), false))
+                .containsExactly(
+                    new double[] {0, 10},
+                    new double[] {10, 10},
+                    new double[] {10, 0},
+                    new double[] {0, 0});
+        }
+
+        @Test
+        void keepsTheOrderOfARingAlreadyWoundTheAskedWay() {
+            assertThat(PolygonRegions.orientRing(buildSquareAt(0, 0, 10), true))
+                .containsExactly(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {0, 10});
+        }
+
+        @Test
+        void keepsTheOrderOfARingEnclosingNoArea() {
+            // Collinear vertices wind neither way, so there is nothing to disagree with.
+            var flat = List.of(
+                new double[] {0, 0},
+                new double[] {5, 0},
+                new double[] {10, 0});
+
+            assertThat(PolygonRegions.orientRing(flat, false))
+                .containsExactly(
+                    new double[] {0, 0},
+                    new double[] {5, 0},
+                    new double[] {10, 0});
+        }
+
+        @Test
+        void leavesTheGivenRingUnchanged() {
+            var counterClockwise = new ArrayList<>(buildSquareAt(0, 0, 10));
+
+            PolygonRegions.orientRing(counterClockwise, false);
+
+            assertThat(counterClockwise)
+                .containsExactly(
+                    new double[] {0, 0},
+                    new double[] {10, 0},
+                    new double[] {10, 10},
+                    new double[] {0, 10});
         }
     }
 
@@ -672,5 +881,16 @@ final class PolygonRegionsTests {
             assertThat(spans)
                 .isEmpty();
         }
+    }
+
+    // A counter-clockwise axis-aligned square spanning [minX, minX + side] x [minY, minY + side],
+    // for the ring-set questions that need squares placed apart or nested.
+    private static List<double[]> buildSquareAt(double minX, double minY, double side) {
+
+        return List.of(
+            new double[] {minX, minY},
+            new double[] {minX + side, minY},
+            new double[] {minX + side, minY + side},
+            new double[] {minX, minY + side});
     }
 }

@@ -96,6 +96,8 @@ so a consumer can tell a real border from a seam between two pieces of the same 
   interrogates a ring without reshaping it: its area and winding (`computeSignedArea`),
   whether it crosses itself and how badly (`countSelfCrossings`),
   whether a point falls inside it (`isPointInsideRing`),
+  which of a set of rings holds a point - the first (`findRingHolding`), the tightest (`findSmallestEnclosingRing`) or any at all (`isPointInsideAnyRing`),
+  the ring wound a chosen way round (`orientRing`),
   and sorts a flat ring soup into the bodies and holes it bounds (`groupRingsIntoRegions`).
 - **`PolygonSmoothing`** -
   `removeSpikes` drops needles and cusps too thin to round,
@@ -109,6 +111,11 @@ so a consumer can tell a real border from a seam between two pieces of the same 
   The point tests split by question:
   `isPointInsideRing` says which side of the boundary a point is on and is arbitrary on it,
   `computeDistanceToBoundary` says how far off it is and is exact there.
+  The ring-set tests ask each ring on its own,
+  so a point in a hole is still held by the ring around it;
+  they answer `NO_RING` when nothing holds the point.
+  That is a different question from the even-odd parity over all rings together
+  that the span passes read a region with holes by.
 - **`Rings`** -
   ring hygiene:
   which vertices survive a dedup,
@@ -304,7 +311,16 @@ bearings,
 projections onto an axis,
 unit vectors.
 Most take either four loose doubles or two `{x, y}` arrays.
-`Lines` and `Spans` work on intervals along a line:
+`Lines` works on the infinite line itself:
+where two meet,
+how far a point lies from one,
+and which side of one a point falls on.
+`Lines.computeOrientation` gives that side by the sign of the cross product:
+positive on the left.
+`Segments` answers the first two within a segment's two endpoints:
+where two actually cross,
+and how far a point lies from the nearest place on one.
+`Spans` works on intervals along a line:
 what a line crosses,
 and the longest run of it left clear by a set of obstacles.
 `Angles` does the same one turn round:
