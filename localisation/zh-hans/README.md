@@ -259,6 +259,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | adapter | 适配器 | |
+| animation, cycle (repetition nobody triggered) | 动画, 循环 | the usual computing words |
 | binding | 绑定 | |
 | blank (text holding only whitespace) | 空白 | |
 | caller | 调用方 | |
@@ -266,6 +267,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | consumer mod | 使用方 Mod | |
+| envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
 | library | 程序库 | |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
@@ -326,6 +328,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | body colour (of text) | 正文颜色 | |
+| eased ramp, turn (of a ramp heading the other way) | 缓动过渡, 转向 | 缓动, easing, with 过渡, transition |
 | digits (of a figure) | 位数 | how many digits a figure carries, as in 保留全部位数, every digit kept; one digit on its own is 数字 |
 | failed load (of a font) | 加载失败 | the noun form of 无法加载 |
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |

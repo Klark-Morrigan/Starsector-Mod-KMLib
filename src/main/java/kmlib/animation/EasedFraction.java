@@ -21,6 +21,7 @@ import kmlib.math.ranges.Ranges;
  * somewhere else.
  */
 public final class EasedFraction {
+
     // Linear animation parameter in [0, 1], stepped by elapsed time and eased only on read so a reversal
     // mid-flight carries on from the current eased value rather than restarting a curve.
     private float progress;
@@ -33,6 +34,7 @@ public final class EasedFraction {
      * @return a fraction seeded at that value and idle there
      */
     public static EasedFraction createAtValue(float value) {
+
         var fraction = new EasedFraction();
 
         fraction.progress = Ranges.clampToUnit(value);
@@ -55,17 +57,12 @@ public final class EasedFraction {
      * @param durationSeconds how long a full traverse of the range should take; zero or less snaps instantly
      */
     public void advanceTowardTarget(float targetValue, float elapsedSeconds, float durationSeconds) {
-        var end = resolveEndValue(targetValue);
 
-        var step = durationSeconds > 0f
-            ? elapsedSeconds / durationSeconds
-            : 1f;
-
-        // Clamping against the target rather than the range end is what makes a settled fraction land on its
-        // target exactly, whichever side it approached from - so an arrival is an equality, not a proximity.
-        progress = progress < end
-            ? Math.min(end, progress + step)
-            : Math.max(end, progress - step);
+        progress = LinearTravel.resolveProgressAfter(
+            progress,
+            resolveEndValue(targetValue),
+            elapsedSeconds,
+            durationSeconds);
     }
 
     /**
@@ -82,7 +79,8 @@ public final class EasedFraction {
      * rest a frame pump, or to read an end state off the animation rather than tracking it alongside.
      *
      * <p>The test is exact rather than approximate because {@link #advanceTowardTarget} lands on its target
-     * by clamping to it: a settled fraction equals its end value instead of merely approaching it.
+     * by clamping to it - see {@link LinearTravel} - so a settled fraction equals its end value instead of
+     * merely approaching it.
      *
      * @param targetValue the end to test against, resolved exactly as the advance resolves it
      * @return true once the fraction has arrived at that end

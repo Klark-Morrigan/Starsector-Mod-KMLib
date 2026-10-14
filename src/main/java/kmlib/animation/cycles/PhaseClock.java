@@ -1,4 +1,4 @@
-package kmlib.animation;
+package kmlib.animation.cycles;
 
 import kmlib.math.hashing.StableFractions;
 import kmlib.time.Timings;
@@ -22,7 +22,7 @@ import java.util.function.LongSupplier;
  * <p>Arithmetic over time and nothing else - no colour, no shape, no element - so whatever holds one decides
  * for itself what a phase drives. Holds nothing worth persisting.
  */
-public final class PulsePhaseClock {
+public final class PhaseClock {
 
     // What a period of zero or less reads as. The start of the cycle, so an animation asked to repeat over no
     // time at all stands still rather than dividing by nothing.
@@ -43,7 +43,7 @@ public final class PulsePhaseClock {
     private final long startedAtNanos;
 
     /** Phases off the JVM's monotonic clock - what a running game gets. */
-    public PulsePhaseClock() {
+    public PhaseClock() {
         this(System::nanoTime);
     }
 
@@ -52,7 +52,7 @@ public final class PulsePhaseClock {
      *                         rather than a wall clock: only differences are read, and a wall clock stepping
      *                         back would run a cycle backwards
      */
-    PulsePhaseClock(LongSupplier readElapsedNanos) {
+    PhaseClock(LongSupplier readElapsedNanos) {
 
         this.readElapsedNanos = readElapsedNanos;
         this.startedAtNanos = readElapsedNanos.getAsLong();

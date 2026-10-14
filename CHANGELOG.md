@@ -35,6 +35,7 @@ No player-facing changes.
 
 #### Added
 
+- **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, else `NO_BASE_PRICE`.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
@@ -72,6 +73,7 @@ No player-facing changes.
 | `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | It asks that sector whether the player faction is set up. |
 | `StarsectorFactionColours`, `StarsectorFactionRelations`, `StarsectorPlayerRelations`, `StarsectorRelationColours` and `StarsectorRelationFormatter` | `FactionColours`, `FactionRelations`, `PlayerRelations`, `RelationColours` and `RelationFormatter` | One naming shape across `kmlib.starsector.factions`, whose package already names the game. |
 | `HighlightedParagraph.getHighlightTexts()` and `getHighlightColours()` | `getHighlights()`, reading `Highlight.getText()` and `getColour()` from each | Only tests read them, and the render methods hand the game its own text-ordered arrays. |
+| `PulsePhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation` | `PhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation.cycles` | Cycles nobody triggered live apart from the animations a caller triggers, and `Pulse` names only the triggered envelopes. |
 
 </details>
 

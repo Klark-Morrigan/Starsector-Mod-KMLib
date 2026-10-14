@@ -35,6 +35,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 新增
 
+- **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都没有时为 `NO_BASE_PRICE`。
 - **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按类别分支的读取方使用。
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的船体插件。
@@ -72,6 +73,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | 它向该星域询问玩家势力是否已设立。 |
 | `StarsectorFactionColours`、`StarsectorFactionRelations`、`StarsectorPlayerRelations`、`StarsectorRelationColours` 和 `StarsectorRelationFormatter` | `FactionColours`、`FactionRelations`、`PlayerRelations`、`RelationColours` 和 `RelationFormatter` | `kmlib.starsector.factions` 中统一为一种命名形式，其包名已经点明了游戏。 |
 | `HighlightedParagraph.getHighlightTexts()` 和 `getHighlightColours()` | `getHighlights()`，从每个高亮读取 `Highlight.getText()` 和 `getColour()` | 只有测试读取它们，而渲染方法会把按文本顺序排列的数组直接交给游戏。 |
+| 位于 `kmlib.animation` 中的 `PulsePhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 位于 `kmlib.animation.cycles` 中的 `PhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 无人触发的循环与调用方触发的动画分开存放，`Pulse` 只用于被触发的包络。 |
 
 </details>
 
