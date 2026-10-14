@@ -351,6 +351,19 @@ every cell bounded to a maximum reach from its site.
 `buildLabelledCell` returns each edge tagged with the neighbouring site's index,
 or `BOUND_EDGE` where the cell met its radius bound instead of a neighbour.
 
+`UniformGrid` partitions the plane into square cells for a different end:
+filing items by where they lie,
+so a question about what is near a point,
+or which items might meet,
+reads only the cells where an answer can be rather than the whole set.
+An item is filed by its point, segment or bounding box under every cell that box touches;
+`listItemsNear` and `listCandidatePairs` answer each item or pair once,
+in filing order,
+so the same filings always give the same answer.
+The cells are a coarse filter -
+the exact distance or crossing test stays the caller's.
+`measureAdaptiveCellSide` sizes the cells to about one item each.
+
 ## What a cell's neighbours agree on
 
 Two cells that meet share the corner where their border gives way to the radius bound,

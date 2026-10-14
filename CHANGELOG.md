@@ -61,6 +61,7 @@ No player-facing changes.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
+- **`UniformGrid`** in `kmlib.math.geometry`: a square-cell hash grid filing points, segments and bounds under every cell they touch. `listItemsNear(double, double, double)` and `listCandidatePairs()` answer each item or pair once, and `measureAdaptiveCellSide(Bounds, int)` sizes the cells to about one item each.
 - **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does. Its named group `locale` holds a localised zip's locale tag.
 - **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll.
 

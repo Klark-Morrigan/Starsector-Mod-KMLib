@@ -385,6 +385,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | directed line, even-odd count | 有向直线, 奇偶计数 | the usual geometry words |
+| region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
 
 ## Forum terms
