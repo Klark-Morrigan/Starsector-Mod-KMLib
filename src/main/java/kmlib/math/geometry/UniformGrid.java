@@ -1,13 +1,15 @@
 package kmlib.math.geometry;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 
 /**
  * A hash grid of square cells that files items under every cell their extent touches, so a
@@ -36,17 +38,18 @@ public final class UniformGrid<T> {
     // still one cell rather than a division by zero.
     private static final int MIN_DIVIDED_ITEM_COUNT = 1;
 
-    // Every distinct item in the order it was first filed. An item's position here is its filing
-    // order, which is what the cells hold and what every answer is sorted by.
-    private final List<T> items = new ArrayList<>();
+    private final double cellSide;
 
     private final Map<T, Integer> filingOrderByItem = new HashMap<>();
 
     // Per cell, the filing orders of the items filed under it. A set, so an item filed into one
-    // cell more than once is held there once.
+    // cell more than once is held there once. Unordered, since every answer is sorted by filing
+    // order on the way out.
     private final Map<GridCell, Set<Integer>> filingOrdersByCell = new HashMap<>();
 
-    private final double cellSide;
+    // Every distinct item in the order it was first filed. An item's position here is its filing
+    // order, which is what the cells hold and what every answer is sorted by.
+    private final List<T> items = new ArrayList<>();
 
     /**
      * @param cellSide the side of every square cell, in the same units as the coordinates filed
@@ -76,19 +79,10 @@ public final class UniformGrid<T> {
     public void fileBounds(Bounds bounds, T item) {
 
         var filingOrder = resolveFilingOrder(item);
-        var fromColumn = locateCellIndex(bounds.minX());
-        var toColumn = locateCellIndex(bounds.maxX());
-        var fromRow = locateCellIndex(bounds.minY());
-        var toRow = locateCellIndex(bounds.maxY());
 
-        for (var column = fromColumn; column <= toColumn; column++) {
-            for (var row = fromRow; row <= toRow; row++) {
-
-                filingOrdersByCell
-                    .computeIfAbsent(new GridCell(column, row), cell -> new LinkedHashSet<>())
-                    .add(filingOrder);
-            }
-        }
+        visitCellsTouching(bounds, cell -> filingOrdersByCell
+            .computeIfAbsent(cell, filed -> new HashSet<>())
+            .add(filingOrder));
     }
 
     /**
@@ -114,14 +108,7 @@ public final class UniformGrid<T> {
      * @param item the item to file
      */
     public void fileSegment(double[] from, double[] to, T item) {
-
-        fileBounds(
-            new Bounds(
-                Math.min(from[0], to[0]),
-                Math.min(from[1], to[1]),
-                Math.max(from[0], to[0]),
-                Math.max(from[1], to[1])),
-            item);
+        fileBounds(Bounds.computeEnclosingBounds(List.of(from, to)), item);
     }
 
     /**
@@ -184,27 +171,21 @@ public final class UniformGrid<T> {
             throw new IllegalArgumentException("Search radius must not be negative, was " + radius);
         }
 
-        var filingOrders = new TreeSet<Integer>();
-        var fromColumn = locateCellIndex(x - radius);
-        var toColumn = locateCellIndex(x + radius);
-        var fromRow = locateCellIndex(y - radius);
-        var toRow = locateCellIndex(y + radius);
+        // A bit per filing order rather than a sorted set: the orders are small and dense, so the
+        // bits already read back in filing order.
+        var filingOrders = new BitSet();
 
-        for (var column = fromColumn; column <= toColumn; column++) {
-            for (var row = fromRow; row <= toRow; row++) {
+        visitCellsTouching(new Bounds(x - radius, y - radius, x + radius, y + radius), cell -> {
 
-                var cellOrders = filingOrdersByCell.get(new GridCell(column, row));
-                if (cellOrders != null) {
-                    filingOrders.addAll(cellOrders);
-                }
+            var cellOrders = filingOrdersByCell.get(cell);
+            if (cellOrders != null) {
+                cellOrders.forEach(filingOrders::set);
             }
-        }
+        });
 
-        var near = new ArrayList<T>(filingOrders.size());
+        var near = new ArrayList<T>(filingOrders.cardinality());
 
-        for (var filingOrder : filingOrders) {
-            near.add(items.get(filingOrder));
-        }
+        filingOrders.stream().forEach(filingOrder -> near.add(items.get(filingOrder)));
 
         return near;
     }
@@ -252,6 +233,29 @@ public final class UniformGrid<T> {
         return filingOrder;
     }
 
+    // Every cell a box touches. The one walk filing and asking share, so a query reads exactly
+    // the cells a box of its extent would have been filed under.
+    private void visitCellsTouching(Bounds bounds, Consumer<GridCell> visitor) {
+
+        var fromColumn = locateCellIndex(bounds.minX());
+        var toColumn = locateCellIndex(bounds.maxX());
+        var fromRow = locateCellIndex(bounds.minY());
+        var toRow = locateCellIndex(bounds.maxY());
+
+        for (var column = fromColumn; column <= toColumn; column++) {
+            for (var row = fromRow; row <= toRow; row++) {
+                visitor.accept(new GridCell(column, row));
+            }
+        }
+    }
+
+    // One cell, keyed by its column and row as they are rather than packed into one number, so
+    // no two cells can share a key however far from the origin they lie.
+    private record GridCell(
+        long column,
+        long row) {
+    }
+
     /**
      * Two distinct items that share a cell, the earlier-filed one first.
      *
@@ -262,13 +266,6 @@ public final class UniformGrid<T> {
     public record ItemPair<T>(
         T first,
         T second) {
-    }
-
-    // One cell, keyed by its column and row as they are rather than packed into one number, so
-    // no two cells can share a key however far from the origin they lie.
-    private record GridCell(
-        long column,
-        long row) {
     }
 
     // One candidate pair by the two items' filing orders, the smaller first.
