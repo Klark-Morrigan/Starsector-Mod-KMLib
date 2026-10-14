@@ -92,30 +92,34 @@ so a consumer can tell a real border from a seam between two pieces of the same 
   and a miter inset that keeps reflex corners a half-plane clip would shear off (`insetPolygonByMiter`).
   `removeReversedLoops` splices out the folds a self-crossing inset leaves, judged against the ring's net winding or against a winding the caller states,
   and `hasInsetCollapsed` says whether an inset folded a ring over rather than offsetting it - the check to make while the raw ring is still at hand, a later resolve having nothing to compare against.
-- **`PolygonRegions`** -
-  interrogates a ring without reshaping it: its area and winding (`computeSignedArea`),
-  whether it crosses itself and how badly (`countSelfCrossings`),
-  whether a point falls inside it (`isPointInsideRing`),
-  which of a set of rings holds a point - the first (`findRingHolding`), the tightest (`findSmallestEnclosingRing`) or any at all (`isPointInsideAnyRing`),
-  the ring wound a chosen way round (`orientRing`),
-  and sorts a flat ring soup into the bodies and holes it bounds (`groupRingsIntoRegions`).
 - **`PolygonSmoothing`** -
   `removeSpikes` drops needles and cusps too thin to round,
   then `roundCorners` arcs or chamfers what remains.
   Run in that order.
 - **`PolygonRegions`** -
-  signed area,
-  point-in-ring,
-  distance to the boundary,
-  and the interior spans a line crosses.
+  measures a ring rather than reshaping it:
+  its area and winding (`computeSignedArea`),
+  whether it crosses itself and how badly (`countSelfCrossings`),
+  whether a point falls inside it (`isPointInsideRing`),
+  how far a point sits from its boundary (`computeDistanceToBoundary`),
+  and the ring wound a chosen way round (`orientRing`).
+  Of a set of rings it says which one holds a point -
+  the first (`findRingHolding`),
+  the tightest (`findSmallestEnclosingRing`)
+  or any at all (`isPointInsideAnyRing`) -
+  and sorts a flat ring soup into the bodies and holes it bounds (`groupRingsIntoRegions`).
   The point tests split by question:
   `isPointInsideRing` says which side of the boundary a point is on and is arbitrary on it,
   `computeDistanceToBoundary` says how far off it is and is exact there.
   The ring-set tests ask each ring on its own,
   so a point in a hole is still held by the ring around it;
   they answer `NO_RING` when nothing holds the point.
-  That is a different question from the even-odd parity over all rings together
-  that the span passes read a region with holes by.
+- **`RegionSpans`** -
+  where a line (`findLineInteriorSpans`) or a band swept along one (`findBandInteriorSpans`) stays inside a region,
+  as `{tStart, tEnd}` intervals along the line.
+  A region is read by the even-odd rule over all its rings together,
+  so a point in a hole is outside -
+  the opposite of the ring-set tests above.
 - **`Rings`** -
   ring hygiene:
   which vertices survive a dedup,

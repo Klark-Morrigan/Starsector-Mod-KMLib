@@ -110,7 +110,7 @@ public final class RingPath {
             double miterSpikeLimit,
             double[] topAnchor) {
 
-        var counterClockwise = RingPathStart.orientCounterClockwise(ring);
+        var counterClockwise = PolygonRegions.orientRing(ring, true);
 
         var inset = PolygonOffsets.removeReversedLoops(
             PolygonOffsets.insetPolygonByMiter(

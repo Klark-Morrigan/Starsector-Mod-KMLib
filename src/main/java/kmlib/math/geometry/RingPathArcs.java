@@ -47,7 +47,7 @@ final class RingPathArcs {
             var edgeLength = arcLengthAtPoint[edge + 1] - arcLengthAtPoint[edge];
 
             for (var ring : nearbyRings) {
-                for (var span : PolygonRegions.findLineInteriorSpans(List.of(ring), line)) {
+                for (var span : RegionSpans.findLineInteriorSpans(List.of(ring), line)) {
                     appendCoveredArc(covered, arcLengthAtPoint[edge], edgeLength, span);
                 }
             }

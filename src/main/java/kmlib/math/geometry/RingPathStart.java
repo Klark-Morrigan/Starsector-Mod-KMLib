@@ -103,11 +103,6 @@ final class RingPathStart {
         return new TopCentre(ring.get(top), top);
     }
 
-    // The ring wound counter-clockwise, reversed only when it arrived the other way.
-    static List<double[]> orientCounterClockwise(List<double[]> ring) {
-        return PolygonRegions.computeSignedArea(ring) < 0 ? reverseRing(ring) : ring;
-    }
-
     // The same ring traced the other way round, as a fresh list - the corners are shared,
     // since nothing here moves one.
     static List<double[]> reverseRing(List<double[]> ring) {
