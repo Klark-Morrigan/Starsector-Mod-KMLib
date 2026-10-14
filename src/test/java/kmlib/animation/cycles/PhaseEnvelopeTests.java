@@ -1,4 +1,4 @@
-package kmlib.animation;
+package kmlib.animation.cycles;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

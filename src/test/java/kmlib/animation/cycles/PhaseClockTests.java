@@ -1,4 +1,4 @@
-package kmlib.animation;
+package kmlib.animation.cycles;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -9,13 +9,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Pins {@link PulsePhaseClock}: elapsed time counted from the moment the clock was made whatever the source's
+ * Pins {@link PhaseClock}: elapsed time counted from the moment the clock was made whatever the source's
  * own origin, a phase that runs the cycle and wraps at every turn, a period of nothing that stands still
  * instead of dividing by it, and a subject's phase shifted along the same cycle by its own share of a turn.
  * The clock is driven off a hand-cranked source, so every case asks at an exact instant rather than at
  * whenever the suite happens to run.
  */
-final class PulsePhaseClockTests {
+final class PhaseClockTests {
 
     private static final float PHASE_TOLERANCE = 0.000001f;
     private static final double SECONDS_TOLERANCE = 0.000001;
@@ -47,7 +47,7 @@ final class PulsePhaseClockTests {
     // The clock every case but the distant-origin one drives, made at a source origin of zero so an instant
     // and the elapsed time to it are the same number and each case reads as the instant it asks at.
     private final NanoClockFake nanoClockFake = new NanoClockFake(0L);
-    private final PulsePhaseClock clock = new PulsePhaseClock(nanoClockFake);
+    private final PhaseClock clock = new PhaseClock(nanoClockFake);
 
     @Nested
     class ReadElapsedSeconds {
@@ -66,7 +66,7 @@ final class PulsePhaseClockTests {
             // A monotonic clock's origin is arbitrary, so elapsed time has to be measured against the reading
             // the clock was made at rather than against zero.
             var distantNanoClockFake = new NanoClockFake(DISTANT_SOURCE_ORIGIN_NANOS);
-            var distantClock = new PulsePhaseClock(distantNanoClockFake);
+            var distantClock = new PhaseClock(distantNanoClockFake);
 
             distantNanoClockFake.advanceBySeconds(1.0);
 
@@ -78,7 +78,7 @@ final class PulsePhaseClockTests {
         void startsFromNothingOnAClockOverTheLiveSource() {
             // The wiring the game gets, which no other case touches: the live source has an origin of its own
             // and a clock made over it must still start from nothing.
-            assertThat(new PulsePhaseClock().readElapsedSeconds())
+            assertThat(new PhaseClock().readElapsedSeconds())
                 .isGreaterThanOrEqualTo(0.0)
                 .isLessThan(FRESHLY_MADE_BOUND_SECONDS);
         }

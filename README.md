@@ -290,15 +290,14 @@ the line ends with where to read it.
 No Starsector API on the signature.
 
 - [`animation/`](src/main/java/kmlib/animation/) -
-  what time does to a value,
-  in two families:
-  stepped envelopes the caller advances each frame,
-  and read ones that are a function of the instant they are asked at.
+  what time does to a value.
+  The package itself answers events the caller can name,
+  and `cycles` answers ambient repetition nobody triggered.
   Which to reach for,
   and why a triggered lift and a shape read off a phase share the word envelope
   without being alternatives,
   is in
-  [Stepped and read animation](src/main/java/kmlib/animation/README.md).
+  [KMLib Animation](src/main/java/kmlib/animation/README.md).
 - [`collections/`](src/main/java/kmlib/collections/) -
   small Collection and Map helpers.
 - [`colour/`](src/main/java/kmlib/colour/) -

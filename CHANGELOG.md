@@ -73,6 +73,7 @@ No player-facing changes.
 | `MarketOwnerTarget.readOwnerName()` | `readOwnerName(SectorAPI)` | It asks that sector whether the player faction is set up. |
 | `StarsectorFactionColours`, `StarsectorFactionRelations`, `StarsectorPlayerRelations`, `StarsectorRelationColours` and `StarsectorRelationFormatter` | `FactionColours`, `FactionRelations`, `PlayerRelations`, `RelationColours` and `RelationFormatter` | One naming shape across `kmlib.starsector.factions`, whose package already names the game. |
 | `HighlightedParagraph.getHighlightTexts()` and `getHighlightColours()` | `getHighlights()`, reading `Highlight.getText()` and `getColour()` from each | Only tests read them, and the render methods hand the game its own text-ordered arrays. |
+| `PulsePhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation` | `PhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation.cycles` | Cycles nobody triggered live apart from the animations a caller triggers, and `Pulse` names only the triggered envelopes. |
 
 </details>
 

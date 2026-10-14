@@ -16,8 +16,9 @@ import java.util.function.LongSupplier;
  * settled ramp costs nothing between turns, and a frame nobody draws on cannot strand it halfway. What it
  * holds is only the moment of its last turn and where the ramp stood then.
  *
- * <p>Real time rather than simulation time, off a monotonic source, for the reasons this package's README
- * gives for a phase: a paused simulation would freeze the ramp on the very screen it plays on.
+ * <p>Real time rather than simulation time, off a monotonic source, for the reasons the README of
+ * {@code kmlib.animation.cycles} gives for a phase: a paused simulation would freeze the ramp on the very
+ * screen it plays on.
  *
  * <p>A turn is measured from where the previous ramp had reached rather than from an end of it, so a ramp
  * reversed part-way turns around from where the eye currently sees it instead of jumping to the far end

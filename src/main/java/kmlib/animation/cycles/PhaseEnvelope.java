@@ -1,4 +1,4 @@
-package kmlib.animation;
+package kmlib.animation.cycles;
 
 import kmlib.math.easing.Easing;
 import kmlib.math.ranges.Ranges;
@@ -13,13 +13,14 @@ import kmlib.math.ranges.Ranges;
  * reads as. A rise taking most of the turn swells; one taking a sliver of it strikes and decays, which is what
  * an alarm or a ping looks like. The same arithmetic serves both, and only the share moves.
  *
- * <p>Named for the phase it is read off rather than for the pulse it shapes, because {@link PulseEnvelope}
- * is a different thing under the name this would otherwise take: a lift something triggers, which times its
- * own rise and fall from that moment and has to be stepped every frame. The two are not alternatives - a
- * triggered lift answers an event, and this answers a cycle that was already turning.
+ * <p>Named for the phase it is read off rather than for the pulse it shapes, because
+ * {@link kmlib.animation.PulseEnvelope} is a different thing under the name this would otherwise take: a lift
+ * something triggers, which times its own rise and fall from that moment and has to be stepped every frame.
+ * The two are not alternatives - a triggered lift answers an event, and this answers a cycle that was already
+ * turning.
  *
- * <p>Eased on read, on the same curve every other animation in this package settles along, so a value driven
- * by a phase advancing at a constant rate still reads as movement rather than as a ramp.
+ * <p>Eased on read, on the same curve every other animation in {@code kmlib.animation} settles along, so a
+ * value driven by a phase advancing at a constant rate still reads as movement rather than as a ramp.
  *
  * <p>Arithmetic over time and nothing else - no colour, no shape, no element - so whatever holds one decides
  * for itself what its amplitude drives.

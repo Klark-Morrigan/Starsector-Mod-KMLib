@@ -1,4 +1,4 @@
-package kmlib.animation;
+package kmlib.animation.cycles;
 
 import kmlib.math.ranges.Ranges;
 

@@ -1,4 +1,4 @@
-package kmlib.animation;
+package kmlib.animation.cycles;
 
 /**
  * Where a phase stands within one element of a {@link PhasePattern}: whether that element is one the pattern
