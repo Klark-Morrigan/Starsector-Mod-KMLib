@@ -718,12 +718,9 @@ public final class PolygonOffsets {
             corner[0] + outboundNormal[0] * outboundDistance,
             corner[1] + outboundNormal[1] * outboundDistance};
 
-        // Left turn (positive cross) is convex for a CCW ring; a right turn is the
-        // reflex corner whose miter would spike, so it bevels.
-        var turn = (corner[0] - previous[0]) * (next[1] - corner[1])
-            - (corner[1] - previous[1]) * (next[0] - corner[0]);
-
-        if (turn > 0) {
+        // A left turn is convex for a CCW ring; a right turn is the reflex corner
+        // whose miter would spike, so it bevels.
+        if (Lines.computeOrientation(previous, corner, next) > 0) {
             var miter = computeMiterVertex(
                 corner,
                 inboundNormal,
