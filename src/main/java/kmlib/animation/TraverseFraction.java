@@ -24,11 +24,6 @@ package kmlib.animation;
  */
 public final class TraverseFraction {
 
-    // The two ends the fraction travels between, named so a target reads as a destination rather than a
-    // bare bound.
-    private static final float FAR_END = 1f;
-    private static final float REST = 0f;
-
     // A drop covers the whole way in one step, so the time it is charged is immaterial.
     private static final float NO_ELAPSED_SECONDS = 0f;
 
@@ -54,7 +49,7 @@ public final class TraverseFraction {
             TraverseDurations durations) {
 
         progress.advanceTowardTarget(
-            resolveEndValue(isRising),
+            LinearTravel.resolveEndValue(isRising),
             elapsedSeconds,
             // Which way the motion is heading is what the flag says, so the pace it travels at follows
             // from the same flag rather than from a second reading of where the fraction stands.
@@ -88,14 +83,6 @@ public final class TraverseFraction {
      * @return true once the fraction sits exactly at rest
      */
     public boolean hasSettledAtRest() {
-        return progress.hasReachedTarget(REST);
-    }
-
-    // The end the travel is heading for this frame. One rule for what the flag means, so the advance and
-    // the settled test cannot disagree about which end that is.
-    private static float resolveEndValue(boolean isRising) {
-        return isRising
-            ? FAR_END
-            : REST;
+        return progress.hasReachedTarget(LinearTravel.REST);
     }
 }

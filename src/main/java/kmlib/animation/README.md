@@ -56,13 +56,22 @@ because they evaluate the same function of the same clock.
 
 Every cycle type is read.
 Most event types are stepped;
-`ClockedEasedFraction` is the read one.
-It holds only the instant of its last turn and where the ramp stood then,
+`ClockedTraverseFraction` is the read counterpart of `TraverseFraction`.
+It holds only the instant of its last turn and where the traverse stood then,
 and derives the rest off the clock at each ask.
 That suits a holder whose value is read in several passes,
 or on frames nothing steps.
 Its time comes off a monotonic source
 for the reason [a phase does](cycles/README.md#why-a-phase-comes-off-real-time).
+
+The stepped and the clocked traverses travel by one rule,
+held in the package-private `LinearTravel`.
+For a fixed end,
+covering a stretch in one step lands where covering it in many does,
+because the travel stops on its end rather than past it.
+So a stepped type applies the rule to each frame's time,
+a clocked one applies it once to the time since its last turn,
+and the two cannot disagree about where a motion stands.
 
 ## The register
 
@@ -70,20 +79,20 @@ for the reason [a phase does](cycles/README.md#why-a-phase-comes-off-real-time).
 | --- | --- | --- |
 | `EasedFraction` | stepped | how far between two ends something is, advanced toward a target and eased only on read |
 | `TraverseFraction` | stepped | the same, aimed at the far end while a flag holds and back at rest while it does not |
-| `ClockedEasedFraction` | read | how far between two ends a ramp stands at the instant it is asked, off the moment it last turned |
+| `ClockedTraverseFraction` | read | the same, at the instant it is asked, off the moment it last turned |
 | `TraverseDurations` | - | how long a motion takes each way, as a pair |
 | `PulseEnvelope` | stepped | a lift a trigger sends out and back, or holds at its peak until released |
 | `PulseEnvelopes<K>` | stepped | the same, one per element of a keyed set, advanced in one pass |
 
 `TraverseDurations` holds nothing and so keeps no time;
-it paces the stepped types.
+it paces the traverses and the pulses.
 A rise and a fall are separate values
 because a motion answering input does not read right when they are equal -
 a rise confirms what the player just did and wants to arrive,
 while a fall is the element letting go and can take its time.
 
 Easing is not this package's.
-`EasedFraction`, `ClockedEasedFraction` and the cycles' `PhaseEnvelope`
+`EasedFraction`, `ClockedTraverseFraction` and the cycles' `PhaseEnvelope`
 ease on read through `kmlib.math.easing.Easing`,
 so the curve is one shape to reason about rather than arithmetic threaded through each of them.
 
