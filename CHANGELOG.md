@@ -35,6 +35,7 @@ No player-facing changes.
 
 #### Added
 
+- **`ClockedEasedFraction`** in `kmlib.animation`: an eased ramp between 0 and 1 worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the ramp had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, else `NO_BASE_PRICE`.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
