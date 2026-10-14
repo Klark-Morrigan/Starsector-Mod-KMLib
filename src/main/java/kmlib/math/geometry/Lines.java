@@ -17,8 +17,8 @@ public final class Lines {
     }
 
     /**
-     * Which side of the directed line from {@code from} to {@code to} a point falls on, as the
-     * cross product {@code (to - from) x (point - from)}.
+     * The orientation of a point against the directed line from {@code from} to {@code to} - which
+     * side of it the point falls on - as the cross product {@code (to - from) x (point - from)}.
      *
      * <p>The sign is the answer: positive when the point lies to the left of the line as it runs
      * from {@code from} towards {@code to}, negative to the right, and zero on the line. The
@@ -30,7 +30,7 @@ public final class Lines {
      * @param point the point to place, as {x, y}
      * @return positive left of the line, negative right of it, zero on it
      */
-    public static double measureSide(double[] from, double[] to, double[] point) {
+    public static double computeOrientation(double[] from, double[] to, double[] point) {
 
         return (to[0] - from[0]) * (point[1] - from[1])
             - (to[1] - from[1]) * (point[0] - from[0]);

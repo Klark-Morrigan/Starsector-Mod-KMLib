@@ -8,34 +8,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LinesTests {
 
     @Nested
-    class MeasureSide {
+    class ComputeOrientation {
 
         @Test
         void isPositiveLeftOfTheLine() {
             // The line runs along +x from (0, 0) to (10, 0); (3, 4) is above it, on its left.
             // The cross product is 10 * 4 - 0 * 3 = 40.
-            assertThat(Lines.measureSide(new double[] {0, 0}, new double[] {10, 0}, new double[] {3, 4}))
+            assertThat(Lines.computeOrientation(new double[] {0, 0}, new double[] {10, 0}, new double[] {3, 4}))
                 .isEqualTo(40.0);
         }
 
         @Test
         void isNegativeRightOfTheLine() {
 
-            assertThat(Lines.measureSide(new double[] {0, 0}, new double[] {10, 0}, new double[] {3, -4}))
+            assertThat(Lines.computeOrientation(new double[] {0, 0}, new double[] {10, 0}, new double[] {3, -4}))
                 .isEqualTo(-40.0);
         }
 
         @Test
         void isZeroOnTheLine() {
             // On the line but past its second point: the line is infinite, not a segment.
-            assertThat(Lines.measureSide(new double[] {0, 0}, new double[] {10, 0}, new double[] {25, 0}))
+            assertThat(Lines.computeOrientation(new double[] {0, 0}, new double[] {10, 0}, new double[] {25, 0}))
                 .isZero();
         }
 
         @Test
         void flipsSignWhenTheLineIsReversed() {
             // The same point and line run the other way: left becomes right.
-            assertThat(Lines.measureSide(new double[] {10, 0}, new double[] {0, 0}, new double[] {3, 4}))
+            assertThat(Lines.computeOrientation(new double[] {10, 0}, new double[] {0, 0}, new double[] {3, 4}))
                 .isEqualTo(-40.0);
         }
     }
