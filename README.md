@@ -687,11 +687,12 @@ No Starsector API on the signature.
   decivilised worlds and the survey bar the fog puts over one
   (including what a bare sighting is worth against that bar),
   patrol counts,
+  the trading counters and the plugins keeping them,
   and the searches over a location -
   every market in one,
   and the nearest meeting what a caller needs of it -
   and over the sector,
-  every market's name.
+  every market's name and every market's ID.
   What can be done *to* a market is a package in,
   one per operation,
   so a class that answers a question and a class that rewrites a colony
