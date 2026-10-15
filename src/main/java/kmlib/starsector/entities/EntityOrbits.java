@@ -3,6 +3,8 @@ package kmlib.starsector.entities;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -46,10 +48,11 @@ public final class EntityOrbits {
     // higher tangential speed.
     private static final float BASE_ORBIT_DIVISOR = 20f;
 
-    // A hang guard for a malformed cyclic orbit chain, not a domain limit: a real
-    // chain nests only a few links (station -> planet -> star), so a walk halts on a
-    // null focus long before this. The value is generous headroom above any real
-    // nesting, chosen only to bound a pathological cycle rather than to model one.
+    // A backstop beside the repeated-body check, not a domain limit: a real chain nests
+    // only a few links (station -> planet -> star), so a walk halts on a null focus long
+    // before this. The check catches every cycle of real bodies; this bounds the one walk
+    // it cannot, a chain that never repeats yet never ends. The value is generous headroom
+    // above any real nesting, chosen to bound that pathology rather than to model it.
     private static final int MAX_ORBIT_CHAIN_DEPTH = 32;
 
     private EntityOrbits() {
@@ -75,9 +78,11 @@ public final class EntityOrbits {
      *         radius is non-positive
      */
     public static float deriveBaseSpeedDegPerDay(float orbitRadius) {
+
         if (orbitRadius <= 0f) {
             return 0f;
         }
+
         // period = radius / divisor (days); speed = 360 / period.
         return DEGREES_PER_CIRCLE * BASE_ORBIT_DIVISOR / orbitRadius;
     }
@@ -98,7 +103,9 @@ public final class EntityOrbits {
      * @return the widened orbital speed in degrees per day
      */
     public static float applyJitter(float speedDegPerDay, float jitterFraction, Random random) {
+
         var jitter = Math.max(0f, jitterFraction);
+
         return speedDegPerDay * (1f + random.nextFloat() * jitter);
     }
 
@@ -118,14 +125,19 @@ public final class EntityOrbits {
             OrbitPlacement placement) {
 
         if (placement.isPinned()) {
+
             var focusLocation = focus.getLocation();
             var radians = Math.toRadians(placement.startAngleDegrees());
+
             entity.setFixedLocation(
                 focusLocation.x + (float) (Math.cos(radians) * placement.orbitDistance()),
                 focusLocation.y + (float) (Math.sin(radians) * placement.orbitDistance()));
+
             return;
         }
+
         var orbitalPeriodDays = DEGREES_PER_CIRCLE / placement.speedDegPerDay();
+
         entity.setCircularOrbit(
             focus,
             placement.startAngleDegrees(),
@@ -139,23 +151,26 @@ public final class EntityOrbits {
      *
      * <p>The one traversal every orbit-relative question makes - how far out a body sits, what
      * it hangs off, which bodies a tree has to keep to show it. Stated once so the cycle guard
-     * is stated once too: a malformed chain that orbits itself is bounded here rather than at
-     * each call site, where one site guarding by depth and another by a visited set is two
-     * answers to a question with one.
+     * is stated once too: a malformed chain that orbits back into itself ends here at the first
+     * body it would repeat, rather than at each call site, where one site guarding by depth and
+     * another by a visited set is two answers to a question with one. Bodies are told apart by
+     * identity, since a cycle is the same body met twice whatever its equality says.
      *
      * @param body the body to walk up from; null yields an empty chain
-     * @return the body and everything it orbits through, outermost first; never null
+     * @return the body first, then what it orbits, and so on outwards, each body once; never null
      */
     public static List<SectorEntityToken> readFocusChain(SectorEntityToken body) {
 
         var chain = new ArrayList<SectorEntityToken>();
+        var visited = Collections.newSetFromMap(new IdentityHashMap<SectorEntityToken, Boolean>());
 
         for (var orbiter = body;
-                orbiter != null && chain.size() < MAX_ORBIT_CHAIN_DEPTH;
+                orbiter != null && chain.size() < MAX_ORBIT_CHAIN_DEPTH && visited.add(orbiter);
                 orbiter = orbiter.getOrbitFocus()) {
 
             chain.add(orbiter);
         }
+
         return chain;
     }
 
@@ -182,14 +197,18 @@ public final class EntityOrbits {
         if (body == null) {
             return Double.POSITIVE_INFINITY;
         }
+
         var distance = 0.0;
 
         for (var orbiter : readFocusChain(body)) {
+
             if (orbiter == reference) {
                 break;
             }
+
             distance += orbiter.getCircularOrbitRadius();
         }
+
         return distance;
     }
 
@@ -207,7 +226,9 @@ public final class EntityOrbits {
      */
     public static float readSpeedDegPerDay(SectorEntityToken entity) {
 
-        var orbit = entity == null ? null : entity.getOrbit();
+        var orbit = entity == null
+            ? null
+            : entity.getOrbit();
 
         if (orbit == null || orbit.getOrbitalPeriod() <= 0f) {
             return 0f;

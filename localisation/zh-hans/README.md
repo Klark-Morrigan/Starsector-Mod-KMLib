@@ -392,6 +392,7 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| body (an entity in orbit), orbit-focus chain | 天体, 轨道焦点链 | 焦点, focus, with 链, chain |
 | directed line, even-odd count | 有向直线, 奇偶计数 | the usual geometry words |
 | extent (one painted shape), outline | 范围, 轮廓 | |
 | hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 单元 as the controls entries write a cell |

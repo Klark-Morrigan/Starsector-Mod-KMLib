@@ -27,8 +27,9 @@ import static org.mockito.Mockito.when;
  * becomes a circular orbit with period 360/speed, and a pinned one fixes the
  * entity instead. {@link EntityOrbits#readSpeedDegPerDay} inverts that same
  * conversion, and {@link EntityOrbits#readFocusChain} and
- * {@link EntityOrbits#computeOrbitalDistanceTo} walk the orbit-focus chain. Each
- * method has its own {@link Nested} group.
+ * {@link EntityOrbits#computeOrbitalDistanceTo} walk the orbit-focus chain, a
+ * cyclic one cut at its first repeated body. Each method has its own
+ * {@link Nested} group.
  */
 final class EntityOrbitsTests {
 
@@ -38,9 +39,9 @@ final class EntityOrbitsTests {
     private static final float ROUND_BASE_SPEED = 2.0f;
     private static final float TOLERANCE = 0.0001f;
 
-    // Comfortably past the walk's own depth bound, so a chain built this long proves the guard
+    // Comfortably past the walk's own depth bound, so a chain built this long proves the bound
     // stopped the walk rather than the chain simply running out.
-    private static final int CYCLE_PROBE_DEPTH = 200;
+    private static final int OVERLONG_CHAIN_LENGTH = 64;
 
     @Nested
     class DeriveBaseSpeedDegPerDay {
@@ -232,7 +233,7 @@ final class EntityOrbitsTests {
         }
 
         @Test
-        void haltsOnAChainThatOrbitsItselfRatherThanHanging() {
+        void yieldsJustTheBodyWhenItOrbitsItself() {
             // A malformed chain is bounded here so no caller has to bound it: one walking by
             // depth and another by a visited set would be two answers to a question with one.
             var bodyMock = mock(SectorEntityToken.class);
@@ -241,7 +242,35 @@ final class EntityOrbitsTests {
                 .thenReturn(bodyMock);
 
             assertThat(EntityOrbits.readFocusChain(bodyMock))
-                .hasSizeLessThan(CYCLE_PROBE_DEPTH);
+                .containsExactly(bodyMock);
+        }
+
+        @Test
+        void stopsAtTheFirstRepeatedBodyWhenTwoBodiesOrbitEachOther() {
+
+            var firstMock = mock(SectorEntityToken.class);
+            var secondMock = mock(SectorEntityToken.class);
+
+            when(firstMock.getOrbitFocus())
+                .thenReturn(secondMock);
+            when(secondMock.getOrbitFocus())
+                .thenReturn(firstMock);
+
+            assertThat(EntityOrbits.readFocusChain(firstMock))
+                .containsExactly(firstMock, secondMock);
+        }
+
+        @Test
+        void stopsAtTheDepthBoundOnAChainThatNeverRepeats() {
+            // The one malformed walk a repeated-body check cannot end, so the depth bound has to.
+            SectorEntityToken innermost = null;
+
+            for (var link = 0; link < OVERLONG_CHAIN_LENGTH; link++) {
+                innermost = buildOrbiting(1f, innermost);
+            }
+
+            assertThat(EntityOrbits.readFocusChain(innermost))
+                .hasSize(32);
         }
     }
 
