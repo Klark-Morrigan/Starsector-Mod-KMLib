@@ -45,4 +45,26 @@ final class AllianceRecordTests {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class FindLeadFactionId {
+
+        @Test
+        void returnsTheFirstMember() {
+
+            var allianceRecord = new AllianceRecord(ALLIANCE_ID, ALLIANCE_NAME, List.of(HEGEMONY, ASTRAL_ARMADA));
+
+            assertThat(allianceRecord.findLeadFactionId())
+                .contains(HEGEMONY);
+        }
+
+        @Test
+        void returnsEmptyForAnAllianceWithNoMembers() {
+
+            var allianceRecord = new AllianceRecord(ALLIANCE_ID, ALLIANCE_NAME, List.of());
+
+            assertThat(allianceRecord.findLeadFactionId())
+                .isEmpty();
+        }
+    }
 }

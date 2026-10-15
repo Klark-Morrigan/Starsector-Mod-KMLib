@@ -1,6 +1,7 @@
 package kmlib.starsector.factions.alliances;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * One alliance flattened to plain data, so whatever reads alliances can be built and tested without
@@ -13,8 +14,8 @@ import java.util.List;
  *
  * @param allianceId              the alliance's stable ID, which every member faction shares
  * @param name                    the alliance's display name
- * @param membersSortedDescending the member faction IDs ordered by descending market size, so
- *                                element 0 is the de-facto dominant member
+ * @param membersSortedDescending the member faction IDs as the source ranks them, so the first is
+ *                                the lead {@link #findLeadFactionId()} names
  */
 public record AllianceRecord(
     String allianceId,
@@ -30,5 +31,17 @@ public record AllianceRecord(
         membersSortedDescending = membersSortedDescending == null
             ? List.of()
             : List.copyOf(membersSortedDescending);
+    }
+
+    /**
+     * Finds the member that leads the alliance: the one its source ranks first.
+     *
+     * @return the lead's faction ID, or empty for an alliance with no members
+     */
+    public Optional<String> findLeadFactionId() {
+
+        return membersSortedDescending.isEmpty()
+            ? Optional.empty()
+            : Optional.of(membersSortedDescending.get(0));
     }
 }

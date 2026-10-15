@@ -375,6 +375,7 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| alliance lead | 盟主 | the alliance's leading member |
 | friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
 | long name (of a faction) | 长名称 | 长, long, before 名称, name |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
