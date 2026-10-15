@@ -4,6 +4,7 @@ import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.SectorWalks;
 import kmlib.text.KmlibStrings;
 
 import org.apache.log4j.Logger;
@@ -13,7 +14,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Queries over the sector's whole set of star systems: where they sit, how to reach one by ID or
@@ -26,9 +26,10 @@ import java.util.function.Consumer;
  * moments: a pass resolves the sector's layout once and then asks about systems many times over.
  * Kept together they read as one grab-bag that any new system read could be added to.
  *
- * <p>Every read that traverses the sector's system list reports that through
- * {@link SectorWalkCounters}, so a caller's row states the walks it caused without the caller
- * having asked for any of them to be counted.
+ * <p>Every bulk read traverses the system list through {@link SectorWalks}, which reports the
+ * walk through {@link SectorWalkCounters}, so a caller's row states the walks it caused without
+ * the caller having asked for any of them to be counted. The two lookups that may stop part way
+ * walk for themselves, so as to charge what they went over rather than the whole sector.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state. Matches
  * {@link kmlib.starsector.scripts.SectorScripts}'s shape, and is null-sector defensive like the
@@ -57,7 +58,7 @@ public final class SectorStarSystems {
 
         var positions = new ArrayList<double[]>();
 
-        walkStarSystems(sector, system -> {
+        SectorWalks.walkStarSystems(sector, system -> {
             // A system the sector never placed has no point to record.
             var location = system.getLocation();
             if (location != null) {
@@ -79,7 +80,7 @@ public final class SectorStarSystems {
 
         var systems = new ArrayList<StarSystemAPI>();
 
-        walkStarSystems(sector, systems::add);
+        SectorWalks.walkStarSystems(sector, systems::add);
 
         return KmlibStrings.collectTexts(systems, StarSystemAPI::getName);
     }
@@ -175,7 +176,7 @@ public final class SectorStarSystems {
 
         var systemByKey = new LinkedHashMap<SystemKey, StarSystemAPI>();
 
-        walkStarSystems(sector, system -> indexFirstSystemUnderKey(systemByKey, system));
+        SectorWalks.walkStarSystems(sector, system -> indexFirstSystemUnderKey(systemByKey, system));
 
         return systemByKey;
     }
@@ -251,26 +252,6 @@ public final class SectorStarSystems {
         SectorWalkCounters.countSectorWalk(systemsExamined);
 
         return found;
-    }
-
-    // The one traversal every bulk read here is built on: the reads differ only in what each
-    // collects off a system, so the loop and the walk it charges live in one place. Written out per
-    // read they were also as many places the counter could drift away from what was visited.
-    //
-    // A null sector charges nothing, there having been no list to go over.
-    private static void walkStarSystems(SectorAPI sector, Consumer<StarSystemAPI> collectFrom) {
-
-        if (sector == null) {
-            return;
-        }
-        var systems = sector.getStarSystems();
-
-        for (var system : systems) {
-            collectFrom.accept(system);
-        }
-        // Charged at what the walk reached rather than at what a caller's filter kept: a read
-        // keeping one system of two did not make the traversal any shorter.
-        SectorWalkCounters.countSectorWalk(systems.size());
     }
 
     // Puts a system under its ID, keeping the one already indexed there.
