@@ -340,6 +340,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | digits (of a figure) | 位数 | how many digits a figure carries, as in 保留全部位数, every digit kept; one digit on its own is 数字 |
 | failed load (of a font) | 加载失败 | the noun form of 无法加载 |
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
+| hatch, stroke, spacing, pattern | 斜线, 描边, 间距, 图样 | 斜线, 描边 and 间距 as the `0.4.0` `HatchPattern` entry writes them |
 | fraction (a share in `[0, 1]`, such as `0.20` for 20%) | 比例 | not 分数, which reads as a ratio of two integers such as 1/5 |
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | highlight colour | 高亮颜色 | |

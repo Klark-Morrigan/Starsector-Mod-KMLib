@@ -368,6 +368,9 @@ No Starsector API on the signature.
   A cut takes a `HatchPattern` -
   the line family as one value -
   so a caller holds what shapes its geometry apart from how it strokes the result.
+  How the cut segments are stroked is a value too:
+  GL lines at a width set as a share of the spacing,
+  so a hatch covers the same share of its gap at every zoom.
 - [`persistence/`](src/main/java/kmlib/persistence/) -
   options a save stores by a key of their own,
   and the one lookup that reads a stored key back to its option,

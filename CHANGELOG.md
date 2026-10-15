@@ -47,6 +47,7 @@ No player-facing changes.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 - **`FactionSetFriendliness`** in `kmlib.starsector.factions.relation`: whether one set of factions is friendly with another, every pair across them above neutral, with how many of either set fall short. `createForSector(SectorAPI)` binds it to that sector's relations.
+- **`GlLineHatchStroke`** in `kmlib.opengl.hatch`: hatch segments stroked as GL lines, at a width set as a share of the pattern's spacing so it holds at every zoom.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
