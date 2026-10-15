@@ -1,5 +1,6 @@
 package kmlib.starsector.markets;
 
+import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Conditions;
@@ -97,19 +98,24 @@ public final class Markets {
      * @return the market's orbital station, or empty when it owns none
      */
     public static Optional<SectorEntityToken> findAttachedStation(MarketAPI market) {
+
         if (market == null || market.getConnectedEntities() == null) {
             return Optional.empty();
         }
+
         for (var entity : market.getConnectedEntities()) {
+
             // The opt-out is tested before the fleet read: it is the cheaper answer, and
             // vanilla's fleet lookup dereferences the entity's memory, which an opted-out
             // decoration has no reason to carry.
             if (entity.hasTag(Tags.STATION)
                     && !entity.hasTag(NO_ORBITAL_STATION_TAG)
                     && Misc.getStationFleet(entity) != null) {
+
                 return Optional.of(entity);
             }
         }
+
         return Optional.empty();
     }
 
@@ -126,10 +132,13 @@ public final class Markets {
      * @return the market's stability in [0, 1]
      */
     public static double getStabilityFraction(MarketAPI market) {
+
         if (market == null) {
             return 0.0;
         }
+
         var fraction = market.getStabilityValue() / MAX_STABILITY_VALUE;
+
         return Math.min(Math.max(fraction, 0.0f), 1.0f);
     }
 
@@ -171,7 +180,9 @@ public final class Markets {
      * @return true when the market carries vanilla's abandoned-station condition
      */
     public static boolean isAbandonedStation(MarketAPI market) {
-        return market != null && market.hasCondition(Conditions.ABANDONED_STATION);
+
+        return market != null
+            && market.hasCondition(Conditions.ABANDONED_STATION);
     }
 
     /**
@@ -193,6 +204,7 @@ public final class Markets {
      * @return true when the market counts as military
      */
     public static boolean isMilitary(MarketAPI market) {
+
         // The memory guard is this library's, not vanilla's: Misc reads the flag straight off
         // the market's memory and would throw on a market that has none. Its neighbours here
         // absorb that case, so this one does too rather than being the single read a caller
@@ -200,6 +212,7 @@ public final class Markets {
         if (market == null || market.getMemoryWithoutUpdate() == null) {
             return false;
         }
+
         return Misc.isMilitary(market);
     }
 
@@ -221,6 +234,7 @@ public final class Markets {
      * @return true when the market flies that faction's flag
      */
     public static boolean isOwnedBy(MarketAPI market, String factionId) {
+
         return market != null
             && factionId != null
             && factionId.equals(market.getFactionId());
@@ -242,6 +256,7 @@ public final class Markets {
      * @return true when a faction owns the market and it is not condition-only
      */
     public static boolean isOwnedColony(MarketAPI market) {
+
         return market != null
             && market.getFaction() != null
             && !market.isPlanetConditionMarketOnly();
@@ -271,7 +286,9 @@ public final class Markets {
      * @return true when a faction other than neutral holds a market that is not condition-only
      */
     public static boolean isSettledColony(MarketAPI market) {
-        return isOwnedColony(market) && !market.getFaction().isNeutralFaction();
+
+        return isOwnedColony(market)
+            && !market.getFaction().isNeutralFaction();
     }
 
     /**
@@ -289,12 +306,35 @@ public final class Markets {
      * @return the market's nameplate
      */
     public static EntityNameplate readNameplate(MarketAPI market) {
+
         if (market == null) {
             return EntityNameplate.BLANK;
         }
         return new EntityNameplate(
             market.getName(),
             EntityMapIcons.resolveMapIcon(market.getPrimaryEntity()));
+    }
+
+    /**
+     * The goods held at one of a market's trading counters, or null where the market has no such
+     * counter. A counter a mod adds exists only once that mod has wired it onto the market, so a
+     * reader reaching for its goods meets the absent counter as an ordinary state, not a fault.
+     *
+     * @param market      the market whose counter is being read; null yields null
+     * @param submarketId the counter's submarket ID
+     * @return the counter's cargo, or null where there is no such counter
+     */
+    public static CargoAPI readSubmarketCargo(MarketAPI market, String submarketId) {
+
+        if (market == null) {
+            return null;
+        }
+
+        var submarket = market.getSubmarket(submarketId);
+
+        return submarket == null
+            ? null
+            : submarket.getCargo();
     }
 
     /**
@@ -312,8 +352,9 @@ public final class Markets {
      * wanting only the interface a step is declared on names that instead, and is answered by
      * whatever is actually keeping the counter.
      *
-     * <p>The one read here that is about how a market is put together rather than about what it
-     * is. It sits with the others because its callers are the operations on a market, and an
+     * <p>With {@link #readSubmarketCargo}, one of the two reads here about how a market is put
+     * together rather than about what it is. It sits with the others because its callers are the
+     * operations on a market, and an
      * operation reaching a counter's plugin for itself would be the place all three of those
      * steps get skipped.
      *
@@ -333,7 +374,6 @@ public final class Markets {
         }
 
         var submarket = market.getSubmarket(submarketId);
-
         if (submarket == null) {
             return null;
         }

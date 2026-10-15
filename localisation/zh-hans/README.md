@@ -385,6 +385,7 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| submarket (one of a market's trading counters), cargo | 子市场, 货物 | the game never names the kind to a player, only each counter, as `submarkets.csv` writes 开放市场 and 仓库, so 子市场 follows the API's `SubmarketAPI`; 货物 as that file's 仓库 description writes it |
 | storage, one-time access fee, paid to unlock | 仓库, 一次性使用费, 已付费解锁 | 仓库 and 一次性使用费 as vanilla's `StoragePlugin` dialog writes them (使用此地仓库需要缴纳一次性使用费); 已付费解锁 is the plain reading of `setPlayerPaidToUnlock`, which the game never shows |
 
 #### Salvage drops
