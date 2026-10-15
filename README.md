@@ -586,7 +586,9 @@ No Starsector API on the signature.
   the random spread over any rate,
   the placement,
   the speed read back off an orbit,
-  and the orbit-focus chain every "how far out does this sit" question walks.
+  and the orbit-focus chain every "how far out does this sit" question walks,
+  ending at the first body it meets twice,
+  with the outermost body at its far end.
   Then the things standing on an entity,
   each as the plain facts it carries and each with the search for the ones in a location:
   the built structures -

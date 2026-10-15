@@ -9,43 +9,39 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Orbit mechanics for sector entities, so KM* mods (and console tools) share one
- * implementation of how fast a body should circle and how to place it on that
- * orbit. {@link EntitySpawner} owns creating the entity; this owns the orbit it
- * is put on.
+ * Orbit mechanics for sector entities, so mods using KMLib (and its console tools) share one
+ * implementation of how fast a body should circle and how to place it on that orbit.
+ * {@link EntitySpawner} owns creating the entity; this owns the orbit it is put on.
  *
- * <p>Three concerns live here. Speed: {@link #deriveBaseSpeedDegPerDay} answers
- * "how fast should a body at this radius drift" the vanilla way (constant
- * tangential speed), and {@link #applyJitter} widens any speed - that
- * radius-derived default or an explicit one - by vanilla's random spread. Orbit:
- * {@link #applyCircularOrbit} puts an entity onto the circle an
- * {@link OrbitPlacement} describes, or pins it where that placement is a
- * standstill. Chain: {@link #readFocusChain} and
- * {@link #computeOrbitalDistanceTo} walk the orbit-focus chain, which is the one
- * traversal any question about where a body sits relative to another has to make.
+ * <p>Three concerns live here. Speed: {@link #deriveBaseSpeedDegPerDay} answers "how fast should
+ * a body at this radius drift" the vanilla way (constant tangential speed), and
+ * {@link #applyJitter} widens any speed - that radius-derived default or an explicit one - by
+ * vanilla's random spread. Orbit: {@link #applyCircularOrbit} puts an entity onto the circle an
+ * {@link OrbitPlacement} describes, or pins it where that placement is a standstill. Chain:
+ * {@link #readFocusChain}, {@link #findOutermostFocus} and {@link #computeOrbitalDistanceTo} walk
+ * the orbit-focus chain, which is the one traversal any question about where a body sits relative
+ * to another has to make.
  *
- * <p>Speed is in degrees per day throughout, the intuitive knob; the orbital
- * period {@code setCircularOrbit} wants is derived from it (period = 360 / speed).
+ * <p>Speed is in degrees per day throughout, the intuitive knob; the orbital period
+ * {@code setCircularOrbit} wants is derived from it (period = 360 / speed).
  *
- * <p>The reads sit here beside the writes on purpose. {@link #readSpeedDegPerDay}
- * inverts the very arithmetic {@link #applyCircularOrbit} performs, and a reader
- * that stated that inverse for itself would be free to disagree with the writer
- * about what 360 means.
+ * <p>The reads sit here beside the writes on purpose. {@link #readSpeedDegPerDay} inverts the
+ * very arithmetic {@link #applyCircularOrbit} performs, and a reader that stated that inverse for
+ * itself would be free to disagree with the writer about what 360 means.
  */
 public final class EntityOrbits {
 
     /**
-     * Vanilla's own orbital spread: it jitters the base divisor up by as much as
-     * a quarter (20 + random*5), so this is what a caller that has no reason to
-     * pick its own spread widens a speed by.
+     * Vanilla's own orbital spread: it jitters the base divisor up by as much as a quarter
+     * (20 + random*5), so this is what a caller that has no reason to pick its own spread widens
+     * a speed by.
      */
     public static final float VANILLA_JITTER_FRACTION = 0.25f;
 
     private static final float DEGREES_PER_CIRCLE = 360f;
 
-    // Vanilla's base orbital divisor for planets and moons: orbital period in
-    // days is radius / divisor, so a larger divisor means a shorter period and a
-    // higher tangential speed.
+    // Vanilla's base orbital divisor for planets and moons: orbital period in days is
+    // radius / divisor, so a larger divisor means a shorter period and a higher tangential speed.
     private static final float BASE_ORBIT_DIVISOR = 20f;
 
     // A backstop beside the repeated-body check, not a domain limit: a real chain nests
@@ -61,21 +57,20 @@ public final class EntityOrbits {
 
     /**
      * Returns the base orbital speed, in degrees per day, for a body orbiting at
-     * {@code orbitRadius}, matching vanilla's constant-tangential-speed
-     * convention before any random spread.
+     * {@code orbitRadius}, matching vanilla's constant-tangential-speed convention before any
+     * random spread.
      *
-     * <p>Vanilla procgen sets a body's orbital period as {@code radius / divisor}
-     * (a base divisor of {@value #BASE_ORBIT_DIVISOR} for planets and moons),
-     * which holds the tangential speed roughly constant across the system - a body
-     * twice as far out takes twice as long to circle. A flat degrees-per-day rate
-     * does the opposite, so close-in bodies look sluggish and distant ones too
-     * fast. Pair with {@link #applyJitter} to add vanilla's random widening. A
-     * non-positive radius is degenerate (the body sits on its focus), so it pins
-     * the body in place by returning {@code 0}.
+     * <p>Vanilla procgen sets a body's orbital period as {@code radius / divisor} (a base divisor
+     * of {@value #BASE_ORBIT_DIVISOR} for planets and moons), which holds the tangential speed
+     * roughly constant across the system - a body twice as far out takes twice as long to circle.
+     * A flat degrees-per-day rate does the opposite, so close-in bodies look sluggish and distant
+     * ones too fast. Pair with {@link #applyJitter} to add vanilla's random widening. A
+     * non-positive radius is degenerate (the body sits on its focus), so it pins the body in place
+     * by returning {@code 0}.
      *
      * @param orbitRadius the orbit radius from the focus, in game units
-     * @return the base orbital speed in degrees per day, or {@code 0} when the
-     *         radius is non-positive
+     * @return the base orbital speed in degrees per day, or {@code 0} when the radius is
+     *         non-positive
      */
     public static float deriveBaseSpeedDegPerDay(float orbitRadius) {
 
@@ -88,17 +83,16 @@ public final class EntityOrbits {
     }
 
     /**
-     * Widens a speed by vanilla's random orbital spread: the rate is scaled by a
-     * random factor in {@code [1, 1 + jitterFraction]} (vanilla jitters the
-     * divisor up by up to a quarter, the {@link #VANILLA_JITTER_FRACTION}
-     * default). A fraction of {@code 0} - or a negative one - leaves the speed
-     * unchanged. This applies to any base rate, the radius-derived default or an
-     * explicit speed, since the jitter is just a spread on the final rate; a
-     * non-positive speed stays non-positive, so a pinned body stays pinned.
+     * Widens a speed by vanilla's random orbital spread: the rate is scaled by a random factor in
+     * {@code [1, 1 + jitterFraction]} (vanilla jitters the divisor up by up to a quarter, the
+     * {@link #VANILLA_JITTER_FRACTION} default). A fraction of {@code 0} - or a negative one -
+     * leaves the speed unchanged. This applies to any base rate, the radius-derived default or an
+     * explicit speed, since the jitter is just a spread on the final rate; a non-positive speed
+     * stays non-positive, so a pinned body stays pinned.
      *
      * @param speedDegPerDay the base orbital speed to widen
-     * @param jitterFraction the upper bound of the random widening; negatives are
-     *                       treated as no jitter
+     * @param jitterFraction the upper bound of the random widening; negatives are treated as no
+     *                       jitter
      * @param random         the randomness source for the jitter sample
      * @return the widened orbital speed in degrees per day
      */
@@ -110,10 +104,10 @@ public final class EntityOrbits {
     }
 
     /**
-     * Puts an existing entity onto the circle {@code placement} describes around
-     * {@code focus}, or fixes it at that point when the placement is a
-     * standstill. Used by {@link EntitySpawner} and by callers placing entities
-     * created elsewhere, e.g. a jump point built through the factory.
+     * Puts an existing entity onto the circle {@code placement} describes around {@code focus},
+     * or fixes it at that point when the placement is a standstill. Used by {@link EntitySpawner}
+     * and by callers placing entities created elsewhere, e.g. a jump point built through the
+     * factory.
      *
      * @param entity    the entity to place
      * @param focus     the entity to orbit
@@ -172,6 +166,33 @@ public final class EntityOrbits {
         }
 
         return chain;
+    }
+
+    /**
+     * The body at the far end of what a body orbits through - typically the star a planet, moon
+     * or station ultimately hangs off.
+     *
+     * <p>Read off {@link #readFocusChain}, so a malformed chain is cut where that walk cuts it and
+     * this answers its last body rather than looping.
+     *
+     * @param body the body to walk up from; null yields null
+     * @return the last body of the focus chain past {@code body} itself, or null when {@code body}
+     *         orbits nothing but, at most, itself
+     */
+    public static SectorEntityToken findOutermostFocus(SectorEntityToken body) {
+
+        var chain = readFocusChain(body);
+        if (chain.isEmpty()) {
+            return null;
+        }
+
+        var outermost = chain.get(chain.size() - 1);
+
+        // The body itself leads the chain and is never repeated in it, so a chain that ends where
+        // it starts is a body that orbits nothing.
+        return outermost == body
+            ? null
+            : outermost;
     }
 
     /**

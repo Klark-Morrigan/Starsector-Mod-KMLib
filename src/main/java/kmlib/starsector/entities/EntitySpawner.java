@@ -7,7 +7,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 /**
- * Spawns sector entities, so KM* mods (and console tools) share one
+ * Spawns sector entities, so mods using KMLib (and its console tools) share one
  * implementation of "add a thing orbiting another thing" rather than repeating
  * the create-then-orbit dance. Creating the entity lives here; the orbit it is
  * placed on is delegated to {@link EntityOrbits}.
