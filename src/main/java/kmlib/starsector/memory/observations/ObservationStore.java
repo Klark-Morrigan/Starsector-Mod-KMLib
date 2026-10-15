@@ -1,8 +1,9 @@
-package kmlib.starsector.memory;
+package kmlib.starsector.memory.observations;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
+import kmlib.starsector.memory.SectorMemoryAccess;
 import kmlib.text.KmlibStrings;
 
 import java.util.HashMap;

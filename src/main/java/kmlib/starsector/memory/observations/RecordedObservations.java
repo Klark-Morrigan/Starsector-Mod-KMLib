@@ -1,4 +1,4 @@
-package kmlib.starsector.memory;
+package kmlib.starsector.memory.observations;
 
 import java.util.Optional;
 

@@ -1,4 +1,4 @@
-package kmlib.starsector.memory;
+package kmlib.starsector.memory.observations;
 
 /**
  * How one family's observation is written into the register and read back out of it.

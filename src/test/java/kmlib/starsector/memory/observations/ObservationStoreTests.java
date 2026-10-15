@@ -1,4 +1,4 @@
-package kmlib.starsector.memory;
+package kmlib.starsector.memory.observations;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
