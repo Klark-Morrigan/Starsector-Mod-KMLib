@@ -58,6 +58,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`Lines`** 改为公开，新增 **`computeOrientation(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
+- **`ObservationStore`**、**`ObservationCodec`** 和 **`RecordedObservations`**（位于 `kmlib.starsector.memory`）：在星域记忆中以调用方给定的键保存某一类观察记录的登记表，以文本形式存储，因此不会有类名写入存档。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
