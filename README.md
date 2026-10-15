@@ -535,6 +535,10 @@ No Starsector API on the signature.
   and the trading counters that mod's own rule decides.
   Registered with the operations in `starsector/markets/` at load,
   and only where the mod is enabled.
+  The other way round,
+  a relay passing that mod's colony transfers on to every `MarketTransferListener` on the sector.
+  KMLib puts it on each loaded sector itself where the mod is enabled,
+  so a mod only registers its own listener.
 - [`mods/rat/`](src/main/java/kmlib/mods/rat/) -
   Random Assortment of Things:
   Abyssal Fracture matching,
@@ -675,6 +679,8 @@ No Starsector API on the signature.
   with the listener's class cleared before it is added
   so an install is idempotent and never keeps a stale instance,
   and cleared again for a feature switched off mid-session.
+  Plus the listener told when a colony changes hands,
+  which vanilla fires no listener for.
 - [`starsector/map/`](src/main/java/kmlib/starsector/map/) -
   which systems the sector map marks with a star.
 - [`starsector/markets/`](src/main/java/kmlib/starsector/markets/) -
@@ -1716,7 +1722,8 @@ since an appender left on a logger goes on collecting what the rest of a suite w
 the core-UI hops and widget tree a layout rule walks,
 builders for the values those ports report,
 the market and colony shapes a "who is here" read is posed against,
-a listener manager that records what an installer registered with it
+a listener manager that records what an installer registered with it,
+and answers which listeners it holds of a type as the game's own manager does,
 beside the narrow sector that answers for nothing but that manager,
 an intel manager that holds what is added to it by the game's own rules,
 so a subject that records an intel and then asks for it finds its own write,

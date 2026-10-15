@@ -191,6 +191,25 @@ final class KMLib_ModPluginTests {
         }
 
         @Test
+        void installsTheNexerelinTransferRelayOnTheLoadedSector() {
+            // A step nobody named silently never runs: every mod's transfer listeners would go
+            // unheard.
+            var sectorMock = mock(SectorAPI.class);
+
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+                    var faceCheckMock = mockStatic(InstalledFaceCheck.class);
+                    var nexerelinMock = mockStatic(NexerelinIntegration.class)) {
+
+                globalMock.when(Global::getSector)
+                    .thenReturn(sectorMock);
+
+                new KMLib_ModPlugin().onGameLoad(false);
+
+                nexerelinMock.verify(() -> NexerelinIntegration.installTransferRelay(sectorMock));
+            }
+        }
+
+        @Test
         void loadsTheInstalledFacesOnceAcrossTwoGameLoads() {
             // The faces are the process's: a second save loaded in one session finds them loaded, and
             // loading them again would only repeat the log line.

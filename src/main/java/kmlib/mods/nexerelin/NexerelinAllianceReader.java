@@ -21,7 +21,8 @@ import exerelin.campaign.alliances.Alliance;
  * all is what commits a caller to a game being up; turning alliances already in hand into records
  * commits it to nothing but the alliances, which is what makes that half testable.
  */
-final class NexerelinAllianceReader implements AllianceSource {
+final class NexerelinAllianceReader
+        implements AllianceSource {
 
     /**
      * Snapshots every current alliance.
@@ -53,13 +54,15 @@ final class NexerelinAllianceReader implements AllianceSource {
         var allianceRecords = new ArrayList<AllianceRecord>(alliances.size());
 
         for (var alliance : alliances) {
-            // uuId is the stable alliance ID; getMembersSorted() ranks members by descending market
-            // size, so element 0 is the dominant member a reader colours or names off.
+
+            // uuId is the stable alliance ID. Nexerelin keeps no leader, so getMembersSorted()'s
+            // ranking by descending market size is what makes its first member the record's lead.
             allianceRecords.add(new AllianceRecord(
                 alliance.uuId,
                 alliance.getName(),
                 alliance.getMembersSorted()));
         }
+
         return allianceRecords;
     }
 }

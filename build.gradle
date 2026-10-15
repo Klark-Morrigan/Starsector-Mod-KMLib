@@ -213,9 +213,11 @@ def lazyLibKotlinRuntimeJarFile = resolveModJarFile('lw_lazylib', 'internal/Kotl
 // is version-stamped; testRuntimeOnly so the matcher's tests can load under test.
 def ratJars = findModJars('RandomAssortmentofThings.jar')
 
-// Nexerelin backs NexerelinColoniser: on an install running it, a colony has to be founded by
-// Nexerelin's own routine or the rest of that mod never fully recognises the place, so compiling
-// against its colony-expedition entry point is what lets KMLib defer to it. Soft dependency, the
+// Nexerelin backs the kmlib.mods.nexerelin adapters. On an install running it, a colony has to be
+// founded by Nexerelin's own routine or the rest of that mod never fully recognises the place, so
+// compiling against its colony-expedition entry point is what lets KMLib defer to it; and a colony
+// it takes in a war changes hands through its own InvasionListener, which the market-transfer
+// relay implements because vanilla reports no such change. Soft dependency, the
 // same stance as RAT above - KMLib declares no Nexerelin mod dependency, the presence gate keeps
 // an install without it from resolving the type, and the game classloader supplies the jar at
 // runtime for installs that ship it. Located by jar name since the install folder is

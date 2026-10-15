@@ -33,6 +33,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`StarsectorFormat.formatPercent(float)` 四舍五入到最接近的整数百分比**，不再截断。浮点数把 `0.53` 存为 `0.52999997`，此前会显示为 52%。
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
 - **`EntityOrbits.readFocusChain(SectorEntityToken)` 在遇到第二次出现的天体时结束**，此前一个循环会重复到深度上限为止。它的文档原先写着由外向内排列；实际上天体本身排在最前。
+- **`RecordingListenerManager` 像游戏自身的管理器一样回答 `getListeners(Class)`、`hasListener(Object)` 和 `hasListenerOfClass(Class)`**：依据它所持有的、属于所查询类型的监听器作答，存档的排在临时的之前，不再一律回答为空。
 - **每个地点的经济系统列表只读取一次**：`LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`、殖民地集合与 `SectorMarkets.readMarketIds(SectorAPI)` 此前各读取两次，使 `markets` 计数器把已列出的市场计了两遍。
 - **`SectorStarSystems` 的批量读取对未列出任何星系的星域回答为空**，不再出错。
 
@@ -59,6 +60,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`Lines`** 改为公开，新增 **`computeOrientation(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
+- **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
+  - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。
 - **`ObservationStore`**、**`ObservationCodec`** 和 **`RecordedObservations`**（位于 `kmlib.starsector.memory.observations`）：在星域记忆中以调用方给定的键保存某一类观察记录的登记表，以文本形式存储，因此不会有类名写入存档。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。

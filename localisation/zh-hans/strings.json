@@ -37,6 +37,8 @@
     "compatibility_unaffected_nexerelin_routines": "Nexerelin 本身，以及不经 KMLib 而与 Nexerelin 集成的 Mod。",
     "compatibility_lost_nexerelin_alliances": "本次游戏期间，所有依赖 KMLib 的 Mod 都将读取不到 Nexerelin 的联盟。",
     "compatibility_unaffected_nexerelin_alliances": "Nexerelin 本身、不经 KMLib 而与 Nexerelin 集成的 Mod，以及你的存档。",
+    "compatibility_lost_nexerelin_colony_transfers": "本次游戏期间，殖民地经由 Nexerelin 易手时，所有依赖 KMLib 的 Mod 都不会得到通知。",
+    "compatibility_unaffected_nexerelin_colony_transfers": "Nexerelin 本身、不经 KMLib 而与 Nexerelin 集成的 Mod，以及你的存档。",
     "compatibility_lost_rat_access_routes": "本次游戏期间，只能经由 Random Assortment of Things 自身路径到达的星系，将被 KM 系列 Mod 视为无法到达。",
     "compatibility_unaffected_rat_access_routes": "这些路径本身（游戏中仍可让舰队通行），以及你的存档。",
 
