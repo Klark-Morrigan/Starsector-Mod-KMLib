@@ -25,6 +25,14 @@ public final class GlVertexRuns {
     // the stride a consumer steps by to read one segment at a time.
     public static final int FLOATS_PER_SEGMENT = 2 * FLOATS_PER_VERTEX;
 
+    // A GL_TRIANGLES face is three vertices, so a triangle soup is walked three
+    // vertices at a time.
+    public static final int VERTICES_PER_TRIANGLE = 3;
+
+    // A triangle's packed width - the stride a consumer steps a triangle soup by to
+    // read one face at a time.
+    public static final int FLOATS_PER_TRIANGLE = VERTICES_PER_TRIANGLE * FLOATS_PER_VERTEX;
+
     // The empty run shared by every draw element that packs nothing, so an omitted
     // element draws nothing without allocating a fresh empty array each time.
     public static final float[] NO_VERTICES = new float[0];

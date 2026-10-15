@@ -48,6 +48,7 @@ No player-facing changes.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 - **`FactionSetFriendliness`** in `kmlib.starsector.factions.relation`: whether one set of factions is friendly with another, every pair across them above neutral, with how many of either set fall short. `createForSector(SectorAPI)` binds it to that sector's relations.
 - **`GlLineHatchStroke`** in `kmlib.opengl.hatch`: hatch segments stroked as GL lines, at a width set as a share of the pattern's spacing so it holds at every zoom.
+- **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
@@ -60,7 +61,7 @@ No player-facing changes.
   - `findSmallestEnclosingRing(List, double, double)`: the holding ring of smallest area, so nested rings resolve to the innermost.
   - `isPointInsideAnyRing(List, double, double)`: whether any one ring holds the point, rather than an even-odd count across them.
   - `orientRing(List, boolean)`: a copy of a ring wound counter-clockwise or clockwise.
-- **`PolygonTessellator.tessellateWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
+- **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.

@@ -477,7 +477,7 @@ final class PolygonTessellatorTests {
     }
 
     @Nested
-    class TessellateWithinLoop {
+    class TessellateToBoundaryLoopsWithinLoop {
 
         @Test
         void joinsAbuttingExtentsIntoOneBoundary() {
@@ -495,7 +495,7 @@ final class PolygonTessellatorTests {
                 new double[] {90, 50},
                 new double[] {50, 50});
 
-            var loops = PolygonTessellator.tessellateWithinLoop(
+            var loops = PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(
                 List.of(left, right),
                 new float[] {0, 0, 200, 0, 200, 200, 0, 200});
 
@@ -515,7 +515,7 @@ final class PolygonTessellatorTests {
                 new double[] {130, 130},
                 new double[] {50, 130});
 
-            var loops = PolygonTessellator.tessellateWithinLoop(
+            var loops = PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(
                 List.of(poking),
                 new float[] {0, 0, 100, 0, 100, 100, 0, 100});
 
@@ -534,7 +534,7 @@ final class PolygonTessellatorTests {
                 new double[] {50, 50},
                 new double[] {10, 50});
 
-            var loops = PolygonTessellator.tessellateWithinLoop(List.of(square), null);
+            var loops = PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List.of(square), null);
 
             assertThat(loops)
                 .hasSize(1);
@@ -556,11 +556,11 @@ final class PolygonTessellatorTests {
         return PolygonRegions.computeSignedArea(loop);
     }
 
-    // Sums the unsigned area of every triangle in a flat [x, y, x, y, ...] soup, six
-    // floats per triangle - the area the fill actually covers.
+    // Sums the unsigned area of every triangle in a flat [x, y, x, y, ...] soup - the
+    // area the fill actually covers.
     private static double computeTotalTriangleArea(float[] triangles) {
 
-        var floatsPerTriangle = 6;
+        var floatsPerTriangle = GlVertexRuns.FLOATS_PER_TRIANGLE;
         var total = 0.0;
 
         for (var i = 0; i + floatsPerTriangle <= triangles.length; i += floatsPerTriangle) {
