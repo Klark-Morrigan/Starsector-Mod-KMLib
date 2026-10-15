@@ -36,7 +36,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 新增
 
-- **`AllianceFingerprint.computeFingerprint(List)`**（位于 `kmlib.starsector.factions.alliances`）：一个数值，在联盟成立、解散或成员与盟主变化时改变，列表仅重新排序时不变。
 - **`AllianceRecord.findLeadFactionId()`**：联盟的盟主；联盟没有成员时为空。
 - **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台命令。子类指定自己的命令词、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
