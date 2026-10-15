@@ -37,6 +37,7 @@ No player-facing changes.
 #### Added
 
 - **`AllianceFingerprint.computeFingerprint(List)`** in `kmlib.starsector.factions.alliances`: one number that changes when an alliance forms, dissolves, or changes its members or its lead, and not when the list is reordered.
+- **`AllianceRecord.findLeadFactionId()`**: the member that leads the alliance, empty where it has no members.
 - **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
