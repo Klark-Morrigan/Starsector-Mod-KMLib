@@ -37,6 +37,8 @@
     "compatibility_unaffected_nexerelin_routines": "On Nexerelin itself, and on mods that integrate with Nexerelin outside of KMLib.",
     "compatibility_lost_nexerelin_alliances": "All mods depending on KMLib will read no Nexerelin alliances this session.",
     "compatibility_unaffected_nexerelin_alliances": "On Nexerelin itself, on mods that integrate with Nexerelin outside of KMLib, and on your save.",
+    "compatibility_lost_nexerelin_colony_transfers": "No mod depending on KMLib will be told this session when a colony changes hands through Nexerelin.",
+    "compatibility_unaffected_nexerelin_colony_transfers": "On Nexerelin itself, on mods that integrate with Nexerelin outside of KMLib, and on your save.",
     "compatibility_lost_rat_access_routes": "Star systems reachable only through Random Assortment of Things' own routes will be read as cut off by KM mods this session.",
     "compatibility_unaffected_rat_access_routes": "On those routes themselves, which still carry a fleet in play, and on your save.",
 

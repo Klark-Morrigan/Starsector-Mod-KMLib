@@ -28,18 +28,9 @@ import exerelin.utilities.InvasionListener;
  * the sector's listener manager for them at the moment a transfer lands, so a listener added or
  * removed mid-campaign is reached or dropped with no word to this class.
  *
- * <p>A mod registers it transient on the sector's listener manager once Nexerelin is present, for
- * instance behind {@link NexerelinPresence#isModEnabled()}. Transient because a save holding a class
- * that implements a Nexerelin interface would fail to load once Nexerelin was removed. The class
- * implements {@link InvasionListener} itself, so loading it resolves that Nexerelin type: a caller
- * only loads this class behind the presence gate, its reference kept in a nested holder class the
- * classloader does not resolve until the gate has passed, the way {@link NexerelinMarketTransfer}
- * keeps its own.
- *
- * <p>One class, shared by every mod that wants the relay, rather than one per mod. Two mods each
- * installing it the usual way - remove by class, then add - leave a single relay between them, so no
- * listener hears a transfer twice. Final for the same reason: a subclass would be a second class,
- * and removing one by its class would leave the other standing beside it.
+ * <p>Only {@link NexerelinIntegration#installTransferRelay} builds it, once per loaded sector, so no
+ * mod can install a second relay or take away the one every listener shares. Package-private and
+ * final for that reason.
  *
  * <p>Holds the sector it was installed on, so a conquest is relayed to that sector's listeners
  * rather than to whichever sector is currently loaded.
@@ -56,7 +47,7 @@ import exerelin.utilities.InvasionListener;
  * would throw {@code AbstractMethodError} in Nexerelin's own frame, before anything here runs. Only
  * Nexerelin giving a new method a default prevents that; failing it, the mend is a KMLib release.
  */
-public final class NexerelinMarketTransferRelay
+final class NexerelinMarketTransferRelay
         implements InvasionListener {
 
     private static final Logger LOG = Global.getLogger(NexerelinMarketTransferRelay.class);
@@ -66,7 +57,7 @@ public final class NexerelinMarketTransferRelay
     /**
      * @param sector the sector this relay is installed on, whose listeners a transfer here reaches
      */
-    public NexerelinMarketTransferRelay(SectorAPI sector) {
+    NexerelinMarketTransferRelay(SectorAPI sector) {
         this.sector = sector;
     }
 

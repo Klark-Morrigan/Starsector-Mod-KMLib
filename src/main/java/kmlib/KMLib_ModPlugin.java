@@ -54,6 +54,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
             KmlibLunaSettings::installBindings,
             "Failed to install KMLib LunaLib settings bindings",
             KmlibLunaSettings::describeLunaLibIntegration);
+
         logActiveRenderer();
         installOptionalModIntegrations();
     }
@@ -62,7 +63,9 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     public void onGameLoad(boolean newGame) {
 
         super.onGameLoad(newGame);
+
         loadInstalledFacesOnce();
+        installNexerelinTransferRelay(Global.getSector());
         installCompatibilityNotice(Global.getSector());
     }
 
@@ -82,6 +85,16 @@ public class KMLib_ModPlugin extends BaseModPlugin {
                 sector,
                 () -> new CompatibilityNotice(sector, CompatibilityFailures.SESSION_RECORD)),
             "Failed to install the KMLib compatibility notice");
+    }
+
+    // Puts the relay carrying Nexerelin's colony transfers on the loaded sector. Per load rather than
+    // at application load, like the notice: the relay is transient and sits on the sector.
+    private static void installNexerelinTransferRelay(SectorAPI sector) {
+
+        WIRING_STEPS.runGuardedStep(
+            () -> NexerelinIntegration.installTransferRelay(sector),
+            "Failed to install the KMLib relay for Nexerelin's colony transfers",
+            NexerelinIntegration::describeTransferRelayIntegration);
     }
 
     // Puts the adapters for whichever optional mods this install has in front of the operations
@@ -118,6 +131,7 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // side effect of the map transform being read for a hover, so it appears only in a session
     // that hovered the map, and it names the reader it picked rather than the renderer underneath.
     private static void logActiveRenderer() {
+
         LOG.info("Active GL renderer resolved; fastRendering="
             + FastRendering.isFastRenderingActive());
     }
@@ -139,7 +153,9 @@ public class KMLib_ModPlugin extends BaseModPlugin {
         if (hasLoadedInstalledFaces) {
             return;
         }
+
         hasLoadedInstalledFaces = true;
+
         WIRING_STEPS.runGuardedStep(
             InstalledFaceCheck::loadEveryFace,
             "Failed to load the installed font faces");

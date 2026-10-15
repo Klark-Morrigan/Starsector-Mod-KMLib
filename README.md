@@ -536,11 +536,9 @@ No Starsector API on the signature.
   Registered with the operations in `starsector/markets/` at load,
   and only where the mod is enabled.
   The other way round,
-  a relay passing that mod's colony transfers on to every `MarketTransferListener` on the sector,
-  which a mod registers once that mod is enabled.
-  It is one class whoever registers it,
-  so clearing by class before adding leaves one relay,
-  and no listener hears a transfer twice.
+  a relay passing that mod's colony transfers on to every `MarketTransferListener` on the sector.
+  KMLib puts it on each loaded sector itself where the mod is enabled,
+  so a mod only registers its own listener.
 - [`mods/rat/`](src/main/java/kmlib/mods/rat/) -
   Random Assortment of Things:
   Abyssal Fracture matching,

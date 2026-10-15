@@ -60,7 +60,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
-  - `NexerelinMarketTransferRelay`（位于 `kmlib.mods.nexerelin`）：把 Nexerelin 的殖民地易手转告星域上的每一个 `MarketTransferListener`。无论由谁注册都是同一个类，因此先按类清除再添加只会留下一个转发器。
+  - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。
 - **`ObservationStore`**、**`ObservationCodec`** 和 **`RecordedObservations`**（位于 `kmlib.starsector.memory.observations`）：在星域记忆中以调用方给定的键保存某一类观察记录的登记表，以文本形式存储，因此不会有类名写入存档。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。

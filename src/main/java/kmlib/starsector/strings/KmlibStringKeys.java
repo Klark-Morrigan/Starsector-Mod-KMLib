@@ -289,6 +289,10 @@ public final class KmlibStringKeys {
     /** What a failed read of Nexerelin's alliances costs. No slots. */
     public static final String COMPATIBILITY_LOST_NEXERELIN_ALLIANCES = "compatibility_lost_nexerelin_alliances";
 
+    /** What a failed install of the Nexerelin colony-transfer relay costs. No slots. */
+    public static final String COMPATIBILITY_LOST_NEXERELIN_COLONY_TRANSFERS =
+        "compatibility_lost_nexerelin_colony_transfers";
+
     /** What a failed Nexerelin integration costs. No slots. */
     public static final String COMPATIBILITY_LOST_NEXERELIN_ROUTINES = "compatibility_lost_nexerelin_routines";
 
@@ -308,6 +312,10 @@ public final class KmlibStringKeys {
     /** What a failed read of Nexerelin's alliances does not cost. No slots. */
     public static final String COMPATIBILITY_UNAFFECTED_NEXERELIN_ALLIANCES =
         "compatibility_unaffected_nexerelin_alliances";
+
+    /** What a failed install of the Nexerelin colony-transfer relay does not cost. No slots. */
+    public static final String COMPATIBILITY_UNAFFECTED_NEXERELIN_COLONY_TRANSFERS =
+        "compatibility_unaffected_nexerelin_colony_transfers";
 
     /** What a failed Nexerelin integration does not cost. No slots. */
     public static final String COMPATIBILITY_UNAFFECTED_NEXERELIN_ROUTINES =

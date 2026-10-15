@@ -291,6 +291,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
 | supplier (a function a caller hands in) | 供应器 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+| told (a listener hearing of an event) | 得到通知 | as the `MarketTransferListener` entry writes it |
 | trigger (a moment that sets an animation off) | 触发 | as the `MarketTransferListener` entry writes it for a listener |
 | usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, as command-line help writes it |
 
