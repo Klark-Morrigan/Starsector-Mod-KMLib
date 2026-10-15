@@ -33,6 +33,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`StarsectorFormat.formatPercent(float)` 四舍五入到最接近的整数百分比**，不再截断。浮点数把 `0.53` 存为 `0.52999997`，此前会显示为 52%。
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
 - **`EntityOrbits.readFocusChain(SectorEntityToken)` 在遇到第二次出现的天体时结束**，此前一个循环会重复到深度上限为止。它的文档原先写着由外向内排列；实际上天体本身排在最前。
+- **每个地点的经济系统列表只读取一次**：`LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`、殖民地集合与 `SectorMarkets.readMarketIds(SectorAPI)` 此前各读取两次，使 `markets` 计数器把已列出的市场计了两遍。
 - **`SectorStarSystems` 的批量读取对未列出任何星系的星域回答为空**，不再出错。
 
 #### 新增

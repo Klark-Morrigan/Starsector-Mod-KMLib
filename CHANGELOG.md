@@ -33,6 +33,7 @@ No player-facing changes.
 - **`StarsectorFormat.formatPercent(float)` rounds to the nearest whole percent** rather than truncating. A float stores `0.53` as `0.52999997`, which showed as 52%.
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` follows the game's own rule**: whether the sector's memory holds `$shownFactionConfigDialog`, which `Misc.isPlayerFactionSetUp()` reads. Its list of placeholder names never held vanilla's unnamed `"Your"`, so an unnamed player faction read as established.
 - **`EntityOrbits.readFocusChain(SectorEntityToken)` ends at the first body it meets twice**, where a cycle repeated until the depth cap. Its documentation said outermost first; the body comes first.
+- **A place's economy listing is read once** by `LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`, the colony sets and `SectorMarkets.readMarketIds(SectorAPI)`. Each read it twice, so the `markets` counter stated the listed markets twice.
 - **`SectorStarSystems`'s bulk reads answer nothing for a sector listing no systems at all**, rather than failing on it.
 
 #### Added
