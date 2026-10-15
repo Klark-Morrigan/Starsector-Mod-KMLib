@@ -14,8 +14,8 @@ import java.util.Optional;
  *
  * @param allianceId              the alliance's stable ID, which every member faction shares
  * @param name                    the alliance's display name
- * @param membersSortedDescending the member faction IDs ordered by descending market size, so the
- *                                first is the lead {@link #findLeadFactionId()} names
+ * @param membersSortedDescending the member faction IDs as the source ranks them, so the first is
+ *                                the lead {@link #findLeadFactionId()} names
  */
 public record AllianceRecord(
     String allianceId,
@@ -34,7 +34,7 @@ public record AllianceRecord(
     }
 
     /**
-     * Finds the member that leads the alliance: the one first by market size.
+     * Finds the member that leads the alliance: the one its source ranks first.
      *
      * @return the lead's faction ID, or empty for an alliance with no members
      */
