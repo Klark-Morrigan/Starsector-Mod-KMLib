@@ -1,6 +1,7 @@
 package kmlib.starsector.memory;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 
 import kmlib.text.KmlibStrings;
 
@@ -186,9 +187,12 @@ public final class ObservationStore<T> {
 
     // One stored entry read back through the family's own codec, which is the only thing that knows
     // what its fields mean - including how much of an entry it can still make sense of.
-    private Optional<T> decodeStoredEntry(String storedObservation) {
+    //
+    // An entry that is not text is not one this store wrote. It reads as never observed, so a
+    // foreign value costs that one subject rather than failing every read of the register.
+    private Optional<T> decodeStoredEntry(Object storedEntry) {
 
-        if (storedObservation == null) {
+        if (!(storedEntry instanceof String storedObservation)) {
             return Optional.empty();
         }
         return Optional.ofNullable(codec.decodeObservation(storedObservation));
@@ -197,53 +201,56 @@ public final class ObservationStore<T> {
     // The stored register as it stands, or null when there is nothing to read - no sector, no
     // memory, or a save written before anything was ever recorded. A caller reading null treats it
     // as "nothing has been observed", which is the answer an absent record deserves.
-    private Map<String, String> readStoredEntries(SectorAPI sector) {
-
-        if (sector == null) {
-            return null;
-        }
-
-        var memory = sector.getMemoryWithoutUpdate();
-        if (memory == null || !memory.contains(memoryKey)) {
-            return null;
-        }
-        return castStoredEntries(memory.get(memoryKey));
+    private Map<String, Object> readStoredEntries(SectorAPI sector) {
+        return readStoredEntriesFrom(SectorMemoryAccess.readSectorMemory(sector));
     }
 
     // The stored register, created and stored on first use. Writers go through here rather than
     // through the read above so that the first observation of a campaign has somewhere to land.
-    private Map<String, String> openStoredEntries(SectorAPI sector) {
+    private Map<String, Object> openStoredEntries(SectorAPI sector) {
 
-        var storedEntries = readStoredEntries(sector);
-        if (storedEntries != null) {
-            return storedEntries;
-        }
-
-        var memory = sector == null
-            ? null
-            : sector.getMemoryWithoutUpdate();
-
+        var memory = SectorMemoryAccess.readSectorMemory(sector);
         if (memory == null) {
             return null;
         }
 
-        var openedEntries = new HashMap<String, String>();
+        var storedEntries = readStoredEntriesFrom(memory);
+        if (storedEntries != null) {
+            return storedEntries;
+        }
+
+        // A key holding something that is not a register is taken over here. Nothing in this store
+        // can read that value, and leaving it in place would stop this family recording anything
+        // for the rest of the campaign. The key is the caller's own, so the value was never
+        // another party's to keep.
+        var openedEntries = new HashMap<String, Object>();
 
         memory.set(memoryKey, openedEntries);
 
         return openedEntries;
     }
 
-    // Sector memory is untyped, so what comes back out of it is taken on trust - and refused
-    // outright when it is not a map at all, since another party writing over the key would
-    // otherwise take down every read of the register rather than merely emptying it.
+    private Map<String, Object> readStoredEntriesFrom(MemoryAPI memory) {
+
+        if (memory == null || !memory.contains(memoryKey)) {
+            return null;
+        }
+        return castStoredEntries(memory.get(memoryKey));
+    }
+
+    // Sector memory is untyped, so what comes back out of it is taken on trust. A value that is not
+    // a map is refused outright, so another party writing over the key empties the register rather
+    // than failing every read of it.
+    //
+    // Entries are typed as Object for the same reason. A cast to String here would be unchecked,
+    // and would fail at the first read of a foreign entry instead of where it can be refused.
     @SuppressWarnings("unchecked")
-    private static Map<String, String> castStoredEntries(Object storedValue) {
+    private static Map<String, Object> castStoredEntries(Object storedValue) {
 
         if (!(storedValue instanceof Map)) {
             return null;
         }
-        return (Map<String, String>) storedValue;
+        return (Map<String, Object>) storedValue;
     }
 
     /**

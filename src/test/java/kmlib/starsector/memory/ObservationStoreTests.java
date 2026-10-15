@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -122,6 +124,22 @@ final class ObservationStoreTests {
 
             assertThat(readObservationOf(SUBJECT_ID))
                 .isEmpty();
+        }
+
+        @Test
+        void readsNothingForAnEntryThatIsNotText() {
+            // The same guard one level down. A foreign value inside the register costs that one
+            // subject, and a subject beside it still reads.
+            var storedEntries = new HashMap<String, Object>();
+
+            storedEntries.put(ABSENT_SUBJECT_ID, OBSERVED_MOMENT);
+            storedEntries.put(SUBJECT_ID, composeStoredEntry(OBSERVED_MOMENT, OBSERVED_PLACE));
+            storeRegisterUnder(REGISTER_KEY, storedEntries);
+
+            assertThat(readObservationOf(ABSENT_SUBJECT_ID))
+                .isEmpty();
+            assertThat(readObservationOf(SUBJECT_ID))
+                .contains(new SyntheticObservation(OBSERVED_MOMENT, OBSERVED_PLACE));
         }
 
         @Test
@@ -279,6 +297,24 @@ final class ObservationStoreTests {
                 Map.of(SUBJECT_ID, new SyntheticObservation(OBSERVED_MOMENT, OBSERVED_PLACE)));
 
             verifyNoInteractions(memoryMock);
+        }
+
+        @Test
+        void takesOverAKeyHoldingSomethingThatIsNotARegister() {
+            // Left in place, the foreign value would stop this family recording anything for the
+            // rest of the campaign.
+            storeRegisterUnder(REGISTER_KEY, "not a register");
+
+            store.recordObservations(
+                sectorMock,
+                Map.of(SUBJECT_ID, new SyntheticObservation(OBSERVED_MOMENT, OBSERVED_PLACE)));
+
+            var openedRegister = ArgumentCaptor.forClass(Object.class);
+
+            verify(memoryMock)
+                .set(eq(REGISTER_KEY), openedRegister.capture());
+            assertThat(openedRegister.getValue())
+                .isEqualTo(Map.of(SUBJECT_ID, "4200@kumari_kandam"));
         }
 
         @Test
