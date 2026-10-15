@@ -29,10 +29,6 @@ import java.util.List;
  * line.
  */
 public final class Hatching {
-    // A triangle is three {x, y} vertices, so its packed width is three vertices - the
-    // stride this steps the soup by to read one triangle at a time.
-    private static final int FLOATS_PER_TRIANGLE = 3 * GlVertexRuns.FLOATS_PER_VERTEX;
-
     // Generates only; never instantiated.
     private Hatching() {
     }
@@ -55,12 +51,14 @@ public final class Hatching {
      *         area for a line to cross
      */
     public static HatchRun computeHatchRun(float[] triangleSoup, HatchPattern pattern) {
-        if (pattern.spacing() <= 0 || triangleSoup.length < FLOATS_PER_TRIANGLE) {
+        if (pattern.spacing() <= 0 || triangleSoup.length < GlVertexRuns.FLOATS_PER_TRIANGLE) {
             return HatchRun.NOTHING_HATCHED;
         }
         var axes = HatchAxes.computeAxesOf(pattern);
         var merger = new HatchSpanMerger(axes, pattern.joinToleranceFraction());
-        for (var i = 0; i + FLOATS_PER_TRIANGLE <= triangleSoup.length; i += FLOATS_PER_TRIANGLE) {
+        for (var i = 0;
+                i + GlVertexRuns.FLOATS_PER_TRIANGLE <= triangleSoup.length;
+                i += GlVertexRuns.FLOATS_PER_TRIANGLE) {
             hatchTriangle(readLevelledTriangle(triangleSoup, i, axes), axes, merger);
         }
         return merger.packHatchRun();

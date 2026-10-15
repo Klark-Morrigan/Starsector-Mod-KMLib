@@ -14,14 +14,13 @@ import java.util.List;
  * triangle soup, so a concave region can be filled with a single {@code
  * GL_TRIANGLES} run instead of the convex-only {@code GL_TRIANGLE_FAN}.
  *
- * <p>A fan or a lone convex inset fills only a convex shape; a fused faction bloc
- * or any rounded, dented outline is concave, and one with an enclave has a hole. To
- * fill such a region so the fill matches its stroked outline exactly, the outline's
- * rings are triangulated here once (at cache-build time, not per frame) and the
- * triangles replayed. The GLU tessellator does the heavy lifting - it handles
- * self-touching contours and holes via the positive winding rule - and this wrapper
- * only flattens whatever primitive kind it emits (triangles, fans, or strips) into
- * one uniform triangle list a caller can hand straight to {@code glVertex}.
+ * <p>A fan or a lone convex inset fills only a convex shape; a rounded or dented
+ * outline is concave, and one with an enclave has a hole. To fill such a region so
+ * the fill matches its stroked outline exactly, the outline's rings are triangulated
+ * here once (at cache-build time, not per frame) and the triangles replayed. The GLU
+ * tessellator does the heavy lifting, and this wrapper only flattens whatever
+ * primitive kind it emits (triangles, fans, or strips) into one uniform triangle list
+ * a caller can hand straight to {@code glVertex}.
  *
  * <p>Winding decides solid from hole under the positive rule: a counter-clockwise
  * outer ring fills, a clockwise hole ring inside it cuts back to winding zero (so an
@@ -37,7 +36,8 @@ public final class PolygonTessellator {
 
     /**
      * Triangulates the given contours into a flat {@code [x, y, x, y, ...]} triangle
-     * soup - every six floats is one triangle - under the positive winding rule.
+     * soup - every {@link GlVertexRuns#FLOATS_PER_TRIANGLE} floats is one triangle -
+     * under the positive winding rule.
      *
      * @param contours the polygon's rings as {@code {x, y}} vertex lists; a
      *                 counter-clockwise outer ring fills, a clockwise hole ring cuts
@@ -47,24 +47,21 @@ public final class PolygonTessellator {
      *         contours enclose no area
      */
     public static float[] tessellateToTriangles(List<List<double[]>> contours) {
+
         var collector = new TriangleCollector();
-        runTessellation(contours, collector, false, GLU.GLU_TESS_WINDING_POSITIVE);
-        return collector.toTriangleArray();
+
+        runTessellation(contours, collector, GLU.GLU_TESS_WINDING_POSITIVE);
+
+        return collector.packTriangles();
     }
 
     /**
-     * Triangulates the intersection of two regions - the area both cover, clipped to
-     * their overlap - into a flat {@code [x, y, x, y, ...]} triangle soup, so a fill
-     * can be clamped to lie inside a second boundary rather than spilling past it.
+     * Triangulates the intersection of two regions - the area both cover - into a flat
+     * {@code [x, y, x, y, ...]} triangle soup, so a fill can be clamped to lie inside a
+     * second boundary rather than spilling past it.
      *
-     * <p>Each operand is first resolved to its own clean, positive-winding boundary
-     * (interior winding exactly +1, self-crossings dropped, holes cut back to 0), and
-     * the two boundaries are then tessellated together under the "absolute winding
-     * &gt;= 2" rule: a point both regions cover winds +2 and survives, a point only one
-     * covers winds +1 and is dropped, and a point inside either region's hole is cut
-     * below the threshold. Resolving each operand first is what makes the &gt;= 2 test
-     * read as "inside both" - a single self-overlapping contour could otherwise reach
-     * +2 on its own and survive where the other region does not reach.
+     * <p>Each region counts as the area {@link #tessellateToTriangles} would fill from it:
+     * a hole in either is cut from the overlap, and a contour overlapping itself counts once.
      *
      * @param regionA one region's rings as {@code {x, y}} vertex lists; rings of fewer
      *                than three vertices are ignored
@@ -77,25 +74,22 @@ public final class PolygonTessellator {
             List<List<double[]>> regionB) {
 
         var collector = new TriangleCollector();
+
         runTessellation(
             combineResolvedBoundaries(regionA, regionB),
             collector,
-            false,
             GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
-        return collector.toTriangleArray();
+
+        return collector.packTriangles();
     }
 
     /**
-     * Outlines the intersection of two regions - the boundary loops of the area both
-     * cover - so a stroke can be clamped to lie inside a second boundary rather than
-     * spilling past it, matching the fill {@link #tessellateIntersectionToTriangles}
-     * clips from the same two regions.
+     * Outlines the intersection of two regions - the boundary of the exact overlap
+     * {@link #tessellateIntersectionToTriangles} fills from the same two regions - so a
+     * stroke can be clamped to match that fill.
      *
-     * <p>Both operands are resolved to their own clean positive-winding boundary first
-     * and then run together under the "absolute winding &gt;= 2" rule, exactly as the
-     * triangle form does; the tessellator emits the overlap's boundary loops instead of
-     * its triangles. The overlap can come back as more than one loop where the clipping
-     * boundary bites the region into disjoint pieces.
+     * <p>The overlap can come back as more than one loop where the second region bites the
+     * first into disjoint pieces.
      *
      * @param regionA one region's rings as {@code {x, y}} vertex lists; rings of fewer
      *                than three vertices are ignored
@@ -108,12 +102,13 @@ public final class PolygonTessellator {
             List<List<double[]>> regionB) {
 
         var collector = new BoundaryCollector();
+
         runTessellation(
             combineResolvedBoundaries(regionA, regionB),
             collector,
-            true,
             GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
-        return collector.loops();
+
+        return collector.getLoops();
     }
 
     /**
@@ -134,16 +129,52 @@ public final class PolygonTessellator {
      *         area
      */
     public static List<List<double[]>> tessellateToBoundaryLoops(List<List<double[]>> contours) {
+
         var collector = new BoundaryCollector();
-        runTessellation(contours, collector, true, GLU.GLU_TESS_WINDING_POSITIVE);
-        return collector.loops();
+
+        runTessellation(contours, collector, GLU.GLU_TESS_WINDING_POSITIVE);
+
+        return collector.getLoops();
+    }
+
+    /**
+     * Outlines the region a set of extents covers, clamped to lie within one enclosing loop -
+     * so an outline drawn from the result never spills past a boundary that was already drawn.
+     *
+     * <p>The extents resolve together rather than one at a time: abutting extents wind into one
+     * region under the positive rule, so the edge two neighbours share is dropped and the set
+     * comes back as the outline of its combined reach.
+     *
+     * <p>The loop is taken in the flat {@code [x, y, x, y, ...]} run form a baked outline is
+     * kept in. A null loop means there is nothing to clamp to, and the extents resolve to their
+     * own combined boundary as {@link #tessellateToBoundaryLoops} would. Nothing here rounds or
+     * reshapes a corner: the clamp only follows the loop it is given.
+     *
+     * @param extents       the regions to outline, as {@code {x, y}} vertex lists; rings of
+     *                      fewer than three vertices are ignored
+     * @param enclosingLoop the loop to clamp them to, as a {@code [x, y, x, y, ...]} run, or
+     *                      null to leave them unclamped
+     * @return one closed loop per boundary contour of what is left, each a list of
+     *         {@code {x, y}} vertices; the clamp can bite the extents into more than one loop
+     */
+    public static List<List<double[]>> tessellateToBoundaryLoopsWithinLoop(
+            List<List<double[]>> extents,
+            float[] enclosingLoop) {
+
+        if (enclosingLoop == null) {
+            return tessellateToBoundaryLoops(extents);
+        }
+        return tessellateIntersectionToBoundaryLoops(
+            extents,
+            List.of(GlVertexRuns.unflattenVertices(enclosingLoop)));
     }
 
     // Resolves both operands to their own clean positive-winding boundary and concatenates
-    // them - the shared front half of both intersection entry points. The combined loops are
-    // then run under the abs>=2 rule, where a point both regions cover winds twice and
-    // survives; resolving each operand first is what makes that test read as "inside both",
-    // since a single self-overlapping contour could otherwise reach +2 on its own.
+    // them, ready to run under the "absolute winding >= 2" rule: a point both regions cover
+    // winds +2 and survives, a point only one covers winds +1 and is dropped, and a point in
+    // either region's hole falls below the threshold. Resolving each operand first is what
+    // makes ">= 2" read as "inside both" - a single self-overlapping contour could otherwise
+    // reach +2 on its own and survive where the other region does not reach.
     private static List<List<double[]>> combineResolvedBoundaries(
             List<List<double[]>> regionA,
             List<List<double[]>> regionB) {
@@ -151,46 +182,45 @@ public final class PolygonTessellator {
         var boundaryA = tessellateToBoundaryLoops(regionA);
         var boundaryB = tessellateToBoundaryLoops(regionB);
         var combined = new ArrayList<List<double[]>>(boundaryA.size() + boundaryB.size());
+
         combined.addAll(boundaryA);
         combined.addAll(boundaryB);
+
         return combined;
     }
 
-    // Feeds every contour through a fresh GLU tessellator under {@code windingRule},
-    // routing its callbacks to {@code collector}. When {@code boundaryOnly}, the
-    // tessellator emits the resolved region's boundary loops rather than its triangles.
-    //
-    // The positive rule keeps only the region wound counter-clockwise overall (the
-    // outer envelope): a counter-clockwise outer contour fills, a clockwise hole
-    // contour cuts back to winding zero (so enclaves stay empty), and a ring that
-    // crosses itself has its reversed sub-loop dropped rather than split off as a
-    // stray loop with a matching notch in the survivor. So a self-touching outline
-    // resolves to one clean envelope instead of an ear-plus-notch pair. The
-    // absolute-winding >= 2 rule instead keeps only where two positive regions
-    // overlap - their intersection - since a point both cover winds twice.
+    // Feeds every contour through a fresh GLU tessellator under windingRule. The collector
+    // receives the output and also decides its form - triangles or boundary loops - so the two
+    // cannot be paired wrongly.
     private static void runTessellation(
             List<List<double[]>> contours,
-            GLUtessellatorCallbackAdapter collector,
-            boolean boundaryOnly,
+            RunCollector collector,
             int windingRule) {
 
         var tessellator = GLU.gluNewTess();
+
         tessellator.gluTessCallback(GLU.GLU_TESS_BEGIN, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_VERTEX, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_END, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_COMBINE, collector);
         tessellator.gluTessProperty(GLU.GLU_TESS_WINDING_RULE, windingRule);
-        if (boundaryOnly) {
+
+        if (collector.isBoundaryOnly()) {
             tessellator.gluTessProperty(GLU.GLU_TESS_BOUNDARY_ONLY, GL11.GL_TRUE);
         }
 
         tessellator.gluTessBeginPolygon(null);
+
         for (var contour : contours) {
+
             if (contour.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
                 continue;
             }
+
             tessellator.gluTessBeginContour();
+
             for (var vertex : contour) {
+
                 // The tessellator both consumes the coordinates (3D, z = 0) and hands
                 // back the vertex-data object in the vertex callback; the 2D point is
                 // passed as that data so it re-emerges without a lookup.
@@ -199,53 +229,54 @@ public final class PolygonTessellator {
                     0,
                     new double[] {vertex[0], vertex[1]});
             }
+
             tessellator.gluTessEndContour();
         }
+
         tessellator.gluTessEndPolygon();
         tessellator.gluDeleteTess();
     }
 
-    // Gathers the tessellator's output. It emits faces as GL_TRIANGLES,
-    // GL_TRIANGLE_FAN, or GL_TRIANGLE_STRIP runs; this records the current run's kind
-    // and, at its end, expands it into individual triangles so every consumer sees
-    // one uniform triangle list regardless of how the tessellator grouped the faces.
-    private static final class TriangleCollector extends GLUtessellatorCallbackAdapter {
-        private final List<Float> triangles = new ArrayList<>();
+    // Gathers the tessellator's boundary-only output: one GL_LINE_LOOP run per
+    // boundary contour of the resolved region. Each run's vertices are one closed
+    // loop; loops shorter than a triangle enclose no area and are dropped.
+    private static final class BoundaryCollector
+            extends RunCollector {
+
+        private final List<List<double[]>> loops = new ArrayList<>();
+
+        @Override
+        protected void collectRun(int kind, List<double[]> vertices) {
+
+            if (vertices.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
+                loops.add(new ArrayList<>(vertices));
+            }
+        }
+
+        @Override
+        protected boolean isBoundaryOnly() {
+            return true;
+        }
+
+        private List<List<double[]>> getLoops() {
+            return loops;
+        }
+    }
+
+    // Buffers the tessellator's output one run at a time and hands each finished run to the
+    // subclass, which decides both the output's form and what to keep of each run.
+    private abstract static class RunCollector
+            extends GLUtessellatorCallbackAdapter {
+
         private final List<double[]> runVertices = new ArrayList<>();
+
         private int runKind;
 
         @Override
         public void begin(int kind) {
+
             runKind = kind;
             runVertices.clear();
-        }
-
-        @Override
-        public void vertex(Object vertexData) {
-            runVertices.add((double[]) vertexData);
-        }
-
-        @Override
-        public void end() {
-            if (runKind == GL11.GL_TRIANGLES) {
-                for (var i = 0; i + 2 < runVertices.size(); i += TESS_TRIANGLE_STEP) {
-                    addTriangle(i, i + 1, i + 2);
-                }
-            } else if (runKind == GL11.GL_TRIANGLE_FAN) {
-                for (var i = 1; i + 1 < runVertices.size(); i++) {
-                    addTriangle(0, i, i + 1);
-                }
-            } else if (runKind == GL11.GL_TRIANGLE_STRIP) {
-                for (var i = 0; i + 2 < runVertices.size(); i++) {
-                    // A strip alternates winding every other triangle; swap the first
-                    // two indices on odd steps so all output triangles wind alike.
-                    if (i % 2 == 0) {
-                        addTriangle(i, i + 1, i + 2);
-                    } else {
-                        addTriangle(i + 1, i, i + 2);
-                    }
-                }
-            }
         }
 
         // The tessellator may synthesise a vertex where contours cross; hand back a
@@ -255,58 +286,82 @@ public final class PolygonTessellator {
             outData[0] = new double[] {coords[0], coords[1]};
         }
 
-        private void addTriangle(int a, int b, int c) {
-            addVertex(runVertices.get(a));
-            addVertex(runVertices.get(b));
-            addVertex(runVertices.get(c));
-        }
-
-        private void addVertex(double[] vertex) {
-            triangles.add((float) vertex[0]);
-            triangles.add((float) vertex[1]);
-        }
-
-        private float[] toTriangleArray() {
-            return GlVertexRuns.packFloats(triangles);
-        }
-
-        // A GL_TRIANGLES run is consumed three vertices at a time.
-        private static final int TESS_TRIANGLE_STEP = 3;
-    }
-
-    // Gathers the tessellator's boundary-only output: one GL_LINE_LOOP run per
-    // boundary contour of the resolved region. Each run's vertices are one closed
-    // loop; loops shorter than a triangle enclose no area and are dropped.
-    private static final class BoundaryCollector extends GLUtessellatorCallbackAdapter {
-        private final List<List<double[]>> loops = new ArrayList<>();
-        private List<double[]> currentLoop = new ArrayList<>();
-
         @Override
-        public void begin(int kind) {
-            currentLoop = new ArrayList<>();
+        public void end() {
+            collectRun(runKind, runVertices);
         }
 
         @Override
         public void vertex(Object vertexData) {
-            currentLoop.add((double[]) vertexData);
+            runVertices.add((double[]) vertexData);
         }
 
+        // Receives one finished run. The vertex list is reused for the next run, so a subclass
+        // that keeps it must copy it.
+        protected abstract void collectRun(int kind, List<double[]> vertices);
+
+        // Whether the tessellator should emit the resolved region's boundary loops rather than
+        // its triangles.
+        protected abstract boolean isBoundaryOnly();
+    }
+
+    // Gathers the tessellator's output. It emits faces as GL_TRIANGLES,
+    // GL_TRIANGLE_FAN, or GL_TRIANGLE_STRIP runs; this expands each run into
+    // individual triangles so every consumer sees one uniform triangle list
+    // regardless of how the tessellator grouped the faces.
+    private static final class TriangleCollector
+            extends RunCollector {
+
+        private final List<Float> triangles = new ArrayList<>();
+
         @Override
-        public void end() {
-            if (currentLoop.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
-                loops.add(currentLoop);
+        protected void collectRun(int kind, List<double[]> vertices) {
+
+            if (kind == GL11.GL_TRIANGLES) {
+
+                for (var i = 0; i + 2 < vertices.size(); i += GlVertexRuns.VERTICES_PER_TRIANGLE) {
+                    addTriangle(vertices, i, i + 1, i + 2);
+                }
+            } else if (kind == GL11.GL_TRIANGLE_FAN) {
+
+                for (var i = 1; i + 1 < vertices.size(); i++) {
+                    addTriangle(vertices, 0, i, i + 1);
+                }
+            } else if (kind == GL11.GL_TRIANGLE_STRIP) {
+
+                for (var i = 0; i + 2 < vertices.size(); i++) {
+
+                    // A strip alternates winding every other triangle; swap the first
+                    // two indices on odd steps so all output triangles wind alike.
+                    if (i % 2 == 0) {
+                        addTriangle(vertices, i, i + 1, i + 2);
+                    } else {
+                        addTriangle(vertices, i + 1, i, i + 2);
+                    }
+                }
             }
         }
 
-        // A crossing may synthesise a vertex; hand back a 2D point at the
-        // interpolated location so it flows through like any other.
         @Override
-        public void combine(double[] coords, Object[] data, float[] weight, Object[] outData) {
-            outData[0] = new double[] {coords[0], coords[1]};
+        protected boolean isBoundaryOnly() {
+            return false;
         }
 
-        private List<List<double[]>> loops() {
-            return loops;
+        private void addTriangle(List<double[]> vertices, int a, int b, int c) {
+
+            addVertex(vertices.get(a));
+            addVertex(vertices.get(b));
+            addVertex(vertices.get(c));
+        }
+
+        private void addVertex(double[] vertex) {
+
+            triangles.add((float) vertex[0]);
+            triangles.add((float) vertex[1]);
+        }
+
+        private float[] packTriangles() {
+            return GlVertexRuns.packFloats(triangles);
         }
     }
 }

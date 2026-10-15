@@ -340,6 +340,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | digits (of a figure) | 位数 | how many digits a figure carries, as in 保留全部位数, every digit kept; one digit on its own is 数字 |
 | failed load (of a font) | 加载失败 | the noun form of 无法加载 |
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
+| hatch, stroke, spacing, pattern | 斜线, 描边, 间距, 图样 | 斜线, 描边 and 间距 as the `0.4.0` `HatchPattern` entry writes them |
 | fraction (a share in `[0, 1]`, such as `0.20` for 20%) | 比例 | not 分数, which reads as a ratio of two integers such as 1/5 |
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | highlight colour | 高亮颜色 | |
@@ -392,6 +393,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | directed line, even-odd count | 有向直线, 奇偶计数 | the usual geometry words |
+| extent (one painted shape), outline | 范围, 轮廓 | |
 | hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 单元 as the controls entries write a cell |
 | region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
