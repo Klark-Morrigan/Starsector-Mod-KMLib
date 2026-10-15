@@ -17,6 +17,11 @@ import java.util.function.Predicate;
  * Finding the markets that sit in one place, whatever kind of place it is - all of them, or the
  * one nearest something.
  *
+ * <p>A place has two listings: the economy's own list, and the markets hung on its entities that
+ * the economy never registered. They are read apart as {@link #readMarkets} and
+ * {@link #readMarketsUnlistedByEconomy}, or together as {@link #readMarketListings}, which asks
+ * the economy once for both.
+ *
  * <p>The search underneath every "what is in here" read. A market sits in a location - a star
  * system, or hyperspace - and neither half of finding one is system-specific: the economy is
  * asked per location, and the entities hung with markets are a location's own. Stating the
@@ -31,6 +36,33 @@ public final class LocationMarkets {
 
     private LocationMarkets() {
         // utility class, no instances.
+    }
+
+    /**
+     * Both of {@code location}'s listings, off one read of the economy: the markets it lists, and
+     * the ones hung on the location's entities that it does not.
+     *
+     * <p>The read for a caller that needs both halves. Asking {@link #readMarkets} and
+     * {@link #readMarketsUnlistedByEconomy} in turn reads the economy's list twice, since telling
+     * an unlisted market from a listed one needs that list - and a place read twice for one
+     * answer is counted twice on the caller's row.
+     *
+     * @param sector   the sector whose economy is read; null (or a null economy) yields
+     *                 {@link LocationMarketListings#NONE}
+     * @param location the location to read; null yields {@link LocationMarketListings#NONE}
+     * @return the location's two listings; never null
+     */
+    public static LocationMarketListings readMarketListings(SectorAPI sector, LocationAPI location) {
+
+        if (!hasReadableEconomy(sector, location)) {
+            return LocationMarketListings.NONE;
+        }
+
+        var listedMarkets = readMarkets(sector, location);
+
+        return new LocationMarketListings(
+            listedMarkets,
+            collectMarketsUnlistedBy(listedMarkets, location));
     }
 
     /**
@@ -52,14 +84,16 @@ public final class LocationMarkets {
      * @return the location's markets in economy order; never null
      */
     public static List<MarketAPI> readMarkets(SectorAPI sector, LocationAPI location) {
+
         if (!hasReadableEconomy(sector, location)) {
             return List.of();
         }
-        var markets = sector.getEconomy().getMarkets(location);
 
+        var markets = sector.getEconomy().getMarkets(location);
         if (markets == null) {
             return List.of();
         }
+
         // Every read of the economy's listing is counted, this one included when a
         // caller above has already made it: two reads of one place are two reads,
         // and a row that reported them as one would hide the second.
@@ -100,34 +134,8 @@ public final class LocationMarkets {
             SectorAPI sector,
             LocationAPI location) {
 
-        if (!hasReadableEconomy(sector, location)) {
-            return List.of();
-        }
-        // Seeded with the economy's own markets so one scan answers both halves of sameness - a
-        // market the economy lists, and one an earlier entity already yielded - then dropped from
-        // the answer, the caller having read those from the economy itself.
-        var listedMarkets = readMarkets(sector, location);
-        var seenMarkets = new ArrayList<>(listedMarkets);
-        var unlistedMarkets = new ArrayList<MarketAPI>();
-
-        var entities = location.getAllEntities();
-
-        for (var entity : entities) {
-            var market = entity == null ? null : entity.getMarket();
-
-            if (market != null && !isAlreadyPresent(seenMarkets, market)) {
-                seenMarkets.add(market);
-                unlistedMarkets.add(market);
-            }
-        }
-        // The entities are what this read costs - everything in the place is looked
-        // at - while the markets are what it produced. Both, since neither answers
-        // the other: a place with one unlisted colony among two thousand bodies is
-        // a cheap answer to state and an expensive one to find.
-        SectorWalkCounters.countEntitiesVisited(entities.size());
-        SectorWalkCounters.countMarketsRead(unlistedMarkets.size());
-
-        return unlistedMarkets;
+        return readMarketListings(sector, location)
+            .unlistedByEconomy();
     }
 
     /**
@@ -165,20 +173,54 @@ public final class LocationMarkets {
         if (from == null || from.getLocation() == null || eligibility == null) {
             return Optional.empty();
         }
-        var presentMarkets = new ArrayList<>(readMarkets(sector, location));
-        presentMarkets.addAll(readMarketsUnlistedByEconomy(sector, location));
 
         RankedMarket nearest = null;
 
-        for (var market : presentMarkets) {
+        for (var market : readMarketListings(sector, location).listPresentMarkets()) {
 
             var candidate = rankMarket(market, from, eligibility);
-
             if (candidate != null && candidate.isNearerThan(nearest)) {
                 nearest = candidate;
             }
         }
-        return nearest == null ? Optional.empty() : Optional.of(nearest.market());
+
+        return nearest == null
+            ? Optional.empty()
+            : Optional.of(nearest.market());
+    }
+
+    // The entity scan behind the unlisted listing. Seeded with the economy's own markets so one
+    // scan answers both halves of sameness - a market the economy lists, and one an earlier entity
+    // already yielded - then those are left out of the answer, the caller holding them already.
+    private static List<MarketAPI> collectMarketsUnlistedBy(
+            List<MarketAPI> listedMarkets,
+            LocationAPI location) {
+
+        var seenMarkets = new ArrayList<>(listedMarkets);
+        var unlistedMarkets = new ArrayList<MarketAPI>();
+        var entities = location.getAllEntities();
+
+        for (var entity : entities) {
+
+            var market = entity == null
+                ? null
+                : entity.getMarket();
+
+            if (market != null && !isAlreadyPresent(seenMarkets, market)) {
+
+                seenMarkets.add(market);
+                unlistedMarkets.add(market);
+            }
+        }
+
+        // The entities are what this read costs - everything in the place is looked
+        // at - while the markets are what it produced. Both, since neither answers
+        // the other: a place with one unlisted colony among two thousand bodies is
+        // a cheap answer to state and an expensive one to find.
+        SectorWalkCounters.countEntitiesVisited(entities.size());
+        SectorWalkCounters.countMarketsRead(unlistedMarkets.size());
+
+        return unlistedMarkets;
     }
 
     // A market with what it takes to rank it, or null when it does not rank at all - rejected by
@@ -193,12 +235,16 @@ public final class LocationMarkets {
         if (market == null || !eligibility.test(market)) {
             return null;
         }
-        var body = market.getPrimaryEntity();
 
+        var body = market.getPrimaryEntity();
         if (body == null || body.getLocation() == null) {
             return null;
         }
-        return new RankedMarket(market, body, StarsectorPoints.computeDistanceBetween(body, from));
+
+        return new RankedMarket(
+            market,
+            body,
+            StarsectorPoints.computeDistanceBetween(body, from));
     }
 
     // Whether there is an economy to read this location's markets out of. Both reads answer an empty
@@ -206,7 +252,9 @@ public final class LocationMarkets {
     // listed market from an unlisted one, so neither read has an answer rather than a shorter one.
     private static boolean hasReadableEconomy(SectorAPI sector, LocationAPI location) {
 
-        return sector != null && location != null && sector.getEconomy() != null;
+        return sector != null
+            && location != null
+            && sector.getEconomy() != null;
     }
 
     // Whether one of the markets already found stands for the same colony under the same owner,
@@ -214,10 +262,12 @@ public final class LocationMarkets {
     private static boolean isAlreadyPresent(List<MarketAPI> presentMarkets, MarketAPI market) {
 
         for (var present : presentMarkets) {
+
             if (MarketColocation.isSamePlaceAndOwner(present, market)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -230,6 +280,7 @@ public final class LocationMarkets {
 
         // Whether this candidate displaces the best found so far, nothing found yet included.
         private boolean isNearerThan(RankedMarket incumbent) {
+
             return incumbent == null
                 || StarsectorPoints.isNearerThan(
                     distance,
