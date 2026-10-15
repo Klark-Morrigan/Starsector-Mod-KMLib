@@ -749,6 +749,13 @@ No Starsector API on the signature.
   the holder states its base key and names the address it means,
   and the key is composed in one place,
   so no holder can spell the segments differently or drop one and quietly share a slot.
+  Beside them a register of one family's observations,
+  kept under a key the caller names,
+  read by subject ID,
+  shed of subjects the sector no longer holds,
+  and brought back into step with a loaded save.
+  Each entry is stored as text through a codec the caller supplies,
+  so no class name enters a save.
 - [`starsector/salvage/`](src/main/java/kmlib/starsector/salvage/) -
   drop lists for the game's salvage roller,
   random drops by weight and value drops by credit budget,

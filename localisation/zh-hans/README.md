@@ -280,6 +280,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | parser, value parser | 解析器, 值解析器 | the usual computing words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reflection | 反射 | as in the settings description |
+| register (a store of records kept under one key) | 登记表 | from 登记, to record, as the `0.5.0` compatibility entries write it |
 | named group (of a regex) | 命名分组 | the usual computing word |
 | regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |

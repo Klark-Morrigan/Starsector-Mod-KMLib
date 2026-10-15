@@ -106,6 +106,9 @@ enforcePackageLayering {
                       'kmlib.starsector.markets.ownership',
                       'kmlib.starsector.markets.storage']
 
+    forbidImport exactly: 'kmlib.starsector.memory',
+                 of: 'kmlib.starsector.memory.observations'
+
     forbidImport exactly: 'kmlib.starsector.settings',
                  of: 'kmlib.starsector.settings.modmanager'
 
