@@ -71,6 +71,7 @@ No player-facing changes.
   - `rollDrops(Random, float, List, List)`: the roll, with every multiplier but the overall one neutral.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`SectorMarkets.readMarketIds(SectorAPI)`**: the ID of every market in the sector, whether the economy lists it or not.
+- **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`** in `kmlib.starsector`: the one traversal of the sector's system list every sector-wide read goes through, charged as one walk. A null sector, or one listing no systems, visits nothing.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.
