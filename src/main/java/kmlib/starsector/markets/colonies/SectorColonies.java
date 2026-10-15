@@ -2,7 +2,7 @@ package kmlib.starsector.markets.colonies;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 
-import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.SectorWalks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ public final class SectorColonies {
      * report the same thing in the same order. Hyperspace goes last because it is not a system:
      * a reader listing what it finds should reach the ordinary case first.
      *
-     * <p>A sector listing no systems is still asked for its hyperspace. The two are separate
+     * <p>Hyperspace is asked after the systems whatever the system list held. The two are separate
      * places, so one being unreadable says nothing about the other - and treating a missing
      * system list as "the sector holds nothing" would drop exactly the colonies this read exists
      * to catch.
@@ -64,17 +64,13 @@ public final class SectorColonies {
         if (sector == null) {
             return List.of();
         }
-        var colonies = new ArrayList<Colony>();
-        var systems = sector.getStarSystems();
 
-        if (systems != null) {
-            for (var system : systems) {
-                colonies.addAll(SystemColonies.readColoniesIn(sector, system).colonies());
-            }
-            // The sector-wide read walks the system list itself rather than through
-            // the system reader, so the walk is counted here or nowhere.
-            SectorWalkCounters.countSectorWalk(systems.size());
-        }
+        var colonies = new ArrayList<Colony>();
+
+        SectorWalks.walkStarSystems(
+            sector,
+            system -> colonies.addAll(SystemColonies.readColoniesIn(sector, system).colonies()));
+
         colonies.addAll(HyperspaceColonies.readColonies(sector).colonies());
 
         return colonies;
