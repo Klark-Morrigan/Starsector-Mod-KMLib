@@ -5,7 +5,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.impl.campaign.GateEntityPlugin;
 
 /**
- * Operations over Domain gates, so KM* mods (and console tools) share one
+ * Operations over Domain gates, so mods using KMLib (and its console tools) share one
  * implementation of the gate-state dance rather than re-deriving which memory
  * flags vanilla reads.
  *
