@@ -212,6 +212,22 @@ final class SectorMarketsTests {
             assertThat(counts.readCount(SectorWalkCounters.SECTOR_WALKS))
                 .isEqualTo(1L);
         }
+
+        @Test
+        void readsEachPlacesEconomyListingOnce() {
+            // Both listings come off one paired read per place, so a system holding one listed and
+            // one unlisted market costs two markets read, not the listed one twice over.
+            var listed = nameMarket(ColonyMarketFixture.buildVisibleColony("hegemony"), LISTED_MARKET_ID);
+            var unlisted = nameMarket(ColonyMarketFixture.buildDerelictStation(), UNLISTED_MARKET_ID);
+
+            ColonyPlacementFixture.listColonies(economyMock, systemMock, listed);
+            ColonyPlacementFixture.hangColoniesOnEntitiesIn(systemMock, listed, unlisted);
+
+            var counts = WalkCountCapture.captureCountsOf(() -> SectorMarkets.readMarketIds(sectorMock));
+
+            assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
+                .isEqualTo(2L);
+        }
     }
 
     // The ID a record is kept against. Given here rather than by the colony builders, none of which
