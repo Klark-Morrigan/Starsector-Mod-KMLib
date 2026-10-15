@@ -60,6 +60,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `findSmallestEnclosingRing(List, double, double)`：包含该点且面积最小的环，因此嵌套的环解析为最内层。
   - `isPointInsideAnyRing(List, double, double)`：是否有任何一个环单独包含该点，而不是对所有环做奇偶计数。
   - `orientRing(List, boolean)`：按逆时针或顺时针方向绕行的环的副本。
+- **`PolygonTessellator.tessellateWithinLoop(List, float[])`**：一组范围被限制在一个外围环之内后的轮廓；环为 null 时不作限制。
 - **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。

@@ -47,8 +47,11 @@ public final class PolygonTessellator {
      *         contours enclose no area
      */
     public static float[] tessellateToTriangles(List<List<double[]>> contours) {
+
         var collector = new TriangleCollector();
+
         runTessellation(contours, collector, false, GLU.GLU_TESS_WINDING_POSITIVE);
+
         return collector.toTriangleArray();
     }
 
@@ -77,11 +80,13 @@ public final class PolygonTessellator {
             List<List<double[]>> regionB) {
 
         var collector = new TriangleCollector();
+
         runTessellation(
             combineResolvedBoundaries(regionA, regionB),
             collector,
             false,
             GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
+
         return collector.toTriangleArray();
     }
 
@@ -108,11 +113,13 @@ public final class PolygonTessellator {
             List<List<double[]>> regionB) {
 
         var collector = new BoundaryCollector();
+
         runTessellation(
             combineResolvedBoundaries(regionA, regionB),
             collector,
             true,
             GLU.GLU_TESS_WINDING_ABS_GEQ_TWO);
+
         return collector.loops();
     }
 
@@ -134,9 +141,44 @@ public final class PolygonTessellator {
      *         area
      */
     public static List<List<double[]>> tessellateToBoundaryLoops(List<List<double[]>> contours) {
+
         var collector = new BoundaryCollector();
+
         runTessellation(contours, collector, true, GLU.GLU_TESS_WINDING_POSITIVE);
+
         return collector.loops();
+    }
+
+    /**
+     * Outlines the region a set of extents covers, clamped to lie within one enclosing loop -
+     * so an outline drawn from the result never spills past a boundary that was already drawn.
+     *
+     * <p>The extents resolve together rather than one at a time: abutting extents wind into one
+     * region under the positive rule, so the edge two neighbours share is dropped and the set
+     * comes back as the outline of its combined reach.
+     *
+     * <p>The loop is taken in the flat {@code [x, y, x, y, ...]} run form a baked outline is
+     * kept in. A null loop means there is nothing to clamp to, and the extents resolve to their
+     * own combined boundary as {@link #tessellateToBoundaryLoops} would. Nothing here rounds or
+     * reshapes a corner: the clamp only follows the loop it is given.
+     *
+     * @param extents       the regions to outline, as {@code {x, y}} vertex lists; rings of
+     *                      fewer than three vertices are ignored
+     * @param enclosingLoop the loop to clamp them to, as a {@code [x, y, x, y, ...]} run, or
+     *                      null to leave them unclamped
+     * @return one closed loop per boundary contour of what is left, each a list of
+     *         {@code {x, y}} vertices; the clamp can bite the extents into more than one loop
+     */
+    public static List<List<double[]>> tessellateWithinLoop(
+            List<List<double[]>> extents,
+            float[] enclosingLoop) {
+
+        if (enclosingLoop == null) {
+            return tessellateToBoundaryLoops(extents);
+        }
+        return tessellateIntersectionToBoundaryLoops(
+            extents,
+            List.of(GlVertexRuns.unflattenVertices(enclosingLoop)));
     }
 
     // Resolves both operands to their own clean positive-winding boundary and concatenates
@@ -151,8 +193,10 @@ public final class PolygonTessellator {
         var boundaryA = tessellateToBoundaryLoops(regionA);
         var boundaryB = tessellateToBoundaryLoops(regionB);
         var combined = new ArrayList<List<double[]>>(boundaryA.size() + boundaryB.size());
+
         combined.addAll(boundaryA);
         combined.addAll(boundaryB);
+
         return combined;
     }
 
@@ -175,22 +219,29 @@ public final class PolygonTessellator {
             int windingRule) {
 
         var tessellator = GLU.gluNewTess();
+
         tessellator.gluTessCallback(GLU.GLU_TESS_BEGIN, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_VERTEX, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_END, collector);
         tessellator.gluTessCallback(GLU.GLU_TESS_COMBINE, collector);
         tessellator.gluTessProperty(GLU.GLU_TESS_WINDING_RULE, windingRule);
+
         if (boundaryOnly) {
             tessellator.gluTessProperty(GLU.GLU_TESS_BOUNDARY_ONLY, GL11.GL_TRUE);
         }
 
         tessellator.gluTessBeginPolygon(null);
+
         for (var contour : contours) {
+
             if (contour.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
                 continue;
             }
+
             tessellator.gluTessBeginContour();
+
             for (var vertex : contour) {
+
                 // The tessellator both consumes the coordinates (3D, z = 0) and hands
                 // back the vertex-data object in the vertex callback; the 2D point is
                 // passed as that data so it re-emerges without a lookup.
@@ -199,8 +250,10 @@ public final class PolygonTessellator {
                     0,
                     new double[] {vertex[0], vertex[1]});
             }
+
             tessellator.gluTessEndContour();
         }
+
         tessellator.gluTessEndPolygon();
         tessellator.gluDeleteTess();
     }
@@ -209,13 +262,17 @@ public final class PolygonTessellator {
     // GL_TRIANGLE_FAN, or GL_TRIANGLE_STRIP runs; this records the current run's kind
     // and, at its end, expands it into individual triangles so every consumer sees
     // one uniform triangle list regardless of how the tessellator grouped the faces.
-    private static final class TriangleCollector extends GLUtessellatorCallbackAdapter {
+    private static final class TriangleCollector
+            extends GLUtessellatorCallbackAdapter {
+
         private final List<Float> triangles = new ArrayList<>();
         private final List<double[]> runVertices = new ArrayList<>();
+
         private int runKind;
 
         @Override
         public void begin(int kind) {
+
             runKind = kind;
             runVertices.clear();
         }
@@ -227,16 +284,21 @@ public final class PolygonTessellator {
 
         @Override
         public void end() {
+
             if (runKind == GL11.GL_TRIANGLES) {
+
                 for (var i = 0; i + 2 < runVertices.size(); i += TESS_TRIANGLE_STEP) {
                     addTriangle(i, i + 1, i + 2);
                 }
             } else if (runKind == GL11.GL_TRIANGLE_FAN) {
+
                 for (var i = 1; i + 1 < runVertices.size(); i++) {
                     addTriangle(0, i, i + 1);
                 }
             } else if (runKind == GL11.GL_TRIANGLE_STRIP) {
+
                 for (var i = 0; i + 2 < runVertices.size(); i++) {
+
                     // A strip alternates winding every other triangle; swap the first
                     // two indices on odd steps so all output triangles wind alike.
                     if (i % 2 == 0) {
@@ -256,12 +318,14 @@ public final class PolygonTessellator {
         }
 
         private void addTriangle(int a, int b, int c) {
+
             addVertex(runVertices.get(a));
             addVertex(runVertices.get(b));
             addVertex(runVertices.get(c));
         }
 
         private void addVertex(double[] vertex) {
+
             triangles.add((float) vertex[0]);
             triangles.add((float) vertex[1]);
         }
@@ -277,7 +341,9 @@ public final class PolygonTessellator {
     // Gathers the tessellator's boundary-only output: one GL_LINE_LOOP run per
     // boundary contour of the resolved region. Each run's vertices are one closed
     // loop; loops shorter than a triangle enclose no area and are dropped.
-    private static final class BoundaryCollector extends GLUtessellatorCallbackAdapter {
+    private static final class BoundaryCollector
+            extends GLUtessellatorCallbackAdapter {
+
         private final List<List<double[]>> loops = new ArrayList<>();
         private List<double[]> currentLoop = new ArrayList<>();
 
@@ -293,6 +359,7 @@ public final class PolygonTessellator {
 
         @Override
         public void end() {
+
             if (currentLoop.size() >= Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
                 loops.add(currentLoop);
             }

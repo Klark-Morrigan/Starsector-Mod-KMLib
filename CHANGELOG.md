@@ -60,6 +60,7 @@ No player-facing changes.
   - `findSmallestEnclosingRing(List, double, double)`: the holding ring of smallest area, so nested rings resolve to the innermost.
   - `isPointInsideAnyRing(List, double, double)`: whether any one ring holds the point, rather than an even-odd count across them.
   - `orientRing(List, boolean)`: a copy of a ring wound counter-clockwise or clockwise.
+- **`PolygonTessellator.tessellateWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
