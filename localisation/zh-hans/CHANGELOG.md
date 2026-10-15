@@ -33,6 +33,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`StarsectorFormat.formatPercent(float)` 四舍五入到最接近的整数百分比**，不再截断。浮点数把 `0.53` 存为 `0.52999997`，此前会显示为 52%。
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
 - **`EntityOrbits.readFocusChain(SectorEntityToken)` 在遇到第二次出现的天体时结束**，此前一个循环会重复到深度上限为止。它的文档原先写着由外向内排列；实际上天体本身排在最前。
+- **`SectorStarSystems` 的批量读取对未列出任何星系的星域回答为空**，不再出错。
 
 #### 新增
 
@@ -55,6 +56,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
 - **`Lines`** 改为公开，新增 **`computeOrientation(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
+- **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
+- **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
@@ -70,6 +73,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
   - `rollDrops(Random, float, List, List)`：执行抽取，除总倍率外的所有倍率均保持中性。
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
+- **`SectorMarkets.readMarketIds(SectorAPI)`**：星域中每一个市场的 ID，无论经济系统是否列出该市场。
+- **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`**（位于 `kmlib.starsector`）：所有星域范围的读取共用的、对星域星系列表的唯一一次遍历，计为一次 walk。星域为 null 或未列出任何星系时不访问任何星系。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StorageAccess.unlockStorage(MarketAPI, String)`**（位于 `kmlib.starsector.markets.storage`）：把市场的仓库标记为已付费解锁，使其无需原版的一次性使用费即可打开。插件被其他 Mod 替换的仓库保持不变。

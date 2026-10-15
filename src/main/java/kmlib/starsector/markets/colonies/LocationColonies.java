@@ -39,9 +39,10 @@ public final class LocationColonies {
      * Reads {@code location}'s colonies out of the sector - the single walk every reader above
      * is meant to share rather than repeat.
      *
-     * <p>Both listings are filtered for admission before they are resolved per place, so a
-     * planet's condition-only market can never win a place from the real colony sharing its
-     * entity by being the larger of the two.
+     * <p>Both listings come off one paired read, so the economy is asked once per place, and both
+     * are filtered for admission before they are resolved per place - so a planet's
+     * condition-only market can never win a place from the real colony sharing its entity by
+     * being the larger of the two.
      *
      * <p>The two listings are resolved together in one pass rather than each on its own. The
      * unlisted read already excludes anything naming a place the economy lists, so the two
@@ -55,14 +56,8 @@ public final class LocationColonies {
      */
     public static Colonies readColoniesIn(SectorAPI sector, LocationAPI location) {
 
-        var listedMarkets = LocationMarkets.readMarkets(sector, location);
-        var ownedMarkets = new ArrayList<MarketAPI>();
-
-        collectOwnedColonies(listedMarkets, ownedMarkets);
-        collectOwnedColonies(
-            LocationMarkets.readMarketsUnlistedByEconomy(sector, location),
-            ownedMarkets);
-
+        var listings = LocationMarkets.readMarketListings(sector, location);
+        var ownedMarkets = collectOwnedColonies(listings.listPresentMarkets());
         var colonies = new ArrayList<Colony>();
 
         for (var market : MarketColocation.readLargestMarketsPerFaction(ownedMarkets)) {
@@ -70,7 +65,7 @@ public final class LocationColonies {
             // Listing is decided here by identity against the economy's own set rather than by
             // asking the market, so the one answer travels with the colony and a later reader
             // cannot arrive at a second.
-            colonies.add(new Colony(market, isListedByEconomy(listedMarkets, market)));
+            colonies.add(new Colony(market, isListedByEconomy(listings.listedByEconomy(), market)));
         }
         // Counted on the one read every colony set is selected through, so a row
         // states the colonies it went over however many places it asked about.
@@ -79,17 +74,17 @@ public final class LocationColonies {
         return new Colonies(colonies);
     }
 
-    // Appends the colonies among a listing, in the order the listing gives them. Kept as one pass
-    // over both listings so the admission rule is stated once rather than per listing.
-    private static void collectOwnedColonies(
-            List<MarketAPI> markets,
-            List<MarketAPI> ownedMarkets) {
+    // The colonies among the markets present, in the order the listings give them.
+    private static List<MarketAPI> collectOwnedColonies(List<MarketAPI> markets) {
+
+        var ownedMarkets = new ArrayList<MarketAPI>();
 
         for (var market : markets) {
             if (isColonyMarket(market)) {
                 ownedMarkets.add(market);
             }
         }
+        return ownedMarkets;
     }
 
     // What may stand for a colony at all: a market some faction holds, or the one shape that is

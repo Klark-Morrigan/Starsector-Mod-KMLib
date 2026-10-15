@@ -33,6 +33,7 @@ No player-facing changes.
 - **`StarsectorFormat.formatPercent(float)` rounds to the nearest whole percent** rather than truncating. A float stores `0.53` as `0.52999997`, which showed as 52%.
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` follows the game's own rule**: whether the sector's memory holds `$shownFactionConfigDialog`, which `Misc.isPlayerFactionSetUp()` reads. Its list of placeholder names never held vanilla's unnamed `"Your"`, so an unnamed player faction read as established.
 - **`EntityOrbits.readFocusChain(SectorEntityToken)` ends at the first body it meets twice**, where a cycle repeated until the depth cap. Its documentation said outermost first; the body comes first.
+- **`SectorStarSystems`'s bulk reads answer nothing for a sector listing no systems at all**, rather than failing on it.
 
 #### Added
 
@@ -55,6 +56,8 @@ No player-facing changes.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
+- **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
+- **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
@@ -70,6 +73,8 @@ No player-facing changes.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
   - `rollDrops(Random, float, List, List)`: the roll, with every multiplier but the overall one neutral.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
+- **`SectorMarkets.readMarketIds(SectorAPI)`**: the ID of every market in the sector, whether the economy lists it or not.
+- **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`** in `kmlib.starsector`: the one traversal of the sector's system list every sector-wide read goes through, charged as one walk. A null sector, or one listing no systems, visits nothing.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.

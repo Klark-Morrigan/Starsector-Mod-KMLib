@@ -140,9 +140,9 @@ final class SectorColoniesTests {
 
         @Test
         void countsOneWalkOverTheSystemsAndTheColoniesItSelected() {
-            // The sector-wide read walks the system list itself rather than through the system
-            // reader, so what it costs is stated here or nowhere. The colonies come from the one
-            // selection every set is read through, hyperspace's included.
+            // The sector-wide read goes over the system list through the shared walk, which is
+            // what charges it. The colonies come from the one selection every set is read through,
+            // hyperspace's included.
             var sector = new SectorFixture();
 
             sector.addSystemHolding(ColonyMarketFixture.buildVisibleColony("hegemony"));

@@ -7,7 +7,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
-import kmlib.starsector.SectorWalkCounters;
+import kmlib.starsector.SectorWalks;
 import kmlib.starsector.entities.Entities;
 import kmlib.starsector.markets.LocationMarkets;
 import kmlib.starsector.markets.Markets;
@@ -15,6 +15,7 @@ import kmlib.starsector.systems.StarSystems;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Console command that lists, as a tree, the star systems worth spoiling: those
@@ -83,65 +84,22 @@ public final class ListMapSpoilersCommand
         var report = new StringBuilder(
             "Map spoilers - cut-off systems and undiscovered markets:");
 
-        var systemCount = 0;
-        var systems = sector.getStarSystems();
+        var entries = new ArrayList<String>();
 
-        for (var system : systems) {
+        SectorWalks.walkStarSystems(
+            sector,
+            system -> describeSpoilerSystem(sector, system).ifPresent(entries::add));
 
-            var ownedMarkets = collectOwnedMarkets(sector, system);
-            var isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
-
-            // Only spoiler-worthy systems: cut off (the player cannot normally
-            // reach it), or holding a market not found yet. A cut-off system
-            // lists even with no owned market, so empty void/story systems still
-            // surface; ordinary reachable systems with nothing hidden are skipped.
-            if (!isSystemCutOff && !hasFlaggedMarkets(ownedMarkets)) {
-                continue;
-            }
-
-            systemCount++;
-
+        if (entries.isEmpty()) {
+            report.append("\n  (none)");
+        }
+        for (var entry : entries) {
             report
                 .append('\n')
-                .append(StarSystems.readDisplayName(system));
-
-            if (isSystemCutOff) {
-                report.append("  [cut off]");
-            }
-
-            for (var market : ownedMarkets) {
-
-                report
-                    .append("\n    ")
-                    .append(market.getName())
-                    .append("  (")
-                    .append(market.getFaction().getDisplayName())
-                    .append(')')
-                    .append(readVisibilitySuffix(market));
-            }
-        }
-
-        // No shared reader stands between this listing and the system list, so the traversal
-        // reports itself: a command walking the sector should show as a walk like any other.
-        SectorWalkCounters.countSectorWalk(systems.size());
-
-        if (systemCount == 0) {
-            report.append("\n  (none)");
+                .append(entry);
         }
 
         return report.toString();
-    }
-
-    private static boolean hasFlaggedMarkets(List<MarketAPI> markets) {
-
-        for (var market : markets) {
-
-            if (!readVisibilitySuffix(market).isEmpty()) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // The systems worth spoiling are the ones somebody has settled, so the listing asks the same
@@ -163,6 +121,53 @@ public final class ListMapSpoilersCommand
         }
 
         return ownedMarkets;
+    }
+
+    // One system's block of the report: the system, then each owned market with its faction and
+    // its visibility flag. Empty for a system not worth spoiling.
+    //
+    // Only spoiler-worthy systems: cut off (the player cannot normally reach it), or holding a
+    // market not found yet. A cut-off system lists even with no owned market, so empty void/story
+    // systems still surface; ordinary reachable systems with nothing hidden are skipped.
+    private static Optional<String> describeSpoilerSystem(SectorAPI sector, StarSystemAPI system) {
+
+        var ownedMarkets = collectOwnedMarkets(sector, system);
+        var isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
+
+        if (!isSystemCutOff && !hasFlaggedMarkets(ownedMarkets)) {
+            return Optional.empty();
+        }
+
+        var entry = new StringBuilder(StarSystems.readDisplayName(system));
+
+        if (isSystemCutOff) {
+            entry.append("  [cut off]");
+        }
+
+        for (var market : ownedMarkets) {
+
+            entry
+                .append("\n    ")
+                .append(market.getName())
+                .append("  (")
+                .append(market.getFaction().getDisplayName())
+                .append(')')
+                .append(readVisibilitySuffix(market));
+        }
+
+        return Optional.of(entry.toString());
+    }
+
+    private static boolean hasFlaggedMarkets(List<MarketAPI> markets) {
+
+        for (var market : markets) {
+
+            if (!readVisibilitySuffix(market).isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // Flags a market the player has not found yet: one whose entity is still

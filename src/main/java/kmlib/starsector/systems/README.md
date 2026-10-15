@@ -64,8 +64,11 @@ so the two are reached at different moments by different code.
 Kept in one class they read as a grab-bag that any new system read could be added to,
 with no rule saying which.
 
-Every read that traverses the system list reports it through [`SectorWalkCounters`](../SectorWalkCounters.java),
+Every bulk read traverses the system list through [`SectorWalks`](../SectorWalks.java),
+which reports the walk through [`SectorWalkCounters`](../SectorWalkCounters.java),
 so a caller's profiling row states the walks it caused without having asked for any of them to be counted.
+The market reads over the whole sector go through the same walk,
+which is why it lives above both packages rather than in this one.
 
 ## What tells two systems apart
 

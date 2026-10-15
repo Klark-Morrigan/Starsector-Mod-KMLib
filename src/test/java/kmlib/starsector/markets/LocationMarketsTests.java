@@ -22,8 +22,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pins the contracts of {@link LocationMarkets#readMarkets},
- * {@link LocationMarkets#readMarketsUnlistedByEconomy} and
- * {@link LocationMarkets#findNearestMarket} - the searches themselves, at the layer that owns
+ * {@link LocationMarkets#readMarketsUnlistedByEconomy}, {@link LocationMarkets#readMarketListings}
+ * and {@link LocationMarkets#findNearestMarket} - the searches themselves, at the layer that owns
  * them. Each method's cases live in a {@link Nested} group so the suite reports as a per-method
  * tree; the shared wiring stays on the outer class.
  *
@@ -69,12 +69,14 @@ final class LocationMarketsTests {
 
         @Test
         void returnsEmptyForANullSector() {
+
             assertThat(LocationMarkets.readMarkets(null, mock(LocationAPI.class)))
                 .isEmpty();
         }
 
         @Test
         void returnsEmptyForANullLocation() {
+
             assertThat(LocationMarkets.readMarkets(mock(SectorAPI.class), null))
                 .isEmpty();
         }
@@ -230,12 +232,14 @@ final class LocationMarketsTests {
 
         @Test
         void returnsEmptyForANullSector() {
+
             assertThat(LocationMarkets.readMarketsUnlistedByEconomy(null, mock(LocationAPI.class)))
                 .isEmpty();
         }
 
         @Test
         void returnsEmptyForANullLocation() {
+
             assertThat(LocationMarkets.readMarketsUnlistedByEconomy(mock(SectorAPI.class), null))
                 .isEmpty();
         }
@@ -275,6 +279,76 @@ final class LocationMarketsTests {
             // The listing this read makes of its own, plus the one unlisted market it found.
             assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
                 .isEqualTo(2L);
+        }
+    }
+
+    @Nested
+    class ReadMarketListings {
+
+        @Test
+        void answersTheEconomysMarketsAndTheUnlistedOnesApart() {
+            // Which listing a market came from is part of the answer: a mirrored mechanic takes the
+            // economy's half alone, and a surface describing the place takes both.
+            var listed = MarketPlacementFixture.buildMarketOnBody("ancyra");
+            var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, listed);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, listed, academy);
+
+            var listings = LocationMarkets.readMarketListings(sector, locationMock);
+
+            assertThat(listings.listedByEconomy())
+                .containsExactly(listed);
+            assertThat(listings.unlistedByEconomy())
+                .containsExactly(academy);
+        }
+
+        @Test
+        void readsTheEconomysListingOnceForBothHalves() {
+            // Telling an unlisted market from a listed one needs the economy's list, so the two
+            // reads asked in turn read it twice. Paired, it is read once: the one listed market, the
+            // one unlisted market, and the two entities looked at to find it.
+            var listed = MarketPlacementFixture.buildMarketOnBody("ancyra");
+            var academy = MarketPlacementFixture.buildMarketOnBody("academy_station");
+            var locationMock = mock(LocationAPI.class);
+            var sector = buildSectorListing(locationMock, listed);
+
+            MarketPlacementFixture.placeMarketsIn(locationMock, listed, academy);
+
+            var counts = WalkCountCapture.captureCountsOf(
+                () -> LocationMarkets.readMarketListings(sector, locationMock));
+
+            assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
+                .isEqualTo(2L);
+            assertThat(counts.readCount(SectorWalkCounters.ENTITIES_VISITED))
+                .isEqualTo(2L);
+        }
+
+        @Test
+        void returnsNoneForANullSector() {
+
+            assertThat(LocationMarkets.readMarketListings(null, mock(LocationAPI.class)))
+                .isEqualTo(LocationMarketListings.NONE);
+        }
+
+        @Test
+        void returnsNoneForANullLocation() {
+
+            assertThat(LocationMarkets.readMarketListings(mock(SectorAPI.class), null))
+                .isEqualTo(LocationMarketListings.NONE);
+        }
+
+        @Test
+        void returnsNoneWhenTheSectorHasNoEconomy() {
+
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getEconomy())
+                .thenReturn(null);
+
+            assertThat(LocationMarkets.readMarketListings(sectorMock, mock(LocationAPI.class)))
+                .isEqualTo(LocationMarketListings.NONE);
         }
     }
 
@@ -486,6 +560,7 @@ final class LocationMarketsTests {
 
         @Test
         void returnsEmptyForANullSector() {
+
             assertThat(LocationMarkets.findNearestMarket(
                     null,
                     mock(LocationAPI.class),
@@ -496,6 +571,7 @@ final class LocationMarketsTests {
 
         @Test
         void returnsEmptyForANullLocation() {
+
             assertThat(LocationMarkets.findNearestMarket(
                     mock(SectorAPI.class),
                     null,
