@@ -55,7 +55,6 @@ No player-facing changes.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
-- **`Markets.readSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, null where the market has no such counter.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
@@ -96,6 +95,7 @@ No player-facing changes.
 | `PulsePhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation` | `PhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation.cycles` | Cycles nobody triggered live apart from the animations a caller triggers, and `Pulse` names only the triggered envelopes. |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` measures rings, and where a line stays inside a region is a question of its own. |
 | `ParameterSpec(String)` and `ParameterSpec.takingNoArguments(String)`, taking the whole usage line | The same, taking the one-word command name; a longer one throws `IllegalArgumentException`. `ParameterSpec(String, String)` adds the word a command reads before the parse, such as `<kind>`. | The spec composes the usage line from its parameters, so the line cannot drift from what the parser accepts. |
+| `Markets.readSubmarketPlugin(MarketAPI, String, Class)`, null where nothing answers | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`, returning `Optional` | `Markets` reads what a market is, and a trading counter is part of how one is put together. |
 
 </details>
 

@@ -1,15 +1,12 @@
 package kmlib.starsector.markets;
 
 import com.fs.starfarer.api.campaign.CampaignFleetAPI;
-import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.CustomEntitySpecAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
-import com.fs.starfarer.api.campaign.econ.SubmarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
-import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
 import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.entities.EntityNameplate;
@@ -33,15 +30,13 @@ import static org.mockito.Mockito.when;
  * Pins the contracts of {@link Markets#findAttachedStation},
  * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
  * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary}, {@link Markets#isOwnedBy},
- * {@link Markets#isOwnedColony}, {@link Markets#isSettledColony}, {@link Markets#readNameplate},
- * {@link Markets#readSubmarketCargo} and
- * {@link Markets#readSubmarketPlugin} - the reads that answer what one market is, plus the two
- * reaches into how it is put together. The cases live in a
- * {@link Nested} group per method so the suite reports as a per-method tree; the shared mock
- * builders stay on the outer class.
+ * {@link Markets#isOwnedColony}, {@link Markets#isSettledColony} and {@link Markets#readNameplate} -
+ * the reads that answer what one market is. The cases live in a {@link Nested} group per method so
+ * the suite reports as a per-method tree; the shared mock builders stay on the outer class.
  *
- * <p>What may be said about a market is pinned by {@link MarketVisibilityTests}, and which of
- * several markets speaks for a place by {@link MarketColocationTests}.
+ * <p>What may be said about a market is pinned by {@link MarketVisibilityTests}, which of several
+ * markets speaks for a place by {@link MarketColocationTests}, and how a market's trading counters
+ * are reached by {@link MarketSubmarketsTests}.
  */
 final class MarketsTests {
 
@@ -492,88 +487,6 @@ final class MarketsTests {
 
             assertThat(Markets.readNameplate(null))
                 .isEqualTo(EntityNameplate.BLANK);
-        }
-    }
-
-    @Nested
-    class ReadSubmarketCargo {
-
-        @Test
-        void readsTheCountersCargo() {
-
-            var cargoMock = mock(CargoAPI.class);
-            var submarketMock = mock(SubmarketAPI.class);
-            var marketMock = mock(MarketAPI.class);
-
-            when(submarketMock.getCargo())
-                .thenReturn(cargoMock);
-            when(marketMock.getSubmarket("storage"))
-                .thenReturn(submarketMock);
-
-            assertThat(Markets.readSubmarketCargo(marketMock, "storage"))
-                .isSameAs(cargoMock);
-        }
-
-        @Test
-        void readsNothingWhereTheMarketKeepsNoSuchCounter() {
-
-            assertThat(Markets.readSubmarketCargo(mock(MarketAPI.class), "storage"))
-                .isNull();
-        }
-
-        @Test
-        void readsNothingForANullMarket() {
-
-            assertThat(Markets.readSubmarketCargo(null, "storage"))
-                .isNull();
-        }
-    }
-
-    // The colonies here are MarketOwnershipFixture's rather than this suite's own builders: what
-    // is being read is a counter and the plugin behind it, and that fixture is where this package
-    // states what a colony's counters look like - including which of them are kept by a plugin
-    // worth speaking to.
-    @Nested
-    class ReadSubmarketPlugin {
-
-        @Test
-        void readsThePluginKeepingTheCounter() {
-
-            var market = MarketOwnershipFixture.buildColonyTradingThrough(
-                "player",
-                "storage");
-
-            assertThat(Markets.readSubmarketPlugin(market, "storage", StoragePlugin.class))
-                .isSameAs(market.getSubmarket("storage").getPlugin());
-        }
-
-        @Test
-        void readsNothingWhereTheCounterIsKeptByAnotherKindOfPlugin() {
-            // The case the kind is asked for at all: a mod may put its own plugin behind a counter
-            // vanilla defines, and an operation that cast it outright would fail on that install
-            // rather than pass the counter over.
-            var market = MarketOwnershipFixture.buildColonyTradingThrough(
-                "player",
-                "local_resources");
-
-            assertThat(Markets.readSubmarketPlugin(market, "local_resources", StoragePlugin.class))
-                .isNull();
-        }
-
-        @Test
-        void readsNothingWhereTheMarketKeepsNoSuchCounter() {
-
-            var market = MarketOwnershipFixture.buildColonyHeldBy("hegemony");
-
-            assertThat(Markets.readSubmarketPlugin(market, "storage", StoragePlugin.class))
-                .isNull();
-        }
-
-        @Test
-        void readsNothingForANullMarket() {
-
-            assertThat(Markets.readSubmarketPlugin(null, "storage", StoragePlugin.class))
-                .isNull();
         }
     }
 

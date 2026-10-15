@@ -55,7 +55,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
 - **`Lines`** 改为公开，新增 **`computeOrientation(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
-- **`Markets.readSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为 null。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
@@ -96,6 +95,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | 位于 `kmlib.animation` 中的 `PulsePhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 位于 `kmlib.animation.cycles` 中的 `PhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 无人触发的循环与调用方触发的动画分开存放，`Pulse` 只用于被触发的包络。 |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` 测量环，而一条直线在区域内停留在哪里是另一个问题。 |
 | `ParameterSpec(String)` 和 `ParameterSpec.takingNoArguments(String)`，接受完整的用法行 | 二者不变，改为接受只有一个词的命令词；多于一个词时抛出 `IllegalArgumentException`。`ParameterSpec(String, String)` 另外接受命令在解析前自行读取的词，例如 `<kind>`。 | 参数规范根据自身的参数组成用法行，因此用法行不会与解析器实际接受的内容脱节。 |
+| `Markets.readSubmarketPlugin(MarketAPI, String, Class)`，无可作答时为 null | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`，返回 `Optional` | `Markets` 读取市场是什么，而子市场属于市场的构成方式。 |
 
 </details>
 
