@@ -1722,7 +1722,8 @@ since an appender left on a logger goes on collecting what the rest of a suite w
 the core-UI hops and widget tree a layout rule walks,
 builders for the values those ports report,
 the market and colony shapes a "who is here" read is posed against,
-a listener manager that records what an installer registered with it
+a listener manager that records what an installer registered with it,
+and answers which listeners it holds of a type as the game's own manager does,
 beside the narrow sector that answers for nothing but that manager,
 an intel manager that holds what is added to it by the game's own rules,
 so a subject that records an intel and then asks for it finds its own write,
