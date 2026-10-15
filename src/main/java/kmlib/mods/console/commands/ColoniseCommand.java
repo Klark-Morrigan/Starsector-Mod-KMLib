@@ -36,10 +36,11 @@ import kmlib.starsector.markets.colonisation.MarketColoniser;
  * without Console Commands never loads it, so KMLib runs fine without that mod - no hard
  * dependency is declared.
  */
-public final class ColoniseCommand extends BaseKmlibCommand {
+public final class ColoniseCommand
+        extends BaseKmlibCommand {
 
     private static final MarketOwnerSpec SPEC =
-        new MarketOwnerSpec("Usage: kmlib_colonise [entity-id] [faction-id].");
+        new MarketOwnerSpec("kmlib_colonise");
 
     public ColoniseCommand() {
     }
@@ -81,8 +82,8 @@ public final class ColoniseCommand extends BaseKmlibCommand {
         var found = ((ResolvedTarget<MarketOwnerTarget>) target).target();
 
         MarketColoniser.establishColony(sector, found.market(), found.owner().getId());
-
         output.showMessage(describeFoundedColony(sector, found));
+
         return CommandResult.SUCCESS;
     }
 

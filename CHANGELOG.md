@@ -39,6 +39,9 @@ No player-facing changes.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, else `NO_BASE_PRICE`.
+- **Console command parameters** in `kmlib.mods.console.commands.parsing`:
+  - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
+  - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
@@ -84,6 +87,7 @@ No player-facing changes.
 | `HighlightedParagraph.getHighlightTexts()` and `getHighlightColours()` | `getHighlights()`, reading `Highlight.getText()` and `getColour()` from each | Only tests read them, and the render methods hand the game its own text-ordered arrays. |
 | `PulsePhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation` | `PhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation.cycles` | Cycles nobody triggered live apart from the animations a caller triggers, and `Pulse` names only the triggered envelopes. |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` measures rings, and where a line stays inside a region is a question of its own. |
+| `ParameterSpec(String)` and `ParameterSpec.takingNoArguments(String)`, taking the whole usage line | The same, taking the one-word command name; a longer one throws `IllegalArgumentException`. `ParameterSpec(String, String)` adds the word a command reads before the parse, such as `<kind>`. | The spec composes the usage line from its parameters, so the line cannot drift from what the parser accepts. |
 
 </details>
 

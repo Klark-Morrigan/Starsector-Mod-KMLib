@@ -19,17 +19,19 @@ import static kmlib.mods.console.commands.parsing.ParameterValues.text;
  * faction - so each is left unsupplied here and answered by the search that knows how to look it
  * up.
  *
- * <p>The usage line stays the caller's, being the one part of this that is genuinely per command:
- * it names the command a player mistyped.
+ * <p>The command name stays the caller's, being the one part of this that is genuinely per
+ * command: the usage line names the command a player mistyped.
  */
-final class MarketOwnerSpec extends ParameterSpec {
+final class MarketOwnerSpec
+        extends ParameterSpec {
 
     final Parameter<String> entityId =
         acceptsPositional("entity_id", "<entity-id>", text());
+
     final Parameter<String> factionId =
         acceptsPositional("faction_id", "<faction-id>", text());
 
-    MarketOwnerSpec(String usageLine) {
-        super(usageLine);
+    MarketOwnerSpec(String commandName) {
+        super(commandName);
     }
 }

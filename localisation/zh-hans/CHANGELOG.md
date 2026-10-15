@@ -39,6 +39,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都没有时为 `NO_BASE_PRICE`。
+- **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
+  - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
+  - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
 - **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按类别分支的读取方使用。
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的船体插件。
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
@@ -84,6 +87,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `HighlightedParagraph.getHighlightTexts()` 和 `getHighlightColours()` | `getHighlights()`，从每个高亮读取 `Highlight.getText()` 和 `getColour()` | 只有测试读取它们，而渲染方法会把按文本顺序排列的数组直接交给游戏。 |
 | 位于 `kmlib.animation` 中的 `PulsePhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 位于 `kmlib.animation.cycles` 中的 `PhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 无人触发的循环与调用方触发的动画分开存放，`Pulse` 只用于被触发的包络。 |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` 测量环，而一条直线在区域内停留在哪里是另一个问题。 |
+| `ParameterSpec(String)` 和 `ParameterSpec.takingNoArguments(String)`，接受完整的用法行 | 二者不变，改为接受只有一个词的命令词；多于一个词时抛出 `IllegalArgumentException`。`ParameterSpec(String, String)` 另外接受命令在解析前自行读取的词，例如 `<kind>`。 | 参数规范根据自身的参数组成用法行，因此用法行不会与解析器实际接受的内容脱节。 |
 
 </details>
 

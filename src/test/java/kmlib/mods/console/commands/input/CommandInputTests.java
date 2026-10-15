@@ -35,16 +35,18 @@ final class CommandInputTests {
     // A single required positional, enough to tell a parse failure (missing ID)
     // from a parse success (ID supplied) apart from the context outcome.
     private static final class SampleSpec extends ParameterSpec {
+
         private final Parameter<String> id =
             acceptsPositional("id", "<id>", ParameterValues.text()).markRequired();
 
         private SampleSpec() {
-            super("Usage: sample <id>.");
+            super("sample");
         }
     }
 
     @Nested
     class ParseArguments {
+
         private final SampleSpec spec = new SampleSpec();
 
         @Test
@@ -55,10 +57,13 @@ final class CommandInputTests {
                 .requireCampaign()
                 .parseArguments(spec);
 
-            assertThat(parsed.isValid()).isFalse();
-            assertThat(parsed.getResult()).isEqualTo(CommandResult.WRONG_CONTEXT);
+            assertThat(parsed.isValid())
+                .isFalse();
+            assertThat(parsed.getResult())
+                .isEqualTo(CommandResult.WRONG_CONTEXT);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("can only run in a campaign"));
+
             // The tokens were never parsed, so no syntax complaint reached the player.
             assertThat(outputFake.getMessages())
                 .noneMatch(message -> message.contains("Too many arguments"));
@@ -66,22 +71,28 @@ final class CommandInputTests {
 
         @Test
         void parsesTheArgumentsOnceTheContextPasses() {
+
             var parsed = new CommandInput(CommandContext.CAMPAIGN_MAP, "gate1", outputFake)
                 .requireCampaign()
                 .parseArguments(spec);
 
-            assertThat(parsed.isValid()).isTrue();
-            assertThat(parsed.get(spec.id)).isEqualTo("gate1");
+            assertThat(parsed.isValid())
+                .isTrue();
+            assertThat(parsed.get(spec.id))
+                .isEqualTo("gate1");
         }
 
         @Test
         void reportsABadArgumentAsBadSyntaxOnceTheContextPasses() {
+
             var parsed = new CommandInput(CommandContext.CAMPAIGN_MAP, "", outputFake)
                 .requireCampaign()
                 .parseArguments(spec);
 
-            assertThat(parsed.isValid()).isFalse();
-            assertThat(parsed.getResult()).isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(parsed.isValid())
+                .isFalse();
+            assertThat(parsed.getResult())
+                .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
                 .anyMatch(message -> message.contains("Missing required parameter 'id'"));
         }

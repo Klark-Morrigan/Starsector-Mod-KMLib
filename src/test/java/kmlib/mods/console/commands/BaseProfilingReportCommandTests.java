@@ -35,9 +35,9 @@ import static org.mockito.Mockito.when;
  * Pins {@link BaseProfilingReportCommand}: a bare invocation writes the capture as it was measured
  * to the game log and tells the overlay where it landed, a named view writes the reading it names,
  * the frame flag divides the totals by the beat the subclass names, {@code reset} clears the
- * profiler and reports that it did, a stray argument is rejected as bad syntax without touching
- * the profiler, the usage line carries the subclass's command name, and every invocation acts on
- * whichever profiler is bound at the moment it runs.
+ * profiler and reports that it did, a stray argument or a reset given with a reading is rejected as
+ * bad syntax without touching the profiler, the usage line carries the subclass's command name,
+ * and every invocation acts on whichever profiler is bound at the moment it runs.
  */
 final class BaseProfilingReportCommandTests {
 
@@ -163,14 +163,29 @@ final class BaseProfilingReportCommandTests {
         }
 
         @Test
+        void rejectsAResetGivenWithAReadingWithoutTouchingTheProfiler() {
+            // A reset writes no reading, so a view or narrowing beside it asks for something the
+            // run would silently drop. Refused, so the player learns which of the two they meant.
+            var result = commandFake.runCommand("flat top=5 reset", CommandContext.CAMPAIGN_MAP);
+
+            assertThat(result)
+                .isEqualTo(CommandResult.BAD_SYNTAX);
+            assertThat(outputFake.getMessages())
+                .anyMatch(message -> message.startsWith(
+                    "'reset' cannot be combined with other arguments."));
+
+            verify(profilerMock, never())
+                .reset();
+        }
+
+        @Test
         void printsTheUsageUnderTheSubclassCommandNameWhenGivenTooManyViews() {
 
             commandFake.runCommand("tree flat", CommandContext.CAMPAIGN_MAP);
 
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains(
-                    "Usage: test_profiling [tree|flat|walks] [namespace=<prefix>] [top=<count>]"
-                        + " [perframe] [reset]."));
+                .containsExactly("Too many arguments. Usage: test_profiling [tree|flat|walks]"
+                    + " [namespace=<prefix>] [top=<count>] [perframe], or test_profiling reset.");
         }
 
         @Test

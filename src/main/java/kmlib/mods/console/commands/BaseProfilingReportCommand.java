@@ -7,8 +7,6 @@ import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
 import kmlib.mods.console.commands.parsing.ParameterValues;
 import kmlib.mods.console.commands.parsing.ParsedParameters;
-import kmlib.mods.console.commands.parsing.ValueParseException;
-import kmlib.mods.console.commands.parsing.ValueParser;
 import kmlib.profiling.ActiveProfiler;
 import kmlib.profiling.ProfileSection;
 import kmlib.profiling.Profiler;
@@ -16,19 +14,14 @@ import kmlib.profiling.report.ProfileReportRequest;
 import kmlib.profiling.report.TimingReport;
 import kmlib.starsector.SectorWalkCounters;
 
-import java.util.Locale;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
  * Base for a console command that writes the accumulated performance timings to the game log, or
  * clears them when invoked with {@code reset}.
- *
- * <p>The on-demand reporting surface for whichever profiler is bound. Three readings of one
- * capture, because three different questions are asked of it: the tree says what a total is made
- * of, the listing says which row to open next, and the walks listing says which pass went looking
- * for the sector. A namespace and a row count narrow any of them to what is being investigated,
- * and the per-frame division turns a session's totals into what one frame spends.
  *
  * <p>A subclass names only what is its own: the word the console knows the command by, the label
  * its notices carry, and which beat a frame is counted by. Profiling knows that a row was opened
@@ -42,16 +35,14 @@ import java.util.function.Supplier;
  *
  * <p>The profiler is resolved per invocation rather than held, because a level knob can rebind
  * it: a command holding the profiler it was built with would report the capture the player
- * switched away from. The lookup and the two output sinks arrive as constructor arguments rather
- * than being reached for, so a caller can point the same formatting and reset rules at a
- * different profiler or a different sink.
+ * switched away from.
  */
 public abstract class BaseProfilingReportCommand
         extends BaseKmlibCommand {
 
-    private static final String TIMINGS_RESET_SUFFIX = " timings reset.";
     private static final String TIMINGS_LOGGED_SUFFIX =
         " timings written to the game log (starsector-core/starsector.log).";
+    private static final String TIMINGS_RESET_SUFFIX = " timings reset.";
 
     private final ProfileSection frameBeat;
     private final CommandOutput log;
@@ -98,23 +89,22 @@ public abstract class BaseProfilingReportCommand
 
         super(output);
 
-        Objects.requireNonNull(commandName, "commandName");
         Objects.requireNonNull(noticeLabel, "noticeLabel");
 
         this.frameBeat = Objects.requireNonNull(frameBeat, "frameBeat");
-        this.resolveBoundProfiler =
-            Objects.requireNonNull(resolveBoundProfiler, "resolveBoundProfiler");
-
         this.log = Objects.requireNonNull(log, "log");
-        this.timingsResetNotice = noticeLabel + TIMINGS_RESET_SUFFIX;
-        this.timingsLoggedNotice = noticeLabel + TIMINGS_LOGGED_SUFFIX;
+        this.resolveBoundProfiler = Objects.requireNonNull(resolveBoundProfiler, "resolveBoundProfiler");
         this.spec = new ProfilingSpec(commandName);
+        this.timingsLoggedNotice = noticeLabel + TIMINGS_LOGGED_SUFFIX;
+        this.timingsResetNotice = noticeLabel + TIMINGS_RESET_SUFFIX;
     }
 
     @Override
     public final CommandResult runCommand(String args, CommandContext context) {
 
-        var parsed = spec.parse(args, output);
+        // No context guard: a capture is worth reading wherever the console opens.
+        var parsed = readInput(context, args).parseArguments(spec);
+
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -155,28 +145,16 @@ public abstract class BaseProfilingReportCommand
      *
      * <p>The reading is a positional, being the one thing an invocation is mostly about; the
      * narrowings are named, since two numbers given positionally could not be told apart; and the
-     * per-frame division and the reset are bare keywords, absence being the answer for both.
+     * per-frame division and the reset are bare keywords, absence being the answer for both. The
+     * reset stands alone, because it writes no reading for the others to shape.
      */
     private static final class ProfilingSpec
             extends ParameterSpec {
 
-        // What each reading is asked for by. Values rather than an enum: the
-        // words are a console vocabulary, and each maps to the request that
-        // answers it.
-        private static final String TREE_VIEW = "tree";
-        private static final String FLAT_VIEW = "flat";
-        private static final String WALKS_VIEW = "walks";
-
-        private static final String VIEW_HINT =
-            "<" + TREE_VIEW + "|" + FLAT_VIEW + "|" + WALKS_VIEW + ">";
-
-        private static final String EXPECTED_VIEW =
-            "one of " + TREE_VIEW + ", " + FLAT_VIEW + ", " + WALKS_VIEW;
-
         private static final String EXPECTED_TOP = "a whole number of rows above zero";
 
         private final Parameter<ProfileReportRequest> view =
-            acceptsPositional("view", VIEW_HINT, parseView())
+            acceptsKeyword("view", buildRequestsByView())
                 .defaultsTo(ProfileReportRequest.showTree());
 
         private final Parameter<String> namespace =
@@ -188,24 +166,24 @@ public abstract class BaseProfilingReportCommand
                 .defaultsTo(ProfileReportRequest.EVERY_ROW);
 
         private final Parameter<Boolean> perFrame = acceptsFlag("perframe");
-        private final Parameter<Boolean> reset = acceptsFlag("reset");
+        private final Parameter<Boolean> reset = acceptsFlag("reset").markStandalone();
 
         private ProfilingSpec(String commandName) {
-            super("Usage: " + commandName + " [" + TREE_VIEW + "|" + FLAT_VIEW + "|" + WALKS_VIEW
-                + "] [namespace=<prefix>] [top=<count>] [perframe] [reset].");
+            super(commandName);
         }
 
-        // The walks reading sorts on the sector-walk counter, the one traversal
-        // every pass shares, so it is the reading worth a word of its own.
-        private static ValueParser<ProfileReportRequest> parseView() {
+        // The word each reading is asked for by, in the order the usage line offers them. The
+        // walks reading sorts on the sector-walk counter, the one traversal every pass shares, so
+        // it is the reading worth a word of its own.
+        private static Map<String, ProfileReportRequest> buildRequestsByView() {
 
-            return raw -> switch (raw.toLowerCase(Locale.ROOT)) {
-                case TREE_VIEW -> ProfileReportRequest.showTree();
-                case FLAT_VIEW -> ProfileReportRequest.showRowsBySelfTime();
-                case WALKS_VIEW ->
-                    ProfileReportRequest.showRowsCounting(SectorWalkCounters.SECTOR_WALKS);
-                default -> throw new ValueParseException(EXPECTED_VIEW);
-            };
+            var requestsByView = new LinkedHashMap<String, ProfileReportRequest>();
+
+            requestsByView.put("tree", ProfileReportRequest.showTree());
+            requestsByView.put("flat", ProfileReportRequest.showRowsBySelfTime());
+            requestsByView.put("walks", ProfileReportRequest.showRowsCounting(SectorWalkCounters.SECTOR_WALKS));
+
+            return requestsByView;
         }
     }
 }

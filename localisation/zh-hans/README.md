@@ -270,18 +270,23 @@ A version heading is never translated; see [translating the changelog](#translat
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | consumer mod | 使用方 Mod | |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
+| keyword (a word a console command accepts as an argument) | 关键词 | the usual computing word |
 | library | 程序库 | |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
 | method handle | 方法句柄 | |
+| parameter, positional parameter, parameter spec (of a console command) | 参数, 位置参数, 参数规范 | the usual computing words; 位置, position, for one filled by where it stands |
+| parser, value parser | 解析器, 值解析器 | the usual computing words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reflection | 反射 | as in the settings description |
 | named group (of a regex) | 命名分组 | the usual computing word |
 | regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
+| standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
 | supplier (a function a caller hands in) | 供应器 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+| usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, as command-line help writes it |
 
 #### CI and git
 
