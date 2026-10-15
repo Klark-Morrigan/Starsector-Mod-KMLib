@@ -32,6 +32,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`HighlightedMessage` 按片段在文本中出现的顺序将每行的片段交给游戏**，与 `HighlightedParagraph` 在其他各处的做法一致。此前，调换了槽位顺序的译文会在战役消息中丢失这些高亮。
 - **`StarsectorFormat.formatPercent(float)` 四舍五入到最接近的整数百分比**，不再截断。浮点数把 `0.53` 存为 `0.52999997`，此前会显示为 52%。
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` 遵循游戏自身的规则**：判断星域的记忆中是否存有 `$shownFactionConfigDialog`，即 `Misc.isPlayerFactionSetUp()` 所读取的键。它原先的占位名称列表从未包含原版未命名时的 `"Your"`，因此未命名的玩家势力会被视为已设立。
+- **`EntityOrbits.readFocusChain(SectorEntityToken)` 在遇到第二次出现的天体时结束**，此前一个循环会重复到深度上限为止。它的文档原先写着由外向内排列；实际上天体本身排在最前。
 
 #### 新增
 

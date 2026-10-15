@@ -32,6 +32,7 @@ No player-facing changes.
 - **`HighlightedMessage` hands each line's runs to the game in text order**, as `HighlightedParagraph` does on every other surface. A translation that reordered its slots lost those highlights in campaign messages.
 - **`StarsectorFormat.formatPercent(float)` rounds to the nearest whole percent** rather than truncating. A float stores `0.53` as `0.52999997`, which showed as 52%.
 - **`StarsectorPlayerFactionResolver.isPlayerFactionEstablished(SectorAPI)` follows the game's own rule**: whether the sector's memory holds `$shownFactionConfigDialog`, which `Misc.isPlayerFactionSetUp()` reads. Its list of placeholder names never held vanilla's unnamed `"Your"`, so an unnamed player faction read as established.
+- **`EntityOrbits.readFocusChain(SectorEntityToken)` ends at the first body it meets twice**, where a cycle repeated until the depth cap. Its documentation said outermost first; the body comes first.
 
 #### Added
 
