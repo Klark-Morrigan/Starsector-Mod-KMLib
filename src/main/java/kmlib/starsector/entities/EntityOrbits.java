@@ -20,7 +20,7 @@ import java.util.Random;
  * radius-derived default or an explicit one - by vanilla's random spread. Orbit:
  * {@link #applyCircularOrbit} puts an entity onto the circle an
  * {@link OrbitPlacement} describes, or pins it where that placement is a
- * standstill. Chain: {@link #readFocusChain} and
+ * standstill. Chain: {@link #readFocusChain}, {@link #findOutermostFocus} and
  * {@link #computeOrbitalDistanceTo} walk the orbit-focus chain, which is the one
  * traversal any question about where a body sits relative to another has to make.
  *
@@ -172,6 +172,33 @@ public final class EntityOrbits {
         }
 
         return chain;
+    }
+
+    /**
+     * The body at the far end of what a body orbits through - typically the star a planet, moon
+     * or station ultimately hangs off.
+     *
+     * <p>Read off {@link #readFocusChain}, so a malformed chain is cut where that walk cuts it and
+     * this answers its last body rather than looping.
+     *
+     * @param body the body to walk up from; null yields null
+     * @return the last body of the focus chain past {@code body} itself, or null when {@code body}
+     *         orbits nothing but, at most, itself
+     */
+    public static SectorEntityToken findOutermostFocus(SectorEntityToken body) {
+
+        var chain = readFocusChain(body);
+        if (chain.isEmpty()) {
+            return null;
+        }
+
+        var outermost = chain.get(chain.size() - 1);
+
+        // The body itself leads the chain and is never repeated in it, so a chain that ends where
+        // it starts is a body that orbits nothing.
+        return outermost == body
+            ? null
+            : outermost;
     }
 
     /**

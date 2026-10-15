@@ -26,7 +26,8 @@ import static org.mockito.Mockito.when;
  * exact sample. {@link EntityOrbits#applyCircularOrbit}: a travelling placement
  * becomes a circular orbit with period 360/speed, and a pinned one fixes the
  * entity instead. {@link EntityOrbits#readSpeedDegPerDay} inverts that same
- * conversion, and {@link EntityOrbits#readFocusChain} and
+ * conversion, and {@link EntityOrbits#readFocusChain},
+ * {@link EntityOrbits#findOutermostFocus} and
  * {@link EntityOrbits#computeOrbitalDistanceTo} walk the orbit-focus chain, a
  * cyclic one cut at its first repeated body. Each method has its own
  * {@link Nested} group.
@@ -271,6 +272,72 @@ final class EntityOrbitsTests {
 
             assertThat(EntityOrbits.readFocusChain(innermost))
                 .hasSize(32);
+        }
+    }
+
+    @Nested
+    class FindOutermostFocus {
+
+        @Test
+        void returnsTheLastBodyTheChainReaches() {
+
+            var starMock = mock(SectorEntityToken.class);
+            var planet = buildOrbiting(300, starMock);
+            var moon = buildOrbiting(50, planet);
+
+            assertThat(EntityOrbits.findOutermostFocus(moon))
+                .isSameAs(starMock);
+        }
+
+        @Test
+        void returnsTheDirectFocusOfABodyOneLinkDeep() {
+
+            var starMock = mock(SectorEntityToken.class);
+            var planet = buildOrbiting(300, starMock);
+
+            assertThat(EntityOrbits.findOutermostFocus(planet))
+                .isSameAs(starMock);
+        }
+
+        @Test
+        void returnsNullWhenNothingIsOrbited() {
+
+            assertThat(EntityOrbits.findOutermostFocus(mock(SectorEntityToken.class)))
+                .isNull();
+        }
+
+        @Test
+        void returnsNullForANullBody() {
+
+            assertThat(EntityOrbits.findOutermostFocus(null))
+                .isNull();
+        }
+
+        @Test
+        void returnsNullWhenTheBodyOrbitsItself() {
+            // The chain is cut back at the body, so a self-orbit is as good as orbiting nothing.
+            var bodyMock = mock(SectorEntityToken.class);
+
+            when(bodyMock.getOrbitFocus())
+                .thenReturn(bodyMock);
+
+            assertThat(EntityOrbits.findOutermostFocus(bodyMock))
+                .isNull();
+        }
+
+        @Test
+        void returnsTheLastBodyBeforeTheRepeatWhenTwoBodiesOrbitEachOther() {
+
+            var firstMock = mock(SectorEntityToken.class);
+            var secondMock = mock(SectorEntityToken.class);
+
+            when(firstMock.getOrbitFocus())
+                .thenReturn(secondMock);
+            when(secondMock.getOrbitFocus())
+                .thenReturn(firstMock);
+
+            assertThat(EntityOrbits.findOutermostFocus(firstMock))
+                .isSameAs(secondMock);
         }
     }
 
