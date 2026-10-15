@@ -20,7 +20,9 @@ import static kmlib.mods.console.commands.parsing.ParameterValues.text;
  * feedback goes through the inherited {@link CommandOutput} seam so the command's
  * outcome branches stay independent of the live console sink.
  */
-public final class ActivateGateCommand extends BaseKmlibCommand {
+public final class ActivateGateCommand
+        extends BaseKmlibCommand {
+
     private static final ActivateGateSpec SPEC = new ActivateGateSpec();
 
     public ActivateGateCommand() {
@@ -32,12 +34,14 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
+
         // Context guards run first; the ID is then required, so a missing or
         // surplus argument is reported as bad syntax before any gate lookup.
         var parsed = readInput(context, args)
             .requireCampaign()
             .requireStarSystem(readActiveSector())
             .parseArguments(SPEC);
+
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -45,14 +49,18 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
         var system = SectorStarSystems.getPlayerStarSystem(readActiveSector());
         var id = parsed.get(SPEC.id);
         var gate = StarSystems.findTaggedEntity(system, Tags.GATE, id);
+
         if (gate == null) {
+
             output.showMessage("No gate with ID '"
                 + id
                 + "' in "
                 + StarSystems.readDisplayName(system)
                 + ".");
+
             return CommandResult.ERROR;
         }
+
         Gates.activateGate(readActiveSector(), gate);
 
         output.showMessage("Activated gate '"
@@ -60,6 +68,7 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
             + "' in "
             + StarSystems.readDisplayName(system)
             + "; it lights up on its next advance.");
+
         return CommandResult.SUCCESS;
     }
 
@@ -69,11 +78,12 @@ public final class ActivateGateCommand extends BaseKmlibCommand {
      * searching for a blank ID.
      */
     private static final class ActivateGateSpec extends ParameterSpec {
+
         private final Parameter<String> id =
             acceptsPositional("id", "<gate-id>", text()).markRequired();
 
         private ActivateGateSpec() {
-            super("Usage: kmlib_activate_gate <id>.");
+            super("kmlib_activate_gate");
         }
     }
 }

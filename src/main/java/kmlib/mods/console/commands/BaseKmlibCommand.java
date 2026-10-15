@@ -9,6 +9,8 @@ import kmlib.mods.console.commands.output.ConsoleCommandOutput;
 
 import org.lazywizard.console.BaseCommand;
 
+import java.util.Objects;
+
 /**
  * Base for KMLib's console commands: it owns the player-output seam every command
  * reports through and wires a per-invocation {@link CommandInput} bound to that
@@ -24,7 +26,9 @@ import org.lazywizard.console.BaseCommand;
  * {@link kmlib.mods.console.commands.parsing.ParameterSpec} collaborators directly, using the
  * inherited {@link #output}.
  */
-public abstract class BaseKmlibCommand implements BaseCommand {
+public abstract class BaseKmlibCommand
+        implements BaseCommand {
+
     protected final CommandOutput output;
 
     protected BaseKmlibCommand() {
@@ -32,7 +36,7 @@ public abstract class BaseKmlibCommand implements BaseCommand {
     }
 
     protected BaseKmlibCommand(CommandOutput output) {
-        this.output = output;
+        this.output = Objects.requireNonNull(output, "output");
     }
 
     // A CommandInput for this invocation, pre-bound to the command's output seam,

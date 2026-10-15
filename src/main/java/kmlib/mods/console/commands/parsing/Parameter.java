@@ -13,14 +13,22 @@ package kmlib.mods.console.commands.parsing;
  * <p>A flag is the degenerate case that carries no value: it has no value parser
  * or hint, is supplied as a bare keyword rather than {@code name=value}, and
  * reads {@link Boolean#TRUE true} when present and false (its default) when not.
+ *
+ * <p>A standalone parameter is a whole invocation by itself, such as a reset that replaces what the
+ * rest of the command does. Anything supplied alongside it is a contradiction the parser rejects,
+ * rather than input the command would silently drop.
  */
 public final class Parameter<T> {
+
     private final String name;
     private final String valueHint;
     private final boolean positional;
     private final ValueParser<T> valueParser;
+
     private boolean flag;
     private boolean required;
+    private boolean standalone;
+
     private T defaultValue;
 
     private Parameter(
@@ -28,6 +36,7 @@ public final class Parameter<T> {
             String valueHint,
             boolean positional,
             ValueParser<T> valueParser) {
+
         this.name = name;
         this.valueHint = valueHint;
         this.positional = positional;
@@ -36,13 +45,23 @@ public final class Parameter<T> {
 
     // Marks the parameter as required: parsing fails if it is never supplied.
     public Parameter<T> markRequired() {
+
         this.required = true;
+        return this;
+    }
+
+    // Marks the parameter as a whole invocation by itself: parsing fails if any other
+    // parameter is supplied alongside it.
+    public Parameter<T> markStandalone() {
+
+        this.standalone = true;
         return this;
     }
 
     // Sets the value returned when the parameter is not supplied; intended as the
     // alternative to markRequired.
     public Parameter<T> defaultsTo(T value) {
+
         this.defaultValue = value;
         return this;
     }
@@ -53,6 +72,7 @@ public final class Parameter<T> {
             String name,
             String valueHint,
             ValueParser<T> valueParser) {
+
         return new Parameter<>(name, valueHint, true, valueParser);
     }
 
@@ -62,6 +82,7 @@ public final class Parameter<T> {
             String name,
             String valueHint,
             ValueParser<T> valueParser) {
+
         return new Parameter<>(name, valueHint, false, valueParser);
     }
 
@@ -69,9 +90,12 @@ public final class Parameter<T> {
     // never claims a positional slot; present reads true, absent reads its false
     // default. Created through ParameterSpec#acceptsFlag.
     static Parameter<Boolean> flag(String name) {
+
         Parameter<Boolean> parameter = new Parameter<>(name, null, false, null);
+
         parameter.flag = true;
         parameter.defaultValue = Boolean.FALSE;
+
         return parameter;
     }
 
@@ -95,13 +119,19 @@ public final class Parameter<T> {
         return required;
     }
 
+    boolean isStandalone() {
+        return standalone;
+    }
+
     T getDefaultValue() {
         return defaultValue;
     }
 
     // Converts a raw token to this parameter's typed value, propagating the
     // ValueParseException the ParameterParser frames for the player.
-    T parseValue(String raw) throws ValueParseException {
+    T parseValue(String raw)
+            throws ValueParseException {
+
         return valueParser.parseValue(raw);
     }
 }

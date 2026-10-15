@@ -23,11 +23,13 @@ import java.util.Map;
  * parameter and a flag never take a slot. Because flags are matched first, a
  * positional value cannot itself be a declared flag's keyword. Per-parameter
  * typing is delegated to each parameter's {@link ValueParser}. An unknown name, a
- * flag given a value, a value its parser rejects, a missing required parameter,
- * or more positionals than open slots are each reported (yielding
- * {@code BAD_SYNTAX}).
+ * flag given a value, a value its parser rejects, more positionals than open
+ * slots, a standalone parameter given with anything else, or a missing required
+ * parameter are each reported (yielding {@code BAD_SYNTAX}). A standalone
+ * parameter given alone is the whole invocation, so nothing else is required of it.
  */
 final class ParameterParser {
+
     private ParameterParser() {
     }
 
@@ -40,12 +42,11 @@ final class ParameterParser {
         for (var token : tokens) {
 
             var separator = token.indexOf('=');
-
             if (separator < 0) {
+
                 // A bare token toggles a flag if it names one; any other bare
                 // token is a positional value, filled later against the open slots.
                 var parameter = findByName(parameters, token);
-
                 if (parameter != null && parameter.isFlag()) {
 
                     supplied.put(parameter, Boolean.TRUE);
@@ -53,6 +54,7 @@ final class ParameterParser {
                 } else {
                     positionals.add(token);
                 }
+
                 continue;
             }
 
@@ -60,15 +62,18 @@ final class ParameterParser {
             var parameter = findByName(parameters, name);
 
             if (parameter == null) {
+
                 return failSyntax(
                     output,
                     "Unknown parameter '"
                         + name
                         + "'. Use "
-                        + describeAcceptedParameters(parameters)
+                        + ParameterUsage.describeAcceptedParameters(parameters)
                         + '.');
             }
+
             if (parameter.isFlag()) {
+
                 // Naming a flag with a value is a distinct mistake from naming
                 // something unknown, so it gets its own correction.
                 return failSyntax(
@@ -78,6 +83,7 @@ final class ParameterParser {
                         + "' is a flag; give it on its own,"
                         + " without '='.");
             }
+
             if (!storeValue(parameter, token.substring(separator + 1), supplied, output)) {
                 return failSyntax();
             }
@@ -93,20 +99,32 @@ final class ParameterParser {
                 openSlots.add(parameter);
             }
         }
-        if (positionals.size() > openSlots.size()) {
 
-            var usage = spec.getUsage();
-            return failSyntax(
-                output,
-                "Too many arguments." + (usage == null ? "" : " " + usage));
+        if (positionals.size() > openSlots.size()) {
+            return failSyntax(output, "Too many arguments. " + spec.describeUsage());
         }
+
         for (var index = 0; index < positionals.size(); index++) {
 
             var isStored = storeValue(openSlots.get(index), positionals.get(index), supplied, output);
-
             if (!isStored) {
                 return failSyntax();
             }
+        }
+
+        var standalone = findSuppliedStandalone(parameters, supplied);
+        if (standalone != null) {
+
+            if (supplied.size() > 1) {
+
+                return failSyntax(
+                    output,
+                    "'"
+                        + standalone.getName()
+                        + "' cannot be combined with other arguments. "
+                        + spec.describeUsage());
+            }
+            return ParsedParameters.createValid(supplied);
         }
 
         for (var parameter : parameters) {
@@ -118,6 +136,7 @@ final class ParameterParser {
                     "Missing required parameter '" + parameter.getName() + "'.");
             }
         }
+
         return ParsedParameters.createValid(supplied);
     }
 
@@ -149,14 +168,14 @@ final class ParameterParser {
             supplied.put(parameter, parameter.parseValue(raw));
             return true;
 
-        } catch (ValueParseException malformed) {
+        } catch (ValueParseException valueParseException) {
 
             output.showMessage("Invalid "
                 + parameter.getName()
                 + " '"
                 + raw
                 + "'. Expected "
-                + malformed.getMessage()
+                + valueParseException.getMessage()
                 + '.');
 
             return false;
@@ -176,24 +195,17 @@ final class ParameterParser {
         return null;
     }
 
-    // The accepted parameters - value parameters as name=<hint> pairs, flags as
-    // bare keywords - for telling the player which names exist when they used one
-    // that does not.
-    private static String describeAcceptedParameters(List<Parameter<?>> parameters) {
-
-        var description = new StringBuilder();
+    // The first standalone parameter the player supplied, or null when they supplied none.
+    private static Parameter<?> findSuppliedStandalone(
+            List<Parameter<?>> parameters,
+            Map<Parameter<?>, Object> supplied) {
 
         for (var parameter : parameters) {
 
-            if (description.length() > 0) {
-                description.append(", ");
-            }
-            description.append(parameter.getName());
-
-            if (!parameter.isFlag()) {
-                description.append('=').append(parameter.getValueHint());
+            if (parameter.isStandalone() && supplied.containsKey(parameter)) {
+                return parameter;
             }
         }
-        return description.toString();
+        return null;
     }
 }

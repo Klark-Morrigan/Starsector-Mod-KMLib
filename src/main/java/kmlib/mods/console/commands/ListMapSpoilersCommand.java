@@ -38,11 +38,13 @@ import java.util.List;
  * never loads it, so KMLib runs fine without that mod - no hard dependency is
  * declared.
  */
-public final class ListMapSpoilersCommand extends BaseKmlibCommand {
+public final class ListMapSpoilersCommand
+        extends BaseKmlibCommand {
+
     // No parameters; declaring the spec still makes the parser reject a stray
     // argument as bad syntax rather than silently ignoring it.
     private static final ParameterSpec SPEC =
-        ParameterSpec.takingNoArguments("Usage: kmlib_list_map_spoilers.");
+        ParameterSpec.takingNoArguments("kmlib_list_map_spoilers");
 
     public ListMapSpoilersCommand() {
     }
@@ -53,13 +55,17 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
 
     @Override
     public CommandResult runCommand(String args, CommandContext context) {
+
         var parsed = readInput(context, args)
             .requireCampaign()
             .parseArguments(SPEC);
+
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
+
         output.showMessage(buildReport(readActiveSector()));
+
         return CommandResult.SUCCESS;
     }
 
@@ -73,14 +79,16 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
      * @return the formatted report, or a notice line when nothing qualifies
      */
     static String buildReport(SectorAPI sector) {
+
         var report = new StringBuilder(
             "Map spoilers - cut-off systems and undiscovered markets:");
+
         var systemCount = 0;
         var systems = sector.getStarSystems();
 
         for (var system : systems) {
-            var ownedMarkets = collectOwnedMarkets(sector, system);
 
+            var ownedMarkets = collectOwnedMarkets(sector, system);
             var isSystemCutOff = system.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER);
 
             // Only spoiler-worthy systems: cut off (the player cannot normally
@@ -90,12 +98,19 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
             if (!isSystemCutOff && !hasFlaggedMarkets(ownedMarkets)) {
                 continue;
             }
+
             systemCount++;
-            report.append('\n').append(StarSystems.readDisplayName(system));
+
+            report
+                .append('\n')
+                .append(StarSystems.readDisplayName(system));
+
             if (isSystemCutOff) {
                 report.append("  [cut off]");
             }
+
             for (var market : ownedMarkets) {
+
                 report
                     .append("\n    ")
                     .append(market.getName())
@@ -105,6 +120,7 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
                     .append(readVisibilitySuffix(market));
             }
         }
+
         // No shared reader stands between this listing and the system list, so the traversal
         // reports itself: a command walking the sector should show as a walk like any other.
         SectorWalkCounters.countSectorWalk(systems.size());
@@ -112,15 +128,19 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
         if (systemCount == 0) {
             report.append("\n  (none)");
         }
+
         return report.toString();
     }
 
     private static boolean hasFlaggedMarkets(List<MarketAPI> markets) {
+
         for (var market : markets) {
+
             if (!readVisibilitySuffix(market).isEmpty()) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -132,12 +152,16 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
     // are found the one way every other listing finds them - counted like the rest, and answering
     // an unreachable economy as an empty place rather than failing on it.
     private static List<MarketAPI> collectOwnedMarkets(SectorAPI sector, StarSystemAPI system) {
+
         var ownedMarkets = new ArrayList<MarketAPI>();
+
         for (var market : LocationMarkets.readMarkets(sector, system)) {
+
             if (Markets.isSettledColony(market)) {
                 ownedMarkets.add(market);
             }
         }
+
         return ownedMarkets;
     }
 
@@ -147,6 +171,7 @@ public final class ListMapSpoilersCommand extends BaseKmlibCommand {
     // $core_hiddenBase flag, both of which stay set for the market's life - it
     // stops flagging the moment the entity is discovered.
     private static String readVisibilitySuffix(MarketAPI market) {
+
         if (!Entities.isDiscoveredByPlayer(market.getPrimaryEntity())) {
             return "  [undiscovered]";
         }

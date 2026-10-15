@@ -99,7 +99,7 @@ final class ListFactionsCommandTests {
                 .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
                 .anyMatch(message ->
-                    message.contains("Give at most one filter. Usage: kmlib_list_factions "));
+                    message.contains("Too many arguments. Usage: kmlib_list_factions "));
         }
 
         // Every option spelled out, each asserted to reach the run rather than to be reported as a
@@ -168,7 +168,8 @@ final class ListFactionsCommandTests {
             assertThat(result)
                 .isEqualTo(CommandResult.BAD_SYNTAX);
             assertThat(outputFake.getMessages())
-                .anyMatch(message -> message.contains("Too many arguments"));
+                .containsExactly("Invalid filter 'bogus'."
+                    + " Expected one of markets, hidden, discoverable, no_markets.");
         }
 
         @Test

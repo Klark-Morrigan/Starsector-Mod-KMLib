@@ -37,10 +37,11 @@ import kmlib.starsector.markets.ownership.MarketOwnershipTransfer;
  * without Console Commands never loads it, so KMLib runs fine without that mod - no hard
  * dependency is declared.
  */
-public final class TransferMarketCommand extends BaseKmlibCommand {
+public final class TransferMarketCommand
+        extends BaseKmlibCommand {
 
     private static final MarketOwnerSpec SPEC =
-        new MarketOwnerSpec("Usage: kmlib_transfer_market [entity-id] [faction-id].");
+        new MarketOwnerSpec("kmlib_transfer_market");
 
     public TransferMarketCommand() {
     }

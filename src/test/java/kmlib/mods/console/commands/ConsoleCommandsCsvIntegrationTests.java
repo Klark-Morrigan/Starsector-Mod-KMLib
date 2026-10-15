@@ -208,8 +208,8 @@ class ConsoleCommandsCsvIntegrationTests {
 
         @Test
         void isWhatTheCommandPrintsAsItsUsage() {
-            // Reached through the two-filter correction, the one path that prints the usage. No
-            // sector is needed for it: the command reaches the sector only after that check.
+            // Reached through a second filter, which the parser refuses with the usage. No sector
+            // is needed for it: the command reaches the sector only after the parse.
             var outputFake = new CommandOutputFake();
 
             new ListFactionsCommand(outputFake).runCommand(
