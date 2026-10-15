@@ -71,7 +71,8 @@ enforcePackageLayering {
 
     forbidImport under: 'kmlib.starsector.markets.colonies',
                  of: ['kmlib.starsector.markets.colonisation',
-                      'kmlib.starsector.markets.ownership']
+                      'kmlib.starsector.markets.ownership',
+                      'kmlib.starsector.markets.storage']
 
     forbidImport under: 'kmlib.starsector.markets.colonisation',
                  of: 'kmlib.starsector.markets.colonies'
@@ -79,6 +80,11 @@ enforcePackageLayering {
     forbidImport under: 'kmlib.starsector.markets.ownership',
                  of: ['kmlib.starsector.markets.colonies',
                       'kmlib.starsector.markets.colonisation']
+
+    forbidImport under: 'kmlib.starsector.markets.storage',
+                 of: ['kmlib.starsector.markets.colonies',
+                      'kmlib.starsector.markets.colonisation',
+                      'kmlib.starsector.markets.ownership']
 
     forbidImport under: 'kmlib.starsector.ui.font.installed',
                  of: 'kmlib.starsector.ui.font.measure'
@@ -97,7 +103,8 @@ enforcePackageLayering {
     forbidImport exactly: 'kmlib.starsector.markets',
                  of: ['kmlib.starsector.markets.colonies',
                       'kmlib.starsector.markets.colonisation',
-                      'kmlib.starsector.markets.ownership']
+                      'kmlib.starsector.markets.ownership',
+                      'kmlib.starsector.markets.storage']
 
     forbidImport exactly: 'kmlib.starsector.settings',
                  of: 'kmlib.starsector.settings.modmanager'

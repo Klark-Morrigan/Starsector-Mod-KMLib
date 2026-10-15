@@ -7,7 +7,6 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.impl.campaign.ids.MemFlags;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
-import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
 import kmlib.starsector.entities.EntityMapIcon;
 import kmlib.starsector.entities.EntityNameplate;
@@ -31,15 +30,13 @@ import static org.mockito.Mockito.when;
  * Pins the contracts of {@link Markets#findAttachedStation},
  * {@link Markets#getStabilityFraction}, {@link Markets#hasAttachedStation},
  * {@link Markets#isAbandonedStation}, {@link Markets#isMilitary}, {@link Markets#isOwnedBy},
- * {@link Markets#isOwnedColony}, {@link Markets#isSettledColony}, {@link Markets#readNameplate}
- * and
- * {@link Markets#readSubmarketPlugin} - the reads that answer what one market is, plus the one
- * reach into how it is put together. The cases live in a
- * {@link Nested} group per method so the suite reports as a per-method tree; the shared mock
- * builders stay on the outer class.
+ * {@link Markets#isOwnedColony}, {@link Markets#isSettledColony} and {@link Markets#readNameplate} -
+ * the reads that answer what one market is. The cases live in a {@link Nested} group per method so
+ * the suite reports as a per-method tree; the shared mock builders stay on the outer class.
  *
- * <p>What may be said about a market is pinned by {@link MarketVisibilityTests}, and which of
- * several markets speaks for a place by {@link MarketColocationTests}.
+ * <p>What may be said about a market is pinned by {@link MarketVisibilityTests}, which of several
+ * markets speaks for a place by {@link MarketColocationTests}, and how a market's trading counters
+ * are reached by {@link MarketSubmarketsTests}.
  */
 final class MarketsTests {
 
@@ -118,6 +115,7 @@ final class MarketsTests {
 
         @Test
         void yieldsEmptyForANullMarket() {
+
             assertThat(Markets.findAttachedStation(null))
                 .isEmpty();
         }
@@ -140,36 +138,42 @@ final class MarketsTests {
 
         @Test
         void fullStabilityIsOne() {
+
             assertThat(Markets.getStabilityFraction(buildMarketAtStability(10.0f)))
                 .isEqualTo(1.0);
         }
 
         @Test
         void halfStabilityIsAHalf() {
+
             assertThat(Markets.getStabilityFraction(buildMarketAtStability(5.0f)))
                 .isEqualTo(0.5);
         }
 
         @Test
         void noStabilityIsZero() {
+
             assertThat(Markets.getStabilityFraction(buildMarketAtStability(0.0f)))
                 .isEqualTo(0.0);
         }
 
         @Test
         void aboveBandClampsToOne() {
+
             assertThat(Markets.getStabilityFraction(buildMarketAtStability(12.0f)))
                 .isEqualTo(1.0);
         }
 
         @Test
         void belowBandClampsToZero() {
+
             assertThat(Markets.getStabilityFraction(buildMarketAtStability(-3.0f)))
                 .isEqualTo(0.0);
         }
 
         @Test
         void nullMarketIsZero() {
+
             assertThat(Markets.getStabilityFraction(null))
                 .isEqualTo(0.0);
         }
@@ -202,6 +206,7 @@ final class MarketsTests {
 
         @Test
         void returnsFalseForANullMarket() {
+
             assertThat(Markets.hasAttachedStation(null))
                 .isFalse();
         }
@@ -212,12 +217,14 @@ final class MarketsTests {
 
         @Test
         void returnsTrueForAMarketCarryingTheAbandonedStationCondition() {
+
             assertThat(Markets.isAbandonedStation(MarketStateFixture.buildAbandonedStation()))
                 .isTrue();
         }
 
         @Test
         void returnsFalseForAColony() {
+
             assertThat(Markets.isAbandonedStation(MarketStateFixture.buildColony("hegemony")))
                 .isFalse();
         }
@@ -232,6 +239,7 @@ final class MarketsTests {
 
         @Test
         void returnsFalseForANullMarket() {
+
             assertThat(Markets.isAbandonedStation(null))
                 .isFalse();
         }
@@ -285,6 +293,7 @@ final class MarketsTests {
 
         @Test
         void returnsFalseForANullMarket() {
+
             assertThat(Markets.isMilitary(null))
                 .isFalse();
         }
@@ -297,6 +306,7 @@ final class MarketsTests {
 
         @Test
         void readsAColonyAsHeldByTheFactionWhoseFlagItFlies() {
+
             assertThat(Markets.isOwnedBy(
                     MarketOwnershipFixture.buildColonyHeldBy("hegemony"),
                     "hegemony"))
@@ -305,6 +315,7 @@ final class MarketsTests {
 
         @Test
         void readsAColonyAsNotHeldByAnotherFaction() {
+
             assertThat(Markets.isOwnedBy(
                     MarketOwnershipFixture.buildColonyHeldBy("hegemony"),
                     "tritachyon"))
@@ -323,6 +334,7 @@ final class MarketsTests {
 
         @Test
         void readsANullMarketAsHeldByNobody() {
+
             assertThat(Markets.isOwnedBy(null, "hegemony"))
                 .isFalse();
         }
@@ -333,24 +345,28 @@ final class MarketsTests {
 
         @Test
         void returnsTrueForAFactionOwnedNonConditionMarket() {
+
             assertThat(Markets.isOwnedColony(MarketStateFixture.buildColony("hegemony")))
                 .isTrue();
         }
 
         @Test
         void returnsFalseForAConditionOnlyMarket() {
+
             assertThat(Markets.isOwnedColony(MarketStateFixture.buildColonisableBody()))
                 .isFalse();
         }
 
         @Test
         void returnsFalseWhenNoFactionOwnsTheMarket() {
+
             assertThat(Markets.isOwnedColony(MarketStateFixture.buildUnownedMarket()))
                 .isFalse();
         }
 
         @Test
         void returnsFalseForANullMarket() {
+
             assertThat(Markets.isOwnedColony(null))
                 .isFalse();
         }
@@ -361,6 +377,7 @@ final class MarketsTests {
 
         @Test
         void returnsTrueForAColonyAFactionHolds() {
+
             assertThat(Markets.isSettledColony(MarketStateFixture.buildColony("hegemony")))
                 .isTrue();
         }
@@ -384,6 +401,7 @@ final class MarketsTests {
 
         @Test
         void returnsFalseForABareWorldsPlaceholder() {
+
             assertThat(Markets.isSettledColony(MarketStateFixture.buildColonisableBody()))
                 .isFalse();
         }
@@ -398,12 +416,14 @@ final class MarketsTests {
 
         @Test
         void returnsFalseWhenNoFactionHoldsTheMarket() {
+
             assertThat(Markets.isSettledColony(MarketStateFixture.buildUnownedMarket()))
                 .isFalse();
         }
 
         @Test
         void returnsFalseForANullMarket() {
+
             assertThat(Markets.isSettledColony(null))
                 .isFalse();
         }
@@ -464,55 +484,9 @@ final class MarketsTests {
 
         @Test
         void readsANullMarketAsBlankAndUnmarked() {
+
             assertThat(Markets.readNameplate(null))
                 .isEqualTo(EntityNameplate.BLANK);
-        }
-    }
-
-    // The colonies here are MarketOwnershipFixture's rather than this suite's own builders: what
-    // is being read is a counter and the plugin behind it, and that fixture is where this package
-    // states what a colony's counters look like - including which of them are kept by a plugin
-    // worth speaking to.
-    @Nested
-    class ReadSubmarketPlugin {
-
-        @Test
-        void readsThePluginKeepingTheCounter() {
-
-            var market = MarketOwnershipFixture.buildColonyTradingThrough(
-                "player",
-                "storage");
-
-            assertThat(Markets.readSubmarketPlugin(market, "storage", StoragePlugin.class))
-                .isSameAs(market.getSubmarket("storage").getPlugin());
-        }
-
-        @Test
-        void readsNothingWhereTheCounterIsKeptByAnotherKindOfPlugin() {
-            // The case the kind is asked for at all: a mod may put its own plugin behind a counter
-            // vanilla defines, and an operation that cast it outright would fail on that install
-            // rather than pass the counter over.
-            var market = MarketOwnershipFixture.buildColonyTradingThrough(
-                "player",
-                "local_resources");
-
-            assertThat(Markets.readSubmarketPlugin(market, "local_resources", StoragePlugin.class))
-                .isNull();
-        }
-
-        @Test
-        void readsNothingWhereTheMarketKeepsNoSuchCounter() {
-
-            var market = MarketOwnershipFixture.buildColonyHeldBy("hegemony");
-
-            assertThat(Markets.readSubmarketPlugin(market, "storage", StoragePlugin.class))
-                .isNull();
-        }
-
-        @Test
-        void readsNothingForANullMarket() {
-            assertThat(Markets.readSubmarketPlugin(null, "storage", StoragePlugin.class))
-                .isNull();
         }
     }
 

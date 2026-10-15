@@ -3,7 +3,7 @@ package kmlib.starsector.markets.storage;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
-import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.MarketSubmarkets;
 
 /**
  * Opening a market's storage without vanilla's one-time access fee.
@@ -33,9 +33,7 @@ public final class StorageAccess {
      */
     public static void unlockStorage(MarketAPI market, String submarketId) {
 
-        var storagePlugin = Markets.readSubmarketPlugin(market, submarketId, StoragePlugin.class);
-        if (storagePlugin != null) {
-            storagePlugin.setPlayerPaidToUnlock(true);
-        }
+        MarketSubmarkets.findSubmarketPlugin(market, submarketId, StoragePlugin.class)
+            .ifPresent(storagePlugin -> storagePlugin.setPlayerPaidToUnlock(true));
     }
 }

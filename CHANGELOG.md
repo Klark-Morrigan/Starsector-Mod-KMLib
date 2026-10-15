@@ -95,6 +95,7 @@ No player-facing changes.
 | `PulsePhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation` | `PhaseClock`, `PhaseEnvelope`, `PhasePattern` and `PatternBeat` in `kmlib.animation.cycles` | Cycles nobody triggered live apart from the animations a caller triggers, and `Pulse` names only the triggered envelopes. |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` measures rings, and where a line stays inside a region is a question of its own. |
 | `ParameterSpec(String)` and `ParameterSpec.takingNoArguments(String)`, taking the whole usage line | The same, taking the one-word command name; a longer one throws `IllegalArgumentException`. `ParameterSpec(String, String)` adds the word a command reads before the parse, such as `<kind>`. | The spec composes the usage line from its parameters, so the line cannot drift from what the parser accepts. |
+| `Markets.readSubmarketPlugin(MarketAPI, String, Class)`, null where nothing answers | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`, returning `Optional` | `Markets` reads what a market is, and a trading counter is part of how one is put together. |
 
 </details>
 

@@ -8,6 +8,7 @@ import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
 import com.fs.starfarer.api.impl.campaign.econ.RecentUnrest;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
 
+import kmlib.starsector.markets.MarketSubmarkets;
 import kmlib.starsector.markets.Markets;
 
 /**
@@ -183,14 +184,12 @@ public final class MarketOwnershipTransfer {
             return;
         }
 
-        var account = Markets.readSubmarketPlugin(
-            market,
-            Submarkets.LOCAL_RESOURCES,
-            EconomyTickListener.class);
-
-        if (account != null) {
-            account.reportEconomyTick(readMonthEndEconomyIteration(settings));
-        }
+        MarketSubmarkets
+            .findSubmarketPlugin(
+                market,
+                Submarkets.LOCAL_RESOURCES,
+                EconomyTickListener.class)
+            .ifPresent(account -> account.reportEconomyTick(readMonthEndEconomyIteration(settings)));
     }
 
     // Which economy step of the month is its last, that being the only one an outstanding account

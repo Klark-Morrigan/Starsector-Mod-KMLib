@@ -95,6 +95,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | 位于 `kmlib.animation` 中的 `PulsePhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 位于 `kmlib.animation.cycles` 中的 `PhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 无人触发的循环与调用方触发的动画分开存放，`Pulse` 只用于被触发的包络。 |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` 测量环，而一条直线在区域内停留在哪里是另一个问题。 |
 | `ParameterSpec(String)` 和 `ParameterSpec.takingNoArguments(String)`，接受完整的用法行 | 二者不变，改为接受只有一个词的命令词；多于一个词时抛出 `IllegalArgumentException`。`ParameterSpec(String, String)` 另外接受命令在解析前自行读取的词，例如 `<kind>`。 | 参数规范根据自身的参数组成用法行，因此用法行不会与解析器实际接受的内容脱节。 |
+| `Markets.readSubmarketPlugin(MarketAPI, String, Class)`，无可作答时为 null | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`，返回 `Optional` | `Markets` 读取市场是什么，而子市场属于市场的构成方式。 |
 
 </details>
 
