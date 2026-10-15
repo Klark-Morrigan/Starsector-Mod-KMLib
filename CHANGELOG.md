@@ -59,6 +59,8 @@ No player-facing changes.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
+- **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
+  - `NexerelinMarketTransferRelay` in `kmlib.mods.nexerelin`: passes Nexerelin's colony transfers on to every `MarketTransferListener` on the sector. It is one class whoever registers it, so clearing by class before adding leaves one relay.
 - **`ObservationStore`**, **`ObservationCodec`** and **`RecordedObservations`** in `kmlib.starsector.memory.observations`: a register of one family's observations in sector memory under the caller's key, stored as text so no class name enters a save.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.

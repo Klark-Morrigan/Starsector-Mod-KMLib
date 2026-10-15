@@ -271,8 +271,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | consumer mod | 使用方 Mod | |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
+| event, unconsumed (an input event no panel has taken) | 事件, 未被消费的 | the usual UI words |
 | keyword (a word a console command accepts as an argument) | 关键词 | the usual computing word |
 | library | 程序库 | |
+| listener, saved or transient (registered on the sector) | 监听器, 存档的或临时的 | 临时, temporary, for one kept out of the save; 存档的 for one written into it |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
 | method handle | 方法句柄 | |
@@ -281,6 +283,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reflection | 反射 | as in the settings description |
 | register (a store of records kept under one key) | 登记表 | from 登记, to record, as the `0.5.0` compatibility entries write it |
+| relay (a listener passing events on) | 转发器 | 转发, to pass on |
 | named group (of a regex) | 命名分组 | the usual computing word |
 | regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
@@ -288,6 +291,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
 | supplier (a function a caller hands in) | 供应器 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
+| trigger (a moment that sets an animation off) | 触发 | as the `MarketTransferListener` entry writes it for a listener |
 | usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, as command-line help writes it |
 
 #### CI and git
@@ -378,6 +382,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | alliance lead | 盟主 | the alliance's leading member |
+| change hands (a colony passing to another owner) | 易手 | the plain word, kept apart from 移交, a hand-over a caller makes |
 | friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
 | long name (of a faction) | 长名称 | 长, long, before 名称, name |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |

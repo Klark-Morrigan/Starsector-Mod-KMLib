@@ -535,6 +535,12 @@ No Starsector API on the signature.
   and the trading counters that mod's own rule decides.
   Registered with the operations in `starsector/markets/` at load,
   and only where the mod is enabled.
+  The other way round,
+  a relay passing that mod's colony transfers on to every `MarketTransferListener` on the sector,
+  which a mod registers once that mod is enabled.
+  It is one class whoever registers it,
+  so clearing by class before adding leaves one relay,
+  and no listener hears a transfer twice.
 - [`mods/rat/`](src/main/java/kmlib/mods/rat/) -
   Random Assortment of Things:
   Abyssal Fracture matching,
@@ -675,6 +681,8 @@ No Starsector API on the signature.
   with the listener's class cleared before it is added
   so an install is idempotent and never keeps a stale instance,
   and cleared again for a feature switched off mid-session.
+  Plus the listener told when a colony changes hands,
+  which vanilla fires no listener for.
 - [`starsector/map/`](src/main/java/kmlib/starsector/map/) -
   which systems the sector map marks with a star.
 - [`starsector/markets/`](src/main/java/kmlib/starsector/markets/) -
