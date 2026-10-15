@@ -737,6 +737,9 @@ No Starsector API on the signature.
   with the owner it already has refused rather than costing it all of that for nothing,
   and the registers whatever hand-over and submarket rule this install supplies
   are offered their work through.
+- [`starsector/markets/storage/`](src/main/java/kmlib/starsector/markets/storage/) -
+  opening a market's storage without vanilla's one-time access fee,
+  leaving alone a storage whose plugin a mod replaced.
 - [`starsector/memory/`](src/main/java/kmlib/starsector/memory/) -
   typed sector-memory accessors (flag, string),
   the string's also taking the sector it acts on for code handed one rather than reading the running sector,

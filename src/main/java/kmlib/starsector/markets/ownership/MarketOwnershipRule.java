@@ -4,9 +4,9 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 import com.fs.starfarer.api.impl.campaign.ids.Submarkets;
-import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
 
 import kmlib.starsector.markets.Markets;
+import kmlib.starsector.markets.storage.StorageAccess;
 
 /**
  * What holding a colony makes true of it: whose flag it and its outlying entities fly, which
@@ -254,17 +254,9 @@ public final class MarketOwnershipRule {
 
         applySubmarketPresence(market, Submarkets.SUBMARKET_STORAGE, true);
 
-        // Asked for as vanilla's own plugin rather than assumed to be one: the storage counter is
-        // vanilla's, but a mod is free to replace the plugin behind it, and a colony changing
-        // hands is not worth failing over a fee.
-        var storagePlugin = Markets.readSubmarketPlugin(
-            market,
-            Submarkets.SUBMARKET_STORAGE,
-            StoragePlugin.class);
-
-        if (storagePlugin != null) {
-            storagePlugin.setPlayerPaidToUnlock(true);
-        }
+        // A storage whose plugin a mod replaced is left alone: a colony changing hands is not
+        // worth failing over a fee.
+        StorageAccess.unlockStorage(market, Submarkets.SUBMARKET_STORAGE);
     }
 
     // The tax rate the new owner levies, read off the market once it flies their flag rather than
