@@ -42,6 +42,7 @@ so the two can never disagree.
     - [Text and rendering](#text-and-rendering)
     - [Campaign scripts](#campaign-scripts)
     - [Factions](#factions)
+    - [Markets](#markets)
     - [Salvage drops](#salvage-drops)
     - [Geometry](#geometry)
 - [Forum terms](#forum-terms)
@@ -379,6 +380,12 @@ A version heading is never translated; see [translating the changelog](#translat
 | friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
 | long name (of a faction) | 长名称 | 长, long, before 名称, name |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
+
+#### Markets
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| storage, one-time access fee, paid to unlock | 仓库, 一次性使用费, 已付费解锁 | 仓库 and 一次性使用费 as vanilla's `StoragePlugin` dialog writes them (使用此地仓库需要缴纳一次性使用费); 已付费解锁 is the plain reading of `setPlayerPaidToUnlock`, which the game never shows |
 
 #### Salvage drops
 
