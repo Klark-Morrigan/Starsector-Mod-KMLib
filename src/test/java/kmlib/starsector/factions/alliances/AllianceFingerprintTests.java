@@ -46,7 +46,7 @@ class AllianceFingerprintTests {
 
         @Test
         void movesWhenTheLeadMemberSwaps() {
-            // The same two members, a different dominant (element 0): the lead swapped, so the
+            // The same two members, a different one first by market size: the lead swapped, so the
             // token must move even though the membership set is identical.
             var relead = new AllianceRecord(
                 "alliance-1",
@@ -103,6 +103,18 @@ class AllianceFingerprintTests {
 
             assertThat(AllianceFingerprint.computeFingerprint(List.of()))
                 .isNotEqualTo(AllianceFingerprint.computeFingerprint(List.of(buildAlliedPowers())));
+        }
+
+        @Test
+        void ignoresAnAllianceWithNoMembers() {
+
+            var memberless = new AllianceRecord(
+                "alliance-2",
+                "Rival Bloc",
+                List.of());
+
+            assertThat(AllianceFingerprint.computeFingerprint(List.of(buildAlliedPowers(), memberless)))
+                .isEqualTo(AllianceFingerprint.computeFingerprint(List.of(buildAlliedPowers())));
         }
     }
 
