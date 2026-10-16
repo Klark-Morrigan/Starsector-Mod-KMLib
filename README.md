@@ -905,7 +905,11 @@ How the tiers meet is in
   Its own package because a sealed type and its variants must share one,
   and because nothing here depends on the laid-out control above.
 - [`starsector/ui/coreui/`](src/main/java/kmlib/starsector/ui/coreui/) -
-  name-based reach into the game's concrete UI classes.
+  name-based reach into the game's concrete UI classes,
+  and a screen-sized modal panel stood up in the core UI:
+  it claims input while raised,
+  fades in and out,
+  and comes down with the screen it was raised over.
   See [Reaching the game's own UI classes](#reaching-the-games-own-ui-classes).
 - [`starsector/ui/debug/`](src/main/java/kmlib/starsector/ui/debug/) -
   quadrant-anchored on-screen debug HUD.

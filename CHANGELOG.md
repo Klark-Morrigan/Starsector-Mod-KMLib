@@ -77,6 +77,10 @@ No player-facing changes.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
 - **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
   - Where Nexerelin is enabled, KMLib puts a relay on each loaded sector that passes Nexerelin's colony transfers on to these listeners, so a mod only registers its own.
+- **`ModalPanel`** in `kmlib.starsector.ui.coreui`: a screen-sized panel in the core UI that claims input while raised, fades in and out, and comes down with its host screen.
+  - `ModalPanelBody`: what the panel shows, and the fills painted under it.
+  - `ModalPanelFade`: whether the panel holds the screen, and how far onto it the panel is painted.
+  - `ModalPanelEventResponse`: a raised panel claims every unconsumed event and closes on Escape.
 - **`ObservationStore`**, **`ObservationCodec`** and **`RecordedObservations`** in `kmlib.starsector.memory.observations`: a register of one family's observations in sector memory under the caller's key, stored as text so no class name enters a save.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.

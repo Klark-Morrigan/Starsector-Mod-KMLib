@@ -360,6 +360,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距 as the hatch row writes spacing; 提示框 as the `0.5.0` entries write it |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
+| modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板 as the `0.5.0` notice entries write it; 宿主, host; 占用, to take up |
 | paragraph | 段落 | |
 | renderer, render pass | 渲染器, 渲染通道 | |
 | round, truncate (a figure) | 四舍五入, 截断 | 四舍五入, four down and five up, is rounding half up, the rule `Math.round` follows; 截断, cut off, drops the fraction outright |
