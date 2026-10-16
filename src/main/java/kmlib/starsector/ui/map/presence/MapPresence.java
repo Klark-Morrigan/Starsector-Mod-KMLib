@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  * sources - separate classes per read would build a second binding to the same live widget tree, and
  * a caller wanting two answers would pay for the walk behind them twice.
  *
- * <p>{@link #isAnyMapShowing()} is the cheapest of the three and not merely their disjunction: no
+ * <p>{@link #isAnyVanillaMapShowing()} is the cheapest of the three and not merely their disjunction: no
  * filter is read on either host, because the filter chooses which look a showing map wears and never
  * whether one is showing. So it resolves a step earlier than the look-aware pair, asking each host
  * one question where they ask two.
@@ -68,7 +68,7 @@ public final class MapPresence {
      * @return whether either host is showing a map - the sector map in its Sector sub-view, or a lit
      *         map visor - with either host's Starscape filter set either way
      */
-    public boolean isAnyMapShowing() {
+    public boolean isAnyVanillaMapShowing() {
         if (readSectorMapState.get().isShowing()) {
             return true;
         }

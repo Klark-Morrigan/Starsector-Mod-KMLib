@@ -32,25 +32,28 @@ class MapPresenceTests {
     }
 
     @Nested
-    class IsAnyMapShowing {
+    class IsAnyVanillaMapShowing {
 
         @Test
         void isFalseWhenNeitherHostIsShowingAMap() {
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isAnyMapShowing())
+
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isAnyVanillaMapShowing())
                 .isFalse();
         }
 
         @Test
         void isTrueWhenTheSectorMapAloneIsShowing() {
-            assertThat(buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isAnyMapShowing())
+
+            assertThat(buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isAnyVanillaMapShowing())
                 .isTrue();
         }
 
         @Test
         void isTrueWhenTheLitMapVisorAloneIsShowing() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isAnyMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isAnyVanillaMapShowing())
                 .isTrue();
         }
 
@@ -62,7 +65,7 @@ class MapPresenceTests {
             // disjunction has to hold with both true.
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
-            assertThat(buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isAnyMapShowing())
+            assertThat(buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isAnyVanillaMapShowing())
                 .isTrue();
         }
 
@@ -73,7 +76,7 @@ class MapPresenceTests {
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
-            assertThat(buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isAnyMapShowing())
+            assertThat(buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isAnyVanillaMapShowing())
                 .isTrue();
         }
 
@@ -83,7 +86,7 @@ class MapPresenceTests {
             // read that does not care which look it wears is the one that still answers true - and
             // it is reachable here only because the sector side arrives as a state rather than as
             // the booleans the live port derives from it.
-            assertThat(buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isAnyMapShowing())
+            assertThat(buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isAnyVanillaMapShowing())
                 .isTrue();
         }
 
@@ -93,7 +96,7 @@ class MapPresenceTests {
             // is up, so no filter setting can stand in for a visor being on screen.
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isAnyMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isAnyVanillaMapShowing())
                 .isFalse();
         }
     }
@@ -111,6 +114,7 @@ class MapPresenceTests {
 
         @Test
         void isTrueWhenTheSectorMapAloneIsShowingTheSchematic() {
+
             assertThat(
                 buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isSchematicMapShowing())
                 .isTrue();
@@ -118,6 +122,7 @@ class MapPresenceTests {
 
         @Test
         void isTrueWhenTheLitMapVisorAloneIsShowingTheSchematic() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
             assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicMapShowing())
@@ -126,6 +131,7 @@ class MapPresenceTests {
 
         @Test
         void isTrueWhenBothHostsAreShowingTheSchematic() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
             assertThat(
@@ -135,6 +141,7 @@ class MapPresenceTests {
 
         @Test
         void isFalseWhenTheLitMapVisorIsInStarscapeMode() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
@@ -144,6 +151,7 @@ class MapPresenceTests {
 
         @Test
         void isFalseWhenTheSectorMapIsInStarscapeMode() {
+
             assertThat(
                 buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isSchematicMapShowing())
                 .isFalse();
@@ -163,6 +171,7 @@ class MapPresenceTests {
 
         @Test
         void isFalseWhenNeitherHostIsInStarscapeMode() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
             assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeMapShowing())
@@ -171,6 +180,7 @@ class MapPresenceTests {
 
         @Test
         void isTrueWhenTheSectorMapAloneIsInStarscapeMode() {
+
             assertThat(
                 buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isStarscapeMapShowing())
                 .isTrue();
@@ -178,6 +188,7 @@ class MapPresenceTests {
 
         @Test
         void isTrueWhenTheLitMapVisorAloneIsInStarscapeMode() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
@@ -187,6 +198,7 @@ class MapPresenceTests {
 
         @Test
         void isTrueWhenBothHostsAreInStarscapeMode() {
+
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
@@ -197,6 +209,7 @@ class MapPresenceTests {
 
         @Test
         void isFalseWhenTheIntelStarscapeFilterIsOnWithNoLitVisor() {
+
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
             assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeMapShowing())
@@ -205,6 +218,7 @@ class MapPresenceTests {
 
         @Test
         void isFalseWhileTheSectorMapsFilterCannotBeRead() {
+
             assertThat(
                 buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isStarscapeMapShowing())
                 .isFalse();
@@ -234,7 +248,8 @@ class MapPresenceTests {
     // a read that went back for the second one says so by failing rather than in a comment. A case
     // that has to pose a whole screen uses the shared fake; this poses one question about how the
     // port is used.
-    private record SingleReadingIntelScreenFake(MapVisorState mapVisorState) implements IntelScreenView {
+    private record SingleReadingIntelScreenFake(MapVisorState mapVisorState)
+            implements IntelScreenView {
 
         @Override
         public boolean isIntelTabOpen() {
