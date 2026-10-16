@@ -36,6 +36,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`RecordingListenerManager` 像游戏自身的管理器一样回答 `getListeners(Class)`、`hasListener(Object)` 和 `hasListenerOfClass(Class)`**：依据它所持有的、属于所查询类型的监听器作答，存档的排在临时的之前，不再一律回答为空。
 - **每个地点的经济系统列表只读取一次**：`LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`、殖民地集合与 `SectorMarkets.readMarketIds(SectorAPI)` 此前各读取两次，使 `markets` 计数器把已列出的市场计了两遍。
 - **`SectorStarSystems` 的批量读取对未列出任何星系的星域回答为空**，不再出错。
+- **`KmlibStrings.splitIntoWords(String)` 和 `abbreviateToInitials(String)` 按 `Character.isWhitespace` 划分词**，即 `hasText(String)` 所读取的规则。此前它们不会在词之间的全角空格处划分，并会去掉首尾的控制字符。
+- **`KmlibStrings.collectTexts(Iterable, Function)` 会去除所保留的每个文本的首尾空白**，与 `normaliseText(String)` 的做法一致。
 
 #### 新增
 

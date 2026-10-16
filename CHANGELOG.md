@@ -36,6 +36,8 @@ No player-facing changes.
 - **`RecordingListenerManager` answers `getListeners(Class)`, `hasListener(Object)` and `hasListenerOfClass(Class)` as the game's own manager does**: from the listeners it holds of the type asked for, saved ones before transient ones, rather than with nothing.
 - **A place's economy listing is read once** by `LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`, the colony sets and `SectorMarkets.readMarketIds(SectorAPI)`. Each read it twice, so the `markets` counter stated the listed markets twice.
 - **`SectorStarSystems`'s bulk reads answer nothing for a sector listing no systems at all**, rather than failing on it.
+- **`KmlibStrings.splitIntoWords(String)` and `abbreviateToInitials(String)` part words by `Character.isWhitespace`**, the rule `hasText(String)` reads. They missed a CJK ideographic space between words and stripped control characters off the ends.
+- **`KmlibStrings.collectTexts(Iterable, Function)` strips each text it keeps**, as `normaliseText(String)` does.
 
 #### Added
 
