@@ -107,6 +107,24 @@ class KmlibStringsTests {
     }
 
     @Nested
+    class ConvertToOptionalText {
+
+        @Test
+        void isEmptyOnWhitespaceOnly() {
+
+            assertThat(KmlibStrings.convertToOptionalText("  "))
+                .isEmpty();
+        }
+
+        @Test
+        void holdsTheStrippedText() {
+
+            assertThat(KmlibStrings.convertToOptionalText("  hello  "))
+                .contains("hello");
+        }
+    }
+
+    @Nested
     class CollectTexts {
 
         @Test

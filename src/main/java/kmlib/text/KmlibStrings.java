@@ -98,6 +98,16 @@ public final class KmlibStrings {
     }
 
     /**
+     * {@link #normaliseText} handed back as an {@link Optional}, for a caller that works in them.
+     *
+     * @param value the text to normalise; may be null
+     * @return the stripped text, or empty where it is blank
+     */
+    public static Optional<String> convertToOptionalText(String value) {
+        return Optional.ofNullable(normaliseText(value));
+    }
+
+    /**
      * The text {@code readText} answers for each of {@code items}, in their order, a null or blank
      * answer left out - the one loop every read of "what may this say" over a listing would otherwise
      * write for itself.
