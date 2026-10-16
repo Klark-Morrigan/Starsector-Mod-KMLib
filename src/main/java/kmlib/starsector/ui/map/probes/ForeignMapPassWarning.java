@@ -8,19 +8,20 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
- * Says once a session that a surface drawn through the sector map's render hook was drawn by something
- * that is not a map.
+ * Says once a session that a surface drawn through the sector map's render hook was drawn while no
+ * recognised vanilla map widget site - the sector map or the intel screen's map visor - was showing.
  *
  * <p>{@code renderOnMap} is the sector map's hook by contract, and a map overlay rests on that: a cursor
  * read inverts whichever transform the running pass has bound, and divides by the {@code factor} that
- * pass supplied. Both are only meaningful if the pass really is a map's. Nothing enforces it, though -
- * the hook is a plain method on a terrain plugin, and any mod that walks the sector's terrain can call it
- * with a transform and a zoom of its own.
+ * pass supplied. Both are only meaningful for a pass from a site the overlay was built for. Nothing
+ * enforces it, though - the hook is a plain method on a terrain plugin. A map widget a mod embeds in its
+ * own screen drives it, and any mod that walks the sector's terrain can call it with a transform and a
+ * zoom of its own.
  *
  * <p>What that costs is not a crash but a quiet wrongness: a cursor pixel inverted against a foreign
  * transform still yields a world point, and in hyperspace - where campaign coordinates are the sector
  * map's own coordinates - that point lands somewhere real. An overlay then answers a pointer that is
- * nowhere near, with no map open at all. Nothing about that reads as a transform problem to whoever
+ * nowhere near, with no vanilla map open at all. Nothing about that reads as a transform problem to whoever
  * hears it, which is why it is worth a line naming the pass rather than leaving each report to be
  * diagnosed from the symptom.
  *
@@ -49,7 +50,7 @@ public final class ForeignMapPassWarning {
     private static final String LEAD_TO_HOSTS_SEPARATOR = "; ";
 
     // What the carried stack is labelled as in the log.
-    private static final String PASS_STACK_LABEL = "Stack of the pass that drew with no map on screen";
+    private static final String PASS_STACK_LABEL = "Stack of the pass that drew with no vanilla map site showing";
 
     // What the live tree holds around any embedded map, or null when it could not be read. Supplied
     // rather than called for here, for the reason the presence read is: both walk a widget tree
@@ -71,13 +72,13 @@ public final class ForeignMapPassWarning {
     private final SessionWarning warning;
 
     /**
-     * @param isAnyMapShowing           whether any host is showing a map
+     * @param isAnyMapShowing           whether any vanilla map widget site is showing
      * @param describeEmbeddedMapHosts  what the live tree holds around any map embedded outside those
-     *                                  hosts, as {@link EmbeddedMapHostTrace#describeEmbeddedMapHosts}
+     *                                  sites, as {@link EmbeddedMapHostTrace#describeEmbeddedMapHosts}
      *                                  answers it - asked only when a line is owed, being a full tree walk
      * @param logger                    the calling surface's own logger, so the line is attributed to the
      *                                  surface that was drawn rather than to this reporter
-     * @param noMapWarningLead          what the line says about the surface drawn with no map on screen;
+     * @param noMapWarningLead          what the line says about the surface drawn with no site showing;
      *                                  the host trace, or that the tree could not be walked, follows it
      * @param unreadablePresenceWarning what the line says when whether a map is showing could not be read
      */
