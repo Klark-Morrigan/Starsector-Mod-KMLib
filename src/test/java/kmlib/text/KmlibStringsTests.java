@@ -16,12 +16,14 @@ class KmlibStringsTests {
 
         @Test
         void isFalseOnNull() {
+
             assertThat(KmlibStrings.hasText(null))
                 .isFalse();
         }
 
         @Test
         void isFalseOnEmpty() {
+
             assertThat(KmlibStrings.hasText(""))
                 .isFalse();
         }
@@ -36,6 +38,7 @@ class KmlibStringsTests {
 
         @Test
         void isTrueOnPlainText() {
+
             assertThat(KmlibStrings.hasText("Independent"))
                 .isTrue();
         }
@@ -55,6 +58,7 @@ class KmlibStringsTests {
 
         @Test
         void returnsTheValueItWasGiven() {
+
             assertThat(KmlibStrings.requireText("Fast Rendering", "unused"))
                 .isEqualTo("Fast Rendering");
         }
@@ -66,6 +70,81 @@ class KmlibStringsTests {
             assertThatThrownBy(() -> KmlibStrings.requireText("   ", "A name with no text in it"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("A name with no text in it");
+        }
+    }
+
+    @Nested
+    class NormaliseText {
+
+        @Test
+        void isNullOnNull() {
+
+            assertThat(KmlibStrings.normaliseText(null))
+                .isNull();
+        }
+
+        @Test
+        void isNullOnWhitespaceOnly() {
+
+            assertThat(KmlibStrings.normaliseText(" \t\n "))
+                .isNull();
+        }
+
+        @Test
+        void stripsSurroundingWhitespace() {
+
+            assertThat(KmlibStrings.normaliseText("  hello\t "))
+                .isEqualTo("hello");
+        }
+
+        @Test
+        void keepsAControlCharacterThatIsNotWhitespace() {
+            // One blank rule with hasText: a character it counts as text is never stripped away here.
+            assertThat(KmlibStrings.normaliseText("\u0001hello"))
+                .isEqualTo("\u0001hello");
+        }
+    }
+
+    @Nested
+    class ConvertToOptionalText {
+
+        @Test
+        void isEmptyOnWhitespaceOnly() {
+
+            assertThat(KmlibStrings.convertToOptionalText("  "))
+                .isEmpty();
+        }
+
+        @Test
+        void holdsTheStrippedText() {
+
+            assertThat(KmlibStrings.convertToOptionalText("  hello  "))
+                .contains("hello");
+        }
+    }
+
+    @Nested
+    class GetTextOrEmpty {
+
+        @Test
+        void isEmptyOnNull() {
+
+            assertThat(KmlibStrings.getTextOrEmpty(null))
+                .isEqualTo("");
+        }
+
+        @Test
+        void isEmptyOnWhitespaceOnly() {
+
+            assertThat(KmlibStrings.getTextOrEmpty("  "))
+                .isEqualTo("");
+        }
+
+        @Test
+        void answersTheStrippedText() {
+
+            assertThat(KmlibStrings.getTextOrEmpty("  hello  "))
+                .isEqualTo("hello");
         }
     }
 
@@ -87,13 +166,24 @@ class KmlibStringsTests {
             assertThat(KmlibStrings.collectTexts(List.of(1, 22), number -> "#" + number))
                 .containsExactly("#1", "#22");
         }
+
+        @Test
+        void stripsTheSurroundingWhitespaceOffEachText() {
+
+            assertThat(KmlibStrings.collectTexts(List.of(" Corvus\t"), name -> name))
+                .containsExactly("Corvus");
+        }
     }
 
     @Nested
     class SplitIntoWords {
 
+        // Whitespace to Character.isWhitespace but outside the ASCII-only regex \s class.
+        private static final String IDEOGRAPHIC_SPACE = "　";
+
         @Test
         void partsASentenceIntoItsWordsInOrder() {
+
             assertThat(KmlibStrings.splitIntoWords("Penelope's Star System"))
                 .containsExactly("Penelope's", "Star", "System");
         }
@@ -108,12 +198,28 @@ class KmlibStringsTests {
 
         @Test
         void partsAWhitespaceFlavourOtherThanTheSpace() {
+
             assertThat(KmlibStrings.splitIntoWords("first\tsecond\nthird"))
                 .containsExactly("first", "second", "third");
         }
 
         @Test
+        void partsOnTheIdeographicSpace() {
+            // The same whitespace rule hasText reads, so a blank this class sees is a parting here too.
+            assertThat(KmlibStrings.splitIntoWords(IDEOGRAPHIC_SPACE + "Ko" + IDEOGRAPHIC_SPACE + "Ko"))
+                .containsExactly("Ko", "Ko");
+        }
+
+        @Test
+        void keepsAControlCharacterThatIsNotWhitespace() {
+            // One blank rule with hasText: a character it counts as text is never stripped away here.
+            assertThat(KmlibStrings.splitIntoWords("\u0001hello world"))
+                .containsExactly("\u0001hello", "world");
+        }
+
+        @Test
         void answersOneWordForAStringWithoutSpacing() {
+
             assertThat(KmlibStrings.splitIntoWords("Galatia"))
                 .containsExactly("Galatia");
         }
@@ -128,12 +234,14 @@ class KmlibStringsTests {
 
         @Test
         void isEmptyOnEmpty() {
+
             assertThat(KmlibStrings.splitIntoWords(""))
                 .isEmpty();
         }
 
         @Test
         void isEmptyOnNull() {
+
             assertThat(KmlibStrings.splitIntoWords(null))
                 .isEmpty();
         }
@@ -152,6 +260,7 @@ class KmlibStringsTests {
 
         @Test
         void raisesALowerCaseInitial() {
+
             assertThat(KmlibStrings.abbreviateToInitials("church of redemption"))
                 .isEqualTo("C.O.R.");
         }
@@ -166,18 +275,21 @@ class KmlibStringsTests {
 
         @Test
         void answersOneInitialForOneWord() {
+
             assertThat(KmlibStrings.abbreviateToInitials("Galatia"))
                 .isEqualTo("G.");
         }
 
         @Test
         void isEmptyForTextWithNoWordsInIt() {
+
             assertThat(KmlibStrings.abbreviateToInitials(" \t\n "))
                 .isEmpty();
         }
 
         @Test
         void isEmptyForNull() {
+
             assertThat(KmlibStrings.abbreviateToInitials(null))
                 .isEmpty();
         }
@@ -188,12 +300,14 @@ class KmlibStringsTests {
 
         @Test
         void answersWhereTheTextOpensOnTheWord() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Station", "abandoned"))
                 .isZero();
         }
 
         @Test
         void answersWhereTheWordSitsInTheMiddle() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Old Abandoned Yards", "abandoned"))
                 .isEqualTo(4);
         }
@@ -216,12 +330,14 @@ class KmlibStringsTests {
 
         @Test
         void passesOverAWordMerelyClosingALongerOne() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Unabandoned", "abandoned"))
                 .isEqualTo(KmlibStrings.NO_WORD_MATCH);
         }
 
         @Test
         void answersTheFirstOfSeveralOccurrences() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Abandoned Yards", "abandoned"))
                 .isZero();
         }
@@ -244,12 +360,14 @@ class KmlibStringsTests {
 
         @Test
         void answersAWordTheWholeTextConsistsOf() {
+
             assertThat(KmlibStrings.findWholeWordIndex("abandoned", "abandoned"))
                 .isZero();
         }
 
         @Test
         void saysNothingIsFoundInAbsentText() {
+
             assertThat(KmlibStrings.findWholeWordIndex(null, "abandoned"))
                 .isEqualTo(KmlibStrings.NO_WORD_MATCH);
         }
@@ -273,6 +391,7 @@ class KmlibStringsTests {
 
         @Test
         void dropsAWordRepeatingTheOneBeforeIt() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
                     "Penelope's Star Star System",
                     TWO_WORD_SUBJECT))
@@ -335,6 +454,7 @@ class KmlibStringsTests {
 
         @Test
         void dropsEveryWordOfARunPastTheProtection() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
                     "Penelope's Star Star Star System",
                     TWO_WORD_SUBJECT))
@@ -343,14 +463,62 @@ class KmlibStringsTests {
 
         @Test
         void answersBlankTextAsGiven() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords("  ", TWO_WORD_SUBJECT))
                 .isEqualTo("  ");
         }
 
         @Test
         void answersNullAsGiven() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(null, TWO_WORD_SUBJECT))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class JoinWithParenthetical {
+
+        @Test
+        void setsTheParentheticalInBracketsAfterTheMainText() {
+
+            assertThat(KmlibStrings.joinWithParenthetical("main", "note"))
+                .contains("main (note)");
+        }
+
+        @Test
+        void answersTheMainTextAloneWhenTheParentheticalIsAbsent() {
+
+            assertThat(KmlibStrings.joinWithParenthetical("main", null))
+                .contains("main");
+        }
+
+        @Test
+        void answersTheMainTextAloneWhenTheParentheticalIsBlank() {
+            // A blank remark would print as an empty pair of brackets.
+            assertThat(KmlibStrings.joinWithParenthetical("main", "  "))
+                .contains("main");
+        }
+
+        @Test
+        void answersTheParentheticalAloneWhenTheMainTextIsAbsent() {
+
+            assertThat(KmlibStrings.joinWithParenthetical(null, "note"))
+                .contains("note");
+        }
+
+        @Test
+        void answersTheParentheticalAloneWhenTheMainTextIsBlank() {
+
+            assertThat(KmlibStrings.joinWithParenthetical("  ", "note"))
+                .contains("note");
+        }
+
+        @Test
+        void isEmptyWhenBothAreAbsent() {
+
+            assertThat(KmlibStrings.joinWithParenthetical(null, null))
+                .isEmpty();
         }
     }
 }

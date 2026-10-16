@@ -36,6 +36,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`RecordingListenerManager` 像游戏自身的管理器一样回答 `getListeners(Class)`、`hasListener(Object)` 和 `hasListenerOfClass(Class)`**：依据它所持有的、属于所查询类型的监听器作答，存档的排在临时的之前，不再一律回答为空。
 - **每个地点的经济系统列表只读取一次**：`LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`、殖民地集合与 `SectorMarkets.readMarketIds(SectorAPI)` 此前各读取两次，使 `markets` 计数器把已列出的市场计了两遍。
 - **`SectorStarSystems` 的批量读取对未列出任何星系的星域回答为空**，不再出错。
+- **`KmlibStrings.splitIntoWords(String)` 和 `abbreviateToInitials(String)` 按 `Character.isWhitespace` 划分词**，即 `hasText(String)` 所读取的规则。此前它们不会在词之间的全角空格处划分，并会去掉首尾的控制字符。
+- **`KmlibStrings.collectTexts(Iterable, Function)` 会去除所保留的每个文本的首尾空白**，与 `normaliseText(String)` 的做法一致。
 
 #### 新增
 
@@ -61,6 +63,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
+- **`KmlibStrings`** 中按 `hasText(String)` 所用的同一条空白规则作答的读取：
+  - `normaliseText(String)`、`convertToOptionalText(String)` 和 `getTextOrEmpty(String)`：去除首尾空白后的文本；空白时分别回答 null、空的 Optional 或 `""`。
+  - `joinWithParenthetical(String, String)`：把两个文本合成“主文本（括注）”的形式，只有一个有文本时取那一个。
 - **`Lines`** 改为公开，新增 **`computeOrientation(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。

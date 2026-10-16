@@ -36,6 +36,8 @@ No player-facing changes.
 - **`RecordingListenerManager` answers `getListeners(Class)`, `hasListener(Object)` and `hasListenerOfClass(Class)` as the game's own manager does**: from the listeners it holds of the type asked for, saved ones before transient ones, rather than with nothing.
 - **A place's economy listing is read once** by `LocationMarkets.findNearestMarket(SectorAPI, LocationAPI, SectorEntityToken, Predicate)`, the colony sets and `SectorMarkets.readMarketIds(SectorAPI)`. Each read it twice, so the `markets` counter stated the listed markets twice.
 - **`SectorStarSystems`'s bulk reads answer nothing for a sector listing no systems at all**, rather than failing on it.
+- **`KmlibStrings.splitIntoWords(String)` and `abbreviateToInitials(String)` part words by `Character.isWhitespace`**, the rule `hasText(String)` reads. They missed a CJK ideographic space between words and stripped control characters off the ends.
+- **`KmlibStrings.collectTexts(Iterable, Function)` strips each text it keeps**, as `normaliseText(String)` does.
 
 #### Added
 
@@ -61,6 +63,9 @@ No player-facing changes.
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
+- **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
+  - `normaliseText(String)`, `convertToOptionalText(String)` and `getTextOrEmpty(String)`: a text trimmed, with blank answered as null, an empty optional or `""`.
+  - `joinWithParenthetical(String, String)`: two texts as "main (parenthetical)", or whichever has text.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.

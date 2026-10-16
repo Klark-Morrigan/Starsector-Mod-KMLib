@@ -449,7 +449,9 @@ No Starsector API on the signature.
   string and number formatting,
   plus the reads over a string every surface shares:
   is there text here,
+  answered under one blank rule as a yes or no, as null, as an optional or as an empty string,
   what are its words,
+  two optional texts joined as "main (parenthetical)",
   and the stutter left where one phrase was appended to another ending on the same word.
   Plus the grid a monospaced table is laid out in:
   cells padded into columns that never close below a floor,
