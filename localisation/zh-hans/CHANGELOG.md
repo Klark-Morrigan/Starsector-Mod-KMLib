@@ -77,6 +77,11 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
   - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。
+- **`ModalPanel`**（位于 `kmlib.starsector.ui.modal`）：核心界面中与屏幕同尺寸的面板，升起时占用输入，淡入淡出，并随其宿主屏幕一同撤下。
+  - `ModalPanelBody`：面板显示的内容，以及绘制在其下方的填充。
+  - 由调用方指定哪些按键关闭面板。`CLOSED_BY_ESCAPE` 是游戏自身的对话框所用的那组按键。
+  - `GAME_PROMPT_DURATIONS`：游戏自身的提示窗口淡入淡出的节奏。
+  - 按下关闭键，以及面板从屏幕上撤下，都会报告给调用方。
 - **`ObservationStore`**、**`ObservationCodec`** 和 **`RecordedObservations`**（位于 `kmlib.starsector.memory.observations`）：在星域记忆中以调用方给定的键保存某一类观察记录的登记表，以文本形式存储，因此不会有类名写入存档。
 - **`Percentages`**（位于 `kmlib.math.percentages`）：`[0, 1]` 比例与百分比之间的换算。
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
@@ -102,6 +107,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StorageAccess.unlockStorage(MarketAPI, String)`**（位于 `kmlib.starsector.markets.storage`）：把市场的仓库标记为已付费解锁，使其无需原版的一次性使用费即可打开。插件被其他 Mod 替换的仓库保持不变。
 - **`ToggledFeature`**（位于 `kmlib.starsector.startup`）：由玩家开关建立或撤回的功能。`applyTo(SectorAPI)` 在载入时应用它，`applyToIfSwitched(SectorAPI)` 只在设置变更且正是这个开关改变时才动作。
+- **`TooltipSpacing`**（位于 `kmlib.starsector.ui.tooltip`）：原版排布提示框所用的间距 `SMALL_PAD` 与 `OUTER_PAD`，以及提示框内按钮的高度 `BUTTON_HEIGHT`。
 - **`UniformGrid`**（位于 `kmlib.math.geometry`）：正方形单元的哈希网格，把点、线段和边界框归入它们触及的每一个单元。`listItemsNear(double, double, double)` 和 `listCandidatePairs()` 对每个条目或每对条目只回答一次，`measureAdaptiveCellSide(Bounds, int)` 把单元大小定为大约每格一个条目。
 - **`read-mod-info` 输出 `zip-name-regex`**：一个正则表达式，每个发布版本的压缩包名称都与之匹配，无论版本号和语言区域如何，而任何版本文件都不与之匹配。其命名分组 `locale` 存放本地化压缩包的语言区域标签。
 - **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。
@@ -125,7 +131,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` 测量环，而一条直线在区域内停留在哪里是另一个问题。 |
 | `ParameterSpec(String)` 和 `ParameterSpec.takingNoArguments(String)`，接受完整的用法行 | 二者不变，改为接受只有一个词的命令词；多于一个词时抛出 `IllegalArgumentException`。`ParameterSpec(String, String)` 另外接受命令在解析前自行读取的词，例如 `<kind>`。 | 参数规范根据自身的参数组成用法行，因此用法行不会与解析器实际接受的内容脱节。 |
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`，无可作答时为 null | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`，返回 `Optional` | `Markets` 读取市场是什么，而子市场属于市场的构成方式。 |
-| `MapPresence.isAnyMapShowing()` | `isAnyVanillaMapShowing()` | 它只回答原版的星图界面，Mod 嵌入别处的星图不计在内。 |
+| 位于 `kmlib.starsector.ui.coreui` 中的 `CoreUiOverlayPanels` | 已从公共 API 中移除。改用 `ModalPanel`。 | 单独的面板既不占用输入，也不淡入淡出，因此每个调用方都得自行重建这两者。 |
+| `MapPresence.isAnyMapShowing()`、`isSchematicMapShowing()` 和 `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`、`isSchematicVanillaMapShowing()` 和 `isStarscapeVanillaMapShowing()` | 它们只回答原版的星图界面，Mod 嵌入别处的星图不计在内。 |
 
 </details>
 

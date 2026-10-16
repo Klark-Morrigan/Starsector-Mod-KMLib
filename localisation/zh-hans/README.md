@@ -358,7 +358,13 @@ A version heading is never translated; see [translating the changelog](#translat
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | highlight colour | 高亮颜色 | |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
+| pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距 as the hatch row writes spacing; 提示框 as the `0.5.0` entries write it |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
+| modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板 as the `0.5.0` notice entries write it; 宿主, host; 占用, to take up |
+| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 is the usual computing word |
+| fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出 as the `0.5.0` notice entry writes it; 节奏, rhythm |
+| close key (a key that closes a panel) | 关闭键 | 关闭, close, with 键, key |
+| public API | 公共 API | 公共 as 公共契约 writes it; API stays in Latin letters |
 | paragraph | 段落 | |
 | renderer, render pass | 渲染器, 渲染通道 | |
 | round, truncate (a figure) | 四舍五入, 截断 | 四舍五入, four down and five up, is rounding half up, the rule `Math.round` follows; 截断, cut off, drops the fraction outright |
@@ -366,6 +372,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | scientific notation, trailing zero (of a figure) | 科学计数法, 末尾零 | |
 | slot (in a format string) | 槽位 | |
 | solid filled rectangle (a glyph drawn without its atlas) | 实心矩形 | 实心, filled, with 矩形, rectangle |
+| stack (of a call) | 调用栈 | the usual computing word |
 | whole percent | 整数百分比 | 整数, integer, before 百分比, percent, which alone says nothing about decimals |
 
 #### Campaign scripts
@@ -422,6 +429,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 单元 as the controls entries write a cell |
 | region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
+| stride, triangle list | 步长, 三角形列表 | the usual words |
 
 #### Lists and sorting
 
