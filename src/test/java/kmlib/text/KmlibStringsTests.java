@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -167,10 +166,20 @@ class KmlibStringsTests {
             assertThat(KmlibStrings.collectTexts(List.of(1, 22), number -> "#" + number))
                 .containsExactly("#1", "#22");
         }
+
+        @Test
+        void stripsTheSurroundingWhitespaceOffEachText() {
+
+            assertThat(KmlibStrings.collectTexts(List.of(" Corvus\t"), name -> name))
+                .containsExactly("Corvus");
+        }
     }
 
     @Nested
     class SplitIntoWords {
+
+        // Whitespace to Character.isWhitespace but outside the ASCII-only regex \s class.
+        private static final String IDEOGRAPHIC_SPACE = "　";
 
         @Test
         void partsASentenceIntoItsWordsInOrder() {
@@ -192,6 +201,20 @@ class KmlibStringsTests {
 
             assertThat(KmlibStrings.splitIntoWords("first\tsecond\nthird"))
                 .containsExactly("first", "second", "third");
+        }
+
+        @Test
+        void partsOnTheIdeographicSpace() {
+            // The same whitespace rule hasText reads, so a blank this class sees is a parting here too.
+            assertThat(KmlibStrings.splitIntoWords(IDEOGRAPHIC_SPACE + "Ko" + IDEOGRAPHIC_SPACE + "Ko"))
+                .containsExactly("Ko", "Ko");
+        }
+
+        @Test
+        void keepsAControlCharacterThatIsNotWhitespace() {
+            // One blank rule with hasText: a character it counts as text is never stripped away here.
+            assertThat(KmlibStrings.splitIntoWords("\u0001hello world"))
+                .containsExactly("\u0001hello", "world");
         }
 
         @Test
@@ -459,28 +482,42 @@ class KmlibStringsTests {
         @Test
         void setsTheParentheticalInBracketsAfterTheMainText() {
 
-            assertThat(KmlibStrings.joinWithParenthetical(Optional.of("main"), Optional.of("note")))
+            assertThat(KmlibStrings.joinWithParenthetical("main", "note"))
                 .contains("main (note)");
         }
 
         @Test
         void answersTheMainTextAloneWhenTheParentheticalIsAbsent() {
 
-            assertThat(KmlibStrings.joinWithParenthetical(Optional.of("main"), Optional.empty()))
+            assertThat(KmlibStrings.joinWithParenthetical("main", null))
+                .contains("main");
+        }
+
+        @Test
+        void answersTheMainTextAloneWhenTheParentheticalIsBlank() {
+            // A blank remark would print as an empty pair of brackets.
+            assertThat(KmlibStrings.joinWithParenthetical("main", "  "))
                 .contains("main");
         }
 
         @Test
         void answersTheParentheticalAloneWhenTheMainTextIsAbsent() {
 
-            assertThat(KmlibStrings.joinWithParenthetical(Optional.empty(), Optional.of("note")))
+            assertThat(KmlibStrings.joinWithParenthetical(null, "note"))
+                .contains("note");
+        }
+
+        @Test
+        void answersTheParentheticalAloneWhenTheMainTextIsBlank() {
+
+            assertThat(KmlibStrings.joinWithParenthetical("  ", "note"))
                 .contains("note");
         }
 
         @Test
         void isEmptyWhenBothAreAbsent() {
 
-            assertThat(KmlibStrings.joinWithParenthetical(Optional.empty(), Optional.empty()))
+            assertThat(KmlibStrings.joinWithParenthetical(null, null))
                 .isEmpty();
         }
     }

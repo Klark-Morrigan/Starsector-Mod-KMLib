@@ -267,11 +267,13 @@ A version heading is never translated; see [translating the changelog](#translat
 | caller | 调用方 | |
 | command word (what a console command is typed as) | 命令词 | 命令, command, with 词, word |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
+| control character | 控制字符 | the usual computing word |
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | consumer mod | 使用方 Mod | |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
 | event, unconsumed (an input event no panel has taken) | 事件, 未被消费的 | the usual UI words |
+| ideographic space (U+3000) | 全角空格 | what a Chinese typist calls it; not the literal 表意空格 |
 | keyword (a word a console command accepts as an argument) | 关键词 | the usual computing word |
 | library | 程序库 | |
 | listener, saved or transient (registered on the sector) | 监听器, 存档的或临时的 | 临时, temporary, for one kept out of the save; 存档的 for one written into it |
@@ -294,6 +296,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | told (a listener hearing of an event) | 得到通知 | as the `MarketTransferListener` entry writes it |
 | trigger (a moment that sets an animation off) | 触发 | as the `MarketTransferListener` entry writes it for a listener |
 | usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, as command-line help writes it |
+| word (a run of text between whitespace), part into words | 词, 划分词 | 词 as 命令词 and 关键词 write it |
 
 #### CI and git
 

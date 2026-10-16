@@ -1,27 +1,35 @@
 package kmlib.text;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
- * Generic, Starsector-agnostic reads over strings shared across the
- * KMLib jar. Lives in its own package (not {@code kmlib.starsector.*})
- * because the helpers here are pure text utilities - they have no
- * dependency on Starsector's API surface and are reused by any KMLib
- * code, Starsector-related or not.
+ * Pure text utilities shared across the KMLib jar. They read no Starsector API, so they live outside
+ * {@code kmlib.starsector.*} and serve any KMLib code.
  *
- * <p>Sibling concept to
- * {@link kmlib.starsector.strings.StarsectorStrings}, which is the
- * defensive wrapper around Starsector's {@code settings.json}
- * localisation lookups; this class is purely string-manipulation.
+ * <p>Every read here parts text from whitespace by the one rule {@link #hasText} uses:
+ * {@link Character#isWhitespace}. A second rule would let two reads disagree about the same value.
  */
 public final class KmlibStrings {
 
     // What closes each initial of an abbreviated name, so the short form reads as one - a run of
     // bare capitals is a word in its own right rather than a name stood in for.
     private static final char INITIAL_TERMINATOR = '.';
+
+    private static final String PARENTHETICAL_CLOSER = ")";
+
+    private static final String PARENTHETICAL_OPENER = " (";
+
+    // The \p{javaWhitespace} class is Character.isWhitespace, the rule hasText reads. The plain \s class
+    // is ASCII only, so it would not part words on a CJK ideographic space (U+3000).
+    private static final Pattern WHITESPACE_RUN = Pattern.compile("\\p{javaWhitespace}+");
+
+    private static final String WORD_SEPARATOR = " ";
 
     /**
      * What {@link #findWholeWordIndex} answers where the text does not say the word at all. Named
@@ -34,12 +42,9 @@ public final class KmlibStrings {
     }
 
     /**
-     * Returns {@code true} when {@code value} is non-null and contains
-     * at least one non-whitespace character. Lives here so KMLib does
-     * not depend on a util module (Apache Commons, Guava, Spring) just
-     * for one predicate; multiple internal callers ({@code
-     * StarsectorStrings}, {@code StarsectorPlayerFactionResolver},
-     * future consumers) share one implementation.
+     * Returns {@code true} when {@code value} is non-null and contains at least one non-whitespace
+     * character. Lives here so KMLib does not depend on a util module (Apache Commons, Guava, Spring)
+     * for one predicate.
      */
     public static boolean hasText(String value) {
 
@@ -82,9 +87,7 @@ public final class KmlibStrings {
      *
      * <p>The game and the mods around it report a missing name three ways - null, empty, and a cell
      * of spaces - and none of them means anything different to a caller. This answers all three as
-     * the one absence, so two sites cannot disagree about the same value. The whitespace stripped is
-     * the same {@link Character#isWhitespace} rule {@link #hasText} reads, so a value this answers
-     * {@code null} for is exactly a value with no text.
+     * the one absence, so two sites cannot disagree about the same value.
      *
      * @param value the text to normalise; may be null
      * @return the stripped text, or {@code null} where it is blank
@@ -115,23 +118,18 @@ public final class KmlibStrings {
      * @return the stripped text, or {@code ""} where it is blank
      */
     public static String getTextOrEmpty(String value) {
-
-        var normalised = normaliseText(value);
-
-        return normalised == null
-            ? ""
-            : normalised;
+        return Objects.requireNonNullElse(normaliseText(value), "");
     }
 
     /**
-     * The text {@code readText} answers for each of {@code items}, in their order, a null or blank
-     * answer left out - the one loop every read of "what may this say" over a listing would otherwise
-     * write for itself.
+     * The {@link #normaliseText normalised} text {@code readText} answers for each of {@code items},
+     * in their order, a null or blank answer left out. This is the one loop every read of "what may
+     * this say" over a listing would otherwise write for itself.
      *
      * @param items    what to read the text off
      * @param readText reads one item's text, which may be null or blank
      * @param <T>      the kind of item
-     * @return each item's text where it has some, never null
+     * @return each item's stripped text where it has some, never null
      */
     public static <T> List<String> collectTexts(Iterable<? extends T> items, Function<? super T, String> readText) {
 
@@ -139,8 +137,8 @@ public final class KmlibStrings {
 
         for (var item : items) {
 
-            var text = readText.apply(item);
-            if (hasText(text)) {
+            var text = normaliseText(readText.apply(item));
+            if (text != null) {
                 texts.add(text);
             }
         }
@@ -149,46 +147,35 @@ public final class KmlibStrings {
     }
 
     /**
-     * The whitespace-parted words of {@code text}, in the order they are
-     * written and with empties dropped, so leading, trailing or doubled
-     * spacing changes nothing about the answer.
+     * The whitespace-parted words of {@code text}, in the order they are written, with empties
+     * dropped. Leading, trailing or doubled spacing changes nothing about the answer.
      *
-     * <p>Empties are dropped rather than reported because a caller counting
-     * or walking words means the words: a count shifted by how the string
-     * happened to be spaced is a count of something else. A caller that
-     * genuinely needs to know a string was blank tests it with
-     * {@link #hasText} first, which states that question directly.
+     * <p>Empties are dropped because a caller counting or walking words means the words. A count
+     * shifted by how the string happened to be spaced is a count of something else. A caller that
+     * needs to know a string was blank asks {@link #hasText} first.
      *
      * @param text the string to part; null or blank yields an empty list
      * @return the words, never null
      */
     public static List<String> splitIntoWords(String text) {
 
-        var words = new ArrayList<String>();
-
         if (!hasText(text)) {
-            return words;
+            return new ArrayList<>();
         }
 
-        for (var word : text.trim().split("\\s+")) {
-            words.add(word);
-        }
-
-        return words;
+        return new ArrayList<>(Arrays.asList(WHITESPACE_RUN.split(text.strip())));
     }
 
     /**
      * The initials of {@code text}'s words, each raised to upper case and closed by a full stop, so
      * "Church of Galactic Redemption" reads as "C.O.G.R.".
      *
-     * <p>Every word contributes, the small joining ones included. A reader matching a short form
-     * back to the name it stands for counts its letters off against the words, so a form that
-     * quietly passed over the joining words would leave them looking for a name of three words to
-     * account for four letters - and which words are small enough to drop is a judgement no two
-     * names would answer alike.
+     * <p>Every word contributes, the small joining ones included. A reader matches a short form back
+     * to its name by counting letters against words. Which words are small enough to drop is a
+     * judgement no two names would answer alike.
      *
      * <p>Whitespace is the only parting ({@link #splitIntoWords}), so a hyphenated word contributes
-     * the one initial it opens with rather than being read as two.
+     * the one initial it opens with.
      *
      * @param text the name to abbreviate; text with no words in it abbreviates to nothing
      * @return the initials, never null
@@ -217,9 +204,8 @@ public final class KmlibStrings {
      * <em>abandoned</em> finds nothing in <em>Abandonedium</em>.
      *
      * <p>Matched against the text as it is spelled rather than against a folded copy, so the position
-     * answered indexes the string the caller holds. A copy folded to one case is free to come out a
-     * different length, which would slide the answer along the text by however much it moved - and a
-     * caller picking a stretch out by that position would then pick out the wrong characters.
+     * answered indexes the string the caller holds. A copy folded to one case can come out a different
+     * length, which would slide the answer along the text.
      *
      * @param text the text to search; null or empty says the word nowhere
      * @param word the word to look for; null or empty is said nowhere
@@ -244,32 +230,21 @@ public final class KmlibStrings {
     }
 
     /**
-     * {@code text} less any word past its first {@code protectedWordCount}
-     * that merely repeats, ignoring case, the word kept before it - the
-     * stutter left where one phrase was appended to another already ending
-     * on the word the second opens with.
+     * {@code text} less any word past its first {@code protectedWordCount} that repeats, ignoring
+     * case, the word kept before it. That is the stutter left where one phrase was appended to another
+     * already ending on the word the second opens with.
      *
-     * <p>The protected opening is the whole of the safety, and the reason
-     * this is stated as a count rather than assumed: a repetition inside a
-     * subject's own name is that name, and dropping it answers a name
-     * nobody has. A caller therefore protects the words it holds
-     * responsible for and exposes only what was appended to them; passing
-     * zero protects nothing and puts every word of the subject in reach,
-     * which is a scan almost nothing wants.
+     * <p>The protected opening is what makes this safe. A repetition inside a subject's own name is
+     * that name, and dropping it answers a name nobody has. A caller protects the words it holds
+     * responsible for and exposes only what was appended. Zero protects nothing.
      *
-     * <p>Text that lost nothing is answered as the very string given rather
-     * than rejoined, so a caller can hand over a string it must not see
-     * respaced and get it back untouched wherever there was no stutter to
-     * drop. Where a word does go, what is left is rejoined on one space -
-     * a string being repaired rather than preserved at that point.
+     * <p>Text that lost nothing is answered as the very string given, so its spacing survives. Where
+     * a word does go, what is left is rejoined on one space.
      *
-     * @param text               the text to weigh; null or blank is answered
-     *                           as given, there being no words to weigh
-     * @param protectedWordCount how many opening words are the subject's own
-     *                           and so untouchable; zero or less protects
-     *                           none of them
-     * @return the text with the repeats dropped, or the very string given
-     *         where none were
+     * @param text               the text to weigh; null or blank is answered as given
+     * @param protectedWordCount how many opening words are the subject's own and so untouchable; zero
+     *                           or less protects none of them
+     * @return the text with the repeats dropped, or the very string given where none were
      */
     public static String dropAdjacentRepeatedWords(String text, int protectedWordCount) {
 
@@ -291,31 +266,38 @@ public final class KmlibStrings {
         if (keptWords.size() == words.size()) {
             return text;
         }
-        return String.join(" ", keptWords);
+        return String.join(WORD_SEPARATOR, keptWords);
     }
 
     /**
      * {@code main} and {@code parenthetical} joined as "main (parenthetical)", or whichever of the two
-     * is present where only one is.
+     * {@link #hasText has text} where only one does.
      *
      * <p>A missing half drops out rather than leaving its slot behind, so a caller never prints an
      * empty pair of brackets or a bracketed remark with nothing before it.
      *
-     * @param main          the leading text
-     * @param parenthetical the remark set in brackets after it
-     * @return the joined text, or empty where neither half is present
+     * @param main          the leading text; null or blank is absent
+     * @param parenthetical the remark set in brackets after it; null or blank is absent
+     * @return the joined text, or empty where neither half has text
      */
-    public static Optional<String> joinWithParenthetical(Optional<String> main, Optional<String> parenthetical) {
+    public static Optional<String> joinWithParenthetical(String main, String parenthetical) {
 
-        if (main.isEmpty()) {
-            return parenthetical;
+        var hasMain = hasText(main);
+        var hasParenthetical = hasText(parenthetical);
+
+        if (hasMain && hasParenthetical) {
+            return Optional.of(main + PARENTHETICAL_OPENER + parenthetical + PARENTHETICAL_CLOSER);
         }
 
-        if (parenthetical.isEmpty()) {
-            return main;
+        if (hasMain) {
+            return Optional.of(main);
         }
 
-        return Optional.of(main.get() + " (" + parenthetical.get() + ")");
+        if (hasParenthetical) {
+            return Optional.of(parenthetical);
+        }
+
+        return Optional.empty();
     }
 
     // Whether the stretch found at that position stands alone rather than opening or closing a
