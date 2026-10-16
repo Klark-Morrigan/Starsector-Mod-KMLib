@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
  */
 public final class KmlibStrings {
 
+    private static final String BLANK_FIELD_MESSAGE_SUFFIX = " must not be blank";
+
     // What closes each initial of an abbreviated name, so the short form reads as one - a run of
     // bare capitals is a word in its own right rather than a name stood in for.
     private static final char INITIAL_TERMINATOR = '.';
@@ -80,6 +82,18 @@ public final class KmlibStrings {
             throw new IllegalArgumentException(message);
         }
         return value;
+    }
+
+    /**
+     * {@link #requireText} for a named field, the message stating the field's name. A constructor
+     * checking several fields reports each the same way rather than spelling the sentence per field.
+     *
+     * @param value     the string a caller requires text in
+     * @param fieldName the field {@code value} is for, named in the exception
+     * @return {@code value}, so the check reads inline in a constructor
+     */
+    public static String requireFieldText(String value, String fieldName) {
+        return requireText(value, fieldName + BLANK_FIELD_MESSAGE_SUFFIX);
     }
 
     /**

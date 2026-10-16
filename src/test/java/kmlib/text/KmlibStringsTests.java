@@ -74,6 +74,33 @@ class KmlibStringsTests {
     }
 
     @Nested
+    class RequireFieldText {
+
+        @Test
+        void returnsTheValueItWasGiven() {
+
+            assertThat(KmlibStrings.requireFieldText("Fast Rendering", "name"))
+                .isEqualTo("Fast Rendering");
+        }
+
+        @Test
+        void rejectsANullNamingTheField() {
+
+            assertThatThrownBy(() -> KmlibStrings.requireFieldText(null, "conditionId"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("conditionId must not be blank");
+        }
+
+        @Test
+        void rejectsABlankNamingTheField() {
+
+            assertThatThrownBy(() -> KmlibStrings.requireFieldText("   ", "conditionId"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("conditionId must not be blank");
+        }
+    }
+
+    @Nested
     class NormaliseText {
 
         @Test
