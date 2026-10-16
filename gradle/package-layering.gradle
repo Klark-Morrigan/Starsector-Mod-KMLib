@@ -66,8 +66,13 @@ enforcePackageLayering {
     forbidImport under: 'kmlib.starsector',
                  of: 'kmlib.mods'
 
+    forbidImport under: 'kmlib.starsector.commodities',
+                 of: ['kmlib.starsector.markets.colonisation',
+                      'kmlib.starsector.markets.ownership',
+                      'kmlib.starsector.markets.storage']
+
     forbidImport under: 'kmlib.starsector.markets',
-                 of: 'kmlib.starsector.systems'
+                 of: ['kmlib.starsector.commodities', 'kmlib.starsector.systems']
 
     forbidImport under: 'kmlib.starsector.markets.colonies',
                  of: ['kmlib.starsector.markets.colonisation',
@@ -96,6 +101,9 @@ enforcePackageLayering {
 
     forbidImport exactly: 'kmlib.profiling',
                  of: ['kmlib.profiling.recording', 'kmlib.profiling.report']
+
+    forbidImport exactly: 'kmlib.starsector.commodities',
+                 of: 'kmlib.starsector.commodities.pricing'
 
     forbidImport exactly: 'kmlib.starsector.factions',
                  of: 'kmlib.starsector.factions.relation'
