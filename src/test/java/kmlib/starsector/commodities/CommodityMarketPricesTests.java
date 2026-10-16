@@ -82,4 +82,37 @@ final class CommodityMarketPricesTests {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class FindAverageUnitPrice {
+
+        @Test
+        void takesTheMeanAcrossMarkets() {
+
+            var markets = List.of(buildMarketSelling(100f), buildMarketSelling(200f), buildMarketSelling(300f));
+
+            assertThat(CommodityMarketPrices.findAverageUnitPrice(markets, COMMODITY_ID, PlayerTradeSide.SELLING))
+                .contains(200f);
+        }
+
+        // (100 + 300) / 2: the NaN counts in neither the sum nor the count.
+        @Test
+        void skipsANonFinitePriceWithoutPoisoningTheMean() {
+
+            var markets = List.of(
+                buildMarketSelling(Float.NaN),
+                buildMarketSelling(100f),
+                buildMarketSelling(300f));
+
+            assertThat(CommodityMarketPrices.findAverageUnitPrice(markets, COMMODITY_ID, PlayerTradeSide.SELLING))
+                .contains(200f);
+        }
+
+        @Test
+        void answersNothingWithoutMarkets() {
+
+            assertThat(CommodityMarketPrices.findAverageUnitPrice(List.of(), COMMODITY_ID, PlayerTradeSide.SELLING))
+                .isEmpty();
+        }
+    }
 }

@@ -29,6 +29,36 @@ public final class CommodityMarketPrices {
     }
 
     /**
+     * The commodity's average unit price across {@code markets}, traded {@code side}.
+     *
+     * @param markets     the markets to average over
+     * @param commodityId the commodity
+     * @param side        which way the player trades
+     * @return the average, or empty where no market priced the commodity
+     */
+    public static Optional<Float> findAverageUnitPrice(
+            List<MarketAPI> markets,
+            String commodityId,
+            PlayerTradeSide side) {
+
+        var sum = 0.0;
+        var count = 0;
+
+        for (var market : markets) {
+
+            var unitPrice = findUnitPrice(market, commodityId, side);
+            if (unitPrice.isPresent()) {
+                sum += unitPrice.get();
+                count++;
+            }
+        }
+
+        return count == 0
+            ? Optional.empty()
+            : Optional.of((float) (sum / count));
+    }
+
+    /**
      * One market's unit price for the commodity, traded {@code side}.
      *
      * @param market      the market quoting; null yields empty
