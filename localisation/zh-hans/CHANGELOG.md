@@ -47,6 +47,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`：单个市场的每单位价格。
   - `findAverageUnitPrice(List, String, PlayerTradeSide)` 和 `computeAverageUnitPrices(List, Collection, PlayerTradeSide)`：多个市场的平均价格。
+  - `findLocalUnitPrice(SectorAPI, MarketAPI, LocationAPI, String, PlayerTradeSide)`：某处的价格：经济系统运行该处的市场时取其价格，否则取其所在位置的平均价格，再否则取整个星域的平均价格；以 `LocalUnitPrice` 返回，并注明其 `UnitPriceScope`。
 - **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。

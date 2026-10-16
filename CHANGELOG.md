@@ -47,6 +47,7 @@ No player-facing changes.
 - **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`: one market's price for one unit.
   - `findAverageUnitPrice(List, String, PlayerTradeSide)` and `computeAverageUnitPrices(List, Collection, PlayerTradeSide)`: the average across markets.
+  - `findLocalUnitPrice(SectorAPI, MarketAPI, LocationAPI, String, PlayerTradeSide)`: the price at a place, from its own market while the economy runs it, else its location's average, else the sector's, as a `LocalUnitPrice` naming its `UnitPriceScope`.
 - **Console command parameters** in `kmlib.mods.console.commands.parsing`:
   - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
   - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.

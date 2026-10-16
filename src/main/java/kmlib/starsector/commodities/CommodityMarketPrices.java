@@ -59,6 +59,48 @@ public final class CommodityMarketPrices {
     }
 
     /**
+     * The commodity's unit price at a place, reached outward until a market answers: the place's own market while the
+     * economy runs it, else the average across its location's markets, else the average across the sector's.
+     *
+     * <p>The place's own market counts only while the economy lists it. A market the economy never ran - a bare world's
+     * placeholder, a market a mod keeps outside the economy - quotes prices no supply or demand stands behind.
+     *
+     * @param sector      the sector whose economy is read; null skips the location and sector averages
+     * @param localMarket the market at the place; null where none stands there
+     * @param location    the place's location, such as its star system; null skips the location average
+     * @param commodityId the commodity
+     * @param side        which way the player trades
+     * @return the price and how far the read reached, or empty where no market anywhere priced the commodity
+     */
+    public static Optional<LocalUnitPrice> findLocalUnitPrice(
+            SectorAPI sector,
+            MarketAPI localMarket,
+            LocationAPI location,
+            String commodityId,
+            PlayerTradeSide side) {
+
+        if (localMarket != null && localMarket.isInEconomy()) {
+
+            var localPrice = findUnitPrice(localMarket, commodityId, side);
+            if (localPrice.isPresent()) {
+                return Optional.of(new LocalUnitPrice(localPrice.get(), UnitPriceScope.LOCAL_MARKET));
+            }
+        }
+
+        var locationAverage = findAverageUnitPrice(
+            LocationMarkets.readMarkets(sector, location),
+            commodityId,
+            side);
+
+        if (locationAverage.isPresent()) {
+            return Optional.of(new LocalUnitPrice(locationAverage.get(), UnitPriceScope.LOCATION_AVERAGE));
+        }
+
+        return findAverageUnitPrice(SectorMarkets.readMarkets(sector), commodityId, side)
+            .map(sectorAverage -> new LocalUnitPrice(sectorAverage, UnitPriceScope.SECTOR_AVERAGE));
+    }
+
+    /**
      * One market's unit price for the commodity, traded {@code side}.
      *
      * @param market      the market quoting; null yields empty

@@ -115,4 +115,144 @@ final class CommodityMarketPricesTests {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class FindLocalUnitPrice {
+
+        private EconomyAPI economyMock;
+        private LocationAPI locationMock;
+        private SectorAPI sectorMock;
+
+        @BeforeEach
+        void setUp() {
+
+            economyMock = mock(EconomyAPI.class);
+            locationMock = mock(LocationAPI.class);
+            sectorMock = mock(SectorAPI.class);
+
+            var locationMarkets = List.of(buildMarketSelling(90f), buildMarketSelling(110f));
+            var sectorMarkets = List.of(buildMarketSelling(40f), buildMarketSelling(60f));
+
+            when(sectorMock.getEconomy())
+                .thenReturn(economyMock);
+            when(economyMock.getMarkets(locationMock))
+                .thenReturn(locationMarkets);
+            when(economyMock.getMarketsCopy())
+                .thenReturn(sectorMarkets);
+        }
+
+        private MarketAPI buildLocalMarketSelling(float unitPrice, boolean isInEconomy) {
+
+            var marketMock = buildMarketSelling(unitPrice);
+
+            when(marketMock.isInEconomy())
+                .thenReturn(isInEconomy);
+
+            return marketMock;
+        }
+
+        @Test
+        void readsTheLocalMarketTheEconomyRuns() {
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    buildLocalMarketSelling(75f, true),
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(75f, UnitPriceScope.LOCAL_MARKET));
+        }
+
+        @Test
+        void averagesTheLocationPastALocalMarketOutsideTheEconomy() {
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    buildLocalMarketSelling(75f, false),
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(100f, UnitPriceScope.LOCATION_AVERAGE));
+        }
+
+        @Test
+        void averagesTheLocationPastALocalMarketWithNoFinitePrice() {
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    buildLocalMarketSelling(Float.NaN, true),
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(100f, UnitPriceScope.LOCATION_AVERAGE));
+        }
+
+        @Test
+        void averagesTheLocationWithoutALocalMarket() {
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    null,
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(100f, UnitPriceScope.LOCATION_AVERAGE));
+        }
+
+        @Test
+        void averagesTheSectorWhereTheLocationHoldsNoMarket() {
+
+            when(economyMock.getMarkets(locationMock))
+                .thenReturn(List.of());
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    null,
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(50f, UnitPriceScope.SECTOR_AVERAGE));
+        }
+
+        @Test
+        void averagesTheSectorWithoutALocation() {
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    null,
+                    null,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(50f, UnitPriceScope.SECTOR_AVERAGE));
+        }
+
+        @Test
+        void answersNothingWhereNoMarketAnywherePricesIt() {
+
+            when(economyMock.getMarkets(locationMock))
+                .thenReturn(List.of());
+            when(economyMock.getMarketsCopy())
+                .thenReturn(List.of());
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    sectorMock,
+                    null,
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .isEmpty();
+        }
+
+        @Test
+        void readsOnlyTheLocalMarketWithoutASector() {
+
+            assertThat(CommodityMarketPrices.findLocalUnitPrice(
+                    null,
+                    buildLocalMarketSelling(75f, true),
+                    locationMock,
+                    COMMODITY_ID,
+                    PlayerTradeSide.SELLING))
+                .contains(new LocalUnitPrice(75f, UnitPriceScope.LOCAL_MARKET));
+        }
+    }
 }
