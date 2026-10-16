@@ -830,6 +830,9 @@ No Starsector API on the signature.
   and where the step was an integration with another mod,
   recorded for the player to be told once
   rather than left to a line nobody reads.
+  Beside it a feature a player switch stands up or takes back,
+  holding what it was last applied as,
+  so a settings change acts only when that switch moved.
 - [`starsector/strings/`](src/main/java/kmlib/starsector/strings/) -
   defensive wrapper around strings.json localisation lookups
   (loud REDACTED on missing or malformed entries),
@@ -980,6 +983,8 @@ How the tiers meet is in
   icon layering,
   the vanilla map tooltip,
   and the traces that describe them.
+  Plus a once-a-session warning for a map render hook run with no map on screen,
+  naming the embedded-map hosts that drove it.
 - [`starsector/ui/map/transform/`](src/main/java/kmlib/starsector/ui/map/transform/) -
   screen and world transform for the campaign map,
   and the modelview matrix readers behind it:
