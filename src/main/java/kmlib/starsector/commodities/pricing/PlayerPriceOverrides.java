@@ -67,4 +67,26 @@ public final class PlayerPriceOverrides {
 
         return ownUnitPrice;
     }
+
+    /**
+     * Removes the caller's override, so the market quotes its own price again.
+     *
+     * @param market      the market quoting; null does nothing
+     * @param commodityId the commodity
+     * @param side        which way the player trades
+     * @param sourceKey   the key the override was filed under
+     */
+    public static void clearUnitPriceOverride(
+            MarketAPI market,
+            String commodityId,
+            PlayerTradeSide side,
+            String sourceKey) {
+
+        if (market == null || market.getCommodityData(commodityId) == null) {
+            return;
+        }
+
+        side.readPlayerPriceMod(market.getCommodityData(commodityId))
+            .unmodifyFlat(sourceKey);
+    }
 }

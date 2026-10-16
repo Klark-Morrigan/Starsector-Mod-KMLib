@@ -143,4 +143,30 @@ final class PlayerPriceOverridesTests {
                 .isEmpty();
         }
     }
+
+    @Nested
+    class ClearUnitPriceOverride {
+
+        @Test
+        void restoresTheMarketsOwnPrice() {
+
+            PlayerPriceOverrides.overrideUnitPrice(marketMock, COMMODITY_ID, PlayerTradeSide.BUYING, SOURCE_KEY, 100f);
+
+            PlayerPriceOverrides.clearUnitPriceOverride(marketMock, COMMODITY_ID, PlayerTradeSide.BUYING, SOURCE_KEY);
+
+            assertThat(readQuotedUnitPrice())
+                .isEqualTo(2f);
+        }
+
+        @Test
+        void leavesAnotherSourcesEntryStanding() {
+
+            supplyPriceMod.modifyFlat("other_mod", 5f);
+
+            PlayerPriceOverrides.clearUnitPriceOverride(marketMock, COMMODITY_ID, PlayerTradeSide.BUYING, SOURCE_KEY);
+
+            assertThat(readQuotedUnitPrice())
+                .isEqualTo(7f);
+        }
+    }
 }
