@@ -43,6 +43,7 @@ final class ClaimContestFixture implements AutoCloseable {
 
     private final MockedStatic<Global> globalMock;
     private final EconomyAPI economyMock;
+    private final SectorAPI sectorMock;
     private final MemoryAPI systemMemoryMock;
     private final StarSystemAPI systemMock;
 
@@ -55,7 +56,7 @@ final class ClaimContestFixture implements AutoCloseable {
             .thenReturn(systemMemoryMock);
 
         economyMock = mock(EconomyAPI.class);
-        var sectorMock = mock(SectorAPI.class);
+        sectorMock = mock(SectorAPI.class);
 
         when(sectorMock.getEconomy())
             .thenReturn(economyMock);
@@ -119,8 +120,8 @@ final class ClaimContestFixture implements AutoCloseable {
             .thenReturn(entities);
     }
 
-    /** Sets the system's claiming-faction memory flag, the override that settles a claim. */
-    void overrideClaimingFaction(String factionId) {
+    /** Sets the system's claiming-faction memory flag, the decree that settles a claim. */
+    void decreeClaimingFaction(String factionId) {
         when(systemMemoryMock.getString(MemFlags.CLAIMING_FACTION))
             .thenReturn(factionId);
     }
@@ -247,6 +248,11 @@ final class ClaimContestFixture implements AutoCloseable {
         // outpost.
         when(factionMock.isNeutralFaction())
             .thenReturn(Factions.NEUTRAL.equals(id));
+
+        // Known to the sector by its ID, as every faction the game loads is - which is what a
+        // decree naming it is looked up against.
+        when(sectorMock.getFaction(id))
+            .thenReturn(factionMock);
 
         return factionMock;
     }

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
  * {@link StarSystems#findTaggedEntity}, {@link StarSystems#readMarkets},
  * {@link StarSystems#readMarketsUnlistedByEconomy}, {@link StarSystems#findNearestMarket},
  * {@link StarSystems#readDisplayName} and
- * {@link StarSystems#readFactionClaimOverride}. Each method's cases live in a
+ * {@link StarSystems#readDecreedFactionId}. Each method's cases live in a
  * {@link Nested} group so
  * the suite reports as a per-method tree; the shared mock builders stay on the
  * outer class.
@@ -63,6 +63,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsEmptyForANullSystem() {
+
             assertThat(StarSystems.getStars(null))
                 .isEmpty();
         }
@@ -178,6 +179,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsNullForANullSystem() {
+
             assertThat(StarSystems.getCentremostStar(null))
                 .isNull();
         }
@@ -204,6 +206,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsEmptyForANullSystem() {
+
             assertThat(StarSystems.readMarkets(mock(SectorAPI.class), null))
                 .isEmpty();
         }
@@ -231,6 +234,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsEmptyForANullSystem() {
+
             assertThat(StarSystems.readMarketsUnlistedByEconomy(mock(SectorAPI.class), null))
                 .isEmpty();
         }
@@ -262,6 +266,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsEmptyForANullSystem() {
+
             assertThat(StarSystems.findNearestMarket(
                     mock(SectorAPI.class),
                     null,
@@ -327,6 +332,7 @@ final class StarSystemsTests {
 
         @Test
         void matchesTheRepeatIgnoringCase() {
+
             assertThat(StarSystems.readDisplayName(
                     buildSystemNamed("Penelope's Star STAR System", "Penelope's Star")))
                 .isEqualTo("Penelope's Star System");
@@ -353,23 +359,26 @@ final class StarSystemsTests {
 
         @Test
         void returnsBlankForASystemWithNoName() {
+
             assertThat(StarSystems.readDisplayName(buildSystemNamed(null, "Penelope's Star")))
                 .isEmpty();
         }
 
         @Test
         void returnsBlankForANullSystem() {
+
             assertThat(StarSystems.readDisplayName(null))
                 .isEmpty();
         }
     }
 
     @Nested
-    class ReadFactionClaimOverride {
+    class ReadDecreedFactionId {
 
         @Test
         void returnsTheDecreedFactionId() {
-            assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy("luddic_church")))
+
+            assertThat(StarSystems.readDecreedFactionId(buildSystemClaimedBy("luddic_church")))
                 .isEqualTo("luddic_church");
         }
 
@@ -377,8 +386,16 @@ final class StarSystemsTests {
         void returnsNullWhenNoClaimIsImposed() {
             // The ordinary case: vanilla scores markets for an unflagged system, so most
             // claimed systems carry no flag at all.
-            assertThat(StarSystems.readFactionClaimOverride(buildSystemClaimedBy(null)))
+            assertThat(StarSystems.readDecreedFactionId(buildSystemClaimedBy(null)))
                 .isNull();
+        }
+
+        @Test
+        void returnsABlankFlagAsWritten() {
+            // Vanilla reads a set flag naming nobody as a decree for nobody, which only a caller
+            // shown the flag as written can mirror.
+            assertThat(StarSystems.readDecreedFactionId(buildSystemClaimedBy("")))
+                .isEmpty();
         }
 
         @Test
@@ -389,13 +406,14 @@ final class StarSystemsTests {
             when(systemMock.getMemoryWithoutUpdate())
                 .thenReturn(null);
 
-            assertThat(StarSystems.readFactionClaimOverride(systemMock))
+            assertThat(StarSystems.readDecreedFactionId(systemMock))
                 .isNull();
         }
 
         @Test
         void returnsNullForANullSystem() {
-            assertThat(StarSystems.readFactionClaimOverride(null))
+
+            assertThat(StarSystems.readDecreedFactionId(null))
                 .isNull();
         }
     }
@@ -446,6 +464,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsFalseForANullSystem() {
+
             assertThat(StarSystems.hasActiveGate(null))
                 .isFalse();
         }
@@ -456,6 +475,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsTrueForASystemCarryingAJumpPoint() {
+
             assertThat(StarSystems.hasJumpPointArrival(buildSystemNotCutOff("a")))
                 .isTrue();
         }
@@ -487,6 +507,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsFalseForANullSystem() {
+
             assertThat(StarSystems.hasJumpPointArrival(null))
                 .isFalse();
         }
@@ -510,6 +531,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsTrueForASystemWithAJumpPoint() {
+
             assertThat(StarSystems.isReachable(buildSystemNotCutOff("a")))
                 .isTrue();
         }
@@ -535,6 +557,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsFalseForACutOffSystemWithNoGate() {
+
             assertThat(StarSystems.isReachable(cutOffSystem("a")))
                 .isFalse();
         }
@@ -619,6 +642,7 @@ final class StarSystemsTests {
 
         @Test
         void returnsNullForANullSystem() {
+
             assertThat(StarSystems.findTaggedEntity(null, "gate", "alpha-gate"))
                 .isNull();
         }

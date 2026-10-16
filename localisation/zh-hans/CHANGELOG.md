@@ -38,13 +38,15 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`SectorStarSystems` 的批量读取对未列出任何星系的星域回答为空**，不再出错。
 - **`KmlibStrings.splitIntoWords(String)` 和 `abbreviateToInitials(String)` 按 `Character.isWhitespace` 划分词**，即 `hasText(String)` 所读取的规则。此前它们不会在词之间的全角空格处划分，并会去掉首尾的控制字符。
 - **`KmlibStrings.collectTexts(Iterable, Function)` 会去除所保留的每个文本的首尾空白**，与 `normaliseText(String)` 的做法一致。
+- **在 `VanillaClaimBreakdownReader` 中，未指向任何势力的宣称势力标记会让星系无人宣称**，与原版的读法一致：标记为空白，或指向星域不认识的势力时，星系在权衡任何市场之前就判给了无人。此前读取器会把标记的文本报告为宣称方。
 
 #### 新增
 
 - **`AllianceRecord.findLeadFactionId()`**：联盟的盟主；联盟没有成员时为空。
 - **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台命令。子类指定自己的命令词、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
-- **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的提示框。
+- **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的悬停框。
+- **`ClaimDecreeReader`**（位于 `kmlib.starsector.systems.claims`）：星系的宣称势力标记所强加的势力，只需一次记忆读取，无需遍历殖民地。`StarSystems::readDecreedFactionId` 是原版绑定。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都不为正时为空。
 - **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
@@ -138,7 +140,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`，无可作答时为 null | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`，返回 `Optional` | `Markets` 读取市场是什么，而子市场属于市场的构成方式。 |
 | 位于 `kmlib.starsector.ui.coreui` 中的 `CoreUiOverlayPanels` | 已从公共 API 中移除。改用 `ModalPanel`。 | 单独的面板既不占用输入，也不淡入淡出，因此每个调用方都得自行重建这两者。 |
 | `MapPresence.isAnyMapShowing()`、`isSchematicMapShowing()` 和 `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`、`isSchematicVanillaMapShowing()` 和 `isStarscapeVanillaMapShowing()` | 它们只回答原版的星图界面，Mod 嵌入别处的星图不计在内。 |
-| `ClaimBreakdownReader`，与 `ClaimReader` 互不相干 | 继承 `ClaimReader`：实现方也要回答 `readClaimingFactionId(StarSystemAPI)`。`ClaimBreakdownReaderFake` 根据所给的明细作答。 | 能说明星系为何被宣称的读取器，也能说出宣称方是谁，因此一个读取器即可同时服务填充和解释填充的提示框。 |
+| `ClaimBreakdownReader`，与 `ClaimReader` 互不相干，带有 `readCoreFactionId(StarSystemAPI)` | 继承 `ClaimReader` 和 `ClaimDecreeReader`：实现方要回答 `readClaimingFactionId(StarSystemAPI)` 和 `readDecreedFactionId(StarSystemAPI)`。`ClaimBreakdownReaderFake` 根据所给的明细回答这两者。 | 能说明星系为何被宣称的读取器，也能说出宣称方是谁，因此一个读取器即可同时服务填充和解释填充的悬停框。 |
+| `SystemClaimBreakdown.overrideFactionId()` 和 `scores()` | `decreedFactionId()` 和 `standings()` | 列表存放的是排名，而该标记在其他所有名称中都叫无条件宣称。 |
+| `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | 同上。 |
+| `VanillaClaimBreakdownReader(KnownColonyReader)`，以及 `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` 中为 null 的索引 | 已移除：在一次遍历的 `SectorPassIndex` 之上打开读取器。只需无条件宣称时，把 `StarSystems::readDecreedFactionId` 当作 `ClaimDecreeReader` 读取。 | 没有遍历的读取器读取的是 `Global.getSector()`，而不是被询问的那个星域。 |
 
 </details>
 

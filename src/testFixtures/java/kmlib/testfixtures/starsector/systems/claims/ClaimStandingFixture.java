@@ -1,22 +1,20 @@
 package kmlib.testfixtures.starsector.systems.claims;
 
-import kmlib.starsector.entities.EntityNameplate;
 import kmlib.starsector.systems.claims.ContestAdmission;
-import kmlib.starsector.systems.claims.MarketClaimBreakdown;
 import kmlib.starsector.systems.claims.PresenceOnlyClaimStanding;
 import kmlib.starsector.systems.claims.WeighedClaimStanding;
 
 import java.util.List;
-import java.util.OptionalInt;
 
 /**
  * Builds the standings a claim contest is posed with, for tests about what a contest means
- * rather than about the arithmetic behind it. Published as a fixture variant so both KMLib's and consuming
- * mods' tests state a standing the same way.
+ * rather than about the arithmetic behind it. Published as a fixture variant so both KMLib's and
+ * consuming mods' tests state a standing the same way.
  *
  * <p>A standing is a market breakdown plus the faction it belongs to, so a test that cares only
  * about a score would otherwise have to invent a colony to carry it - and every such test would
  * invent a slightly different one. Stating the score directly keeps those cases about the score.
+ * Each colony is an ordinary {@link ClaimMarketFixture} market, varied only where a builder says.
  *
  * <p>Both kinds of standing are built here, since a case posing a contest usually wants the
  * distinction between them and nothing else about either - who was weighed, and who was merely
@@ -24,51 +22,16 @@ import java.util.OptionalInt;
  */
 public final class ClaimStandingFixture {
 
-    // The one colony a plainly-scored standing rests on. Named rather than left blank so a box
-    // rendering the market list has something to print, and marked with nothing: a test posing
-    // standings by score alone is not about how a market line is identified, and a glyph here would
-    // put a mark on every box built from this fixture.
-    private static final EntityNameplate STANDING_MARKET =
-        EntityNameplate.createUnmarkedNameplate("Standing Colony");
+    // Whether the player knows of a builder's colony. Known is what a case posing standings by
+    // score alone wants; unknown is what the fog-of-war builders vary.
+    private static final boolean KNOWN_TO_PLAYER = true;
+    private static final boolean UNKNOWN_TO_PLAYER = false;
 
-    // The one colony a presence-only standing is present through, named apart from the scored one
-    // so a box listing both kinds can be read line by line.
-    private static final EntityNameplate UNWEIGHED_MARKET =
-        EntityNameplate.createUnmarkedNameplate("Unweighed Colony");
-
-    // What a colony the contest never weighed is worth. Its size is never read - the standing
-    // reports a nought of its own - so it is stated once here rather than invented per case.
-    private static final int UNWEIGHED_MARKET_SIZE = 3;
-
-    // The market carries the whole score on its size, which is the shape with the fewest moving
-    // parts: no siblings beside it and no garrison bonus folded into it.
-    private static final int NO_SIBLING_MARKETS = 0;
-
-    // Where the market falls in the system's listing. A test posing standings by score alone is
-    // not posing a tie, so every standing built here takes the head of the list.
-    private static final int FIRST_LISTED = 1;
-
-    // The one colony a presence nobody knows of stands on, named apart again so a case about the fog
-    // can be read against the known kinds above it.
-    private static final EntityNameplate UNKNOWN_MARKET =
-        EntityNameplate.createUnmarkedNameplate("Unknown Colony");
-
-    // Whether the player knows of the colony. Known is what a case posing standings by score alone
-    // wants; the two false readings below are what the fog-of-war builders vary.
-    private static final boolean IS_KNOWN_TO_PLAYER = true;
-
-    // The same flag false, named for the shape that reaches it. A market held in the open is unknown
-    // only by being undiscovered; a concealed one stays unknown until somebody has seen it standing
-    // there, whatever its entity says.
-    private static final boolean IS_UNKNOWN_TO_PLAYER = false;
-
-    // Which colony each standing rests on. A case about what a contest means is not a case about
-    // pairing a row with anything else, so each builder's market is identified once here rather
-    // than offered for a caller to vary - distinct per builder, so a box listing several kinds of
-    // standing still has one ID per line.
-    private static final String STANDING_MARKET_ID = "standing_colony";
-    private static final String UNWEIGHED_MARKET_ID = "unweighed_colony";
-    private static final String UNKNOWN_MARKET_ID = "unknown_colony";
+    // The colonies the three builders stand on. Named apart so a box listing several kinds of
+    // standing can be read line by line, and each name gives its colony its own ID.
+    private static final String STANDING_MARKET_NAME = "Standing Colony";
+    private static final String UNKNOWN_MARKET_NAME = "Unknown Colony";
+    private static final String UNWEIGHED_MARKET_NAME = "Unweighed Colony";
 
     private ClaimStandingFixture() {
     }
@@ -87,7 +50,7 @@ public final class ClaimStandingFixture {
             int score,
             boolean isTerritorial) {
 
-        return buildStandingOnOneMarket(factionId, score, isTerritorial, IS_KNOWN_TO_PLAYER);
+        return buildStandingOnOneMarket(factionId, score, isTerritorial, KNOWN_TO_PLAYER);
     }
 
     /**
@@ -110,24 +73,15 @@ public final class ClaimStandingFixture {
             boolean isTerritorial,
             boolean isKnownToPlayer) {
 
-        return new WeighedClaimStanding(
-            factionId,
-            isTerritorial,
-            new MarketClaimBreakdown(
-                STANDING_MARKET,
-                STANDING_MARKET_ID,
-                FIRST_LISTED,
-                isKnownToPlayer,
-                // Held in the open and listed by the economy, which a standing market could not be
-                // otherwise in any case: the mechanic lets neither kind stand for a faction.
-                // Whether the player has found it is a separate question, and the two do not move
-                // together - concealment is what the mechanic skips a market for, being found is
-                // what a display may name it on.
-                ContestAdmission.WEIGHED,
-                score,
-                NO_SIBLING_MARKETS,
-                OptionalInt.empty()),
-            List.of());
+        // The whole score on the size, the shape with the fewest moving parts: no siblings beside
+        // it and no garrison bonus folded into it.
+        var standingMarket = ClaimMarketFixture
+            .startMarket(STANDING_MARKET_NAME)
+            .setMarketSize(score)
+            .setKnownToPlayer(isKnownToPlayer)
+            .buildMarket();
+
+        return new WeighedClaimStanding(factionId, isTerritorial, standingMarket, List.of());
     }
 
     /**
@@ -147,21 +101,11 @@ public final class ClaimStandingFixture {
             String factionId,
             boolean isTerritorial) {
 
-        return new PresenceOnlyClaimStanding(
+        return buildPresenceOnlyStanding(
             factionId,
             isTerritorial,
-            List.of(new MarketClaimBreakdown(
-                UNWEIGHED_MARKET,
-                UNWEIGHED_MARKET_ID,
-                FIRST_LISTED,
-                IS_KNOWN_TO_PLAYER,
-                // Concealment rather than an absence from the economy's listing, arbitrarily: the
-                // two suppress scoring identically, and a test posing a faction that was never
-                // weighed is not about which of them did it.
-                ContestAdmission.HIDDEN,
-                UNWEIGHED_MARKET_SIZE,
-                NO_SIBLING_MARKETS,
-                OptionalInt.empty())));
+            UNWEIGHED_MARKET_NAME,
+            KNOWN_TO_PLAYER);
     }
 
     /**
@@ -183,21 +127,30 @@ public final class ClaimStandingFixture {
             String factionId,
             boolean isTerritorial) {
 
-        return new PresenceOnlyClaimStanding(
+        return buildPresenceOnlyStanding(
             factionId,
             isTerritorial,
-            List.of(new MarketClaimBreakdown(
-                UNKNOWN_MARKET,
-                UNKNOWN_MARKET_ID,
-                FIRST_LISTED,
-                IS_UNKNOWN_TO_PLAYER,
-                // Concealed as well as unknown, which is one pairing of two independent facts:
-                // concealment is what keeps the mechanic from weighing a market, and being unknown
-                // is what keeps a display from naming it. Both are posed here because this standing
-                // needs the first to be presence-only and the case needs the second.
-                ContestAdmission.HIDDEN,
-                UNWEIGHED_MARKET_SIZE,
-                NO_SIBLING_MARKETS,
-                OptionalInt.empty())));
+            UNKNOWN_MARKET_NAME,
+            UNKNOWN_TO_PLAYER);
+    }
+
+    // One concealed colony standing for the faction. Concealment rather than an absence from the
+    // economy's listing, arbitrarily: the two suppress scoring identically, and a case posing a
+    // faction that was never weighed is not about which of them did it. Whether the player has
+    // found it is a separate fact - concealment keeps the mechanic from weighing a market, being
+    // unknown keeps a display from naming it.
+    private static PresenceOnlyClaimStanding buildPresenceOnlyStanding(
+            String factionId,
+            boolean isTerritorial,
+            String marketName,
+            boolean isKnownToPlayer) {
+
+        var unweighedMarket = ClaimMarketFixture
+            .startMarket(marketName)
+            .setAdmission(ContestAdmission.HIDDEN)
+            .setKnownToPlayer(isKnownToPlayer)
+            .buildMarket();
+
+        return new PresenceOnlyClaimStanding(factionId, isTerritorial, List.of(unweighedMarket));
     }
 }

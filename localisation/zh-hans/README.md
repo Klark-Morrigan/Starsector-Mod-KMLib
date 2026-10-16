@@ -412,7 +412,8 @@ A version heading is never translated; see [translating the changelog](#translat
 | decree (a claim the system's memory flag imposes) | 无条件宣称 | KMU's word for the `$claimingFaction` flag, which wins over any scored claim |
 | contest, standing (one faction's place in it), score | 争夺, 排名, 得分 | 争夺 and 得分 as KMU writes them; 排名, ranking, for a place the scores order |
 | breakdown (the whole scored contest behind a claim) | 明细 | the itemised account, as a bill's 明细 lists its lines |
-| fill (a map cell's paint), hover box | 填充, 提示框 | 填充 as KMU writes it; 提示框 as the pad row writes it |
+| fill (a map cell's paint), hover box | 填充, 悬停框 | both as KMU writes them; 悬停框, a box raised on hover, kept apart from 提示框, a tooltip |
+| index (of one pass's walk), memory read (of a flag) | 索引, 记忆读取 | the usual computing word; 记忆, memory, the API's `MemoryAPI` read literally, since no player ever sees the term |
 
 #### Markets
 

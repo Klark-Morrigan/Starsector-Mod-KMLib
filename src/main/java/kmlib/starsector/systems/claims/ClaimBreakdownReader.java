@@ -4,7 +4,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 
 /**
  * Source port for the reasoning behind a star system's claim - the scored contest between the
- * factions present and the override that can settle it outright. {@link ClaimReader} answers
+ * factions present and the decree that can settle it outright. {@link ClaimReader} answers
  * <em>who</em> claims a system; this answers <em>why</em>, for callers that have to justify a
  * claim to a player rather than merely colour by it.
  *
@@ -13,17 +13,14 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
  * computation. {@link VanillaClaimBreakdownReader} is the binding that mirrors the game's own
  * mechanic at runtime.
  *
- * <p>The two reads are separate because they cost wildly different amounts: the override is a
- * single memory read, while the breakdown scores every market in the system. A caller that
- * only needs to know whether a system is held by decree should not pay for the scoring.
- *
- * <p>It extends {@link ClaimReader} because a reader that can say why a system is claimed can say
- * who claims it. One reader then serves both a fill and the box explaining it, so the two cannot
- * be read through different bindings. An implementer answers the claimant without scoring the
+ * <p>It extends {@link ClaimReader} and {@link ClaimDecreeReader} because a reader that can say
+ * why a system is claimed can say who claims it and whether a decree did. One reader then serves a
+ * fill, the box explaining it and the decree heading over that box, so none of them can be read
+ * through a different binding. An implementer answers the two narrow reads without scoring the
  * system where it can, since a caller colouring a whole sector asks for nothing more.
  */
 public interface ClaimBreakdownReader
-        extends ClaimReader {
+        extends ClaimReader, ClaimDecreeReader {
 
     /**
      * @param system the star system to explain the claim of
@@ -32,11 +29,4 @@ public interface ClaimBreakdownReader
      *         this" is a state callers already handle
      */
     SystemClaimBreakdown readBreakdown(StarSystemAPI system);
-
-    /**
-     * @param system the star system to read the claiming-faction override of
-     * @return the ID of the faction the system's claiming-faction memory flag imposes, or
-     *         {@code null} when no override is set (or the system cannot be read)
-     */
-    String readCoreFactionId(StarSystemAPI system);
 }

@@ -180,10 +180,14 @@ public final class StarSystems {
      * report null here. A caller wanting the resolved claimant wants that computation,
      * not this flag.
      *
+     * <p>The flag as written. Vanilla reads a flag that is set but names no faction - blank, or an
+     * ID the sector does not know - as a decree for nobody, so a caller resolving a claimant
+     * checks the ID rather than trusting it.
+     *
      * @param system the system to read; null (or one with no memory) yields null
      * @return the decreed claimant's faction ID, or null when no claim is imposed
      */
-    public static String readFactionClaimOverride(StarSystemAPI system) {
+    public static String readDecreedFactionId(StarSystemAPI system) {
         if (system == null || system.getMemoryWithoutUpdate() == null) {
             return null;
         }

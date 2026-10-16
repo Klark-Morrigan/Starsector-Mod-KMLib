@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * <p>An unmapped system - or a null system, or one with a null ID - reports
  * {@link SystemClaimBreakdown#NONE}, matching the port's "unreadable reads as nothing"
- * contract. The override and claimant reads are derived from the stored breakdown rather than
+ * contract. The decree and claimant reads are derived from the stored breakdown rather than
  * tracked separately, so the reads can never be set to disagree.
  */
 public final class ClaimBreakdownReaderFake
@@ -47,7 +47,7 @@ public final class ClaimBreakdownReaderFake
     }
 
     @Override
-    public String readCoreFactionId(StarSystemAPI system) {
-        return readBreakdown(system).overrideFactionId();
+    public String readDecreedFactionId(StarSystemAPI system) {
+        return readBreakdown(system).decreedFactionId();
     }
 }

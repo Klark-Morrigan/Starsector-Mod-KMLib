@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Pins {@link SystemClaimBreakdown}'s guarantee that the standings it carries are fixed, and the
  * questions it answers about its claimant. A breakdown is read repeatedly during a render pass, so
- * a caller that could see its scores change - or change them - would be reading a different contest
+ * a caller that could see its standings change - or change them - would be reading a different contest
  * each time it looked. The questions are pinned because a reader asking one for itself could read a
  * blank claimant as somebody where its neighbour reads nobody.
  */
@@ -26,15 +26,15 @@ final class SystemClaimBreakdownTests {
         @Test
         void keepsTheStandingsItWasBuiltWithWhenTheSourceListChangesLater() {
 
-            var scores = new ArrayList<FactionClaimStanding>();
+            var standings = new ArrayList<FactionClaimStanding>();
 
-            scores.add(ClaimStandingFixture.buildStandingOnOneMarket("hegemony", 6, true));
+            standings.add(ClaimStandingFixture.buildStandingOnOneMarket("hegemony", 6, true));
 
-            var breakdown = new SystemClaimBreakdown(null, "hegemony", scores);
+            var breakdown = new SystemClaimBreakdown(null, "hegemony", standings);
 
-            scores.clear();
+            standings.clear();
 
-            assertThat(breakdown.scores())
+            assertThat(breakdown.standings())
                 .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
         }
@@ -47,7 +47,7 @@ final class SystemClaimBreakdownTests {
                 "hegemony",
                 List.of(ClaimStandingFixture.buildStandingOnOneMarket("hegemony", 6, true)));
 
-            assertThatThrownBy(() -> breakdown.scores().clear())
+            assertThatThrownBy(() -> breakdown.standings().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
         }
 
@@ -56,7 +56,7 @@ final class SystemClaimBreakdownTests {
 
             var breakdown = new SystemClaimBreakdown("luddic_church", "luddic_church", null);
 
-            assertThat(breakdown.scores())
+            assertThat(breakdown.standings())
                 .isEmpty();
         }
     }
@@ -146,7 +146,7 @@ final class SystemClaimBreakdownTests {
         }
 
         @Test
-        void readsAnEmptyOverrideAsNoDecreeAtAll() {
+        void readsAnEmptyDecreeAsNoDecreeAtAll() {
             // The reading the question is named for. A flag present but naming nobody imposes
             // nothing, and a reader testing the field for being set rather than for saying anything
             // would report a decree here while its neighbour reported none.
@@ -229,13 +229,13 @@ final class SystemClaimBreakdownTests {
     class None {
 
         @Test
-        void carriesNoClaimantNoOverrideAndNoStandings() {
+        void carriesNoClaimantNoDecreeAndNoStandings() {
 
-            assertThat(SystemClaimBreakdown.NONE.overrideFactionId())
+            assertThat(SystemClaimBreakdown.NONE.decreedFactionId())
                 .isNull();
             assertThat(SystemClaimBreakdown.NONE.claimantFactionId())
                 .isNull();
-            assertThat(SystemClaimBreakdown.NONE.scores())
+            assertThat(SystemClaimBreakdown.NONE.standings())
                 .isEmpty();
         }
     }
