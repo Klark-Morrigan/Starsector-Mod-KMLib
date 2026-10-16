@@ -75,6 +75,38 @@ class KmlibStringsTests {
     }
 
     @Nested
+    class NormaliseText {
+
+        @Test
+        void isNullOnNull() {
+
+            assertThat(KmlibStrings.normaliseText(null))
+                .isNull();
+        }
+
+        @Test
+        void isNullOnWhitespaceOnly() {
+
+            assertThat(KmlibStrings.normaliseText(" \t\n "))
+                .isNull();
+        }
+
+        @Test
+        void stripsSurroundingWhitespace() {
+
+            assertThat(KmlibStrings.normaliseText("  hello\t "))
+                .isEqualTo("hello");
+        }
+
+        @Test
+        void keepsAControlCharacterThatIsNotWhitespace() {
+            // One blank rule with hasText: a character it counts as text is never stripped away here.
+            assertThat(KmlibStrings.normaliseText("\u0001hello"))
+                .isEqualTo("\u0001hello");
+        }
+    }
+
+    @Nested
     class CollectTexts {
 
         @Test

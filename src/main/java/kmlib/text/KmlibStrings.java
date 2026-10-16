@@ -78,6 +78,26 @@ public final class KmlibStrings {
     }
 
     /**
+     * {@code value} with its surrounding whitespace stripped, or {@code null} where nothing is left.
+     *
+     * <p>The game and the mods around it report a missing name three ways - null, empty, and a cell
+     * of spaces - and none of them means anything different to a caller. This answers all three as
+     * the one absence, so two sites cannot disagree about the same value. The whitespace stripped is
+     * the same {@link Character#isWhitespace} rule {@link #hasText} reads, so a value this answers
+     * {@code null} for is exactly a value with no text.
+     *
+     * @param value the text to normalise; may be null
+     * @return the stripped text, or {@code null} where it is blank
+     */
+    public static String normaliseText(String value) {
+
+        if (!hasText(value)) {
+            return null;
+        }
+        return value.strip();
+    }
+
+    /**
      * The text {@code readText} answers for each of {@code items}, in their order, a null or blank
      * answer left out - the one loop every read of "what may this say" over a listing would otherwise
      * write for itself.
