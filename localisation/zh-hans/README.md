@@ -45,6 +45,7 @@ so the two can never disagree.
     - [Markets](#markets)
     - [Salvage drops](#salvage-drops)
     - [Geometry](#geometry)
+    - [Lists and sorting](#lists-and-sorting)
 - [Forum terms](#forum-terms)
   - [The forum](#the-forum)
   - [Editions and translation](#editions-and-translation)
@@ -421,6 +422,13 @@ A version heading is never translated; see [translating the changelog](#translat
 | hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 单元 as the controls entries write a cell |
 | region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
+
+#### Lists and sorting
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| sort mode, metric, ranking | 排序模式, 指标, 排名 | the usual words |
+| tie, break a tie | 平局, 打破平局 | |
 
 ## Forum terms
 

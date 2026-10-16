@@ -69,6 +69,10 @@ No player-facing changes.
   - `joinWithParenthetical(String, String)`: two texts as "main (parenthetical)", or whichever has text.
   - `requireFieldText(String, String)`: `requireText(String, String)` with a message naming the field.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
+- **`ListSortComparators`** in `kmlib.starsector.ui.widgets.lists`: the ranking a sort mode builds from its metrics, with the item's name and then its ID breaking every tie.
+  - `assembleComparator(ToIntFunction, List, SortDirection)`: the mode's metric in the direction asked, then the metric chain, then the tie-break.
+  - `appendNameAndIdTail(Comparator)`: the same tie-break after an order the caller built.
+  - `resolveDefaultDirection(ToIntFunction)`: descending for a metric, ascending by name where there is none.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
 - **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
