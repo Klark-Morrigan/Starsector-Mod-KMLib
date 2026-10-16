@@ -117,6 +117,34 @@ final class CommodityMarketPricesTests {
     }
 
     @Nested
+    class ComputeAverageUnitPrices {
+
+        @Test
+        void pricesEachCommodityAskedFor() {
+
+            var markets = List.of(
+                buildMarketSelling(Map.of("ore", 100f, "organics", 60f)),
+                buildMarketSelling(Map.of("ore", 300f, "organics", 80f)));
+
+            assertThat(CommodityMarketPrices.computeAverageUnitPrices(
+                    markets,
+                    Set.of("ore", "organics"),
+                    PlayerTradeSide.SELLING))
+                .containsOnly(entry("ore", 200f), entry("organics", 70f));
+        }
+
+        @Test
+        void leavesOutACommodityNoMarketPriced() {
+
+            assertThat(CommodityMarketPrices.computeAverageUnitPrices(
+                    List.of(buildMarketSelling(Map.of("ore", Float.NaN))),
+                    Set.of("ore"),
+                    PlayerTradeSide.SELLING))
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class FindLocalUnitPrice {
 
         private EconomyAPI economyMock;

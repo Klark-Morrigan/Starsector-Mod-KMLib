@@ -29,6 +29,31 @@ public final class CommodityMarketPrices {
     }
 
     /**
+     * Each commodity's average unit price across {@code markets}, traded {@code side}. A market without a finite price
+     * for a commodity counts in neither that commodity's sum nor its count.
+     *
+     * @param markets      the markets to average over
+     * @param commodityIds the commodities to price
+     * @param side         which way the player trades
+     * @return the averages by commodity ID; a commodity no market priced is left out
+     */
+    public static Map<String, Float> computeAverageUnitPrices(
+            List<MarketAPI> markets,
+            Collection<String> commodityIds,
+            PlayerTradeSide side) {
+
+        var averages = new HashMap<String, Float>();
+
+        for (var commodityId : commodityIds) {
+
+            findAverageUnitPrice(markets, commodityId, side)
+                .ifPresent(average -> averages.put(commodityId, average));
+        }
+
+        return averages;
+    }
+
+    /**
      * The commodity's average unit price across {@code markets}, traded {@code side}.
      *
      * @param markets     the markets to average over

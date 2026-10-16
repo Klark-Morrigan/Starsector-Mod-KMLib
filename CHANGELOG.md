@@ -71,6 +71,7 @@ No player-facing changes.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
   - `convertPercentToFraction(double)`: a percent, such as a settings slider holds, as a fraction.
+- **`PlayerTradeSide`** in `kmlib.starsector.commodities`: the player buying or selling, with the market price and the player price modifier that side reads.
 - **`PolygonRegions`** ring reads:
   - `findRingHolding(List, double, double)`: the first ring holding a point, or `NO_RING`.
   - `findSmallestEnclosingRing(List, double, double)`: the holding ring of smallest area, so nested rings resolve to the innermost.
