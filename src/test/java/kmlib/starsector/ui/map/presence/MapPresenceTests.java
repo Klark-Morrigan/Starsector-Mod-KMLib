@@ -102,13 +102,13 @@ class MapPresenceTests {
     }
 
     @Nested
-    class IsSchematicMapShowing {
+    class IsSchematicVanillaMapShowing {
 
         @Test
         void isFalseWhenNeitherHostIsShowingAMap() {
             // The fake opens with no visor, so this is every screen that is neither the map nor the
             // intel tab - and the case that stops this being read as "not starscape".
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicVanillaMapShowing())
                 .isFalse();
         }
 
@@ -116,7 +116,7 @@ class MapPresenceTests {
         void isTrueWhenTheSectorMapAloneIsShowingTheSchematic() {
 
             assertThat(
-                buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isSchematicMapShowing())
+                buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isSchematicVanillaMapShowing())
                 .isTrue();
         }
 
@@ -125,7 +125,7 @@ class MapPresenceTests {
 
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicVanillaMapShowing())
                 .isTrue();
         }
 
@@ -135,7 +135,7 @@ class MapPresenceTests {
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
             assertThat(
-                buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isSchematicMapShowing())
+                buildPresence(SectorMapState.SHOWING_WITH_STARSCAPE_OFF).isSchematicVanillaMapShowing())
                 .isTrue();
         }
 
@@ -145,7 +145,7 @@ class MapPresenceTests {
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isSchematicVanillaMapShowing())
                 .isFalse();
         }
 
@@ -153,7 +153,7 @@ class MapPresenceTests {
         void isFalseWhenTheSectorMapIsInStarscapeMode() {
 
             assertThat(
-                buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isSchematicMapShowing())
+                buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isSchematicVanillaMapShowing())
                 .isFalse();
         }
 
@@ -161,20 +161,20 @@ class MapPresenceTests {
         void isFalseWhileTheSectorMapsFilterCannotBeRead() {
             // Declined rather than assumed: an unknown filter is not evidence of either look.
             assertThat(
-                buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isSchematicMapShowing())
+                buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isSchematicVanillaMapShowing())
                 .isFalse();
         }
     }
 
     @Nested
-    class IsStarscapeMapShowing {
+    class IsStarscapeVanillaMapShowing {
 
         @Test
         void isFalseWhenNeitherHostIsInStarscapeMode() {
 
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeVanillaMapShowing())
                 .isFalse();
         }
 
@@ -182,7 +182,7 @@ class MapPresenceTests {
         void isTrueWhenTheSectorMapAloneIsInStarscapeMode() {
 
             assertThat(
-                buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isStarscapeMapShowing())
+                buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isStarscapeVanillaMapShowing())
                 .isTrue();
         }
 
@@ -192,7 +192,7 @@ class MapPresenceTests {
             intelScreenViewFake.setMapVisorRect(LIT_VISOR_RECT);
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeVanillaMapShowing())
                 .isTrue();
         }
 
@@ -203,7 +203,7 @@ class MapPresenceTests {
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
             assertThat(
-                buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isStarscapeMapShowing())
+                buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE).isStarscapeVanillaMapShowing())
                 .isTrue();
         }
 
@@ -212,7 +212,7 @@ class MapPresenceTests {
 
             intelScreenViewFake.setMapStarscapeModeOn(true);
 
-            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeMapShowing())
+            assertThat(buildPresence(SectorMapState.NOT_SHOWING).isStarscapeVanillaMapShowing())
                 .isFalse();
         }
 
@@ -220,7 +220,7 @@ class MapPresenceTests {
         void isFalseWhileTheSectorMapsFilterCannotBeRead() {
 
             assertThat(
-                buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isStarscapeMapShowing())
+                buildPresence(SectorMapState.SHOWING_WITH_UNREADABLE_FILTER).isStarscapeVanillaMapShowing())
                 .isFalse();
         }
 
@@ -233,7 +233,7 @@ class MapPresenceTests {
                 new SingleReadingIntelScreenFake(MapVisorState.SHOWING_IN_STARSCAPE_MODE);
 
             assertThat(new MapPresence(() -> SectorMapState.NOT_SHOWING, intelScreenFake)
-                .isStarscapeMapShowing())
+                .isStarscapeVanillaMapShowing())
                 .isTrue();
         }
     }

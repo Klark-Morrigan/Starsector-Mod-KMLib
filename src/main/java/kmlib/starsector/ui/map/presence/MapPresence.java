@@ -81,7 +81,7 @@ public final class MapPresence {
      * @return whether either host is showing a map drawing the ordinary schematic - the sector map
      *         with its own filter off, or a lit map visor with the intel screen's filter off
      */
-    public boolean isSchematicMapShowing() {
+    public boolean isSchematicVanillaMapShowing() {
         if (readSectorMapState.get() == SectorMapState.SHOWING_WITH_STARSCAPE_OFF) {
             return true;
         }
@@ -92,7 +92,7 @@ public final class MapPresence {
      * @return whether either host is showing a map in Starscape mode - the sector map
      *         with its own filter on, or a lit map visor with the intel screen's filter on
      */
-    public boolean isStarscapeMapShowing() {
+    public boolean isStarscapeVanillaMapShowing() {
         if (readSectorMapState.get() == SectorMapState.SHOWING_IN_STARSCAPE_MODE) {
             return true;
         }

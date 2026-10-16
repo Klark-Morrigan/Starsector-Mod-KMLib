@@ -130,7 +130,7 @@ No player-facing changes.
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` measures rings, and where a line stays inside a region is a question of its own. |
 | `ParameterSpec(String)` and `ParameterSpec.takingNoArguments(String)`, taking the whole usage line | The same, taking the one-word command name; a longer one throws `IllegalArgumentException`. `ParameterSpec(String, String)` adds the word a command reads before the parse, such as `<kind>`. | The spec composes the usage line from its parameters, so the line cannot drift from what the parser accepts. |
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`, null where nothing answers | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`, returning `Optional` | `Markets` reads what a market is, and a trading counter is part of how one is put together. |
-| `MapPresence.isAnyMapShowing()` | `isAnyVanillaMapShowing()` | It answers for the vanilla map screens only, and a map a mod embeds elsewhere is not counted. |
+| `MapPresence.isAnyMapShowing()`, `isSchematicMapShowing()` and `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`, `isSchematicVanillaMapShowing()` and `isStarscapeVanillaMapShowing()` | They answer for the vanilla map screens only, and a map a mod embeds elsewhere is not counted. |
 
 </details>
 
