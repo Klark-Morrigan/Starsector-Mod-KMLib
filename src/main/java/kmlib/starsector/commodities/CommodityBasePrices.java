@@ -1,8 +1,11 @@
 package kmlib.starsector.commodities;
 
 import com.fs.starfarer.api.SettingsAPI;
+import com.fs.starfarer.api.campaign.econ.CommoditySpecAPI;
 
 import kmlib.text.KmlibStrings;
+
+import java.util.Optional;
 
 /**
  * A commodity's base price as the game's data holds it, for a reader that divides by one. Vanilla ships
@@ -12,8 +15,7 @@ import kmlib.text.KmlibStrings;
  */
 public final class CommodityBasePrices {
 
-    /** What {@link #findBasePrice} answers when neither the commodity nor its demand-class peer has a price. */
-    public static final float NO_BASE_PRICE = 0f;
+    private static final float ZERO_PRICE = 0f;
 
     private CommodityBasePrices() {
     }
@@ -23,30 +25,37 @@ public final class CommodityBasePrices {
      *
      * @param settings    the settings the commodity specs are read from
      * @param commodityId the commodity
-     * @return a positive price, or {@link #NO_BASE_PRICE} when the commodity is unknown or neither carries one
+     * @return a positive price, or empty when the commodity is unknown or neither carries one
      */
-    public static float findBasePrice(SettingsAPI settings, String commodityId) {
+    public static Optional<Float> findBasePrice(SettingsAPI settings, String commodityId) {
 
         var spec = settings.getCommoditySpec(commodityId);
-
         if (spec == null) {
-            return NO_BASE_PRICE;
+            return Optional.empty();
         }
-        if (spec.getBasePrice() > NO_BASE_PRICE) {
-            return spec.getBasePrice();
+
+        var ownPrice = findPositiveBasePrice(spec);
+        if (ownPrice.isPresent()) {
+            return ownPrice;
         }
 
         var demandClassId = spec.getDemandClass();
 
         if (!KmlibStrings.hasText(demandClassId) || demandClassId.equals(commodityId)) {
-            return NO_BASE_PRICE;
+            return Optional.empty();
         }
 
-        var peerSpec = settings.getCommoditySpec(demandClassId);
+        return Optional
+            .ofNullable(settings.getCommoditySpec(demandClassId))
+            .flatMap(CommodityBasePrices::findPositiveBasePrice);
+    }
 
-        if (peerSpec == null || peerSpec.getBasePrice() <= NO_BASE_PRICE) {
-            return NO_BASE_PRICE;
-        }
-        return peerSpec.getBasePrice();
+    private static Optional<Float> findPositiveBasePrice(CommoditySpecAPI spec) {
+
+        var basePrice = spec.getBasePrice();
+
+        return basePrice > ZERO_PRICE
+            ? Optional.of(basePrice)
+            : Optional.empty();
     }
 }
