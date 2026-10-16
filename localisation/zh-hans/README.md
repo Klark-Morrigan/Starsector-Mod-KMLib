@@ -268,6 +268,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | caller | 调用方 | |
 | command word (what a console command is typed as) | 命令词 | 命令, command, with 词, word |
+| compile | 编译 | the usual computing word |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | control character | 控制字符 | the usual computing word |
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
