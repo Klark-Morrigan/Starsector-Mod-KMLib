@@ -59,7 +59,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
-- **`ForeignMapPassWarning`**（位于 `kmlib.starsector.ui.map.probes`）：星图渲染钩子在屏幕上没有星图时运行，每次游戏期间警告一次，并在调用方自己的消息后附上嵌入星图的宿主和该渲染流程的调用栈。
+- **`ForeignMapPassWarning`**（位于 `kmlib.starsector.ui.map.probes`）：星图渲染钩子在屏幕上没有原版星图时运行，每次游戏期间警告一次，并在调用方自己的消息后附上嵌入星图的宿主和该渲染流程的调用栈。
 - **`GlLineHatchStroke`**（位于 `kmlib.opengl.hatch`）：以 GL 线条描画的斜线段，线宽按图样间距的比例设定，因此在任何缩放下都保持一致。
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。

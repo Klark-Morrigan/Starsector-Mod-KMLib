@@ -48,7 +48,7 @@ final class ForeignMapPassWarningTests {
     private static final String UNREADABLE_PRESENCE = "Overlay could not read whether a map is on screen.";
 
     @Nested
-    class WarnOnceIfNoMapIsShowing {
+    class WarnOnceIfNoVanillaMapIsShowing {
 
         @Test
         void reportsThePassWithItsStackWhenNoMapIsOnScreen() {
@@ -56,7 +56,7 @@ final class ForeignMapPassWarningTests {
             var loggerMock = mock(Logger.class);
 
             buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock)
-                .warnOnceIfNoMapIsShowing();
+                .warnOnceIfNoVanillaMapIsShowing();
 
             // The throwable is the caller's stack, which is the only thing in the line that answers
             // the question the line is raised to ask.
@@ -70,7 +70,7 @@ final class ForeignMapPassWarningTests {
             var loggerMock = mock(Logger.class);
 
             buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock)
-                .warnOnceIfNoMapIsShowing();
+                .warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock)
                 .warn(eq("Overlay drawn with no map on screen; mapHosts=[]"), any(Throwable.class));
@@ -83,7 +83,7 @@ final class ForeignMapPassWarningTests {
             var loggerMock = mock(Logger.class);
 
             buildWarning(() -> true, () -> NO_HOSTS_FOUND, loggerMock)
-                .warnOnceIfNoMapIsShowing();
+                .warnOnceIfNoVanillaMapIsShowing();
 
             verifyNoInteractions(loggerMock);
         }
@@ -95,9 +95,9 @@ final class ForeignMapPassWarningTests {
             var loggerMock = mock(Logger.class);
             var warning = buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock);
 
-            warning.warnOnceIfNoMapIsShowing();
-            warning.warnOnceIfNoMapIsShowing();
-            warning.warnOnceIfNoMapIsShowing();
+            warning.warnOnceIfNoVanillaMapIsShowing();
+            warning.warnOnceIfNoVanillaMapIsShowing();
+            warning.warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock, times(1))
                 .warn(any(), any(Throwable.class));
@@ -112,13 +112,13 @@ final class ForeignMapPassWarningTests {
             var isMapShowing = new boolean[] {false};
             var warning = buildWarning(() -> isMapShowing[0], () -> NO_HOSTS_FOUND, loggerMock);
 
-            warning.warnOnceIfNoMapIsShowing();
+            warning.warnOnceIfNoVanillaMapIsShowing();
 
             isMapShowing[0] = true;
-            warning.warnOnceIfNoMapIsShowing();
+            warning.warnOnceIfNoVanillaMapIsShowing();
 
             isMapShowing[0] = false;
-            warning.warnOnceIfNoMapIsShowing();
+            warning.warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock, times(1))
                 .warn(any(), any(Throwable.class));
@@ -132,7 +132,7 @@ final class ForeignMapPassWarningTests {
             var loggerMock = mock(Logger.class);
 
             buildWarning(() -> false, () -> MOD_OWNED_HOST_FOUND, loggerMock)
-                .warnOnceIfNoMapIsShowing();
+                .warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock)
                 .warn(contains("org.example.mod.NavTooltipPlugin"), any(Throwable.class));
@@ -145,7 +145,7 @@ final class ForeignMapPassWarningTests {
             var loggerMock = mock(Logger.class);
 
             buildWarning(() -> false, () -> null, loggerMock)
-                .warnOnceIfNoMapIsShowing();
+                .warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock)
                 .warn(
@@ -166,7 +166,7 @@ final class ForeignMapPassWarningTests {
                 },
                 loggerMock);
 
-            assertThatCode(treeWalkOnShowingMap::warnOnceIfNoMapIsShowing)
+            assertThatCode(treeWalkOnShowingMap::warnOnceIfNoVanillaMapIsShowing)
                 .doesNotThrowAnyException();
         }
 
@@ -183,7 +183,7 @@ final class ForeignMapPassWarningTests {
                 () -> NO_HOSTS_FOUND,
                 loggerMock);
 
-            assertThatCode(warningOnBrokenRead::warnOnceIfNoMapIsShowing)
+            assertThatCode(warningOnBrokenRead::warnOnceIfNoVanillaMapIsShowing)
                 .doesNotThrowAnyException();
         }
 
@@ -201,8 +201,8 @@ final class ForeignMapPassWarningTests {
                 () -> NO_HOSTS_FOUND,
                 loggerMock);
 
-            warningOnBrokenRead.warnOnceIfNoMapIsShowing();
-            warningOnBrokenRead.warnOnceIfNoMapIsShowing();
+            warningOnBrokenRead.warnOnceIfNoVanillaMapIsShowing();
+            warningOnBrokenRead.warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock, times(1))
                 .warn(anyString(), any(Throwable.class));
@@ -222,7 +222,7 @@ final class ForeignMapPassWarningTests {
                 () -> NO_HOSTS_FOUND,
                 loggerMock);
 
-            warningOnBrokenRead.warnOnceIfNoMapIsShowing();
+            warningOnBrokenRead.warnOnceIfNoVanillaMapIsShowing();
 
             verify(loggerMock)
                 .warn(UNREADABLE_PRESENCE, readFailure);
@@ -230,12 +230,12 @@ final class ForeignMapPassWarningTests {
     }
 
     private static ForeignMapPassWarning buildWarning(
-            BooleanSupplier isAnyMapShowing,
+            BooleanSupplier isAnyVanillaMapShowing,
             Supplier<String> describeEmbeddedMapHosts,
             Logger logger) {
 
         return new ForeignMapPassWarning(
-            isAnyMapShowing,
+            isAnyVanillaMapShowing,
             describeEmbeddedMapHosts,
             logger,
             NO_MAP_LEAD,
