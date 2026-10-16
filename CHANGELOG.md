@@ -44,6 +44,8 @@ No player-facing changes.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, else `NO_BASE_PRICE`.
+- **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
+  - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`: one market's price for one unit.
 - **Console command parameters** in `kmlib.mods.console.commands.parsing`:
   - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
   - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.

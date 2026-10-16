@@ -44,6 +44,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都没有时为 `NO_BASE_PRICE`。
+- **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
+  - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`：单个市场的每单位价格。
 - **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
