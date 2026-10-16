@@ -71,6 +71,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
   - `convertPercentToFraction(double)`：百分比（例如设置滑块所存的值）对应的比例。
+- **`PlayerPriceOverrides`**（位于 `kmlib.starsector.commodities.pricing`）：`overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` 把市场向玩家报出的商品价格设为指定数值，无论该市场原本如何报价；`clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` 将其撤回。
 - **`PlayerTradeSide`**（位于 `kmlib.starsector.commodities`）：玩家买入或卖出，以及这一方向读取的市场价格与玩家价格修正。
 - **`PolygonRegions`** 中关于环的读取：
   - `findRingHolding(List, double, double)`：第一个包含该点的环，没有时为 `NO_RING`。
