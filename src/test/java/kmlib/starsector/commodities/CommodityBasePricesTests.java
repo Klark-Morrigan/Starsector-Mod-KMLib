@@ -42,7 +42,7 @@ final class CommodityBasePricesTests {
             addSpec("ore", 10f, "ore");
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "ore"))
-                .isEqualTo(10f);
+                .contains(10f);
         }
 
         @Test
@@ -52,7 +52,7 @@ final class CommodityBasePricesTests {
             addSpec("luxury_goods", 100f, "luxury_goods");
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "lobster"))
-                .isEqualTo(100f);
+                .contains(100f);
         }
 
         @Test
@@ -62,7 +62,7 @@ final class CommodityBasePricesTests {
             addSpec("exotic_class", 0f, "exotic_class");
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "exotic"))
-                .isEqualTo(0f);
+                .isEmpty();
         }
 
         @Test
@@ -71,7 +71,7 @@ final class CommodityBasePricesTests {
             addSpec("exotic", 0f, "exotic_class");
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "exotic"))
-                .isEqualTo(0f);
+                .isEmpty();
         }
 
         // A commodity naming itself as its class has no peer to fall back on.
@@ -81,7 +81,7 @@ final class CommodityBasePricesTests {
             addSpec("ore", 0f, "ore");
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "ore"))
-                .isEqualTo(0f);
+                .isEmpty();
         }
 
         @Test
@@ -90,14 +90,14 @@ final class CommodityBasePricesTests {
             addSpec("ore", 0f, "");
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "ore"))
-                .isEqualTo(0f);
+                .isEmpty();
         }
 
         @Test
         void returnsNoPriceForAnUnknownCommodity() {
 
             assertThat(CommodityBasePrices.findBasePrice(settingsMock, "phantom"))
-                .isEqualTo(0f);
+                .isEmpty();
         }
     }
 }

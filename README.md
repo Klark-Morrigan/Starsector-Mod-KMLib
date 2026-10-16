@@ -565,6 +565,18 @@ No Starsector API on the signature.
   as vanilla's lobster leaves its price on luxury goods.
   An answer of no price is the caller's to settle,
   since what to divide by instead is a judgement about the caller's formula.
+  Also what markets ask and pay for one,
+  named by the player's side of the trade:
+  one market's price,
+  an average across markets that leaves out a market quoting nothing finite,
+  and the price at a place reached outward -
+  its own market while the economy runs it,
+  then its location's average,
+  then the sector's.
+- [`starsector/commodities/pricing/`](src/main/java/kmlib/starsector/commodities/pricing/) -
+  setting the price a market quotes the player for a commodity to a chosen figure,
+  whatever the market would quote on its own,
+  filed under the caller's key so clearing it leaves every other mod's entries standing.
 - [`starsector/compatibility/`](src/main/java/kmlib/starsector/compatibility/) -
   what a binding to third-party code that has stopped holding is reported as,
   and how that report reaches the player:
@@ -698,6 +710,7 @@ No Starsector API on the signature.
   every market in one,
   and the nearest meeting what a caller needs of it -
   and over the sector,
+  every market the economy lists,
   every market's name and every market's ID.
   What can be done *to* a market is a package in,
   one per operation,
@@ -755,7 +768,8 @@ No Starsector API on the signature.
   the holder states its base key and names the address it means,
   and the key is composed in one place,
   so no holder can spell the segments differently or drop one and quietly share a slot.
-  Beside them a register of one family's observations,
+- [`starsector/memory/observations/`](src/main/java/kmlib/starsector/memory/observations/) -
+  a register of one family's observations in sector memory,
   kept under a key the caller names,
   read by subject ID,
   shed of subjects the sector no longer holds,

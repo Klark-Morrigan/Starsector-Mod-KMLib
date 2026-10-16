@@ -43,7 +43,11 @@ No player-facing changes.
 - **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
-- **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, else `NO_BASE_PRICE`.
+- **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, empty where neither is positive.
+- **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
+  - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`: one market's price for one unit.
+  - `findAverageUnitPrice(List, String, PlayerTradeSide)` and `computeAverageUnitPrices(List, Collection, PlayerTradeSide)`: the average across markets.
+  - `findLocalUnitPrice(SectorAPI, MarketAPI, LocationAPI, String, PlayerTradeSide)`: the price at a place, from its own market while the economy runs it, else its location's average, else the sector's, as a `LocalUnitPrice` naming its `UnitPriceScope`.
 - **Console command parameters** in `kmlib.mods.console.commands.parsing`:
   - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
   - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.
@@ -67,6 +71,8 @@ No player-facing changes.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
   - `convertPercentToFraction(double)`: a percent, such as a settings slider holds, as a fraction.
+- **`PlayerPriceOverrides`** in `kmlib.starsector.commodities.pricing`: `overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` sets the price a market quotes the player for a commodity to a chosen figure, whatever it would quote on its own; `clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` takes it back.
+- **`PlayerTradeSide`** in `kmlib.starsector.commodities`: the player buying or selling, with the market price and the player price modifier that side reads.
 - **`PolygonRegions`** ring reads:
   - `findRingHolding(List, double, double)`: the first ring holding a point, or `NO_RING`.
   - `findSmallestEnclosingRing(List, double, double)`: the holding ring of smallest area, so nested rings resolve to the innermost.
@@ -79,6 +85,7 @@ No player-facing changes.
   - `rollDrops(Random, float, List, List)`: the roll, with every multiplier but the overall one neutral.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`SectorMarkets.readMarketIds(SectorAPI)`**: the ID of every market in the sector, whether the economy lists it or not.
+- **`SectorMarkets.readMarkets(SectorAPI)`**: every market the sector's economy lists.
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`** in `kmlib.starsector`: the one traversal of the sector's system list every sector-wide read goes through, charged as one walk. A null sector, or one listing no systems, visits nothing.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.

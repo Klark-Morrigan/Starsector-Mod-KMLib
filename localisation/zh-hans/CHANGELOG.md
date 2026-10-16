@@ -43,7 +43,11 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台命令。子类指定自己的命令词、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
-- **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都没有时为 `NO_BASE_PRICE`。
+- **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都不为正时为空。
+- **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
+  - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`：单个市场的每单位价格。
+  - `findAverageUnitPrice(List, String, PlayerTradeSide)` 和 `computeAverageUnitPrices(List, Collection, PlayerTradeSide)`：多个市场的平均价格。
+  - `findLocalUnitPrice(SectorAPI, MarketAPI, LocationAPI, String, PlayerTradeSide)`：某处的价格：经济系统运行该处的市场时取其价格，否则取其所在位置的平均价格，再否则取整个星域的平均价格；以 `LocalUnitPrice` 返回，并注明其 `UnitPriceScope`。
 - **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
@@ -67,6 +71,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
   - `convertPercentToFraction(double)`：百分比（例如设置滑块所存的值）对应的比例。
+- **`PlayerPriceOverrides`**（位于 `kmlib.starsector.commodities.pricing`）：`overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` 把市场向玩家报出的商品价格设为指定数值，无论该市场原本如何报价；`clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` 将其撤回。
+- **`PlayerTradeSide`**（位于 `kmlib.starsector.commodities`）：玩家买入或卖出，以及这一方向读取的市场价格与玩家价格修正。
 - **`PolygonRegions`** 中关于环的读取：
   - `findRingHolding(List, double, double)`：第一个包含该点的环，没有时为 `NO_RING`。
   - `findSmallestEnclosingRing(List, double, double)`：包含该点且面积最小的环，因此嵌套的环解析为最内层。
@@ -79,6 +85,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `rollDrops(Random, float, List, List)`：执行抽取，除总倍率外的所有倍率均保持中性。
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
 - **`SectorMarkets.readMarketIds(SectorAPI)`**：星域中每一个市场的 ID，无论经济系统是否列出该市场。
+- **`SectorMarkets.readMarkets(SectorAPI)`**：星域经济系统列出的每一个市场。
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`**（位于 `kmlib.starsector`）：所有星域范围的读取共用的、对星域星系列表的唯一一次遍历，计为一次 walk。星域为 null 或未列出任何星系时不访问任何星系。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
