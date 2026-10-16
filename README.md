@@ -274,6 +274,8 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   the JSON reads the locale scripts share.
 - [`actions/_lib/localisation.sh`](.github/actions/_lib/localisation.sh) -
   where a mod keeps its locale bundles and its translated changelogs.
+- [`actions/_lib/github_output.sh`](.github/actions/_lib/github_output.sh) -
+  writes a step output and logs it.
 - [`tests/`](.github/tests/) -
   bats-core tests for the action scripts.
 
@@ -1389,6 +1391,10 @@ and no output read as no lines.
 [_lib/localisation.sh](.github/actions/_lib/localisation.sh) holds the bundle paths the locale scripts share:
 the manifest, the changelog,
 and the check that a translated locale has its changelog.
+[_lib/github_output.sh](.github/actions/_lib/github_output.sh) writes a one-line step output and logs it in the same call,
+so no output can be written unlogged;
+a value spanning lines fails the run,
+since the runner would read its second line as a key of its own.
 
 `mod-release.yml` names the actions in registry form
 (`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`),

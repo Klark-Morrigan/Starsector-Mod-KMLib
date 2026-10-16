@@ -8,6 +8,7 @@
 #                     default locale first and the rest by tag; coreLocalisation
 #                     is empty for a locale naming none
 #   default-locale  - the manifest's defaultLocale
+# and logs each to stderr, with the manifest it read or the reason it read none.
 #
 # A mod committing no manifest keeps no locales, and gets an empty array and an
 # empty default: the pipeline then packages the single unsuffixed zip it always
@@ -40,6 +41,10 @@ source "${LIB_DIR}/json.sh"
 # shellcheck source=../../_lib/localisation.sh
 source "${LIB_DIR}/localisation.sh"
 
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/github_output.sh
+source "${LIB_DIR}/github_output.sh"
+
 MANIFEST_FILE="${LOCALISATION_MANIFEST_FILE}"
 
 # Lowercased BCP 47, the rule the build holds a tag to. Checked again here
@@ -51,6 +56,8 @@ LOCALES="[]"
 DEFAULT_LOCALE=""
 
 if [[ -f "${MANIFEST_FILE}" ]]; then
+
+  echo "Reading ${MANIFEST_FILE}." >&2
 
   DEFAULT_LOCALE=$(jq -r '.defaultLocale // ""' "${MANIFEST_FILE}")
   if [[ -z "${DEFAULT_LOCALE}" ]]; then
@@ -84,11 +91,9 @@ if [[ -f "${MANIFEST_FILE}" ]]; then
              coreLocalisation: (.value.coreLocalisation // "") })
      | sort_by(.tag != $defaultTag, .tag)' \
     "${MANIFEST_FILE}")
+else
+  echo "No ${MANIFEST_FILE} in ${PWD}, so the mod releases no locales and the locale list is empty." >&2
 fi
 
-# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
-# shellcheck disable=SC2154
-{
-  echo "locales=${LOCALES}"
-  echo "default-locale=${DEFAULT_LOCALE}"
-} >> "${GITHUB_OUTPUT}"
+write_github_output "locales" "${LOCALES}"
+write_github_output "default-locale" "${DEFAULT_LOCALE}"

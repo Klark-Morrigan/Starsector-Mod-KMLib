@@ -9,6 +9,9 @@
 # is run from a temp working directory so it cannot accidentally read the
 # repository's own mod_info.json.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/read-mod-info/scripts/read_mod_info.sh"
 
 setup() {
@@ -286,6 +289,52 @@ EOF
     # build, and the release reads before it builds.
     grep -qx "version=0.2.0"                     "$GITHUB_OUTPUT"
     grep -qx "zip-name=KMU-0.2.0.zip"            "$GITHUB_OUTPUT"
+}
+
+@test "logs the file it read and every key it emits, with its value" {
+
+    write_mod_info_with_kmlib "kmu" "0.1.0" "jars/KMU.jar" "1.0.0"
+
+    cd "$WORK_DIR"
+    run --separate-stderr bash "$SCRIPT"
+
+    siblings='[{"repo":"Klark-Morrigan/Common-Java","path":"Common-Java"},'
+    siblings+='{"repo":"Klark-Morrigan/Starsector-Mod-KMLib","path":"Starsector-Mod-KMLib"}]'
+
+    expectedLines=(
+        "Reading mod_info.json."
+        "mod-id: kmu"
+        "version: 0.1.0"
+        "runner-label: kmu-runner"
+        "mod-folder-name: KMU"
+        "dist-dir: dist/KMU/"
+        "zip-name: KMU-0.1.0.zip"
+        'zip-name-regex: ^KMU-[0-9]+\.[0-9]+\.[0-9]+(-(?<locale>.+))?\.zip$'
+        "version-file-name: kmu.version"
+        "jar-source: jars/KMU.jar"
+        "sibling-checkouts: $siblings"
+        "kmlib-dependency-version: 1.0.0"
+        "kmlib-repo: Klark-Morrigan/Starsector-Mod-KMLib"
+    )
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+    [ "$stderr" = "$(printf '%s\n' "${expectedLines[@]}")" ]
+}
+
+@test "logs the base as the file it read over a generated mod_info.json" {
+
+    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+
+    cat > "$WORK_DIR/mod_info.base.json" <<EOF
+{ "id": "kmu", "version": "0.2.0", "jars": ["jars/KMU.jar"] }
+EOF
+
+    cd "$WORK_DIR"
+    run --separate-stderr bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+    [ "${stderr%%$'\n'*}" = "Reading mod_info.base.json." ]
 }
 
 @test "fails when no metadata file is present" {
