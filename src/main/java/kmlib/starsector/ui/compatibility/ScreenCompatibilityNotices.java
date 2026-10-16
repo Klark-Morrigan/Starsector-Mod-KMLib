@@ -90,8 +90,8 @@ public final class ScreenCompatibilityNotices {
         return true;
     }
 
-    // Whether a notice is still on screen. The panel takes itself down on its own - a button, the
-    // escape key, or the screen going - so what is held here is only believed until it is asked.
+    // Whether a notice is still on screen. The panel takes itself down on its own - a button, a key,
+    // or the screen going - so what is held here is only believed until it is asked.
     private static boolean isNoticeAlreadyRaised() {
 
         return raisedNotice != null && raisedNotice.isNoticeRaised();

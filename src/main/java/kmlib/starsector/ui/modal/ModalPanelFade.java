@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import kmlib.animation.TraverseDurations;
 import kmlib.animation.TraverseFraction;
@@ -20,10 +20,10 @@ import java.util.Objects;
  * That is why the flag is held here rather than handed to the travel each frame - it is an answer in
  * its own right, and the one input reads.
  *
- * <p>Apart from the panel it paces because a clock kept inside a frame hook could be checked only by
- * opening the panel and watching it.
+ * <p>Kept out of the panel it paces so the clock can be checked without a running game. Kept inside a
+ * frame hook, it could be checked only by opening the panel and watching it.
  */
-public final class ModalPanelFade {
+final class ModalPanelFade {
 
     // How long the way in and the way out take.
     private final TraverseDurations durations;

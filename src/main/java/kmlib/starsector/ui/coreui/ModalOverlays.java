@@ -9,8 +9,8 @@ import java.util.function.Supplier;
  * The overlays this library has raised over a core screen and that hold it while they are up, so
  * that anything standing aside for a modal stands aside for these too.
  *
- * <p>A panel stood in the core UI's own tree through {@link CoreUiOverlayPanels} is an ordinary
- * child, and nothing reading the game's modal base sees it. So a panel that means to be modal
+ * <p>A panel a mod stands in the core UI's own tree is an ordinary child, and nothing reading the
+ * game's modal base sees it. So a panel that means to be modal
  * says so here, and {@link CoreUiDialogView} reads this beside the game's own modal - one answer
  * to "is something holding the screen", whichever raised it. Without that, a host that stands its
  * input down for the game's dialogs would keep dispatching under a dialog of ours.

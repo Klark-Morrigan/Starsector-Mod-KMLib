@@ -1,25 +1,23 @@
 package kmlib.starsector.ui.compatibility;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.CustomUIPanelPlugin;
-import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
-import kmlib.animation.TraverseDurations;
-import kmlib.animation.TraverseFraction;
 import kmlib.starsector.compatibility.GameReachReporter;
 import kmlib.starsector.compatibility.ReportedFailure;
 import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.ui.colour.StarsectorUiColour;
-import kmlib.starsector.ui.coreui.CoreUiOverlayPanels;
 import kmlib.starsector.ui.coreui.ModalOverlays;
 import kmlib.starsector.ui.coreui.OverlayPresence;
 import kmlib.starsector.ui.map.probes.ShownMapTab;
+import kmlib.starsector.ui.modal.ModalPanel;
+import kmlib.starsector.ui.modal.ModalPanelBody;
 
 import org.lwjgl.input.Keyboard;
 
-import java.util.List;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -34,15 +32,13 @@ import java.util.function.Supplier;
  * the core UI's own tree is advanced by the screen holding it, so it can be raised on the frame the
  * failure is found.
  *
- * <p><b>Modality is supplied here, because the game does not supply it.</b> A panel added this way
- * is an ordinary child: nothing dims behind it and nothing stops the screen underneath being
- * dispatched to. So the body paints its own backdrop through this plugin's render hook, and this
- * claims every event the panel's own widgets have not already taken - the engine dispatching those
- * widgets first, which is what leaves a blanket claim safe.
+ * <p>The surface, its modality and its fade are {@link ModalPanel}'s. What this adds is the notice
+ * itself, and a hold on the screen through {@link ModalOverlays} for as long as the panel is up, so
+ * whatever stands aside for the game's own modals stands aside for this one too.
  *
- * <p><b>Three ways out, deliberately.</b> The button, the escape key, and the screen going away
- * under it. A notice that could only be dismissed through its own button would trap a player on a
- * screen it had just claimed every event on if that button ever failed to draw.
+ * <p><b>Three ways out, deliberately.</b> The button, a key, and the screen going away under it. A
+ * notice that could only be dismissed through its own button would trap a player on a screen it had
+ * just claimed every event on if that button ever failed to draw.
  */
 public final class CompatibilityNoticePanel {
 
@@ -50,9 +46,13 @@ public final class CompatibilityNoticePanel {
     // button and nothing to tell it from by name.
     private static final Object CONFIRM_BUTTON_ID = new Object();
 
-    // How far the panel is offset from the corner it hangs off, which is not at all: it is the size
-    // of the screen and the core UI it hangs in is too, so the two corners coincide.
-    private static final float NO_OFFSET = 0f;
+    // Which keys take a one-button notice off the screen. The game binds both its keyboard confirm
+    // and its keyboard cancel to the single option, so enter and escape both dismiss; space is the
+    // third a player reaches for without being told.
+    private static final Set<Integer> CLOSED_BY_ANY_ANSWER = Set.of(
+        Keyboard.KEY_ESCAPE,
+        Keyboard.KEY_RETURN,
+        Keyboard.KEY_SPACE);
 
     // The box's width, and the room left around the text inside it. Wide enough for a consuming
     // mod's own sentence to take two lines rather than five.
@@ -67,34 +67,24 @@ public final class CompatibilityNoticePanel {
     // a widget of the game's, the game publishing one that strokes and none that fills.
     private static final float BORDER_THICKNESS = 2f;
 
-    // The pace the game's own prompts arrive and leave at, so two dialogs over one screen move
-    // together and anything riding this fade rides the same curve it rides theirs.
-    private static final TraverseDurations MODAL_DURATIONS = new TraverseDurations(0.3f, 0.2f);
+    // The surface the notice stands on. Files nothing where it cannot stand: a notice that is not
+    // raised is left on the record for the campaign's dialog, so no report is lost by it.
+    private final ModalPanel modalPanel;
 
     // The reading handed to whatever stands aside for a modal, held so the same one is taken back.
-    private final Supplier<OverlayPresence> screenHold = this::resolveScreenPresence;
-
-    // How far onto the screen the notice is painted. Apart from whether it holds the screen,
-    // because the two part company for the length of a fade: input comes back on the press while
-    // the paint runs on, and a notice still dissolving must claim nothing or it eats the click
-    // after it.
-    private final TraverseFraction fadeProgress = new TraverseFraction();
-
-    // Whether a map is still on screen, so the panel comes down with the screen it was raised on.
-    private final BooleanSupplier isMapTabShowing;
-
-    // The screen-sized panel standing in the core UI, or null once it has come down.
-    private CustomPanelAPI panel;
-
-    // Where the layout settled the box, which is what the backdrop is painted against.
-    private PositionAPI boxPlacement;
-
-    // Whether the notice holds the screen. Moves on the press, never on the fade.
-    private boolean isRaised;
+    private final Supplier<OverlayPresence> screenHold;
 
     private CompatibilityNoticePanel(BooleanSupplier isMapTabShowing) {
 
-        this.isMapTabShowing = isMapTabShowing;
+        this.modalPanel = new ModalPanel(
+            GameReachReporter.UNREPORTED,
+            isMapTabShowing,
+            ModalPanel.GAME_PROMPT_DURATIONS,
+            CLOSED_BY_ANY_ANSWER,
+            this::dismissNotice,
+            this::releaseScreen);
+
+        this.screenHold = modalPanel::resolvePanelPresence;
     }
 
     /**
@@ -113,29 +103,6 @@ public final class CompatibilityNoticePanel {
     }
 
     /**
-     * Draws {@code failure} into the notice already on screen.
-     *
-     * @param failure what the notice is about
-     */
-    public void showFailure(ReportedFailure failure) {
-
-        if (panel == null) {
-            return;
-        }
-        var settings = Global.getSettings();
-
-        drawNoticeInto(panel, failure, settings.getScreenWidth(), settings.getScreenHeight());
-    }
-
-    /**
-     * @return whether the notice is still on screen, which is false from the frame it comes down
-     */
-    public boolean isNoticeRaised() {
-
-        return panel != null;
-    }
-
-    /**
      * Hands the screen back, leaving the notice to fade from wherever it stands.
      *
      * <p>The panel outlives the press for the length of that fall, and claims nothing for it.
@@ -144,7 +111,26 @@ public final class CompatibilityNoticePanel {
      */
     public void dismissNotice() {
 
-        isRaised = false;
+        modalPanel.dismissPanel();
+    }
+
+    /**
+     * @return whether the notice is still on screen, fading out included, which is false from the
+     *         frame it comes down
+     */
+    public boolean isNoticeRaised() {
+
+        return modalPanel.resolvePanelPresence().isShowing();
+    }
+
+    /**
+     * Draws {@code failure} into the notice already on screen.
+     *
+     * @param failure what the notice is about
+     */
+    public void showFailure(ReportedFailure failure) {
+
+        modalPanel.showBody(noticePanel -> new NoticeBody(noticePanel, failure, this::dismissNotice));
     }
 
     /**
@@ -159,204 +145,87 @@ public final class CompatibilityNoticePanel {
      */
     static CompatibilityNoticePanel raiseNoticeOnScreen(BooleanSupplier isMapTabShowing) {
 
-        var notice = new CompatibilityNoticePanel(isMapTabShowing);
-
         if (!isMapTabShowing.getAsBoolean()) {
             return null;
         }
 
-        return notice.standPanelUp() ? notice : null;
-    }
-
-    // Stands the screen-sized panel in the core UI. Answers false without leaving anything behind
-    // where the core UI could not be reached.
-    //
-    // Files nothing where it cannot: a notice this cannot stand is left on the record for the
-    // campaign's dialog, so no report is lost by it.
-    private boolean standPanelUp() {
-
-        var settings = Global.getSettings();
-        var newPanel = settings.createCustom(
-            settings.getScreenWidth(),
-            settings.getScreenHeight(),
-            new NoticePanelPlugin());
-
-        var placement = CoreUiOverlayPanels.attachOverlayPanel(newPanel, GameReachReporter.UNREPORTED);
-        if (placement == null) {
-            return false;
+        var notice = new CompatibilityNoticePanel(isMapTabShowing);
+        if (!notice.modalPanel.raisePanel()) {
+            return null;
         }
-        placement.inTL(NO_OFFSET, NO_OFFSET);
-        panel = newPanel;
-        isRaised = true;
-
-        // Painted at nothing on the frame it is stood up, so the first frame is the start of the
-        // rise rather than a flash of the whole box before the fade has been stepped once.
-        paintFadeOntoPanel();
 
         // Said the moment the panel is up rather than once it is filled: input has to stand down
         // from the first frame, and what fills the box a frame later changes nothing about that.
-        ModalOverlays.holdScreen(screenHold);
+        ModalOverlays.holdScreen(notice.screenHold);
 
-        return true;
+        return notice;
     }
 
-    // Takes the panel off the screen and forgets everything built into it, the fade included: what
-    // comes down here is not fading, it is gone.
-    private void takePanelDown() {
+    // The panel is off the screen, so nothing is left for anything to stand aside for.
+    private void releaseScreen() {
 
         ModalOverlays.releaseScreen(screenHold);
-        CoreUiOverlayPanels.detachOverlayPanel(panel);
-
-        panel = null;
-        boxPlacement = null;
-        fadeProgress.dropToRest();
     }
 
-    // Where the paint stands, written onto the panel as its opacity - the one write that fades
-    // every part of the notice together, the engine multiplying it into the alpha it hands each
-    // widget and this plugin's render hook alike.
-    private void paintFadeOntoPanel() {
+    // The notice's widgets: the text and button in one element, centred on the screen and measured
+    // rather than assumed, because what a consuming mod says it lost is its own sentence and can run
+    // to any length.
+    private static final class NoticeBody
+            implements ModalPanelBody {
 
-        panel.setOpacity(fadeProgress.getEasedValue());
-    }
+        // The element holding the text and the button, held so it can be taken off again.
+        private final TooltipMakerAPI box;
 
-    // What this is doing on one frame, for whatever stands aside for a modal.
-    private OverlayPresence resolveScreenPresence() {
+        // Where the layout settled the box, which is what the backdrop is painted against.
+        private final PositionAPI boxPlacement;
 
-        return panel == null
-            ? OverlayPresence.NONE
-            : new OverlayPresence(isRaised, fadeProgress.getEasedValue());
-    }
+        NoticeBody(CustomPanelAPI noticePanel, ReportedFailure failure, Runnable onConfirmPressed) {
 
-    // Builds the box, measures what went into it, and centres it on the screen. Measured rather
-    // than assumed because what a consuming mod says it lost is its own sentence and can run to
-    // any length.
-    private void drawNoticeInto(
-            CustomPanelAPI noticePanel,
-            ReportedFailure failure,
-            float screenWidth,
-            float screenHeight) {
+            var settings = Global.getSettings();
 
-        var box = noticePanel.createUIElement(BOX_WIDTH - BOX_PADDING * 2, BOX_BUILD_HEIGHT, false);
+            box = noticePanel.createUIElement(BOX_WIDTH - BOX_PADDING * 2, BOX_BUILD_HEIGHT, false);
 
-        CompatibilityNoticeBody.fillNoticeBody(
-            box,
-            failure,
-            CONFIRM_BUTTON_ID,
-            KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_CONFIRM_BUTTON));
+            // The button reports to the element holding it, the panel's own plugin hearing nothing of
+            // it. Set before the button is added so the button is built with somewhere to report.
+            box.setActionListenerDelegate((buttonId, data) -> onConfirmPressed.run());
 
-        var boxHeight = box.getHeightSoFar() + BOX_PADDING * 2;
+            CompatibilityNoticeBody.fillNoticeBody(
+                box,
+                failure,
+                CONFIRM_BUTTON_ID,
+                KmlibStringKeys.get(KmlibStringKeys.COMPATIBILITY_NOTICE_CONFIRM_BUTTON));
 
-        // The rule around the box, laid outside the text by the padding on every side. Added
-        // without advancing the layout, so it frames what was measured rather than adding to it.
-        var border = box.createRect(StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(), BORDER_THICKNESS);
-        box.addCustomDoNotSetPosition(border)
-            .getPosition()
-            .inTL(-BOX_PADDING, -BOX_PADDING)
-            .setSize(BOX_WIDTH, boxHeight);
+            var boxHeight = box.getHeightSoFar() + BOX_PADDING * 2;
 
-        boxPlacement = noticePanel.addUIElement(box);
-        boxPlacement.inTL(
-            (screenWidth - BOX_WIDTH) / 2 + BOX_PADDING,
-            (screenHeight - boxHeight) / 2 + BOX_PADDING);
+            // The rule around the box, laid outside the text by the padding on every side. Added
+            // without advancing the layout, so it frames what was measured rather than adding to it.
+            var border = box.createRect(StarsectorUiColour.VANILLA_PLAYER_BASE.resolve(), BORDER_THICKNESS);
 
-        // The fill is painted against the box rather than the text in it, so the placement carries
-        // the padding the text is inset by.
-        boxPlacement.setSize(BOX_WIDTH - BOX_PADDING * 2, boxHeight - BOX_PADDING * 2);
-    }
+            box.addCustomDoNotSetPosition(border)
+                .getPosition()
+                .inTL(-BOX_PADDING, -BOX_PADDING)
+                .setSize(BOX_WIDTH, boxHeight);
 
-    // The panel's own frame hooks. Glue by design - a plugin exists only inside a panel the game
-    // built, so every rule it acts on is stated somewhere it can be checked without one.
-    private final class NoticePanelPlugin implements CustomUIPanelPlugin {
+            boxPlacement = noticePanel.addUIElement(box);
+            boxPlacement.inTL(
+                (settings.getScreenWidth() - BOX_WIDTH) / 2 + BOX_PADDING,
+                (settings.getScreenHeight() - boxHeight) / 2 + BOX_PADDING);
 
-        @Override
-        public void positionChanged(PositionAPI position) {
+            // The fill is painted against the box rather than the text in it, so the placement carries
+            // the padding the text is inset by.
+            boxPlacement.setSize(BOX_WIDTH - BOX_PADDING * 2, boxHeight - BOX_PADDING * 2);
         }
 
         @Override
-        public void renderBelow(float alphaMult) {
+        public void removeFromPanel(CustomPanelAPI noticePanel) {
+
+            noticePanel.removeComponent(box);
+        }
+
+        @Override
+        public void renderFills(float alphaMult) {
 
             CompatibilityNoticeBody.renderFills(boxPlacement, BOX_PADDING, alphaMult);
-        }
-
-        @Override
-        public void render(float alphaMult) {
-        }
-
-        @Override
-        public void advance(float amount) {
-
-            // A panel this has already let go of, which is what a detach that could not reach the
-            // core UI leaves behind: still advanced by whoever holds it, and no longer ours.
-            if (panel == null) {
-                return;
-            }
-
-            // The panel hangs from the core UI, which outlives the screen the notice was raised on,
-            // so leaving that screen has to be noticed rather than waited for. Down at once rather
-            // than faded: there is no screen left under it to fade against.
-            if (!isMapTabShowing.getAsBoolean()) {
-                takePanelDown();
-                return;
-            }
-
-            fadeProgress.advanceTowardEnd(isRaised, amount, MODAL_DURATIONS);
-            paintFadeOntoPanel();
-
-            // Off the screen once the fall has run out, a notice still fading being one the player
-            // is watching leave.
-            if (!isRaised && fadeProgress.hasSettledAtRest()) {
-                takePanelDown();
-            }
-        }
-
-        @Override
-        public void processInput(List<InputEventAPI> events) {
-
-            // Nothing is claimed once the screen has been handed back: the notice is only fading
-            // from here, and the events under it are the screen's again.
-            if (panel == null || !isRaised) {
-                return;
-            }
-
-            for (var event : events) {
-
-                if (event.isConsumed()) {
-                    continue;
-                }
-
-                // Read before it is claimed: a consumed event refuses its value, and the read is
-                // the one thing this needs from it.
-                var isDismissRequested = event.isKeyDownEvent() && isDismissKey(event.getEventValue());
-
-                // Claimed whether or not it dismisses: the screen underneath is stood down for as
-                // long as the notice is up, which is what makes it read as a modal rather than as
-                // something drawn over a map still taking clicks.
-                event.consume();
-
-                if (isDismissRequested) {
-                    dismissNotice();
-                    return;
-                }
-            }
-        }
-
-        @Override
-        public void buttonPressed(Object buttonId) {
-
-            if (buttonId == CONFIRM_BUTTON_ID) {
-                dismissNotice();
-            }
-        }
-
-        // Which keys take a one-button notice off the screen. The game's own binds both its
-        // keyboard confirm and its keyboard cancel to the single option, so enter and escape both
-        // dismiss; space is the third a player reaches for without being told.
-        private boolean isDismissKey(int keyCode) {
-
-            return keyCode == Keyboard.KEY_ESCAPE
-                || keyCode == Keyboard.KEY_RETURN
-                || keyCode == Keyboard.KEY_SPACE;
         }
     }
 }

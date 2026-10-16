@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CustomUIPanelPlugin;
@@ -8,9 +8,14 @@ import com.fs.starfarer.api.ui.PositionAPI;
 
 import kmlib.animation.TraverseDurations;
 import kmlib.starsector.compatibility.GameReachReporter;
+import kmlib.starsector.ui.coreui.ModalOverlays;
+import kmlib.starsector.ui.coreui.OverlayPresence;
+
+import org.lwjgl.input.Keyboard;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -18,9 +23,9 @@ import java.util.function.Function;
  * A modal surface over a core screen: a screen-sized panel in the core UI, what it claims while it
  * holds the screen, how far onto the screen it is painted, and when it comes off again.
  *
- * <p>Apart from whatever it shows because the two answer different questions. What is in the box and
- * when the player may start or stop is the caller's; where the widgets stand, what the frame hooks do,
- * and how long the box lingers after the press is a question about a surface.
+ * <p>Kept apart from whatever it shows, because the two change for different reasons. What is in the
+ * box, and when the player may start or stop, is the caller's. Where the widgets stand, what the frame
+ * hooks do, and how long the box lingers after the press belong to the surface.
  *
  * <p><b>Built from the game's own widgets</b> - a panel from {@code SettingsAPI.createCustom} stood in
  * the core UI's own tree by {@link CoreUiOverlayPanels}. Nothing here is painted into another render
@@ -44,15 +49,27 @@ import java.util.function.Function;
  * <p>The panel therefore outlives the press that dismisses it, coming off the screen at the end of the
  * fall. For that length it is on screen and claims nothing.
  *
- * <p>What it cannot answer for itself it reports rather than decides: a press on the way out and a
- * screen that has gone are both handed back, because whether either ends what the panel shows is the
- * caller's to say.
+ * <p>What it cannot answer for itself it reports rather than decides: a press on the way out, and the
+ * panel coming off the screen, are both handed back, because what either means for what the panel
+ * shows is the caller's to say.
  */
 public final class ModalPanel {
 
     // How far the panel is offset from the corner it hangs off, which is not at all: it is the size of
     // the screen and the core UI it hangs in is too, so the two corners coincide.
     private static final float NO_OFFSET = 0f;
+
+    /** Escape alone closes the panel, which is how the game's own dialogs with a choice in them close. */
+    public static final Set<Integer> CLOSED_BY_ESCAPE = Set.of(Keyboard.KEY_ESCAPE);
+
+    /**
+     * The pace the game's own prompts arrive and leave at: every confirmation a core screen raises in
+     * front of itself is shown at these two durations. A panel moving at this pace moves with them.
+     */
+    public static final TraverseDurations GAME_PROMPT_DURATIONS = new TraverseDurations(0.3f, 0.2f);
+
+    // The keys whose press asks the panel to close.
+    private final Set<Integer> closeKeyCodes;
 
     // Whether the panel holds the screen, and how far onto it the box is painted.
     private final ModalPanelFade fade;
@@ -64,42 +81,48 @@ public final class ModalPanel {
     // knows the press happened, and what it costs the caller is not this one's to decide.
     private final Runnable onCloseRequested;
 
-    // The screen this stood over has gone, and the panel with it. Reported for the same reason, and
-    // separately, because it is not a dismissal: there is nothing left to fade against.
-    private final Runnable onPanelLost;
+    // The panel is off the screen, at the end of its fall or with the screen it stood over. Reported
+    // for the same reason: whatever the caller tied to the panel being up is the caller's to let go.
+    private final Runnable onPanelTakenDown;
 
     // Where a core UI that will not take the panel is filed.
     private final GameReachReporter reporter;
+
+    // The widgets currently in the panel, replaced whole on every change.
+    private ModalPanelBody body;
 
     // The screen-sized panel standing in the core UI, or null while none does. Stood up on the first
     // open and kept through the fall, so a reopen during the fall reuses it rather than standing a
     // second one over the first.
     private CustomPanelAPI panel;
 
-    // The widgets currently in that panel, replaced whole on every change.
-    private ModalPanelBody body;
-
     /**
      * @param reporter            where a core UI that will not take the panel is filed, for the mod
      *                            standing it
      * @param isHostScreenShowing whether the screen the panel was opened over is still showing; a
      *                            false answer takes the panel down at once
-     * @param durations           how long the rise and the fall each take
+     * @param durations           how long the rise and the fall each take, usually
+     *                            {@link #GAME_PROMPT_DURATIONS}
+     * @param closeKeyCodes       the keys, as {@link Keyboard} codes, whose press is reported as a
+     *                            request to close, usually {@link #CLOSED_BY_ESCAPE}
      * @param onCloseRequested    what a press on the way out is reported to
-     * @param onPanelLost         what a screen gone out from under the panel is reported to
+     * @param onPanelTakenDown    what the panel coming off the screen is reported to, whether its fall
+     *                            ran out or the screen under it went
      */
     public ModalPanel(
             GameReachReporter reporter,
             BooleanSupplier isHostScreenShowing,
             TraverseDurations durations,
+            Set<Integer> closeKeyCodes,
             Runnable onCloseRequested,
-            Runnable onPanelLost) {
+            Runnable onPanelTakenDown) {
 
         this.reporter = Objects.requireNonNull(reporter, "reporter");
         this.isHostScreenShowing = Objects.requireNonNull(isHostScreenShowing, "isHostScreenShowing");
         this.fade = new ModalPanelFade(durations);
+        this.closeKeyCodes = Set.copyOf(closeKeyCodes);
         this.onCloseRequested = Objects.requireNonNull(onCloseRequested, "onCloseRequested");
-        this.onPanelLost = Objects.requireNonNull(onPanelLost, "onPanelLost");
+        this.onPanelTakenDown = Objects.requireNonNull(onPanelTakenDown, "onPanelTakenDown");
     }
 
     /**
@@ -155,9 +178,16 @@ public final class ModalPanel {
      * compose and the panel it is composed against is this one's to hold - so neither has to publish
      * what the other keeps.
      *
+     * <p>Builds nothing while no panel is standing - before the first raise, or once the panel has
+     * come down - since there is nothing to build the widgets against.
+     *
      * @param buildBody builds the widgets against the panel they will stand in
      */
     public void showBody(Function<CustomPanelAPI, ? extends ModalPanelBody> buildBody) {
+
+        if (panel == null) {
+            return;
+        }
 
         if (body != null) {
             body.removeFromPanel(panel);
@@ -200,7 +230,9 @@ public final class ModalPanel {
 
         panel = null;
         body = null;
+
         fade.dropFade();
+        onPanelTakenDown.run();
     }
 
     // The panel's own frame hooks: the claim that makes the panel modal, the fade that brings it in
@@ -245,8 +277,8 @@ public final class ModalPanel {
             // so leaving that screen has to be noticed rather than waited for. Down at once rather than
             // faded: there is no screen left under it to fade against.
             if (!isHostScreenShowing.getAsBoolean()) {
+
                 takePanelDown();
-                onPanelLost.run();
                 return;
             }
 
@@ -265,7 +297,8 @@ public final class ModalPanel {
 
                 var response = ModalPanelEventResponse.resolveResponseTo(
                     event,
-                    isPanelRaised());
+                    isPanelRaised(),
+                    closeKeyCodes);
 
                 if (response == ModalPanelEventResponse.LEAVE_ALONE) {
                     continue;
@@ -276,12 +309,15 @@ public final class ModalPanel {
                 // Nothing after the press is this pass's to answer for: from here on the panel is only
                 // fading, and the events under it are the screen's again.
                 if (response == ModalPanelEventResponse.CLOSE_PANEL) {
+
                     onCloseRequested.run();
                     return;
                 }
             }
         }
 
+        // Buttons in the body report through the action listener of the element holding them, so a
+        // press never needs to reach the panel's own plugin.
         @Override
         public void buttonPressed(Object buttonId) {
         }

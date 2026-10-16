@@ -1,16 +1,15 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
-import org.lwjgl.input.Keyboard;
+import java.util.Set;
 
 /**
  * What a {@link ModalPanel} does with one input event, and the rule that decides it.
  *
- * <p>Apart from the panel plugin that acts on it because the rule is the whole of the panel's
- * modality and the plugin is unreachable. A plugin exists only inside a panel the game built, over a
- * core UI that exists only while the game is running. Held here, the rule is a function of one event
- * that needs neither.
+ * <p>Kept out of the panel's plugin so the rule can be checked without a running game. A plugin
+ * exists only inside a panel the game built, over a core UI that exists only while the game runs.
+ * This rule is a function of one event, and needs neither.
  *
  * <p><b>A raised panel claims every event it is handed that nothing has already taken.</b> The
  * engine hands a custom panel's events to its children first and to its plugin afterwards, so
@@ -26,7 +25,7 @@ import org.lwjgl.input.Keyboard;
  * its fade. The press that dismisses it is the moment the screen is the player's again, and a claim
  * held for the fall would eat the click that follows.
  */
-public enum ModalPanelEventResponse {
+enum ModalPanelEventResponse {
 
     /** The event is the panel's own widgets' to handle, or somebody else's already. */
     LEAVE_ALONE,
@@ -47,17 +46,19 @@ public enum ModalPanelEventResponse {
      *
      * @param event         the event the panel was handed
      * @param isPanelRaised whether the panel is still up, as against on screen but dismissed
+     * @param closeKeyCodes the keys whose press asks the panel to close, as {@code Keyboard} codes
      * @return what the panel does with it
      */
-    public static ModalPanelEventResponse resolveResponseTo(
+    static ModalPanelEventResponse resolveResponseTo(
             InputEventAPI event,
-            boolean isPanelRaised) {
+            boolean isPanelRaised,
+            Set<Integer> closeKeyCodes) {
 
         if (!isPanelRaised || event.isConsumed()) {
             return LEAVE_ALONE;
         }
 
-        if (event.isKeyDownEvent() && event.getEventValue() == Keyboard.KEY_ESCAPE) {
+        if (event.isKeyDownEvent() && closeKeyCodes.contains(event.getEventValue())) {
             return CLOSE_PANEL;
         }
 

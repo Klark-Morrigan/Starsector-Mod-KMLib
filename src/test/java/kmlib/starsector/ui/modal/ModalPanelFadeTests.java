@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import kmlib.animation.TraverseDurations;
 

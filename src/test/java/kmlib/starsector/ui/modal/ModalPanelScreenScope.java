@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.SettingsAPI;

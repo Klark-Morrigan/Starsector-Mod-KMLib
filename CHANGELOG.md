@@ -77,10 +77,11 @@ No player-facing changes.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
 - **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
   - Where Nexerelin is enabled, KMLib puts a relay on each loaded sector that passes Nexerelin's colony transfers on to these listeners, so a mod only registers its own.
-- **`ModalPanel`** in `kmlib.starsector.ui.coreui`: a screen-sized panel in the core UI that claims input while raised, fades in and out, and comes down with its host screen.
+- **`ModalPanel`** in `kmlib.starsector.ui.modal`: a screen-sized panel in the core UI that claims input while raised, fades in and out, and comes down with its host screen.
   - `ModalPanelBody`: what the panel shows, and the fills painted under it.
-  - `ModalPanelFade`: whether the panel holds the screen, and how far onto it the panel is painted.
-  - `ModalPanelEventResponse`: a raised panel claims every unconsumed event and closes on Escape.
+  - The caller states which keys close the panel. `CLOSED_BY_ESCAPE` is the set the game's own dialogs close on.
+  - `GAME_PROMPT_DURATIONS`: the pace the game's own prompts fade in and out at.
+  - A press on the way out, and the panel coming off the screen, are reported back to the caller.
 - **`ObservationStore`**, **`ObservationCodec`** and **`RecordedObservations`** in `kmlib.starsector.memory.observations`: a register of one family's observations in sector memory under the caller's key, stored as text so no class name enters a save.
 - **`Percentages`** in `kmlib.math.percentages`: conversions between `[0, 1]` fractions and percents.
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
@@ -130,6 +131,7 @@ No player-facing changes.
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` and `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` measures rings, and where a line stays inside a region is a question of its own. |
 | `ParameterSpec(String)` and `ParameterSpec.takingNoArguments(String)`, taking the whole usage line | The same, taking the one-word command name; a longer one throws `IllegalArgumentException`. `ParameterSpec(String, String)` adds the word a command reads before the parse, such as `<kind>`. | The spec composes the usage line from its parameters, so the line cannot drift from what the parser accepts. |
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`, null where nothing answers | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`, returning `Optional` | `Markets` reads what a market is, and a trading counter is part of how one is put together. |
+| `CoreUiOverlayPanels` in `kmlib.starsector.ui.coreui` | Removed from the public API. Stand a `ModalPanel` instead. | A bare panel claims no input and fades nothing, so every caller had to rebuild both. |
 | `MapPresence.isAnyMapShowing()`, `isSchematicMapShowing()` and `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`, `isSchematicVanillaMapShowing()` and `isStarscapeVanillaMapShowing()` | They answer for the vanilla map screens only, and a map a mod embeds elsewhere is not counted. |
 
 </details>

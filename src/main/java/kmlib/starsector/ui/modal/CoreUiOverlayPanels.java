@@ -1,10 +1,13 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import kmlib.starsector.compatibility.GameReachReporter;
+import kmlib.starsector.ui.coreui.CoreUiDialogView;
+import kmlib.starsector.ui.coreui.CoreUiTree;
+import kmlib.starsector.ui.coreui.ModalOverlays;
 
 /**
  * Standing a panel of one's own in the core UI's own widget tree, and taking it off again.
@@ -16,12 +19,13 @@ import kmlib.starsector.compatibility.GameReachReporter;
  * added to it is drawn and hit-tested by the game beside the screen's own widgets rather than
  * composited after them.
  *
- * <p>That is the whole of what this buys, and it is worth being plain about what it does not. The
- * game dims nothing behind such a panel and stops dispatching to nothing under it, because the
- * dimming and the interception belong to the modal base {@link CoreUiDialogView} recognises and
- * nothing here descends from it. A caller wanting either supplies its own. A caller wanting to be
- * seen as a modal by anything reading that base hands its presence to {@link ModalOverlays}, which
- * that view reads beside the base.
+ * <p>That is the whole of what this buys. The game dims nothing behind such a panel and stops
+ * dispatching to nothing under it, because the dimming and the interception belong to the modal base
+ * {@link CoreUiDialogView} recognises, and nothing here descends from it. {@link ModalPanel} supplies
+ * both, and a caller wanting to be seen as a modal hands its presence to {@link ModalOverlays}.
+ *
+ * <p>Package-private so that {@link ModalPanel} is the one way to stand a panel over a core screen. A
+ * bare panel would claim nothing and fade nothing, and every caller would have to rebuild both.
  *
  * <p>Reached through the published panel interface rather than by name. The core UI's own class is
  * obfuscated, but it is a panel, and adding and removing children is what the interface is for - so
@@ -34,11 +38,11 @@ import kmlib.starsector.compatibility.GameReachReporter;
  * settles removal on its own: whatever discarded the old root discarded the panel with it, so a
  * removal that no longer finds its parent has nothing left to do.
  *
- * <p>Fails closed, which is the opposite of the reads in this package and deliberate: those take
- * something away from a caller that was working before them, while this is the caller's whole
- * effect. A no reads as "the panel is not up", which is a state every caller already has to handle.
+ * <p>Fails closed, the opposite of the reads in {@code coreui}, and deliberately: those take something
+ * away from a caller that was working before them, while this is the caller's whole effect. A no reads
+ * as "the panel is not up", which is a state every caller already has to handle.
  */
-public final class CoreUiOverlayPanels {
+final class CoreUiOverlayPanels {
 
     // What a core UI that will not take a panel is reported as having been doing.
     private static final String FAILURE_SITE = "standing a panel over a core screen";

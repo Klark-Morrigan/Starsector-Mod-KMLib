@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
@@ -140,20 +140,39 @@ final class ModalPanelTests {
         }
 
         @Test
-        void takesThePanelDownAndReportsTheLossWhenTheHostScreenHasGone() {
+        void takesThePanelDownAndReportsItWhenTheHostScreenHasGone() {
             // The panel hangs from the core UI, which outlives the screen the panel was opened on,
             // so leaving that screen has to be noticed rather than waited for.
             try (var screenScope = ModalPanelScreenScope.openOverAReachableCoreUi()) {
 
-                var lostReports = new int[1];
-                var panel = buildPanel(screenScope, NO_REPORT, () -> lostReports[0]++);
+                var takenDownReports = new int[1];
+                var panel = buildPanel(screenScope, NO_REPORT, () -> takenDownReports[0]++);
 
                 panel.raisePanel();
 
                 screenScope.settleHostScreenShowing(false);
                 screenScope.resolvePanelPlugin().advance(ADVANCE_WITHIN_FADE);
 
-                assertThat(lostReports[0])
+                assertThat(takenDownReports[0])
+                    .isEqualTo(1);
+            }
+        }
+
+        @Test
+        void reportsThePanelTakenDownOnceADismissedFadeHasSettled() {
+            // The other way off the screen. A caller holding anything for as long as the panel is up
+            // lets go on this report, so the end of a fall has to send it too.
+            try (var screenScope = ModalPanelScreenScope.openOverAReachableCoreUi()) {
+
+                var takenDownReports = new int[1];
+                var panel = buildPanel(screenScope, NO_REPORT, () -> takenDownReports[0]++);
+
+                panel.raisePanel();
+                panel.dismissPanel();
+
+                screenScope.resolvePanelPlugin().advance(ADVANCE_PAST_FADE);
+
+                assertThat(takenDownReports[0])
                     .isEqualTo(1);
             }
         }
@@ -165,8 +184,8 @@ final class ModalPanelTests {
             // through a panel it no longer has.
             try (var screenScope = ModalPanelScreenScope.openOverAReachableCoreUi()) {
 
-                var lostReports = new int[1];
-                var panel = buildPanel(screenScope, NO_REPORT, () -> lostReports[0]++);
+                var takenDownReports = new int[1];
+                var panel = buildPanel(screenScope, NO_REPORT, () -> takenDownReports[0]++);
 
                 panel.raisePanel();
 
@@ -174,7 +193,7 @@ final class ModalPanelTests {
                 screenScope.resolvePanelPlugin().advance(ADVANCE_WITHIN_FADE);
                 screenScope.resolvePanelPlugin().advance(ADVANCE_WITHIN_FADE);
 
-                assertThat(lostReports[0])
+                assertThat(takenDownReports[0])
                     .isEqualTo(1);
             }
         }
@@ -257,6 +276,25 @@ final class ModalPanelTests {
                 verify(firstBodyMock).removeFromPanel(screenScope.resolvePanel());
             }
         }
+
+        @Test
+        void buildsNothingWhileNoPanelIsStanding() {
+            // Before the first raise there is nothing to build the widgets against, and a builder
+            // handed a null panel would fail inside the caller's own layout code.
+            try (var screenScope = ModalPanelScreenScope.openOverAReachableCoreUi()) {
+
+                var panel = buildPanel(screenScope);
+                var buildCount = new int[1];
+
+                panel.showBody(modalPanel -> {
+                    buildCount[0]++;
+                    return mock(ModalPanelBody.class);
+                });
+
+                assertThat(buildCount[0])
+                    .isZero();
+            }
+        }
     }
 
     @Nested
@@ -326,14 +364,15 @@ final class ModalPanelTests {
     private static ModalPanel buildPanel(
             ModalPanelScreenScope screenScope,
             Runnable onCloseRequested,
-            Runnable onPanelLost) {
+            Runnable onPanelTakenDown) {
 
         return new ModalPanel(
             GameReachReporter.UNREPORTED,
             screenScope::isHostScreenShowing,
             DURATIONS,
+            ModalPanel.CLOSED_BY_ESCAPE,
             onCloseRequested,
-            onPanelLost);
+            onPanelTakenDown);
     }
 
     // An event nothing has taken yet, which is the only kind the claim rule reads past.

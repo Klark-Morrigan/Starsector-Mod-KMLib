@@ -1,10 +1,12 @@
-package kmlib.starsector.ui.coreui;
+package kmlib.starsector.ui.modal;
 
 import com.fs.starfarer.api.input.InputEventAPI;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lwjgl.input.Keyboard;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -36,6 +38,9 @@ final class ModalPanelEventResponseTests {
 
     private static final boolean DISMISSED = false;
 
+    // The keys a panel states as closing it, here the default most panels pass.
+    private static final Set<Integer> CLOSE_KEYS = ModalPanel.CLOSED_BY_ESCAPE;
+
     @Nested
     class ResolveResponseTo {
 
@@ -48,7 +53,7 @@ final class ModalPanelEventResponseTests {
             when(eventMock.isConsumed())
                 .thenReturn(true);
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.LEAVE_ALONE);
         }
 
@@ -63,7 +68,7 @@ final class ModalPanelEventResponseTests {
             when(eventMock.isKeyDownEvent())
                 .thenThrow(new IllegalStateException("a consumed event was read"));
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.LEAVE_ALONE);
         }
 
@@ -73,7 +78,7 @@ final class ModalPanelEventResponseTests {
             // stands in the box has already had its turn.
             var eventMock = mock(InputEventAPI.class);
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.CLAIM);
         }
 
@@ -83,7 +88,7 @@ final class ModalPanelEventResponseTests {
             // to the player at the press - so an event a raised panel claims is left alone here.
             var eventMock = mock(InputEventAPI.class);
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, DISMISSED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, DISMISSED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.LEAVE_ALONE);
         }
 
@@ -96,7 +101,7 @@ final class ModalPanelEventResponseTests {
             when(eventMock.isConsumed())
                 .thenThrow(new IllegalStateException("an event was read for a dismissed panel"));
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, DISMISSED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, DISMISSED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.LEAVE_ALONE);
         }
 
@@ -111,7 +116,7 @@ final class ModalPanelEventResponseTests {
             when(eventMock.getEventValue())
                 .thenReturn(Keyboard.KEY_ESCAPE);
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, DISMISSED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, DISMISSED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.LEAVE_ALONE);
         }
 
@@ -125,14 +130,34 @@ final class ModalPanelEventResponseTests {
             when(eventMock.getEventValue())
                 .thenReturn(Keyboard.KEY_ESCAPE);
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.CLOSE_PANEL);
         }
 
         @Test
-        void doesNotCloseOnAKeyThatIsNotEscape() {
-            // Escape is the only key with a meaning of its own here; every other one is claimed like
-            // any other event, so no key reaches the screen underneath.
+        void closesOnAnyKeyThePanelStates() {
+            // A one-button notice closes on the keys the game binds to its single option, so the set
+            // is the panel's to state rather than fixed at Escape.
+            var eventMock = mock(InputEventAPI.class);
+
+            when(eventMock.isKeyDownEvent())
+                .thenReturn(true);
+            when(eventMock.getEventValue())
+                .thenReturn(Keyboard.KEY_RETURN);
+
+            var response = ModalPanelEventResponse.resolveResponseTo(
+                eventMock,
+                RAISED,
+                Set.of(Keyboard.KEY_ESCAPE, Keyboard.KEY_RETURN));
+
+            assertThat(response)
+                .isEqualTo(ModalPanelEventResponse.CLOSE_PANEL);
+        }
+
+        @Test
+        void doesNotCloseOnAKeyThePanelDoesNotState() {
+            // A key outside the stated set is claimed like any other event, so no key reaches the
+            // screen underneath.
             var eventMock = mock(InputEventAPI.class);
 
             when(eventMock.isKeyDownEvent())
@@ -140,7 +165,7 @@ final class ModalPanelEventResponseTests {
             when(eventMock.getEventValue())
                 .thenReturn(Keyboard.KEY_M);
 
-            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED))
+            assertThat(ModalPanelEventResponse.resolveResponseTo(eventMock, RAISED, CLOSE_KEYS))
                 .isEqualTo(ModalPanelEventResponse.CLAIM);
         }
     }
