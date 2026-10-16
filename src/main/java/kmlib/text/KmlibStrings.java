@@ -108,6 +108,22 @@ public final class KmlibStrings {
     }
 
     /**
+     * {@link #normaliseText} with the absence answered as {@code ""}, for a caller building a string
+     * that would otherwise print a null.
+     *
+     * @param value the text to normalise; may be null
+     * @return the stripped text, or {@code ""} where it is blank
+     */
+    public static String getTextOrEmpty(String value) {
+
+        var normalised = normaliseText(value);
+
+        return normalised == null
+            ? ""
+            : normalised;
+    }
+
+    /**
      * The text {@code readText} answers for each of {@code items}, in their order, a null or blank
      * answer left out - the one loop every read of "what may this say" over a listing would otherwise
      * write for itself.

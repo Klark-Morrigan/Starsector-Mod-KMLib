@@ -125,6 +125,31 @@ class KmlibStringsTests {
     }
 
     @Nested
+    class GetTextOrEmpty {
+
+        @Test
+        void isEmptyOnNull() {
+
+            assertThat(KmlibStrings.getTextOrEmpty(null))
+                .isEqualTo("");
+        }
+
+        @Test
+        void isEmptyOnWhitespaceOnly() {
+
+            assertThat(KmlibStrings.getTextOrEmpty("  "))
+                .isEqualTo("");
+        }
+
+        @Test
+        void answersTheStrippedText() {
+
+            assertThat(KmlibStrings.getTextOrEmpty("  hello  "))
+                .isEqualTo("hello");
+        }
+    }
+
+    @Nested
     class CollectTexts {
 
         @Test
