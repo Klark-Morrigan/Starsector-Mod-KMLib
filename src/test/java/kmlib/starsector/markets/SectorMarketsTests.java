@@ -83,6 +83,45 @@ final class SectorMarketsTests {
         }
     }
 
+    @Nested
+    class ReadMarkets {
+
+        @Test
+        void readsEveryMarketTheEconomyLists() {
+
+            var jangalaMock = createNamedMarket("Jangala");
+            var sindriaMock = createNamedMarket("Sindria");
+
+            assertThat(SectorMarkets.readMarkets(createSectorListing(List.of(jangalaMock, sindriaMock))))
+                .containsExactly(jangalaMock, sindriaMock);
+        }
+
+        @Test
+        void answersNothingForASectorWithNoEconomyYet() {
+
+            assertThat(SectorMarkets.readMarkets(mock(SectorAPI.class)))
+                .isEmpty();
+        }
+
+        @Test
+        void answersNothingForANullSector() {
+
+            assertThat(SectorMarkets.readMarkets(null))
+                .isEmpty();
+        }
+
+        @Test
+        void countsEveryMarketItReadOnTheOpenSection() {
+
+            var sectorMock = createSectorListing(List.of(createNamedMarket("Jangala"), createNamedMarket("Sindria")));
+
+            var counts = WalkCountCapture.captureCountsOf(() -> SectorMarkets.readMarkets(sectorMock));
+
+            assertThat(counts.readCount(SectorWalkCounters.MARKETS_READ))
+                .isEqualTo(2L);
+        }
+    }
+
     /**
      * Every case poses a market one of the ways the sector can hold one - listed by the economy,
      * hung on an entity it never registered, standing in hyperspace - because what the walk is for

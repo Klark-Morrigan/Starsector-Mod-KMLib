@@ -38,6 +38,17 @@ public final class SectorMarkets {
      */
     public static List<String> listMarketNames(SectorAPI sector) {
 
+        return KmlibStrings.collectTexts(readMarkets(sector), MarketAPI::getName);
+    }
+
+    /**
+     * Every market the sector's economy lists, for a read across the whole economy such as an average price.
+     *
+     * @param sector the sector to read; null, or one with no economy yet, yields an empty list
+     * @return the economy's markets, in its order; never null
+     */
+    public static List<MarketAPI> readMarkets(SectorAPI sector) {
+
         if (sector == null || sector.getEconomy() == null) {
             return List.of();
         }
@@ -46,7 +57,7 @@ public final class SectorMarkets {
 
         SectorWalkCounters.countMarketsRead(markets.size());
 
-        return KmlibStrings.collectTexts(markets, MarketAPI::getName);
+        return markets;
     }
 
     /**
