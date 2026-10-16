@@ -645,7 +645,9 @@ No Starsector API on the signature.
   which factions stand together,
   as plain data folded from whichever mod keeps alliances,
   since vanilla keeps none.
-  It answers only whether two factions are on the same side;
+  It answers whether two factions are on the same side,
+  and one number that moves whenever the set of alliances does,
+  so a caller polls for a change without re-reading every alliance;
   what an alliance is worth is the asker's question.
 - [`starsector/factions/relation/`](src/main/java/kmlib/starsector/factions/relation/) -
   where one faction stands with another,
@@ -1068,6 +1070,8 @@ How the tiers meet is in
   the sort-mode,
   direction and column-count model it ranks and wraps by,
   the item seam it draws rows from,
+  the ranking a sort mode builds from its metrics,
+  with name and ID breaking every tie,
   and the memo a consumer holds its list in -
   holding no store of its own.
 - [`starsector/ui/widgets/scroll/`](src/main/java/kmlib/starsector/ui/widgets/scroll/) -
@@ -1202,6 +1206,10 @@ and the default is among them,
 since its version file is what older installs poll.
 It reads with `jq`, as every action here does,
 so the manifest must be plain JSON here even though the build would accept a `#` comment in it.
+
+Both read actions log what they read and every output they emit, as `<key>: <value>`,
+so a run's log shows each value a later step was handed.
+read-locales also logs a missing manifest as the reason its locale list is empty.
 
 **[check-version](.github/actions/check-version/action.yml)** takes a `version`,
 looks for a git tag naming it in the caller checkout,
