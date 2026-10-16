@@ -16,10 +16,12 @@ import java.util.Map;
  *
  * <p>An unmapped system - or a null system, or one with a null ID - reports
  * {@link SystemClaimBreakdown#NONE}, matching the port's "unreadable reads as nothing"
- * contract. The override read is derived from the stored breakdown rather than tracked
- * separately, so the two reads can never be set to disagree.
+ * contract. The override and claimant reads are derived from the stored breakdown rather than
+ * tracked separately, so the reads can never be set to disagree.
  */
-public final class ClaimBreakdownReaderFake implements ClaimBreakdownReader {
+public final class ClaimBreakdownReaderFake
+        implements ClaimBreakdownReader {
+
     private final Map<String, SystemClaimBreakdown> breakdownBySystemId = new HashMap<>();
 
     /**
@@ -32,10 +34,16 @@ public final class ClaimBreakdownReaderFake implements ClaimBreakdownReader {
 
     @Override
     public SystemClaimBreakdown readBreakdown(StarSystemAPI system) {
+
         if (system == null || system.getId() == null) {
             return SystemClaimBreakdown.NONE;
         }
         return breakdownBySystemId.getOrDefault(system.getId(), SystemClaimBreakdown.NONE);
+    }
+
+    @Override
+    public String readClaimingFactionId(StarSystemAPI system) {
+        return readBreakdown(system).claimantFactionId();
     }
 
     @Override

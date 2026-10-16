@@ -3,6 +3,7 @@ package kmlib.starsector.systems.claims;
 import kmlib.text.KmlibStrings;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Why a star system is claimed by whoever claims it: the resolved claimant, the memory-flag
@@ -47,7 +48,37 @@ public record SystemClaimBreakdown(
      * breakdown handed around a render pass cannot change under its readers.
      */
     public SystemClaimBreakdown {
-        scores = scores == null ? List.of() : List.copyOf(scores);
+
+        scores = scores == null
+            ? List.of()
+            : List.copyOf(scores);
+    }
+
+    /**
+     * One faction's standing in the contest.
+     *
+     * @param factionId the ID of the faction to find
+     * @return the faction's standing, or empty where it holds nothing in the system - a decreed
+     *         claimant with no colony there, say
+     */
+    public Optional<FactionClaimStanding> findStanding(String factionId) {
+
+        return scores
+            .stream()
+            .filter(standing -> standing.factionId().equals(factionId))
+            .findFirst();
+    }
+
+    /**
+     * Whether anybody claims the system.
+     *
+     * <p>Named here for the reason {@link #isSettledByDecree} is: a claimant present as an empty
+     * string is nobody, and a reader testing the field for null alone would name one.
+     *
+     * @return true when a faction claims the system, by decree or by score
+     */
+    public boolean hasClaimant() {
+        return KmlibStrings.hasText(claimantFactionId);
     }
 
     /**
@@ -61,8 +92,25 @@ public record SystemClaimBreakdown(
      * @return true when the claimant is present and is the decreed faction
      */
     public boolean isClaimedByDecree() {
+
         return isSettledByDecree()
             && overrideFactionId.equals(claimantFactionId);
+    }
+
+    /**
+     * Whether the given faction took the system by out-scoring its rivals.
+     *
+     * <p>The question a market's account asks to say its market won the system. Under a decree no
+     * market won anything, however the scores fell, so a decreed claimant answers false here.
+     *
+     * @param factionId the ID of the faction to ask about
+     * @return true when the faction claims the system and no decree imposed it
+     */
+    public boolean isClaimedByScore(String factionId) {
+
+        return hasClaimant()
+            && !isSettledByDecree()
+            && claimantFactionId.equals(factionId);
     }
 
     /**

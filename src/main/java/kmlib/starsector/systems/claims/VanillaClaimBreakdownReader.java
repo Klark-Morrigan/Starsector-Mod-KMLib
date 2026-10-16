@@ -94,7 +94,8 @@ import java.util.Set;
  * has to do: an index is a snapshot of the sector the pass that opened it saw, so the shared
  * instance a hover box holds would otherwise answer off a sector that has since moved on.
  */
-public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, ClaimReader {
+public final class VanillaClaimBreakdownReader
+        implements ClaimBreakdownReader {
 
     // A military market weighs far more than any colony's size can reach on its own, which is
     // how a garrison world claims a system its neighbours out-populate. Vanilla's flat bonus.
@@ -156,15 +157,15 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         if (system == null) {
             return SystemClaimBreakdown.NONE;
         }
+
         var overrideFactionId = readCoreFactionId(system);
         var claimedMarkets = readClaimedMarkets(readColonies(system), knownColonyReader);
 
         // An override answers the question before any market is weighed, so it stands as the
         // claimant even where the scores point elsewhere; those scores stay on as context.
-        var claimantFactionId =
-            overrideFactionId != null
-                ? overrideFactionId
-                : resolveTopTerritorialFactionId(claimedMarkets);
+        var claimantFactionId = overrideFactionId != null
+            ? overrideFactionId
+            : resolveTopTerritorialFactionId(claimedMarkets);
 
         return new SystemClaimBreakdown(
             overrideFactionId,
@@ -178,12 +179,14 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         if (system == null) {
             return SystemClaimBreakdown.NONE.claimantFactionId();
         }
+
         var overrideFactionId = readCoreFactionId(system);
 
         // A decree answers before a market is weighed, so nothing beneath it is walked at all.
         if (overrideFactionId != null) {
             return overrideFactionId;
         }
+
         // Walked under no knowledge at all, which changes no answer: the claimant is resolved off
         // the unfogged set - the mechanic scores colonies nobody has found - and the port reaches
         // only what a market's breakdown reports about the player, which nothing here reads. Asking
@@ -241,6 +244,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
                     knownColonies.contains(colony),
                     claimedMarkets.size() + FIRST_LISTED)));
         }
+
         return claimedMarkets;
     }
 
@@ -270,10 +274,12 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         var economyMarkets = new ArrayList<MarketAPI>(colonies.size());
 
         for (var colony : colonies) {
+
             if (colony.isListedByEconomy()) {
                 economyMarkets.add(colony.market());
             }
         }
+
         return economyMarkets;
     }
 
@@ -287,18 +293,27 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     private static String resolveTopTerritorialFactionId(List<ClaimedMarket> claimedMarkets) {
 
         String topFactionId = null;
+
         var topScore = NO_LEADING_SCORE;
 
         for (var claimedMarket : claimedMarkets) {
+
             if (!claimedMarket.claim().isScoredOnItsOwnAccount()
                     || !isEligibleToClaim(claimedMarket.faction())) {
+
                 continue;
             }
-            var score = claimedMarket.claim().computeTotalScore();
+
+            var score = claimedMarket
+                .claim()
+                .computeTotalScore();
 
             if (score > topScore) {
+
                 topScore = score;
-                topFactionId = claimedMarket.faction().getId();
+                topFactionId = claimedMarket
+                    .faction()
+                    .getId();
             }
         }
         return topFactionId;
@@ -317,19 +332,23 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         var standingByFactionId = new LinkedHashMap<String, ClaimedMarket>();
 
         for (var claimedMarket : claimedMarkets) {
+
             if (claimedMarket.claim().isScoredOnItsOwnAccount()) {
                 recordBestStanding(standingByFactionId, claimedMarket);
             }
         }
+
         var standings = new ArrayList<FactionClaimStanding>();
 
         for (var standing : standingByFactionId.values()) {
+
             standings.add(new WeighedClaimStanding(
                 standing.faction().getId(),
                 isEligibleToClaim(standing.faction()),
                 standing.claim(),
                 selectOtherMarketClaims(claimedMarkets, standing)));
         }
+
         standings.addAll(
             collectPresenceOnlyStandings(claimedMarkets, standingByFactionId.keySet()));
 
@@ -350,27 +369,36 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         var marketsByFactionId = new LinkedHashMap<String, List<ClaimedMarket>>();
 
         for (var claimedMarket : claimedMarkets) {
-            var factionId = claimedMarket.faction().getId();
+
+            var factionId = claimedMarket
+                .faction()
+                .getId();
 
             if (!weighedFactionIds.contains(factionId)) {
+
                 marketsByFactionId
                     .computeIfAbsent(factionId, id -> new ArrayList<>())
                     .add(claimedMarket);
             }
         }
+
         var standings = new ArrayList<PresenceOnlyClaimStanding>(marketsByFactionId.size());
 
         for (var factionMarkets : marketsByFactionId.values()) {
+
             // Read off the first of the faction's markets rather than carried alongside the group:
             // the game holds one faction instance per ID, so every market in a group names the
             // same object and a second source for it could only ever be a way to disagree.
-            var faction = factionMarkets.get(0).faction();
+            var faction = factionMarkets
+                .get(0)
+                .faction();
 
             standings.add(new PresenceOnlyClaimStanding(
                 faction.getId(),
                 isEligibleToClaim(faction),
                 factionMarkets.stream().map(ClaimedMarket::claim).toList()));
         }
+
         return standings;
     }
 
@@ -408,10 +436,12 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         var otherClaims = new ArrayList<MarketClaimBreakdown>();
 
         for (var claimedMarket : claimedMarkets) {
+
             if (claimedMarket != standing && claimedMarket.faction() == standing.faction()) {
                 otherClaims.add(claimedMarket.claim());
             }
         }
+
         return otherClaims;
     }
 
@@ -460,10 +490,12 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         var siblingMarketCount = 0;
 
         for (var other : economyMarkets) {
+
             if (other != market && other.getFaction() == market.getFaction()) {
                 siblingMarketCount++;
             }
         }
+
         return new MarketClaimBreakdown(
             Markets.readNameplate(market),
             market.getId(),
@@ -482,7 +514,9 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
     // the faction rather than its .faction file, which is free to declare a territoriality the
     // mechanic will not honour.
     private static boolean isEligibleToClaim(FactionAPI faction) {
-        return !faction.isPlayerFaction() && FactionFlags.isTerritorial(faction);
+
+        return !faction.isPlayerFaction()
+            && FactionFlags.isTerritorial(faction);
     }
 
     // The system's colonies, off the pass's index where a pass owns this reader and by a walk of
@@ -493,6 +527,7 @@ public final class VanillaClaimBreakdownReader implements ClaimBreakdownReader, 
         if (sectorIndex == null) {
             return SystemColonies.readColoniesIn(Global.getSector(), system);
         }
+
         return sectorIndex.readColoniesIn(system);
     }
 

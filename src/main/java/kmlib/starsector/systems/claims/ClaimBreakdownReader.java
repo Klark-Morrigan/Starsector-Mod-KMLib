@@ -16,8 +16,14 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
  * <p>The two reads are separate because they cost wildly different amounts: the override is a
  * single memory read, while the breakdown scores every market in the system. A caller that
  * only needs to know whether a system is held by decree should not pay for the scoring.
+ *
+ * <p>It extends {@link ClaimReader} because a reader that can say why a system is claimed can say
+ * who claims it. One reader then serves both a fill and the box explaining it, so the two cannot
+ * be read through different bindings. An implementer answers the claimant without scoring the
+ * system where it can, since a caller colouring a whole sector asks for nothing more.
  */
-public interface ClaimBreakdownReader {
+public interface ClaimBreakdownReader
+        extends ClaimReader {
 
     /**
      * @param system the star system to explain the claim of

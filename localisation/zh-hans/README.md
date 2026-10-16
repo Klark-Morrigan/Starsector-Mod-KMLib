@@ -42,6 +42,7 @@ so the two can never disagree.
     - [Text and rendering](#text-and-rendering)
     - [Campaign scripts](#campaign-scripts)
     - [Factions](#factions)
+    - [System claims](#system-claims)
     - [Markets](#markets)
     - [Salvage drops](#salvage-drops)
     - [Geometry](#geometry)
@@ -270,6 +271,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | control character | 控制字符 | the usual computing word |
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
+| extend (an interface extending another), implementer | 继承, 实现方 | the usual computing words; 方 for the party, as 调用方 writes it |
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | consumer mod | 使用方 Mod | |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
@@ -285,6 +287,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | parameter, positional parameter, parameter spec (of a console command) | 参数, 位置参数, 参数规范 | the usual computing words; 位置, position, for one filled by where it stands |
 | parser, value parser | 解析器, 值解析器 | the usual computing words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
+| reader, source (a port opening readers) | 读取器, 来源 | 读取器 as the `0.5.0` entries write it; 来源, where something comes from |
 | reflection | 反射 | as in the settings description |
 | register (a store of records kept under one key) | 登记表 | from 登记, to record, as the `0.5.0` compatibility entries write it |
 | relay (a listener passing events on) | 转发器 | 转发, to pass on |
@@ -400,6 +403,16 @@ A version heading is never translated; see [translating the changelog](#translat
 | friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
 | long name (of a faction) | 长名称 | 长, long, before 名称, name |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
+
+#### System claims
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| claim, claimant (the faction claiming a system) | 宣称, 宣称方 | KMU's words, from vanilla's 无宣称领土; 方 for the party holding it |
+| decree (a claim the system's memory flag imposes) | 无条件宣称 | KMU's word for the `$claimingFaction` flag, which wins over any scored claim |
+| contest, standing (one faction's place in it), score | 争夺, 排名, 得分 | 争夺 and 得分 as KMU writes them; 排名, ranking, for a place the scores order |
+| breakdown (the whole scored contest behind a claim) | 明细 | the itemised account, as a bill's 明细 lists its lines |
+| fill (a map cell's paint), hover box | 填充, 提示框 | 填充 as KMU writes it; 提示框 as the pad row writes it |
 
 #### Markets
 

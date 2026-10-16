@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.tuple;
  * them off this walk rather than looking the market up again. That reading them changes no outcome
  * is asserted head-on beside them.
  *
- * <p>The narrow claimant read and the {@link ClaimReaderSource} binding sit beside the breakdown
+ * <p>The narrow claimant read and the two source bindings sit beside the breakdown
  * cases rather than in a suite of their own, the reader answering both claim ports off one
  * contest. Posing them here is what shows the narrow answer is the wide one's claimant and not a
  * second opinion.
@@ -78,6 +78,26 @@ final class VanillaClaimBreakdownReaderTests {
 
     @Nested
     class OpenReaderOver {
+
+        @Test
+        void bindsTheConstructorAsAClaimBreakdownReaderSource() {
+            // A view holds one such source for its fills, bands and box, so the binding has to
+            // open a reader whose breakdown names the claimant its narrow read does.
+            var hegemony = claimContest.buildFaction("hegemony", true);
+
+            claimContest.placeMarketsInSystem(claimContest.buildMarket(hegemony, 4));
+
+            ClaimBreakdownReaderSource source = VanillaClaimBreakdownReader::new;
+
+            var reader = source.openReaderOver(
+                EVERY_COLONY_KNOWN,
+                new SectorPassIndex(Global.getSector()));
+
+            assertThat(reader.readBreakdown(claimContest.getSystem()).claimantFactionId())
+                .isEqualTo("hegemony");
+            assertThat(reader.readClaimingFactionId(claimContest.getSystem()))
+                .isEqualTo("hegemony");
+        }
 
         @Test
         void bindsTheConstructorAsAClaimReaderSource() {
@@ -123,6 +143,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 14));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -151,6 +172,7 @@ final class VanillaClaimBreakdownReaderTests {
                 .isEqualTo(5);
             assertThat(standing.standingMarket().siblingMarketCount())
                 .isEqualTo(1);
+
             assertThat(standing.otherMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Kazeron");
@@ -248,6 +270,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("tritachyon", 7), tuple("hegemony", 4));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
         }
@@ -276,6 +299,7 @@ final class VanillaClaimBreakdownReaderTests {
                 .isEqualTo("Chicomoztoc");
             assertThat(standing.standingMarket().siblingMarketCount())
                 .isEqualTo(2);
+
             assertThat(standing.otherMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Sindria", "Kazeron");
@@ -428,6 +452,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("pirates", 0));
+
             assertThat(breakdown.claimantFactionId())
                 .isNull();
 
@@ -435,6 +460,7 @@ final class VanillaClaimBreakdownReaderTests {
             // system whose account named nobody would be emptier than what the map draws in it.
             assertThat(breakdown.scores().get(0))
                 .isInstanceOf(PresenceOnlyClaimStanding.class);
+
             assertThat(breakdown.scores().get(0).readHeldMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Tigra City");
@@ -461,6 +487,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
+
             assertThat(readTopStanding(breakdown).otherMarkets())
                 .isEmpty();
         }
@@ -530,6 +557,7 @@ final class VanillaClaimBreakdownReaderTests {
             claimContest.placeMarketsInSystem(
                 claimContest.buildHiddenMarket(pirates, 9),
                 claimContest.buildMarket(hegemony, 1));
+
             claimContest.placeOffEconomyMarketsInSystem(claimContest.buildMarket(independent, 9));
 
             var breakdown =
@@ -548,6 +576,7 @@ final class VanillaClaimBreakdownReaderTests {
                     tuple("hegemony", true),
                     tuple("pirates", false),
                     tuple("independent", true));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -578,6 +607,7 @@ final class VanillaClaimBreakdownReaderTests {
                 .isInstanceOf(WeighedClaimStanding.class);
             assertThat(readTopStanding(breakdown).standingMarket().marketNameplate().displayName())
                 .isEqualTo("Ancyra");
+
             assertThat(readTopStanding(breakdown).otherMarkets())
                 .extracting(market -> market.marketNameplate().displayName())
                 .containsExactly("Tigra City", "Galatia Academy");
@@ -635,6 +665,7 @@ final class VanillaClaimBreakdownReaderTests {
 
             assertThat(standing.standingMarket().listingPosition())
                 .isEqualTo(1);
+
             assertThat(standing.otherMarkets())
                 .extracting(
                     market -> market.marketNameplate().displayName(),
@@ -658,6 +689,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
+
             assertThat(readStanding(breakdown, "hegemony").otherMarkets())
                 .isEmpty();
         }
@@ -701,6 +733,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 3), tuple("independent", 0));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -726,6 +759,7 @@ final class VanillaClaimBreakdownReaderTests {
                     FactionClaimStanding::score,
                     FactionClaimStanding::isTerritorial)
                 .containsExactly(tuple("player", 8, false));
+
             assertThat(breakdown.claimantFactionId())
                 .isNull();
         }
@@ -750,6 +784,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("player", 8), tuple("hegemony", 3));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -771,6 +806,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("tritachyon", 7), tuple("hegemony", 4));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
         }
@@ -794,6 +830,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::isTerritorial)
                 .containsExactly(tuple("pirates", false), tuple("hegemony", true));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -851,6 +888,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 6), tuple("tritachyon", 6));
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("tritachyon");
         }
@@ -895,6 +933,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId)
                 .containsExactly("hegemony");
+
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("hegemony");
         }
@@ -917,6 +956,7 @@ final class VanillaClaimBreakdownReaderTests {
                 .isEqualTo("luddic_church");
             assertThat(breakdown.claimantFactionId())
                 .isEqualTo("luddic_church");
+
             assertThat(breakdown.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 6));
@@ -967,6 +1007,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(throughIndex.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 5), tuple("pirates", 4));
+
             assertThat(throughOwnWalk.claimantFactionId())
                 .isEqualTo("hegemony");
             assertThat(throughOwnWalk.scores())
@@ -1070,6 +1111,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(namingNothing.scores())
                 .extracting(FactionClaimStanding::factionId, FactionClaimStanding::score)
                 .containsExactly(tuple("hegemony", 4), tuple("pirates", 0));
+
             assertThat(namingEverything.claimantFactionId())
                 .isEqualTo("hegemony");
             assertThat(namingEverything.scores())
@@ -1133,6 +1175,7 @@ final class VanillaClaimBreakdownReaderTests {
 
         @Test
         void reportsUnclaimedForANullSystem() {
+
             assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readClaimingFactionId(null))
                 .isNull();
@@ -1154,6 +1197,7 @@ final class VanillaClaimBreakdownReaderTests {
             assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isEqualTo("tritachyon");
+
             assertThat(new VanillaClaimBreakdownReader(NO_COLONY_KNOWN)
                     .readClaimingFactionId(claimContest.getSystem()))
                 .isEqualTo("tritachyon");
@@ -1192,6 +1236,7 @@ final class VanillaClaimBreakdownReaderTests {
 
         @Test
         void reportsNoCoreWhenTheFlagIsUnset() {
+
             assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readCoreFactionId(claimContest.getSystem()))
                 .isNull();
@@ -1199,6 +1244,7 @@ final class VanillaClaimBreakdownReaderTests {
 
         @Test
         void reportsNoCoreForANullSystem() {
+
             assertThat(new VanillaClaimBreakdownReader(EVERY_COLONY_KNOWN)
                     .readCoreFactionId(null))
                 .isNull();
@@ -1219,6 +1265,7 @@ final class VanillaClaimBreakdownReaderTests {
     private static WeighedClaimStanding readStanding(
             SystemClaimBreakdown breakdown,
             String factionId) {
+
         return breakdown
             .scores()
             .stream()

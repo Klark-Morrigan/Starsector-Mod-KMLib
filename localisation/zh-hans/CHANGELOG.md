@@ -44,6 +44,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`AllianceRecord.findLeadFactionId()`**：联盟的盟主；联盟没有成员时为空。
 - **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台命令。子类指定自己的命令词、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
+- **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的提示框。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都不为正时为空。
 - **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
@@ -106,6 +107,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StorageAccess.unlockStorage(MarketAPI, String)`**（位于 `kmlib.starsector.markets.storage`）：把市场的仓库标记为已付费解锁，使其无需原版的一次性使用费即可打开。插件被其他 Mod 替换的仓库保持不变。
+- **`SystemClaimBreakdown`** 回答关于其宣称方的问题：
+  - `findStanding(String)`：某个势力在争夺中的排名；该势力在星系中一无所有时为空。
+  - `hasClaimant()`：是否有势力宣称该星系；空白的宣称方视为无人。
+  - `isClaimedByScore(String)`：该势力是凭得分而非无条件宣称取得该星系的。
 - **`ToggledFeature`**（位于 `kmlib.starsector.startup`）：由玩家开关建立或撤回的功能。`applyTo(SectorAPI)` 在载入时应用它，`applyToIfSwitched(SectorAPI)` 只在设置变更且正是这个开关改变时才动作。
 - **`TooltipSpacing`**（位于 `kmlib.starsector.ui.tooltip`）：原版排布提示框所用的间距 `SMALL_PAD` 与 `OUTER_PAD`，以及提示框内按钮的高度 `BUTTON_HEIGHT`。
 - **`UniformGrid`**（位于 `kmlib.math.geometry`）：正方形单元的哈希网格，把点、线段和边界框归入它们触及的每一个单元。`listItemsNear(double, double, double)` 和 `listCandidatePairs()` 对每个条目或每对条目只回答一次，`measureAdaptiveCellSide(Bounds, int)` 把单元大小定为大约每格一个条目。
@@ -133,6 +138,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`，无可作答时为 null | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`，返回 `Optional` | `Markets` 读取市场是什么，而子市场属于市场的构成方式。 |
 | 位于 `kmlib.starsector.ui.coreui` 中的 `CoreUiOverlayPanels` | 已从公共 API 中移除。改用 `ModalPanel`。 | 单独的面板既不占用输入，也不淡入淡出，因此每个调用方都得自行重建这两者。 |
 | `MapPresence.isAnyMapShowing()`、`isSchematicMapShowing()` 和 `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`、`isSchematicVanillaMapShowing()` 和 `isStarscapeVanillaMapShowing()` | 它们只回答原版的星图界面，Mod 嵌入别处的星图不计在内。 |
+| `ClaimBreakdownReader`，与 `ClaimReader` 互不相干 | 继承 `ClaimReader`：实现方也要回答 `readClaimingFactionId(StarSystemAPI)`。`ClaimBreakdownReaderFake` 根据所给的明细作答。 | 能说明星系为何被宣称的读取器，也能说出宣称方是谁，因此一个读取器即可同时服务填充和解释填充的提示框。 |
 
 </details>
 

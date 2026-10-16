@@ -44,6 +44,7 @@ No player-facing changes.
 - **`AllianceRecord.findLeadFactionId()`**: the member that leads the alliance, empty where it has no members.
 - **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
+- **`ClaimBreakdownReaderSource`** in `kmlib.starsector.systems.claims`: a `ClaimReaderSource` whose readers also explain the claims they read, so one source serves a map's fills and the box explaining them.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, empty where neither is positive.
 - **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
@@ -106,6 +107,10 @@ No player-facing changes.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.
+- **`SystemClaimBreakdown`** answers about its claimant:
+  - `findStanding(String)`: one faction's standing, empty where it holds nothing in the system.
+  - `hasClaimant()`: whether anybody claims the system, a blank claimant read as nobody.
+  - `isClaimedByScore(String)`: whether the faction took the system on score rather than by decree.
 - **`ToggledFeature`** in `kmlib.starsector.startup`: a feature a player switch stands up or takes back. `applyTo(SectorAPI)` applies it on a load, and `applyToIfSwitched(SectorAPI)` acts on a settings change only where this switch moved.
 - **`TooltipSpacing`** in `kmlib.starsector.ui.tooltip`: the pads vanilla lays its tooltips out on, `SMALL_PAD` and `OUTER_PAD`, and its in-tooltip `BUTTON_HEIGHT`.
 - **`UniformGrid`** in `kmlib.math.geometry`: a square-cell hash grid filing points, segments and bounds under every cell they touch. `listItemsNear(double, double, double)` and `listCandidatePairs()` answer each item or pair once, and `measureAdaptiveCellSide(Bounds, int)` sizes the cells to about one item each.
@@ -133,6 +138,7 @@ No player-facing changes.
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`, null where nothing answers | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`, returning `Optional` | `Markets` reads what a market is, and a trading counter is part of how one is put together. |
 | `CoreUiOverlayPanels` in `kmlib.starsector.ui.coreui` | Removed from the public API. Stand a `ModalPanel` instead. | A bare panel claims no input and fades nothing, so every caller had to rebuild both. |
 | `MapPresence.isAnyMapShowing()`, `isSchematicMapShowing()` and `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`, `isSchematicVanillaMapShowing()` and `isStarscapeVanillaMapShowing()` | They answer for the vanilla map screens only, and a map a mod embeds elsewhere is not counted. |
+| `ClaimBreakdownReader`, standing apart from `ClaimReader` | Extends `ClaimReader`: an implementer answers `readClaimingFactionId(StarSystemAPI)` too. `ClaimBreakdownReaderFake` answers it off the breakdown it was given. | A reader that can say why a system is claimed can say who claims it, so one reader serves a fill and the box explaining it. |
 
 </details>
 

@@ -856,7 +856,7 @@ No Starsector API on the signature.
   [Star systems](src/main/java/kmlib/starsector/systems/README.md).
 - [`starsector/systems/claims/`](src/main/java/kmlib/starsector/systems/claims/) -
   vanilla system claims behind a port,
-  with a second port for the scored contest behind one -
+  with a second port extending it for the scored contest behind one -
   down to the terms each market's score is the sum of -
   for callers that must justify a claim rather than merely colour by it.
   A standing in that contest states its own kind:
