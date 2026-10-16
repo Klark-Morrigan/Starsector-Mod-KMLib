@@ -8,15 +8,10 @@
 # Writes one "key=value" line per output to $GITHUB_OUTPUT, and logs each to
 # stderr with the file it read. The outputs block of ../action.yml states what
 # each key holds.
-#
-# A thin script (rather than inline action steps) so bats can exercise it
-# in isolation - composite actions are not unit-testable directly.
 set -euo pipefail
 
 SCRIPT_NAME="read_mod_info"
 
-# Resolved from this script's own location, not from $PWD: these scripts run
-# against the caller's checkout, which is never where they live.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
@@ -38,16 +33,7 @@ COMMON_JAVA_PATH="Common-Java"
 KMLIB_REPO="Klark-Morrigan/Starsector-Mod-KMLib"
 KMLIB_PATH="Starsector-Mod-KMLib"
 
-mod_info_locate_file
-echo "Reading ${MOD_INFO_FILE}." >&2
-
-MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
-VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
-JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
-
-# Fail loudly on missing required fields so callers do not silently emit
-# malformed downstream values like "dist/null/".
-mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"
+mod_info_read_release_fields
 
 RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 

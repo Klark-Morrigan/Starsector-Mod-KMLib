@@ -9,6 +9,9 @@
 # are part of what is being asserted. The script is run from a temp working
 # directory so it cannot accidentally read the repository's own files.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/fill-version-file-template/scripts/fill_version_file_template.sh"
 
 OUTPUT_FILE="generated.version"
@@ -131,6 +134,21 @@ EOF
     [ "$status" -eq 0 ]
     expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
     [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+}
+
+@test "logs the file it read and the file it wrote, with the addresses it filled in" {
+    cd "$WORK_DIR"
+    run --separate-stderr bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    downloadUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/$ZIP_NAME"
+    expectedLines=(
+        "Reading mod_info.json."
+        "Wrote $OUTPUT_FILE from kmu.version.template, version 1.2.3:"
+        "  masterVersionFile: https://example.invalid/master/kmu.version"
+        "  directDownloadURL: $downloadUrl"
+    )
+    [ "$status" -eq 0 ]
+    [ "$stderr" = "$(printf '%s\n' "${expectedLines[@]}")" ]
+    [ "$output" = "" ]
 }
 
 @test "finds the template by mod id, not by a fixed name" {

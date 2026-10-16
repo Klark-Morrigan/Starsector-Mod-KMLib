@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Validates that the caller checkout is consistent with the version about
-# to be released. Enforces four rules from docs/dev/versioning.md:
+# to be released. Enforces five rules from docs/dev/versioning.md:
 #
 #   1. CHANGELOG.md has a "## [<version>]" section (date suffix optional).
 #   2. mod_info.json .version equals the supplied version, so a stale or
@@ -22,17 +22,15 @@
 #
 # Reads CHANGELOG.md and the mod's metadata from the current directory - the
 # metadata from mod_info.base.json when committed, else mod_info.json, by the
-# shared lib's rule. Exits non-zero with a clear message on the first failed
-# rule.
+# shared lib's rule. Logs each rule as it passes, and exits non-zero with a
+# clear message on the first failed rule.
 set -euo pipefail
 
 # Prefixes every message the shared lib reports, so a failure names the step
 # a reader saw fail rather than the lib's default.
 SCRIPT_NAME="validate_versioning"
 
-# Supplies MOD_INFO_FILE and SEMVER_REGEX. Resolved from this script's own
-# location, not from $PWD: these scripts run against the caller's checkout,
-# which is never where they live.
+# Supplies MOD_INFO_FILE and SEMVER_REGEX.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
@@ -54,6 +52,7 @@ if ! grep -qF "## [${VERSION}]" "${CHANGELOG_FILE}"; then
   echo "${SCRIPT_NAME}: no '## [${VERSION}]' section found in ${CHANGELOG_FILE}" >&2
   exit 1
 fi
+echo "${CHANGELOG_FILE} has a '## [${VERSION}]' section." >&2
 
 # Rule 2: mod_info.json .version must equal the input. Without this a
 # tag-only bump could publish a release that disagrees with the file the
@@ -64,6 +63,7 @@ if [[ "${MOD_INFO_VERSION}" != "${VERSION}" ]]; then
   echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} .version (${MOD_INFO_VERSION}) does not match released version (${VERSION})" >&2
   exit 1
 fi
+echo "${MOD_INFO_FILE} states the same version." >&2
 
 # Rule 3: the released version itself must be well-formed. Every consumer
 # of a malformed version degrades quietly rather than erroring - the game's
@@ -74,6 +74,7 @@ if ! [[ "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
   echo "${SCRIPT_NAME}: version '${VERSION}' is not well-formed SemVer (MAJOR.MINOR.PATCH, digits only)" >&2
   exit 1
 fi
+echo "${VERSION} is well-formed SemVer." >&2
 
 # Rule 4: if a kmlib dependency entry exists, its .version must be in that
 # same shape. The game compares dependency versions component-by-component
@@ -91,6 +92,9 @@ if [[ "${HAS_KMLIB_DEP}" == "true" ]]; then
     echo "${SCRIPT_NAME}: ${MOD_INFO_FILE} kmlib dependency version '${KMLIB_DEP_VERSION}' is not well-formed SemVer (MAJOR.MINOR.PATCH)" >&2
     exit 1
   fi
+  echo "The kmlib dependency pins well-formed ${KMLIB_DEP_VERSION}." >&2
+else
+  echo "No kmlib dependency is declared, so there is no pin to check." >&2
 fi
 
 # Rule 5: a changelog carrying a navigation index must list the version
@@ -111,4 +115,7 @@ if grep -qF "${CHANGELOG_INDEX_HEADING}" "${CHANGELOG_FILE}"; then
     echo "${SCRIPT_NAME}: ${CHANGELOG_FILE} has an index but no entry linking to ${VERSION}" >&2
     exit 1
   fi
+  echo "${CHANGELOG_FILE}'s index lists ${VERSION}." >&2
+else
+  echo "${CHANGELOG_FILE} keeps no index, so there is none to check." >&2
 fi

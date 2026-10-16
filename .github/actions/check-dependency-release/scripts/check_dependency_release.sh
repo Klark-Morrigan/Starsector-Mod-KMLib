@@ -15,6 +15,7 @@
 #
 # Emits to $GITHUB_OUTPUT:
 #   release-url  the release's html_url
+# and logs the release it looked for and the output.
 #
 # Exits non-zero when the release is absent AND when the lookup could not be
 # completed, with a different message for each. Both are failures - a release
@@ -25,6 +26,11 @@
 set -euo pipefail
 
 SCRIPT_NAME="check_dependency_release"
+
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/github_output.sh
+source "${LIB_DIR}/github_output.sh"
 
 # How gh reports a 404 on its stderr ("gh: Not Found (HTTP 404)"). Matching
 # gh's text is what separates "no such release" from every other failure -
@@ -42,6 +48,8 @@ VERSION="${VERSION:?${SCRIPT_NAME}: VERSION is required}"
 # file rather than merged into the output being parsed.
 ERROR_OUTPUT="$(mktemp)"
 trap 'rm -f "${ERROR_OUTPUT}"' EXIT
+
+echo "Looking up the release of ${REPO} tagged '${VERSION}'." >&2
 
 # The tags endpoint takes the tag directly, so no listing is paged through
 # and a repository with hundreds of releases costs the same single call.
@@ -66,8 +74,4 @@ if [[ -z "${RELEASE_URL}" ]] || [[ "${RELEASE_URL}" == "null" ]]; then
   exit 1
 fi
 
-echo "${SCRIPT_NAME}: ${REPO} release '${VERSION}' found at ${RELEASE_URL}"
-
-# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
-# shellcheck disable=SC2154
-echo "release-url=${RELEASE_URL}" >> "${GITHUB_OUTPUT}"
+write_github_output "release-url" "${RELEASE_URL}"

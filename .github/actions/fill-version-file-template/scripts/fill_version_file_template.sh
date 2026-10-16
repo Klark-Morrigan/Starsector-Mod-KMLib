@@ -38,14 +38,11 @@
 # token surviving substitution fails the run, so a typo in a template
 # ships nothing rather than shipping a literal "{{modName}}" to players.
 #
-# A thin script (rather than inline action steps) so bats can exercise it
-# in isolation - composite actions are not unit-testable directly.
+# Logs the file it writes, with the addresses it filled in.
 set -euo pipefail
 
 SCRIPT_NAME="fill_version_file_template"
 
-# Resolved from this script's own location, not from $PWD: these scripts run
-# against the caller's checkout, which is never where they live.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
@@ -245,3 +242,7 @@ cd "${CALLER_DIR}"
 # exists.
 mkdir -p "$(dirname "${OUTPUT_PATH}")"
 printf '%s\n' "${GENERATED}" > "${OUTPUT_PATH}"
+
+echo "Wrote ${OUTPUT_PATH} from ${TEMPLATE_FILE}, version ${VERSION}:" >&2
+echo "  masterVersionFile: ${MASTER_VERSION_FILE}" >&2
+echo "  directDownloadURL: ${DIRECT_DOWNLOAD_URL}" >&2

@@ -32,17 +32,18 @@ ACTIONS_WITH_OUTPUTS=(
 
 ACTIONS_DIR_NAME="actions"
 
+# The shared lib holding the only writers of $GITHUB_OUTPUT.
+GITHUB_OUTPUT_LIB_NAME="_lib/github_output.sh"
+
 # Echoes the keys a script writes to $GITHUB_OUTPUT, one per line, sorted.
-# A one-line value is written as an `echo "key=value"` line or through a
-# `write_github_output "key" ...` call, and a multi-line one through a
-# `write_multiline_output "key" ...` call, so matching those three shapes is
-# enough and needs no YAML or shell parse.
+# Every key goes through a `write_github_output "key" ...` or
+# `write_multiline_output "key" ...` call - the last test below holds that -
+# so matching those two shapes is enough and needs no YAML or shell parse.
 read_emitted_keys() {
 
     local scriptPath="$1"
-    grep -oE '^[[:space:]]*(echo "[a-z][a-z0-9_-]*=|(write_github_output|write_multiline_output) "[a-z][a-z0-9_-]*")' \
-            "$scriptPath" \
-        | sed -E 's/.*(echo|write_github_output|write_multiline_output) "([a-z0-9_-]+)[="]$/\2/' \
+    grep -oE '^[[:space:]]*(write_github_output|write_multiline_output) "[a-z][a-z0-9_-]*"' "$scriptPath" \
+        | sed -E 's/.*(write_github_output|write_multiline_output) "([a-z0-9_-]+)"$/\2/' \
         | sort -u
 }
 
@@ -128,4 +129,17 @@ report() {
     covered="$(printf '%s\n' "${ACTIONS_WITH_OUTPUTS[@]}" | sort)"
 
     [ "$declared" = "$covered" ]
+}
+
+@test "no script writes \$GITHUB_OUTPUT but the shared lib" {
+
+    # A key written by hand is neither logged nor seen by the first test.
+    writers="$(cd "$ACTIONS_DIR" && grep -lE '>>[[:space:]]*"?\$\{?GITHUB_OUTPUT' -r --include='*.sh' . \
+        | sed 's#^\./##' | sort)"
+
+    if [ "$writers" != "$GITHUB_OUTPUT_LIB_NAME" ]; then
+        report "scripts writing \$GITHUB_OUTPUT: [$(echo "$writers" | tr '\n' ' ')]"
+        report "write each output through $GITHUB_OUTPUT_LIB_NAME instead"
+        return 1
+    fi
 }

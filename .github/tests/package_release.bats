@@ -11,6 +11,9 @@
 # zip would hold without either tool installed. The version file is filled by
 # the real fill script, since which file a zip carries is the point.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/package-release/scripts/package_release.sh"
 
 OUTPUT_DIR_NAME="release-assets"
@@ -150,6 +153,19 @@ run_package() {
 
     [ "$status" -eq 0 ]
     [ "$(list_assets)" = "KMU-1.2.3-en.zip KMU-1.2.3-zh-hans.zip kmu-en.version kmu-zh-hans.version kmu.version " ]
+}
+
+@test "logs each asset it writes on stderr alone" {
+
+    export LOCALES="$TWO_LOCALES" DEFAULT_LOCALE="en"
+    cd "$WORK_DIR"
+    run --separate-stderr bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+    [[ "$stderr" == *$'Packaged KMU-1.2.3-en.zip and kmu-en.version.\n'* ]]
+    [[ "$stderr" == *$'Packaged KMU-1.2.3-zh-hans.zip and kmu-zh-hans.version.\n'* ]]
+    [[ "$stderr" == *"Copied locale en's version file to kmu.version, for installs polling the unlocalised name." ]]
 }
 
 @test "writes each locale through the build, in the order given" {

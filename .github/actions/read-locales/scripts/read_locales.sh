@@ -23,15 +23,10 @@
 # a file name, and the default being among them, since its copy is what an
 # existing install polls. The rest of the schema is the build's and the
 # localisation fixtures' to hold, and a release runs both before it gets here.
-#
-# A thin script (rather than inline action steps) so bats can exercise it
-# in isolation - composite actions are not unit-testable directly.
 set -euo pipefail
 
 SCRIPT_NAME="read_locales"
 
-# Resolved from this script's own location, not from $PWD: these scripts run
-# against the caller's checkout, which is never where they live.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/json.sh

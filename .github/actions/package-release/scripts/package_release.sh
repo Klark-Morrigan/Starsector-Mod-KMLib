@@ -31,14 +31,11 @@
 # The jar is built once, before this runs: it is identical across locales, so
 # only the files a locale changes are rewritten between passes.
 #
-# A thin script (rather than inline action steps) so bats can exercise it
-# in isolation - composite actions are not unit-testable directly.
+# Logs each asset it writes to stderr.
 set -euo pipefail
 
 SCRIPT_NAME="package_release"
 
-# Resolved from this script's own location, not from $PWD: these scripts run
-# against the caller's checkout, which is never where they live.
 ACTIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # shellcheck source-path=SCRIPTDIR
@@ -74,13 +71,7 @@ mkdir -p "${OUTPUT_DIR}"
 OUTPUT_DIR="$(cd "${OUTPUT_DIR}" && pwd)"
 
 mod_info_enter_mod_root "${MOD_ROOT}"
-mod_info_locate_file
-
-MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
-VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
-JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
-
-mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"
+mod_info_read_release_fields
 
 MOD_FOLDER_NAME=$(mod_info_derive_mod_folder_name "${JAR_SOURCE}")
 DIST_DIR="${DIST_ROOT}/${MOD_FOLDER_NAME}"
@@ -189,7 +180,7 @@ package_locale() {
   # player unzips into mods/.
   (cd "${DIST_ROOT}" && zip -r -q "${OUTPUT_DIR}/${zipName}" "${MOD_FOLDER_NAME}/")
 
-  echo "${SCRIPT_NAME}: packaged ${zipName} and ${assetVersionFileName}"
+  echo "Packaged ${zipName} and ${assetVersionFileName}." >&2
 }
 
 for localeTag in "${LOCALE_TAGS[@]}"; do
@@ -201,6 +192,6 @@ if [[ "${IS_LOCALISED}" == "true" ]]; then
   DEFAULT_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}" "${DEFAULT_LOCALE}")
 
   cp "${OUTPUT_DIR}/${DEFAULT_VERSION_FILE_NAME}" "${OUTPUT_DIR}/${PAYLOAD_VERSION_FILE_NAME}"
-  echo "${SCRIPT_NAME}: copied locale ${DEFAULT_LOCALE}'s version file to ${PAYLOAD_VERSION_FILE_NAME}" \
-       "for installs polling the unlocalised name"
+  echo "Copied locale ${DEFAULT_LOCALE}'s version file to ${PAYLOAD_VERSION_FILE_NAME}," \
+       "for installs polling the unlocalised name." >&2
 fi

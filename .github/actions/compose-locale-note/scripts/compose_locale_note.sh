@@ -17,6 +17,7 @@
 #   note          the "Builds by language" heading and list, or empty
 #   translations  per translated locale, its CHANGELOG.md section for the
 #                 version, collapsed under the locale's display name; or empty
+# and logs both to stderr.
 #
 # A locale that needs a core localisation gets a link to it. That project
 # supplies the glyphs the locale's text is drawn in. It is installed over the
@@ -42,6 +43,9 @@ source "${LIB_DIR}/json.sh"
 # shellcheck source=../../_lib/localisation.sh
 source "${LIB_DIR}/localisation.sh"
 
+# shellcheck source=../../_lib/github_output.sh
+source "${LIB_DIR}/github_output.sh"
+
 # Separates a locale's fields on one line. A control character no display name
 # or URL carries, so a field is read back exactly, where a tab-separated row
 # would come back with its backslashes escaped.
@@ -54,33 +58,6 @@ JAR_SOURCE="${JAR_SOURCE:?${SCRIPT_NAME}: JAR_SOURCE is required}"
 VERSION="${VERSION:?${SCRIPT_NAME}: VERSION is required}"
 
 CHANGELOG_LIB="${CHANGELOG_LIB:-}"
-
-draw_output_delimiter() {
-  local randomHex
-  randomHex="$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
-  printf 'EOF_%s' "${randomHex}"
-}
-
-# Writes one output in the multi-line form: KEY<<DELIMITER, the value, then the
-# delimiter alone. The delimiter is random, so no changelog line can end the
-# value early.
-write_multiline_output() {
-
-  local outputKey="${1}" outputValue="${2}" delimiter
-  delimiter="$(draw_output_delimiter)"
-
-  while [[ "${outputValue}" == *"${delimiter}"* ]]; do
-    delimiter="$(draw_output_delimiter)"
-  done
-
-  # GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
-  # shellcheck disable=SC2154
-  {
-    echo "${outputKey}<<${delimiter}"
-    printf '%s\n' "${outputValue}"
-    echo "${delimiter}"
-  } >> "${GITHUB_OUTPUT}"
-}
 
 # Echoes one translated locale's notes for the version, collapsed under its
 # display name. The blank lines inside the block are what make GitHub render

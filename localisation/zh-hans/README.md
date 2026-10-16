@@ -307,12 +307,15 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| action (what a workflow step runs) | 操作 | GitHub's own Chinese documentation word |
 | branch (of a git repository) | 分支 | the usual git word |
 | gate (a CI check a change must pass) | 门禁 | |
 | lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
+| output (a value one step hands the next) | 输出 | GitHub's own Chinese documentation word, as the `zip-name-regex` entry writes it |
 | pull request | 拉取请求 | GitHub's own Chinese interface word |
 | reusable workflow | 可复用工作流 | GitHub's own Chinese documentation words |
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
+| step (of a workflow job) | 步骤 | GitHub's own Chinese documentation word |
 
 #### Releases and badges
 

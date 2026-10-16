@@ -9,6 +9,7 @@
 #
 # Emits to $GITHUB_OUTPUT:
 #   note  the composed line, or empty
+# and logs the output, with the reason when it is empty.
 #
 # Both emptiness cases are ordinary rather than errors, and they are not the
 # same case. An empty VERSION is a mod that declares no such dependency -
@@ -21,6 +22,11 @@ set -euo pipefail
 
 SCRIPT_NAME="compose_dependency_note"
 
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/github_output.sh
+source "${LIB_DIR}/github_output.sh"
+
 DEPENDENCY_NAME="${DEPENDENCY_NAME:?${SCRIPT_NAME}: DEPENDENCY_NAME is required}"
 VERSION="${VERSION:-}"
 RELEASE_URL="${RELEASE_URL:-}"
@@ -28,10 +34,12 @@ RELEASE_URL="${RELEASE_URL:-}"
 # One line, because $GITHUB_OUTPUT's key=value form takes no newline and a
 # release body wants a single sentence under the rule that precedes it.
 NOTE=""
-if [[ -n "${VERSION}" ]] && [[ -n "${RELEASE_URL}" ]]; then
+if [[ -z "${VERSION}" ]]; then
+  echo "No ${DEPENDENCY_NAME} version is pinned, so no note is due." >&2
+elif [[ -z "${RELEASE_URL}" ]]; then
+  echo "${DEPENDENCY_NAME} ${VERSION} has no release URL, so the note is dropped rather than link nowhere." >&2
+else
   NOTE="Requires [${DEPENDENCY_NAME} ${VERSION}](${RELEASE_URL})."
 fi
 
-# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
-# shellcheck disable=SC2154
-echo "note=${NOTE}" >> "${GITHUB_OUTPUT}"
+write_github_output "note" "${NOTE}"

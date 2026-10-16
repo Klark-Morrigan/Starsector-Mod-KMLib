@@ -66,7 +66,44 @@ run_in_lib() {
 
     # Its second line would be read back as a key of its own.
     [ "$status" -ne 0 ]
-    [ "$stderr" = "read_locales: output 'locales' spans more than one line" ]
+    [ "$stderr" = "read_locales: output 'locales' spans more than one line; write it with write_multiline_output" ]
     [ "$output" = "" ]
     [ ! -s "$GITHUB_OUTPUT" ]
+}
+
+@test "write_multiline_output writes the value between a delimiter line and its closing" {
+
+    run_in_lib "write_multiline_output 'note' \$'first\n\nthird'"
+
+    [ "$status" -eq 0 ]
+
+    mapfile -t writtenLines < "$GITHUB_OUTPUT"
+    delimiter="${writtenLines[0]#note<<}"
+
+    [[ "${writtenLines[0]}" == "note<<EOF_"* ]]
+    [ "${writtenLines[1]}" = "first" ]
+    [ "${writtenLines[2]}" = "" ]
+    [ "${writtenLines[3]}" = "third" ]
+    [ "${writtenLines[4]}" = "$delimiter" ]
+    [ "${#writtenLines[@]}" -eq 5 ]
+}
+
+@test "write_multiline_output logs the key with the value's lines indented beneath, on stderr alone" {
+
+    run_in_lib "write_multiline_output 'note' \$'first\n\nthird'"
+
+    # The blank line stays blank rather than carrying the indent's spaces.
+    [ "$status" -eq 0 ]
+    [ "$stderr" = $'note:\n  first\n\n  third' ]
+    [ "$output" = "" ]
+}
+
+@test "write_multiline_output writes an empty value and logs the key alone" {
+
+    run_in_lib "write_multiline_output 'translations' ''"
+
+    [ "$status" -eq 0 ]
+    [ "$(sed -n '2p' "$GITHUB_OUTPUT")" = "" ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 3 ]
+    [ "$stderr" = "translations:" ]
 }
