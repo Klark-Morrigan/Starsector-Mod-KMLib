@@ -358,6 +358,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | highlight colour | 高亮颜色 | |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
+| pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距 as the hatch row writes spacing; 提示框 as the `0.5.0` entries write it |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
 | paragraph | 段落 | |
 | renderer, render pass | 渲染器, 渲染通道 | |
