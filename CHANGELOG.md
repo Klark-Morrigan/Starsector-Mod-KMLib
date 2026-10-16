@@ -38,12 +38,15 @@ No player-facing changes.
 - **`SectorStarSystems`'s bulk reads answer nothing for a sector listing no systems at all**, rather than failing on it.
 - **`KmlibStrings.splitIntoWords(String)` and `abbreviateToInitials(String)` part words by `Character.isWhitespace`**, the rule `hasText(String)` reads. They missed a CJK ideographic space between words and stripped control characters off the ends.
 - **`KmlibStrings.collectTexts(Iterable, Function)` strips each text it keeps**, as `normaliseText(String)` does.
+- **A claiming-faction flag naming no faction leaves the system unclaimed** in `VanillaClaimBreakdownReader`, as vanilla reads it: a blank flag, or one naming a faction the sector does not know, settles the system on nobody before any market is weighed. The reader reported the flag's text as the claimant.
 
 #### Added
 
 - **`AllianceRecord.findLeadFactionId()`**: the member that leads the alliance, empty where it has no members.
 - **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
+- **`ClaimBreakdownReaderSource`** in `kmlib.starsector.systems.claims`: a `ClaimReaderSource` whose readers also explain the claims they read, so one source serves a map's fills and the box explaining them.
+- **`ClaimDecreeReader`** in `kmlib.starsector.systems.claims`: the faction a system's claiming-faction flag imposes, one memory read with no colony walk. `StarSystems::readDecreedFactionId` is the vanilla binding.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, empty where neither is positive.
 - **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
@@ -106,11 +109,16 @@ No player-facing changes.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.
+- **`SystemClaimBreakdown`** answers about its claimant:
+  - `findStanding(String)`: one faction's standing, empty where it holds nothing in the system.
+  - `hasClaimant()`: whether anybody claims the system, a blank claimant read as nobody.
+  - `isClaimedByScore(String)`: whether the faction took the system on score rather than by decree.
 - **`ToggledFeature`** in `kmlib.starsector.startup`: a feature a player switch stands up or takes back. `applyTo(SectorAPI)` applies it on a load, and `applyToIfSwitched(SectorAPI)` acts on a settings change only where this switch moved.
 - **`TooltipSpacing`** in `kmlib.starsector.ui.tooltip`: the pads vanilla lays its tooltips out on, `SMALL_PAD` and `OUTER_PAD`, and its in-tooltip `BUTTON_HEIGHT`.
 - **`UniformGrid`** in `kmlib.math.geometry`: a square-cell hash grid filing points, segments and bounds under every cell they touch. `listItemsNear(double, double, double)` and `listCandidatePairs()` answer each item or pair once, and `measureAdaptiveCellSide(Bounds, int)` sizes the cells to about one item each.
 - **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does. Its named group `locale` holds a localised zip's locale tag.
 - **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll.
+- **Every action `mod-release.yml` and `publish-download-badges.yml` run logs what it read, what it decided and each output it emits**, so a run's log alone explains what a later step was handed.
 
 #### Public contracts changed (**breaking**)
 
@@ -133,6 +141,10 @@ No player-facing changes.
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`, null where nothing answers | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`, returning `Optional` | `Markets` reads what a market is, and a trading counter is part of how one is put together. |
 | `CoreUiOverlayPanels` in `kmlib.starsector.ui.coreui` | Removed from the public API. Stand a `ModalPanel` instead. | A bare panel claims no input and fades nothing, so every caller had to rebuild both. |
 | `MapPresence.isAnyMapShowing()`, `isSchematicMapShowing()` and `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`, `isSchematicVanillaMapShowing()` and `isStarscapeVanillaMapShowing()` | They answer for the vanilla map screens only, and a map a mod embeds elsewhere is not counted. |
+| `ClaimBreakdownReader`, standing apart from `ClaimReader`, with `readCoreFactionId(StarSystemAPI)` | Extends `ClaimReader` and `ClaimDecreeReader`: an implementer answers `readClaimingFactionId(StarSystemAPI)` and `readDecreedFactionId(StarSystemAPI)`. `ClaimBreakdownReaderFake` answers both off the breakdown it was given. | A reader that can say why a system is claimed can say who claims it, so one reader serves a fill and the box explaining it. |
+| `SystemClaimBreakdown.overrideFactionId()` and `scores()` | `decreedFactionId()` and `standings()` | The list holds standings, and the flag is a decree in every other name it carries. |
+| `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | The same. |
+| `VanillaClaimBreakdownReader(KnownColonyReader)`, and a null index in `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` | Removed: open the reader over a pass's `SectorPassIndex`. For the decree alone, read `StarSystems::readDecreedFactionId` as a `ClaimDecreeReader`. | A reader with no pass read `Global.getSector()` rather than the sector it was asked about. |
 
 </details>
 

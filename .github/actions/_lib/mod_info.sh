@@ -90,7 +90,8 @@ mod_info_enter_mod_root() {
 # Points MOD_INFO_FILE at the file holding the mod's metadata in the working
 # directory, which is the caller's checkout root when a composite action
 # invokes these scripts: the committed base when there is one, else
-# mod_info.json. Fails the run when neither is there.
+# mod_info.json. Logs the file chosen, and fails the run when neither is
+# there.
 #
 # The base wins whenever it is present, because beside it mod_info.json is
 # generated - absent on a fresh checkout, and on whichever locale was last
@@ -106,6 +107,25 @@ mod_info_locate_file() {
     echo "${SCRIPT_NAME}: neither ${MOD_INFO_BASE_FILE} nor ${MOD_INFO_LAUNCHER_FILE} found in ${PWD}" >&2
     exit 1
   fi
+
+  echo "Reading ${MOD_INFO_FILE}." >&2
+}
+
+# Locates the metadata file and reads the three fields every release file name
+# follows from into MOD_ID, VERSION and JAR_SOURCE. Fails the run on the first
+# one missing, so no caller emits a malformed name like "dist/null/".
+#
+# The three are not initialised when this file is sourced: a sourcing script
+# may read VERSION from its environment.
+mod_info_read_release_fields() {
+
+  mod_info_locate_file
+
+  MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
+  VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
+  JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
+
+  mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"
 }
 
 # Fails the run on the first absent field, given "<label>:<value>" pairs.

@@ -9,6 +9,9 @@
 # rather than matched loosely, because a link that renders as literal text is
 # a broken release note, not a formatting preference.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/compose-dependency-note/scripts/compose_dependency_note.sh"
 
 DEPENDENCY_NAME_UNDER_TEST="KMLib"
@@ -90,6 +93,33 @@ read_note() {
     # $GITHUB_OUTPUT's key=value form carries no newline; a multi-line value
     # would be parsed as further keys rather than as the note.
     [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 1 ]
+}
+
+@test "logs the composed note on stderr alone" {
+    export DEPENDENCY_NAME="$DEPENDENCY_NAME_UNDER_TEST"
+    export VERSION="$VERSION_UNDER_TEST" RELEASE_URL="$RELEASE_URL_UNDER_TEST"
+    run --separate-stderr bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [ "$stderr" = "note: Requires [KMLib 1.0.0]($RELEASE_URL_UNDER_TEST)." ]
+    [ "$output" = "" ]
+}
+
+@test "logs why the note is empty when no version is pinned" {
+    export DEPENDENCY_NAME="$DEPENDENCY_NAME_UNDER_TEST" VERSION="" RELEASE_URL=""
+    run --separate-stderr bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [ "$stderr" = $'No KMLib version is pinned, so no note is due.\nnote:' ]
+}
+
+@test "logs why the note is dropped when a pinned version has no release URL" {
+    export DEPENDENCY_NAME="$DEPENDENCY_NAME_UNDER_TEST" VERSION="$VERSION_UNDER_TEST" RELEASE_URL=""
+    run --separate-stderr bash "$SCRIPT"
+    expectedLines=(
+        "KMLib 1.0.0 has no release URL, so the note is dropped rather than link nowhere."
+        "note:"
+    )
+    [ "$status" -eq 0 ]
+    [ "$stderr" = "$(printf '%s\n' "${expectedLines[@]}")" ]
 }
 
 @test "carries the dependency name it is given rather than a fixed one" {

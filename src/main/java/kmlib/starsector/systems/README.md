@@ -207,7 +207,7 @@ and that line is what turns the next report of something missing into a one-line
 - Who claims a system -
   [`claims/`](claims/)
   holds vanilla's claim behind a port,
-  and the scored contest behind a second one for callers that must justify a claim
+  and the scored contest behind a second one extending it for callers that must justify a claim
   rather than merely colour by it.
 - What a colony is -
   [`markets/colonies/`](../markets/colonies/)

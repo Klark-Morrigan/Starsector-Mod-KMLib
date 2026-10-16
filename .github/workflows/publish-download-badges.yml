@@ -9,7 +9,8 @@
 # of the local ref.
 #
 # Only what is Starsector-specific lives here: which assets count and what the
-# badge is called, both read from the caller's metadata by read-mod-info.
+# badge is called, read from the caller's metadata by read-mod-info, and which
+# locale an unsuffixed zip counts under, read from its manifest by read-locales.
 # Counting, rendering and publishing belong to Common-Automation's
 # publish-download-badges action, which knows nothing of mods.
 name: publish-download-badges

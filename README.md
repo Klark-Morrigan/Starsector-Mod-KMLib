@@ -274,6 +274,8 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   the JSON reads the locale scripts share.
 - [`actions/_lib/localisation.sh`](.github/actions/_lib/localisation.sh) -
   where a mod keeps its locale bundles and its translated changelogs.
+- [`actions/_lib/github_output.sh`](.github/actions/_lib/github_output.sh) -
+  writes every step output the action scripts emit, and logs it.
 - [`tests/`](.github/tests/) -
   bats-core tests for the action scripts.
 
@@ -854,7 +856,7 @@ No Starsector API on the signature.
   [Star systems](src/main/java/kmlib/starsector/systems/README.md).
 - [`starsector/systems/claims/`](src/main/java/kmlib/starsector/systems/claims/) -
   vanilla system claims behind a port,
-  with a second port for the scored contest behind one -
+  with a second port extending it for the scored contest behind one -
   down to the terms each market's score is the sum of -
   for callers that must justify a claim rather than merely colour by it.
   A standing in that contest states its own kind:
@@ -1137,12 +1139,14 @@ and KMLib uses them for nothing but reading and calling the game's own live UI o
 
 ## Reusable CI / release actions
 
-KMLib hosts the reusable workflows other KM mods call -
+KMLib hosts the reusable workflows other mods call -
 `mod-release.yml` for releases and `publish-download-badges.yml` for download badges -
 and the composite actions those workflows run.
 A mod calls a workflow and never an action directly.
 Each action delegates to a shell script under its own `scripts/` directory,
 so the logic stays unit-testable with bats-core.
+Every script logs what it read, what it decided and each output it emits, as `<key>: <value>`,
+so a run's log alone explains what a later step was handed.
 
 Run the tests with `bats .github/tests/` from the KMLib root;
 they need `bats-core` and `jq`.
@@ -1197,6 +1201,7 @@ display name and core localisation,
 the default first -
 and its `default-locale`.
 A caller committing no manifest gets an empty list,
+logged with the missing manifest as its reason,
 which the rest of the pipeline reads as "release the one unsuffixed zip",
 so a mod adopts per-locale releases by committing the manifest and nothing else.
 It checks only what packaging acts on:
@@ -1206,10 +1211,6 @@ and the default is among them,
 since its version file is what older installs poll.
 It reads with `jq`, as every action here does,
 so the manifest must be plain JSON here even though the build would accept a `#` comment in it.
-
-Both read actions log what they read and every output they emit, as `<key>: <value>`,
-so a run's log shows each value a later step was handed.
-read-locales also logs a missing manifest as the reason its locale list is empty.
 
 **[check-version](.github/actions/check-version/action.yml)** takes a `version`,
 looks for a git tag naming it in the caller checkout,
@@ -1379,7 +1380,8 @@ and the release body tells a reader to download it,
 so a rule spelled twice would give a working link and a 404 the same spelling.
 The file sits under `actions/` rather than beside it
 so it is where the scripts sourcing it look,
-each reaching it relative to its own location;
+each reaching it relative to its own location rather than the working directory,
+which is the caller's checkout;
 the leading underscore marks it as not-an-action.
 [_lib/json.sh](.github/actions/_lib/json.sh) beside it holds the two JSON reads the locale scripts share:
 failing an input that is not an array,
@@ -1389,6 +1391,13 @@ and no output read as no lines.
 [_lib/localisation.sh](.github/actions/_lib/localisation.sh) holds the bundle paths the locale scripts share:
 the manifest, the changelog,
 and the check that a translated locale has its changelog.
+[_lib/github_output.sh](.github/actions/_lib/github_output.sh) is the only writer of step outputs.
+`write_github_output` writes a one-line output and `write_multiline_output` a multi-line one,
+each logging the value in the same call,
+so no output can be written unlogged.
+A multi-line value handed to the one-line writer fails the run,
+since the runner would read its second line as a key of its own.
+A secret must be masked before it is written, since the log shows every value.
 
 `mod-release.yml` names the actions in registry form
 (`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`),

@@ -14,6 +14,9 @@
 # suite. The format is a named constant on both sides so the assumption is at
 # least visible in one place rather than implied by a bare grep.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/check-dependency-release/scripts/check_dependency_release.sh"
 
 REPO_UNDER_TEST="Klark-Morrigan/Starsector-Mod-KMLib"
@@ -75,6 +78,19 @@ stub_release_missing() {
     run_check
     [ "$status" -eq 0 ]
     grep -qx "release-url=$RELEASE_URL_UNDER_TEST" "$GITHUB_OUTPUT"
+}
+
+@test "logs the release it looked up and the output, on stderr alone" {
+    stub_release_found
+    export REPO="$REPO_UNDER_TEST" VERSION="$VERSION_UNDER_TEST"
+    run --separate-stderr bash "$SCRIPT"
+    expectedLines=(
+        "Looking up the release of $REPO_UNDER_TEST tagged '$VERSION_UNDER_TEST'."
+        "release-url: $RELEASE_URL_UNDER_TEST"
+    )
+    [ "$status" -eq 0 ]
+    [ "$stderr" = "$(printf '%s\n' "${expectedLines[@]}")" ]
+    [ "$output" = "" ]
 }
 
 @test "asks the tags endpoint for the given repo and version" {

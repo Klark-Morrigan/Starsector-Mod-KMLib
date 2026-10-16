@@ -10,7 +10,11 @@
 # not that the check works.
 #
 # Each case runs the lib in a subshell (bash -c) because both helpers exit on
-# failure, which would otherwise take the test runner down with them.
+# failure, which would otherwise take the test runner down with them. Its
+# stderr is kept apart, so a value a helper echoes is read without its log.
+
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
 
 LIB="$BATS_TEST_DIRNAME/../actions/_lib/mod_info.sh"
 
@@ -30,10 +34,10 @@ run_in_lib() {
     local scriptName="$1"
     shift
 
-    run bash -c "set -euo pipefail
-                 SCRIPT_NAME='${scriptName}'
-                 source '$LIB'
-                 $*"
+    run --separate-stderr bash -c "set -euo pipefail
+                                   SCRIPT_NAME='${scriptName}'
+                                   source '$LIB'
+                                   $*"
 }
 
 @test "mod_info_enter_mod_root moves into the given directory" {
@@ -53,7 +57,7 @@ run_in_lib() {
     run_in_lib "package_release" "mod_info_enter_mod_root absent"
 
     [ "$status" -ne 0 ]
-    [[ "$output" == "package_release: mod root absent not found in "* ]]
+    [[ "$stderr" == "package_release: mod root absent not found in "* ]]
 }
 
 @test "mod_info_locate_file points at mod_info.json when it is the only file" {
@@ -94,13 +98,26 @@ run_in_lib() {
     [ "$output" = "mod_info.base.json" ]
 }
 
+@test "mod_info_locate_file logs the file it chose on stderr alone" {
+
+    echo '{}' > "$WORK_DIR/mod_info.json"
+    echo '{}' > "$WORK_DIR/mod_info.base.json"
+
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_locate_file"
+
+    [ "$status" -eq 0 ]
+    [ "$stderr" = "Reading mod_info.base.json." ]
+    [ "$output" = "" ]
+}
+
 @test "mod_info_locate_file fails naming both files when neither is present" {
 
     cd "$WORK_DIR"
     run_in_lib "read_mod_info" "mod_info_locate_file"
 
     [ "$status" -ne 0 ]
-    [[ "$output" == *"neither mod_info.base.json nor mod_info.json found"* ]]
+    [[ "$stderr" == *"neither mod_info.base.json nor mod_info.json found"* ]]
 }
 
 @test "mod_info_locate_file names the sourcing script in its message" {
@@ -110,18 +127,55 @@ run_in_lib() {
 
     # A shared lib reporting under its own name would tell a reader nothing
     # about which release step actually stopped.
-    [[ "$output" == "fill_version_file_template: "* ]]
+    [[ "$stderr" == "fill_version_file_template: "* ]]
 }
 
 @test "mod_info_locate_file falls back to a default name when unset" {
 
     cd "$WORK_DIR"
-    run bash -c "set -euo pipefail; source '$LIB'; mod_info_locate_file"
+    run --separate-stderr bash -c "set -euo pipefail; source '$LIB'; mod_info_locate_file"
 
     # Under set -u an unset SCRIPT_NAME would crash the reporting itself,
     # losing the real failure behind an unbound-variable error.
     [ "$status" -ne 0 ]
-    [[ "$output" == "mod_info: "* ]]
+    [[ "$stderr" == "mod_info: "* ]]
+}
+
+@test "mod_info_read_release_fields reads the id, the version and the first jar" {
+
+    echo '{ "id": "kmu", "version": "0.2.0", "jars": ["jars/KMU.jar", "jars/Other.jar"] }' \
+        > "$WORK_DIR/mod_info.json"
+
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" \
+        'mod_info_read_release_fields; echo "${MOD_ID}|${VERSION}|${JAR_SOURCE}"'
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "kmu|0.2.0|jars/KMU.jar" ]
+    [ "$stderr" = "Reading mod_info.json." ]
+}
+
+@test "mod_info_read_release_fields reads the base over a generated mod_info.json" {
+
+    echo '{ "id": "kmu", "version": "0.1.0", "jars": ["jars/KMU.jar"] }' > "$WORK_DIR/mod_info.json"
+    echo '{ "id": "kmu", "version": "0.2.0", "jars": ["jars/KMU.jar"] }' > "$WORK_DIR/mod_info.base.json"
+
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" 'mod_info_read_release_fields; echo "${VERSION}"'
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "0.2.0" ]
+}
+
+@test "mod_info_read_release_fields fails naming the first field missing" {
+
+    echo '{ "id": "kmu", "jars": [] }' > "$WORK_DIR/mod_info.json"
+
+    cd "$WORK_DIR"
+    run_in_lib "read_mod_info" "mod_info_read_release_fields"
+
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"read_mod_info: mod_info.json is missing required field 'version'"* ]]
 }
 
 @test "mod_info_require_fields passes when every field has a value" {
@@ -137,7 +191,7 @@ run_in_lib() {
     run_in_lib "read_mod_info" "mod_info_require_fields 'id:kmu' 'version:'"
 
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'version'"* ]]
+    [[ "$stderr" == *"missing required field 'version'"* ]]
 }
 
 @test "mod_info_require_fields fails on jq's null" {
@@ -147,7 +201,7 @@ run_in_lib() {
     # jq -r prints absent fields as the string "null", so this is what a
     # missing field actually looks like by the time it reaches the check.
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'name'"* ]]
+    [[ "$stderr" == *"missing required field 'name'"* ]]
 }
 
 @test "mod_info_require_fields reports the first absent field only" {
@@ -156,8 +210,8 @@ run_in_lib() {
         "mod_info_require_fields 'id:' 'version:' 'gameVersion:'"
 
     [ "$status" -ne 0 ]
-    [[ "$output" == *"'id'"* ]]
-    [[ "$output" != *"'version'"* ]]
+    [[ "$stderr" == *"'id'"* ]]
+    [[ "$stderr" != *"'version'"* ]]
 }
 
 @test "mod_info_require_fields keeps values holding colons intact" {
@@ -176,7 +230,7 @@ run_in_lib() {
 
     # The label is written as it appears in mod_info.json so a reader can
     # go straight to it, rather than as the shell variable holding it.
-    [[ "$output" == *"missing required field 'jars[0]'"* ]]
+    [[ "$stderr" == *"missing required field 'jars[0]'"* ]]
 }
 
 @test "mod_info_derive_mod_folder_name strips the jar extension from a nested path" {

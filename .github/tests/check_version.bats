@@ -7,6 +7,9 @@
 # git is stubbed by writing a minimal shell script into a temporary
 # directory that is prepended to PATH, so no real repository is needed.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/check-version/scripts/check_version.sh"
 
 setup() {
@@ -71,6 +74,21 @@ EOF
     VERSION=1.2.3 run bash "$SCRIPT"
     [ "$status" -eq 0 ]
     grep -q "version_updated=false" "$GITHUB_OUTPUT"
+}
+
+@test "logs a tagged version as released, then the output, on stderr alone" {
+    stub_git_tags "1.2.3"
+    VERSION=1.2.3 run --separate-stderr bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [ "$stderr" = $'Tag 1.2.3 exists, so this version is already released.\nversion_updated: false' ]
+    [ "$output" = "" ]
+}
+
+@test "logs an untagged version as unreleased, then the output" {
+    stub_git_tags "1.2.3"
+    VERSION=1.2.4 run --separate-stderr bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [ "$stderr" = $'No tag names 1.2.4, so this version is unreleased.\nversion_updated: true' ]
 }
 
 @test "fails when no version is given" {

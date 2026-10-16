@@ -8,6 +8,9 @@
 # Each test stages a fresh working directory with the fixture files the
 # script reads (CHANGELOG.md, mod_info.json) so cases are isolated.
 
+# run --separate-stderr arrived in 1.5.0.
+bats_require_minimum_version 1.5.0
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/validate-versioning/scripts/validate_versioning.sh"
 
 CHANGELOG_WITH_SECTION='## [Unreleased]
@@ -119,6 +122,32 @@ write_changelog_with_index() {
     write_mod_info "1.2.0"
     run bash "$SCRIPT" "1.2.0"
     [ "$status" -eq 0 ]
+}
+
+@test "logs every rule as it passes, on stderr alone" {
+    write_changelog_with_index "1.2.0" "1.2.0"
+    write_mod_info "1.2.0" '{ "id": "kmlib", "name": "KMLib", "version": "1.0.0" }'
+    run --separate-stderr bash "$SCRIPT" "1.2.0"
+    expectedLines=(
+        "CHANGELOG.md has a '## [1.2.0]' section."
+        "Reading mod_info.json."
+        "mod_info.json states the same version."
+        "1.2.0 is well-formed SemVer."
+        "The kmlib dependency pins well-formed 1.0.0."
+        "CHANGELOG.md's index lists 1.2.0."
+    )
+    [ "$status" -eq 0 ]
+    [ "$stderr" = "$(printf '%s\n' "${expectedLines[@]}")" ]
+    [ "$output" = "" ]
+}
+
+@test "logs why the two conditional rules had nothing to check" {
+    printf '%s' "$CHANGELOG_WITH_SECTION" > CHANGELOG.md
+    write_mod_info "1.2.0"
+    run --separate-stderr bash "$SCRIPT" "1.2.0"
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *$'No kmlib dependency is declared, so there is no pin to check.\n'* ]]
+    [[ "$stderr" == *"CHANGELOG.md keeps no index, so there is none to check." ]]
 }
 
 @test "fails when CHANGELOG.md is missing" {

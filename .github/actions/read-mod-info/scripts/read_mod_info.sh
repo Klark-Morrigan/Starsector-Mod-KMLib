@@ -5,21 +5,21 @@
 # pass nothing: whatever varies between mods is either stated in that file or
 # follows from it by a convention this script defines.
 #
-# Writes one "key=value" line per output to $GITHUB_OUTPUT. The outputs block
-# of ../action.yml states what each key holds.
-#
-# A thin script (rather than inline action steps) so bats can exercise it
-# in isolation - composite actions are not unit-testable directly.
+# Writes one "key=value" line per output to $GITHUB_OUTPUT, and logs each to
+# stderr with the file it read. The outputs block of ../action.yml states what
+# each key holds.
 set -euo pipefail
 
 SCRIPT_NAME="read_mod_info"
 
-# Resolved from this script's own location, not from $PWD: these scripts run
-# against the caller's checkout, which is never where they live.
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/github_output.sh
+source "${LIB_DIR}/github_output.sh"
 
 RUNNER_SUFFIX="-runner"
 DIST_ROOT="dist"
@@ -33,15 +33,7 @@ COMMON_JAVA_PATH="Common-Java"
 KMLIB_REPO="Klark-Morrigan/Starsector-Mod-KMLib"
 KMLIB_PATH="Starsector-Mod-KMLib"
 
-mod_info_locate_file
-
-MOD_ID=$(jq -r '.id' "${MOD_INFO_FILE}")
-VERSION=$(jq -r '.version' "${MOD_INFO_FILE}")
-JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
-
-# Fail loudly on missing required fields so callers do not silently emit
-# malformed downstream values like "dist/null/".
-mod_info_require_fields "id:${MOD_ID}" "version:${VERSION}" "jars[0]:${JAR_SOURCE}"
+mod_info_read_release_fields
 
 RUNNER_LABEL="${MOD_ID}${RUNNER_SUFFIX}"
 
@@ -90,22 +82,18 @@ SIBLING_CHECKOUTS=$(jq -cn \
         else []
         end)')
 
-# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
-# shellcheck disable=SC2154
-{
-  echo "mod-id=${MOD_ID}"
-  echo "version=${VERSION}"
-  echo "runner-label=${RUNNER_LABEL}"
-  echo "mod-folder-name=${MOD_FOLDER_NAME}"
-  echo "dist-dir=${DIST_DIR}"
-  echo "zip-name=${ZIP_NAME}"
-  echo "zip-name-regex=${ZIP_NAME_REGEX}"
-  echo "version-file-name=${VERSION_FILE_NAME}"
-  echo "jar-source=${JAR_SOURCE}"
-  echo "sibling-checkouts=${SIBLING_CHECKOUTS}"
-  echo "kmlib-dependency-version=${KMLIB_DEPENDENCY_VERSION}"
-  # Emitted from the same constant the sibling clone above is built from, so
-  # the repository a release is checked against cannot drift from the one the
-  # build actually compiles the mod against.
-  echo "kmlib-repo=${KMLIB_REPO}"
-} >> "${GITHUB_OUTPUT}"
+write_github_output "mod-id" "${MOD_ID}"
+write_github_output "version" "${VERSION}"
+write_github_output "runner-label" "${RUNNER_LABEL}"
+write_github_output "mod-folder-name" "${MOD_FOLDER_NAME}"
+write_github_output "dist-dir" "${DIST_DIR}"
+write_github_output "zip-name" "${ZIP_NAME}"
+write_github_output "zip-name-regex" "${ZIP_NAME_REGEX}"
+write_github_output "version-file-name" "${VERSION_FILE_NAME}"
+write_github_output "jar-source" "${JAR_SOURCE}"
+write_github_output "sibling-checkouts" "${SIBLING_CHECKOUTS}"
+write_github_output "kmlib-dependency-version" "${KMLIB_DEPENDENCY_VERSION}"
+# Emitted from the same constant the sibling clone above is built from, so
+# the repository a release is checked against cannot drift from the one the
+# build actually compiles the mod against.
+write_github_output "kmlib-repo" "${KMLIB_REPO}"
