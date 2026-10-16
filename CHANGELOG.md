@@ -61,6 +61,8 @@ No player-facing changes.
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
+- **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
+  - `joinWithParenthetical(Optional, Optional)`: two optional texts as "main (parenthetical)", or whichever is present.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.

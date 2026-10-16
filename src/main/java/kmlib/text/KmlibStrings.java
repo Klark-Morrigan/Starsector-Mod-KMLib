@@ -2,6 +2,7 @@ package kmlib.text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -41,14 +42,18 @@ public final class KmlibStrings {
      * future consumers) share one implementation.
      */
     public static boolean hasText(String value) {
+
         if (value == null) {
             return false;
         }
+
         for (var i = 0; i < value.length(); i++) {
+
             if (!Character.isWhitespace(value.charAt(i))) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -65,6 +70,7 @@ public final class KmlibStrings {
      * @return {@code value}, so the check reads inline in a constructor
      */
     public static String requireText(String value, String message) {
+
         if (!hasText(value)) {
             throw new IllegalArgumentException(message);
         }
@@ -88,11 +94,11 @@ public final class KmlibStrings {
         for (var item : items) {
 
             var text = readText.apply(item);
-
             if (hasText(text)) {
                 texts.add(text);
             }
         }
+
         return texts;
     }
 
@@ -111,13 +117,17 @@ public final class KmlibStrings {
      * @return the words, never null
      */
     public static List<String> splitIntoWords(String text) {
+
         var words = new ArrayList<String>();
+
         if (!hasText(text)) {
             return words;
         }
+
         for (var word : text.trim().split("\\s+")) {
             words.add(word);
         }
+
         return words;
     }
 
@@ -142,10 +152,12 @@ public final class KmlibStrings {
         var initials = new StringBuilder();
 
         for (var word : splitIntoWords(text)) {
+
             initials
                 .append(Character.toUpperCase(word.charAt(0)))
                 .append(INITIAL_TERMINATOR);
         }
+
         return initials.toString();
     }
 
@@ -172,13 +184,16 @@ public final class KmlibStrings {
         if (!hasText(text) || !hasText(word)) {
             return NO_WORD_MATCH;
         }
+
         for (var index = 0; index + word.length() <= text.length(); index++) {
 
             if (text.regionMatches(true, index, word, 0, word.length())
                     && isWholeWordAt(text, index, word.length())) {
+
                 return index;
             }
         }
+
         return NO_WORD_MATCH;
     }
 
@@ -226,15 +241,41 @@ public final class KmlibStrings {
                 keptWords.add(word);
             }
         }
+
         if (keptWords.size() == words.size()) {
             return text;
         }
         return String.join(" ", keptWords);
     }
 
+    /**
+     * {@code main} and {@code parenthetical} joined as "main (parenthetical)", or whichever of the two
+     * is present where only one is.
+     *
+     * <p>A missing half drops out rather than leaving its slot behind, so a caller never prints an
+     * empty pair of brackets or a bracketed remark with nothing before it.
+     *
+     * @param main          the leading text
+     * @param parenthetical the remark set in brackets after it
+     * @return the joined text, or empty where neither half is present
+     */
+    public static Optional<String> joinWithParenthetical(Optional<String> main, Optional<String> parenthetical) {
+
+        if (main.isEmpty()) {
+            return parenthetical;
+        }
+
+        if (parenthetical.isEmpty()) {
+            return main;
+        }
+
+        return Optional.of(main.get() + " (" + parenthetical.get() + ")");
+    }
+
     // Whether the stretch found at that position stands alone rather than opening or closing a
     // longer word.
     private static boolean isWholeWordAt(String text, int matchIndex, int wordLength) {
+
         return isWordBoundaryAt(text, matchIndex - 1)
             && isWordBoundaryAt(text, matchIndex + wordLength);
     }
@@ -242,6 +283,7 @@ public final class KmlibStrings {
     // Whether that position parts one word from another - anything that is not a letter or a digit,
     // and the ends of the text itself.
     private static boolean isWordBoundaryAt(String text, int index) {
+
         return index < 0
             || index >= text.length()
             || !Character.isLetterOrDigit(text.charAt(index));

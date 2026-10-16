@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,12 +17,14 @@ class KmlibStringsTests {
 
         @Test
         void isFalseOnNull() {
+
             assertThat(KmlibStrings.hasText(null))
                 .isFalse();
         }
 
         @Test
         void isFalseOnEmpty() {
+
             assertThat(KmlibStrings.hasText(""))
                 .isFalse();
         }
@@ -36,6 +39,7 @@ class KmlibStringsTests {
 
         @Test
         void isTrueOnPlainText() {
+
             assertThat(KmlibStrings.hasText("Independent"))
                 .isTrue();
         }
@@ -55,6 +59,7 @@ class KmlibStringsTests {
 
         @Test
         void returnsTheValueItWasGiven() {
+
             assertThat(KmlibStrings.requireText("Fast Rendering", "unused"))
                 .isEqualTo("Fast Rendering");
         }
@@ -94,6 +99,7 @@ class KmlibStringsTests {
 
         @Test
         void partsASentenceIntoItsWordsInOrder() {
+
             assertThat(KmlibStrings.splitIntoWords("Penelope's Star System"))
                 .containsExactly("Penelope's", "Star", "System");
         }
@@ -108,12 +114,14 @@ class KmlibStringsTests {
 
         @Test
         void partsAWhitespaceFlavourOtherThanTheSpace() {
+
             assertThat(KmlibStrings.splitIntoWords("first\tsecond\nthird"))
                 .containsExactly("first", "second", "third");
         }
 
         @Test
         void answersOneWordForAStringWithoutSpacing() {
+
             assertThat(KmlibStrings.splitIntoWords("Galatia"))
                 .containsExactly("Galatia");
         }
@@ -128,12 +136,14 @@ class KmlibStringsTests {
 
         @Test
         void isEmptyOnEmpty() {
+
             assertThat(KmlibStrings.splitIntoWords(""))
                 .isEmpty();
         }
 
         @Test
         void isEmptyOnNull() {
+
             assertThat(KmlibStrings.splitIntoWords(null))
                 .isEmpty();
         }
@@ -152,6 +162,7 @@ class KmlibStringsTests {
 
         @Test
         void raisesALowerCaseInitial() {
+
             assertThat(KmlibStrings.abbreviateToInitials("church of redemption"))
                 .isEqualTo("C.O.R.");
         }
@@ -166,18 +177,21 @@ class KmlibStringsTests {
 
         @Test
         void answersOneInitialForOneWord() {
+
             assertThat(KmlibStrings.abbreviateToInitials("Galatia"))
                 .isEqualTo("G.");
         }
 
         @Test
         void isEmptyForTextWithNoWordsInIt() {
+
             assertThat(KmlibStrings.abbreviateToInitials(" \t\n "))
                 .isEmpty();
         }
 
         @Test
         void isEmptyForNull() {
+
             assertThat(KmlibStrings.abbreviateToInitials(null))
                 .isEmpty();
         }
@@ -188,12 +202,14 @@ class KmlibStringsTests {
 
         @Test
         void answersWhereTheTextOpensOnTheWord() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Station", "abandoned"))
                 .isZero();
         }
 
         @Test
         void answersWhereTheWordSitsInTheMiddle() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Old Abandoned Yards", "abandoned"))
                 .isEqualTo(4);
         }
@@ -216,12 +232,14 @@ class KmlibStringsTests {
 
         @Test
         void passesOverAWordMerelyClosingALongerOne() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Unabandoned", "abandoned"))
                 .isEqualTo(KmlibStrings.NO_WORD_MATCH);
         }
 
         @Test
         void answersTheFirstOfSeveralOccurrences() {
+
             assertThat(KmlibStrings.findWholeWordIndex("Abandoned Abandoned Yards", "abandoned"))
                 .isZero();
         }
@@ -244,12 +262,14 @@ class KmlibStringsTests {
 
         @Test
         void answersAWordTheWholeTextConsistsOf() {
+
             assertThat(KmlibStrings.findWholeWordIndex("abandoned", "abandoned"))
                 .isZero();
         }
 
         @Test
         void saysNothingIsFoundInAbsentText() {
+
             assertThat(KmlibStrings.findWholeWordIndex(null, "abandoned"))
                 .isEqualTo(KmlibStrings.NO_WORD_MATCH);
         }
@@ -273,6 +293,7 @@ class KmlibStringsTests {
 
         @Test
         void dropsAWordRepeatingTheOneBeforeIt() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
                     "Penelope's Star Star System",
                     TWO_WORD_SUBJECT))
@@ -335,6 +356,7 @@ class KmlibStringsTests {
 
         @Test
         void dropsEveryWordOfARunPastTheProtection() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(
                     "Penelope's Star Star Star System",
                     TWO_WORD_SUBJECT))
@@ -343,14 +365,48 @@ class KmlibStringsTests {
 
         @Test
         void answersBlankTextAsGiven() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords("  ", TWO_WORD_SUBJECT))
                 .isEqualTo("  ");
         }
 
         @Test
         void answersNullAsGiven() {
+
             assertThat(KmlibStrings.dropAdjacentRepeatedWords(null, TWO_WORD_SUBJECT))
                 .isNull();
+        }
+    }
+
+    @Nested
+    class JoinWithParenthetical {
+
+        @Test
+        void setsTheParentheticalInBracketsAfterTheMainText() {
+
+            assertThat(KmlibStrings.joinWithParenthetical(Optional.of("main"), Optional.of("note")))
+                .contains("main (note)");
+        }
+
+        @Test
+        void answersTheMainTextAloneWhenTheParentheticalIsAbsent() {
+
+            assertThat(KmlibStrings.joinWithParenthetical(Optional.of("main"), Optional.empty()))
+                .contains("main");
+        }
+
+        @Test
+        void answersTheParentheticalAloneWhenTheMainTextIsAbsent() {
+
+            assertThat(KmlibStrings.joinWithParenthetical(Optional.empty(), Optional.of("note")))
+                .contains("note");
+        }
+
+        @Test
+        void isEmptyWhenBothAreAbsent() {
+
+            assertThat(KmlibStrings.joinWithParenthetical(Optional.empty(), Optional.empty()))
+                .isEmpty();
         }
     }
 }
