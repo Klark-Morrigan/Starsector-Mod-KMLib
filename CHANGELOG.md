@@ -67,6 +67,7 @@ No player-facing changes.
 - **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
   - `normaliseText(String)`, `convertToOptionalText(String)` and `getTextOrEmpty(String)`: a text trimmed, with blank answered as null, an empty optional or `""`.
   - `joinWithParenthetical(String, String)`: two texts as "main (parenthetical)", or whichever has text.
+  - `requireFieldText(String, String)`: `requireText(String, String)` with a message naming the field.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.

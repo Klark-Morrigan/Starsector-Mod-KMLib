@@ -273,6 +273,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | consumer mod | 使用方 Mod | |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
 | event, unconsumed (an input event no panel has taken) | 事件, 未被消费的 | the usual UI words |
+| exception, exception message, field (of a Java type) | 异常, 异常消息, 字段 | the usual computing words; 字段 as the `mod_info.json` row writes it |
 | ideographic space (U+3000) | 全角空格 | what a Chinese typist calls it; not the literal 表意空格 |
 | keyword (a word a console command accepts as an argument) | 关键词 | the usual computing word |
 | library | 程序库 | |
