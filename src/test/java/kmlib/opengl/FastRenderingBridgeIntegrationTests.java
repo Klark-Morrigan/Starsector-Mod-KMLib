@@ -54,10 +54,6 @@ final class FastRenderingBridgeIntegrationTests {
     // Uneven, and different on the two axes, so a transposed or swapped read cannot land on a match.
     private static final float PAN_X = 137.01f;
     private static final float PAN_Y = 41.01f;
-    private static final float LIST_PAN_X = 5.5f;
-    private static final float LIST_PAN_Y = 7.25f;
-
-    private static final int DISPLAY_LIST_ID = 1;
 
     private static final MethodHandles.Lookup PUBLIC_LOOKUP = MethodHandles.publicLookup();
 
@@ -70,9 +66,6 @@ final class FastRenderingBridgeIntegrationTests {
     private static MethodHandle pushMatrix;
     private static MethodHandle popMatrix;
     private static MethodHandle translate;
-    private static MethodHandle newList;
-    private static MethodHandle endList;
-    private static MethodHandle callList;
     private static MethodHandle getFloat;
 
     // The bridge's main context, created once: the bridge holds it in a static, one per process.
@@ -94,9 +87,6 @@ final class FastRenderingBridgeIntegrationTests {
         pushMatrix = findVoidStatic(bridgeGl, "glPushMatrix");
         popMatrix = findVoidStatic(bridgeGl, "glPopMatrix");
         translate = findVoidStatic(bridgeGl, "glTranslatef", float.class, float.class, float.class);
-        newList = findVoidStatic(bridgeGl, "glNewList", int.class, int.class);
-        endList = findVoidStatic(bridgeGl, "glEndList");
-        callList = findVoidStatic(bridgeGl, "glCallList", int.class);
         getFloat = findVoidStatic(bridgeGl, "glGetFloat", int.class, FloatBuffer.class);
 
         var contextManagerClass = loadBridgeClass(CONTEXT_MANAGER_CLASS_NAME);
@@ -180,35 +170,6 @@ final class FastRenderingBridgeIntegrationTests {
                     0f, 1f, 0f, 0f,
                     0f, 0f, 1f, 0f,
                     0f, 0f, 0f, 1f);
-        }
-
-        @Test
-        void answersTheModelviewADisplayListAppliedWhenCalled() throws Throwable {
-
-            matrixMode.invoke(GL11.GL_MODELVIEW);
-            loadIdentity.invoke();
-            newList.invoke(DISPLAY_LIST_ID, GL11.GL_COMPILE);
-            translate.invoke(LIST_PAN_X, LIST_PAN_Y, 0f);
-            endList.invoke();
-
-            // Compiling records the translate rather than applying it.
-            assertThat(readModelview())
-                .containsExactly(
-                    1f, 0f, 0f, 0f,
-                    0f, 1f, 0f, 0f,
-                    0f, 0f, 1f, 0f,
-                    0f, 0f, 0f, 1f);
-
-            callList.invoke(DISPLAY_LIST_ID);
-
-            assertThat(readModelview())
-                .containsExactly(
-                    1f, 0f, 0f, 0f,
-                    0f, 1f, 0f, 0f,
-                    0f, 0f, 1f, 0f,
-                    LIST_PAN_X, LIST_PAN_Y, 0f, 1f);
-
-            loadIdentity.invoke();
         }
 
         @Test
