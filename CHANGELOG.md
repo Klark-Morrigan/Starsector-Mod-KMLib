@@ -56,6 +56,7 @@ No player-facing changes.
 - **Console command parameters** in `kmlib.mods.console.commands.parsing`:
   - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
   - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.
+- **`DialogHandOff`** in `kmlib.starsector.dialogs.handoff`: hands an open interaction dialog to another plugin and starts it, which setting the plugin alone does not. `clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` clears the options and hides the visual panel first; `handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` leaves the dialog as it stands.
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**: the body at the far end of a body's orbit-focus chain, null where it orbits nothing.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.

@@ -56,6 +56,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
+- **`DialogHandOff`**（位于 `kmlib.starsector.dialogs.handoff`）：把已打开的交互对话框移交给另一个对话框插件并启动它；仅设置插件并不会启动它。`clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 先清空选项并隐藏视觉面板；`handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 保持对话框原样。
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**：天体轨道焦点链最远端的天体；天体不绕任何天体运行时为 null。
 - **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按种类分支的读取方使用。
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的舰船插件。

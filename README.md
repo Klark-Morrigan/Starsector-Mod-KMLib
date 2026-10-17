@@ -592,6 +592,9 @@ No Starsector API on the signature.
 - [`starsector/dialogs/`](src/main/java/kmlib/starsector/dialogs/) -
   the entity an interaction dialog is open on,
   read as nothing where there is no dialog or no target.
+- [`starsector/dialogs/handoff/`](src/main/java/kmlib/starsector/dialogs/handoff/) -
+  handing an open dialog to another plugin and starting it,
+  which setting the plugin alone does not.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
