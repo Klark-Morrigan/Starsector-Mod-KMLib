@@ -68,8 +68,8 @@ jobs:
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-mod-info@master
 
       # An unsuffixed zip names no locale, so it counts under the manifest's
-      # default. A mod without a manifest has no default, so its unsuffixed
-      # zips fail the run rather than count under a guessed locale.
+      # default. A mod without a manifest keeps no locales: its empty default
+      # passes through unchanged, and it gets one count per release.
       - name: Read the locales the mod releases in
         id: locales
         uses: Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/read-locales@master

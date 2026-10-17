@@ -56,6 +56,7 @@ No player-facing changes.
 - **Console command parameters** in `kmlib.mods.console.commands.parsing`:
   - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
   - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.
+- **`DialogHandOff`** in `kmlib.starsector.dialogs.handoff`: hands an open interaction dialog to another plugin and starts it, which setting the plugin alone does not. `clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` clears the options and hides the visual panel first; `handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` leaves the dialog as it stands.
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**: the body at the far end of a body's orbit-focus chain, null where it orbits nothing.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
@@ -67,6 +68,7 @@ No player-facing changes.
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
+- **`InteractionTargets.readTargetId(InteractionDialogAPI)`** in `kmlib.starsector.dialogs`: the ID of the entity a dialog is open on, null without a dialog or a target.
 - **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
   - `normaliseText(String)`, `convertToOptionalText(String)` and `getTextOrEmpty(String)`: a text trimmed, with blank answered as null, an empty optional or `""`.
   - `joinWithParenthetical(String, String)`: two texts as "main (parenthetical)", or whichever has text.
@@ -117,7 +119,7 @@ No player-facing changes.
 - **`TooltipSpacing`** in `kmlib.starsector.ui.tooltip`: the pads vanilla lays its tooltips out on, `SMALL_PAD` and `OUTER_PAD`, and its in-tooltip `BUTTON_HEIGHT`.
 - **`UniformGrid`** in `kmlib.math.geometry`: a square-cell hash grid filing points, segments and bounds under every cell they touch. `listItemsNear(double, double, double)` and `listCandidatePairs()` answer each item or pair once, and `measureAdaptiveCellSide(Bounds, int)` sizes the cells to about one item each.
 - **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does. Its named group `locale` holds a localised zip's locale tag.
-- **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll.
+- **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll. A mod committing no `localisation/manifest.json` keeps no locales, and gets one count per release.
 - **Every action `mod-release.yml` and `publish-download-badges.yml` run logs what it read, what it decided and each output it emits**, so a run's log alone explains what a later step was handed.
 
 #### Public contracts changed (**breaking**)

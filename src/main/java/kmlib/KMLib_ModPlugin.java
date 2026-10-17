@@ -35,7 +35,8 @@ import org.apache.log4j.Logger;
  * of its own compatibility channel here, filing under its own ID the way a consuming mod files
  * under its.
  */
-public class KMLib_ModPlugin extends BaseModPlugin {
+public class KMLib_ModPlugin
+        extends BaseModPlugin {
 
     private static final Logger LOG = Global.getLogger(KMLib_ModPlugin.class);
 
@@ -64,7 +65,15 @@ public class KMLib_ModPlugin extends BaseModPlugin {
 
         super.onGameLoad(newGame);
 
+        // At 0.5.1 font face loading has been moved here from `onApplicationLoad()`.
+        // Fast Rendering pre-0.9.4 with VRAM Optimizer installed
+        // defers textures loaded before every mod's `onApplicationLoad()` has run,
+        // and a font atlas LazyFont loaded in that window has been seen never to upload:
+        // every glyph then draws as a solid quad in the text colour.
+        // After that window Fast Rendering uploads a texture as it loads.
+        // Starting from 0.9.4, FR closes the window before `onApplicationLoad()` calls.
         loadInstalledFacesOnce();
+
         installNexerelinTransferRelay(Global.getSector());
         installCompatibilityNotice(Global.getSector());
     }
@@ -139,11 +148,6 @@ public class KMLib_ModPlugin extends BaseModPlugin {
     // Loads every face KMLib draws text in, so the log states what the install holds under each before any
     // campaign text is drawn, and no first draw pays for a load. The library's to do rather than a
     // consumer's: the faces and their cache are shared by every mod drawing text through KMLib.
-    //
-    // Not at application load. With VRAM Optimizer installed, Fast Rendering defers a texture loaded before
-    // every mod's onApplicationLoad has run, and a font atlas LazyFont loaded in that window has been seen
-    // never to upload: every glyph then draws as a solid quad in the text colour. After that window Fast
-    // Rendering uploads a texture as it loads.
     //
     // Guarded without an integration named: LazyLib is a declared dependency, not an optional mod, so a
     // failure here is logged for whoever reads the log rather than reported as a mod that did not

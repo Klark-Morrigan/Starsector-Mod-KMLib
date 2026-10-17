@@ -589,6 +589,12 @@ No Starsector API on the signature.
   and otherwise as the game's own confirm dialog from a frame that can open one.
   A mod's own feature that failed and was switched off is reported the same way.
   [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
+- [`starsector/dialogs/`](src/main/java/kmlib/starsector/dialogs/) -
+  the entity an interaction dialog is open on,
+  read as nothing where there is no dialog or no target.
+- [`starsector/dialogs/handoff/`](src/main/java/kmlib/starsector/dialogs/handoff/) -
+  handing an open dialog to another plugin and starting it,
+  which setting the plugin alone does not.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,
@@ -1442,8 +1448,8 @@ which counts, renders and publishes the endpoint files to the caller's `badges` 
 Each zip counts under the locale its name carries.
 An unsuffixed zip counts under the default locale of the caller's `localisation/manifest.json`,
 read through `read-locales`.
-A mod without a manifest has no default locale,
-so its unsuffixed zips fail the run, naming the zip.
+A mod without a manifest keeps no locales,
+so it gets one count per release, under no locale.
 Only the publishing job holds `contents: write`,
 and a caller has to grant the same,
 since a reusable workflow's permissions are capped by its caller.

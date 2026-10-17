@@ -132,6 +132,8 @@ by pairing its text with vanilla's at the same location:
 the same `strings.json` key, the same CSV row, or the same string constant in the same class of the game jars.
 The core localisation at `startup-optimization` 2026.09.04 was the edition read;
 the typeface editions share its text.
+The Dialog, Dialog option, Entity, Hullmod, Interaction, Screen and Target rows were read off the installed `startup-optimization` edition,
+which records no date of its own.
 
 | English | 简体中文 | Source |
 | --- | --- | --- |
@@ -141,17 +143,24 @@ the typeface editions share its text.
 | Colony | 殖民地 | `starfarer_obf.jar` |
 | Commodity | 商品 | `starfarer_obf.jar`, `CommodityPanel` |
 | Credits | 星币 | `rules.csv` `oyaTanaicaAskSampleBack2`: "It's your credits." is 反正是你的星币 |
+| Dialog (an interaction dialog) | 对话框 | `starfarer.api.jar`, `RuleBasedInteractionDialogPluginImpl`: the failsafe's "Exit dialog" is 退出对话框 |
+| Dialog option | 选项 | `starfarer_obf.jar`, the story-point help: "dialog options" is 对话选项; the failsafe's "failsafe option" is 故障保护选项 |
+| Entity | 实体 | `descriptions.csv` `test_station`: "a custom campaign entity" is 自定义实体 |
 | Faction | 势力 | `starfarer.api.jar` |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Hullmod | 舰船插件 | `tooltips.json`: "Change the weapons and hullmods equipped on this ship." is 改变这艘船的武器与舰船插件; the codex's "Hull Modifications" is 舰船插件. A bare 插件 reads as a hullmod too: S-插件, D-插件, 本插件 |
 | Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
+| Interaction | 交互 | `starfarer.api.jar`, `RuleBasedInteractionDialogPluginImpl`: "any mission interaction in the current dialog" is 当前对话框中的某些任务交互 |
 | Jump-point | 跳跃点 | `descriptions.csv` `jump_point_normal` is 跳跃点，前往超空间; `strings.json` `approach` is 驶向了跳跃点 |
 | Market | 市场 | `starfarer_obf.jar` |
 | Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
-| ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
+| ModSpec (the item) | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the hullmod it teaches is 舰船插件 |
 | Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
+| Screen, tab (of the core UI) | 面板 | `starfarer.api.jar`, the campaign tutorial: "open the intel screen" is 打开情报信息面板, "the character tab" is 角色面板. Vanilla shows no UI "panel" by that name; its English panels are physical ones |
 | Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
+| Target | 目标 | `descriptions.csv` `plasma`: "toward the target" is 射向目标 |
 
 ## KMLib terms
 
@@ -251,6 +260,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | Fixed | 修复 | |
 | For developers | 面向开发者 | |
 | Index | 索引 | |
+| Minor optimisations | 小幅优化 | 小幅, slight, with 优化, the usual word for optimisation |
 | No player-facing changes. | 没有面向玩家的变更。 | opens a version whose changes are all under `For developers` |
 | Public contracts changed (**breaking**) | 公共契约变更（**破坏性**） | from 公共契约 |
 | Reported by X at USC | 由 X 在 USC 报告 | closes the entry as a sentence of its own |
@@ -266,36 +276,48 @@ A version heading is never translated; see [translating the changelog](#translat
 | animation, cycle (repetition nobody triggered) | 动画, 循环 | the usual computing words |
 | binding | 绑定 | |
 | blank (text holding only whitespace) | 空白 | |
+| cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
 | command word (what a console command is typed as) | 命令词 | 命令, command, with 词, word |
+| compile | 编译 | the usual computing word |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
+| consumer mod | 使用方 Mod | |
 | control character | 控制字符 | the usual computing word |
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
-| extend (an interface extending another), implementer | 继承, 实现方 | the usual computing words; 方 for the party, as 调用方 writes it |
-| float (a Java `float`) | 浮点数 | the usual computing word |
-| consumer mod | 使用方 Mod | |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
 | event, unconsumed (an input event no panel has taken) | 事件, 未被消费的 | the usual UI words |
 | exception, exception message, field (of a Java type) | 异常, 异常消息, 字段 | the usual computing words; 字段 as the `mod_info.json` row writes it |
+| extend (an interface extending another), implementer | 继承, 实现方 | the usual computing words; 方 for the party, as 调用方 writes it |
+| final class (one nothing may extend) | 不可继承的类 | said plainly rather than left as the keyword |
+| float (a Java `float`) | 浮点数 | the usual computing word |
 | ideographic space (U+3000) | 全角空格 | what a Chinese typist calls it; not the literal 表意空格 |
+| import, compose | 导入, 组合 | the usual computing words for a package naming another and for putting parts together |
 | keyword (a word a console command accepts as an argument) | 关键词 | the usual computing word |
+| kind (of a place or a record a reader branches on) | 种类 | the plain word for a sort of thing, kept apart from 类别, a category |
 | library | 程序库 | |
+| listener manager (the game's registry of event listeners) | 监听器管理器 | 监听器, the usual computing word for a listener, with 管理器, a manager |
 | listener, saved or transient (registered on the sector) | 监听器, 存档的或临时的 | 临时, temporary, for one kept out of the save; 存档的 for one written into it |
 | log line | 日志行 | as the settings description and the `0.5.0` entries write it |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
 | method handle | 方法句柄 | |
+| named group (of a regex) | 命名分组 | the usual computing word |
+| overload (one of several same-named methods) | 重载 | the usual computing word |
 | parameter, positional parameter, parameter spec (of a console command) | 参数, 位置参数, 参数规范 | the usual computing words; 位置, position, for one filled by where it stands |
 | parser, value parser | 解析器, 值解析器 | the usual computing words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reader, source (a port opening readers) | 读取器, 来源 | 读取器 as the `0.5.0` entries write it; 来源, where something comes from |
+| record (a Java value type) | 记录类型 | 记录 with 类型, a type: the type itself, where 记录 is one value of it |
 | reflection | 反射 | as in the settings description |
+| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
 | register (a store of records kept under one key) | 登记表 | from 登记, to record, as the `0.5.0` compatibility entries write it |
 | relay (a listener passing events on) | 转发器 | 转发, to pass on |
-| named group (of a regex) | 命名分组 | the usual computing word |
-| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
+| revision (a number that moves when content changes) | 修订号 | 修订, a revision, with 号, its number |
+| sampling (one read of a live value) | 采样 | the usual word for taking one reading of something that changes |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
 | standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
+| string ID, key class | 字符串 ID, 键类 | 字符串, the computing word for a string; a key class is the class holding one reader's string IDs |
+| strings category (the namespace in strings.json) | 字符串类别 | 字符串 before 类别, a category |
 | supplier (a function a caller hands in) | 供应器 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
 | told (a listener hearing of an event) | 得到通知 | as the `MarketTransferListener` entry writes it |
@@ -367,7 +389,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距 as the hatch row writes spacing; 提示框 as the `0.5.0` entries write it |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
 | modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板 as the `0.5.0` notice entries write it; 宿主, host; 占用, to take up |
-| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 is the usual computing word |
+| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 as the vanilla Dialog row |
+| interaction dialog, option (in one), visual panel | 交互对话框, 选项, 视觉面板 | the vanilla Interaction and Dialog rows joined; 选项 as the vanilla Dialog option row; 视觉, visual, with 面板 as vanilla names its screens, the visual panel having no name a player sees |
+| interaction target (the entity a dialog is open on) | 交互目标 | the vanilla Interaction and Target rows joined; kept apart from 目标版本, a targeted version |
+| plugin (the class the game runs a feature through), hand off (a dialog to a plugin), start (a plugin) | 插件, 移交, 启动 | 插件 as the `StorageAccess` entry writes it. Vanilla shows players no plugin in this sense, and reads a bare 插件 as a hullmod (see the Hullmod row), so an entry names the kind where it is not plain: 对话框插件, 插件类. 移交, to transfer; 启动 as vanilla starts the game, a system or an ability |
 | fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出 as the `0.5.0` notice entry writes it; 节奏, rhythm |
 | close key (a key that closes a panel) | 关闭键 | 关闭, close, with 键, key |
 | public API | 公共 API | 公共 as 公共契约 writes it; API stays in Latin letters |

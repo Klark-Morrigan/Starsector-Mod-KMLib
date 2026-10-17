@@ -14,6 +14,10 @@ Every other pname, `GL_PROJECTION_MATRIX` included, throws `UnsupportedOperation
 
 The same release renamed `TransformManager` to `MatrixManager`, and `Context.transformManager` to `Context.matrixManager`. That unbinds the workaround below, which a mod no longer needs on v0.9.1rc1.
 
+Re-verified on **v0.9.6rc1** (`fr.jar`, SHA-256 `fa4e30418cd38884780e559619c09f54dc5d5773dddd004c3181cd4edb1578f2`, 570102 bytes): the read is unchanged. Two things around it moved. v0.9.2rc1 replaced LWJGL's `Matrix4f` under the bridge's matrices with its own `bridge.context.Matrix`, still row-major, so `getCPUModelView` now returns that type. v0.9.6rc1 refuses display lists outright and rewrites the game's display-list cache onto a no-op stub, so the tracker no longer has lists to follow; through v0.9.5 it followed them.
+
+One composition-order gap remains in the shared `Matrix` code, so the read reports it too: `Matrix.ortho` composes `P × current` where GL composes `current × P`. It is invisible after `glLoadIdentity` and on the campaign UI, whose ortho is on the projection matrix. `glMultMatrix` had the same reversal from v0.9.2rc1 through v0.9.3, and v0.9.4 fixed it.
+
 The rest of this report is as filed against v0.9.0.
 
 ## Summary

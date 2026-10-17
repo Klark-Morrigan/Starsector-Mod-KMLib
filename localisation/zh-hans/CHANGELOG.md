@@ -56,9 +56,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
+- **`DialogHandOff`**（位于 `kmlib.starsector.dialogs.handoff`）：把已打开的交互对话框移交给另一个对话框插件并启动它；仅设置插件并不会启动它。`clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 先清空选项并隐藏视觉面板；`handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 保持对话框原样。
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**：天体轨道焦点链最远端的天体；天体不绕任何天体运行时为 null。
-- **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按类别分支的读取方使用。
-- **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的船体插件。
+- **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按种类分支的读取方使用。
+- **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的舰船插件。
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
@@ -67,6 +68,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
+- **`InteractionTargets.readTargetId(InteractionDialogAPI)`**（位于 `kmlib.starsector.dialogs`）：对话框所对应实体的 ID；没有对话框或交互目标时为 null。
 - **`KmlibStrings`** 中按 `hasText(String)` 所用的同一条空白规则作答的读取：
   - `normaliseText(String)`、`convertToOptionalText(String)` 和 `getTextOrEmpty(String)`：去除首尾空白后的文本；空白时分别回答 null、空的 Optional 或 `""`。
   - `joinWithParenthetical(String, String)`：把两个文本合成“主文本（括注）”的形式，只有一个有文本时取那一个。
@@ -117,7 +119,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`TooltipSpacing`**（位于 `kmlib.starsector.ui.tooltip`）：原版排布提示框所用的间距 `SMALL_PAD` 与 `OUTER_PAD`，以及提示框内按钮的高度 `BUTTON_HEIGHT`。
 - **`UniformGrid`**（位于 `kmlib.math.geometry`）：正方形单元的哈希网格，把点、线段和边界框归入它们触及的每一个单元。`listItemsNear(double, double, double)` 和 `listCandidatePairs()` 对每个条目或每对条目只回答一次，`measureAdaptiveCellSide(Bounds, int)` 把单元大小定为大约每格一个条目。
 - **`read-mod-info` 输出 `zip-name-regex`**：一个正则表达式，每个发布版本的压缩包名称都与之匹配，无论版本号和语言区域如何，而任何版本文件都不与之匹配。其命名分组 `locale` 存放本地化压缩包的语言区域标签。
-- **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。
+- **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。未提交 `localisation/manifest.json` 的 Mod 不区分语言区域，每个发布版本只有一个下载量。
 - **`mod-release.yml` 与 `publish-download-badges.yml` 运行的每个操作，都会在日志中记录它读取了什么、做出了什么判断，以及它的每一项输出**，因此仅凭一次运行的日志，就能看出后续步骤拿到了什么。
 
 #### 公共契约变更（**破坏性**）
