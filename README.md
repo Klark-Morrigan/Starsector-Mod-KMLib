@@ -1442,8 +1442,8 @@ which counts, renders and publishes the endpoint files to the caller's `badges` 
 Each zip counts under the locale its name carries.
 An unsuffixed zip counts under the default locale of the caller's `localisation/manifest.json`,
 read through `read-locales`.
-A mod without a manifest has no default locale,
-so its unsuffixed zips fail the run, naming the zip.
+A mod without a manifest keeps no locales,
+so it gets one count per release, under no locale.
 Only the publishing job holds `contents: write`,
 and a caller has to grant the same,
 since a reusable workflow's permissions are capped by its caller.

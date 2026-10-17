@@ -117,7 +117,7 @@ No player-facing changes.
 - **`TooltipSpacing`** in `kmlib.starsector.ui.tooltip`: the pads vanilla lays its tooltips out on, `SMALL_PAD` and `OUTER_PAD`, and its in-tooltip `BUTTON_HEIGHT`.
 - **`UniformGrid`** in `kmlib.math.geometry`: a square-cell hash grid filing points, segments and bounds under every cell they touch. `listItemsNear(double, double, double)` and `listCandidatePairs()` answer each item or pair once, and `measureAdaptiveCellSide(Bounds, int)` sizes the cells to about one item each.
 - **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does. Its named group `locale` holds a localised zip's locale tag.
-- **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll.
+- **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll. A mod committing no `localisation/manifest.json` keeps no locales, and gets one count per release.
 - **Every action `mod-release.yml` and `publish-download-badges.yml` run logs what it read, what it decided and each output it emits**, so a run's log alone explains what a later step was handed.
 
 #### Public contracts changed (**breaking**)
