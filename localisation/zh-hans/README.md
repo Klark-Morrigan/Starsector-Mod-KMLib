@@ -132,6 +132,8 @@ by pairing its text with vanilla's at the same location:
 the same `strings.json` key, the same CSV row, or the same string constant in the same class of the game jars.
 The core localisation at `startup-optimization` 2026.09.04 was the edition read;
 the typeface editions share its text.
+The Dialog, Dialog option, Entity, Hullmod, Interaction, Screen and Target rows were read off the installed `startup-optimization` edition,
+which records no date of its own.
 
 | English | 简体中文 | Source |
 | --- | --- | --- |
@@ -141,17 +143,24 @@ the typeface editions share its text.
 | Colony | 殖民地 | `starfarer_obf.jar` |
 | Commodity | 商品 | `starfarer_obf.jar`, `CommodityPanel` |
 | Credits | 星币 | `rules.csv` `oyaTanaicaAskSampleBack2`: "It's your credits." is 反正是你的星币 |
+| Dialog (an interaction dialog) | 对话框 | `starfarer.api.jar`, `RuleBasedInteractionDialogPluginImpl`: the failsafe's "Exit dialog" is 退出对话框 |
+| Dialog option | 选项 | `starfarer_obf.jar`, the story-point help: "dialog options" is 对话选项; the failsafe's "failsafe option" is 故障保护选项 |
+| Entity | 实体 | `descriptions.csv` `test_station`: "a custom campaign entity" is 自定义实体 |
 | Faction | 势力 | `starfarer.api.jar` |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Hullmod | 舰船插件 | `tooltips.json`: "Change the weapons and hullmods equipped on this ship." is 改变这艘船的武器与舰船插件; the codex's "Hull Modifications" is 舰船插件. A bare 插件 reads as a hullmod too: S-插件, D-插件, 本插件 |
 | Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
+| Interaction | 交互 | `starfarer.api.jar`, `RuleBasedInteractionDialogPluginImpl`: "any mission interaction in the current dialog" is 当前对话框中的某些任务交互 |
 | Jump-point | 跳跃点 | `descriptions.csv` `jump_point_normal` is 跳跃点，前往超空间; `strings.json` `approach` is 驶向了跳跃点 |
 | Market | 市场 | `starfarer_obf.jar` |
 | Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
-| ModSpec, hullmod | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the item and the hullmod it teaches take the one word |
+| ModSpec (the item) | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the hullmod it teaches is 舰船插件 |
 | Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
+| Screen, tab (of the core UI) | 面板 | `starfarer.api.jar`, the campaign tutorial: "open the intel screen" is 打开情报信息面板, "the character tab" is 角色面板. Vanilla shows no UI "panel" by that name; its English panels are physical ones |
 | Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
+| Target | 目标 | `descriptions.csv` `plasma`: "toward the target" is 射向目标 |
 
 ## KMLib terms
 
@@ -380,7 +389,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距 as the hatch row writes spacing; 提示框 as the `0.5.0` entries write it |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
 | modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板 as the `0.5.0` notice entries write it; 宿主, host; 占用, to take up |
-| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 is the usual computing word |
+| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 as the vanilla Dialog row |
+| interaction dialog, option (in one), visual panel | 交互对话框, 选项, 视觉面板 | the vanilla Interaction and Dialog rows joined; 选项 as the vanilla Dialog option row; 视觉, visual, with 面板 as vanilla names its screens, the visual panel having no name a player sees |
+| interaction target (the entity a dialog is open on) | 交互目标 | the vanilla Interaction and Target rows joined; kept apart from 目标版本, a targeted version |
+| plugin (the class the game runs a feature through), hand off (a dialog to a plugin), start (a plugin) | 插件, 移交, 启动 | 插件 as the `StorageAccess` entry writes it. Vanilla shows players no plugin in this sense, and reads a bare 插件 as a hullmod (see the Hullmod row), so an entry names the kind where it is not plain: 对话框插件, 插件类. 移交, to transfer; 启动 as vanilla starts the game, a system or an ability |
 | fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出 as the `0.5.0` notice entry writes it; 节奏, rhythm |
 | close key (a key that closes a panel) | 关闭键 | 关闭, close, with 键, key |
 | public API | 公共 API | 公共 as 公共契约 writes it; API stays in Latin letters |

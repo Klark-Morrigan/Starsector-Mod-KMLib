@@ -67,6 +67,7 @@ No player-facing changes.
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
+- **`InteractionTargets.readTargetId(InteractionDialogAPI)`** in `kmlib.starsector.dialogs`: the ID of the entity a dialog is open on, null without a dialog or a target.
 - **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
   - `normaliseText(String)`, `convertToOptionalText(String)` and `getTextOrEmpty(String)`: a text trimmed, with blank answered as null, an empty optional or `""`.
   - `joinWithParenthetical(String, String)`: two texts as "main (parenthetical)", or whichever has text.

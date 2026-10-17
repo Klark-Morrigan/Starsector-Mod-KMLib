@@ -589,6 +589,9 @@ No Starsector API on the signature.
   and otherwise as the game's own confirm dialog from a frame that can open one.
   A mod's own feature that failed and was switched off is reported the same way.
   [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
+- [`starsector/dialogs/`](src/main/java/kmlib/starsector/dialogs/) -
+  the entity an interaction dialog is open on,
+  read as nothing where there is no dialog or no target.
 - [`starsector/entities/`](src/main/java/kmlib/starsector/entities/) -
   spawning custom campaign entities and jump points,
   name generation,

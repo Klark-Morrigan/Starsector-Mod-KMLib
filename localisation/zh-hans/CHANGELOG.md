@@ -58,7 +58,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**：天体轨道焦点链最远端的天体；天体不绕任何天体运行时为 null。
 - **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按种类分支的读取方使用。
-- **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的船体插件。
+- **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的舰船插件。
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
@@ -67,6 +67,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
+- **`InteractionTargets.readTargetId(InteractionDialogAPI)`**（位于 `kmlib.starsector.dialogs`）：对话框所对应实体的 ID；没有对话框或交互目标时为 null。
 - **`KmlibStrings`** 中按 `hasText(String)` 所用的同一条空白规则作答的读取：
   - `normaliseText(String)`、`convertToOptionalText(String)` 和 `getTextOrEmpty(String)`：去除首尾空白后的文本；空白时分别回答 null、空的 Optional 或 `""`。
   - `joinWithParenthetical(String, String)`：把两个文本合成“主文本（括注）”的形式，只有一个有文本时取那一个。
