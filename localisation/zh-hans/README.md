@@ -495,7 +495,9 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
 | Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
 | mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
+| OP (a thread's first post) | 主楼 | the players' word on Chinese forums, where replies are numbered floors |
 | pre-release | 预发布 | Fossic's word for its pre-release board |
+| Q&A (a post's section of player questions and answers) | 常见问题; 问 and 答 open each question and answer | the usual heading for that section of a mod post; 问答 reads as a quiz or an interview |
 | repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
 | testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
 | translation (a translated build) | 汉化 | a Fossic board |
