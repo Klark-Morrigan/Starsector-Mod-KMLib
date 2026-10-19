@@ -13,6 +13,9 @@
     The load's cause is the one its first attempt hit, since campaign.xml is the newest file.
     Each attempt keeps its own cause and log position for a closer look.
 
+    A cause usually names one id the save holds and no installed mod defines.
+    Each cause is read into that content's kind and id, so the next step knows what to look for.
+
     Rotated logs (starsector.log.1, .2, ...) are read too, oldest first,
     so a load the game logged before a rotation is still found.
     Rotation renumbers the files, so a reported log position holds only until the game writes the next one.
@@ -74,6 +77,29 @@ $OutcomeFailed = 'Failed'
 
 # The log ends before the attempt does: the game crashed or is still loading.
 $OutcomeUnfinished = 'Unfinished'
+
+# The message each spec store throws when a save names an id it lacks, one wording per store.
+# No two patterns match one message, so their order does not matter.
+$MissingSpecPatterns = @(
+    @{ Kind = 'Weapon'; Pattern = '^Weapon spec \[(?<id>[^\]]+)\] not found!$' }
+    @{ Kind = 'Hull'; Pattern = '^Ship hull spec \[(?<id>[^\]]+)\] not found!$' }
+    @{ Kind = 'Variant'; Pattern = '^Ship hull variant \[(?<id>[^\]]+)\] not found!$' }
+    @{ Kind = 'FighterWing'; Pattern = '^Fighter wing spec \[(?<id>[^\]]+)\] not found$' }
+    @{ Kind = 'Hullmod'; Pattern = '^Hullmod with id \[(?<id>[^\]]+)\] not found$' }
+
+    # Every other spec type shares one generic store, whose message names the spec's class instead of a kind.
+    @{ Kind = 'Spec'; Pattern = '^Spec of class \[(?<class>[^\]]+)\] with id \[(?<id>[^\]]+)\] not found$' }
+)
+
+# XStream throws this when a save names a class no loaded jar holds; its message is the class name alone.
+$UnresolvedClassExceptionType = 'com.thoughtworks.xstream.mapper.CannotResolveClassException'
+$MissingClassKind = 'Class'
+
+$HullKind = 'Hull'
+
+# Vanilla builds every hull's d-hull at startup, under the hull id plus this suffix (Misc.D_HULL_SUFFIX).
+# A missing d-hull so means its base hull is missing, and the base hull is what a mod defines.
+$DHullSuffix = '_default_D'
 
 function Write-DiagnosticLine {
     # Stderr keeps stdout parseable when -AsJson is set.
@@ -191,6 +217,69 @@ function Read-LoadAttempt {
     return $attempts
 }
 
+function Get-MissingContent {
+    <#
+        Reads which content a failure's root cause names: its kind and id.
+        Id is what to look for in a mod; ReportedId is the id as the message names it.
+        The two differ for a d-hull, which names its base hull.
+        Returns null when the cause names no missing content.
+    #>
+    param(
+        [string] $CauseType,
+        [string] $Cause
+    )
+
+    if ($CauseType -eq $UnresolvedClassExceptionType) {
+        return [pscustomobject]@{ Kind = $MissingClassKind; Id = $Cause; ReportedId = $Cause; SpecClass = $null }
+    }
+
+    foreach ($missingSpec in $MissingSpecPatterns) {
+
+        $match = [regex]::Match($Cause, $missingSpec.Pattern)
+
+        if (-not $match.Success) {
+            continue
+        }
+
+        $reportedId = $match.Groups['id'].Value
+        $isDHull = $missingSpec.Kind -eq $HullKind -and $reportedId.EndsWith($DHullSuffix)
+        $id = if ($isDHull) { $reportedId.Substring(0, $reportedId.Length - $DHullSuffix.Length) } else { $reportedId }
+        $specClass = $match.Groups['class']
+
+        return [pscustomobject]@{
+            Kind       = $missingSpec.Kind
+            Id         = $id
+            ReportedId = $reportedId
+            SpecClass  = if ($specClass.Success) { $specClass.Value } else { $null }
+        }
+    }
+
+    return $null
+}
+
+function Format-MissingContentLine {
+    # One diagnostic line per load with a cause, so the log says what each cause was read as.
+    param([object] $Load)
+
+    $missing = $Load.Missing
+
+    if ($null -eq $missing) {
+        return "$($Load.SaveFolder): the cause names no missing content"
+    }
+
+    $line = "$($Load.SaveFolder): missing $($missing.Kind) $($missing.Id)"
+
+    if ($missing.SpecClass) {
+        $line += " of spec class $($missing.SpecClass)"
+    }
+
+    if ($missing.ReportedId -ne $missing.Id) {
+        $line += ", named as $($missing.ReportedId)"
+    }
+
+    return $line
+}
+
 function Group-LoadAttempt {
     <#
         Folds vanilla's retries into the load that caused them.
@@ -232,10 +321,13 @@ function Group-LoadAttempt {
                 Outcome   = $attempt.Outcome
                 CauseType = $attempt.CauseType
                 Cause     = $attempt.Cause
+                Missing   = Get-MissingContent -CauseType $attempt.CauseType -Cause $attempt.Cause
                 LogFile   = $attempt.LogFile
                 LogLine   = $attempt.LogLine
             }
         }
+
+        $sourcedAttempts = @($sourcedAttempts)
 
         [pscustomobject]@{
             SaveFolder = Split-Path -Leaf $firstAttempt.SavePath
@@ -243,7 +335,8 @@ function Group-LoadAttempt {
             Outcome    = $loadAttempts[$loadAttempts.Count - 1].Outcome
             CauseType  = $firstAttempt.CauseType
             Cause      = $firstAttempt.Cause
-            Attempts   = @($sourcedAttempts)
+            Missing    = $sourcedAttempts[0].Missing
+            Attempts   = $sourcedAttempts
         }
     }
 }
@@ -272,6 +365,10 @@ $failedCount = @($loads | Where-Object { $_.Outcome -eq $OutcomeFailed }).Count
 
 Write-DiagnosticLine ("grouped $($attempts.Count) attempts into $($loads.Count) loads, $failedCount failed; " +
     'listing them newest first')
+
+foreach ($load in $loads | Where-Object { $_.CauseType }) {
+    Write-DiagnosticLine (Format-MissingContentLine -Load $load)
+}
 
 if ($AsJson) {
     ConvertTo-Json -InputObject $loads -Depth 4

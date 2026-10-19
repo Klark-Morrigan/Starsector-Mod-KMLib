@@ -103,7 +103,29 @@ Describe 'Get-SaveLoadFailure' {
                 "Get-SaveLoadFailure: read $script:FixtureRoot\starsector-core\starsector.log.1: 8 lines, 1 load attempts start here"
                 "Get-SaveLoadFailure: read $script:FixtureRoot\starsector-core\starsector.log: 20 lines, 2 load attempts start here"
                 'Get-SaveLoadFailure: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
+                'Get-SaveLoadFailure: save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
+                'Get-SaveLoadFailure: save_Alpha_1: missing Weapon tania_boomerang_launcher'
             )
+        }
+
+        It 'reads a missing weapon from the cause' {
+
+            $script:Loads[1].Missing.Kind | Should -Be 'Weapon'
+            $script:Loads[1].Missing.Id | Should -Be 'tania_boomerang_launcher'
+            $script:Loads[1].Missing.ReportedId | Should -Be 'tania_boomerang_launcher'
+        }
+
+        It 'reads a missing d-hull as its base hull' {
+
+            $script:Loads[0].Missing.Kind | Should -Be 'Hull'
+            $script:Loads[0].Missing.Id | Should -Be 'BSC_Buffalo_Mk3'
+            $script:Loads[0].Missing.ReportedId | Should -Be 'BSC_Buffalo_Mk3_default_D'
+        }
+
+        It 'reads the missing content of each retry, and none from a missing file' {
+
+            $script:Loads[0].Attempts[1].Missing.Id | Should -Be 'BSC_Hammerhead_MK2'
+            $script:Loads[0].Attempts[2].Missing | Should -BeNullOrEmpty
         }
 
         It 'prints the same loads as JSON with -AsJson' {
@@ -135,6 +157,50 @@ Describe 'Get-SaveLoadFailure' {
 
             $script:Loads[0].CauseType | Should -Be 'com.thoughtworks.xstream.mapper.CannotResolveClassException'
             $script:Loads[0].Cause | Should -Be 'data.scripts.removed.GoneScript'
+        }
+
+        It 'reads the unresolved class as missing content' {
+
+            $script:Loads[0].Missing.Kind | Should -Be 'Class'
+            $script:Loads[0].Missing.Id | Should -Be 'data.scripts.removed.GoneScript'
+        }
+    }
+
+    Context 'one failed load per kind of missing content' {
+
+        BeforeAll {
+
+            $script:Run = Invoke-SaveLoadFailure @{ StarsectorRoot = (Get-FixtureRoot 'each-missing-kind') }
+            $script:Loads = @($script:Run.Output)
+        }
+
+        It 'reads each spec store message into its kind and id' {
+
+            $script:Loads[1..4].Missing.Kind | Should -Be @('Spec', 'Hullmod', 'FighterWing', 'Variant')
+            $script:Loads[1..4].Missing.Id | Should -Be @('gone_item', 'gone_dmod', 'gone_wing', 'gone_hull_Standard')
+        }
+
+        It 'keeps the spec class of a generic spec, and none for another kind' {
+
+            $script:Loads[1].Missing.SpecClass | Should -Be 'com.fs.starfarer.loading.SpecialItemSpec'
+            $script:Loads[4].Missing.SpecClass | Should -BeNullOrEmpty
+        }
+
+        It 'reads no missing content from a cause that names none' {
+
+            $script:Loads[0].CauseType | Should -Be 'java.lang.NullPointerException'
+            $script:Loads[0].Missing | Should -BeNullOrEmpty
+        }
+
+        It 'logs what each cause was read as' {
+
+            $script:Run.Diagnostics[-5..-1] | Should -Be @(
+                'Get-SaveLoadFailure: save_Other_5: the cause names no missing content'
+                'Get-SaveLoadFailure: save_Spec_4: missing Spec gone_item of spec class com.fs.starfarer.loading.SpecialItemSpec'
+                'Get-SaveLoadFailure: save_Hullmod_3: missing Hullmod gone_dmod'
+                'Get-SaveLoadFailure: save_Wing_2: missing FighterWing gone_wing'
+                'Get-SaveLoadFailure: save_Variant_1: missing Variant gone_hull_Standard'
+            )
         }
     }
 

@@ -8,6 +8,7 @@ They are repository tooling: the release zip does not carry them.
 - [Scripts](#scripts)
 - [Get-SaveLoadFailure.ps1](#get-saveloadfailureps1)
   - [How vanilla logs a load](#how-vanilla-logs-a-load)
+  - [Missing content](#missing-content)
   - [Output](#output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
 - [Tests](#tests)
@@ -51,6 +52,32 @@ Rotated logs (`starsector.log.1`, `.2`, ...) are read first, highest number firs
 An attempt can straddle a rotation.
 Rotation renumbers the files, so a reported log position holds only until the game rotates again.
 
+### Missing content
+
+A failed load usually names one id that the save holds and no installed mod defines.
+Each spec store throws its own wording, and the script reads each into a kind and an id:
+
+| Cause | Kind |
+| --- | --- |
+| `Weapon spec [<id>] not found!` | `Weapon` |
+| `Ship hull spec [<id>] not found!` | `Hull` |
+| `Ship hull variant [<id>] not found!` | `Variant` |
+| `Fighter wing spec [<id>] not found` | `FighterWing` |
+| `Hullmod with id [<id>] not found` | `Hullmod` |
+| `Spec of class [<class>] with id [<id>] not found` | `Spec`, with the class kept as `SpecClass` |
+| `CannotResolveClassException: <class>` | `Class`, the class name as the id |
+
+`Spec` covers every spec type without a store of its own: special items, market conditions, industries and more.
+Its class name is often obfuscated,
+so it says which store missed, not always which kind.
+
+Vanilla builds a d-hull for every hull at startup, under the hull id plus `_default_D`.
+A missing d-hull so means a missing base hull, and the base hull is what a mod defines.
+`Id` holds the base hull;
+`ReportedId` keeps the id as the message names it.
+
+A cause matching none of these, a crash in a mod's script for one, gives no missing content.
+
 ### Output
 
 One object per load, newest first:
@@ -61,7 +88,10 @@ One object per load, newest first:
 | `SavePath` | The full save path, with `..` resolved against the log's folder (the game's working directory) |
 | `Outcome` | `Loaded`, `Failed`, or `Unfinished` when the log ends first: a crash, or a load still running |
 | `CauseType`, `Cause` | The root throwable of the first attempt, read from `campaign.xml`, the newest file. Empty when that attempt loaded |
-| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `Outcome`, `CauseType`, `Cause`, and the `LogFile` and `LogLine` it starts on |
+| `Missing` | The [missing content](#missing-content) the first attempt's cause names: `Kind`, `Id`, `ReportedId` and `SpecClass`. Empty when the cause names none |
+| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `Outcome`, `CauseType`, `Cause`, `Missing`, and the `LogFile` and `LogLine` it starts on |
+
+Stderr gains one line per load with a cause, saying what the cause was read as.
 
 `campaign` stands for `campaign.xml`, or `campaign.zip` for a compressed save.
 The log does not say which.

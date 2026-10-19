@@ -133,7 +133,7 @@ by pairing its text with vanilla's at the same location:
 the same `strings.json` key, the same CSV row, or the same string constant in the same class of the game jars.
 The core localisation at `startup-optimization` 2026.09.04 was the edition read;
 the typeface editions share its text.
-The Dialog, Dialog option, Entity, Hullmod, Interaction, Screen and Target rows were read off the installed `startup-optimization` edition,
+The Dialog, Dialog option, Entity, Fighter wing, Hull, Hullmod, Interaction, Screen, Target and Weapon rows were read off the installed `startup-optimization` edition,
 which records no date of its own.
 
 | English | 简体中文 | Source |
@@ -148,7 +148,9 @@ which records no date of its own.
 | Dialog option | 选项 | `starfarer_obf.jar`, the story-point help: "dialog options" is 对话选项; the failsafe's "failsafe option" is 故障保护选项 |
 | Entity | 实体 | `descriptions.csv` `test_station`: "a custom campaign entity" is 自定义实体 |
 | Faction | 势力 | `starfarer.api.jar` |
+| Fighter wing | 战机联队 | `strings.json` `chmWingPurchase_text`: "you just bought a new fighter wing" is 你购买了一个战机联队 |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Hull, (D) hull (a d-hull) | 船体, (D) 船体 | `tips.json`: "Ships with a (D) designation are substandard versions of the normal hulls." is 带有 (D) 标识的船体是性能低于正常状态的低质量船体 |
 | Hullmod | 舰船插件 | `tooltips.json`: "Change the weapons and hullmods equipped on this ship." is 改变这艘船的武器与舰船插件; the codex's "Hull Modifications" is 舰船插件. A bare 插件 reads as a hullmod too: S-插件, D-插件, 本插件 |
 | Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
 | Interaction | 交互 | `starfarer.api.jar`, `RuleBasedInteractionDialogPluginImpl`: "any mission interaction in the current dialog" is 当前对话框中的某些任务交互 |
@@ -162,6 +164,7 @@ which records no date of its own.
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
 | Target | 目标 | `descriptions.csv` `plasma`: "toward the target" is 射向目标 |
+| Weapon | 武器 | `tooltips.json`, as the Hullmod row: "the weapons and hullmods" is 武器与舰船插件 |
 
 ## KMLib terms
 
@@ -349,6 +352,9 @@ A version heading is never translated; see [translating the changelog](#translat
 | Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
 | load (of a save), failed load, retry (vanilla loading the save again from another file) | 读取, 读取失败, 重试 | 读取 as the vanilla Save row's 读取最近的存档; 重试, the usual computing word |
 | newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
+| missing content (an id a save holds and no installed mod defines) | 缺失内容 | 缺失, missing, with 内容, content |
+| base hull (the hull a (D) hull is built from) | 基础船体 | 基础 as the vanilla Blueprint row's 基础舰船蓝图, with the vanilla Hull row's 船体 |
+| variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game jar, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
 | load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
 | cause (the exception a failed load hit) | 原因 | the plain word |
 

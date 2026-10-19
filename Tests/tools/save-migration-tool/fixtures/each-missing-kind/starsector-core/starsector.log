@@ -1,0 +1,34 @@
+100 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Variant_1...
+200 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+200 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+Caused by: java.lang.RuntimeException: Ship hull variant [gone_hull_Standard] not found!
+	at com.fs.starfarer.loading.specs.HullVariantSpec.readResolve(Unknown Source)
+210 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+300 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Wing_2...
+400 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+400 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+Caused by: java.lang.RuntimeException: Fighter wing spec [gone_wing] not found
+	at com.fs.starfarer.campaign.CargoItemStack.readResolve(Unknown Source)
+410 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+500 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Hullmod_3...
+600 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+600 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+Caused by: java.lang.RuntimeException: Hullmod with id [gone_dmod] not found
+	at com.fs.starfarer.loading.specs.g.isDHull(Unknown Source)
+610 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+700 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Spec_4...
+800 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+800 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+Caused by: java.lang.RuntimeException: Spec of class [com.fs.starfarer.loading.SpecialItemSpec] with id [gone_item] not found
+	at com.fs.starfarer.loading.SpecStore.o00000(Unknown Source)
+810 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+900 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Other_5...
+1000 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+1000 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - null
+java.lang.NullPointerException
+	at com.fs.starfarer.campaign.save.CampaignGameManager.o00000(Unknown Source)
+1010 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
