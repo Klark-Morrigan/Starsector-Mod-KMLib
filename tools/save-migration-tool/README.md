@@ -20,6 +20,9 @@ They are repository tooling: the release zip does not carry them.
 | [`Get-SaveLoadFailure.ps1`](Get-SaveLoadFailure.ps1) | Which saves the game's logs show loaded, and why a load failed |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
+Each script holds its parameters and its flow.
+The functions it calls live one per file under [`lib/`](lib/), named after the function, and the scripts dot-source the ones they need.
+
 Every script writes data to stdout and what it read and decided to stderr.
 `Get-SaveLoadFailure.ps1 -AsJson` prints its data as JSON;
 `Get-ModRoster.ps1` returns objects for another script to consume.
@@ -120,12 +123,18 @@ Each entry carries `Id`, `Version`, `Folder`, `RelativePath` (under the install 
 
 ## Tests
 
-[`Get-SaveLoadFailure.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-SaveLoadFailure.Tests.ps1)
+Each `lib/` function has a unit suite of the same name under
+[`Tests/tools/save-migration-tool/lib/`](../../Tests/tools/save-migration-tool/lib/),
+with the functions it calls mocked.
+
+Each script has an integration suite, which runs it with its `lib/` functions unmocked:
+[`Get-SaveLoadFailure.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-SaveLoadFailure.IntegrationTests.Tests.ps1)
 runs the script against hand-written install roots under
 [`fixtures/`](../../Tests/tools/save-migration-tool/fixtures/).
-[`Get-ModRoster.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.Tests.ps1)
+[`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case,
 so each odd `mod_info.json` sits beside the assertion about it.
+
 No test reads a real install, log or save.
 
 The tests live under the repository's top-level `Tests\`, mirroring this folder,

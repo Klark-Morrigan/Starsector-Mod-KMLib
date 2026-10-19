@@ -1,5 +1,6 @@
-# Pester tests for Get-SaveLoadFailure.ps1.
-# Run with: Invoke-Pester -Path .\Get-SaveLoadFailure.Tests.ps1
+# Integration tests for Get-SaveLoadFailure.ps1: the script and its lib\ functions run together, unmocked.
+# Each lib function's own behaviour is pinned by its unit suite under lib\.
+# Run with: Invoke-Pester -Path .\Get-SaveLoadFailure.IntegrationTests.Tests.ps1
 #
 # Each fixture under fixtures\ is a hand-written install root holding only starsector-core\starsector.log
 # and its rotated siblings. The lines are trimmed copies of what 0.98a writes. No test reads a real log.
@@ -44,7 +45,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-SaveLoadFailure' {
+Describe 'Get-SaveLoadFailure.IntegrationTests' {
 
     Context 'two failed loads of one save, the second split across a log rotation' {
 
@@ -196,7 +197,8 @@ Describe 'Get-SaveLoadFailure' {
 
             $script:Run.Diagnostics[-5..-1] | Should -Be @(
                 'Get-SaveLoadFailure: save_Other_5: the cause names no missing content'
-                'Get-SaveLoadFailure: save_Spec_4: missing Spec gone_item of spec class com.fs.starfarer.loading.SpecialItemSpec'
+                ('Get-SaveLoadFailure: save_Spec_4: missing Spec gone_item ' +
+                    'of spec class com.fs.starfarer.loading.SpecialItemSpec')
                 'Get-SaveLoadFailure: save_Hullmod_3: missing Hullmod gone_dmod'
                 'Get-SaveLoadFailure: save_Wing_2: missing FighterWing gone_wing'
                 'Get-SaveLoadFailure: save_Variant_1: missing Variant gone_hull_Standard'
@@ -237,7 +239,8 @@ Describe 'Get-SaveLoadFailure' {
             $run = Invoke-SaveLoadFailure @{ StarsectorRoot = (Get-FixtureRoot 'no-loads'); AsJson = $true }
 
             $run.Output | Should -Be '[]'
-            $run.Diagnostics[-1] | Should -Be 'Get-SaveLoadFailure: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
+            $run.Diagnostics[-1] |
+                Should -Be 'Get-SaveLoadFailure: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
         }
     }
 

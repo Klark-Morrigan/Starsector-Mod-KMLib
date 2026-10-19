@@ -29,216 +29,18 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Version components are zero-padded to this width so an ordinal string
-# comparison matches numeric ordering ("10" must sort above "9").
-$VersionPadWidth = 6
+. (Join-Path $PSScriptRoot 'lib\ConvertFrom-StarsectorJson.ps1')
+. (Join-Path $PSScriptRoot 'lib\Format-ModVersion.ps1')
+. (Join-Path $PSScriptRoot 'lib\Get-JsonPropertyValue.ps1')
+. (Join-Path $PSScriptRoot 'lib\Get-VersionObjectParts.ps1')
+. (Join-Path $PSScriptRoot 'lib\Get-VersionSortKey.ps1')
+. (Join-Path $PSScriptRoot 'lib\Remove-JsonComment.ps1')
+. (Join-Path $PSScriptRoot 'lib\Write-DiagnosticLine.ps1')
 
-# Components compared per version. Starsector versions are major.minor.patch
-# with an occasional build suffix, so four covers every observed shape.
-$VersionPartCount = 4
+$DiagnosticSource = 'Get-ModRoster'
 
 $StatusParsed = 'ok'
 $StatusUnparsed = 'unparsed'
-
-function Write-DiagnosticLine {
-    # Stderr keeps stdout for the roster, which callers consume as objects.
-    param([string] $Message)
-
-    [Console]::Error.WriteLine("Get-ModRoster: $Message")
-}
-
-function Get-JsonPropertyValue {
-    <#
-        Reads a property a parsed JSON object may lack, as null.
-        Strict mode throws on a missing property, and mod authors omit fields freely.
-    #>
-    param(
-        [object] $Object,
-        [string] $Name
-    )
-
-    if ($null -eq $Object) {
-        return $null
-    }
-
-    $property = $Object.PSObject.Properties[$Name]
-
-    if ($null -eq $property) {
-        return $null
-    }
-
-    return $property.Value
-}
-
-function Get-VersionObjectParts {
-    # The major, minor and patch of the { major, minor, patch } version form, a missing one as null.
-    param([object] $Version)
-
-    return ,@(
-        (Get-JsonPropertyValue -Object $Version -Name 'major'),
-        (Get-JsonPropertyValue -Object $Version -Name 'minor'),
-        (Get-JsonPropertyValue -Object $Version -Name 'patch')
-    )
-}
-
-function Remove-JsonComment {
-    <#
-        Strips # and // line comments that sit outside string literals.
-        A regex cannot do this safely in either direction: matching anywhere
-        destroys the "//" in a URL and the "#" in a hex colour, while matching
-        only whole lines misses the comments that trail data on the same line
-        (which is how most mod_info.json files annotate their fields).
-    #>
-    param([string] $Text)
-
-    $builder = [System.Text.StringBuilder]::new($Text.Length)
-    $isInString = $false
-    $isEscaped = $false
-    $index = 0
-
-    while ($index -lt $Text.Length) {
-
-        $char = $Text[$index]
-
-        if ($isInString) {
-
-            [void] $builder.Append($char)
-
-            if ($isEscaped) {
-                $isEscaped = $false
-            } elseif ($char -eq '\') {
-                $isEscaped = $true
-            } elseif ($char -eq '"') {
-                $isInString = $false
-            }
-
-            $index++
-            continue
-        }
-
-        if ($char -eq '"') {
-
-            $isInString = $true
-            [void] $builder.Append($char)
-            $index++
-            continue
-        }
-
-        $isComment = ($char -eq '#') -or
-            ($char -eq '/' -and ($index + 1) -lt $Text.Length -and $Text[$index + 1] -eq '/')
-
-        if ($isComment) {
-
-            while ($index -lt $Text.Length -and $Text[$index] -ne "`n") {
-                $index++
-            }
-
-            continue
-        }
-
-        [void] $builder.Append($char)
-        $index++
-    }
-
-    return $builder.ToString()
-}
-
-# Single-quoted scalar in value position: MagicLib and apex_design both write
-# "major": '1' inside their version object.
-$SingleQuotedValuePattern = "(?<=[:\[,{]\s{0,8})'([^']*)'(?=\s{0,8}[,\]}])"
-
-# Unquoted bare word in value position, as in Thunder's Flag Pack's
-# "patch":a. true/false/null are excluded so real literals survive.
-$BareWordValuePattern = ':(\s*)(?!true\b|false\b|null\b)([A-Za-z_][\w.\-]*)(\s*[,}\]])'
-
-function ConvertFrom-StarsectorJson {
-    <#
-        Starsector's JSON reader accepts input that ConvertFrom-Json rejects:
-        BOMs, line comments, trailing commas, single-quoted scalars and bare
-        unquoted words.
-
-        Repairs are tried least-invasive first and never applied
-        speculatively, because a rewrite can corrupt a file that did not need
-        it. The single-quote pass is the cautionary case: it reads a pair of
-        apostrophes in prose as a quoted scalar, which breaks Magellan
-        Protectorate - a file that parses cleanly without it.
-    #>
-    param([string] $Path)
-
-    $raw = [System.IO.File]::ReadAllText($Path)
-    $raw = Remove-JsonComment -Text $raw
-    $raw = [regex]::Replace($raw, ',(\s*[}\]])', '$1')
-
-    $singleQuoted = [regex]::Replace($raw, $SingleQuotedValuePattern, '"$1"')
-    $bareWord = [regex]::Replace($raw, $BareWordValuePattern, ':$1"$2"$3')
-    $bothRepairs = [regex]::Replace($singleQuoted, $BareWordValuePattern, ':$1"$2"$3')
-
-    $lastError = $null
-
-    foreach ($candidate in @($raw, $singleQuoted, $bareWord, $bothRepairs)) {
-
-        try {
-            return $candidate | ConvertFrom-Json
-
-        } catch {
-            # The next, more invasive repair gets its turn; the throw below reports when none parses.
-            $lastError = $_.Exception.Message
-        }
-    }
-
-    throw "no repair produced valid JSON: $Path ($lastError)"
-}
-
-function Get-VersionSortKey {
-    <#
-        Builds an ordinally comparable key from either version shape: the
-        "1.2.3" string form or the { major, minor, patch } object form.
-        Components keep their leading digits only, so "91.DEV" ranks as 91
-        and "1.3.1b" as 1 rather than collapsing to zero.
-    #>
-    param([object] $Version)
-
-    if ($null -eq $Version) {
-        $parts = @()
-
-    } elseif ($Version -is [string] -or $Version -is [int] -or $Version -is [double]) {
-        $parts = "$Version" -split '[.\-_ ]'
-
-    } else {
-        $parts = Get-VersionObjectParts -Version $Version
-    }
-
-    $key = foreach ($index in 0..($VersionPartCount - 1)) {
-
-        $component = if ($index -lt $parts.Count) { "$($parts[$index])" } else { '0' }
-        $leadingDigits = [regex]::Match($component.Trim(), '^\d+')
-        $number = if ($leadingDigits.Success) { [int] $leadingDigits.Value } else { 0 }
-        $number.ToString().PadLeft($VersionPadWidth, '0')
-    }
-
-    return ($key -join '.')
-}
-
-function Format-ModVersion {
-    # Collapses both version shapes to one displayable string.
-    param([object] $Version)
-
-    if ($null -eq $Version) {
-        return ''
-    }
-
-    if ($Version -is [string]) {
-        return $Version
-    }
-
-    if ($null -ne (Get-JsonPropertyValue -Object $Version -Name 'major')) {
-
-        $parts = Get-VersionObjectParts -Version $Version
-        return (@($parts | Where-Object { $null -ne $_ }) -join '.')
-    }
-
-    return "$Version"
-}
 
 $modsRoot = Join-Path $StarsectorRoot 'mods'
 
@@ -361,7 +163,8 @@ foreach ($group in ($candidates | Group-Object -Property Id)) {
 
 $unparsedCount = @($roster | Where-Object { $_.Status -eq $StatusUnparsed }).Count
 
-Write-DiagnosticLine ("read $($candidates.Count) mod folders under $modsRoot and $($enabledIds.Count) enabled IDs; " +
+Write-DiagnosticLine -Source $DiagnosticSource -Message (
+    "read $($candidates.Count) mod folders under $modsRoot and $($enabledIds.Count) enabled IDs; " +
     "listing $($roster.Count) mods ($unparsedCount unparsed), " +
     "skipping $disabledCount disabled and $supersededCount superseded copies")
 

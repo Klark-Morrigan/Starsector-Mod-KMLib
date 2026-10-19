@@ -1,5 +1,6 @@
-# Pester tests for Get-ModRoster.ps1.
-# Run with: Invoke-Pester -Path .\Get-ModRoster.Tests.ps1
+# Integration tests for Get-ModRoster.ps1: the script and its lib\ functions run together, unmocked.
+# Each lib function's own behaviour is pinned by its unit suite under lib\.
+# Run with: Invoke-Pester -Path .\Get-ModRoster.IntegrationTests.Tests.ps1
 #
 # Each case builds a small install under TestDrive: a mods\ folder of hand-written mod_info.json files and,
 # where the case needs one, an enabled_mods.json. No test reads a real install.
@@ -68,7 +69,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-ModRoster' {
+Describe 'Get-ModRoster.IntegrationTests' {
 
     Context 'an install with enabled, disabled and superseded mods' {
 
