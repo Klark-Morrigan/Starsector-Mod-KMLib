@@ -1,7 +1,7 @@
 # Folds vanilla's retries into the load that caused them.
 # An attempt is a retry when the one before it failed on the same save and the load has not yet used every source.
 # A player loading the same broken save twice so still reads as two loads.
-#   Depends on Get-LoadOutcomeNames and Get-MissingContent being dot-sourced into the same scope.
+#   Depends on Get-LoadOutcomeNames being dot-sourced into the same scope.
 function Group-LoadAttempt {
 
     param([object[]] $Attempts)
@@ -44,13 +44,10 @@ function Group-LoadAttempt {
                 Outcome   = $attempt.Outcome
                 CauseType = $attempt.CauseType
                 Cause     = $attempt.Cause
-                Missing   = Get-MissingContent -CauseType $attempt.CauseType -Cause $attempt.Cause
                 LogFile   = $attempt.LogFile
                 LogLine   = $attempt.LogLine
             }
         }
-
-        $sourcedAttempts = @($sourcedAttempts)
 
         [pscustomobject]@{
             SaveFolder = Split-Path -Leaf $firstAttempt.SavePath
@@ -58,8 +55,7 @@ function Group-LoadAttempt {
             Outcome    = $loadAttempts[$loadAttempts.Count - 1].Outcome
             CauseType  = $firstAttempt.CauseType
             Cause      = $firstAttempt.Cause
-            Missing    = $sourcedAttempts[0].Missing
-            Attempts   = $sourcedAttempts
+            Attempts   = @($sourcedAttempts)
         }
     }
 }

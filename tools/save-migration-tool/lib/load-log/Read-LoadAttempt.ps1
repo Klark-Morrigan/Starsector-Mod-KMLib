@@ -2,7 +2,8 @@
 # with how many lines and attempts each file held.
 # An attempt's lines may straddle a rotation, so the parse state carries across files.
 # A relative save path resolves against SaveBaseDirectory, the game's working directory.
-#   Depends on Get-LoadOutcomeNames being dot-sourced into the same scope.
+#   Depends on ConvertFrom-LogLine, ConvertFrom-ThrowableHeader and Get-LoadOutcomeNames
+#   being dot-sourced into the same scope.
 function Read-LoadAttempt {
 
     param(
@@ -10,12 +11,9 @@ function Read-LoadAttempt {
         [string] $SaveBaseDirectory
     )
 
-    # Every load line comes from this logger; its name gates the cheap pre-check on each log line.
+    # Every load line comes from this logger.
+    # Its name is checked with Contains first, which spares the regex on almost every line of a long log.
     $loaderLoggerName = 'com.fs.starfarer.campaign.save.CampaignGameManager'
-
-    # A log line from the loader: "<ms> [<thread>] <LEVEL> <logger>  - <message>".
-    # Anchoring on the timestamp matters: the loader's own stack frames name the same class.
-    $loaderLogLinePattern = "^\d+ \[[^\]]*\] (?<level>\w+)\s+$([regex]::Escape($loaderLoggerName))\s+- (?<message>.*)$"
 
     $attemptStartPattern = '^Loading (?<path>.+)\.\.\.$'
     $attemptSuccessMessage = 'Finished loading'
@@ -23,11 +21,6 @@ function Read-LoadAttempt {
 
     # The loader logs its exception at this level, then prints the trace beneath it.
     $exceptionLogLevel = 'ERROR'
-
-    # A trace's own header and each "Caused by:" line name a throwable at column 0.
-    # Frames and "Suppressed:" blocks are indented, and log lines open with a timestamp, so neither matches.
-    $throwableHeaderPattern =
-        '^(?:Caused by: )?(?<type>(?:[A-Za-z_$][\w$]*\.)+[\w$]*(?:Exception|Error|Throwable))(?:: (?<message>.*))?$'
 
     $outcomes = Get-LoadOutcomeNames
     $attempts = [System.Collections.Generic.List[object]]::new()
@@ -43,34 +36,34 @@ function Read-LoadAttempt {
         foreach ($line in [System.IO.File]::ReadLines($logFile)) {
 
             $lineNumber++
-            $loaderLine = if ($line.Contains($loaderLoggerName)) { [regex]::Match($line, $loaderLogLinePattern) }
-            $isLoaderLine = $null -ne $loaderLine -and $loaderLine.Success
+            $loaderLine = if ($line.Contains($loaderLoggerName)) {
+                ConvertFrom-LogLine -Line $line -LoggerName $loaderLoggerName
+            }
 
             if ($isReadingCause) {
-                if (-not $isLoaderLine) {
+                if ($null -eq $loaderLine) {
 
-                    $header = [regex]::Match($line, $throwableHeaderPattern)
+                    $header = ConvertFrom-ThrowableHeader -Line $line
 
                     # Java prints the chain outermost first, so the last header is the root cause.
-                    if ($header.Success) {
-                        $currentAttempt.CauseType = $header.Groups['type'].Value
-                        $currentAttempt.Cause = $header.Groups['message'].Value
+                    if ($null -ne $header) {
+                        $currentAttempt.CauseType = $header.Type
+                        $currentAttempt.Cause = $header.Message
                     }
                     continue
                 }
 
-                if ($loaderLine.Groups['level'].Value -eq $exceptionLogLevel) { continue }
+                if ($loaderLine.Level -eq $exceptionLogLevel) { continue }
 
                 $isReadingCause = $false
                 $currentAttempt = $null
             }
 
-            if (-not $isLoaderLine) {
+            if ($null -eq $loaderLine) {
                 continue
             }
 
-            $message = $loaderLine.Groups['message'].Value
-            $start = [regex]::Match($message, $attemptStartPattern)
+            $start = [regex]::Match($loaderLine.Message, $attemptStartPattern)
 
             if ($start.Success) {
 
@@ -91,12 +84,12 @@ function Read-LoadAttempt {
                 continue
             }
 
-            if ($message -eq $attemptSuccessMessage) {
+            if ($loaderLine.Message -eq $attemptSuccessMessage) {
 
                 $currentAttempt.Outcome = $outcomes.Loaded
                 $currentAttempt = $null
 
-            } elseif ($message -eq $attemptFailureMessage) {
+            } elseif ($loaderLine.Message -eq $attemptFailureMessage) {
 
                 $currentAttempt.Outcome = $outcomes.Failed
                 $isReadingCause = $true

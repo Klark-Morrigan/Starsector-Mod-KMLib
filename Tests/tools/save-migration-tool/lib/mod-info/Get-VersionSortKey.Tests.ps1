@@ -1,8 +1,8 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-JsonPropertyValue.ps1"
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-VersionObjectParts.ps1"
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-VersionSortKey.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Get-JsonPropertyValue.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Get-VersionObjectParts.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Get-VersionSortKey.ps1"
 }
 
 Describe 'Get-VersionSortKey' {

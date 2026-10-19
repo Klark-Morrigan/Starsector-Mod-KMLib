@@ -1,5 +1,5 @@
 BeforeAll {
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-LoadOutcomeNames.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-LoadOutcomeNames.ps1"
 }
 
 Describe 'Get-LoadOutcomeNames' {

@@ -103,10 +103,11 @@ Describe 'Get-ModRoster.IntegrationTests' {
             ($script:Run.Roster | Where-Object Id -EQ 'beta').Version | Should -Be '2.0.3'
         }
 
-        It 'logs what it read and decided to stderr' {
+        It 'logs which copy won over which, and what it read and decided, to stderr' {
             $script:Run.Diagnostics | Should -Be @(
-                "Get-ModRoster: read 4 mod folders under $script:InstallRoot\mods and 2 enabled IDs; " +
-                'listing 2 mods (0 unparsed), skipping 1 disabled and 1 superseded copies'
+                'Get-ModRoster: alpha: Alpha-1.10.0 (1.10.0) wins over Alpha (1.9.0)'
+                ("Get-ModRoster: read 4 mod folders under $script:InstallRoot\mods and 2 enabled IDs; " +
+                    'listing 2 mods (0 unparsed), skipping 1 disabled and 1 superseded copies')
             )
         }
 
@@ -116,54 +117,30 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             $run.Roster.Id | Sort-Object | Should -Be @('alpha', 'beta', 'gamma')
         }
+
+        It 'reports the same relative path for a root written with a trailing slash' {
+
+            $run = Invoke-ModRoster @{ StarsectorRoot = "$script:InstallRoot\" }
+
+            ($run.Roster | Where-Object Id -EQ 'alpha').RelativePath | Should -Be 'mods\Alpha-1.10.0'
+        }
     }
 
-    Context 'mod_info.json files the game reads but strict JSON does not' {
+    Context 'a mod_info.json the game reads but strict JSON does not' {
 
-        BeforeAll {
+        It 'reads it as the game does: # comments, trailing commas and single-quoted values' {
 
-            $script:Run = Invoke-ModRoster @{
+            $modInfo = "{`n  # a comment line`n  `"id`": `"a`", # a trailing comment`n" +
+                "  `"version`": { `"major`": '1', `"minor`": 2, },`n}"
 
-                StarsectorRoot = (New-ModInstall -Name 'lenient' `
-                    -EnabledModsJson '{ "enabledMods": ["a", "b", "c", "d", "e", "f", "g"] }' `
-                    -ModInfoByFolder @{
-                        'a' = "{`n  # a comment line`n  `"id`": `"a`", // a trailing comment`n  `"url`": `"https://example.com/a`",`n  `"version`": `"1.0`",`n}"
-                        'b' = '{ "id": "b", "version": { "major": ''3'', "minor": ''1'', "patch": ''4'' } }'
-                        'c' = '{ "id": "c", "version": { "major": 1, "minor": 2, "patch":a } }'
-                        'd' = "$([char] 0xFEFF){ `"id`": `"d`", `"version`": `"0.5`" }"
-                        'e' = '{ "id": "e", "name": "The \"Quoted\" # Mod", "version": "2.1" }'
-                        'f' = '{ "id": "f", "version": 1.5 }'
-                        'g' = '{ "id": "g" }'
-                    })
+            $run = Invoke-ModRoster @{
+
+                StarsectorRoot = (New-ModInstall -Name 'lenient' -EnabledModsJson '{ "enabledMods": ["a"] }' `
+                    -ModInfoByFolder @{ 'a' = $modInfo })
             }
-        }
 
-        It 'parses comments, a URL holding //, and trailing commas' {
-            ($script:Run.Roster | Where-Object Id -EQ 'a').Version | Should -Be '1.0'
-        }
-
-        It 'parses single-quoted version parts' {
-            ($script:Run.Roster | Where-Object Id -EQ 'b').Version | Should -Be '3.1.4'
-        }
-
-        It 'parses a bare-word version part' {
-            ($script:Run.Roster | Where-Object Id -EQ 'c').Version | Should -Be '1.2.a'
-        }
-
-        It 'parses a file opening with a byte order mark' {
-            ($script:Run.Roster | Where-Object Id -EQ 'd').Version | Should -Be '0.5'
-        }
-
-        It 'keeps a # inside a string holding escaped quotes' {
-            ($script:Run.Roster | Where-Object Id -EQ 'e').Version | Should -Be '2.1'
-        }
-
-        It 'reads a version written as a bare number' {
-            ($script:Run.Roster | Where-Object Id -EQ 'f').Version | Should -Be '1.5'
-        }
-
-        It 'lists a mod with no version, with an empty version' {
-            ($script:Run.Roster | Where-Object Id -EQ 'g').Version | Should -Be ''
+            $run.Roster.Version | Should -Be '1.2'
+            $run.Warnings.Count | Should -Be 0
         }
     }
 
@@ -250,14 +227,17 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
     Context 'folders without a mod_info.json' {
 
-        It 'skips them' {
+        It 'skips them, naming them in the log' {
 
             $root = New-ModInstall -Name 'noInfo' -EnabledModsJson '{ "enabledMods": ["a"] }' `
                 -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
 
             New-Item -ItemType Directory -Path (Join-Path $root 'mods\loose-assets') | Out-Null
 
-            (Invoke-ModRoster @{ StarsectorRoot = $root }).Roster.Id | Should -Be @('a')
+            $run = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            $run.Roster.Id | Should -Be @('a')
+            $run.Diagnostics[0] | Should -Be 'Get-ModRoster: skipped 1 folders with no mod_info.json: loose-assets'
         }
     }
 

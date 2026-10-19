@@ -1,41 +1,27 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Lists every save load in starsector.log, newest first: the save folder, the outcome, and the cause of a failure.
+    Lists every save load in starsector.log and its rotated siblings, newest first:
+    the save folder, the outcome, the cause of a failure, and the missing content the cause names.
 
 .DESCRIPTION
-    A failed load buries its cause in a stack trace a thousand lines long.
-    Vanilla then retries the load twice: from campaign.xml.bak, then from campaign.xml.inprogress.
-    One click on Load can so leave three failures in the log,
-    the last usually a FileNotFoundException for an .inprogress file that never existed.
-
-    This script groups those retries back into the one load the player made.
-    The load's cause is the one its first attempt hit, since campaign.xml is the newest file.
-    Each attempt keeps its own cause and log position for a closer look.
-
-    A cause usually names one id the save holds and no installed mod defines.
-    Each cause is read into that content's kind and id, so the next step knows what to look for.
-
-    Rotated logs (starsector.log.1, .2, ...) are read too, oldest first,
-    so a load the game logged before a rotation is still found.
-    Rotation renumbers the files, so a reported log position holds only until the game writes the next one.
-
-    Loads are listed newest first.
-    An older load is likelier to describe a save or a mod set that has changed since.
-
+    Vanilla's own retries of a load fold into the load that caused them.
     Stdout carries the loads only. What the script read and decided goes to stderr.
+    The README beside this script explains how vanilla logs a load and what each field holds.
 
 .EXAMPLE
-    Get-SaveLoadFailure.ps1 -AsJson
-    Lists every load in the default install's logs, as JSON.
+    Get-SaveLoadAttempt.ps1 -StarsectorRoot <install> -AsJson
+    Lists every load in the install's logs, as JSON.
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Install')]
 param(
-    # Starsector install root. The log is resolved beneath it unless -LogPath names one.
-    [string] $StarsectorRoot = 'c:\a_Games\Starsector',
+    # Starsector install root; the log is resolved beneath it.
+    [Parameter(Mandatory, ParameterSetName = 'Install')]
+    [string] $StarsectorRoot,
 
     # The log to read. Its rotated siblings are read with it.
+    [Parameter(Mandatory, ParameterSetName = 'Log')]
     [string] $LogPath,
 
     # Print JSON instead of objects, for a caller that parses the output.
@@ -45,20 +31,23 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-. (Join-Path $PSScriptRoot 'lib\Format-MissingContentLine.ps1')
-. (Join-Path $PSScriptRoot 'lib\Get-LoadOutcomeNames.ps1')
-. (Join-Path $PSScriptRoot 'lib\Get-LogFileChain.ps1')
-. (Join-Path $PSScriptRoot 'lib\Get-MissingContent.ps1')
-. (Join-Path $PSScriptRoot 'lib\Group-LoadAttempt.ps1')
-. (Join-Path $PSScriptRoot 'lib\Read-LoadAttempt.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Add-MissingContent.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\ConvertFrom-LogLine.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\ConvertFrom-ThrowableHeader.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Format-MissingContentLine.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Get-LoadOutcomeNames.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Get-LogFileChain.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Get-MissingContent.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Group-LoadAttempt.ps1')
+. (Join-Path $PSScriptRoot 'lib\load-log\Read-LoadAttempt.ps1')
 . (Join-Path $PSScriptRoot 'lib\Write-DiagnosticLine.ps1')
 
-$DiagnosticSource = 'Get-SaveLoadFailure'
+$DiagnosticSource = 'Get-SaveLoadAttempt'
 
 # The game's log location relative to the install root.
 $DefaultLogRelativePath = 'starsector-core\starsector.log'
 
-if (-not $LogPath) {
+if ($PSCmdlet.ParameterSetName -eq 'Install') {
     $LogPath = Join-Path $StarsectorRoot $DefaultLogRelativePath
 }
 
@@ -83,7 +72,7 @@ foreach ($fileRead in $read.FileReads) {
 }
 
 $attempts = @($read.Attempts)
-$loads = @(Group-LoadAttempt -Attempts $attempts)
+$loads = @(Group-LoadAttempt -Attempts $attempts | ForEach-Object { Add-MissingContent -Load $_ })
 [array]::Reverse($loads)
 
 $failedOutcome = (Get-LoadOutcomeNames).Failed

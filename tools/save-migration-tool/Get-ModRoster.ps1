@@ -1,26 +1,27 @@
-#requires -Version 5.1
-# Resolves the "live" Starsector mod roster: for each mod id the game will
-# actually load, the single installed folder that wins.
-#
-# Folder names are not a usable key - the same mod ships as both "bmo" and
-# "Building Menu Overhaul-2.1.0". mod_info.json's "id" is the identity and
-# "version" the recency; enabled_mods.json says which ids the game loads.
-# A tool scoped to this roster leaves disabled mods and superseded copies out
-# without deleting anything from disk, so an older version stays reachable by
-# naming its folder explicitly.
-#
-# Fails OPEN: a mod_info.json that cannot be parsed still yields a roster
-# entry (Status 'unparsed') plus a warning, never a silent drop. A filter
-# that hides a real mod is worse than no filter at all, because nothing
-# signals that it happened.
-#
-# Stdout carries the roster only. The summary of what was read and decided
-# goes to stderr.
+#requires -Version 7.0
+<#
+.SYNOPSIS
+    Lists the installed mods the game loads: for each enabled mod id, the one folder that wins, at its version.
+
+.DESCRIPTION
+    Folder names are not a usable key: the same mod ships as both "bmo" and "Building Menu Overhaul-2.1.0".
+    mod_info.json's "id" is the identity and "version" the recency; enabled_mods.json says which ids the game loads.
+    Disabled mods and superseded copies stay on disk; the roster only leaves them out.
+
+    Stdout carries the roster only. What the script read and decided goes to stderr, and warnings name each
+    mod_info.json or enabled_mods.json it could not read.
+    The README beside this script explains how each file is read.
+
+.EXAMPLE
+    Get-ModRoster.ps1 -StarsectorRoot <install>
+    Lists the enabled mods of the install.
+#>
 
 [CmdletBinding()]
 param(
     # Starsector install root. The mods directory is resolved beneath it.
-    [string] $StarsectorRoot = 'c:\a_Games\Starsector',
+    [Parameter(Mandatory)]
+    [string] $StarsectorRoot,
 
     # Emit every installed mod rather than only those enabled_mods.json lists.
     [switch] $IncludeDisabled
@@ -29,142 +30,94 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-. (Join-Path $PSScriptRoot 'lib\ConvertFrom-StarsectorJson.ps1')
-. (Join-Path $PSScriptRoot 'lib\Format-ModVersion.ps1')
-. (Join-Path $PSScriptRoot 'lib\Get-JsonPropertyValue.ps1')
-. (Join-Path $PSScriptRoot 'lib\Get-VersionObjectParts.ps1')
-. (Join-Path $PSScriptRoot 'lib\Get-VersionSortKey.ps1')
-. (Join-Path $PSScriptRoot 'lib\Remove-JsonComment.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-info\ConvertFrom-StarsectorJson.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-info\Format-ModVersion.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-info\Get-JsonPropertyValue.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-info\Get-VersionObjectParts.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-info\Get-VersionSortKey.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-info\Remove-JsonComment.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-roster\ConvertTo-RosterEntry.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-roster\Get-ModStatusNames.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-roster\Group-ModCandidate.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-roster\Read-EnabledModIds.ps1')
+. (Join-Path $PSScriptRoot 'lib\mod-roster\Read-ModCandidate.ps1')
 . (Join-Path $PSScriptRoot 'lib\Write-DiagnosticLine.ps1')
 
 $DiagnosticSource = 'Get-ModRoster'
 
-$StatusParsed = 'ok'
-$StatusUnparsed = 'unparsed'
-
 $modsRoot = Join-Path $StarsectorRoot 'mods'
 
-if (-not (Test-Path $modsRoot)) {
+if (-not (Test-Path -LiteralPath $modsRoot -PathType Container)) {
     throw "mods directory not found: $modsRoot"
 }
 
-# An unreadable enabled_mods.json must not empty the roster, so fall back to
-# treating every installed mod as live.
-$enabledIds = @()
-$enabledFile = Join-Path $modsRoot 'enabled_mods.json'
+# Every path the roster reports is relative to this one, so it is resolved once, whatever form it was given in.
+$installRoot = (Resolve-Path -LiteralPath $StarsectorRoot).Path
 
-if (Test-Path $enabledFile) {
-
-    try {
-
-        # Read through the property, not Get-JsonPropertyValue: returning an empty list from a function unrolls it
-        # to null, and an install with no mod enabled holds exactly that.
-        $enabledProperty = (ConvertFrom-StarsectorJson -Path $enabledFile).PSObject.Properties['enabledMods']
-
-        if ($null -eq $enabledProperty) {
-            throw 'it holds no enabledMods list'
-        }
-
-        $enabledIds = @($enabledProperty.Value | Where-Object { $_ })
-
-    } catch {
-
-        Write-Warning "enabled_mods.json unparseable, treating all mods as enabled: $($_.Exception.Message)"
-        $IncludeDisabled = $true
-    }
-
-} else {
-
-    Write-Warning "enabled_mods.json not found, treating all mods as enabled."
-    $IncludeDisabled = $true
-}
-
+$enabled = Read-EnabledModIds -ModsRoot $modsRoot
+$isEveryModListed = $IncludeDisabled -or -not $enabled.IsListRead
 $enabledSet = [System.Collections.Generic.HashSet[string]]::new(
-    [string[]] $enabledIds,
+    [string[]] $enabled.Ids,
     [System.StringComparer]::OrdinalIgnoreCase)
 
 $candidates = [System.Collections.Generic.List[object]]::new()
+$skippedFolders = [System.Collections.Generic.List[string]]::new()
 
-foreach ($dir in Get-ChildItem -Path $modsRoot -Directory) {
+foreach ($folder in Get-ChildItem -LiteralPath $modsRoot -Directory) {
 
-    $infoPath = Join-Path $dir.FullName 'mod_info.json'
+    $candidate = Read-ModCandidate -Folder $folder
 
-    if (-not (Test-Path $infoPath)) {
-        continue
+    if ($null -eq $candidate) {
+        $skippedFolders.Add($folder.Name)
+
+    } else {
+        $candidates.Add($candidate)
     }
-
-    $info = $null
-    $parseError = $null
-
-    try {
-        $info = ConvertFrom-StarsectorJson -Path $infoPath
-
-    } catch {
-        $parseError = $_.Exception.Message
-    }
-
-    $modId = Get-JsonPropertyValue -Object $info -Name 'id'
-
-    if (-not $modId) {
-
-        $reason = if ($parseError) { $parseError } else { 'no "id" field' }
-
-        Write-Warning "Unparseable mod_info.json, keeping in roster: $($dir.Name) ($reason)"
-
-        $candidates.Add([pscustomobject]@{
-            Id      = $dir.Name
-            Version = $null
-            SortKey = ''
-            Folder  = $dir
-            Status  = $StatusUnparsed
-        })
-
-        continue
-    }
-
-    $version = Get-JsonPropertyValue -Object $info -Name 'version'
-
-    $candidates.Add([pscustomobject]@{
-        Id      = [string] $modId
-        Version = $version
-        SortKey = Get-VersionSortKey -Version $version
-        Folder  = $dir
-        Status  = $StatusParsed
-    })
 }
 
+if ($skippedFolders.Count -gt 0) {
+
+    Write-DiagnosticLine -Source $DiagnosticSource -Message (
+        "skipped $($skippedFolders.Count) folders with no mod_info.json: $($skippedFolders -join ', ')")
+}
+
+$parsedStatus = (Get-ModStatusNames).Parsed
 $roster = [System.Collections.Generic.List[object]]::new()
 $supersededCount = 0
 $disabledCount = 0
 
-foreach ($group in ($candidates | Group-Object -Property Id)) {
+foreach ($modGroup in (Group-ModCandidate -Candidates $candidates.ToArray())) {
 
-    $ordered = $group.Group | Sort-Object -Property SortKey -Descending
-    $winner = $ordered | Select-Object -First 1
-    $supersededCount += $group.Count - 1
+    $winner = $modGroup.Winner
+
+    foreach ($loser in $modGroup.Superseded) {
+
+        $supersededCount++
+        $winnerCopy = "$($winner.Folder.Name) ($(Format-ModVersion -Version $winner.Version))"
+        $loserCopy = "$($loser.Folder.Name) ($(Format-ModVersion -Version $loser.Version))"
+
+        Write-DiagnosticLine -Source $DiagnosticSource -Message "$($modGroup.Id): $winnerCopy wins over $loserCopy"
+    }
 
     # Unparsed entries bypass the enabled filter: their id is unknown, so the
     # only safe assumption is that they might matter.
-    if ($winner.Status -eq $StatusParsed -and -not $IncludeDisabled -and -not $enabledSet.Contains($winner.Id)) {
+    $isListed = $isEveryModListed -or
+        $winner.Status -ne $parsedStatus -or
+        $enabledSet.Contains($modGroup.Id)
+
+    if (-not $isListed) {
 
         $disabledCount++
         continue
     }
 
-    $roster.Add([pscustomobject]@{
-        Id              = $winner.Id
-        Version         = Format-ModVersion -Version $winner.Version
-        Folder          = $winner.Folder.FullName
-        RelativePath    = $winner.Folder.FullName.Substring($StarsectorRoot.Length).TrimStart('\')
-        Status          = $winner.Status
-        SupersededCount = $group.Count - 1
-    })
+    $roster.Add((ConvertTo-RosterEntry -ModGroup $modGroup -StarsectorRoot $installRoot))
 }
 
-$unparsedCount = @($roster | Where-Object { $_.Status -eq $StatusUnparsed }).Count
+$unparsedCount = @($roster | Where-Object { $_.Status -ne $parsedStatus }).Count
 
 Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "read $($candidates.Count) mod folders under $modsRoot and $($enabledIds.Count) enabled IDs; " +
+    "read $($candidates.Count) mod folders under $modsRoot and $($enabled.Ids.Count) enabled IDs; " +
     "listing $($roster.Count) mods ($unparsedCount unparsed), " +
     "skipping $disabledCount disabled and $supersededCount superseded copies")
 

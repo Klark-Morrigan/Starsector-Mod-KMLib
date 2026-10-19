@@ -1,6 +1,6 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-LogFileChain.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-LogFileChain.ps1"
 
     function script:New-LogFolder {
         # Writes empty files with the given names into a fresh folder under TestDrive and returns the folder.

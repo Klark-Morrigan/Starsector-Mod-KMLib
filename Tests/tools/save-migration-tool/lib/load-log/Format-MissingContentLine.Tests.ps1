@@ -1,5 +1,5 @@
 BeforeAll {
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Format-MissingContentLine.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Format-MissingContentLine.ps1"
 }
 
 Describe 'Format-MissingContentLine' {

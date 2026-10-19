@@ -1,5 +1,5 @@
 BeforeAll {
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-MissingContent.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-MissingContent.ps1"
 }
 
 Describe 'Get-MissingContent' {

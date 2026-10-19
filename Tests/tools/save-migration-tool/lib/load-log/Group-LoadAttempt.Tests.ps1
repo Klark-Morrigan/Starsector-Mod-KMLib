@@ -1,8 +1,7 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-LoadOutcomeNames.ps1"
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Get-MissingContent.ps1"
-    . "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\Group-LoadAttempt.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-LoadOutcomeNames.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Group-LoadAttempt.ps1"
 
     function script:New-Attempt {
         # One attempt as Read-LoadAttempt returns it.
@@ -27,9 +26,7 @@ BeforeAll {
 Describe 'Group-LoadAttempt' {
 
     BeforeEach {
-
         Mock Get-LoadOutcomeNames { [pscustomobject]@{ Loaded = 'L'; Failed = 'F'; Unfinished = 'U' } }
-        Mock Get-MissingContent { if ($Cause) { [pscustomobject]@{ Id = "missing-$Cause" } } }
     }
 
     It 'folds failed retries of one save into one load, naming each source' {
@@ -45,7 +42,7 @@ Describe 'Group-LoadAttempt' {
         $loads[0].Attempts.LogLine | Should -Be @(10, 20, 30)
     }
 
-    It 'takes the cause and missing content of the first attempt, and the outcome of the last' {
+    It 'takes the cause of the first attempt, and the outcome of the last' {
 
         $load = Group-LoadAttempt -Attempts @(
             (New-Attempt -SavePath 'C:\saves\a' -Outcome 'F' -Cause 'first')
@@ -53,9 +50,7 @@ Describe 'Group-LoadAttempt' {
         )
 
         $load.Cause | Should -Be 'first'
-        $load.Missing.Id | Should -Be 'missing-first'
         $load.Outcome | Should -Be 'L'
-        $load.Attempts[1].Missing | Should -BeNullOrEmpty
         $load.SaveFolder | Should -Be 'a'
     }
 
