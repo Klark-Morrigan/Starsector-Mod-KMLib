@@ -1,0 +1,22 @@
+# Delegates to the shared PowerShell CI workflow in Common-PowerShell. It
+# runs the parse, bare-return and PSScriptAnalyzer lints over every *.ps1
+# in the repo, then every *.Tests.ps1 under Tests\ with Pester 5. For
+# KMLib the PowerShell surface is the save migration tool's scripts under
+# tools/ and their suites under Tests/tools/.
+#
+# The unit job runs on windows-latest unless CI_POWERSHELL_RUNNER names
+# another runner. The Docker integration job finds no integration suites
+# here and stops after its scans.
+#
+# PR-only: KMLib's own release re-runs this same gate through
+# mod-release.yml, which calls Common-PowerShell's ci-powershell directly
+# rather than routing back through this caller.
+name: Common-PowerShell
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci-powershell:
+    uses: Klark-Morrigan/Common-PowerShell/.github/workflows/ci-powershell.yml@master

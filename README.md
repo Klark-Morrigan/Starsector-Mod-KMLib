@@ -215,6 +215,17 @@ all with a `.sh` and a `.bat` face:
 - `fix-permissions` -
   re-stages `+x` on tracked `*.sh` files.
 
+Tools run from a checkout,
+never shipped in the release zip:
+
+- [`tools/save-migration-tool/`](tools/save-migration-tool/README.md) -
+  the Save Migration Tool (SMT) scripts,
+  which diagnose a save that stopped loading after a mod update.
+- [`Tests/`](Tests/) -
+  their Pester suites,
+  mirroring the tools' paths.
+  The folder sits at the root because Common-PowerShell's CI discovers `*.Tests.ps1` files only there.
+
 CI and release,
 under [`.github/`](.github/).
 The reusable workflows are what other KM mods consume;
@@ -227,6 +238,9 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   YAML,
   Actions and Bash lint plus bats,
   via Common-Automation.
+- [`workflows/ci-powershell.yml`](.github/workflows/ci-powershell.yml) -
+  PowerShell lint plus the Pester suites under `Tests/`,
+  via Common-PowerShell.
 - [`workflows/release.yml`](.github/workflows/release.yml) -
   the release entry point,
   delegating to [`mod-release.yml`](.github/workflows/mod-release.yml),
@@ -1679,6 +1693,10 @@ These gates cover the YAML / Actions / Bash surface only.
 The Gradle build and JUnit tests are no part of them -
 they run through Gradle,
 see [Build & Test](#build--test).
+Nor is the PowerShell surface:
+[ci-powershell.yml](.github/workflows/ci-powershell.yml) lints it and runs its Pester suites on every pull request,
+and `Invoke-Pester -Path Tests` runs the same suites locally.
+A release re-runs it too.
 
 Two workflows run on every pull request,
 each calling Common-Automation's reusable workflow of the same name:

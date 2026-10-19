@@ -29,7 +29,8 @@
 # config job and stops.
 #
 # Job chain (each downstream job is gated on version-updated == true):
-#   config -> {ci-bash, ci-gradle, ci-yaml} -> prepare-artifact -> create-tag -> create-release
+#   config -> {ci-bash, ci-gradle, ci-powershell, ci-yaml}
+#     -> prepare-artifact -> create-tag -> create-release
 name: mod-release
 
 on:
@@ -207,6 +208,13 @@ jobs:
       sibling-checkouts: ${{ needs.config.outputs.sibling-checkouts }}
     secrets: inherit
 
+  # A mod carrying no PowerShell passes in about a minute: the lints scan no
+  # files and the test runner finds no suites.
+  ci-powershell:
+    needs: config
+    if: needs.config.outputs.version-updated == 'true'
+    uses: Klark-Morrigan/Common-PowerShell/.github/workflows/ci-powershell.yml@master
+
   ci-yaml:
     needs: config
     if: needs.config.outputs.version-updated == 'true'
@@ -218,7 +226,7 @@ jobs:
   # same reason: the build reads shared Gradle scripts from repos that have to
   # sit beside the checkout.
   prepare-artifact:
-    needs: [config, ci-bash, ci-gradle, ci-yaml]
+    needs: [config, ci-bash, ci-gradle, ci-powershell, ci-yaml]
     if: needs.config.outputs.version-updated == 'true'
     runs-on: ${{ fromJSON(needs.config.outputs.runner-json) }}
     steps:

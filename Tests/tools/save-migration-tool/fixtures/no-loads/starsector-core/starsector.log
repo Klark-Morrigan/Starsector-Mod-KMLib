@@ -1,0 +1,2 @@
+100 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Reading save data from [..\saves\save_Alpha_1\descriptor.xml]
+200 [Thread-3] INFO  com.fs.graphics.TextureLoader  - Loading image [graphics/ships/wolf.png]

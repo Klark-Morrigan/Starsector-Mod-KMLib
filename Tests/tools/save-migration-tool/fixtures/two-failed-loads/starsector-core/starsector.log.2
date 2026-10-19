@@ -1,0 +1,44 @@
+100 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Reading save data from [..\saves\save_Alpha_1\descriptor.xml]
+200 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1...
+210 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 2
+210 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 3
+250 [Thread-3] INFO  com.fs.starfarer.loading.LoadingUtils  - Loading CSV data from [DIRECTORY: C:\Games\Starsector\starsector-core\..\mods\IndEvo]
+300 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+300 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+---- Debugging information ----
+message             : Failed calling method
+cause-exception     : java.lang.RuntimeException
+cause-message       : Weapon spec [tania_boomerang_launcher] not found!
+class               : com.fs.starfarer.campaign.ui.trade.CargoItemStack
+-------------------------------
+com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+---- Debugging information ----
+message             : Failed calling method
+cause-exception     : java.lang.RuntimeException
+cause-message       : Weapon spec [tania_boomerang_launcher] not found!
+-------------------------------
+	at com.thoughtworks.xstream.core.util.SerializationMembers.callReadResolve(SerializationMembers.java:78)
+	at com.fs.starfarer.campaign.save.CampaignGameManager.o00000(Unknown Source)
+	at com.fs.starfarer.title.TitleScreenState.dialogDismissed(Unknown Source)
+Caused by: java.lang.RuntimeException: Weapon spec [tania_boomerang_launcher] not found!
+	at com.fs.starfarer.loading.SpecStore.o00000(Unknown Source)
+	... 12 more
+310 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+310 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 12
+310 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1...
+320 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 2
+400 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+400 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+	at com.fs.starfarer.campaign.save.CampaignGameManager.o00000(Unknown Source)
+Caused by: java.lang.RuntimeException: Weapon spec [tania_boomerang_launcher] not found!
+	at com.fs.starfarer.loading.SpecStore.o00000(Unknown Source)
+410 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+410 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1...
+420 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+420 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\campaign.xml.inprogress (The system cannot find the file specified)
+java.io.FileNotFoundException: C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\campaign.xml.inprogress (The system cannot find the file specified)
+	at java.base/java.io.FileInputStream.open0(Native Method)
+	at com.fs.starfarer.campaign.save.CampaignGameManager.o00000(Unknown Source)
+420 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+430 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Reading save data from [C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\descriptor.xml]

@@ -29,6 +29,9 @@ jars/*.jar
 out/
 *.class
 
+# Written by Common-PowerShell's Pester runner, which CI uploads as an artefact.
+/TestResults.xml
+
 # graphify knowledge graph artifacts (local; rebuilt by graphify)
 graphify-out/
 supersets-out/

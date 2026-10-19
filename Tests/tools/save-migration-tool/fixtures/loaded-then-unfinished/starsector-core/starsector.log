@@ -1,0 +1,6 @@
+100 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading ..\saves\save_Beta_2...
+110 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 2
+200 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Finished loading
+200 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 21
+900 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Gamma_3...
+910 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 2
