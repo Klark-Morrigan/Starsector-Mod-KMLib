@@ -18,7 +18,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [Unreleased]
 
-没有面向玩家的变更。
+### 修复
+
+- **更新检查器会以中文打开中文压缩包的更新日志**。
 
 ### 面向开发者
 
@@ -27,6 +29,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 修复
 
+- **中文更新日志链接：** 给定默认语言区域以外的 `locale` 时，`fill-version-file-template` 会把 `changelogURL` 指向 `localisation/<locale>/CHANGELOG.md`，即该语言区域的压缩包所附带的更新日志。不以 `CHANGELOG.md` 结尾的地址保持不变，并给出警告。
 - **空白的势力 ID 视为没有势力**：`FactionRelations.createDispositionReader(SectorAPI)`、`NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` 和 `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)` 不再把它交给星域查询。
 - **`FactionAlliances.buildFrom(List)` 会跳过为 null 的记录**，`AllianceRecord(String, String, List)` 也把为 null 的成员列表读作空列表，与 `FactionAlliances` 读取为 null 的映射的方式一致。
 - **`HighlightedMessage` 按片段在文本中出现的顺序将每行的片段交给游戏**，与 `HighlightedParagraph` 在其他各处的做法一致。此前，调换了槽位顺序的译文会在战役消息中丢失这些高亮。

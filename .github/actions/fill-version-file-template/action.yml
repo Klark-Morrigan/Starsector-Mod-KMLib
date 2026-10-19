@@ -45,8 +45,9 @@ inputs:
       Locale tag of the zip this file ships in, for a mod releasing one zip
       per locale. Set, the download URL names that locale's zip and
       masterVersionFile names that locale's copy of this file, so an install
-      polls the copy leading back to its own language. Empty for a mod
-      keeping no locales.
+      polls the copy leading back to its own language. For a translated
+      locale, changelogURL names the translated changelog its zip carries.
+      Empty for a mod keeping no locales.
     required: false
     default: ''
 
