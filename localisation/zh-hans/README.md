@@ -348,6 +348,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
 | load (of a save), failed load, retry (vanilla loading the save again from another file) | 读取, 读取失败, 重试 | 读取 as the vanilla Save row's 读取最近的存档; 重试, the usual computing word |
+| newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
 | load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
 | cause (the exception a failed load hit) | 原因 | the plain word |
 
