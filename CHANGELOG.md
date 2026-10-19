@@ -18,7 +18,9 @@ The reusable release workflow extracts the section matching the released version
 
 ## [Unreleased]
 
-No player-facing changes.
+### Fixed
+
+- **An update checker opens a Chinese ZIP's changelog in Chinese**.
 
 ### For developers
 
@@ -27,6 +29,7 @@ No player-facing changes.
 
 #### Fixed
 
+- **Chinese changelog link:** given a `locale` other than the default, `fill-version-file-template` points `changelogURL` at `localisation/<locale>/CHANGELOG.md`, the changelog that locale's zip carries. An address not ending in `CHANGELOG.md` is kept, with a warning.
 - **A blank faction ID reads as no faction** in `FactionRelations.createDispositionReader(SectorAPI)`, `NexerelinColoniser.establishColony(SectorAPI, MarketAPI, String, int)` and `NexerelinMarketTransfer.transferOwnership(SectorAPI, MarketAPI, String)`, rather than being handed to the sector.
 - **`FactionAlliances.buildFrom(List)` skips a null record**, and `AllianceRecord(String, String, List)` reads a null member list as empty, as `FactionAlliances` already reads a null map.
 - **`HighlightedMessage` hands each line's runs to the game in text order**, as `HighlightedParagraph` does on every other surface. A translation that reordered its slots lost those highlights in campaign messages.

@@ -30,10 +30,11 @@ if (file(versionFileTemplateName).isFile()) {
     def fillVersionFileScript = new File(actionsDirectory,
         'fill-version-file-template/scripts/fill_version_file_template.sh')
 
-    // Sourced by the script above for the shared metadata helpers, so it is as
-    // much an input as the script is: undeclared, an edit to the helpers would leave
-    // the task up to date over a file the new code writes differently.
+    // Sourced by the script above for the shared metadata and bundle helpers, so
+    // they are as much inputs as the script is: undeclared, an edit to a helper
+    // would leave the task up to date over a file the new code writes differently.
     def modInfoLibraryScript = new File(actionsDirectory, '_lib/mod_info.sh')
+    def localisationLibraryScript = new File(actionsDirectory, '_lib/localisation.sh')
 
     // Forward slashes because this one is handed to bash, which reads a Windows
     // backslash as an escape. The input declarations below take the File as it is.
@@ -131,6 +132,7 @@ if (file(versionFileTemplateName).isFile()) {
         inputs.file "${projectDir}/${versionFileTemplateName}"
         inputs.file fillVersionFileScript
         inputs.file modInfoLibraryScript
+        inputs.file localisationLibraryScript
 
         inputs.property 'originRemoteUrl', originRemoteUrl
         outputs.file "${projectDir}/${versionFileName}"

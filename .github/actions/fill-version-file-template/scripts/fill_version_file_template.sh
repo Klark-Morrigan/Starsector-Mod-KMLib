@@ -48,6 +48,10 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
 
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/localisation.sh
+source "${LIB_DIR}/localisation.sh"
+
 # The suffix keeps the committed template distinct from the generated
 # <mod-id>.version: a dev install symlinks the repo into mods/, and a
 # committed file under the generated name would have version_files.csv
@@ -79,9 +83,9 @@ MOD_ROOT="${3:-.}"
 # The locale tag of the build this file ships in, for a mod releasing one zip
 # per locale. Optional because a mod keeping no locales releases one zip under
 # no tag, and a local build fills the file for whichever locale it holds. Set,
-# it names that locale's zip in the download URL and that locale's copy of this
-# file as the master, so an install polls the copy whose download link leads
-# back to its own language.
+# it names that locale's zip in the download URL, that locale's copy of this
+# file as the master, and that locale's changelog, so an install polls the copy
+# whose download link leads back to its own language and reads its changes in it.
 LOCALE_TAG="${4:-}"
 
 # Kept before the move below, so the output path resolves against the
@@ -102,18 +106,23 @@ mod_info_require_fields "id:${MOD_ID}" "name:${MOD_NAME}" "version:${VERSION}" \
                         "gameVersion:${GAME_VERSION}"
 
 if [[ -z "${ZIP_NAME}" ]]; then
+
   JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
+
   # Required only on this path: a caller that stated the zip name needs no
   # jar to work it out from, and refusing one for a field it never reads
   # would fail mods that publish no jar at all.
   mod_info_require_fields "jars[0]:${JAR_SOURCE}"
+
   ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${LOCALE_TAG}")
 fi
 
 # The template is named after the mod id, so no caller has to state a
 # path that mod_info.json already determines.
 TEMPLATE_FILE="${MOD_ID}${TEMPLATE_EXTENSION}"
+
 if [[ ! -f "${TEMPLATE_FILE}" ]]; then
+
   echo "${SCRIPT_NAME}: template ${TEMPLATE_FILE} not found in ${PWD}" >&2
   exit 1
 fi
@@ -125,9 +134,11 @@ fi
 # push to. Read here, inside the mod root, so the remote consulted is the
 # mod's own rather than that of whatever checkout the caller stood in.
 REPOSITORY="${GITHUB_REPOSITORY:-}"
+
 if [[ -z "${REPOSITORY}" ]]; then
 
   if ! ORIGIN_REMOTE_URL=$(git remote get-url origin 2>/dev/null); then
+
     echo "${SCRIPT_NAME}: GITHUB_REPOSITORY is unset and ${PWD} has no origin" \
          "remote to read <owner>/<repo> from" >&2
     exit 1
@@ -137,11 +148,14 @@ if [[ -z "${REPOSITORY}" ]]; then
   # what separates the host from the owner, so both are read by taking the last
   # two segments and treating ":" as another separator.
   ORIGIN_REMOTE_URL="${ORIGIN_REMOTE_URL%.git}"
+
   if [[ "${ORIGIN_REMOTE_URL}" != */* ]]; then
+
     echo "${SCRIPT_NAME}: cannot read <owner>/<repo> out of the origin remote" \
          "'${ORIGIN_REMOTE_URL}'" >&2
     exit 1
   fi
+
   REPOSITORY_NAME="${ORIGIN_REMOTE_URL##*/}"
   REPOSITORY_OWNER="${ORIGIN_REMOTE_URL%/*}"
   REPOSITORY_OWNER="${REPOSITORY_OWNER##*[:/]}"
@@ -155,7 +169,9 @@ fi
 # is inert, and nothing downstream reads it until a player's update checker
 # does.
 MASTER_VERSION_FILE=$(jq -r '.masterVersionFile' "${TEMPLATE_FILE}")
+
 if [[ -z "${MASTER_VERSION_FILE}" ]] || [[ "${MASTER_VERSION_FILE}" == "null" ]]; then
+
   echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} is missing required field 'masterVersionFile'" >&2
   exit 1
 fi
@@ -166,19 +182,57 @@ fi
 # address ending in another name is a place this release does not publish
 # locale copies to, so the run fails rather than point an install at nothing.
 if [[ -n "${LOCALE_TAG}" ]]; then
+
   UNLOCALISED_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
+
   if [[ "${MASTER_VERSION_FILE##*/}" != "${UNLOCALISED_VERSION_FILE_NAME}" ]]; then
+
     echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} masterVersionFile '${MASTER_VERSION_FILE}' does not end in" \
          "${UNLOCALISED_VERSION_FILE_NAME}, so it names no copy for locale ${LOCALE_TAG}" >&2
     exit 1
   fi
+
   MASTER_VERSION_FILE="${MASTER_VERSION_FILE%/*}/$(mod_info_derive_version_file_name "${MOD_ID}" "${LOCALE_TAG}")"
 fi
 
+# A translated locale's zip carries that locale's changelog in place of the root
+# one, so its changelog address follows: the template's, written for the root
+# changelog, has its last segment swapped for the translation's path beside it.
+# The default locale, a mod keeping no root changelog and a template stating no
+# address keep the template's - the same cases in which the zip keeps the root
+# changelog. Read before the move back to the caller, as the bundle paths are
+# relative to the mod root.
+CHANGELOG_URL=$(jq -r '.changelogURL // ""' "${TEMPLATE_FILE}")
+
+if [[ -n "${LOCALE_TAG}" && -n "${CHANGELOG_URL}" && -f "${LOCALISATION_CHANGELOG_FILE}" \
+      && -f "${LOCALISATION_MANIFEST_FILE}" ]]; then
+
+  DEFAULT_LOCALE_TAG=$(jq -r '.defaultLocale // ""' "${LOCALISATION_MANIFEST_FILE}")
+
+  if [[ "${LOCALE_TAG}" != "${DEFAULT_LOCALE_TAG}" ]]; then
+
+    # Required here as the packaging requires it: a translated locale without its
+    # changelog was never tested, and its zip fails to package for the same reason.
+    TRANSLATED_CHANGELOG_FILE="$(localisation_require_translated_changelog "${LOCALE_TAG}")"
+
+    # An address ending in another name is left as written rather than failed: it
+    # still leads to the root changelog, which is degraded rather than broken.
+    if [[ "${CHANGELOG_URL##*/}" == "${LOCALISATION_CHANGELOG_FILE}" ]]; then
+      CHANGELOG_URL="${CHANGELOG_URL%/*}/${TRANSLATED_CHANGELOG_FILE}"
+    else
+      echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} changelogURL '${CHANGELOG_URL}' does not end in" \
+           "${LOCALISATION_CHANGELOG_FILE}, so locale ${LOCALE_TAG} keeps it rather than naming" \
+           "${TRANSLATED_CHANGELOG_FILE}" >&2
+    fi
+  fi
+fi
+
 if ! [[ "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
+
   echo "${SCRIPT_NAME}: version '${VERSION}' does not split into three numeric parts (MAJOR.MINOR.PATCH)" >&2
   exit 1
 fi
+
 IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION}"
 
 # Base-10 arithmetic canonicalises each part before it is emitted as a JSON
@@ -213,22 +267,27 @@ REPLACEMENTS=$(jq -n \
 # knowing the template's shape, which is what keeps the shape the mod's
 # to state. The visited value is bound to $value first because the "." in a
 # piped expression would otherwise refer to $replacements, not to it. The
-# master address is written back as resolved above, which for an unlocalised
-# file is the template's own.
+# master and changelog addresses are written back as resolved above, which for
+# an unlocalised file are the template's own. The changelog address is written
+# only where the template states one, so the template keeps owning its shape.
 GENERATED=$(jq --argjson replacements "${REPLACEMENTS}" \
   --arg masterVersionFile "${MASTER_VERSION_FILE}" \
+  --arg changelogUrl "${CHANGELOG_URL}" \
   'walk(. as $value
         | if ($value | type) == "string" and ($replacements | has($value))
           then $replacements[$value]
           else $value
           end)
-   | .masterVersionFile = $masterVersionFile' \
+   | .masterVersionFile = $masterVersionFile
+   | if $changelogUrl != "" then .changelogURL = $changelogUrl else . end' \
   "${TEMPLATE_FILE}")
 
 UNREPLACED=$(jq -r --arg tokenRegex "${TOKEN_REGEX}" \
   '[.. | strings | select(test($tokenRegex))] | unique | join(", ")' \
   <<< "${GENERATED}")
+
 if [[ -n "${UNREPLACED}" ]]; then
+
   echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} has unreplaced token(s): ${UNREPLACED}" >&2
   exit 1
 fi
@@ -241,8 +300,13 @@ cd "${CALLER_DIR}"
 # the release asset, so the parent directory is not always one that already
 # exists.
 mkdir -p "$(dirname "${OUTPUT_PATH}")"
+
 printf '%s\n' "${GENERATED}" > "${OUTPUT_PATH}"
 
 echo "Wrote ${OUTPUT_PATH} from ${TEMPLATE_FILE}, version ${VERSION}:" >&2
 echo "  masterVersionFile: ${MASTER_VERSION_FILE}" >&2
 echo "  directDownloadURL: ${DIRECT_DOWNLOAD_URL}" >&2
+
+if [[ -n "${CHANGELOG_URL}" ]]; then
+  echo "  changelogURL: ${CHANGELOG_URL}" >&2
+fi

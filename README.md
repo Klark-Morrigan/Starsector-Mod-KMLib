@@ -1354,6 +1354,12 @@ so no version number is restated by hand outside that file.
   A template whose master address does not end in `<mod-id>.version`
   names a place the release does not publish locale copies to,
   and fails rather than point an install at nothing.
+- For a translated locale,
+  `changelogURL` has its last segment swapped for `localisation/<locale>/CHANGELOG.md`,
+  the changelog that locale's zip carries.
+  The default locale keeps the template's address.
+  An address not ending in `CHANGELOG.md` is kept with a warning,
+  since the root changelog it leads to is still true.
 - Substitution is by whole value,
   which is how the version components come out as JSON numbers rather than quoted digits.
   Every other key is carried through untouched,

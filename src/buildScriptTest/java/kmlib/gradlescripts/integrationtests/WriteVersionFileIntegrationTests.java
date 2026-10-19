@@ -114,7 +114,8 @@ final class WriteVersionFileIntegrationTests {
             Files.writeString(projectDirectory.resolve(VERSION_FILE_TEMPLATE_NAME), "{}");
 
             assertThat(runHelp(projectDirectory))
-                .contains("inputs: [fill_version_file_template.sh, kmu.version.template, mod_info.json, mod_info.sh]");
+                .contains("inputs: [fill_version_file_template.sh, kmu.version.template, localisation.sh, mod_info.json, "
+                    + "mod_info.sh]");
         }
 
         @Test
@@ -127,7 +128,8 @@ final class WriteVersionFileIntegrationTests {
             Files.writeString(projectDirectory.resolve(VERSION_FILE_TEMPLATE_NAME), "{}");
 
             assertThat(runHelp(projectDirectory))
-                .contains("inputs: [fill_version_file_template.sh, kmu.version.template, mod_info.base.json, mod_info.sh]");
+                .contains("inputs: [fill_version_file_template.sh, kmu.version.template, localisation.sh, "
+                    + "mod_info.base.json, mod_info.sh]");
         }
 
         /** Refreshing a dev install is what building the jar is, so the version file comes with it. */
