@@ -36,6 +36,7 @@ so the two can never disagree.
     - [Headings and entry wording](#headings-and-entry-wording)
     - [Code and tests](#code-and-tests)
     - [CI and git](#ci-and-git)
+    - [Save Migration Tool](#save-migration-tool)
     - [Releases and badges](#releases-and-badges)
     - [Data files](#data-files)
     - [Localisation](#localisation)
@@ -313,6 +314,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | relay (a listener passing events on) | 转发器 | 转发, to pass on |
 | revision (a number that moves when content changes) | 修订号 | 修订, a revision, with 号, its number |
 | sampling (one read of a live value) | 采样 | the usual word for taking one reading of something that changes |
+| script (a PowerShell file run from a terminal) | 脚本 | the usual computing word |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
 | standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
@@ -331,13 +333,24 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | action (what a workflow step runs) | 操作 | GitHub's own Chinese documentation word |
 | branch (of a git repository) | 分支 | the usual git word |
+| checkout (a repository's working copy) | 检出副本 | 检出, git's own word for checking out, with 副本, a copy |
 | gate (a CI check a change must pass) | 门禁 | |
-| lint (a YAML or shell check) | 检查 | a tool's name, such as yamllint, stays in English |
+| lint (a YAML, shell or PowerShell check) | 检查 | a tool's name, such as yamllint or Pester, stays in English |
 | output (a value one step hands the next) | 输出 | GitHub's own Chinese documentation word, as the `zip-name-regex` entry writes it |
 | pull request | 拉取请求 | GitHub's own Chinese interface word |
 | reusable workflow | 可复用工作流 | GitHub's own Chinese documentation words |
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
 | step (of a workflow job) | 步骤 | GitHub's own Chinese documentation word |
+
+#### Save Migration Tool
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
+| load (of a save), failed load, retry (vanilla loading the save again from another file) | 读取, 读取失败, 重试 | 读取 as the vanilla Save row's 读取最近的存档; 重试, the usual computing word |
+| newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
+| load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
+| cause (the exception a failed load hit) | 原因 | the plain word |
 
 #### Releases and badges
 
@@ -345,6 +358,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | download count | 下载量 | |
 | endpoint file (the data a shields badge reads) | 端点文件 | 端点, endpoint, as shields names the service; shields itself stays in English |
+| package (build the release zip) | 打包 | the usual word |
 | poll (an update checker asking for a version file) | 轮询 | the usual computing word |
 | release (a published version) | 发布版本 | |
 | release notes | 发布说明 | |
@@ -495,7 +509,9 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
 | Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
 | mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
+| OP (a thread's first post) | 主楼 | the players' word on Chinese forums, where replies are numbered floors |
 | pre-release | 预发布 | Fossic's word for its pre-release board |
+| Q&A (a post's section of player questions and answers) | 常见问题; 问 and 答 open each question and answer | the usual heading for that section of a mod post; 问答 reads as a quiz or an interview |
 | repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
 | testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
 | translation (a translated build) | 汉化 | a Fossic board |

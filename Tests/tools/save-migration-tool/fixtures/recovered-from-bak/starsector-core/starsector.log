@@ -1,0 +1,16 @@
+100 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Delta_4...
+110 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 2
+200 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
+200 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - data.scripts.removed.GoneScript
+---- Debugging information ----
+message             : data.scripts.removed.GoneScript
+class               : data.scripts.removed.GoneScript
+-------------------------------
+com.thoughtworks.xstream.mapper.CannotResolveClassException: data.scripts.removed.GoneScript
+	at com.thoughtworks.xstream.mapper.DefaultMapper.realClass(DefaultMapper.java:81)
+	at com.fs.starfarer.campaign.save.CampaignGameManager.o00000(Unknown Source)
+210 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 11
+210 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading C:\Games\Starsector\starsector-core\..\saves\save_Delta_4...
+220 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 2
+300 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Finished loading
+300 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 21
