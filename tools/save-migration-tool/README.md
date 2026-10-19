@@ -16,7 +16,7 @@ They are repository tooling: the release zip does not carry them.
 
 | Script | Answers |
 | --- | --- |
-| [`Get-SaveLoadFailure.ps1`](Get-SaveLoadFailure.ps1) | Which saves were loaded lately, and why a load failed |
+| [`Get-SaveLoadFailure.ps1`](Get-SaveLoadFailure.ps1) | Which saves the game's logs show loaded, and why a load failed |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
 Every script writes data to stdout and what it read and decided to stderr.
@@ -25,11 +25,11 @@ Every script writes data to stdout and what it read and decided to stderr.
 
 ## Get-SaveLoadFailure.ps1
 
-Lists the latest save loads in `starsector-core\starsector.log`, oldest first.
+Lists every save load in `starsector-core\starsector.log` and its rotated siblings, newest first.
+An older load is likelier to describe a save or a mod set that has changed since.
 
 ```powershell
-pwsh -NoProfile -File Get-SaveLoadFailure.ps1 -AsJson          # last ten loads
-pwsh -NoProfile -File Get-SaveLoadFailure.ps1 -Last 1          # the latest load
+pwsh -NoProfile -File Get-SaveLoadFailure.ps1 -AsJson          # every load, as JSON
 pwsh -NoProfile -File Get-SaveLoadFailure.ps1 -LogPath <log>   # another log
 ```
 
@@ -53,7 +53,7 @@ Rotation renumbers the files, so a reported log position holds only until the ga
 
 ### Output
 
-One object per load:
+One object per load, newest first:
 
 | Field | Meaning |
 | --- | --- |

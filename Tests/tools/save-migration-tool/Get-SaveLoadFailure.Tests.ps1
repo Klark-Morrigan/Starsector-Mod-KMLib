@@ -55,35 +55,35 @@ Describe 'Get-SaveLoadFailure' {
             $script:Loads = @($script:Run.Output)
         }
 
-        It 'lists each load once, oldest first' {
+        It 'lists each load once, newest first' {
 
             $script:Loads.Count | Should -Be 2
-            $script:Loads[0].Cause | Should -Be 'Weapon spec [tania_boomerang_launcher] not found!'
-            $script:Loads[1].Cause | Should -Be 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+            $script:Loads[0].Cause | Should -Be 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+            $script:Loads[1].Cause | Should -Be 'Weapon spec [tania_boomerang_launcher] not found!'
         }
 
-        It 'groups the bak and inprogress retries under their load' {
+        It 'groups the bak and inprogress retries under their load, in the order vanilla tries them' {
 
-            $script:Loads[1].Outcome | Should -Be 'Failed'
-            $script:Loads[1].Attempts.Source | Should -Be @('campaign', 'campaign.bak', 'campaign.inprogress')
-            $script:Loads[1].Attempts.Outcome | Should -Be @('Failed', 'Failed', 'Failed')
+            $script:Loads[0].Outcome | Should -Be 'Failed'
+            $script:Loads[0].Attempts.Source | Should -Be @('campaign', 'campaign.bak', 'campaign.inprogress')
+            $script:Loads[0].Attempts.Outcome | Should -Be @('Failed', 'Failed', 'Failed')
         }
 
         It 'reads the root cause past a stack frame of the loader class' {
 
-            $script:Loads[0].CauseType | Should -Be 'java.lang.RuntimeException'
-            $script:Loads[0].Attempts[0].Cause | Should -Be 'Weapon spec [tania_boomerang_launcher] not found!'
+            $script:Loads[1].CauseType | Should -Be 'java.lang.RuntimeException'
+            $script:Loads[1].Attempts[0].Cause | Should -Be 'Weapon spec [tania_boomerang_launcher] not found!'
         }
 
         It 'keeps the cause of each retry' {
 
-            $script:Loads[1].Attempts[1].Cause | Should -Be 'Ship hull spec [BSC_Hammerhead_MK2_default_D] not found!'
-            $script:Loads[1].Attempts[2].CauseType | Should -Be 'java.io.FileNotFoundException'
+            $script:Loads[0].Attempts[1].Cause | Should -Be 'Ship hull spec [BSC_Hammerhead_MK2_default_D] not found!'
+            $script:Loads[0].Attempts[2].CauseType | Should -Be 'java.io.FileNotFoundException'
         }
 
         It 'places each attempt in the log file and line it starts on' {
 
-            $attempts = $script:Loads[1].Attempts
+            $attempts = $script:Loads[0].Attempts
             $attempts.LogFile | ForEach-Object { Split-Path -Leaf $_ } |
                 Should -Be @('starsector.log.1', 'starsector.log', 'starsector.log')
             $attempts.LogLine | Should -Be @(2, 7, 15)
@@ -91,8 +91,8 @@ Describe 'Get-SaveLoadFailure' {
 
         It 'names the save folder and resolves its path' {
 
-            $script:Loads[0].SaveFolder | Should -Be 'save_Alpha_1'
-            $script:Loads[0].SavePath | Should -Be 'C:\Games\Starsector\saves\save_Alpha_1'
+            $script:Loads[1].SaveFolder | Should -Be 'save_Alpha_1'
+            $script:Loads[1].SavePath | Should -Be 'C:\Games\Starsector\saves\save_Alpha_1'
         }
 
         It 'logs what it read and decided to stderr' {
@@ -102,16 +102,8 @@ Describe 'Get-SaveLoadFailure' {
                 "Get-SaveLoadFailure: read $script:FixtureRoot\starsector-core\starsector.log.2: 44 lines, 3 load attempts start here"
                 "Get-SaveLoadFailure: read $script:FixtureRoot\starsector-core\starsector.log.1: 8 lines, 1 load attempts start here"
                 "Get-SaveLoadFailure: read $script:FixtureRoot\starsector-core\starsector.log: 20 lines, 2 load attempts start here"
-                'Get-SaveLoadFailure: grouped 6 attempts into 2 loads, 2 failed; listing the last 2'
+                'Get-SaveLoadFailure: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
             )
-        }
-
-        It 'lists only the latest loads with -Last' {
-
-            $run = Invoke-SaveLoadFailure @{ StarsectorRoot = $script:FixtureRoot; Last = 1 }
-
-            @($run.Output).Count | Should -Be 1
-            $run.Output.Cause | Should -Be 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
         }
 
         It 'prints the same loads as JSON with -AsJson' {
@@ -120,8 +112,8 @@ Describe 'Get-SaveLoadFailure' {
             $loads = @(($run.Output -join "`n") | ConvertFrom-Json)
 
             $loads.Count | Should -Be 2
-            $loads[1].Attempts[1].Source | Should -Be 'campaign.bak'
-            $loads[1].Attempts[1].LogLine | Should -Be 7
+            $loads[0].Attempts[1].Source | Should -Be 'campaign.bak'
+            $loads[0].Attempts[1].LogLine | Should -Be 7
         }
     }
 
@@ -156,19 +148,19 @@ Describe 'Get-SaveLoadFailure' {
 
         It 'reports the clean load with one attempt and no cause' {
 
-            $script:Loads[0].Outcome | Should -Be 'Loaded'
-            $script:Loads[0].Attempts.Count | Should -Be 1
-            $script:Loads[0].Cause | Should -BeNullOrEmpty
+            $script:Loads[1].Outcome | Should -Be 'Loaded'
+            $script:Loads[1].Attempts.Count | Should -Be 1
+            $script:Loads[1].Cause | Should -BeNullOrEmpty
         }
 
         It 'resolves a relative save path against the log folder' {
-            $script:Loads[0].SavePath | Should -Be "$script:FixtureRoot\saves\save_Beta_2"
+            $script:Loads[1].SavePath | Should -Be "$script:FixtureRoot\saves\save_Beta_2"
         }
 
         It 'reports the cut-off load as unfinished' {
 
-            $script:Loads[1].SaveFolder | Should -Be 'save_Gamma_3'
-            $script:Loads[1].Outcome | Should -Be 'Unfinished'
+            $script:Loads[0].SaveFolder | Should -Be 'save_Gamma_3'
+            $script:Loads[0].Outcome | Should -Be 'Unfinished'
         }
     }
 
@@ -179,7 +171,7 @@ Describe 'Get-SaveLoadFailure' {
             $run = Invoke-SaveLoadFailure @{ StarsectorRoot = (Get-FixtureRoot 'no-loads'); AsJson = $true }
 
             $run.Output | Should -Be '[]'
-            $run.Diagnostics[-1] | Should -Be 'Get-SaveLoadFailure: grouped 0 attempts into 0 loads, 0 failed; listing the last 0'
+            $run.Diagnostics[-1] | Should -Be 'Get-SaveLoadFailure: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
         }
     }
 

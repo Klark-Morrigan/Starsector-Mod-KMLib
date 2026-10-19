@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Lists the latest save loads in starsector.log: the save folder, the outcome, and the cause of a failure.
+    Lists every save load in starsector.log, newest first: the save folder, the outcome, and the cause of a failure.
 
 .DESCRIPTION
     A failed load buries its cause in a stack trace a thousand lines long.
@@ -17,15 +17,14 @@
     so a load the game logged before a rotation is still found.
     Rotation renumbers the files, so a reported log position holds only until the game writes the next one.
 
+    Loads are listed newest first.
+    An older load is likelier to describe a save or a mod set that has changed since.
+
     Stdout carries the loads only. What the script read and decided goes to stderr.
 
 .EXAMPLE
     Get-SaveLoadFailure.ps1 -AsJson
-    Lists the last ten loads in the default install's log, as JSON.
-
-.EXAMPLE
-    Get-SaveLoadFailure.ps1 -Last 1
-    Shows the latest load only.
+    Lists every load in the default install's logs, as JSON.
 #>
 
 [CmdletBinding()]
@@ -35,10 +34,6 @@ param(
 
     # The log to read. Its rotated siblings are read with it.
     [string] $LogPath,
-
-    # How many of the latest loads to list.
-    [ValidateRange(1, [int]::MaxValue)]
-    [int] $Last = 10,
 
     # Print JSON instead of objects, for a caller that parses the output.
     [switch] $AsJson
@@ -271,16 +266,16 @@ Write-DiagnosticLine "reading $($logFiles.Count) log files, oldest first"
 
 $attempts = @(Read-LoadAttempt -LogFiles $logFiles -SaveBaseDirectory $saveBaseDirectory)
 $loads = @(Group-LoadAttempt -Attempts $attempts)
-$listedLoads = @($loads | Select-Object -Last $Last)
+[array]::Reverse($loads)
 
 $failedCount = @($loads | Where-Object { $_.Outcome -eq $OutcomeFailed }).Count
 
 Write-DiagnosticLine ("grouped $($attempts.Count) attempts into $($loads.Count) loads, $failedCount failed; " +
-    "listing the last $($listedLoads.Count)")
+    'listing them newest first')
 
 if ($AsJson) {
-    ConvertTo-Json -InputObject $listedLoads -Depth 4
+    ConvertTo-Json -InputObject $loads -Depth 4
 
 } else {
-    $listedLoads
+    $loads
 }
