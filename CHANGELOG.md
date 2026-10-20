@@ -174,6 +174,7 @@ The reusable release workflow extracts the section matching the released version
 | `SystemClaimBreakdown.overrideFactionId()` and `scores()` | `decreedFactionId()` and `standings()` | The list holds standings, and the flag is a decree in every other name it carries. |
 | `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | The same. |
 | `VanillaClaimBreakdownReader(KnownColonyReader)`, and a null index in `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` | Removed: open the reader over a pass's `SectorPassIndex`. For the decree alone, read `StarSystems::readDecreedFactionId` as a `ClaimDecreeReader`. | A reader with no pass read `Global.getSector()` rather than the sector it was asked about. |
+| `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
 
 </details>
 
