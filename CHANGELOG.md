@@ -96,6 +96,8 @@ The reusable release workflow extracts the section matching the released version
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
 - **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
   - Where Nexerelin is enabled, KMLib puts a relay on each loaded sector that passes Nexerelin's colony transfers on to these listeners, so a mod only registers its own.
+- **`MonthlyReportRows.openFleetRow(MonthlyReport, String, String)`** in `kmlib.starsector.economy.report`: a mod's own row under the monthly report's fleet line, named on its first write, with the fleet line set up as vanilla sets it where no one has yet.
+- **`MonthlyReports.findCurrentReport(SectorAPI)`** in `kmlib.starsector.economy`: the month's report read off the sector handed in, where vanilla's `SharedData.getData()` reads the running one; empty where the sector holds none, which it never creates.
 - **`ModalPanel`** in `kmlib.starsector.ui.modal`: a screen-sized panel in the core UI that claims input while raised, fades in and out, and comes down with its host screen.
   - `ModalPanelBody`: what the panel shows, and the fills painted under it.
   - The caller states which keys close the panel. `CLOSED_BY_ESCAPE` is the set the game's own dialogs close on.

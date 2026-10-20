@@ -46,6 +46,7 @@ so the two can never disagree.
     - [Factions](#factions)
     - [System claims](#system-claims)
     - [Markets](#markets)
+    - [Monthly report](#monthly-report)
     - [Salvage drops](#salvage-drops)
     - [Geometry](#geometry)
     - [Lists and sorting](#lists-and-sorting)
@@ -515,6 +516,14 @@ A version heading is never translated; see [translating the changelog](#translat
 | storage, one-time access fee, paid to unlock | 仓库, 一次性使用费, 已付费解锁 | 仓库 and 一次性使用费 as vanilla's `StoragePlugin` dialog writes them (使用此地仓库需要缴纳一次性使用费); 已付费解锁 is the plain reading of `setPlayerPaidToUnlock`, which the game never shows |
 | buy, sell (the player's side of a trade), unit price | 买入, 卖出, 每单位价格 | as the trade screen's cargo tooltips write them (每单位买入的价格, 每单位价格是基于一次性买入或卖出) |
 | average price, price modifier | 平均价格, 价格修正 | plain words; 修正 for a modifier is unchecked against the game jar |
+
+#### Monthly report
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| monthly report (the income and expenses the game totals and pays each month), income, expenses | 月度收支报告, 收益, 支出 | 收益 and 支出 as vanilla's month-end message writes them (每月收益, 每月支出, `CoreScript`); the report's own title sits in the game jar and is unchecked |
+| row (one line of the report), fleet (its parent line) | 条目, 舰队 | 舰队 as `CoreScript` names the fleet line; 条目, an entry, for a line under it |
+| economy step (one of the month's economy iterations), month end | 经济步进, 月末 | 步进, a step, as a script's 推进 is an advance; the game never names the step to a player |
 
 #### Salvage drops
 
