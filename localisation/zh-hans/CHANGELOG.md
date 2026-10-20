@@ -96,6 +96,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
   - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。
+- **`MonthlyReportRows.openFleetRow(MonthlyReport, String, String)`**（位于 `kmlib.starsector.economy.report`）：Mod 自己在月度收支报告舰队条目下的条目，首次写入时命名；无人设置舰队条目时，按原版的方式设置它。
+- **`MonthlyReports.findCurrentReport(SectorAPI)`**（位于 `kmlib.starsector.economy`）：从传入的星域读取当月的报告，而原版的 `SharedData.getData()` 读取的是正在运行的星域；星域没有该报告时为空，且从不创建它。
 - **`ModalPanel`**（位于 `kmlib.starsector.ui.modal`）：核心界面中与屏幕同尺寸的面板，升起时占用输入，淡入淡出，并随其宿主屏幕一同撤下。
   - `ModalPanelBody`：面板显示的内容，以及绘制在其下方的填充。
   - 由调用方指定哪些按键关闭面板。`CLOSED_BY_ESCAPE` 是游戏自身的对话框所用的那组按键。
