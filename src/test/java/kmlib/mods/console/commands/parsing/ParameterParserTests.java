@@ -1,7 +1,9 @@
 package kmlib.mods.console.commands.parsing;
 
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,16 @@ final class ParameterParserTests {
         private SampleSpec() {
             super("spawn", "<kind>");
         }
+    }
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
     }
 
     @Nested

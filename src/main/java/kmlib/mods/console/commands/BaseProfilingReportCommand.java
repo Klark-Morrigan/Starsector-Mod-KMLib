@@ -1,5 +1,6 @@
 package kmlib.mods.console.commands;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.output.ConsoleCommandOutput;
 import kmlib.mods.console.commands.output.GameLogCommandOutput;
@@ -18,6 +19,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PROFILING_EXPECTED_TOP;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PROFILING_TIMINGS_LOGGED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PROFILING_TIMINGS_RESET;
 
 /**
  * Base for a console command that writes the accumulated performance timings to the game log, or
@@ -40,16 +46,11 @@ import java.util.function.Supplier;
 public abstract class BaseProfilingReportCommand
         extends BaseKmlibCommand {
 
-    private static final String TIMINGS_LOGGED_SUFFIX =
-        " timings written to the game log (starsector-core/starsector.log).";
-    private static final String TIMINGS_RESET_SUFFIX = " timings reset.";
-
     private final ProfileSection frameBeat;
     private final CommandOutput log;
+    private final String noticeLabel;
     private final Supplier<Profiler> resolveBoundProfiler;
     private final ProfilingSpec spec;
-    private final String timingsLoggedNotice;
-    private final String timingsResetNotice;
 
     /**
      * Binds the command to the active profiler, the live console and the game log.
@@ -89,14 +90,11 @@ public abstract class BaseProfilingReportCommand
 
         super(output);
 
-        Objects.requireNonNull(noticeLabel, "noticeLabel");
-
         this.frameBeat = Objects.requireNonNull(frameBeat, "frameBeat");
         this.log = Objects.requireNonNull(log, "log");
+        this.noticeLabel = Objects.requireNonNull(noticeLabel, "noticeLabel");
         this.resolveBoundProfiler = Objects.requireNonNull(resolveBoundProfiler, "resolveBoundProfiler");
         this.spec = new ProfilingSpec(commandName);
-        this.timingsLoggedNotice = noticeLabel + TIMINGS_LOGGED_SUFFIX;
-        this.timingsResetNotice = noticeLabel + TIMINGS_RESET_SUFFIX;
     }
 
     @Override
@@ -114,12 +112,12 @@ public abstract class BaseProfilingReportCommand
         if (parsed.get(spec.reset)) {
 
             profiler.reset();
-            output.showMessage(timingsResetNotice);
+            output.showMessage(ConsoleStrings.format(CATEGORY, CONSOLE_PROFILING_TIMINGS_RESET, noticeLabel));
             return CommandResult.SUCCESS;
         }
 
         log.showMessage(TimingReport.format(profiler.snapshot(), buildRequest(parsed)));
-        output.showMessage(timingsLoggedNotice);
+        output.showMessage(ConsoleStrings.format(CATEGORY, CONSOLE_PROFILING_TIMINGS_LOGGED, noticeLabel));
 
         return CommandResult.SUCCESS;
     }
@@ -151,8 +149,6 @@ public abstract class BaseProfilingReportCommand
     private static final class ProfilingSpec
             extends ParameterSpec {
 
-        private static final String EXPECTED_TOP = "a whole number of rows above zero";
-
         private final Parameter<ProfileReportRequest> view =
             acceptsKeyword("view", buildRequestsByView())
                 .defaultsTo(ProfileReportRequest.showTree());
@@ -162,7 +158,10 @@ public abstract class BaseProfilingReportCommand
                 .defaultsTo(ProfileReportRequest.EVERY_NAMESPACE);
 
         private final Parameter<Integer> top =
-            acceptsNamed("top", "<count>", ParameterValues.positiveWholeNumber(EXPECTED_TOP))
+            acceptsNamed(
+                    "top",
+                    "<count>",
+                    ParameterValues.positiveWholeNumber(ConsoleStrings.get(CATEGORY, CONSOLE_PROFILING_EXPECTED_TOP)))
                 .defaultsTo(ProfileReportRequest.EVERY_ROW);
 
         private final Parameter<Boolean> perFrame = acceptsFlag("perframe");

@@ -77,6 +77,8 @@ final class StringsParity {
     }
 
     // A string only one side declares is the key check's finding, so only strings both declare are compared.
+    // A console string's English copy is left out: the console check holds it to the default word for word,
+    // so its slots are the default's already, and the translation's are the ones left to compare.
     private static List<String> describeFormatArgumentMismatches(ComparedReadings<SortedMap<String, String>> readings) {
 
         var findings = new ArrayList<String>();
@@ -88,7 +90,8 @@ final class StringsParity {
             if (referenceWording == null) {
                 return;
             }
-            var conversions = StringTemplates.readArgumentConversions(wording);
+            var translation = ConsoleEnglishCopyParity.cutEnglishCopy(wording);
+            var conversions = StringTemplates.readArgumentConversions(translation);
             var referenceConversions = StringTemplates.readArgumentConversions(referenceWording);
 
             if (!conversions.equals(referenceConversions)) {

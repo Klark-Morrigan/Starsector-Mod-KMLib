@@ -4,7 +4,12 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.text.KmlibStrings;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_FACTION_NOT_FOUND;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_NO_SECTOR_FOR_FACTIONS;
 
 /**
  * Finding the one faction a command was told to act for: the one named by ID, or - when none was
@@ -24,11 +29,6 @@ import kmlib.text.KmlibStrings;
  * of {@code Global}, so a run reads only the sector it is given.
  */
 public final class FactionTargetResolver {
-
-    // The one refusal that names no faction: without a sector there is nothing to look an ID up
-    // in, and no default to fall back to either - the player's faction is the sector's to answer
-    // for like any other.
-    private static final String NO_SECTOR_MESSAGE = "No sector to read factions from.";
 
     private FactionTargetResolver() {
         // utility class, no instances.
@@ -50,8 +50,11 @@ public final class FactionTargetResolver {
             SectorAPI sector,
             String factionId) {
 
+        // The one refusal that names no faction: without a sector there is nothing to look an ID up
+        // in, and no default to fall back to either - the player's faction is the sector's to answer
+        // for like any other.
         if (sector == null) {
-            return new UnresolvedTarget<>(NO_SECTOR_MESSAGE);
+            return new UnresolvedTarget<>(ConsoleStrings.get(CATEGORY, CONSOLE_TARGET_NO_SECTOR_FOR_FACTIONS));
         }
 
         var requestedId = KmlibStrings.hasText(factionId)
@@ -61,7 +64,8 @@ public final class FactionTargetResolver {
         var faction = sector.getFaction(requestedId);
 
         if (faction == null) {
-            return new UnresolvedTarget<>("No faction with ID '" + requestedId + "'.");
+            return new UnresolvedTarget<>(
+                ConsoleStrings.format(CATEGORY, CONSOLE_TARGET_FACTION_NOT_FOUND, requestedId));
         }
         return new ResolvedTarget<>(faction);
     }

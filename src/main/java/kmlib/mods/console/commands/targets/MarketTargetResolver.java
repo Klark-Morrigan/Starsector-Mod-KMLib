@@ -3,9 +3,18 @@ package kmlib.mods.console.commands.targets;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.text.KmlibStrings;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_ENTITY_NOT_FOUND;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_ENTITY_WITHOUT_MARKET;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_MARKET_INELIGIBLE;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_NO_ELIGIBLE_MARKET;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_NO_SECTOR_FOR_MARKETS;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_NO_STAR_SYSTEM;
 
 /**
  * Finding the one market a command was pointed at: the place named by ID, or - when none was
@@ -33,16 +42,6 @@ import kmlib.text.KmlibStrings;
  */
 public final class MarketTargetResolver {
 
-    // Nothing to look an ID up in and nowhere to search from. The one refusal that names neither
-    // a place nor a requirement, there being no sector to phrase either against.
-    private static final String NO_SECTOR_MESSAGE = "No sector to search.";
-
-    // What a bare invocation is refused with from hyperspace: nowhere to measure "nearest" from,
-    // and the way out said in the same breath, since naming a place is not a narrowing of the
-    // search but the alternative to it.
-    private static final String NO_SYSTEM_MESSAGE =
-        "Not in a star system - name an entity ID to point at a place directly.";
-
     private MarketTargetResolver() {
         // utility class, no instances.
     }
@@ -67,8 +66,10 @@ public final class MarketTargetResolver {
             String entityId,
             MarketTargetRequirement requirement) {
 
+        // Nothing to look an ID up in and nowhere to search from. The one refusal that names neither
+        // a place nor a requirement, there being no sector to phrase either against.
         if (sector == null) {
-            return new UnresolvedTarget<>(NO_SECTOR_MESSAGE);
+            return new UnresolvedTarget<>(ConsoleStrings.get(CATEGORY, CONSOLE_TARGET_NO_SECTOR_FOR_MARKETS));
         }
         return KmlibStrings.hasText(entityId)
             ? resolveNamedMarket(sector, entityId, requirement)
@@ -90,19 +91,21 @@ public final class MarketTargetResolver {
         var entity = sector.getEntityById(entityId);
 
         if (entity == null) {
-            return new UnresolvedTarget<>("No entity with ID '" + entityId + "' in the sector.");
+            return new UnresolvedTarget<>(ConsoleStrings.format(CATEGORY, CONSOLE_TARGET_ENTITY_NOT_FOUND, entityId));
         }
         var market = entity.getMarket();
 
         if (market == null) {
-            return new UnresolvedTarget<>("Entity '" + entityId + "' has no market.");
+            return new UnresolvedTarget<>(
+                ConsoleStrings.format(CATEGORY, CONSOLE_TARGET_ENTITY_WITHOUT_MARKET, entityId));
         }
         if (!requirement.isMetBy(market)) {
-            return new UnresolvedTarget<>("The market on '"
-                + entityId
-                + "' is not "
-                + requirement.requirementPhrase()
-                + ".");
+
+            return new UnresolvedTarget<>(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_TARGET_MARKET_INELIGIBLE,
+                entityId,
+                requirement.readRequirementPhrase()));
         }
         return new ResolvedTarget<>(market);
     }
@@ -119,18 +122,21 @@ public final class MarketTargetResolver {
 
         var system = SectorStarSystems.getPlayerStarSystem(sector);
 
+        // Nowhere to measure "nearest" from, and the way out said in the same breath, since naming a
+        // place is not a narrowing of the search but the alternative to it.
         if (system == null) {
-            return new UnresolvedTarget<>(NO_SYSTEM_MESSAGE);
+            return new UnresolvedTarget<>(ConsoleStrings.get(CATEGORY, CONSOLE_TARGET_NO_STAR_SYSTEM));
         }
         var nearestMarket = StarSystems
             .findNearestMarket(sector, system, sector.getPlayerFleet(), requirement::isMetBy);
 
         if (nearestMarket.isEmpty()) {
-            return new UnresolvedTarget<>("Nothing in "
-                + StarSystems.readDisplayName(system)
-                + " is "
-                + requirement.requirementPhrase()
-                + ".");
+
+            return new UnresolvedTarget<>(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_TARGET_NO_ELIGIBLE_MARKET,
+                StarSystems.readDisplayName(system),
+                requirement.readRequirementPhrase()));
         }
         return new ResolvedTarget<>(nearestMarket.get());
     }

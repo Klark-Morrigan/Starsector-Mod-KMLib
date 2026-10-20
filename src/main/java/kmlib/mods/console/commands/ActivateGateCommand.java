@@ -2,6 +2,7 @@ package kmlib.mods.console.commands;
 
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
@@ -10,6 +11,9 @@ import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 
 import static kmlib.mods.console.commands.parsing.ParameterValues.text;
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_GATE_ACTIVATED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_GATE_NOT_FOUND;
 
 /**
  * Console command (dev tool): activates the gate with the given ID in the
@@ -52,22 +56,22 @@ public final class ActivateGateCommand
 
         if (gate == null) {
 
-            output.showMessage("No gate with ID '"
-                + id
-                + "' in "
-                + StarSystems.readDisplayName(system)
-                + ".");
+            output.showMessage(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_GATE_NOT_FOUND,
+                id,
+                StarSystems.readDisplayName(system)));
 
             return CommandResult.ERROR;
         }
 
         Gates.activateGate(readActiveSector(), gate);
 
-        output.showMessage("Activated gate '"
-            + id
-            + "' in "
-            + StarSystems.readDisplayName(system)
-            + "; it lights up on its next advance.");
+        output.showMessage(ConsoleStrings.format(
+            CATEGORY,
+            CONSOLE_GATE_ACTIVATED,
+            id,
+            StarSystems.readDisplayName(system)));
 
         return CommandResult.SUCCESS;
     }

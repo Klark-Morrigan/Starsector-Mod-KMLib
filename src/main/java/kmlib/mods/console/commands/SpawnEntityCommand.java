@@ -8,6 +8,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.collections.KmlibCollections;
 import kmlib.math.geometry.Points;
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
@@ -26,6 +27,14 @@ import java.util.Random;
 import static kmlib.mods.console.commands.parsing.ParameterValues.decimal;
 import static kmlib.mods.console.commands.parsing.ParameterValues.nonNegativeDecimal;
 import static kmlib.mods.console.commands.parsing.ParameterValues.text;
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_AMBIGUOUS_FOCUS;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_EXPECTED_JITTER;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_EXPECTED_SPEED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_FOCUS_NOT_FOUND;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_GATE_ADDED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_JUMP_POINT_ADDED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPAWN_UNKNOWN_KIND;
 
 /**
  * Console command (dev tool): spawns an entity at the player's fleet position in
@@ -65,7 +74,9 @@ import static kmlib.mods.console.commands.parsing.ParameterValues.text;
 public final class SpawnEntityCommand
         extends BaseKmlibCommand {
 
-    private static final SpawnSpec SPEC = new SpawnSpec();
+    // Built with the command rather than its class, since its value parsers word what they expect from the
+    // game's strings, and Console Commands builds a command only once those have loaded.
+    private final SpawnSpec spec = new SpawnSpec();
 
     public SpawnEntityCommand() {
     }
@@ -98,11 +109,11 @@ public final class SpawnEntityCommand
 
         if (kind == null) {
 
-            output.showMessage("Unknown entity type '"
-                + kindArg
-                + "'. Supported: "
-                + SpawnableKind.listSupportedArgs()
-                + '.');
+            output.showMessage(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_SPAWN_UNKNOWN_KIND,
+                kindArg,
+                SpawnableKind.listSupportedArgs()));
 
             return CommandResult.ERROR;
         }
@@ -113,7 +124,7 @@ public final class SpawnEntityCommand
             .subList(1, words.size())
             .toArray(new String[0]);
 
-        var parsed = SPEC.parse(parameterTokens, output);
+        var parsed = spec.parse(parameterTokens, output);
         if (!parsed.isValid()) {
             return parsed.getResult();
         }
@@ -123,7 +134,7 @@ public final class SpawnEntityCommand
         // resolveOrbitFocus returns null (having printed why) when the focus is
         // ambiguous in a multi-star system or the supplied ID matches no entity,
         // so we surface that as bad syntax too.
-        var focus = resolveOrbitFocus(system, parsed.get(SPEC.focus));
+        var focus = resolveOrbitFocus(system, parsed.get(spec.focus));
         if (focus == null) {
             return CommandResult.BAD_SYNTAX;
         }
@@ -136,13 +147,13 @@ public final class SpawnEntityCommand
         // An explicit speed sets the base rate; otherwise derive a vanilla-paced
         // rate from the orbit radius. The jitter then widens whichever base by the
         // requested (or default) spread - it applies in either case.
-        var baseSpeedDegPerDay = parsed.get(SPEC.speed) != null
-            ? parsed.get(SPEC.speed)
+        var baseSpeedDegPerDay = parsed.get(spec.speed) != null
+            ? parsed.get(spec.speed)
             : EntityOrbits.deriveBaseSpeedDegPerDay(distance);
 
         var speedDegPerDay = EntityOrbits.applyJitter(
             baseSpeedDegPerDay,
-            parsed.get(SPEC.jitter),
+            parsed.get(spec.jitter),
             new Random());
 
         var entity = kind.spawnOrbiting(
@@ -174,11 +185,11 @@ public final class SpawnEntityCommand
 
             if (focus == null) {
 
-                output.showMessage("No entity with ID '"
-                    + focusId
-                    + "' in "
-                    + StarSystems.readDisplayName(system)
-                    + ".");
+                output.showMessage(ConsoleStrings.format(
+                    CATEGORY,
+                    CONSOLE_SPAWN_FOCUS_NOT_FOUND,
+                    focusId,
+                    StarSystems.readDisplayName(system)));
             }
 
             return focus;
@@ -187,12 +198,11 @@ public final class SpawnEntityCommand
         var stars = StarSystems.getStars(system);
         if (stars.size() >= 2) {
 
-            output.showMessage("This system has "
-                + stars.size()
-                + " stars ("
-                + KmlibCollections.join(stars, ", ", PlanetAPI::getId)
-                + "). Re-run with a focus ID -"
-                + " one of those star IDs, or any entity ID in the system.");
+            output.showMessage(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_SPAWN_AMBIGUOUS_FOCUS,
+                stars.size(),
+                KmlibCollections.join(stars, ", ", PlanetAPI::getId)));
 
             return null;
         }
@@ -211,14 +221,16 @@ public final class SpawnEntityCommand
         private final Parameter<String> focus =
             acceptsPositional("focus", "<focus-id>", text()).defaultsTo("");
 
-        private final Parameter<Float> speed =
-            acceptsPositional("speed", "<deg/day>", decimal("a number in degrees per day"));
+        private final Parameter<Float> speed = acceptsPositional(
+            "speed",
+            "<deg/day>",
+            decimal(ConsoleStrings.get(CATEGORY, CONSOLE_SPAWN_EXPECTED_SPEED)));
 
         private final Parameter<Float> jitter =
             acceptsNamed(
                     "jitter",
                     "<frac>",
-                    nonNegativeDecimal("a non-negative fraction (e.g. 0.25)"))
+                    nonNegativeDecimal(ConsoleStrings.get(CATEGORY, CONSOLE_SPAWN_EXPECTED_JITTER)))
                 .defaultsTo(EntityOrbits.VANILLA_JITTER_FRACTION);
 
         private SpawnSpec() {
@@ -252,10 +264,7 @@ public final class SpawnEntityCommand
             @Override
             String describeSpawn(SectorEntityToken spawned, StarSystemAPI system) {
 
-                return "Added an inactive gate (ID "
-                    + spawned.getId()
-                    + ") at your fleet position."
-                    + " Activate it with the gate-activation command and this ID.";
+                return ConsoleStrings.format(CATEGORY, CONSOLE_SPAWN_GATE_ADDED, spawned.getId());
             }
         },
 
@@ -277,12 +286,11 @@ public final class SpawnEntityCommand
             @Override
             String describeSpawn(SectorEntityToken spawned, StarSystemAPI system) {
 
-                return "Spawned "
-                    + spawned.getName()
-                    + " at your fleet position in "
-                    + StarSystems.readDisplayName(system)
-                    + ", generated its hyperspace entrance,"
-                    + " and cleared the cut-off tag.";
+                return ConsoleStrings.format(
+                    CATEGORY,
+                    CONSOLE_SPAWN_JUMP_POINT_ADDED,
+                    spawned.getName(),
+                    StarSystems.readDisplayName(system));
             }
         };
 

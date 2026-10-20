@@ -3,6 +3,7 @@ package kmlib.mods.console.commands;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.starsector.factions.FactionFlags;
 import kmlib.starsector.factions.FactionNames;
 import kmlib.starsector.factions.relation.PlayerRelations;
@@ -18,6 +19,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_ATTITUDE_SELF;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HEADER;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HEADER_WITHOUT_HOLDINGS;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HEADING;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HEADING_FILTERED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HOLDINGS;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HOLDINGS_SYSTEMS;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_HOLDINGS_VISIBILITY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_SOURCE;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_TERRITORIAL;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_FACTIONS_UNATTRIBUTED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_LISTING_NONE;
 
 /**
  * The faction listing itself: every faction the filter admits, written as the ID it is addressed
@@ -62,25 +77,13 @@ import java.util.Set;
  */
 final class FactionListingReport {
 
-    // Two headers rather than one with a clause cut off it: a listing that reports no holdings must
-    // not open by saying it does.
-    private static final String HEADER = "Factions and their holdings";
-    private static final String HEADER_WITHOUT_HOLDINGS = "Factions";
     private static final String HOLDINGS_INDENT = "\n    ";
 
     // What a faction's segments are joined by, and what separates the two names a faction has where
     // it carries a distinct long one.
     private static final String NAME_SEPARATOR = " / ";
-    private static final String NO_FACTIONS_LINE = "\n  (none)";
+    private static final String NO_FACTIONS_INDENT = "\n  ";
     private static final String SEGMENT_SEPARATOR = " - ";
-    private static final String SELF_ATTITUDE = "(self)";
-    private static final String SOURCE_PREFIX = "from: ";
-    private static final String TERRITORIAL_MARK = " [territorial]";
-
-    // A faction the sector holds that no row in the game's data declares - one a mod built at
-    // runtime rather than from a file. Named rather than left blank, so a reader can tell it apart
-    // from a faction whose clause was simply not printed.
-    private static final String UNATTRIBUTED_SOURCE = "(unattributed)";
 
     private final FactionListingFilter filter;
     private final Set<ListingOption> options;
@@ -119,17 +122,7 @@ final class FactionListingReport {
         var coloniesByFactionId = groupColoniesByFactionId(SectorColonies.readColonies(sector));
         var playerFactionId = readPlayerFactionId(sector);
         var isHoldingsShown = !options.contains(ListingOption.OMIT_HOLDINGS);
-        var report = new StringBuilder(isHoldingsShown
-            ? HEADER
-            : HEADER_WITHOUT_HOLDINGS);
-
-        var keyword = filter.getKeyword();
-        if (keyword != null) {
-            report.append(" (").append(keyword).append(')');
-        }
-
-        report.append(':');
-
+        var report = new StringBuilder(describeHeading(isHoldingsShown));
         var listedCount = 0;
 
         for (var faction : collectFactionsSortedById(sector)) {
@@ -153,7 +146,10 @@ final class FactionListingReport {
         }
 
         if (listedCount == 0) {
-            report.append(NO_FACTIONS_LINE);
+
+            report
+                .append(NO_FACTIONS_INDENT)
+                .append(ConsoleStrings.get(CATEGORY, CONSOLE_LISTING_NONE));
         }
 
         return report.toString();
@@ -187,7 +183,11 @@ final class FactionListingReport {
         // Nothing read means nothing to say about any faction, so the clause goes rather than
         // standing on every line as a mark the reader cannot act on.
         if (!sourcesByFactionId.isEmpty()) {
-            segments.add(SOURCE_PREFIX + describeSource(sourcesByFactionId.get(faction.getId())));
+
+            segments.add(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_FACTIONS_SOURCE,
+                describeSource(sourcesByFactionId.get(faction.getId()))));
         }
 
         report
@@ -203,8 +203,7 @@ final class FactionListingReport {
 
         report
             .append(HOLDINGS_INDENT)
-            .append("holdings: ")
-            .append(placeCount);
+            .append(ConsoleStrings.format(CATEGORY, CONSOLE_FACTIONS_HOLDINGS, placeCount));
 
         if (placeCount == 0) {
             // Nothing held leaves the visibility counts and the systems clause with nothing to say,
@@ -215,11 +214,12 @@ final class FactionListingReport {
         // The counts are of everything the faction holds even under a filter: the keyword decides
         // who is listed, not what is reported about them.
         report
-            .append(" (")
-            .append(holdings.countHiddenPlaces())
-            .append(" hidden, ")
-            .append(holdings.countDiscoverablePlaces())
-            .append(" discoverable)");
+            .append(' ')
+            .append(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_FACTIONS_HOLDINGS_VISIBILITY,
+                holdings.countHiddenPlaces(),
+                holdings.countDiscoverablePlaces()));
 
         // The clause, unlike the counts, does narrow - under "hidden" it names the systems holding
         // a hidden place, which is what makes the filter useful for finding where the matches
@@ -229,17 +229,41 @@ final class FactionListingReport {
         if (!systemLabels.isEmpty()) {
 
             report
-                .append("  systems: ")
-                .append(String.join(", ", systemLabels));
+                .append("  ")
+                .append(ConsoleStrings.format(
+                    CATEGORY,
+                    CONSOLE_FACTIONS_HOLDINGS_SYSTEMS,
+                    String.join(", ", systemLabels)));
         }
+    }
+
+    // The heading line, naming the filter where there is one. Two heading nouns rather than one with a
+    // clause cut off it: a listing that reports no holdings must not open by saying it does.
+    private String describeHeading(boolean isHoldingsShown) {
+
+        var header = ConsoleStrings.get(
+            CATEGORY,
+            isHoldingsShown
+                ? CONSOLE_FACTIONS_HEADER
+                : CONSOLE_FACTIONS_HEADER_WITHOUT_HOLDINGS);
+
+        var keyword = filter.getKeyword();
+
+        return keyword == null
+            ? ConsoleStrings.format(CATEGORY, CONSOLE_FACTIONS_HEADING, header)
+            : ConsoleStrings.format(CATEGORY, CONSOLE_FACTIONS_HEADING_FILTERED, header, keyword);
     }
 
     // Where a faction came from, with the mod ID beside the name for a source that has one - the
     // name is what a reader recognises, the ID what another command takes.
+    //
+    // A faction the sector holds that no row in the game's data declares is one a mod built at runtime
+    // rather than from a file. Named rather than left blank, so a reader can tell it apart from a faction
+    // whose clause was simply not printed.
     private String describeSource(ModSource source) {
 
         if (source == null) {
-            return UNATTRIBUTED_SOURCE;
+            return ConsoleStrings.get(CATEGORY, CONSOLE_FACTIONS_UNATTRIBUTED);
         }
 
         if (!source.hasModId()) {
@@ -255,7 +279,7 @@ final class FactionListingReport {
     private static String describeAttitude(FactionAPI faction, String playerFactionId) {
 
         if (Objects.equals(faction.getId(), playerFactionId)) {
-            return SELF_ATTITUDE;
+            return ConsoleStrings.get(CATEGORY, CONSOLE_FACTIONS_ATTITUDE_SELF);
         }
 
         return PlayerRelations
@@ -293,7 +317,10 @@ final class FactionListingReport {
         identity.append(shortName);
 
         if (FactionFlags.isTerritorial(faction)) {
-            identity.append(TERRITORIAL_MARK);
+
+            identity
+                .append(' ')
+                .append(ConsoleStrings.get(CATEGORY, CONSOLE_FACTIONS_TERRITORIAL));
         }
 
         return identity.toString();

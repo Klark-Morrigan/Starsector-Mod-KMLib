@@ -1,5 +1,6 @@
 package kmlib.starsector.strings;
 
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
 
 import org.junit.jupiter.api.Nested;
@@ -39,6 +40,22 @@ final class KmlibStringKeysIntegrationTests {
             // is translated, and is never drawn - a rename that left the old row behind.
             assertThat(ShippedStrings.readStringIdsByConstantName(KmlibStringKeys.class).values())
                 .containsExactlyInAnyOrderElementsOf(ShippedStrings.readStringsByKey().keySet());
+        }
+    }
+
+    @Nested
+    class FixtureWording {
+
+        @Test
+        void everyStringTheFixtureAnswersWithMatchesTheShippedWording() {
+            // The fixture restates the wording its suites assert on, so a caption reworded in the file alone
+            // would leave every assertion green while the player reads something else.
+            var shippedStrings = ShippedStrings.readStringsByKey();
+
+            assertThat(KmlibStringsSettingsFake.readStringsByKey())
+                .allSatisfy((key, wording) -> assertThat(wording)
+                    .as("wording of %s", key)
+                    .isEqualTo(shippedStrings.get(key)));
         }
     }
 }

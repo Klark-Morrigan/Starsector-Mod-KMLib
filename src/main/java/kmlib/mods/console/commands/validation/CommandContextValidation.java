@@ -2,8 +2,10 @@ package kmlib.mods.console.commands.validation;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.output.ConsoleCommandOutput;
+import kmlib.starsector.strings.KmlibStringKeys;
 import kmlib.starsector.systems.SectorStarSystems;
 
 import org.lazywizard.console.BaseCommand.CommandContext;
@@ -61,7 +63,7 @@ public final class CommandContextValidation {
         checks.add(() -> context.isInCampaign()
             ? null
             : new Failure(
-                "This command can only run in a campaign.",
+                ConsoleStrings.get(KmlibStringKeys.CATEGORY, KmlibStringKeys.CONSOLE_REQUIRES_CAMPAIGN),
                 CommandResult.WRONG_CONTEXT));
         return this;
     }
@@ -78,7 +80,7 @@ public final class CommandContextValidation {
         checks.add(() -> SectorStarSystems.getPlayerStarSystem(sector) != null
             ? null
             : new Failure(
-                "This command must be run inside a star system.",
+                ConsoleStrings.get(KmlibStringKeys.CATEGORY, KmlibStringKeys.CONSOLE_REQUIRES_STAR_SYSTEM),
                 CommandResult.WRONG_CONTEXT));
         return this;
     }

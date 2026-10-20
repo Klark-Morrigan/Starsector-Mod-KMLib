@@ -1,5 +1,9 @@
 package kmlib.mods.console.commands.parsing;
 
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +36,16 @@ final class ParameterValuesTests {
         valuesByKeyword.put("flat", 2);
 
         return valuesByKeyword;
+    }
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
     }
 
     @Nested

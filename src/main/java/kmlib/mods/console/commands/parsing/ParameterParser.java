@@ -1,5 +1,6 @@
 package kmlib.mods.console.commands.parsing;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 
 import org.lazywizard.console.BaseCommand.CommandResult;
@@ -8,6 +9,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PARAMETER_FLAG_GIVEN_VALUE;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PARAMETER_INVALID_VALUE;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PARAMETER_MISSING;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PARAMETER_STANDALONE_COMBINED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PARAMETER_TOO_MANY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_PARAMETER_UNKNOWN;
 
 /**
  * The parsing algorithm behind {@link ParameterSpec#parse}: it matches a
@@ -65,11 +74,11 @@ final class ParameterParser {
 
                 return failSyntax(
                     output,
-                    "Unknown parameter '"
-                        + name
-                        + "'. Use "
-                        + ParameterUsage.describeAcceptedParameters(parameters)
-                        + '.');
+                    ConsoleStrings.format(
+                        CATEGORY,
+                        CONSOLE_PARAMETER_UNKNOWN,
+                        name,
+                        ParameterUsage.describeAcceptedParameters(parameters)));
             }
 
             if (parameter.isFlag()) {
@@ -78,10 +87,7 @@ final class ParameterParser {
                 // something unknown, so it gets its own correction.
                 return failSyntax(
                     output,
-                    "'"
-                        + name
-                        + "' is a flag; give it on its own,"
-                        + " without '='.");
+                    ConsoleStrings.format(CATEGORY, CONSOLE_PARAMETER_FLAG_GIVEN_VALUE, name));
             }
 
             if (!storeValue(parameter, token.substring(separator + 1), supplied, output)) {
@@ -101,7 +107,9 @@ final class ParameterParser {
         }
 
         if (positionals.size() > openSlots.size()) {
-            return failSyntax(output, "Too many arguments. " + spec.describeUsage());
+            return failSyntax(
+                output,
+                ConsoleStrings.format(CATEGORY, CONSOLE_PARAMETER_TOO_MANY, spec.describeUsage()));
         }
 
         for (var index = 0; index < positionals.size(); index++) {
@@ -119,10 +127,11 @@ final class ParameterParser {
 
                 return failSyntax(
                     output,
-                    "'"
-                        + standalone.getName()
-                        + "' cannot be combined with other arguments. "
-                        + spec.describeUsage());
+                    ConsoleStrings.format(
+                        CATEGORY,
+                        CONSOLE_PARAMETER_STANDALONE_COMBINED,
+                        standalone.getName(),
+                        spec.describeUsage()));
             }
             return ParsedParameters.createValid(supplied);
         }
@@ -133,7 +142,7 @@ final class ParameterParser {
 
                 return failSyntax(
                     output,
-                    "Missing required parameter '" + parameter.getName() + "'.");
+                    ConsoleStrings.format(CATEGORY, CONSOLE_PARAMETER_MISSING, parameter.getName()));
             }
         }
 
@@ -170,13 +179,12 @@ final class ParameterParser {
 
         } catch (ValueParseException valueParseException) {
 
-            output.showMessage("Invalid "
-                + parameter.getName()
-                + " '"
-                + raw
-                + "'. Expected "
-                + valueParseException.getMessage()
-                + '.');
+            output.showMessage(ConsoleStrings.format(
+                CATEGORY,
+                CONSOLE_PARAMETER_INVALID_VALUE,
+                parameter.getName(),
+                raw,
+                valueParseException.getMessage()));
 
             return false;
         }

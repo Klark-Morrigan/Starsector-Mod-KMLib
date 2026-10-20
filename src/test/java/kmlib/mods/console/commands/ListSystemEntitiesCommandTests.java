@@ -13,7 +13,7 @@ import kmlib.starsector.WalkCountCapture;
 import kmlib.starsector.systems.SectorStarSystems;
 import kmlib.starsector.systems.StarSystems;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
-import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +47,16 @@ final class ListSystemEntitiesCommandTests {
 
     @Nested
     class BuildReport {
+
+        @BeforeEach
+        void installStrings() {
+            KmlibStringsSettingsFake.installSettings();
+        }
+
+        @AfterEach
+        void clearStrings() {
+            KmlibStringsSettingsFake.clearSettings();
+        }
 
         @Test
         void buildsOrbitTreeWithTrailingUnorbitedAndFleets() {
@@ -128,7 +138,7 @@ final class ListSystemEntitiesCommandTests {
             var gate = buildEntity("gate1", "Gate", 100f, 0f, star, 180f, true);
             var systemMock = buildSystem(star, List.of(star, gate), List.of());
 
-            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+            globalMock = KmlibStringsSettingsFake.openGlobalAnsweringStrings();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(mock(SectorAPI.class));
@@ -158,6 +168,7 @@ final class ListSystemEntitiesCommandTests {
             starSystemsMock.close();
             sectorStarSystemsMock.close();
             globalMock.close();
+            KmlibStringsSettingsFake.clearSettings();
         }
 
         @Test

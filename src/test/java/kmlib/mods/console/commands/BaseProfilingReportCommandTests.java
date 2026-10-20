@@ -15,7 +15,10 @@ import kmlib.profiling.snapshot.ProfileTiming;
 import kmlib.profiling.snapshot.WorstCall;
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lazywizard.console.BaseCommand.CommandContext;
@@ -70,6 +73,16 @@ final class BaseProfilingReportCommandTests {
 
     private final ProfilingReportCommandFake commandFake =
         new ProfilingReportCommandFake(boundProfiler::get, outputFake, logFake);
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
+    }
 
     @Nested
     class RunCommand {

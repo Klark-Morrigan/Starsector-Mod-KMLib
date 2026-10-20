@@ -325,6 +325,191 @@ public final class KmlibStringKeys {
     public static final String COMPATIBILITY_UNAFFECTED_RAT_ACCESS_ROUTES =
         "compatibility_unaffected_rat_access_routes";
 
+    // What KMLib's console commands print, read through kmlib.mods.console.ConsoleStrings rather than the
+    // accessors below: a translation of these carries an English copy the console can draw.
+
+    /** A hand-over refused because the faction named already holds the colony. Two slots: colony, faction. */
+    public static final String CONSOLE_COLONY_ALREADY_OWNED = "console_colony_already_owned";
+
+    /** A colony founded. Two slots: the colony, then the faction holding it. */
+    public static final String CONSOLE_COLONY_FOUNDED = "console_colony_founded";
+
+    /** A colony handed over. Two slots: the colony, then the faction now holding it. */
+    public static final String CONSOLE_COLONY_TRANSFERRED = "console_colony_transferred";
+
+    /** The heading of the system entity listing's fleet section. No slots. */
+    public static final String CONSOLE_ENTITIES_FLEETS = "console_entities_fleets";
+
+    /** The system entity listing's heading. One slot: the system. */
+    public static final String CONSOLE_ENTITIES_HEADING = "console_entities_heading";
+
+    /** The system entity listing's heading when narrowed to gates. One slot: the system. */
+    public static final String CONSOLE_ENTITIES_HEADING_GATES_ONLY = "console_entities_heading_gates_only";
+
+    /** An orbiting entity's distance to its focus and its speed. Two slots: distance, degrees per day. */
+    public static final String CONSOLE_ENTITIES_ORBIT = "console_entities_orbit";
+
+    /** What an entity with no name is listed as. No slots. */
+    public static final String CONSOLE_ENTITIES_UNNAMED = "console_entities_unnamed";
+
+    /** The heading of the system entity listing's section for entities orbiting nothing. No slots. */
+    public static final String CONSOLE_ENTITIES_UNORBITED = "console_entities_unorbited";
+
+    /** What a keyword parameter expects when given another word. One slot: the keywords, listed. */
+    public static final String CONSOLE_EXPECTED_ONE_OF = "console_expected_one_of";
+
+    /** What the faction listing gives as the player faction's attitude to itself. No slots. */
+    public static final String CONSOLE_FACTIONS_ATTITUDE_SELF = "console_factions_attitude_self";
+
+    /** The faction listing's heading noun. No slots. */
+    public static final String CONSOLE_FACTIONS_HEADER = "console_factions_header";
+
+    /** The faction listing's heading noun when it lists no holdings. No slots. */
+    public static final String CONSOLE_FACTIONS_HEADER_WITHOUT_HOLDINGS = "console_factions_header_without_holdings";
+
+    /** The faction listing's heading line. One slot: the heading noun. */
+    public static final String CONSOLE_FACTIONS_HEADING = "console_factions_heading";
+
+    /** The faction listing's heading line under a filter. Two slots: the heading noun, then the filter. */
+    public static final String CONSOLE_FACTIONS_HEADING_FILTERED = "console_factions_heading_filtered";
+
+    /** How many places a faction holds. One slot: the count. */
+    public static final String CONSOLE_FACTIONS_HOLDINGS = "console_factions_holdings";
+
+    /** The systems a faction's places sit in. One slot: the systems, listed. */
+    public static final String CONSOLE_FACTIONS_HOLDINGS_SYSTEMS = "console_factions_holdings_systems";
+
+    /** How many of a faction's places are hidden and discoverable. Two slots: those two counts. */
+    public static final String CONSOLE_FACTIONS_HOLDINGS_VISIBILITY = "console_factions_holdings_visibility";
+
+    /** What a place in hyperspace is listed under in place of a system. No slots. */
+    public static final String CONSOLE_FACTIONS_HYPERSPACE = "console_factions_hyperspace";
+
+    /** The mod a faction came from. One slot: the mod. */
+    public static final String CONSOLE_FACTIONS_SOURCE = "console_factions_source";
+
+    /** The mark beside a faction treating the space around its holdings as its own. No slots. */
+    public static final String CONSOLE_FACTIONS_TERRITORIAL = "console_factions_territorial";
+
+    /** What the source of a faction no data file declares is given as. No slots. */
+    public static final String CONSOLE_FACTIONS_UNATTRIBUTED = "console_factions_unattributed";
+
+    /** What the console says when the faction listing went to the log. No slots. */
+    public static final String CONSOLE_FACTIONS_WRITTEN_TO_LOG = "console_factions_written_to_log";
+
+    /** A gate activated. Two slots: the gate's ID, then the system. */
+    public static final String CONSOLE_GATE_ACTIVATED = "console_gate_activated";
+
+    /** No gate under the ID asked for. Two slots: the ID, then the system. */
+    public static final String CONSOLE_GATE_NOT_FOUND = "console_gate_not_found";
+
+    /** What a listing with nothing in it says. No slots. */
+    public static final String CONSOLE_LISTING_NONE = "console_listing_none";
+
+    /** A flag given a value. One slot: the flag. */
+    public static final String CONSOLE_PARAMETER_FLAG_GIVEN_VALUE = "console_parameter_flag_given_value";
+
+    /** A value its parameter refuses. Three slots: the parameter, the value, what it expects. */
+    public static final String CONSOLE_PARAMETER_INVALID_VALUE = "console_parameter_invalid_value";
+
+    /** A required parameter left out. One slot: the parameter. */
+    public static final String CONSOLE_PARAMETER_MISSING = "console_parameter_missing";
+
+    /** A standalone parameter given with others. Two slots: the parameter, then the usage line. */
+    public static final String CONSOLE_PARAMETER_STANDALONE_COMBINED = "console_parameter_standalone_combined";
+
+    /** More positional values than slots. One slot: the usage line. */
+    public static final String CONSOLE_PARAMETER_TOO_MANY = "console_parameter_too_many";
+
+    /** A parameter name the command does not take. Two slots: the name, then the names it does take. */
+    public static final String CONSOLE_PARAMETER_UNKNOWN = "console_parameter_unknown";
+
+    /**
+     * The usage line. One slot: the command's forms, whose grammar stays English in every locale because
+     * the command table's syntax column restates it and a player types it.
+     */
+    public static final String CONSOLE_PARAMETER_USAGE = "console_parameter_usage";
+
+    /** What the profiling command's row count expects. No slots. */
+    public static final String CONSOLE_PROFILING_EXPECTED_TOP = "console_profiling_expected_top";
+
+    /** The profiling timings written to the log. One slot: whose timings, as the command labels them. */
+    public static final String CONSOLE_PROFILING_TIMINGS_LOGGED = "console_profiling_timings_logged";
+
+    /** The profiling timings cleared. One slot: whose timings, as the command labels them. */
+    public static final String CONSOLE_PROFILING_TIMINGS_RESET = "console_profiling_timings_reset";
+
+    /** A command run outside a campaign. No slots. */
+    public static final String CONSOLE_REQUIRES_CAMPAIGN = "console_requires_campaign";
+
+    /** A command run outside a star system. No slots. */
+    public static final String CONSOLE_REQUIRES_STAR_SYSTEM = "console_requires_star_system";
+
+    /** A spawn with no focus in a system of several stars. Two slots: how many stars, their IDs listed. */
+    public static final String CONSOLE_SPAWN_AMBIGUOUS_FOCUS = "console_spawn_ambiguous_focus";
+
+    /** What the spawn command's jitter expects. No slots. */
+    public static final String CONSOLE_SPAWN_EXPECTED_JITTER = "console_spawn_expected_jitter";
+
+    /** What the spawn command's speed expects. No slots. */
+    public static final String CONSOLE_SPAWN_EXPECTED_SPEED = "console_spawn_expected_speed";
+
+    /** No entity under the focus ID asked for. Two slots: the ID, then the system. */
+    public static final String CONSOLE_SPAWN_FOCUS_NOT_FOUND = "console_spawn_focus_not_found";
+
+    /** A gate spawned. One slot: its ID. */
+    public static final String CONSOLE_SPAWN_GATE_ADDED = "console_spawn_gate_added";
+
+    /** A jump point spawned. Two slots: its name, then the system. */
+    public static final String CONSOLE_SPAWN_JUMP_POINT_ADDED = "console_spawn_jump_point_added";
+
+    /** A kind the spawn command does not know. Two slots: the word given, then the kinds it knows. */
+    public static final String CONSOLE_SPAWN_UNKNOWN_KIND = "console_spawn_unknown_kind";
+
+    /** The mark beside a system no jump point leads into. No slots. */
+    public static final String CONSOLE_SPOILERS_CUT_OFF = "console_spoilers_cut_off";
+
+    /** The map spoiler listing's heading. No slots. */
+    public static final String CONSOLE_SPOILERS_HEADING = "console_spoilers_heading";
+
+    /** The mark beside a market the player has not found. No slots. */
+    public static final String CONSOLE_SPOILERS_UNDISCOVERED = "console_spoilers_undiscovered";
+
+    /** No entity under the ID asked for. One slot: the ID. */
+    public static final String CONSOLE_TARGET_ENTITY_NOT_FOUND = "console_target_entity_not_found";
+
+    /** An entity asked for that holds no market. One slot: the ID. */
+    public static final String CONSOLE_TARGET_ENTITY_WITHOUT_MARKET = "console_target_entity_without_market";
+
+    /** No faction under the ID asked for. One slot: the ID. */
+    public static final String CONSOLE_TARGET_FACTION_NOT_FOUND = "console_target_faction_not_found";
+
+    /** A market asked for that is not the kind the command acts on. Two slots: the ID, the requirement. */
+    public static final String CONSOLE_TARGET_MARKET_INELIGIBLE = "console_target_market_ineligible";
+
+    /** No market of the kind asked for nearby. Two slots: the system, then the requirement. */
+    public static final String CONSOLE_TARGET_NO_ELIGIBLE_MARKET = "console_target_no_eligible_market";
+
+    /** No sector to find a faction in. No slots. */
+    public static final String CONSOLE_TARGET_NO_SECTOR_FOR_FACTIONS = "console_target_no_sector_for_factions";
+
+    /** No sector to find a market in. No slots. */
+    public static final String CONSOLE_TARGET_NO_SECTOR_FOR_MARKETS = "console_target_no_sector_for_markets";
+
+    /** A search for the nearest market from outside a star system. No slots. */
+    public static final String CONSOLE_TARGET_NO_STAR_SYSTEM = "console_target_no_star_system";
+
+    /**
+     * What colonising needs of a market. No slots. Worded to complete both refusals that name a requirement,
+     * so it carries its own article.
+     */
+    public static final String CONSOLE_TARGET_REQUIREMENT_COLONISABLE_BODY =
+        "console_target_requirement_colonisable_body";
+
+    /** What handing a colony over needs of a market. No slots. Worded as the one above is. */
+    public static final String CONSOLE_TARGET_REQUIREMENT_EXISTING_COLONY =
+        "console_target_requirement_existing_colony";
+
     /** Display word for a jump point, e.g. "&lt;focus&gt; Jump-point &lt;radius&gt;". */
     public static final String JUMP_POINT_LABEL = "jump_point_label";
 

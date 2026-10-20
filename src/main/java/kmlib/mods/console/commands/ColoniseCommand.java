@@ -2,6 +2,7 @@ package kmlib.mods.console.commands;
 
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.targets.MarketOwnerTarget;
 import kmlib.mods.console.commands.targets.MarketOwnerTargetResolver;
@@ -9,6 +10,7 @@ import kmlib.mods.console.commands.targets.MarketTargetRequirement;
 import kmlib.mods.console.commands.targets.ResolvedTarget;
 import kmlib.mods.console.commands.targets.UnresolvedTarget;
 import kmlib.starsector.markets.colonisation.MarketColoniser;
+import kmlib.starsector.strings.KmlibStringKeys;
 
 /**
  * Console command (cheat): founds a colony on a body that so far carries only survey data. Takes
@@ -93,10 +95,10 @@ public final class ColoniseCommand
     // name that mod gave the place.
     private static String describeFoundedColony(SectorAPI sector, MarketOwnerTarget target) {
 
-        return "Founded a colony on "
-            + target.market().getName()
-            + " for "
-            + target.readOwnerName(sector)
-            + '.';
+        return ConsoleStrings.format(
+            KmlibStringKeys.CATEGORY,
+            KmlibStringKeys.CONSOLE_COLONY_FOUNDED,
+            target.market().getName(),
+            target.readOwnerName(sector));
     }
 }

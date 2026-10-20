@@ -32,6 +32,7 @@ so the two can never disagree.
     - [Row labels](#row-labels)
   - [What a failed binding costs](#what-a-failed-binding-costs)
   - [Settings](#settings)
+  - [Console commands](#console-commands)
   - [The changelog](#the-changelog)
     - [Headings and entry wording](#headings-and-entry-wording)
     - [Code and tests](#code-and-tests)
@@ -61,9 +62,10 @@ so the two can never disagree.
 | File | What it is |
 | --- | --- |
 | [CHANGELOG.md](CHANGELOG.md) | A full translation of the root [CHANGELOG.md](../../CHANGELOG.md): every version, every section. The Chinese zip ships it, and each release's notes show its section for the version. |
+| [commands.csv](commands.csv) | The console commands' table: the help Console Commands prints for each `kmlib_` command. Only the `help` column is translated; the rest is what a player types and what the console runs. |
 | [LunaSettings.csv](LunaSettings.csv) | KMLib's row on the LunaLib settings screen: the tab name, the setting's name and its description. |
 | [mod_info.json](mod_info.json) | The launcher's mod list entry: `name` and `description` only, merged over the base. |
-| [strings.json](strings.json) | Every string KMLib draws in game: the compatibility notice, the sentences its own failed bindings cost, and the jump-point label. |
+| [strings.json](strings.json) | Every string KMLib draws in game: the compatibility notice, the sentences its own failed bindings cost, the jump-point label, and what its console commands print. |
 
 Players of this bundle are expected to have the
 [Chinese core localisation](https://github.com/TruthOriginem/Starsector-Localization-CN)
@@ -118,6 +120,16 @@ A mod's own reference may add rules for its own features.
   `将此问题报告给 %s 的开发者 。`, `用 上移 和 下移 调整图层顺序`.
   That covers a format slot the code highlights, a phrase the code highlights, and a `[...]` run in a settings description.
   The parity suite and the suites drawing highlighted paragraphs fail a run that would draw plain.
+- **Console text carries the English after it.**
+  Console Commands draws in fonts of its own, which hold no Chinese, so a Chinese line prints as a row of `?`.
+  Each console text is the Chinese,
+  then a `-- English --` line,
+  then the English text word for word:
+  every help cell of `commands.csv`,
+  and every `strings.json` string whose key starts with `console_`.
+  The console prints the English until its fonts draw Chinese.
+  The parity suite holds the English to the English bundle's,
+  and the Chinese to its slots.
 - **Defaults read `[默认值：X]`, on a line of their own.**
   `X` is the shipped value as the English file writes it,
   except a Boolean, which reads `开启` for true and `关闭` for false.
@@ -150,6 +162,7 @@ which records no date of its own.
 | Faction | 势力 | `starfarer.api.jar` |
 | Fighter wing | 战机联队 | `strings.json` `chmWingPurchase_text`: "you just bought a new fighter wing" is 你购买了一个战机联队 |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Gate | 星门 | `descriptions.csv`, Active Gate is 激活的星门 |
 | Hull, (D) hull (a d-hull) | 船体, (D) 船体 | `tips.json`: "Ships with a (D) designation are substandard versions of the normal hulls." is 带有 (D) 标识的船体是性能低于正常状态的低质量船体 |
 | Hullmod | 舰船插件 | `tooltips.json`: "Change the weapons and hullmods equipped on this ship." is 改变这艘船的武器与舰船插件; the codex's "Hull Modifications" is 舰船插件. A bare 插件 reads as a hullmod too: S-插件, D-插件, 本插件 |
 | Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
@@ -159,6 +172,7 @@ which records no date of its own.
 | Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
 | ModSpec (the item) | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the hullmod it teaches is 舰船插件 |
 | Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
+| Planet | 行星 | `rules.csv` `surveyPrintFullData`: "You have full survey data for this planet." is 你已获得该行星的完整调查数据。 |
 | Screen, tab (of the core UI) | 面板 | `starfarer.api.jar`, the campaign tutorial: "open the intel screen" is 打开情报信息面板, "the character tab" is 角色面板. Vanilla shows no UI "panel" by that name; its English panels are physical ones |
 | Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
@@ -246,6 +260,32 @@ so the values line up as they do in English.
 | probes that read the game's UI by reflection | 通过反射读取游戏界面的探测器 | reflection is 反射, a probe 探测器 |
 | settings slider | 设置滑块 | 滑块 as KMU's settings descriptions write it |
 
+### Console commands
+
+What KMLib's console commands print and their help says.
+A term the console text shares with the changelog, such as a parameter, is under [Code and tests](#code-and-tests).
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| cut off (a system no jump point leads into), cut-off tag | 被截断, 被截断标签 | 截断, to cut off |
+| discoverable (a place the player has still to find) | 可发现 | `SectorEntityToken.isDiscoverable()`: kept off the system map until the player's sensors find it |
+| drift rate (an orbit's speed) | 漂移速率 | 漂移, drift, with 速率, rate |
+| flag (an argument given as a bare keyword) | 开关参数 | 开关, a switch, with 参数: a parameter that is on by being given |
+| game log | 游戏日志 | 日志 as the [log](#support-replies) row writes it |
+| holdings (the places a faction holds) | 持有地 | 持有, to hold, with 地, a place |
+| hyperspace entrance (of a jump point) | 超空间入口 | the vanilla Hyperspace row with 入口, entrance |
+| intel entry | 情报条目 | 情报, vanilla's intel item, with 条目, an entry |
+| map spoilers | 星图剧透 | vanilla's 星图 with 剧透, the usual word for a spoiler |
+| named parameter (one given as `name=value`) | 具名参数 | 具名, named, the usual computing word |
+| orbit tree, focus (what an orbit goes round) | 轨道树, 焦点 | 轨道, orbit; 焦点 as the [orbit-focus chain](#geometry) row writes it |
+| stockpiling, accrued unrest (what a colony's old owner arranged) | 囤积, 累积的动荡 | plain words, unchecked against the game jar |
+| system center (a system's middle where no star sits) | 星系中心 | vanilla's 星系 with 中心, center; vanilla never names it. Not 质心, barycentre, which is true only where stars orbit it, and false for a starless system such as a nebula |
+| territorial, non-territorial (a faction) | 领土, 非领土 | `territorial` in a faction's `punitiveExpeditionData`, read by `Misc.getClaimingFaction`: only a territorial faction claims a system dynamically. 非领土势力 in prose; 领土 is also the word for territory |
+| timings (what a profiler measured) | 性能计时 | 性能, performance, with 计时, timing |
+| unattributed (a faction no data file declares) | 来源不明 | 来源, source, with 不明, unknown |
+| undiscovered | 未发现 | not yet found |
+| unnamed | 未命名 | the usual word |
+
 ### The changelog
 
 The headings every KM mod's translated changelog shares,
@@ -282,8 +322,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
+| class, syntax, tags, help (the columns of a console command table) | 类, 语法, 标签, 帮助文字 | the usual computing words; 帮助文字, help text, so the column reads as words rather than as the help command |
 | command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread writes `help <指令名>` |
 | compile | 编译 | the usual computing word |
+| console command, console command table (a mod's `commands.csv`) | 控制台指令, 控制台指令表 | 指令 as [Console Commands' Fossic thread](https://www.fossic.org/thread-14602-1-1.html) writes it throughout, never 命令: that thread is where a Chinese player installs the mod from, and it names the mod itself 控制台. 表, a table |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | consumer mod | 使用方 Mod | |
 | control character | 控制字符 | the usual computing word |
@@ -387,6 +429,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | bundle | 语言包 | |
 | core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
+| English copy (the English a console text carries after its translation) | 英文副本 | 副本, a copy, as 检出副本 writes it |
 | locale | 语言区域 | |
 | locale tag (such as `zh-hans`) | 语言区域标签 | 标签, tag |
 | translation (the translated text of a string) | 译文 | as the `0.5.0` entry on highlight order writes it; kept apart from 汉化, a translated build |

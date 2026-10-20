@@ -3,9 +3,10 @@ package kmlib.mods.console.commands;
 import com.fs.starfarer.api.Global;
 
 import kmlib.mods.console.commands.output.GameLogCommandOutput;
+import kmlib.starsector.factions.FactionSourceMods;
 import kmlib.testfixtures.logging.LogAppenderFake;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
-import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +18,11 @@ import org.lazywizard.console.BaseCommand.CommandContext;
 import org.lazywizard.console.BaseCommand.CommandResult;
 import org.mockito.MockedStatic;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Pins what the command does with the words the player typed: prints the listing, accepts one
@@ -33,6 +38,7 @@ final class ListFactionsCommandTests {
     @Nested
     class RunCommand {
 
+        private MockedStatic<FactionSourceMods> factionSourceModsMock;
         private MockedStatic<Global> globalMock;
         private CommandOutputFake outputFake;
         private ListFactionsCommand command;
@@ -44,10 +50,17 @@ final class ListFactionsCommandTests {
             // so the two do not nest into an unfinished-stubbing error.
             var sector = new FactionListingFixture().getSector();
 
-            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+            globalMock = KmlibStringsSettingsFake.openGlobalAnsweringStrings();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sector);
+
+            // Nothing read, which drops the source clause: what a faction's source reads as is the
+            // report's to pin, and the settings standing in for the strings hold no game data.
+            factionSourceModsMock = mockStatic(FactionSourceMods.class);
+            factionSourceModsMock
+                .when(() -> FactionSourceMods.readSourcesByFactionId(any()))
+                .thenReturn(Map.of());
 
             outputFake = new CommandOutputFake();
             command = new ListFactionsCommand(outputFake);
@@ -55,7 +68,11 @@ final class ListFactionsCommandTests {
 
         @AfterEach
         void tearDown() {
+
+            factionSourceModsMock.close();
             globalMock.close();
+
+            KmlibStringsSettingsFake.clearSettings();
         }
 
         @Test

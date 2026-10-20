@@ -1,7 +1,9 @@
 package kmlib.mods.console.commands;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.starsector.markets.MarketVisibility;
 import kmlib.starsector.markets.colonies.Colony;
+import kmlib.starsector.strings.KmlibStringKeys;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,11 +18,6 @@ import java.util.function.Predicate;
  * once here rather than each question re-walking the sector.
  */
 final class FactionHoldings {
-
-    // A colony outside every star system has no ID to name it by. Vanilla builds none, but mods put
-    // markets in hyperspace, so the clause says where they are rather than dropping them and
-    // under-reporting the systems a faction is in.
-    private static final String HYPERSPACE_LABEL = "(hyperspace)";
 
     private final List<Colony> colonies;
 
@@ -65,8 +62,11 @@ final class FactionHoldings {
 
         var labels = new ArrayList<String>(systemIds);
 
+        // A colony outside every star system has no ID to name it by. Vanilla builds none, but mods put
+        // markets in hyperspace, so the clause says where they are rather than dropping them and
+        // under-reporting the systems a faction is in.
         if (isHyperspaceHeld) {
-            labels.add(HYPERSPACE_LABEL);
+            labels.add(ConsoleStrings.get(KmlibStringKeys.CATEGORY, KmlibStringKeys.CONSOLE_FACTIONS_HYPERSPACE));
         }
         return labels;
     }

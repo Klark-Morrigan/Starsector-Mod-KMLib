@@ -1,5 +1,8 @@
 package kmlib.mods.console.commands.parsing;
 
+import kmlib.mods.console.ConsoleStrings;
+import kmlib.starsector.strings.KmlibStringKeys;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,8 +19,9 @@ import java.util.List;
  */
 final class ParameterUsage {
 
+    // Part of the usage grammar, which stays English in every locale: the command table's syntax column
+    // restates the line, and a player types what it shows. Only the words around it are translated.
     private static final String ALTERNATIVE_FORM_SEPARATOR = ", or ";
-    private static final String USAGE_PREFIX = "Usage: ";
 
     private ParameterUsage() {
     }
@@ -44,7 +48,10 @@ final class ParameterUsage {
 
         forms.add(0, mainForm.toString());
 
-        return USAGE_PREFIX + String.join(ALTERNATIVE_FORM_SEPARATOR, forms) + '.';
+        return ConsoleStrings.format(
+            KmlibStringKeys.CATEGORY,
+            KmlibStringKeys.CONSOLE_PARAMETER_USAGE,
+            String.join(ALTERNATIVE_FORM_SEPARATOR, forms));
     }
 
     // The accepted parameters - value parameters as name=<hint> pairs, flags as bare keywords -

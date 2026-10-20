@@ -1,7 +1,10 @@
 package kmlib.mods.console.commands.targets;
 
 import kmlib.testfixtures.starsector.markets.MarketStateFixture;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +17,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * they are posed against are {@link MarketStateFixture}'s.
  */
 final class MarketTargetRequirementTests {
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
+    }
 
     @Nested
     class IsMetBy {
@@ -89,12 +102,12 @@ final class MarketTargetRequirementTests {
     }
 
     @Nested
-    class RequirementPhrase {
+    class ReadRequirementPhrase {
 
         @Test
         void wordsTheColonisableBodyRequirementWithItsOwnArticle() {
 
-            assertThat(MarketTargetRequirement.COLONISABLE_BODY.requirementPhrase())
+            assertThat(MarketTargetRequirement.COLONISABLE_BODY.readRequirementPhrase())
                 .isEqualTo("a body ready for colonisation");
         }
 
@@ -102,8 +115,21 @@ final class MarketTargetRequirementTests {
         void wordsTheExistingColonyRequirementWithItsOwnArticle() {
             // "an", not "a": the article belongs to the phrase, so a message reads as a
             // sentence without the caller having to know which one this requirement takes.
-            assertThat(MarketTargetRequirement.EXISTING_COLONY.requirementPhrase())
+            assertThat(MarketTargetRequirement.EXISTING_COLONY.readRequirementPhrase())
                 .isEqualTo("an existing colony");
+        }
+
+        @Test
+        void readsThePhraseWhenAskedRatherThanWhenBuilt() {
+            // The constants are built when the class loads, which may be before the game's strings are; the
+            // phrase is read from whatever strings stand when a refusal is worded.
+            var phraseReads = new int[1];
+            var requirement = new MarketTargetRequirement(market -> true, () -> "read " + ++phraseReads[0]);
+
+            assertThat(phraseReads[0])
+                .isZero();
+            assertThat(requirement.readRequirementPhrase())
+                .isEqualTo("read 1");
         }
     }
 }

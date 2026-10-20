@@ -64,6 +64,25 @@ final class LocaleBundleTests {
     }
 
     @Nested
+    class ReadConsoleCommands {
+
+        @Test
+        void theBundlesOwnCommandTableIsRead(@TempDir Path directory) throws IOException {
+
+            var bundle = createBundleWith(directory, "commands.csv", """
+                command,class,tags,syntax,help
+                kmu_only,kmu.OnlyCommand,kmu,kmu_only,"%s, %s"
+                """.formatted(CHINESE_TEXT, CHINESE_TEXT));
+
+            assertThat(bundle.readConsoleCommands())
+                .containsOnlyKeys("kmu_only");
+
+            assertThat(bundle.readConsoleCommands().get("kmu_only"))
+                .containsEntry("help", CHINESE_TEXT + ", " + CHINESE_TEXT);
+        }
+    }
+
+    @Nested
     class ReadChangelogOutline {
 
         @Test

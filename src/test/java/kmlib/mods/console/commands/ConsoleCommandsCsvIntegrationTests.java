@@ -1,8 +1,12 @@
 package kmlib.mods.console.commands;
 
+import kmlib.testfixtures.mods.console.commands.ConsoleCommandsTable;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
 import kmlib.testfixtures.starsector.spreadsheets.ShippedSpreadsheet;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lazywizard.console.BaseCommand;
@@ -43,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ConsoleCommandsCsvIntegrationTests {
 
-    private static final Path COMMANDS_CSV = Path.of("data", "console", "commands.csv");
+    private static final Path COMMANDS_CSV = ConsoleCommandsTable.COMMANDS_CSV;
 
     private static final Path COMMAND_SOURCE_DIRECTORY =
         Path.of("src", "main", "java", "kmlib", "mods", "console", "commands");
@@ -51,13 +55,6 @@ class ConsoleCommandsCsvIntegrationTests {
     private static final String COMMAND_PACKAGE = "kmlib.mods.console.commands.";
 
     private static final String JAVA_SUFFIX = ".java";
-
-    // The columns this suite reads, by the names the table's own header gives them.
-    private static final String CLASS_COLUMN = "class";
-
-    private static final String COMMAND_COLUMN = "command";
-
-    private static final String SYNTAX_COLUMN = "syntax";
 
     private static final String LIST_FACTIONS_COMMAND = "kmlib_list_factions";
 
@@ -73,7 +70,9 @@ class ConsoleCommandsCsvIntegrationTests {
     // so a read that came back with nothing would pass all of them without checking anything.
     private static List<String> readRegisteredClassNames() {
 
-        var registeredClassNames = ShippedSpreadsheet.listColumnValues(COMMANDS_CSV, CLASS_COLUMN);
+        var registeredClassNames = ShippedSpreadsheet.listColumnValues(
+            COMMANDS_CSV,
+            ConsoleCommandsTable.CLASS_COLUMN);
 
         if (registeredClassNames.isEmpty()) {
             throw new AssertionError("No command rows read from " + COMMANDS_CSV);
@@ -85,14 +84,14 @@ class ConsoleCommandsCsvIntegrationTests {
     // both carry commas inside quotes, which is the parser's business rather than this suite's.
     private static String readSyntaxColumnOf(String commandName) {
 
-        var row = ShippedSpreadsheet
-            .readRowsById(COMMANDS_CSV, COMMAND_COLUMN)
+        var row = ConsoleCommandsTable
+            .readRowsByCommand(COMMANDS_CSV)
             .get(commandName);
 
         if (row == null) {
             throw new AssertionError("No row for " + commandName + " in " + COMMANDS_CSV);
         }
-        return row.get(SYNTAX_COLUMN);
+        return row.get(ConsoleCommandsTable.SYNTAX_COLUMN);
     }
 
     // Every command this package actually ships: a concrete class the console could run. The
@@ -138,6 +137,16 @@ class ConsoleCommandsCsvIntegrationTests {
         } catch (ClassNotFoundException failure) {
             throw new AssertionError("No class " + className + " on the classpath", failure);
         }
+    }
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
     }
 
     @Nested

@@ -72,12 +72,46 @@ final class LocaleParityTests {
         }
         """;
 
+    // A mod registering console commands, which maps its command table beside its strings. It names no core
+    // localisation, so the table's help is held to Latin-1 too.
+    private static final String MANIFEST_MAPPING_COMMANDS = """
+        {
+          "defaultLocale": "en",
+          "files": {
+            "strings.json": "data/strings/strings.json",
+            "commands.csv": "data/console/commands.csv"
+          },
+          "locales": {
+            "en": { "displayName": "English" },
+            "zh-hans": { "displayName": "Chinese" }
+          }
+        }
+        """;
+
+    private static final String COMMANDS_HEADER_LINE = "command,class,tags,syntax,help\n";
+
+    private static final String ENGLISH_COMMANDS = COMMANDS_HEADER_LINE + """
+        kmu_open,kmu.OpenCommand,"kmu,campaign",kmu_open [all],Opens the manager.
+        kmu_report,kmu.ReportCommand,kmu,kmu_report,"Writes a report, then a notice."
+        """;
+
+    // The help translated, every other column kept: the shape a translation is meant to take.
+    private static final String TRANSLATED_COMMANDS = COMMANDS_HEADER_LINE + """
+        kmu_open,kmu.OpenCommand,"kmu,campaign",kmu_open [all],Ouvre le gestionnaire.
+        kmu_report,kmu.ReportCommand,kmu,kmu_report,"Rapporte, puis avise."
+        """;
+
+    // The marker parting a console text's translation from its English copy, as both files are written: the
+    // JSON parser reads each backslash-n as a line break, and Console Commands reads the command table's so.
+    private static final String WRITTEN_COPY_MARKER = "\\n\\n-- English --\\n";
+
+    // A console string beside two others, which the console's English copy rule leaves alone.
     private static final String ENGLISH_STRINGS = """
-        { "kmu": { "greeting": "Hello %s, you hold %d", "farewell": "Goodbye" } }
+        { "kmu": { "greeting": "Hello %s, you hold %d", "console_done": "Done %s.", "farewell": "Goodbye" } }
         """;
 
     private static final String TRANSLATED_STRINGS = """
-        { "kmu": { "greeting": "Bonjour %s, %d", "farewell": "Au revoir" } }
+        { "kmu": { "greeting": "Bonjour %s, %d", "console_done": "Fini %s.", "farewell": "Au revoir" } }
         """;
 
     private static final String SETTINGS_HEADER_LINE =
@@ -123,7 +157,8 @@ final class LocaleParityTests {
         Files.writeString(file, contents, StandardCharsets.UTF_8);
     }
 
-    // The agreeing pair every case breaks one file of: a manifest, then both bundles holding both files.
+    // The agreeing pair every case breaks one file of: a manifest, then both bundles holding every file. A file
+    // the manifest does not map is compared by nothing, so each manifest picks the files a case reads.
     private static Path writeAgreeingMod(Path modRoot, String manifest) throws IOException {
 
         var localisation = modRoot.resolve("localisation");
@@ -146,6 +181,12 @@ final class LocaleParityTests {
 
         writeFile(
             localisation
+                .resolve("en")
+                .resolve("commands.csv"),
+            ENGLISH_COMMANDS);
+
+        writeFile(
+            localisation
                 .resolve("zh-hans")
                 .resolve("strings.json"),
             TRANSLATED_STRINGS);
@@ -155,6 +196,12 @@ final class LocaleParityTests {
                 .resolve("zh-hans")
                 .resolve("LunaSettings.csv"),
             TRANSLATED_SETTINGS);
+
+        writeFile(
+            localisation
+                .resolve("zh-hans")
+                .resolve("commands.csv"),
+            TRANSLATED_COMMANDS);
 
         return localisation;
     }
@@ -171,6 +218,19 @@ final class LocaleParityTests {
             throw new IllegalArgumentException("The agreeing translation holds no \"" + agreeingRun + "\"");
         }
         return agreeingText.replace(agreeingRun, brokenRun);
+    }
+
+    private static void writeTranslatedCommandsReplacing(Path localisation, String agreeingRun, String brokenRun)
+            throws IOException {
+
+        writeFile(
+            localisation
+                .resolve("zh-hans")
+                .resolve("commands.csv"),
+            replaceRun(
+                TRANSLATED_COMMANDS,
+                agreeingRun,
+                brokenRun));
     }
 
     private static void writeTranslatedSettingsReplacing(Path localisation, String agreeingRun, String brokenRun)
@@ -265,6 +325,29 @@ final class LocaleParityTests {
                     "zh-hans: strings.json lacks string kmu > farewell, which en declares",
                     "zh-hans: strings.json declares string kmu > welcome, which en does not",
                     "zh-hans: LunaSettings.csv row kmu_width differs from en in maxValue: \"9\" against \"8\"");
+        }
+
+        @Test
+        void consoleCommandFindingsFollowTheStrings(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "kmu_open [all]",
+                "kmu_open [tout]");
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "\"farewell\": \"Au revoir\"",
+                "\"welcome\": \"Bienvenue\"");
+
+            assertThat(createParity(localisation).findAllMismatches())
+                .containsExactly(
+                    "zh-hans: strings.json lacks string kmu > farewell, which en declares",
+                    "zh-hans: strings.json declares string kmu > welcome, which en does not",
+                    "zh-hans: commands.csv command kmu_open differs from en in syntax: "
+                        + "\"kmu_open [tout]\" against \"kmu_open [all]\"");
         }
     }
 
@@ -405,6 +488,217 @@ final class LocaleParityTests {
     }
 
     @Nested
+    class FindConsoleCommandBehaviourMismatches {
+
+        @Test
+        void translatedHelpPasses(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS))
+                    .findConsoleCommandBehaviourMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aTranslatedSyntaxIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "kmu_open [all]",
+                "kmu_open [tout]");
+
+            assertThat(createParity(localisation).findConsoleCommandBehaviourMismatches())
+                .containsExactly("zh-hans: commands.csv command kmu_open differs from en in syntax: "
+                    + "\"kmu_open [tout]\" against \"kmu_open [all]\"");
+        }
+
+        @Test
+        void anotherClassAndOtherTagsAreFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "kmu.ReportCommand,kmu,",
+                "kmu.RapportCommand,rapport,");
+
+            assertThat(createParity(localisation).findConsoleCommandBehaviourMismatches())
+                .containsExactly(
+                    "zh-hans: commands.csv command kmu_report differs from en in class: "
+                        + "\"kmu.RapportCommand\" against \"kmu.ReportCommand\"",
+                    "zh-hans: commands.csv command kmu_report differs from en in tags: \"rapport\" against \"kmu\"");
+        }
+    }
+
+    @Nested
+    class FindConsoleCommandRowMismatches {
+
+        @Test
+        void agreeingCommandsPass(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS))
+                    .findConsoleCommandRowMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aMissingAndAnAddedCommandAreFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "kmu_report,kmu.ReportCommand,kmu,kmu_report,",
+                "kmu_rapport,kmu.ReportCommand,kmu,kmu_rapport,");
+
+            assertThat(createParity(localisation).findConsoleCommandRowMismatches())
+                .containsExactly(
+                    "zh-hans: commands.csv lacks command kmu_report, which en declares",
+                    "zh-hans: commands.csv declares command kmu_rapport, which en does not");
+        }
+
+        @Test
+        void aModMappingNoCommandTableComparesNone(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "kmu_report,kmu.ReportCommand,kmu,kmu_report,",
+                "kmu_rapport,kmu.ReportCommand,kmu,kmu_rapport,");
+
+            assertThat(createParity(localisation).findConsoleCommandRowMismatches())
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class FindConsoleHelpEnglishCopyMismatches {
+
+        @Test
+        void aHelpTheConsoleFontsDrawNeedsNoCopy(@TempDir Path modRoot) throws IOException {
+            // The agreeing translation is Latin-1 throughout, which Console Commands' own fonts draw.
+            assertThat(createParity(writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS))
+                    .findConsoleHelpEnglishCopyMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aHelpCarryingTheDefaultsWordsAfterTheMarkerPasses(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "Ouvre le gestionnaire.",
+                CHINESE_TEXT + WRITTEN_COPY_MARKER + "Opens the manager.");
+
+            assertThat(createParity(localisation).findConsoleHelpEnglishCopyMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aHelpOutsideLatin1WithoutACopyIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "Ouvre le gestionnaire.",
+                CHINESE_TEXT);
+
+            assertThat(createParity(localisation).findConsoleHelpEnglishCopyMismatches())
+                .containsExactly("zh-hans: commands.csv command kmu_open draws characters Console Commands' fonts "
+                    + "lack, but carries no English copy");
+        }
+
+        @Test
+        void aCopyDifferingFromTheDefaultIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "Ouvre le gestionnaire.",
+                CHINESE_TEXT + WRITTEN_COPY_MARKER + "Opens it.");
+
+            assertThat(createParity(localisation).findConsoleHelpEnglishCopyMismatches())
+                .containsExactly("zh-hans: commands.csv command kmu_open carries an English copy differing from en: "
+                    + "\"Opens it.\" against \"Opens the manager.\"");
+        }
+    }
+
+    @Nested
+    class FindConsoleStringEnglishCopyMismatches {
+
+        @Test
+        void aStringTheConsoleFontsDrawNeedsNoCopy(@TempDir Path modRoot) throws IOException {
+
+            assertThat(createParity(writeAgreeingMod(modRoot)).findConsoleStringEnglishCopyMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aStringCarryingTheDefaultsWordsAfterTheMarkerPasses(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Fini %s.",
+                CHINESE_TEXT + " %s" + WRITTEN_COPY_MARKER + "Done %s.");
+
+            assertThat(createParity(localisation).findConsoleStringEnglishCopyMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aStringOutsideLatin1WithoutACopyIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Fini %s.",
+                CHINESE_TEXT + " %s");
+
+            assertThat(createParity(localisation).findConsoleStringEnglishCopyMismatches())
+                .containsExactly("zh-hans: strings.json string kmu > console_done draws characters Console Commands' "
+                    + "fonts lack, but carries no English copy");
+        }
+
+        @Test
+        void aCopyDifferingFromTheDefaultIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Fini %s.",
+                CHINESE_TEXT + " %s" + WRITTEN_COPY_MARKER + "Finished %s.");
+
+            assertThat(createParity(localisation).findConsoleStringEnglishCopyMismatches())
+                .containsExactly("zh-hans: strings.json string kmu > console_done carries an English copy differing "
+                    + "from en: \"Finished %s.\" against \"Done %s.\"");
+        }
+
+        @Test
+        void aStringTheConsoleDoesNotPrintIsLeftAlone(@TempDir Path modRoot) throws IOException {
+            // Only a console_ key is printed by Console Commands; the rest are drawn in the game's own fonts.
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Au revoir",
+                CHINESE_TEXT);
+
+            assertThat(createParity(localisation).findConsoleStringEnglishCopyMismatches())
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class FindDeclaredLocalesWithoutBundleDirectory {
 
         @Test
@@ -485,6 +779,34 @@ final class LocaleParityTests {
             assertThat(createParity(localisation).findFormatArgumentMismatches())
                 .containsExactly("zh-hans: strings.json kmu > greeting takes [%1$s, %2$s] where en takes [%1$s, %2$d]");
         }
+
+        @Test
+        void aConsoleStringsEnglishCopyIsNotCountedAsSlotsOfItsOwn(@TempDir Path modRoot) throws IOException {
+            // The copy repeats the default's slots, so counted whole the string would take each slot twice.
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Fini %s.",
+                CHINESE_TEXT + " %s" + WRITTEN_COPY_MARKER + "Done %s.");
+
+            assertThat(createParity(localisation).findFormatArgumentMismatches())
+                .isEmpty();
+        }
+
+        @Test
+        void aConsoleStringsTranslationDroppingASlotIsFound(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot);
+
+            writeTranslatedStringsReplacing(
+                localisation,
+                "Fini %s.",
+                CHINESE_TEXT + WRITTEN_COPY_MARKER + "Done %s.");
+
+            assertThat(createParity(localisation).findFormatArgumentMismatches())
+                .containsExactly("zh-hans: strings.json kmu > console_done takes [] where en takes [%1$s]");
+        }
     }
 
     @Nested
@@ -545,6 +867,21 @@ final class LocaleParityTests {
 
             assertThat(createParity(localisation).findLocalesMissingCoreLocalisation())
                 .containsExactly("zh-hans: LunaSettings.csv draws characters outside Latin-1, "
+                    + "but the manifest names no coreLocalisation for the locale");
+        }
+
+        @Test
+        void aCommandHelpOutsideLatin1IsFoundWithoutOne(@TempDir Path modRoot) throws IOException {
+
+            var localisation = writeAgreeingMod(modRoot, MANIFEST_MAPPING_COMMANDS);
+
+            writeTranslatedCommandsReplacing(
+                localisation,
+                "Ouvre le gestionnaire.",
+                CHINESE_TEXT);
+
+            assertThat(createParity(localisation).findLocalesMissingCoreLocalisation())
+                .containsExactly("zh-hans: commands.csv draws characters outside Latin-1, "
                     + "but the manifest names no coreLocalisation for the locale");
         }
     }

@@ -13,7 +13,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import kmlib.starsector.SectorWalkCounters;
 import kmlib.starsector.WalkCountCapture;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
-import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +46,16 @@ final class ListMapSpoilersCommandTests {
 
     @Nested
     class BuildReport {
+
+        @BeforeEach
+        void installStrings() {
+            KmlibStringsSettingsFake.installSettings();
+        }
+
+        @AfterEach
+        void clearStrings() {
+            KmlibStringsSettingsFake.clearSettings();
+        }
 
         @Test
         void omitsOrdinaryFullyVisibleSystems() {
@@ -240,7 +250,7 @@ final class ListMapSpoilersCommandTests {
             when(sectorMock.getStarSystems())
                 .thenReturn(new ArrayList<>());
 
-            globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+            globalMock = KmlibStringsSettingsFake.openGlobalAnsweringStrings();
             globalMock
                 .when(Global::getSector)
                 .thenReturn(sectorMock);
@@ -252,6 +262,7 @@ final class ListMapSpoilersCommandTests {
         @AfterEach
         void tearDown() {
             globalMock.close();
+            KmlibStringsSettingsFake.clearSettings();
         }
 
         @Test

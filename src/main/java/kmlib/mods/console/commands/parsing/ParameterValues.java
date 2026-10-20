@@ -1,5 +1,8 @@
 package kmlib.mods.console.commands.parsing;
 
+import kmlib.mods.console.ConsoleStrings;
+import kmlib.starsector.strings.KmlibStringKeys;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -44,11 +47,11 @@ public final class ParameterValues {
     }
 
     // One of a fixed set of words, matched case-insensitively, standing for the value it selects.
-    // The clause a stray word is refused with lists the words, so it never needs writing out.
+    // The clause a stray word is refused with lists the words, so it never needs writing out. Worded
+    // at the refusal rather than here, since a spec is often built before the game's strings load.
     public static <T> ValueParser<T> oneOfKeywords(Map<String, T> valuesByKeyword) {
 
         var keptValuesByKeyword = new LinkedHashMap<>(valuesByKeyword);
-        var expected = "one of " + String.join(", ", keptValuesByKeyword.keySet());
 
         return raw -> {
 
@@ -59,7 +62,10 @@ public final class ParameterValues {
                 }
             }
 
-            throw new ValueParseException(expected);
+            throw new ValueParseException(ConsoleStrings.format(
+                KmlibStringKeys.CATEGORY,
+                KmlibStringKeys.CONSOLE_EXPECTED_ONE_OF,
+                String.join(", ", keptValuesByKeyword.keySet())));
         };
     }
 
