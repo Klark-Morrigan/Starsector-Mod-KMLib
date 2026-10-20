@@ -36,7 +36,6 @@ public final class MonthlyReports {
         if (sector.getPersistentData().get(SHARED_DATA_KEY) instanceof SharedData sharedData) {
             return Optional.of(sharedData.getCurrentReport());
         }
-
         return Optional.empty();
     }
 }
