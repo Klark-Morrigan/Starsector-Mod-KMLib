@@ -98,9 +98,13 @@ What the game reads, and where each file is edited:
   keyed by mod ID.
 - [`data/config/version/version_files.csv`](data/config/version/version_files.csv) -
   names the `.version` file VersionChecker reads.
-- [`data/console/commands.csv`](data/console/commands.csv) -
+- [`localisation/en/commands.csv`](localisation/en/commands.csv) -
   Console Commands registrations,
   and the per-command help the console prints.
+  Written to `data/console/commands.csv`,
+  the file Console Commands reads,
+  by `gradlew jar`;
+  that copy is not committed.
 - [`localisation/en/strings.json`](localisation/en/strings.json) -
   localisation lookups.
   Written to `data/strings/strings.json`,
@@ -1838,13 +1842,16 @@ and a looser one would pass a key declared twice.
 reads a mod's shipped `data/strings/strings.json` through it,
 beside the string IDs its holder class names,
 for the guard that pins each against the other.
+`KmlibStringsSettingsFake` answers KMLib's own strings in a mod's suites,
+for a command built on KMLib's that prints them.
 [`localisation/`](src/testFixtures/java/kmlib/testfixtures/localisation/)
 reads a mod's `localisation/` directory:
 the manifest naming its locales, its default and where each bundle file lands,
 each locale's bundle -
 its strings,
 its launcher fragment,
-and its settings table -
+its settings table,
+and its console command table -
 each through the reading a mod's shipped copy of that file gets,
 the `mod_info.base.json` the fragments merge over,
 and the mod's changelog.
@@ -1859,6 +1866,9 @@ a missing key or row,
 a slot taking another argument,
 a row varying what it stores,
 a tab split or merged,
+a console command varying what a player types or what the console runs,
+a console text the console's fonts cannot draw that carries no English copy,
+or one whose copy differs from the default,
 glyphs no named core localisation supplies,
 a translated changelog missing or behind the root one,
 a bracketed settings run the game cannot highlight where it stands -
@@ -1943,10 +1953,31 @@ See [Optional mod seams](#optional-mod-seams).
 
 Arguments,
 defaults and the cases a command refuses are documented per command in
-[`data/console/commands.csv`](data/console/commands.csv),
+[`localisation/en/commands.csv`](localisation/en/commands.csv),
 which is what the console reads and what `help <command>` prints in-game.
 That file is the single source for the detail;
 the table above only says which command to reach for.
+
+Everything a KM console command prints is player text, read from `strings.json` like any other:
+its refusals, its corrections and its reports.
+Log lines stay English,
+since a log is what a bug report carries.
+Console Commands draws in fonts of its own,
+which hold no character past Latin-1,
+so a Chinese line prints as a row of `?`.
+A translation the console cannot draw therefore carries the English after it,
+following a `-- English --` line:
+in each translated help cell,
+and in each `strings.json` string whose key starts with `console_`.
+`kmlib.mods.console.ConsoleStrings` is the read for those strings,
+and answers the English copy alone,
+so every piece of a message comes back in one language and composes as it would untranslated.
+`LocaleParity` holds each copy to the default's wording.
+Once Console Commands draws Chinese,
+that read answers the translation instead and the copies are cut from the marker on.
+The usage line keeps its grammar in English in every locale,
+since the table's `syntax` column restates it and a player types what it shows;
+only the words around it, such as "Usage:", are translated.
 
 ## Rendering environment
 

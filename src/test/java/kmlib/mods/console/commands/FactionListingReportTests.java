@@ -2,7 +2,10 @@ package kmlib.mods.console.commands;
 
 import kmlib.starsector.settings.modmanager.ModSource;
 import kmlib.testfixtures.starsector.markets.colonies.ColonyMarketFixture;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +39,16 @@ final class FactionListingReportTests {
     // A colony bigger than the fixture's default, so a colliding pair reads as
     // "the larger of the two" rather than as two loose numbers.
     private static final int LARGER_COLONY_SIZE = 6;
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
+    }
 
     @Nested
     class DescribeFactions {

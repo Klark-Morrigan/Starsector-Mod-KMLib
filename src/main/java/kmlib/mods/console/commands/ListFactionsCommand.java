@@ -2,12 +2,14 @@ package kmlib.mods.console.commands;
 
 import com.fs.starfarer.api.Global;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.output.GameLogCommandOutput;
 import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
 import kmlib.mods.console.commands.parsing.ParsedParameters;
 import kmlib.starsector.factions.FactionSourceMods;
+import kmlib.starsector.strings.KmlibStringKeys;
 
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -34,11 +36,6 @@ public final class ListFactionsCommand
         extends BaseKmlibCommand {
 
     private static final String COMMAND_NAME = "kmlib_list_factions";
-
-    // What the console is told when the report went to the log instead, so a run that printed
-    // nothing where the player is looking does not read as a run that did nothing.
-    private static final String WROTE_TO_LOG_NOTICE =
-        "Faction listing written to the game log.";
 
     private static final ListFactionsSpec SPEC = new ListFactionsSpec();
 
@@ -69,11 +66,14 @@ public final class ListFactionsCommand
             .describeFactions(readActiveSector());
 
         // The log keeps what the console scrolls away, which is what a listing this
-        // long is usually wanted for; the console still hears that it happened.
+        // long is usually wanted for; the console still hears that it happened, so a run
+        // that printed nothing where the player is looking does not read as one that did nothing.
         if (options.contains(ListingOption.WRITE_TO_LOG)) {
 
             GameLogCommandOutput.INSTANCE.showMessage(report);
-            output.showMessage(WROTE_TO_LOG_NOTICE);
+            output.showMessage(ConsoleStrings.get(
+                KmlibStringKeys.CATEGORY,
+                KmlibStringKeys.CONSOLE_FACTIONS_WRITTEN_TO_LOG));
 
         } else {
             output.showMessage(report);

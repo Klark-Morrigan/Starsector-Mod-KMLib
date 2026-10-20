@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
 import kmlib.starsector.SectorWalks;
@@ -16,6 +17,12 @@ import kmlib.starsector.systems.StarSystems;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_LISTING_NONE;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPOILERS_CUT_OFF;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPOILERS_HEADING;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_SPOILERS_UNDISCOVERED;
 
 /**
  * Console command that lists, as a tree, the star systems worth spoiling: those
@@ -81,9 +88,7 @@ public final class ListMapSpoilersCommand
      */
     static String buildReport(SectorAPI sector) {
 
-        var report = new StringBuilder(
-            "Map spoilers - cut-off systems and undiscovered markets:");
-
+        var report = new StringBuilder(ConsoleStrings.get(CATEGORY, CONSOLE_SPOILERS_HEADING));
         var entries = new ArrayList<String>();
 
         SectorWalks.walkStarSystems(
@@ -91,7 +96,10 @@ public final class ListMapSpoilersCommand
             system -> describeSpoilerSystem(sector, system).ifPresent(entries::add));
 
         if (entries.isEmpty()) {
-            report.append("\n  (none)");
+
+            report
+                .append("\n  ")
+                .append(ConsoleStrings.get(CATEGORY, CONSOLE_LISTING_NONE));
         }
         for (var entry : entries) {
             report
@@ -141,7 +149,10 @@ public final class ListMapSpoilersCommand
         var entry = new StringBuilder(StarSystems.readDisplayName(system));
 
         if (isSystemCutOff) {
-            entry.append("  [cut off]");
+
+            entry
+                .append("  ")
+                .append(ConsoleStrings.get(CATEGORY, CONSOLE_SPOILERS_CUT_OFF));
         }
 
         for (var market : ownedMarkets) {
@@ -178,7 +189,7 @@ public final class ListMapSpoilersCommand
     private static String readVisibilitySuffix(MarketAPI market) {
 
         if (!Entities.isDiscoveredByPlayer(market.getPrimaryEntity())) {
-            return "  [undiscovered]";
+            return "  " + ConsoleStrings.get(CATEGORY, CONSOLE_SPOILERS_UNDISCOVERED);
         }
         return "";
     }

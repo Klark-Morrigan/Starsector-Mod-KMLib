@@ -8,7 +8,10 @@ import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
 import kmlib.testfixtures.starsector.markets.MarketPlacementFixture;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -39,10 +42,20 @@ final class MarketTargetResolverTests {
     private static final String TARGET_PHRASE = "a suitable target";
 
     private static final MarketTargetRequirement ANY_MARKET =
-        new MarketTargetRequirement(market -> true, TARGET_PHRASE);
+        new MarketTargetRequirement(market -> true, () -> TARGET_PHRASE);
 
     private static final MarketTargetRequirement NO_MARKET =
-        new MarketTargetRequirement(market -> false, TARGET_PHRASE);
+        new MarketTargetRequirement(market -> false, () -> TARGET_PHRASE);
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
+    }
 
     @Nested
     class ResolveTargetMarket {

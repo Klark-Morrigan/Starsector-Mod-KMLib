@@ -1,5 +1,6 @@
 package kmlib.testfixtures.localisation;
 
+import kmlib.testfixtures.mods.console.commands.ConsoleCommandsTable;
 import kmlib.testfixtures.starsector.settings.LunaSettingsTable;
 import kmlib.testfixtures.starsector.settings.StarsectorSettingsFake.SettingsStringSource;
 import kmlib.testfixtures.starsector.strings.ShippedStrings;
@@ -14,8 +15,8 @@ import java.util.regex.Pattern;
  * locale's launcher fragment and, for a locale other than the default, its translation of the changelog.
  *
  * <p>Each file is read the way a mod's shipped copy of it is read, so a bundle file is never parsed a
- * second way: the strings file through {@link ShippedStrings}, and the settings table through
- * {@link LunaSettingsTable}.
+ * second way: the strings file through {@link ShippedStrings}, the settings table through
+ * {@link LunaSettingsTable}, and the console command table through {@link ConsoleCommandsTable}.
  */
 public final class LocaleBundle {
 
@@ -23,6 +24,9 @@ public final class LocaleBundle {
     // parent step would let one bundle reach into another's. The first character excludes the dot,
     // which is what keeps out "..".
     private static final Pattern BUNDLE_FILE_NAME = Pattern.compile("[A-Za-z0-9_-][A-Za-z0-9_.-]*");
+
+    // The name every bundle gives its console command table, and the name Console Commands gives it too.
+    static final String COMMANDS_FILE_NAME = ConsoleCommandsTable.COMMANDS_CSV.getFileName().toString();
 
     // The name every bundle gives its launcher fragment, after the file it is merged into.
     static final String MOD_INFO_FILE_NAME = "mod_info.json";
@@ -73,6 +77,15 @@ public final class LocaleBundle {
      */
     public ChangelogOutline readChangelogOutline() {
         return ChangelogOutline.readOutline(resolveBundleFile(LocalisationDirectory.CHANGELOG_FILE_NAME));
+    }
+
+    /**
+     * This locale's console command table.
+     *
+     * @return each row's cells by column name, keyed by the row's command, in file order
+     */
+    public Map<String, Map<String, String>> readConsoleCommands() {
+        return ConsoleCommandsTable.readRowsByCommand(resolveBundleFile(COMMANDS_FILE_NAME));
     }
 
     /**

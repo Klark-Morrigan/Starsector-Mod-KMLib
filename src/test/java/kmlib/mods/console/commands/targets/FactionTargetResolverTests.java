@@ -3,6 +3,10 @@ package kmlib.mods.console.commands.targets;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +22,16 @@ import static org.mockito.Mockito.when;
 final class FactionTargetResolverTests {
 
     private static final String PLAYER_FACTION_ID = "player";
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
+    }
 
     @Nested
     class ResolveOwningFaction {

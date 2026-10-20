@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.SectorEntityToken;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Tags;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.mods.console.commands.output.CommandOutput;
 import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
@@ -22,6 +23,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_ENTITIES_FLEETS;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_ENTITIES_HEADING;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_ENTITIES_HEADING_GATES_ONLY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_ENTITIES_ORBIT;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_ENTITIES_UNNAMED;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_ENTITIES_UNORBITED;
 
 /**
  * Console command (dev tool): lists the current system's entities as an orbit
@@ -109,21 +118,19 @@ public final class ListSystemEntitiesCommand
             ? collectGatesAndAncestors(entities, center)
             : null;
 
-        var report = new StringBuilder("System entities in ")
-            .append(StarSystems.readDisplayName(system));
-
-        if (isGatesOnly) {
-            report.append(" (gates only)");
-        }
-
-        report.append(':');
+        var report = new StringBuilder(ConsoleStrings.format(
+            CATEGORY,
+            isGatesOnly
+                ? CONSOLE_ENTITIES_HEADING_GATES_ONLY
+                : CONSOLE_ENTITIES_HEADING,
+            StarSystems.readDisplayName(system)));
 
         var inTree = new HashSet<SectorEntityToken>();
 
         appendOrbitTree(report, center, childrenByFocus, 0, keep, inTree);
         appendPositionedSection(
             report,
-            "Unorbited entities (nearest center first)",
+            ConsoleStrings.get(CATEGORY, CONSOLE_ENTITIES_UNORBITED),
             collectUnorbitedEntities(entities, inTree, isGatesOnly),
             center);
 
@@ -131,7 +138,7 @@ public final class ListSystemEntitiesCommand
 
             appendPositionedSection(
                 report,
-                "Fleets (nearest center first)",
+                ConsoleStrings.get(CATEGORY, CONSOLE_ENTITIES_FLEETS),
                 new ArrayList<SectorEntityToken>(system.getFleets()),
                 center);
         }
@@ -267,9 +274,9 @@ public final class ListSystemEntitiesCommand
             return describe(entity);
         }
 
-        return describe(entity) + String.format(
-            Locale.ROOT,
-            "  dist=%.0f  speed=%.2f deg/day",
+        return describe(entity) + "  " + ConsoleStrings.format(
+            CATEGORY,
+            CONSOLE_ENTITIES_ORBIT,
             StarsectorPoints.computeDistanceBetween(entity, focus),
             EntityOrbits.readSpeedDegPerDay(entity));
     }
@@ -278,7 +285,7 @@ public final class ListSystemEntitiesCommand
 
         var name = entity.getName() != null
             ? entity.getName()
-            : "(unnamed)";
+            : ConsoleStrings.get(CATEGORY, CONSOLE_ENTITIES_UNNAMED);
 
         return name + " [" + entity.getId() + ']';
     }

@@ -31,6 +31,8 @@ public final class LocaleParity {
 
     private final BundleLayoutParity bundleLayoutParity;
     private final ChangelogParity changelogParity;
+    private final ConsoleCommandsParity consoleCommandsParity;
+    private final ConsoleEnglishCopyParity consoleEnglishCopyParity;
     private final CoreLocalisationParity coreLocalisationParity;
     private final ModInfoParity modInfoParity;
     private final SettingsHighlightParity settingsHighlightParity;
@@ -64,6 +66,8 @@ public final class LocaleParity {
 
         this.bundleLayoutParity = new BundleLayoutParity(directory);
         this.changelogParity = new ChangelogParity(directory);
+        this.consoleCommandsParity = new ConsoleCommandsParity(bundleReadings);
+        this.consoleEnglishCopyParity = new ConsoleEnglishCopyParity(bundleReadings);
         this.modInfoParity = new ModInfoParity(directory);
         this.settingsParity = new SettingsParity(bundleReadings, settingsFieldIdPrefix);
         this.stringsParity = new StringsParity(bundleReadings);
@@ -75,7 +79,8 @@ public final class LocaleParity {
      * Every finding of every check below, so a mod holds its locales to the default in one assertion. Each
      * finding names its locale, its file and the edit to make, so the check it came from needs no naming.
      * Listed in the order a fix is best made: the directories and files first, since a gap there hides the
-     * comparisons over them, then the strings, the settings table, the launcher fragment and the changelog.
+     * comparisons over them, then the strings, the settings table, the console command table, the launcher
+     * fragment and the changelog.
      *
      * @return the findings of every check, in that order
      */
@@ -88,11 +93,15 @@ public final class LocaleParity {
                 findStringsKeyMismatches(),
                 findBlankStrings(),
                 findFormatArgumentMismatches(),
+                findConsoleStringEnglishCopyMismatches(),
                 findLocalesMissingCoreLocalisation(),
                 findSettingsRowMismatches(),
                 findSettingsBehaviourMismatches(),
                 findSettingsTabMismatches(),
                 findUnhighlightedSettingsRuns(),
+                findConsoleCommandRowMismatches(),
+                findConsoleCommandBehaviourMismatches(),
+                findConsoleHelpEnglishCopyMismatches(),
                 findModInfoFragmentMismatches(),
                 findChangelogMismatches())
             .flatMap(List::stream)
@@ -124,6 +133,50 @@ public final class LocaleParity {
     }
 
     /**
+     * The console commands that run differently in a locale than in the default: another class, syntax or
+     * tags. Only the help is translated. The rest is what a player types and what the console builds and
+     * lists by, so a locale varying it ships a different command under the same name.
+     *
+     * @return one finding per differing column of such a command
+     */
+    public List<String> findConsoleCommandBehaviourMismatches() {
+        return consoleCommandsParity.findConsoleCommandBehaviourMismatches();
+    }
+
+    /**
+     * The console commands a locale lacks or adds against the default. A missing command cannot be typed
+     * in that locale's build, and an added one exists in that build alone.
+     *
+     * @return one finding per missing or added command
+     */
+    public List<String> findConsoleCommandRowMismatches() {
+        return consoleCommandsParity.findConsoleCommandRowMismatches();
+    }
+
+    /**
+     * The console command help a locale translates without the English copy Console Commands can draw, or
+     * with a copy saying something the default does not. Console Commands draws in fonts holding nothing
+     * past Latin-1, so a help drawing such a character prints as {@code ?} unless the default's wording
+     * follows it, word for word, after {@link kmlib.mods.console.ConsoleStrings#ENGLISH_COPY_MARKER}.
+     *
+     * @return one finding per such help
+     */
+    public List<String> findConsoleHelpEnglishCopyMismatches() {
+        return consoleEnglishCopyParity.findConsoleHelpEnglishCopyMismatches();
+    }
+
+    /**
+     * The console strings a locale translates without the English copy Console Commands can draw, or with
+     * a copy saying something the default does not. The same rule as the command help's, over every string
+     * whose key starts with {@link kmlib.mods.console.ConsoleStrings#CONSOLE_KEY_PREFIX}.
+     *
+     * @return one finding per such string
+     */
+    public List<String> findConsoleStringEnglishCopyMismatches() {
+        return consoleEnglishCopyParity.findConsoleStringEnglishCopyMismatches();
+    }
+
+    /**
      * The declared locales with no bundle directory, which would ship nothing when built.
      *
      * @return one finding per such locale
@@ -136,7 +189,8 @@ public final class LocaleParity {
      * The strings whose slots take different arguments in a locale than in the default. One call site
      * fills every locale's wording, so a slot dropped or retyped in a translation renders as the fallback
      * sentinel or with a figure missing, and only in that locale. Slots may be reordered, a translation
-     * numbering them where its sentence runs the other way.
+     * numbering them where its sentence runs the other way. A console string's English copy is not
+     * compared here, {@link #findConsoleStringEnglishCopyMismatches()} holding it to the default's wording.
      *
      * @return one finding per such string
      */
@@ -146,7 +200,8 @@ public final class LocaleParity {
 
     /**
      * The locales drawing characters the vanilla atlases lack while naming no core localisation to supply
-     * them. Such a locale draws its text as a row of fallback glyphs with no error anywhere.
+     * them. Such a locale draws its text as a row of fallback glyphs with no error anywhere. Read over the
+     * strings, the settings table and the console command help.
      *
      * @return one finding per such locale and file
      */

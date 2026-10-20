@@ -3,7 +3,10 @@ package kmlib.mods.console.commands.validation;
 import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.lazywizard.console.BaseCommand.CommandContext;
@@ -24,6 +27,16 @@ import static org.mockito.Mockito.mock;
  * suite reports as a per-subject tree.
  */
 final class CommandContextValidationTests {
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
+    }
 
     @Nested
     class ValidateAndPrintFeedback {

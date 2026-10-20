@@ -315,7 +315,8 @@ and a translation may order its slots differently.
 The game also leaves a run plain when a character beside it is anything but whitespace or ASCII punctuation,
 so a run touching Chinese text needs a space on that side;
 [`LabelHighlightRule`](../../../../../testFixtures/java/kmlib/testfixtures/starsector/ui/label/LabelHighlightRule.java)
-states the rule for the suites that check it.
+states the rule for the suites that check it,
+and a stand-in tooltip and dialog text panel hold everything drawn into them to it.
 
 ### `ImageSpan` versus `RowSlot.Image`
 

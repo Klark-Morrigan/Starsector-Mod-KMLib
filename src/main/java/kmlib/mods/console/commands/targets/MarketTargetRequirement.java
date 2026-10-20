@@ -2,10 +2,16 @@ package kmlib.mods.console.commands.targets;
 
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.mods.console.ConsoleStrings;
 import kmlib.starsector.markets.Markets;
 import kmlib.starsector.markets.colonisation.MarketColoniser;
 
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import static kmlib.starsector.strings.KmlibStringKeys.CATEGORY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_REQUIREMENT_COLONISABLE_BODY;
+import static kmlib.starsector.strings.KmlibStringKeys.CONSOLE_TARGET_REQUIREMENT_EXISTING_COLONY;
 
 /**
  * What a command needs of the market it is about to act on: the rule a candidate has to meet,
@@ -18,13 +24,14 @@ import java.util.function.Predicate;
  * command's rule with another's wording.
  *
  * @param eligibility       whether a market qualifies as this kind of target
- * @param requirementPhrase what a market has to be, worded to complete both "... is not
+ * @param requirementPhrase reads what a market has to be, worded to complete both "... is not
  *                          &lt;phrase&gt;" and "Nothing here is &lt;phrase&gt;", so it carries
- *                          its own article
+ *                          its own article. Read when a refusal is worded rather than held, since
+ *                          a requirement is built before the game's strings load
  */
 public record MarketTargetRequirement(
     Predicate<MarketAPI> eligibility,
-    String requirementPhrase) {
+    Supplier<String> requirementPhrase) {
 
     /**
      * A body still carrying only survey data, which a colony can be founded on.
@@ -36,7 +43,7 @@ public record MarketTargetRequirement(
      */
     public static final MarketTargetRequirement COLONISABLE_BODY = new MarketTargetRequirement(
         MarketColoniser::isReadyForColonisation,
-        "a body ready for colonisation");
+        () -> ConsoleStrings.get(CATEGORY, CONSOLE_TARGET_REQUIREMENT_COLONISABLE_BODY));
 
     /**
      * A colony somebody already holds, which can be moved to another owner.
@@ -52,7 +59,7 @@ public record MarketTargetRequirement(
      */
     public static final MarketTargetRequirement EXISTING_COLONY = new MarketTargetRequirement(
         Markets::isSettledColony,
-        "an existing colony");
+        () -> ConsoleStrings.get(CATEGORY, CONSOLE_TARGET_REQUIREMENT_EXISTING_COLONY));
 
     /**
      * Whether {@code market} is the kind of target this requirement describes.
@@ -63,5 +70,14 @@ public record MarketTargetRequirement(
      */
     public boolean isMetBy(MarketAPI market) {
         return eligibility.test(market);
+    }
+
+    /**
+     * The phrase a refusal names this requirement by, read now.
+     *
+     * @return what a market has to be, with its own article
+     */
+    public String readRequirementPhrase() {
+        return requirementPhrase.get();
     }
 }

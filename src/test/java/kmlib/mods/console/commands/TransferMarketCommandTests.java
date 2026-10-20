@@ -10,7 +10,7 @@ import kmlib.mods.console.commands.targets.MarketTargetRequirement;
 import kmlib.mods.console.commands.targets.UnresolvedTarget;
 import kmlib.starsector.markets.ownership.MarketOwnershipTransfer;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
-import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +77,7 @@ final class TransferMarketCommandTests {
         when(marketMock.getFactionId())
             .thenReturn(INCUMBENT_OWNER_ID);
 
-        globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers();
+        globalMock = KmlibStringsSettingsFake.openGlobalAnsweringStrings();
         globalMock
             .when(Global::getSector)
             .thenReturn(sectorMock);
@@ -95,6 +95,7 @@ final class TransferMarketCommandTests {
         marketOwnershipTransferMock.close();
         marketOwnerTargetResolverMock.close();
         globalMock.close();
+        KmlibStringsSettingsFake.clearSettings();
     }
 
     @Nested

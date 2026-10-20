@@ -118,6 +118,27 @@ public final class StarsectorStrings {
     }
 
     /**
+     * Fills a template already read, as {@link #format(String, String, Object...)} fills the one it reads:
+     * against {@link Locale#ROOT}, and to {@link #REDACTED} where the template and the args disagree.
+     *
+     * <p>For a caller that has to choose which part of a wording to fill before filling it, so the format
+     * rule stays this class's alone.
+     *
+     * @param template the wording to fill
+     * @param args     what fills the template's slots, in order
+     * @return the filled template, or the sentinel
+     */
+    public static String fillTemplate(String template, Object... args) {
+        Objects.requireNonNull(template, "template");
+
+        try {
+            return String.format(Locale.ROOT, template, args);
+        } catch (IllegalFormatException exception) {
+            return REDACTED;
+        }
+    }
+
+    /**
      * {@link #get(String, String)} against an explicit {@link StringSource}. The public entry point
      * pins the source to the live {@code SettingsAPI}; a caller that already holds a resolver uses
      * this one to avoid the extra hop.
@@ -154,12 +175,7 @@ public final class StarsectorStrings {
      * @return the filled template, or the sentinel
      */
     static String format(String category, String key, StringSource source, Object... args) {
-        var template = get(category, key, source);
-        try {
-            return String.format(Locale.ROOT, template, args);
-        } catch (IllegalFormatException exception) {
-            return REDACTED;
-        }
+        return fillTemplate(get(category, key, source), args);
     }
 
     private static String fromSettings(String category, String key) {

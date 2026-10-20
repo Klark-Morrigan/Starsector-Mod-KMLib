@@ -1,5 +1,7 @@
 package kmlib.testfixtures.localisation;
 
+import kmlib.testfixtures.mods.console.commands.ConsoleCommandsTable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -8,7 +10,8 @@ import java.util.TreeMap;
 
 /**
  * The locales that draw characters the vanilla atlases lack, against the core localisation each names to
- * supply them. Reads every file a player sees text from: the strings and the settings table.
+ * supply them. Reads every file a player sees text from: the strings, the settings table and the console
+ * command table's help.
  */
 final class CoreLocalisationParity {
 
@@ -50,6 +53,12 @@ final class CoreLocalisationParity {
                     LocaleBundle.SETTINGS_FILE_NAME,
                     settingsParity.openSettingsTable(bundle).readDisplayedTexts());
             }
+            if (LocaleBundleReadings.isFileHeld(manifest, bundle, LocaleBundle.COMMANDS_FILE_NAME)) {
+
+                displayedTextsByFileName.put(
+                    LocaleBundle.COMMANDS_FILE_NAME,
+                    readHelpTexts(bundle));
+            }
             displayedTextsByFileName.forEach((fileName, displayedTexts) -> {
 
                 if (displayedTexts.stream().anyMatch(CoreLocalisationParity::hasCharacterOutsideLatin1)) {
@@ -63,7 +72,16 @@ final class CoreLocalisationParity {
         return findings;
     }
 
-    private static boolean hasCharacterOutsideLatin1(String text) {
+    static boolean hasCharacterOutsideLatin1(String text) {
         return text.codePoints().anyMatch(codePoint -> codePoint > LATIN_1_LAST_CODE_POINT);
+    }
+
+    // The help column alone: the table's other columns are held to the default's, so they draw what it draws.
+    private static List<String> readHelpTexts(LocaleBundle bundle) {
+
+        return bundle.readConsoleCommands().values().stream()
+            .map(cells -> cells.get(ConsoleCommandsTable.HELP_COLUMN))
+            .filter(Objects::nonNull)
+            .toList();
     }
 }

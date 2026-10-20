@@ -4,6 +4,8 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -61,6 +63,16 @@ final class MarketOwnerTargetResolverTests {
     void tearDown() {
         factionTargetResolverMock.close();
         marketTargetResolverMock.close();
+    }
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
     }
 
     @Nested

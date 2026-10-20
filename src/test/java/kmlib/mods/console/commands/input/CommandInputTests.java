@@ -4,7 +4,9 @@ import kmlib.mods.console.commands.parsing.Parameter;
 import kmlib.mods.console.commands.parsing.ParameterSpec;
 import kmlib.mods.console.commands.parsing.ParameterValues;
 import kmlib.testfixtures.mods.console.commands.output.CommandOutputFake;
+import kmlib.testfixtures.starsector.strings.KmlibStringsSettingsFake;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,16 @@ final class CommandInputTests {
         private SampleSpec() {
             super("sample");
         }
+    }
+
+    @BeforeEach
+    void installStrings() {
+        KmlibStringsSettingsFake.installSettings();
+    }
+
+    @AfterEach
+    void clearStrings() {
+        KmlibStringsSettingsFake.clearSettings();
     }
 
     @Nested

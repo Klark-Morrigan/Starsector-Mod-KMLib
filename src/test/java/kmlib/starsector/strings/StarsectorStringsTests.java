@@ -130,6 +130,24 @@ final class StarsectorStringsTests {
     }
 
     @Nested
+    class FillTemplate {
+
+        @Test
+        void fillsTheTemplateUsingRootLocale() {
+
+            assertThat(StarsectorStrings.fillTemplate("%.1f of %d", 1.5f, 3))
+                .isEqualTo("1.5 of 3");
+        }
+
+        @Test
+        void redactsWhenTheArgsMissASlot() {
+
+            assertThat(StarsectorStrings.fillTemplate("%s and %s", "one"))
+                .isEqualTo(StarsectorStrings.REDACTED);
+        }
+    }
+
+    @Nested
     class ListCategoryStrings {
 
         @AfterEach

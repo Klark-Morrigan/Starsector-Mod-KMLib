@@ -21,6 +21,7 @@ The reusable release workflow extracts the section matching the released version
 ### Fixed
 
 - **An update checker opens a Chinese ZIP's changelog in Chinese**.
+- **The Chinese zip's console text carries a Chinese translation beside the English**: the help of KMLib's console commands shows the Chinese above the English, and every message they print shows its English, ready for when the Chinese version of Console Commands draws Chinese. Until then the Chinese shows as `?`, a [known issue on its Fossic thread](https://www.fossic.org/forum.php?mod=redirect&goto=findpost&ptid=14602&pid=299524).
 
 ### For developers
 
@@ -59,6 +60,8 @@ The reusable release workflow extracts the section matching the released version
 - **Console command parameters** in `kmlib.mods.console.commands.parsing`:
   - `Parameter.markStandalone()`: a parameter that is a whole invocation by itself, such as a reset. The parser refuses anything supplied alongside it.
   - `ParameterSpec.acceptsKeyword(String, Map)`: a positional parameter whose value is one of a fixed set of words, each standing for the value it selects. `ParameterValues.oneOfKeywords(Map)` is its value parser.
+- **`ConsoleCommandsTable`** in `kmlib.testfixtures.mods.console.commands`: a mod's `data/console/commands.csv` read the way Console Commands reads it, each row keyed by its command, with the names of its columns.
+- **`ConsoleStrings`** in `kmlib.mods.console`: the read for every string a console command prints. `get(String, String)` and `format(String, String, Object...)` answer the English a translation carries after `ENGLISH_COPY_MARKER`, else the whole string, so a message composes in one language the console can draw. A console string's key starts with `CONSOLE_KEY_PREFIX`.
 - **`DialogHandOff`** in `kmlib.starsector.dialogs.handoff`: hands an open interaction dialog to another plugin and starts it, which setting the plugin alone does not. `clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` clears the options and hides the visual panel first; `handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` leaves the dialog as it stands.
 - **`EconomyIterations.isLastIterationOfMonth(SettingsAPI, int)`** in `kmlib.starsector.economy`: whether an economy tick is the month's last, the step that runs just before the game totals and pays the month.
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**: the body at the far end of a body's orbit-focus chain, null where it orbits nothing.
@@ -72,16 +75,21 @@ The reusable release workflow extracts the section matching the released version
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
+- **`HighlightedTextPanelMock`** in `kmlib.testfixtures.starsector.ui.label`: a dialog's text panel keeping each highlighted paragraph added to it, so its highlights can be checked, as `HighlightedTooltipMock` does for a tooltip.
 - **`InteractionTargets.readTargetId(InteractionDialogAPI)`** in `kmlib.starsector.dialogs`: the ID of the entity a dialog is open on, null without a dialog or a target.
 - **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
   - `normaliseText(String)`, `convertToOptionalText(String)` and `getTextOrEmpty(String)`: a text trimmed, with blank answered as null, an empty optional or `""`.
   - `joinWithParenthetical(String, String)`: two texts as "main (parenthetical)", or whichever has text.
   - `requireFieldText(String, String)`: `requireText(String, String)` with a message naming the field.
+- **`KmlibStringKeys` names what KMLib's console commands print**, as `CONSOLE_` constants read through `ConsoleStrings`: their refusals, their corrections and their reports.
+- **`KmlibStringsSettingsFake`** in `kmlib.testfixtures.starsector.strings`: KMLib's strings in a mod's suites, for a command built on KMLib's that prints them. `KMLIB_STRINGS` answers KMLib's category beside a mod's own, and `openGlobalAnsweringStrings()` opens a static mock of `Global` answering them.
 - **`Lines`** is public, with **`computeOrientation(double[], double[], double[])`**: which side of a directed line a point falls on, positive on the left and zero on the line.
 - **`ListSortComparators`** in `kmlib.starsector.ui.widgets.lists`: the ranking a sort mode builds from its metrics, with the item's name and then its ID breaking every tie.
   - `assembleComparator(ToIntFunction, List, SortDirection)`: the mode's metric in the direction asked, then the metric chain, then the tie-break.
   - `appendNameAndIdTail(Comparator)`: the same tie-break after an order the caller built.
   - `resolveDefaultDirection(ToIntFunction)`: descending for a metric, ascending by name where there is none.
+- **`LocaleParity` holds a console command table to the default**: `findConsoleCommandRowMismatches()` finds a command a locale lacks or adds, and `findConsoleCommandBehaviourMismatches()` one whose class, syntax or tags differ, since only the help is translated. `findAllMismatches()` runs both, and a locale naming no core localisation has its help held to Latin-1. `LocaleBundle.readConsoleCommands()` reads one locale's table.
+- **`LocaleParity` holds a console text's English copy to the default**: `findConsoleHelpEnglishCopyMismatches()` over the command table's help, and `findConsoleStringEnglishCopyMismatches()` over every `console_` string, find a translation drawing past Latin-1 with no copy, or a copy differing from the default. `findAllMismatches()` runs both, and `findFormatArgumentMismatches()` compares a console string's translation alone.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**: the goods at one of a market's trading counters, empty where the market has no such counter.
 - **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
@@ -114,6 +122,7 @@ The reusable release workflow extracts the section matching the released version
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`** in `kmlib.starsector`: the one traversal of the sector's system list every sector-wide read goes through, charged as one walk. A null sector, or one listing no systems, visits nothing.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
+- **`StarsectorStrings.fillTemplate(String, Object...)`**: a template already read, filled as `format(String, String, Object...)` fills the one it reads.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.
 - **`SystemClaimBreakdown`** answers about its claimant:
   - `findStanding(String)`: one faction's standing, empty where it holds nothing in the system.
@@ -129,6 +138,10 @@ The reusable release workflow extracts the section matching the released version
   - `Get-SaveLoadAttempt.ps1` lists every save load in the game's logs, newest first, with the cause a failed load hit and the content that cause names as missing. The game's own retries fold into the load they belong to.
   - `Get-ModRoster.ps1` lists the folder and version the game loads for each enabled mod, reading each `mod_info.json` as the game does.
 - **`ci-powershell.yml`**: lints the repository's PowerShell and runs its Pester suites on every pull request, through Common-PowerShell's reusable workflow. `mod-release.yml` re-runs the same gate before packaging, as it does the others; a mod carrying no PowerShell passes it.
+
+#### Changed
+
+- **KMLib's console command table is kept per locale**: `localisation/<locale>/commands.csv` is written to `data/console/commands.csv`, which is no longer committed.
 
 #### Public contracts changed (**breaking**)
 

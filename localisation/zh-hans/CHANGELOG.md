@@ -21,6 +21,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 ### 修复
 
 - **更新检查器会以中文打开中文压缩包的更新日志**。
+- **中文压缩包的控制台文字在英文旁附有中文译文**：KMLib 控制台指令的帮助在英文之上显示中文，指令输出的每条消息则显示其英文，待 Console Commands 的中文版能够显示中文时即可阅读。在此之前，中文会显示为 `?`，这是其 [Fossic 帖子中列出的已知问题](https://www.fossic.org/forum.php?mod=redirect&goto=findpost&ptid=14602&pid=299524)。
 
 ### 面向开发者
 
@@ -59,6 +60,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **控制台指令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
+- **`ConsoleCommandsTable`**（位于 `kmlib.testfixtures.mods.console.commands`）：按 Console Commands 的读取方式读取 Mod 的 `data/console/commands.csv`，每一行以其指令为键，并给出各列的名称。
+- **`ConsoleStrings`**（位于 `kmlib.mods.console`）：控制台指令输出的每个字符串的读取方式。`get(String, String)` 和 `format(String, String, Object...)` 返回译文在 `ENGLISH_COPY_MARKER` 之后附带的英文，没有标记时返回整个字符串，因此一条消息会以控制台能显示的同一种语言组合而成。控制台字符串的键以 `CONSOLE_KEY_PREFIX` 开头。
 - **`DialogHandOff`**（位于 `kmlib.starsector.dialogs.handoff`）：把已打开的交互对话框移交给另一个对话框插件并启动它；仅设置插件并不会启动它。`clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 先清空选项并隐藏视觉面板；`handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 保持对话框原样。
 - **`EconomyIterations.isLastIterationOfMonth(SettingsAPI, int)`**（位于 `kmlib.starsector.economy`）：某次经济步进是否为当月最后一次，即游戏结算并支付当月收支之前的那一步。
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**：天体轨道焦点链最远端的天体；天体不绕任何天体运行时为 null。
@@ -72,16 +75,21 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
+- **`HighlightedTextPanelMock`**（位于 `kmlib.testfixtures.starsector.ui.label`）：保留每个加入其中的高亮段落的对话框文本面板，使其高亮可以被检查，如同 `HighlightedTooltipMock` 之于提示框。
 - **`InteractionTargets.readTargetId(InteractionDialogAPI)`**（位于 `kmlib.starsector.dialogs`）：对话框所对应实体的 ID；没有对话框或交互目标时为 null。
 - **`KmlibStrings`** 中按 `hasText(String)` 所用的同一条空白规则作答的读取：
   - `normaliseText(String)`、`convertToOptionalText(String)` 和 `getTextOrEmpty(String)`：去除首尾空白后的文本；空白时分别回答 null、空的 Optional 或 `""`。
   - `joinWithParenthetical(String, String)`：把两个文本合成“主文本（括注）”的形式，只有一个有文本时取那一个。
   - `requireFieldText(String, String)`：即 `requireText(String, String)`，其异常消息写明字段名。
+- **`KmlibStringKeys` 列出 KMLib 控制台指令输出的文字**：以 `CONSOLE_` 常量列出，通过 `ConsoleStrings` 读取，包括拒绝、纠正和报告。
+- **`KmlibStringsSettingsFake`**（位于 `kmlib.testfixtures.starsector.strings`）：在 Mod 的测试套件中提供 KMLib 的字符串，供基于 KMLib 指令、会输出这些字符串的指令使用。`KMLIB_STRINGS` 在 Mod 自身的类别之外响应 KMLib 的类别，`openGlobalAnsweringStrings()` 打开一个响应这些字符串的 `Global` 静态替身。
 - **`Lines`** 改为公开，新增 **`computeOrientation(double[], double[], double[])`**：点落在有向直线的哪一侧，左侧为正，在线上为零。
 - **`ListSortComparators`**（位于 `kmlib.starsector.ui.widgets.lists`）：排序模式依据其指标构建的排名，名称及其后的 ID 用于打破每一个平局。
   - `assembleComparator(ToIntFunction, List, SortDirection)`：先按所要求的方向比较该模式的指标，再比较指标链，最后打破平局。
   - `appendNameAndIdTail(Comparator)`：在调用方构建的顺序之后接上同样的平局规则。
   - `resolveDefaultDirection(ToIntFunction)`：有指标时为降序，没有指标时按名称升序。
+- **`LocaleParity` 以默认语言区域核对控制台指令表**：`findConsoleCommandRowMismatches()` 找出某个语言区域缺少或多出的指令，`findConsoleCommandBehaviourMismatches()` 找出类、语法或标签不同的指令，因为只有帮助文字需要翻译。`findAllMismatches()` 会运行这两项检查；未指定核心本地化的语言区域，其帮助文字限于 Latin-1。`LocaleBundle.readConsoleCommands()` 读取单个语言区域的指令表。
+- **`LocaleParity` 以默认语言区域核对控制台文字的英文副本**：`findConsoleHelpEnglishCopyMismatches()` 检查指令表的帮助文字，`findConsoleStringEnglishCopyMismatches()` 检查每个 `console_` 字符串，找出含有 Latin-1 以外字符却没有英文副本的译文，以及副本与默认语言区域不同的译文。`findAllMismatches()` 会运行这两项检查，`findFormatArgumentMismatches()` 只比较控制台字符串的译文部分。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
 - **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
@@ -114,6 +122,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`**（位于 `kmlib.starsector`）：所有星域范围的读取共用的、对星域星系列表的唯一一次遍历，计为一次 walk。星域为 null 或未列出任何星系时不访问任何星系。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
+- **`StarsectorStrings.fillTemplate(String, Object...)`**：填充一个已读取的模板，填充方式与 `format(String, String, Object...)` 填充它所读取的模板相同。
 - **`StorageAccess.unlockStorage(MarketAPI, String)`**（位于 `kmlib.starsector.markets.storage`）：把市场的仓库标记为已付费解锁，使其无需原版的一次性使用费即可打开。插件被其他 Mod 替换的仓库保持不变。
 - **`SystemClaimBreakdown`** 回答关于其宣称方的问题：
   - `findStanding(String)`：某个势力在争夺中的排名；该势力在星系中一无所有时为空。
@@ -129,6 +138,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因，以及该原因指出的缺失内容。游戏自身的重试归入它们所属的那次读取。
   - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹和版本，并按游戏的方式读取每个 `mod_info.json`。
 - **`ci-powershell.yml`**：通过 Common-PowerShell 的可复用工作流，在每个拉取请求上检查仓库的 PowerShell 代码，并运行其 Pester 测试套件。`mod-release.yml` 在打包前重新运行同一门禁，与其他门禁一样；不含 PowerShell 的 Mod 也能通过。
+
+#### 变更
+
+- **KMLib 的控制台指令表按语言区域存放**：`localisation/<locale>/commands.csv` 会写入 `data/console/commands.csv`，后者不再提交到仓库。
 
 #### 公共契约变更（**破坏性**）
 
