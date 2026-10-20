@@ -282,7 +282,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | blank (text holding only whitespace) | 空白 | |
 | cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
-| command word (what a console command is typed as) | 命令词 | 命令, command, with 词, word |
+| command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread writes `help <指令名>` |
 | compile | 编译 | the usual computing word |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | consumer mod | 使用方 Mod | |
@@ -328,7 +328,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | told (a listener hearing of an event) | 得到通知 | as the `MarketTransferListener` entry writes it |
 | trigger (a moment that sets an animation off) | 触发 | as the `MarketTransferListener` entry writes it for a listener |
 | usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, as command-line help writes it |
-| word (a run of text between whitespace), part into words | 词, 划分词 | 词 as 命令词 and 关键词 write it |
+| word (a run of text between whitespace), part into words | 词, 划分词 | 词 as 关键词 writes it |
 
 #### CI and git
 
