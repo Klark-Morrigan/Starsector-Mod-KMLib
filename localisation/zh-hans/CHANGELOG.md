@@ -108,6 +108,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
   - `convertPercentToFraction(double)`：百分比（例如设置滑块所存的值）对应的比例。
+- **`PlayerCredits`**（位于 `kmlib.starsector.fleet`）：玩家的星币，存放于玩家舰队的货舱中。`readPlayerCredits(SectorAPI)` 是实时余额，`canPlayerAfford(SectorAPI, float)` 判断余额是否足以支付某个价格。
+- **`PlayerCreditsFixture`**（位于 `kmlib.testfixtures.starsector.fleet`）：星域替身背后的玩家星币，沿玩家舰队货舱的每一次读取都得到同一个星币替身。
 - **`PlayerPriceOverrides`**（位于 `kmlib.starsector.commodities.pricing`）：`overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` 把市场向玩家报出的商品价格设为指定数值，无论该市场原本如何报价；`clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` 将其撤回。
 - **`PlayerTradeSide`**（位于 `kmlib.starsector.commodities`）：玩家买入或卖出，以及这一方向读取的市场价格与玩家价格修正。
 - **`PolygonRegions`** 中关于环的读取：

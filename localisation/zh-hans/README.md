@@ -465,6 +465,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 as the vanilla Dialog row |
 | interaction dialog, option (in one), visual panel | 交互对话框, 选项, 视觉面板 | the vanilla Interaction and Dialog rows joined; 选项 as the vanilla Dialog option row; 视觉, visual, with 面板 as vanilla names its screens, the visual panel having no name a player sees |
 | text panel (the column of paragraphs in an interaction dialog) | 文本面板 | 文本, text, with 面板 as the visual panel row writes it, the text panel having no name a player sees |
+| balance (the credits a player holds) | 余额 | the usual word for what an account holds |
 | interaction target (the entity a dialog is open on) | 交互目标 | the vanilla Interaction and Target rows joined; kept apart from 目标版本, a targeted version |
 | plugin (the class the game runs a feature through), hand off (a dialog to a plugin), start (a plugin) | 插件, 移交, 启动 | 插件 as the `StorageAccess` entry writes it. Vanilla shows players no plugin in this sense, and reads a bare 插件 as a hullmod (see the Hullmod row), so an entry names the kind where it is not plain: 对话框插件, 插件类. 移交, to transfer; 启动 as vanilla starts the game, a system or an ability |
 | fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出 as the `0.5.0` notice entry writes it; 节奏, rhythm |

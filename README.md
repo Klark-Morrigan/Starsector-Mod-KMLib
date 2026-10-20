@@ -705,7 +705,8 @@ No Starsector API on the signature.
   so nothing can pick the most hostile relation of a set
   while asking whether that same set is uniformly friendly.
 - [`starsector/fleet/`](src/main/java/kmlib/starsector/fleet/) -
-  player fleet proximity.
+  player fleet proximity,
+  and the player's credits, kept in the player fleet's cargo.
 - [`starsector/geometry/`](src/main/java/kmlib/starsector/geometry/) -
   distance and bearing between campaign entities,
   and how a nearest search settles an equal distance;
@@ -1803,6 +1804,8 @@ and answers which listeners it holds of a type as the game's own manager does,
 beside the narrow sector that answers for nothing but that manager,
 an intel manager that holds what is added to it by the game's own rules,
 so a subject that records an intel and then asks for it finds its own write,
+an interaction dialog answering a mock of each of its panels,
+the player's credits behind a sector mock,
 a `Global` stand-in that still answers every class its own logger -
 owed wherever `Global` is mocked,
 since a static `LOG` field resolved under a mock keeps the mock's null for the rest of the JVM,

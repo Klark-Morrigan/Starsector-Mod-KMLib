@@ -108,6 +108,8 @@ The reusable release workflow extracts the section matching the released version
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
   - `convertPercentToFraction(double)`: a percent, such as a settings slider holds, as a fraction.
+- **`PlayerCredits`** in `kmlib.starsector.fleet`: the player's credits, kept in the player fleet's cargo. `readPlayerCredits(SectorAPI)` is the live balance, and `canPlayerAfford(SectorAPI, float)` whether it covers a price.
+- **`PlayerCreditsFixture`** in `kmlib.testfixtures.starsector.fleet`: the player's credits behind a sector mock, one credits mock that every walk down the player fleet's cargo reaches.
 - **`PlayerPriceOverrides`** in `kmlib.starsector.commodities.pricing`: `overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` sets the price a market quotes the player for a commodity to a chosen figure, whatever it would quote on its own; `clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` takes it back.
 - **`PlayerTradeSide`** in `kmlib.starsector.commodities`: the player buying or selling, with the market price and the player price modifier that side reads.
 - **`PolygonRegions`** ring reads:
