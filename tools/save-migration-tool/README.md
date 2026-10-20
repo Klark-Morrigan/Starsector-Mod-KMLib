@@ -6,31 +6,47 @@ so a caller can act on the result without reading the log itself.
 They are repository tooling: the release zip does not carry them.
 
 - [Scripts](#scripts)
-- [Get-SaveLoadFailure.ps1](#get-saveloadfailureps1)
+- [Layout](#layout)
+- [Get-SaveLoadAttempt.ps1](#get-saveloadattemptps1)
   - [How vanilla logs a load](#how-vanilla-logs-a-load)
+  - [Missing content](#missing-content)
   - [Output](#output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
+  - [How the game reads its JSON](#how-the-game-reads-its-json)
 - [Tests](#tests)
 
 ## Scripts
 
 | Script | Answers |
 | --- | --- |
-| [`Get-SaveLoadFailure.ps1`](Get-SaveLoadFailure.ps1) | Which saves the game's logs show loaded, and why a load failed |
+| [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, and why a load failed |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
+Every script takes the install it reads as `-StarsectorRoot`; none assumes where the game is installed.
 Every script writes data to stdout and what it read and decided to stderr.
-`Get-SaveLoadFailure.ps1 -AsJson` prints its data as JSON;
+`Get-SaveLoadAttempt.ps1 -AsJson` prints its data as JSON;
 `Get-ModRoster.ps1` returns objects for another script to consume.
 
-## Get-SaveLoadFailure.ps1
+## Layout
+
+Each script holds its parameters and its flow.
+The functions it calls live one per file under [`lib/`](lib/), named after the function, and the scripts dot-source the ones they need.
+
+| Folder | Holds |
+| --- | --- |
+| [`lib/`](lib/) | `Write-DiagnosticLine`, which every script logs through |
+| [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log` and what their causes name |
+| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions |
+| [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
+
+## Get-SaveLoadAttempt.ps1
 
 Lists every save load in `starsector-core\starsector.log` and its rotated siblings, newest first.
 An older load is likelier to describe a save or a mod set that has changed since.
 
 ```powershell
-pwsh -NoProfile -File Get-SaveLoadFailure.ps1 -AsJson          # every load, as JSON
-pwsh -NoProfile -File Get-SaveLoadFailure.ps1 -LogPath <log>   # another log
+pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -StarsectorRoot <install> -AsJson   # every load, as JSON
+pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -LogPath <log>                      # another log
 ```
 
 ### How vanilla logs a load
@@ -51,6 +67,32 @@ Rotated logs (`starsector.log.1`, `.2`, ...) are read first, highest number firs
 An attempt can straddle a rotation.
 Rotation renumbers the files, so a reported log position holds only until the game rotates again.
 
+### Missing content
+
+A failed load usually names one ID that the save holds and no installed mod defines.
+Each spec store throws its own wording, and the script reads each into a kind and an ID:
+
+| Cause | Kind |
+| --- | --- |
+| `Weapon spec [<id>] not found!` | `Weapon` |
+| `Ship hull spec [<id>] not found!` | `Hull` |
+| `Ship hull variant [<id>] not found!` | `Variant` |
+| `Fighter wing spec [<id>] not found` | `FighterWing` |
+| `Hullmod with id [<id>] not found` | `Hullmod` |
+| `Spec of class [<class>] with id [<id>] not found` | `Spec`, with the class kept as `SpecClass` |
+| `CannotResolveClassException: <class>` | `Class`, the class name as the ID |
+
+`Spec` covers every spec type without a store of its own: special items, market conditions, industries and more.
+Its class name is often obfuscated,
+so it says which store missed, not always which kind.
+
+Vanilla builds a d-hull for every hull at startup, under the hull ID plus `_default_D`.
+A missing d-hull so means a missing base hull, and the base hull is what a mod defines.
+`Id` holds the base hull;
+`ReportedId` keeps the ID as the message names it.
+
+A cause matching none of these, a crash in a mod's script for one, gives no missing content.
+
 ### Output
 
 One object per load, newest first:
@@ -61,7 +103,10 @@ One object per load, newest first:
 | `SavePath` | The full save path, with `..` resolved against the log's folder (the game's working directory) |
 | `Outcome` | `Loaded`, `Failed`, or `Unfinished` when the log ends first: a crash, or a load still running |
 | `CauseType`, `Cause` | The root throwable of the first attempt, read from `campaign.xml`, the newest file. Empty when that attempt loaded |
-| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `Outcome`, `CauseType`, `Cause`, and the `LogFile` and `LogLine` it starts on |
+| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `Outcome`, `CauseType`, `Cause`, the `LogFile` and `LogLine` it starts on, and its `Missing` |
+| `Missing` | The [missing content](#missing-content) the first attempt's cause names: `Kind`, `Id`, `ReportedId` and `SpecClass`. Empty when the cause names none |
+
+Stderr gains one line per load with a cause, saying what the cause was read as.
 
 `campaign` stands for `campaign.xml`, or `campaign.zip` for a compressed save.
 The log does not say which.
@@ -71,31 +116,49 @@ The log does not say which.
 Resolves the installed side of a save's mod list: for each mod ID the game will load, the one folder that wins.
 
 ```powershell
-& .\Get-ModRoster.ps1                     # enabled mods
-& .\Get-ModRoster.ps1 -IncludeDisabled    # every installed mod
+pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install>                    # enabled mods
+pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabled   # every installed mod
 ```
 
 - `mod_info.json`'s `id` is the identity, not the folder name: one mod can sit in several folders.
 - When it does, the highest `version` wins, compared number by number (`1.10.0` above `1.9.0`).
-  `SupersededCount` says how many copies lost.
+  `SupersededCount` says how many copies lost, and stderr names each winner and loser.
 - `enabled_mods.json` decides what loads.
   A missing or unreadable one warns and lists every mod.
-- The JSON is read as leniently as the game reads it:
-  comments, trailing commas, a byte order mark, single-quoted values and bare words.
-  Each repair is tried only after the stricter ones fail, since a repair can corrupt a file that needed none.
+- A folder with no `mod_info.json` is not a mod; stderr names each one skipped.
 - A `mod_info.json` nothing can parse stays in the roster as `unparsed`, under its folder name, with a warning.
   Dropping it would hide a real mod with nothing to say so.
 
 Each entry carries `Id`, `Version`, `Folder`, `RelativePath` (under the install root), `Status` and `SupersededCount`.
 
+### How the game reads its JSON
+
+Every file is read as the game reads its data files, neither stricter nor looser.
+`LoadingUtils` strips `#` comments, then org.json parses what is left.
+
+- A `#` outside a string starts a comment that runs to the end of its line.
+  The game tracks strings by flipping on every `"`, escaped or not, and forgets an open string at each line break;
+  the reader does the same, so a `#` after an odd number of `\"` is a comment here too.
+- `//` and `/* */` are not comments to the game, and a file holding them fails to parse.
+- A file opening with a byte order mark fails, as it does in the game.
+- org.json accepts trailing commas, single-quoted strings and unquoted values.
+  ConvertFrom-Json rejects the last two, so the reader repairs them,
+  each repair tried only after the ones before it fail, since a repair can corrupt a file that needed none.
+
 ## Tests
 
-[`Get-SaveLoadFailure.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-SaveLoadFailure.Tests.ps1)
+Each `lib/` function has a unit suite of the same name under
+[`Tests/tools/save-migration-tool/lib/`](../../Tests/tools/save-migration-tool/lib/),
+in the same subfolder, with the functions it calls mocked.
+
+Each script has an integration suite, which runs it with its `lib/` functions unmocked:
+[`Get-SaveLoadAttempt.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-SaveLoadAttempt.IntegrationTests.Tests.ps1)
 runs the script against hand-written install roots under
-[`fixtures/`](../../Tests/tools/save-migration-tool/fixtures/).
-[`Get-ModRoster.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.Tests.ps1)
-builds a small install per case,
-so each odd `mod_info.json` sits beside the assertion about it.
+[`fixtures/`](../../Tests/tools/save-migration-tool/fixtures/),
+whose logs are shaped as 0.98a writes them.
+[`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
+builds a small install per case.
+
 No test reads a real install, log or save.
 
 The tests live under the repository's top-level `Tests\`, mirroring this folder,

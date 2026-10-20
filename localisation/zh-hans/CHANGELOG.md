@@ -46,7 +46,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 #### 新增
 
 - **`AllianceRecord.findLeadFactionId()`**：联盟的盟主；联盟没有成员时为空。
-- **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台命令。子类指定自己的命令词、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
+- **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台指令。子类指定自己的指令名、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
 - **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的悬停框。
 - **`ClaimDecreeReader`**（位于 `kmlib.starsector.systems.claims`）：星系的宣称势力标记所强加的势力，只需一次记忆读取，无需遍历殖民地。`StarSystems::readDecreedFactionId` 是原版绑定。
@@ -56,7 +56,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`：单个市场的每单位价格。
   - `findAverageUnitPrice(List, String, PlayerTradeSide)` 和 `computeAverageUnitPrices(List, Collection, PlayerTradeSide)`：多个市场的平均价格。
   - `findLocalUnitPrice(SectorAPI, MarketAPI, LocationAPI, String, PlayerTradeSide)`：某处的价格：经济系统运行该处的市场时取其价格，否则取其所在位置的平均价格，再否则取整个星域的平均价格；以 `LocalUnitPrice` 返回，并注明其 `UnitPriceScope`。
-- **控制台命令参数**（位于 `kmlib.mods.console.commands.parsing`）：
+- **控制台指令参数**（位于 `kmlib.mods.console.commands.parsing`）：
   - `Parameter.markStandalone()`：本身即构成一次完整调用的参数，例如重置。与它一同提供的任何参数都会被解析器拒绝。
   - `ParameterSpec.acceptsKeyword(String, Map)`：取值为一组固定关键词之一的位置参数，每个关键词代表它所选中的值。`ParameterValues.oneOfKeywords(Map)` 是它的值解析器。
 - **`DialogHandOff`**（位于 `kmlib.starsector.dialogs.handoff`）：把已打开的交互对话框移交给另一个对话框插件并启动它；仅设置插件并不会启动它。`clearAndHandDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 先清空选项并隐藏视觉面板；`handDialogTo(InteractionDialogAPI, InteractionDialogPlugin)` 保持对话框原样。
@@ -125,7 +125,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`read-mod-info` 输出 `zip-name-regex`**：一个正则表达式，每个发布版本的压缩包名称都与之匹配，无论版本号和语言区域如何，而任何版本文件都不与之匹配。其命名分组 `locale` 存放本地化压缩包的语言区域标签。
 - **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。未提交 `localisation/manifest.json` 的 Mod 不区分语言区域，每个发布版本只有一个下载量。
 - **`mod-release.yml` 与 `publish-download-badges.yml` 运行的每个操作，都会在日志中记录它读取了什么、做出了什么判断，以及它的每一项输出**，因此仅凭一次运行的日志，就能看出后续步骤拿到了什么。
-- **存档迁移工具（SMT）脚本**（位于 `tools/save-migration-tool/`）：从仓库的检出副本运行，从不随压缩包发布。`Get-SaveLoadFailure.ps1` 列出游戏日志中的每一次存档读取，最新的在前，把游戏自身的重试归入它们所属的那次读取，并给出读取失败时遇到的原因。`Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹和版本。
+- **存档迁移工具（SMT）脚本**（位于 `tools/save-migration-tool/`），从仓库的检出副本运行，从不随压缩包发布：
+  - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因，以及该原因指出的缺失内容。游戏自身的重试归入它们所属的那次读取。
+  - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹和版本，并按游戏的方式读取每个 `mod_info.json`。
 - **`ci-powershell.yml`**：通过 Common-PowerShell 的可复用工作流，在每个拉取请求上检查仓库的 PowerShell 代码，并运行其 Pester 测试套件。`mod-release.yml` 在打包前重新运行同一门禁，与其他门禁一样；不含 PowerShell 的 Mod 也能通过。
 
 #### 公共契约变更（**破坏性**）
@@ -145,7 +147,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `HighlightedParagraph.getHighlightTexts()` 和 `getHighlightColours()` | `getHighlights()`，从每个高亮读取 `Highlight.getText()` 和 `getColour()` | 只有测试读取它们，而渲染方法会把按文本顺序排列的数组直接交给游戏。 |
 | 位于 `kmlib.animation` 中的 `PulsePhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 位于 `kmlib.animation.cycles` 中的 `PhaseClock`、`PhaseEnvelope`、`PhasePattern` 和 `PatternBeat` | 无人触发的循环与调用方触发的动画分开存放，`Pulse` 只用于被触发的包络。 |
 | `PolygonRegions.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `RegionSpans.findLineInteriorSpans(List, DirectedLine)` 和 `findBandInteriorSpans(List, DirectedLine, double)` | `PolygonRegions` 测量环，而一条直线在区域内停留在哪里是另一个问题。 |
-| `ParameterSpec(String)` 和 `ParameterSpec.takingNoArguments(String)`，接受完整的用法行 | 二者不变，改为接受只有一个词的命令词；多于一个词时抛出 `IllegalArgumentException`。`ParameterSpec(String, String)` 另外接受命令在解析前自行读取的词，例如 `<kind>`。 | 参数规范根据自身的参数组成用法行，因此用法行不会与解析器实际接受的内容脱节。 |
+| `ParameterSpec(String)` 和 `ParameterSpec.takingNoArguments(String)`，接受完整的用法行 | 二者不变，改为接受只有一个词的指令名；多于一个词时抛出 `IllegalArgumentException`。`ParameterSpec(String, String)` 另外接受指令在解析前自行读取的词，例如 `<kind>`。 | 参数规范根据自身的参数组成用法行，因此用法行不会与解析器实际接受的内容脱节。 |
 | `Markets.readSubmarketPlugin(MarketAPI, String, Class)`，无可作答时为 null | `MarketSubmarkets.findSubmarketPlugin(MarketAPI, String, Class)`，返回 `Optional` | `Markets` 读取市场是什么，而子市场属于市场的构成方式。 |
 | 位于 `kmlib.starsector.ui.coreui` 中的 `CoreUiOverlayPanels` | 已从公共 API 中移除。改用 `ModalPanel`。 | 单独的面板既不占用输入，也不淡入淡出，因此每个调用方都得自行重建这两者。 |
 | `MapPresence.isAnyMapShowing()`、`isSchematicMapShowing()` 和 `isStarscapeMapShowing()` | `isAnyVanillaMapShowing()`、`isSchematicVanillaMapShowing()` 和 `isStarscapeVanillaMapShowing()` | 它们只回答原版的星图界面，Mod 嵌入别处的星图不计在内。 |
@@ -562,13 +564,13 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 ## [0.1.0] - 2026-09-14
 
-首个打标签的发布版本，因此没有可供比较的先前版本：以下即为全部公共接口，包括玩家输入的命令、使用方导入的包，以及作为第二个构件发布、供使用方在自己的测试套件中使用的测试夹具。
+首个打标签的发布版本，因此没有可供比较的先前版本：以下即为全部公共接口，包括玩家输入的指令、使用方导入的包，以及作为第二个构件发布、供使用方在自己的测试套件中使用的测试夹具。
 
 ### 新增
 
-#### 控制台命令
+#### 控制台指令
 
-七条仅限战役中使用的命令，通过 `data/console/commands.csv` 注册，仅在安装了 Console Commands 时可用。启用 Nexerelin 时，两条殖民地命令都会交由该 Mod 自身的殖民和移交流程处理。
+七条仅限战役中使用的指令，通过 `data/console/commands.csv` 注册，仅在安装了 Console Commands 时可用。启用 Nexerelin 时，两条殖民地指令都会交由该 Mod 自身的殖民和移交流程处理。
 
 - `kmlib_activate_gate`
 - `kmlib_colonise`
