@@ -108,6 +108,8 @@ The reusable release workflow extracts the section matching the released version
   - `convertFractionToPercent(double)`: a fraction as a percent, every digit kept.
   - `convertFractionToWholePercent(double)` and `convertFractionToWholePercent(float)`: a fraction as the nearest whole percent, for a caller that builds its own text.
   - `convertPercentToFraction(double)`: a percent, such as a settings slider holds, as a fraction.
+- **`PlayerCredits`** in `kmlib.starsector.fleet`: the player's credits, kept in the player fleet's cargo. `readPlayerCredits(SectorAPI)` is the live balance, and `canPlayerAfford(SectorAPI, float)` whether it covers a price.
+- **`PlayerCreditsFixture`** in `kmlib.testfixtures.starsector.fleet`: the player's credits behind a sector mock, one credits mock that every walk down the player fleet's cargo reaches.
 - **`PlayerPriceOverrides`** in `kmlib.starsector.commodities.pricing`: `overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` sets the price a market quotes the player for a commodity to a chosen figure, whatever it would quote on its own; `clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` takes it back.
 - **`PlayerTradeSide`** in `kmlib.starsector.commodities`: the player buying or selling, with the market price and the player price modifier that side reads.
 - **`PolygonRegions`** ring reads:
@@ -172,6 +174,7 @@ The reusable release workflow extracts the section matching the released version
 | `SystemClaimBreakdown.overrideFactionId()` and `scores()` | `decreedFactionId()` and `standings()` | The list holds standings, and the flag is a decree in every other name it carries. |
 | `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | The same. |
 | `VanillaClaimBreakdownReader(KnownColonyReader)`, and a null index in `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` | Removed: open the reader over a pass's `SectorPassIndex`. For the decree alone, read `StarSystems::readDecreedFactionId` as a `ClaimDecreeReader`. | A reader with no pass read `Global.getSector()` rather than the sector it was asked about. |
+| `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
 
 </details>
 

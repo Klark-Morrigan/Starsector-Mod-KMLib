@@ -108,6 +108,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `convertFractionToPercent(double)`：比例对应的百分比，保留全部位数。
   - `convertFractionToWholePercent(double)` 和 `convertFractionToWholePercent(float)`：比例对应的最接近的整数百分比，供自行组织文本的调用方使用。
   - `convertPercentToFraction(double)`：百分比（例如设置滑块所存的值）对应的比例。
+- **`PlayerCredits`**（位于 `kmlib.starsector.fleet`）：玩家的星币，存放于玩家舰队的货舱中。`readPlayerCredits(SectorAPI)` 是实时余额，`canPlayerAfford(SectorAPI, float)` 判断余额是否足以支付某个价格。
+- **`PlayerCreditsFixture`**（位于 `kmlib.testfixtures.starsector.fleet`）：星域替身背后的玩家星币，沿玩家舰队货舱的每一次读取都得到同一个星币替身。
 - **`PlayerPriceOverrides`**（位于 `kmlib.starsector.commodities.pricing`）：`overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` 把市场向玩家报出的商品价格设为指定数值，无论该市场原本如何报价；`clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` 将其撤回。
 - **`PlayerTradeSide`**（位于 `kmlib.starsector.commodities`）：玩家买入或卖出，以及这一方向读取的市场价格与玩家价格修正。
 - **`PolygonRegions`** 中关于环的读取：
@@ -172,6 +174,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `SystemClaimBreakdown.overrideFactionId()` 和 `scores()` | `decreedFactionId()` 和 `standings()` | 列表存放的是排名，而该标记在其他所有名称中都叫无条件宣称。 |
 | `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | 同上。 |
 | `VanillaClaimBreakdownReader(KnownColonyReader)`，以及 `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` 中为 null 的索引 | 已移除：在一次遍历的 `SectorPassIndex` 之上打开读取器。只需无条件宣称时，把 `StarSystems::readDecreedFactionId` 当作 `ClaimDecreeReader` 读取。 | 没有遍历的读取器读取的是 `Global.getSector()`，而不是被询问的那个星域。 |
+| `MarketTargetRequirement(Predicate, String)`，其 `requirementPhrase()` 返回短语 | `MarketTargetRequirement(Predicate, Supplier)`，通过 `readRequirementPhrase()` 读取短语 | 短语是翻译后的字符串，在拒绝的措辞成形时读取，而不是在构建要求时读取，后者可能早于游戏字符串加载。 |
 
 </details>
 
