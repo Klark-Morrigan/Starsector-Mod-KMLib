@@ -151,7 +151,9 @@ which records no date of its own.
 
 | English | 简体中文 | Source |
 | --- | --- | --- |
+| Administrator (of a colony) | 管理员 | `tooltips.json` `fleetScreen` `tooltipAdmin`: "Assign Administrator" is 分配管理员 |
 | Alliance | 联盟 | vanilla's word for the Persean League, taken for Nexerelin's alliances |
+| Attitude (the relation number) | 关系 | `starfarer_obf.jar` faction screen, "Attitude: " is 关系： |
 | Blueprint | 蓝图 | `special_items.csv` `ship_bp`: "Base Ship Blueprint" is 基础舰船蓝图 |
 | Cancel | 取消 | `starfarer.api.jar`, `SetFlagship`: the pair with Ok |
 | Colony | 殖民地 | `starfarer_obf.jar` |
@@ -163,7 +165,9 @@ which records no date of its own.
 | Faction | 势力 | `starfarer.api.jar` |
 | Fighter wing | 战机联队 | `strings.json` `chmWingPurchase_text`: "you just bought a new fighter wing" is 你购买了一个战机联队 |
 | Fleet | 舰队 | `strings.json` `fleetInteractionDialog` `initialWithStationVsLargeFleet`: "your fleet" is 你的舰队 |
+| Free Port (condition) | 自由港 | `market_conditions.csv` `free_market` |
 | Gate | 星门 | `descriptions.csv`, Active Gate is 激活的星门 |
+| Hidden | 隐藏 | `starfarer_obf.jar`; "Comm Relay (hidden)" is 通讯中继站 (隐藏) |
 | Hull, (D) hull (a d-hull) | 船体, (D) 船体 | `tips.json`: "Ships with a (D) designation are substandard versions of the normal hulls." is 带有 (D) 标识的船体是性能低于正常状态的低质量船体 |
 | Hullmod | 舰船插件 | `tooltips.json`: "Change the weapons and hullmods equipped on this ship." is 改变这艘船的武器与舰船插件; the codex's "Hull Modifications" is 舰船插件. A bare 插件 reads as a hullmod too: S-插件, D-插件, 本插件 |
 | Hyperspace | 超空间 | `descriptions.csv` `jump_point_normal` |
@@ -173,12 +177,17 @@ which records no date of its own.
 | Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
 | ModSpec (the item) | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the hullmod it teaches is 舰船插件 |
 | Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
+| Outpost | 前哨站 | `market_conditions.csv` |
 | Planet | 行星 | `rules.csv` `surveyPrintFullData`: "You have full survey data for this planet." is 你已获得该行星的完整调查数据。 |
+| Population & Infrastructure (industry) | 居住区 & 基础设施 | `industries.csv` `population` |
 | Screen, tab (of the core UI) | 面板 | `starfarer.api.jar`, the campaign tutorial: "open the intel screen" is 打开情报信息面板, "the character tab" is 角色面板. Vanilla shows no UI "panel" by that name; its English panels are physical ones |
 | Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
+| Spaceport | 太空港 | `industries.csv` `spaceport` |
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
+| Survey data | 调查数据 | `descriptions.csv` `survey_data`: "a recent survey database" is 一个最新的调查数据库 |
 | Target | 目标 | `descriptions.csv` `plasma`: "toward the target" is 射向目标 |
+| Tariff | 关税 | `submarkets.csv` `open_market`: "subject to tariffs" is 可能有关税 |
 | Weapon | 武器 | `tooltips.json`, as the Hullmod row: "the weapons and hullmods" is 武器与舰船插件 |
 
 ## KMLib terms
