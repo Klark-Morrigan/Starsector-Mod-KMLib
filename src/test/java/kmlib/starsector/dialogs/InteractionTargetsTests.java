@@ -1,6 +1,7 @@
 package kmlib.starsector.dialogs;
 
 import com.fs.starfarer.api.campaign.InteractionDialogAPI;
+import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.SectorEntityToken;
 
 import org.junit.jupiter.api.Nested;
@@ -11,9 +12,53 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the target read: a dialog's target answers its ID, and a missing dialog or target answers nothing.
+ * Pins the target reads: a dialog's target answers its ID or itself as a planet, and a missing dialog or target
+ * answers nothing.
  */
 final class InteractionTargetsTests {
+
+    @Nested
+    class FindTargetPlanet {
+
+        @Test
+        void findsAPlanetTarget() {
+
+            var planetMock = mock(PlanetAPI.class);
+            var dialogMock = mock(InteractionDialogAPI.class);
+
+            when(dialogMock.getInteractionTarget())
+                .thenReturn(planetMock);
+
+            assertThat(InteractionTargets.findTargetPlanet(dialogMock))
+                .containsSame(planetMock);
+        }
+
+        @Test
+        void answersNothingForATargetThatIsNoPlanet() {
+
+            var dialogMock = mock(InteractionDialogAPI.class);
+
+            when(dialogMock.getInteractionTarget())
+                .thenReturn(mock(SectorEntityToken.class));
+
+            assertThat(InteractionTargets.findTargetPlanet(dialogMock))
+                .isEmpty();
+        }
+
+        @Test
+        void answersNothingForADialogWithoutATarget() {
+
+            assertThat(InteractionTargets.findTargetPlanet(mock(InteractionDialogAPI.class)))
+                .isEmpty();
+        }
+
+        @Test
+        void answersNothingWithoutADialog() {
+
+            assertThat(InteractionTargets.findTargetPlanet(null))
+                .isEmpty();
+        }
+    }
 
     @Nested
     class ReadTargetId {

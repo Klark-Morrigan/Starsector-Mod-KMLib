@@ -1,6 +1,9 @@
 package kmlib.starsector.dialogs;
 
 import com.fs.starfarer.api.campaign.InteractionDialogAPI;
+import com.fs.starfarer.api.campaign.PlanetAPI;
+
+import java.util.Optional;
 
 /**
  * Reads of the entity an interaction dialog is open on.
@@ -12,6 +15,19 @@ import com.fs.starfarer.api.campaign.InteractionDialogAPI;
 public final class InteractionTargets {
 
     private InteractionTargets() {
+    }
+
+    /**
+     * @param dialog the dialog, possibly {@code null}
+     * @return the planet the dialog is open on, or empty without a dialog, without a target, or on a target that is
+     *         no planet
+     */
+    public static Optional<PlanetAPI> findTargetPlanet(InteractionDialogAPI dialog) {
+
+        if (dialog == null || !(dialog.getInteractionTarget() instanceof PlanetAPI planet)) {
+            return Optional.empty();
+        }
+        return Optional.of(planet);
     }
 
     /**

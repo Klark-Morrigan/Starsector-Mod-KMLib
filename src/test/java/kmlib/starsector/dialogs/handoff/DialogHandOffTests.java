@@ -4,6 +4,8 @@ import com.fs.starfarer.api.campaign.InteractionDialogAPI;
 import com.fs.starfarer.api.campaign.InteractionDialogPlugin;
 import com.fs.starfarer.api.campaign.OptionPanelAPI;
 
+import kmlib.testfixtures.starsector.dialogs.InteractionDialogMock;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,7 +14,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Pins each hand-off's order: the plugin is set before it starts, and the clearing hand-off clears the dialog before
@@ -27,12 +28,11 @@ final class DialogHandOffTests {
     @BeforeEach
     void setUp() {
 
-        dialogMock = mock(InteractionDialogAPI.class);
-        optionPanelMock = mock(OptionPanelAPI.class);
-        pluginMock = mock(InteractionDialogPlugin.class);
+        var dialog = InteractionDialogMock.createDialogMock();
 
-        when(dialogMock.getOptionPanel())
-            .thenReturn(optionPanelMock);
+        dialogMock = dialog.getDialog();
+        optionPanelMock = dialog.getOptionPanel();
+        pluginMock = mock(InteractionDialogPlugin.class);
     }
 
     @Nested

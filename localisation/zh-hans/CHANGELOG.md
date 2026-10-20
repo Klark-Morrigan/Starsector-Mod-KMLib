@@ -76,6 +76,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
 - **`HighlightedTextPanelMock`**（位于 `kmlib.testfixtures.starsector.ui.label`）：保留每个加入其中的高亮段落的对话框文本面板，使其高亮可以被检查，如同 `HighlightedTooltipMock` 之于提示框。
+- **`InteractionDialogMock`**（位于 `kmlib.testfixtures.starsector.dialogs`）：交互对话框的替身，其每个面板各由一个替身应答，交互目标由用例指定。
+- **`InteractionTargets.findTargetPlanet(InteractionDialogAPI)`**：对话框所对应的行星；没有对话框或交互目标，或交互目标不是行星时为空。
 - **`InteractionTargets.readTargetId(InteractionDialogAPI)`**（位于 `kmlib.starsector.dialogs`）：对话框所对应实体的 ID；没有对话框或交互目标时为 null。
 - **`KmlibStrings`** 中按 `hasText(String)` 所用的同一条空白规则作答的读取：
   - `normaliseText(String)`、`convertToOptionalText(String)` 和 `getTextOrEmpty(String)`：去除首尾空白后的文本；空白时分别回答 null、空的 Optional 或 `""`。
