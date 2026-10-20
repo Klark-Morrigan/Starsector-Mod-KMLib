@@ -69,8 +69,8 @@ Rotation renumbers the files, so a reported log position holds only until the ga
 
 ### Missing content
 
-A failed load usually names one id that the save holds and no installed mod defines.
-Each spec store throws its own wording, and the script reads each into a kind and an id:
+A failed load usually names one ID that the save holds and no installed mod defines.
+Each spec store throws its own wording, and the script reads each into a kind and an ID:
 
 | Cause | Kind |
 | --- | --- |
@@ -80,16 +80,16 @@ Each spec store throws its own wording, and the script reads each into a kind an
 | `Fighter wing spec [<id>] not found` | `FighterWing` |
 | `Hullmod with id [<id>] not found` | `Hullmod` |
 | `Spec of class [<class>] with id [<id>] not found` | `Spec`, with the class kept as `SpecClass` |
-| `CannotResolveClassException: <class>` | `Class`, the class name as the id |
+| `CannotResolveClassException: <class>` | `Class`, the class name as the ID |
 
 `Spec` covers every spec type without a store of its own: special items, market conditions, industries and more.
 Its class name is often obfuscated,
 so it says which store missed, not always which kind.
 
-Vanilla builds a d-hull for every hull at startup, under the hull id plus `_default_D`.
+Vanilla builds a d-hull for every hull at startup, under the hull ID plus `_default_D`.
 A missing d-hull so means a missing base hull, and the base hull is what a mod defines.
 `Id` holds the base hull;
-`ReportedId` keeps the id as the message names it.
+`ReportedId` keeps the ID as the message names it.
 
 A cause matching none of these, a crash in a mod's script for one, gives no missing content.
 
