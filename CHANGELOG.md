@@ -76,6 +76,8 @@ The reusable release workflow extracts the section matching the released version
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**: a paragraph whose runs all share one highlight colour.
 - **`HighlightedTextPanelMock`** in `kmlib.testfixtures.starsector.ui.label`: a dialog's text panel keeping each highlighted paragraph added to it, so its highlights can be checked, as `HighlightedTooltipMock` does for a tooltip.
+- **`InteractionDialogMock`** in `kmlib.testfixtures.starsector.dialogs`: a stand-in interaction dialog answering a mock of each of its panels, open on whichever target a case names.
+- **`InteractionTargets.findTargetPlanet(InteractionDialogAPI)`**: the planet a dialog is open on, empty without a dialog or a target, or on a target that is no planet.
 - **`InteractionTargets.readTargetId(InteractionDialogAPI)`** in `kmlib.starsector.dialogs`: the ID of the entity a dialog is open on, null without a dialog or a target.
 - **`KmlibStrings`** reads under the one blank rule `hasText(String)` uses:
   - `normaliseText(String)`, `convertToOptionalText(String)` and `getTextOrEmpty(String)`: a text trimmed, with blank answered as null, an empty optional or `""`.

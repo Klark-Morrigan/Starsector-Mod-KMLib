@@ -608,7 +608,7 @@ No Starsector API on the signature.
   A mod's own feature that failed and was switched off is reported the same way.
   [Compatibility](src/main/java/kmlib/starsector/compatibility/README.md).
 - [`starsector/dialogs/`](src/main/java/kmlib/starsector/dialogs/) -
-  the entity an interaction dialog is open on,
+  the entity an interaction dialog is open on, and the planet when it is one,
   read as nothing where there is no dialog or no target.
 - [`starsector/dialogs/handoff/`](src/main/java/kmlib/starsector/dialogs/handoff/) -
   handing an open dialog to another plugin and starting it,
