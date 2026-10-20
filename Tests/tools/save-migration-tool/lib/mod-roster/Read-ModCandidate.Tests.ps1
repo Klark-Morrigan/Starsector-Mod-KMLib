@@ -30,7 +30,11 @@ Describe 'Read-ModCandidate' {
     BeforeEach {
 
         Mock Get-ModStatusNames { [pscustomobject]@{ Parsed = 'P'; Unparsed = 'U' } }
-        Mock Get-JsonPropertyValue { if ($null -ne $Object) { $Object.$Name } }
+        # Strict mode throws on a missing property, as CI runs the suites, so the fake looks the name up first.
+        Mock Get-JsonPropertyValue {
+            $property = if ($null -ne $Object) { $Object.PSObject.Properties[$Name] }
+            if ($null -ne $property) { $property.Value }
+        }
         Mock Get-VersionSortKey { "key-$Version" }
     }
 

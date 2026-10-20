@@ -9,7 +9,11 @@ Describe 'Format-ModVersion' {
 
     BeforeEach {
 
-        Mock Get-JsonPropertyValue { $Object.PSObject.Properties[$Name].Value }
+        # Strict mode throws on a missing property, as CI runs the suites, so the fake looks the name up first.
+        Mock Get-JsonPropertyValue {
+            $property = $Object.PSObject.Properties[$Name]
+            if ($null -ne $property) { $property.Value }
+        }
         Mock Get-VersionObjectParts { ,@(2, $null, 3) }
     }
 
