@@ -30,18 +30,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-. (Join-Path $PSScriptRoot 'lib\mod-info\ConvertFrom-StarsectorJson.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-info\Format-ModVersion.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-info\Get-JsonPropertyValue.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-info\Get-VersionObjectParts.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-info\Get-VersionSortKey.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-info\Remove-JsonComment.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-roster\ConvertTo-RosterEntry.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-roster\Get-ModStatusNames.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-roster\Group-ModCandidate.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-roster\Read-EnabledModIds.ps1')
-. (Join-Path $PSScriptRoot 'lib\mod-roster\Read-ModCandidate.ps1')
-. (Join-Path $PSScriptRoot 'lib\Write-DiagnosticLine.ps1')
+. (Join-Path $PSScriptRoot 'lib\Import-SaveMigrationToolLibrary.ps1')
 
 $DiagnosticSource = 'Get-ModRoster'
 

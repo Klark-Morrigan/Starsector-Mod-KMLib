@@ -22,7 +22,7 @@ param(
     [Parameter(Mandatory, ParameterSetName = 'Install')]
     [string] $StarsectorRoot,
 
-    # The log to read. Its rotated siblings are read with it.
+    # The log to read. Its rotated siblings are read with it, and class owners come from the install above its folder.
     [Parameter(Mandatory, ParameterSetName = 'Log')]
     [string] $LogPath,
 
@@ -33,28 +33,15 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-. (Join-Path $PSScriptRoot 'lib\class-index\Get-CoreOwnerName.ps1')
-. (Join-Path $PSScriptRoot 'lib\class-index\New-ClassOwnerIndex.ps1')
-. (Join-Path $PSScriptRoot 'lib\class-index\Read-CoreClasspath.ps1')
-. (Join-Path $PSScriptRoot 'lib\class-index\Read-JarClassNames.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Add-MissingContent.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Add-ObjectChainOwner.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\ConvertFrom-LogLine.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\ConvertFrom-ThrowableHeader.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\ConvertFrom-XStreamClassLine.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Format-MissingContentLine.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Format-ObjectChainLine.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Get-LoadOutcomeNames.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Get-LogFileChain.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Get-MissingContent.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Group-LoadAttempt.ps1')
-. (Join-Path $PSScriptRoot 'lib\load-log\Read-LoadAttempt.ps1')
-. (Join-Path $PSScriptRoot 'lib\Write-DiagnosticLine.ps1')
+. (Join-Path $PSScriptRoot 'lib\Import-SaveMigrationToolLibrary.ps1')
 
 $DiagnosticSource = 'Get-SaveLoadAttempt'
 
 # The game's log location relative to the install root.
 $DefaultLogRelativePath = 'starsector-core\starsector.log'
+
+# Deep enough for each class owner: a load, its attempts, an attempt's object chain, and a class's owners.
+$JsonDepth = 6
 
 if ($PSCmdlet.ParameterSetName -eq 'Install') {
     $LogPath = Join-Path $StarsectorRoot $DefaultLogRelativePath
@@ -69,6 +56,9 @@ $LogPath = (Resolve-Path -LiteralPath $LogPath).Path
 # The game logs save paths as it opened them, relative to its working directory: the log's own folder.
 $saveBaseDirectory = Split-Path -Parent $LogPath
 
+# The log sits in starsector-core, so the install it belongs to is the folder above.
+$installRoot = Split-Path -Parent $saveBaseDirectory
+
 $logFiles = Get-LogFileChain -Path $LogPath
 Write-DiagnosticLine -Source $DiagnosticSource -Message "reading $($logFiles.Count) log files, oldest first"
 
@@ -81,45 +71,39 @@ foreach ($fileRead in $read.FileReads) {
 }
 
 $attempts = @($read.Attempts)
-
-# The log sits in starsector-core, so the install it belongs to is the folder above.
-$installRoot = Split-Path -Parent $saveBaseDirectory
-$modsRoot = Join-Path $installRoot 'mods'
-
-# Opening every jar takes seconds, so the index is built only when a chain needs it.
+$chainClassNames = @($attempts | ForEach-Object { $_.ObjectChain } | ForEach-Object { $_.Class } | Select-Object -Unique)
+$hasObjectChain = $chainClassNames.Count -gt 0
 $ownersByClass = @{}
 
-if (@($attempts | Where-Object { $_.ObjectChain.Count -gt 0 }).Count -eq 0) {
-    Write-DiagnosticLine -Source $DiagnosticSource -Message 'no failure names an object chain; skipping the class index'
+if (-not $hasObjectChain) {
+    Write-DiagnosticLine -Source $DiagnosticSource -Message 'no failure names an object chain; resolving no class owners'
 
-} elseif (-not (Test-Path -LiteralPath $modsRoot -PathType Container)) {
+} elseif (-not (Test-Path -LiteralPath (Join-Path $installRoot 'mods') -PathType Container)) {
     Write-Warning "no mods folder in the log's install, $installRoot; object chain classes stay without owners"
 
 } else {
 
-    $roster = @(& (Join-Path $PSScriptRoot 'Get-ModRoster.ps1') -StarsectorRoot $installRoot)
-    $coreJars = @(Read-CoreClasspath -StarsectorRoot $installRoot)
+    Write-DiagnosticLine -Source $DiagnosticSource -Message (
+        "resolving the owners of $($chainClassNames.Count) object chain classes from the install at $installRoot")
 
-    if ($coreJars.Count -eq 0) {
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $roster = @(& (Join-Path $PSScriptRoot 'Get-ModRoster.ps1') -StarsectorRoot $installRoot)
+    $resolved = Resolve-ClassOwner -StarsectorRoot $installRoot -Roster $roster -ClassNames $chainClassNames
+    $ownersByClass = $resolved.OwnersByClass
+
+    if ($resolved.CoreJarCount -eq 0) {
         Write-Warning "vmparams in $installRoot names no classpath; vanilla classes stay without owners"
     }
 
-    $sources = @([pscustomobject]@{ Owner = Get-CoreOwnerName; Jars = $coreJars }) +
-        @($roster | ForEach-Object { [pscustomobject]@{ Owner = $_.Id; Jars = $_.Jars } })
-
-    $index = New-ClassOwnerIndex -Sources $sources
-    $ownersByClass = $index.OwnersByClass
-
-    foreach ($missingJar in $index.MissingJars) {
-
-        Write-DiagnosticLine -Source $DiagnosticSource -Message (
-            "skipped a declared jar that is not on disk: $missingJar")
+    foreach ($skippedJar in $resolved.SkippedJars) {
+        Write-DiagnosticLine -Source $DiagnosticSource -Message "skipped jar $($skippedJar.Path): $($skippedJar.Reason)"
     }
 
     Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        "indexed classes $($ownersByClass.Count), jars $($index.JarCount), " +
-        "from mods $($roster.Count) and core classpath entries $($coreJars.Count); " +
-        "classes in more than one owner's jars $($index.SharedClassCount)")
+        "read $($resolved.JarCount) jars of $($roster.Count) mods and $($resolved.CoreJarCount) core classpath entries " +
+        "in $($stopwatch.ElapsedMilliseconds) ms; owners found for $($ownersByClass.Count) classes, " +
+        "more than one mod for $($resolved.SharedClassCount), " +
+        "mod copies of core classes dropped for $($resolved.ShadowedClassCount)")
 }
 
 $loads = @(Group-LoadAttempt -Attempts $attempts | ForEach-Object {
@@ -143,7 +127,7 @@ foreach ($load in $loads | Where-Object { $_.CauseType }) {
 }
 
 if ($AsJson) {
-    ConvertTo-Json -InputObject $loads -Depth 6
+    ConvertTo-Json -InputObject $loads -Depth $JsonDepth
 
 } else {
     $loads

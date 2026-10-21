@@ -16,7 +16,7 @@ Describe 'ConvertTo-RosterEntry' {
                 Version = '1.2'
                 Jars    = @('jars/alpha.jar', 'jars\..\lib.jar')
                 Folder  = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
-                Status  = 'ok'
+                Status  = 'parsed'
             }
             Superseded = @('older copy')
         }
@@ -29,7 +29,7 @@ Describe 'ConvertTo-RosterEntry' {
         $entry.Id | Should -Be 'alpha'
         $entry.Version | Should -Be 'formatted-1.2'
         $entry.Folder | Should -Be 'C:\Games\Starsector\mods\Alpha-1.2'
-        $entry.Status | Should -Be 'ok'
+        $entry.Status | Should -Be 'parsed'
         $entry.SupersededCount | Should -Be 1
     }
 

@@ -141,8 +141,8 @@ The reusable release workflow extracts the section matching the released version
 - **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll. A mod committing no `localisation/manifest.json` keeps no locales, and gets one count per release.
 - **Every action `mod-release.yml` and `publish-download-badges.yml` run logs what it read, what it decided and each output it emits**, so a run's log alone explains what a later step was handed.
 - **Save Migration Tool (SMT) scripts** in `tools/save-migration-tool/`, run from a checkout and never shipped:
-  - `Get-SaveLoadAttempt.ps1` lists every save load in the game's logs, newest first, with the cause a failed load hit and the content that cause names as missing. The game's own retries fold into the load they belong to.
-  - `Get-ModRoster.ps1` lists the folder and version the game loads for each enabled mod, reading each `mod_info.json` as the game does.
+  - `Get-SaveLoadAttempt.ps1` lists every save load in the game's logs, newest first, with the cause a failed load hit, the content that cause names as missing, and the chain of objects the failure sat in, each class with the mods whose jars hold it. The game's own retries fold into the load they belong to.
+  - `Get-ModRoster.ps1` lists the folder, version and declared jars the game loads for each enabled mod, reading each `mod_info.json` as the game does.
 - **`ci-powershell.yml`**: lints the repository's PowerShell and runs its Pester suites on every pull request, through Common-PowerShell's reusable workflow. `mod-release.yml` re-runs the same gate before packaging, as it does the others; a mod carrying no PowerShell passes it.
 
 #### Changed

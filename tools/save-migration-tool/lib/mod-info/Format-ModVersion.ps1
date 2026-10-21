@@ -1,5 +1,4 @@
 # Collapses both version shapes to one displayable string.
-#   Depends on Get-JsonPropertyValue and Get-VersionObjectParts being dot-sourced into the same scope.
 function Format-ModVersion {
 
     param([object] $Version)

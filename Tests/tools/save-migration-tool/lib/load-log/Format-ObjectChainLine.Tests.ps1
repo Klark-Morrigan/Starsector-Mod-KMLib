@@ -37,12 +37,12 @@ Describe 'Format-ObjectChainLine' {
             Should -Be 'save_A: object chain length 4, mod classes 2, nearest m.Market (alpha, beta) at depth 2'
     }
 
-    It 'counts a core class a mod also bundles as the game''s' {
+    It 'counts no mod class in a chain of core and unowned classes' {
 
         $load = [pscustomobject]@{
             SaveFolder  = 'save_A'
             ObjectChain = @(
-                (New-Link -Depth 0 -Class 'a.Spec' -Owners 'core', 'alpha')
+                (New-Link -Depth 0 -Class 'a.Spec' -Owners 'core')
                 (New-Link -Depth 1 -Class 'java.util.ArrayList')
             )
         }

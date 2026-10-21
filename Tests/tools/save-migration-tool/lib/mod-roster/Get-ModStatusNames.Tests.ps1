@@ -8,7 +8,7 @@ Describe 'Get-ModStatusNames' {
 
         $statuses = Get-ModStatusNames
 
-        $statuses.Parsed | Should -Be 'ok'
+        $statuses.Parsed | Should -Be 'parsed'
         $statuses.Unparsed | Should -Be 'unparsed'
     }
 }

@@ -1,6 +1,5 @@
 # Adds to a load, and to each of its attempts, the missing content its cause names.
 # The load's own is its first attempt's, since that attempt read campaign.xml, the newest file.
-#   Depends on Get-MissingContent being dot-sourced into the same scope.
 function Add-MissingContent {
 
     param([object] $Load)

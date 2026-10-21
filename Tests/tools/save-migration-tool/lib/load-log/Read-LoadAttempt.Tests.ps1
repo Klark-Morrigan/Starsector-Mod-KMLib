@@ -2,19 +2,16 @@ BeforeAll {
 
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log"
 
+    . "$libRoot\Add-LineRange.ps1"
+    . "$libRoot\ConvertFrom-FailureTrace.ps1"
     . "$libRoot\ConvertFrom-LogLine.ps1"
-    . "$libRoot\ConvertFrom-ThrowableHeader.ps1"
-    . "$libRoot\ConvertFrom-XStreamClassLine.ps1"
+    . "$libRoot\Find-MatchingLineIndex.ps1"
     . "$libRoot\Get-LoadOutcomeNames.ps1"
     . "$libRoot\Read-LoadAttempt.ps1"
 
-    # The parsers are mocked, so a test line only has to name the loader for the cheap check to pass it on.
-    # "<logger>|<level>|<message>" stands for a loader line, "THROW|<type>|<message>" for a throwable header,
-    # and "CLASS|<depth>|<class>" for a class line of XStream's debugging information.
+    # The parsers are mocked, so a test line only has to name the loader for the index search to find it.
+    # "<logger>|<level>|<message>" stands for a loader line; any other line naming the loader stands for a stack frame.
     $script:Loader = 'com.fs.starfarer.campaign.save.CampaignGameManager'
-
-    # Not mocked: the reader matches XStream's block opener itself.
-    $script:DebugBlockStart = '---- Debugging information ----'
 
     function script:New-LogFile {
         # Writes one log file under TestDrive from the given lines and returns its path.
@@ -37,6 +34,17 @@ Describe 'Read-LoadAttempt' {
 
         Mock Get-LoadOutcomeNames { [pscustomobject]@{ Loaded = 'L'; Failed = 'F'; Unfinished = 'U' } }
 
+        Mock Find-MatchingLineIndex {
+
+            for ($index = 0; $index -lt $Lines.Count; $index++) {
+                if ($Lines[$index].Contains($Text)) { $index }
+            }
+        }
+
+        Mock Add-LineRange {
+            for ($index = $From; $index -le $To; $index++) { $Target.Add($Lines[$index]) }
+        }
+
         Mock ConvertFrom-LogLine {
 
             $parts = $Line -split '\|'
@@ -46,26 +54,18 @@ Describe 'Read-LoadAttempt' {
             }
         }
 
-        Mock ConvertFrom-ThrowableHeader {
+        # The trace's lines, joined, stand for its cause; its first line stands for its object chain.
+        Mock ConvertFrom-FailureTrace {
 
-            $parts = $Line -split '\|'
-
-            if ($parts[0] -eq 'THROW') {
-                [pscustomobject]@{ Type = $parts[1]; Message = $parts[2] }
-            }
-        }
-
-        Mock ConvertFrom-XStreamClassLine {
-
-            $parts = $Line -split '\|'
-
-            if ($parts[0] -eq 'CLASS') {
-                [pscustomobject]@{ Depth = [int] $parts[1]; Class = $parts[2] }
+            [pscustomobject]@{
+                CauseType   = 'T'
+                Cause       = $Lines -join '/'
+                ObjectChain = @($Lines | Select-Object -First 1)
             }
         }
     }
 
-    It 'reads a loaded attempt with its save path, file and line' {
+    It 'reads a loaded attempt with its save path, file and line, and no cause' {
 
         $log = New-LogFile -Name 'loaded.log' -Lines @(
             'an unrelated line'
@@ -80,6 +80,10 @@ Describe 'Read-LoadAttempt' {
         $read.Attempts[0].Outcome | Should -Be 'L'
         $read.Attempts[0].LogFile | Should -Be $log
         $read.Attempts[0].LogLine | Should -Be 2
+        $read.Attempts[0].Cause | Should -BeNullOrEmpty
+        $read.Attempts[0].ObjectChain.Count | Should -Be 0
+
+        Should -Invoke ConvertFrom-FailureTrace -Times 0 -Exactly
     }
 
     It 'parses only the lines that name the loader' {
@@ -107,76 +111,54 @@ Describe 'Read-LoadAttempt' {
         (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts[0].Outcome | Should -Be 'U'
     }
 
-    It 'takes the last throwable header of a failure as its root cause, past the ERROR line and stack frames' {
+    It 'reads a failure''s trace up to the loader''s next line, past its ERROR lines, stack frames naming it included' {
 
         $log = New-LogFile -Name 'failed.log' -Lines @(
             "$script:Loader|INFO|Loading C:\saves\save_D..."
             "$script:Loader|INFO|Error loading"
             "$script:Loader|ERROR|Failed calling method"
-            'THROW|com.thoughtworks.xstream.converters.ConversionException|Failed calling method'
+            'first trace line'
             "    at $script:Loader.o00000(Unknown Source)"
-            'THROW|java.lang.RuntimeException|Weapon spec [gone] not found!'
+            "$script:Loader|ERROR|a second error line"
+            'last trace line'
             "$script:Loader|INFO|Loading stage 11"
-            'THROW|java.lang.IllegalStateException|after the cause ended'
+            'after the trace ended'
         )
 
         $attempt = (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts[0]
 
         $attempt.Outcome | Should -Be 'F'
-        $attempt.CauseType | Should -Be 'java.lang.RuntimeException'
-        $attempt.Cause | Should -Be 'Weapon spec [gone] not found!'
+        $attempt.CauseType | Should -Be 'T'
+        $attempt.Cause | Should -Be "first trace line/    at $script:Loader.o00000(Unknown Source)/last trace line"
+        $attempt.ObjectChain | Should -Be @('first trace line')
     }
 
-    It 'reads the object chain from the first debugging block of a failure only' {
+    It 'carries a trace across files, and to the log''s end' {
 
-        $log = New-LogFile -Name 'chain.log' -Lines @(
-            "$script:Loader|INFO|Loading C:\saves\save_G..."
+        $older = New-LogFile -Name 'trace.log.1' -Lines @(
+            "$script:Loader|INFO|Loading C:\saves\save_E..."
             "$script:Loader|INFO|Error loading"
-            "$script:Loader|ERROR|Failed calling method"
-            $script:DebugBlockStart
-            'CLASS|0|a.Failed'
-            'CLASS|1|a.Container'
-            'THROW|com.thoughtworks.xstream.converters.ConversionException|Failed calling method'
-            $script:DebugBlockStart
-            'CLASS|0|a.FromTheSecondBlock'
+            'in the older file'
         )
 
-        $chain = (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts[0].ObjectChain
+        $newer = New-LogFile -Name 'trace.log' -Lines @('in the newer file')
+        $attempt = (Read-LoadAttempt -LogFiles @($older, $newer) -SaveBaseDirectory 'C:\').Attempts[0]
 
-        $chain.Class | Should -Be @('a.Failed', 'a.Container')
-        $chain.Depth | Should -Be @(0, 1)
+        $attempt.Cause | Should -Be 'in the older file/in the newer file'
     }
 
-    It 'gives each failure its own chain, and ignores class lines outside a debugging block' {
+    It 'gives each failure its own trace' {
 
-        $log = New-LogFile -Name 'chains.log' -Lines @(
+        $log = New-LogFile -Name 'traces.log' -Lines @(
             "$script:Loader|INFO|Loading C:\saves\save_H..."
             "$script:Loader|INFO|Error loading"
-            "$script:Loader|ERROR|Failed calling method"
-            $script:DebugBlockStart
-            'CLASS|0|a.First'
+            'first'
             "$script:Loader|INFO|Loading C:\saves\save_H..."
             "$script:Loader|INFO|Error loading"
-            "$script:Loader|ERROR|Failed calling method"
-            'CLASS|0|a.OutsideABlock'
-            $script:DebugBlockStart
-            'CLASS|0|a.Second'
+            'second'
         )
 
-        $attempts = (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts
-
-        $attempts[0].ObjectChain.Class | Should -Be @('a.First')
-        $attempts[1].ObjectChain.Class | Should -Be @('a.Second')
-    }
-
-    It 'leaves a loaded attempt with no chain' {
-
-        $log = New-LogFile -Name 'nochain.log' -Lines @(
-            "$script:Loader|INFO|Loading C:\saves\save_I..."
-            "$script:Loader|INFO|Finished loading"
-        )
-
-        (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts[0].ObjectChain.Count | Should -Be 0
+        (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts.Cause | Should -Be @('first', 'second')
     }
 
     It 'carries an attempt across files, and counts the lines and attempts each file holds' {
@@ -185,8 +167,8 @@ Describe 'Read-LoadAttempt' {
             "$script:Loader|INFO|Loading C:\saves\save_F..."
             "$script:Loader|INFO|Loading stage 2"
         )
-        $newer = New-LogFile -Name 'starsector.log' -Lines @("$script:Loader|INFO|Finished loading")
 
+        $newer = New-LogFile -Name 'starsector.log' -Lines @("$script:Loader|INFO|Finished loading")
         $read = Read-LoadAttempt -LogFiles @($older, $newer) -SaveBaseDirectory 'C:\'
 
         $read.Attempts.Count | Should -Be 1

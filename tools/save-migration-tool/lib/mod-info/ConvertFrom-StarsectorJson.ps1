@@ -8,7 +8,6 @@
 # which breaks Magellan Protectorate - a file that parses cleanly without it.
 #
 # Takes the text instead of the path when the caller has already read the file.
-#   Depends on Remove-JsonComment being dot-sourced into the same scope.
 function ConvertFrom-StarsectorJson {
 
     [CmdletBinding(DefaultParameterSetName = 'Path')]

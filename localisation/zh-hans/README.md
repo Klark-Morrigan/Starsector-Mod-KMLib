@@ -407,6 +407,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | missing content (an ID a save holds and no installed mod defines) | 缺失内容 | 缺失, missing, with 内容, content |
 | base hull (the hull a (D) hull is built from) | 基础船体 | 基础 as the vanilla Blueprint row's 基础舰船蓝图, with the vanilla Hull row's 船体 |
 | variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game jar, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
+| object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
 | load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
 | cause (the exception a failed load hit) | 原因 | the plain word |
 

@@ -9,7 +9,9 @@
 
 BeforeAll {
 
+    . "$PSScriptRoot\helpers\Invoke-ScriptCapturingOutput.ps1"
     . "$PSScriptRoot\helpers\New-TestJar.ps1"
+    . "$PSScriptRoot\helpers\New-TestMod.ps1"
 
     # Tests\ mirrors the repo, so the script sits at the same relative path under the repo root.
     $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
@@ -18,29 +20,17 @@ BeforeAll {
     $script:FixturesRoot = Join-Path $PSScriptRoot 'fixtures'
 
     function script:Invoke-SaveLoadAttempt {
-        <#
-            Runs the script in-process, so coverage sees it, with stderr swapped for a buffer and warnings
-            collected. The script writes its diagnostics to the console's stderr, outside PowerShell's streams.
-        #>
+        # Runs the script on the given arguments; the loads are the run's Output.
         param([hashtable] $Arguments)
 
-        $stderrBuffer = [System.IO.StringWriter]::new()
-        $originalStderr = [Console]::Error
+        return Invoke-ScriptCapturingOutput -ScriptPath $script:ScriptPath -Arguments $Arguments
+    }
 
-        [Console]::SetError($stderrBuffer)
+    function script:Format-StableDiagnostics {
+        # Blanks the one timing a run logs, so a list of diagnostics compares as text.
+        param([string[]] $Diagnostics)
 
-        try {
-            $output = & $script:ScriptPath @Arguments -WarningVariable warnings -WarningAction SilentlyContinue
-
-        } finally {
-            [Console]::SetError($originalStderr)
-        }
-
-        return [pscustomobject]@{
-            Output      = $output
-            Warnings    = @($warnings | ForEach-Object { "$_" })
-            Diagnostics = @($stderrBuffer.ToString() -split "`r?`n" | Where-Object { $_ })
-        }
+        return $Diagnostics -replace ' in \d+ ms;', ' in <n> ms;'
     }
 
     function script:Get-FixtureRoot {
@@ -60,13 +50,6 @@ BeforeAll {
         return $root
     }
 
-    function script:ConvertTo-ClassEntryName {
-        # Names a class's entry as a jar stores it: a.b.C reads as a/b/C.class.
-        param([string] $Class)
-
-        return "$($Class.Replace('.', '/')).class"
-    }
-
     function script:Add-ModJar {
         # Writes mods\<id>\mod_info.json declaring one jar, and the jar holding the given classes.
         param(
@@ -75,14 +58,10 @@ BeforeAll {
             [string[]] $Classes
         )
 
-        $modFolder = Join-Path $Root "mods\$ModId"
         $modInfo = "{ `"id`": `"$ModId`", `"version`": `"1.0`", `"jars`": [`"jars/$ModId.jar`"] }"
+        $modFolder = New-TestMod -StarsectorRoot $Root -Folder $ModId -ModInfo $modInfo
 
-        New-Item -ItemType Directory -Path $modFolder -Force | Out-Null
-        [System.IO.File]::WriteAllText((Join-Path $modFolder 'mod_info.json'), $modInfo)
-
-        New-TestJar -Path (Join-Path $modFolder "jars\$ModId.jar") `
-            -EntryNames @($Classes | ForEach-Object { ConvertTo-ClassEntryName $_ }) | Out-Null
+        New-TestJar -Path (Join-Path $modFolder "jars\$ModId.jar") -ClassNames $Classes | Out-Null
     }
 }
 
@@ -98,21 +77,30 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             [System.IO.File]::WriteAllText((Join-Path $script:FixtureRoot 'vmparams'),
                 'java.exe -Xms1536m -classpath starfarer_obf.jar;starfarer.api.jar -Dx=y')
 
-            New-TestJar -Path (Join-Path $script:FixtureRoot 'starsector-core\starfarer_obf.jar') -EntryNames @(
-                ConvertTo-ClassEntryName 'com.fs.starfarer.loading.specs.HullVariantSpec'
-                ConvertTo-ClassEntryName 'com.fs.starfarer.campaign.fleet.FleetMember'
-                ConvertTo-ClassEntryName 'com.fs.starfarer.campaign.CampaignEngine'
+            New-TestJar -Path (Join-Path $script:FixtureRoot 'starsector-core\starfarer_obf.jar') -ClassNames @(
+                'com.fs.starfarer.loading.specs.HullVariantSpec'
+                'com.fs.starfarer.campaign.fleet.FleetMember'
+                'com.fs.starfarer.campaign.CampaignEngine'
             ) | Out-Null
 
             Add-ModJar -Root $script:FixtureRoot -ModId 'aotd_theory_of_toolbox' `
                 -Classes @('data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin')
 
-            # Starlords bundles a copy of a core class, which the index records and the report counts as vanilla.
+            # Starlords bundles a copy of a core class, which the game never loads, so vanilla stays its one owner.
             Add-ModJar -Root $script:FixtureRoot -ModId 'starlords' `
                 -Classes @('starlords.person.Lord', 'com.fs.starfarer.campaign.CampaignEngine')
 
+            # Nexerelin bundles Starlords' Lord, so the class has two mod owners.
+            Add-ModJar -Root $script:FixtureRoot -ModId 'nexerelin' -Classes @('starlords.person.Lord')
+
+            # A jar no zip reader opens is skipped, and the other mods still resolve.
+            $brokenFolder = New-TestMod -StarsectorRoot $script:FixtureRoot -Folder 'broken' `
+                -ModInfo '{ "id": "broken", "version": "1.0", "jars": ["jars/broken.jar"] }'
+            New-Item -ItemType Directory -Path (Join-Path $brokenFolder 'jars') | Out-Null
+            [System.IO.File]::WriteAllText((Join-Path $brokenFolder 'jars\broken.jar'), 'not a zip')
+
             [System.IO.File]::WriteAllText((Join-Path $script:FixtureRoot 'mods\enabled_mods.json'),
-                '{ "enabledMods": ["aotd_theory_of_toolbox", "starlords"] }')
+                '{ "enabledMods": ["aotd_theory_of_toolbox", "starlords", "nexerelin", "broken"] }')
 
             $script:Run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }
             $script:Loads = @($script:Run.Output)
@@ -177,24 +165,35 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $chain[0].Owners | Should -Be @('vanilla')
             @($chain[2].Owners).Count | Should -Be 0
             $chain[3].Owners | Should -Be @('aotd_theory_of_toolbox')
-            $chain[4].Owners | Should -Be @('starlords')
-            $chain[5].Owners | Should -Be @('vanilla', 'starlords')
+            $chain[4].Owners | Should -Be @('nexerelin', 'starlords')
+            $chain[5].Owners | Should -Be @('vanilla')
+        }
+
+        It 'skips a jar no zip reader opens, naming it and the reason' {
+
+            $brokenJar = "$script:FixtureRoot\mods\broken\jars\broken.jar"
+
+            @($script:Run.Diagnostics -like "Get-SaveLoadAttempt: skipped jar ${brokenJar}: ?*").Count | Should -Be 1
         }
 
         It 'logs what it read and decided to stderr' {
 
             $logFolder = "$script:FixtureRoot\starsector-core"
+            $diagnostics = Format-StableDiagnostics $script:Run.Diagnostics |
+                Where-Object { $_ -notlike '*broken.jar*' }
 
-            $script:Run.Diagnostics | Should -Be @(
+            $diagnostics | Should -Be @(
                 'Get-SaveLoadAttempt: reading 3 log files, oldest first'
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.2: 44 lines, 3 load attempts start here"
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.1: 31 lines, 1 load attempts start here"
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log: 20 lines, 2 load attempts start here"
-                ("Get-ModRoster: read 2 mod folders under $script:FixtureRoot\mods and 2 enabled IDs; " +
-                    'listing 2 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
-                "Get-SaveLoadAttempt: skipped a declared jar that is not on disk: $logFolder\starfarer.api.jar"
-                ('Get-SaveLoadAttempt: indexed classes 5, jars 3, from mods 2 and core classpath entries 2; ' +
-                    "classes in more than one owner's jars 1")
+                ('Get-SaveLoadAttempt: resolving the owners of 7 object chain classes ' +
+                    "from the install at $script:FixtureRoot")
+                ("Get-ModRoster: read 4 mod folders under $script:FixtureRoot\mods and 4 enabled IDs; " +
+                    'listing 4 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
+                "Get-SaveLoadAttempt: skipped jar $logFolder\starfarer.api.jar: not on disk"
+                ('Get-SaveLoadAttempt: read 4 jars of 4 mods and 2 core classpath entries in <n> ms; ' +
+                    'owners found for 5 classes, more than one mod for 1, mod copies of core classes dropped for 1')
                 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
                 ('Get-SaveLoadAttempt: save_Alpha_1: object chain length 6, mod classes 2, nearest ' +
@@ -215,7 +214,7 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $loads[0].Attempts[1].LogLine | Should -Be 7
             $loads[0].Attempts[1].Missing.Id | Should -Be 'BSC_Hammerhead_MK2'
             $loads[0].Missing.ReportedId | Should -Be 'BSC_Buffalo_Mk3_default_D'
-            $loads[0].Attempts[0].ObjectChain[5].Owners | Should -Be @('vanilla', 'starlords')
+            $loads[0].Attempts[0].ObjectChain[4].Owners | Should -Be @('nexerelin', 'starlords')
             $run.Warnings.Count | Should -Be 0
         }
 
@@ -270,7 +269,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $root = Copy-FixtureRoot 'recovered-from-bak'
 
             Add-ModJar -Root $root -ModId 'gone_mod' -Classes @('data.scripts.removed.GoneScript')
-            [System.IO.File]::WriteAllText((Join-Path $root 'mods\enabled_mods.json'), '{ "enabledMods": ["gone_mod"] }')
+            [System.IO.File]::WriteAllText((Join-Path $root 'mods\enabled_mods.json'),
+                '{ "enabledMods": ["gone_mod"] }')
 
             $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $root }
 
@@ -302,10 +302,10 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $script:Loads[1].SavePath | Should -Be "$script:FixtureRoot\saves\save_Beta_2"
         }
 
-        It 'skips the class index when no failure names a chain' {
+        It 'resolves no class owners when no failure names a chain' {
 
             (Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }).Diagnostics |
-                Should -Contain 'Get-SaveLoadAttempt: no failure names an object chain; skipping the class index'
+                Should -Contain 'Get-SaveLoadAttempt: no failure names an object chain; resolving no class owners'
         }
     }
 

@@ -1,14 +1,18 @@
-# Indexes which owners' jars hold each class, so a class a failure names resolves to the mods behind it.
+# Finds which owners' jars hold each of the given classes, so a class a failure names resolves to the mods behind it.
 # A source is an owner and its jars: a mod id with the jars its mod_info.json declares, or the core owner.
-# A mod can bundle another's classes, so a class keeps every owner whose jars hold it, in source order.
-# A declared jar that is not on disk is skipped and returned in MissingJars.
-#   Depends on Read-JarClassNames being dot-sourced into the same scope.
+# A mod can bundle another mod's classes, so a class keeps every mod whose jars hold it, in source order.
+# A jar that is not on disk, or that no zip reader opens, is skipped and returned with the reason.
 function New-ClassOwnerIndex {
 
-    param([object[]] $Sources)
+    param(
+        [object[]] $Sources,
+        [string[]] $ClassNames
+    )
 
+    $coreOwner = Get-CoreOwnerName
+    $wantedClasses = [System.Collections.Generic.HashSet[string]]::new($ClassNames, [System.StringComparer]::Ordinal)
     $ownersByClass = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]::new()
-    $missingJars = [System.Collections.Generic.List[string]]::new()
+    $skippedJars = [System.Collections.Generic.List[object]]::new()
     $jarCount = 0
 
     foreach ($source in $Sources) {
@@ -16,13 +20,25 @@ function New-ClassOwnerIndex {
 
             if (-not (Test-Path -LiteralPath $jar -PathType Leaf)) {
 
-                $missingJars.Add($jar)
+                $skippedJars.Add([pscustomobject]@{ Path = $jar; Reason = 'not on disk' })
+                continue
+            }
+
+            try {
+                $heldClasses = [System.Collections.Generic.HashSet[string]]::new(
+                    [string[]] @(Read-JarClassNames -Path $jar), [System.StringComparer]::Ordinal)
+
+            } catch {
+
+                # A broken jar in one mod must not end the diagnosis of every other.
+                $skippedJars.Add([pscustomobject]@{ Path = $jar; Reason = $_.Exception.Message })
                 continue
             }
 
             $jarCount++
+            $heldClasses.IntersectWith($wantedClasses)
 
-            foreach ($className in Read-JarClassNames -Path $jar) {
+            foreach ($className in $heldClasses) {
 
                 $owners = $null
 
@@ -39,19 +55,33 @@ function New-ClassOwnerIndex {
         }
     }
 
+    $shadowedClassCount = 0
     $sharedClassCount = 0
 
     foreach ($owners in $ownersByClass.Values) {
 
-        if ($owners.Count -gt 1) {
+        if ($owners.Count -lt 2) {
+            continue
+        }
+
+        # Every mod jar loads through one URLClassLoader whose parent is the game's (ScriptStore).
+        # It asks its parent first, so a mod's copy of a core class never loads, and the core stays the only owner.
+        if ($owners.Contains($coreOwner)) {
+
+            $shadowedClassCount++
+            $owners.Clear()
+            $owners.Add($coreOwner)
+
+        } else {
             $sharedClassCount++
         }
     }
 
     return [pscustomobject]@{
-        OwnersByClass    = $ownersByClass
-        JarCount         = $jarCount
-        SharedClassCount = $sharedClassCount
-        MissingJars      = $missingJars.ToArray()
+        OwnersByClass      = $ownersByClass
+        JarCount           = $jarCount
+        SharedClassCount   = $sharedClassCount
+        ShadowedClassCount = $shadowedClassCount
+        SkippedJars        = $skippedJars.ToArray()
     }
 }
