@@ -79,6 +79,14 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $alpha.SupersededCount | Should -Be 1
         }
 
+        It 'prints as a table of ID, version and name, as Get-SaveModDrift.ps1 prints a save''s mods' {
+
+            $lines = @($script:Run.Output | Out-String -Width 200) -split "`r?`n" | Where-Object { $_.Trim() }
+
+            $lines[0] | Should -Match '^Id\s+Version\s+Name$'
+            @($lines -match '^alpha\s+1\.10\.0\s+Alpha$').Count | Should -Be 1
+        }
+
         It 'reads the major, minor, patch version form' {
             ($script:Run.Output | Where-Object Id -EQ 'beta').Version | Should -Be '2.0.3'
         }

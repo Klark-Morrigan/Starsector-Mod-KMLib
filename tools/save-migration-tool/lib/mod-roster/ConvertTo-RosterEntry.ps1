@@ -11,13 +11,16 @@ function ConvertTo-RosterEntry {
     $winner = $ModGroup.Winner
     $folder = $winner.Folder.FullName
 
-    return [pscustomobject]@{
+    $entry = [pscustomobject]@{
         Id              = $winner.Id
         Version         = Format-ModVersion -Version $winner.Version
+        Name            = $winner.Name
         Folder          = $folder
         RelativePath    = [System.IO.Path]::GetRelativePath($StarsectorRoot, $folder)
         Jars            = @(foreach ($jar in $winner.Jars) { [System.IO.Path]::GetFullPath($jar, $folder) })
         Status          = $winner.Status
         SupersededCount = $ModGroup.Superseded.Count
     }
+
+    return Add-ModDefaultDisplay -Mod $entry
 }

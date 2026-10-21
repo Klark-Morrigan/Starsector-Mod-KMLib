@@ -1,0 +1,111 @@
+# Integration tests for Invoke-SaveMigrationTool.ps1: the script, the scripts it runs and their lib\ functions
+# run together, unmocked. Each script's own cases are pinned by its own integration suite.
+# Run with: Invoke-Pester -Path .\Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1
+#
+# Each case copies the two-failed-loads fixture's logs under TestDrive and adds the saved-mod-list fixture's
+# descriptor as the failed save's, so one install holds both a failed load and its save. No test reads a real install.
+
+BeforeAll {
+
+    . "$PSScriptRoot\helpers\Invoke-ScriptCapturingOutput.ps1"
+
+    # Tests\ mirrors the repo, so the script sits at the same relative path under the repo root.
+    $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
+
+    $script:ScriptPath = Join-Path $repoRoot 'tools\save-migration-tool\Invoke-SaveMigrationTool.ps1'
+    $script:FixturesRoot = Join-Path $PSScriptRoot 'fixtures'
+
+    function script:New-DiagnosisInstall {
+        # Copies a fixture's logs under TestDrive, with the saved-mod-list descriptor as save_Alpha_1's.
+        param(
+            [string] $Name,
+            [string] $LogFixture
+        )
+
+        $root = Join-Path $TestDrive $Name
+        $saveFolder = Join-Path $root 'saves\save_Alpha_1'
+
+        Copy-Item -LiteralPath (Join-Path $script:FixturesRoot $LogFixture) -Destination $root -Recurse
+        New-Item -ItemType Directory -Path $saveFolder -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $script:FixturesRoot 'saved-mod-list\saves\save_TestCaptain_1\descriptor.xml') `
+            -Destination $saveFolder
+
+        return $root
+    }
+
+    function script:Invoke-SaveMigrationTool {
+        # Runs the script on the given arguments; the report is the run's Output.
+        param([hashtable] $Arguments)
+
+        return Invoke-ScriptCapturingOutput -ScriptPath $script:ScriptPath -Arguments $Arguments
+    }
+}
+
+Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
+
+    Context 'an install whose newest load failed' {
+
+        BeforeAll {
+
+            $script:Root = New-DiagnosisInstall -Name 'failed' -LogFixture 'two-failed-loads'
+            $script:Run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
+        }
+
+        It 'reports the newest failed load, then how many mods its save was last written with' {
+
+            $script:Run.Output | Should -Be @(
+                'Save: save_Alpha_1'
+                'Newest load: Failed'
+                '  Cause: java.lang.RuntimeException: Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+                '  save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
+                '  save_Alpha_1: object chain length 6, mod classes 0'
+                ''
+                'Mods the save was last written with: 3; Get-SaveModDrift.ps1 lists them'
+            )
+        }
+
+        It 'logs which save it chose, beside what the scripts it runs log' {
+
+            $script:Run.Diagnostics |
+                Should -Contain 'Invoke-SaveMigrationTool: of 2 loads, diagnosing the newest failed: save_Alpha_1'
+            @($script:Run.Diagnostics -like 'Get-SaveModDrift: listing 3 enabled mods*').Count | Should -Be 1
+        }
+
+        It 'prints the report object as JSON with -AsJson' {
+
+            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; AsJson = $true }
+
+            $report = $run.Output -join "`n" | ConvertFrom-Json
+
+            $report.SaveFolder | Should -Be 'save_Alpha_1'
+            $report.Load.Missing.Id | Should -Be 'BSC_Buffalo_Mk3'
+            $report.Mods.Id | Should -Be @('alpha', 'beta', 'gamma')
+        }
+    }
+
+    Context 'an install whose logs hold no failed load' {
+
+        BeforeAll {
+            $script:Root = New-DiagnosisInstall -Name 'loaded' -LogFixture 'recovered-from-bak'
+        }
+
+        It 'says no save is diagnosed' {
+
+            (Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }).Output |
+                Should -Be @('No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.')
+        }
+
+        It 'diagnoses a save named with -SaveFolder, though the logs hold no load of it' {
+
+            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
+
+            $run.Output | Should -Be @(
+                'Save: save_Alpha_1'
+                'Newest load: none in the logs'
+                ''
+                'Mods the save was last written with: 3; Get-SaveModDrift.ps1 lists them'
+            )
+            $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
+        }
+    }
+}

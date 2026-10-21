@@ -1,4 +1,4 @@
-# Reads one mods\ folder as a roster candidate: its mod id, version, the key its version sorts by,
+# Reads one mods\ folder as a roster candidate: its mod id, name, version, the key its version sorts by,
 # and the jars it declares, as mod_info.json writes them.
 # Returns null for a folder with no mod_info.json, which the game does not load as a mod.
 # Fails open: a mod_info.json nothing can parse still yields a candidate, under its folder name, with a warning.
@@ -35,6 +35,7 @@ function Read-ModCandidate {
 
         return [pscustomobject]@{
             Id      = $Folder.Name
+            Name    = $null
             Version = $null
             SortKey = ''
             Jars    = @()
@@ -47,6 +48,7 @@ function Read-ModCandidate {
 
     return [pscustomobject]@{
         Id      = [string] $modId
+        Name    = Get-JsonPropertyValue -Object $info -Name 'name'
         Version = $version
         SortKey = Get-VersionSortKey -Version $version
         Jars    = @(Get-JsonPropertyValue -Object $info -Name 'jars' | Where-Object { $_ })

@@ -8,12 +8,16 @@ the release zip does not carry them.
 
 - [Scripts](#scripts)
 - [Layout](#layout)
+- [Invoke-SaveMigrationTool.ps1](#invoke-savemigrationtoolps1)
 - [Get-SaveLoadAttempt.ps1](#get-saveloadattemptps1)
   - [How vanilla logs a load](#how-vanilla-logs-a-load)
   - [Missing content](#missing-content)
   - [Object chain](#object-chain)
   - [Class owners](#class-owners)
   - [Output](#output)
+- [Get-SaveModDrift.ps1](#get-savemoddriftps1)
+  - [How a save stores its mod list](#how-a-save-stores-its-mod-list)
+  - [Mod list output](#mod-list-output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
   - [How the game reads its JSON](#how-the-game-reads-its-json)
 - [Tests](#tests)
@@ -22,13 +26,19 @@ the release zip does not carry them.
 
 | Script | Answers |
 | --- | --- |
+| [`Invoke-SaveMigrationTool.ps1`](Invoke-SaveMigrationTool.ps1) | Everything the scripts below can say about one save, as one report |
 | [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, why a load failed, and which mods' objects the failure sat in |
+| [`Get-SaveModDrift.ps1`](Get-SaveModDrift.ps1) | Which mods, at which versions, a save was last written with |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
+
+`Invoke-SaveMigrationTool.ps1` is the one to run.
+The others are its parts, each runnable alone.
 
 Every script takes the install it reads as `-StarsectorRoot`;
 none assumes where the game is installed.
 Every script writes data to stdout and what it read and decided to stderr.
-`Get-SaveLoadAttempt.ps1 -AsJson` prints its data as JSON;
+`Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1` and `Get-SaveModDrift.ps1`
+print their data as JSON with `-AsJson`;
 `Get-ModRoster.ps1` returns objects for another script to consume.
 
 ## Layout
@@ -43,9 +53,42 @@ so no script lists the functions it calls or what those call in turn.
 | --- | --- |
 | [`lib/`](lib/) | The library loader, and `Write-DiagnosticLine`, which every script logs through |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
+| [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log` and what their causes name |
-| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions |
+| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, mod versions, and the columns every mod list prints |
 | [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
+| [`lib/save-descriptor/`](lib/save-descriptor/) | Reading the mod list out of a save's `descriptor.xml` |
+| [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
+
+## Invoke-SaveMigrationTool.ps1
+
+Diagnoses one save end to end,
+running the other scripts in order:
+
+1. `Get-SaveLoadAttempt.ps1` lists the loads in the logs.
+   Without `-SaveFolder`,
+   the save of the newest failed load is the one diagnosed.
+2. `Get-SaveModDrift.ps1` lists the mods that save was last written with.
+
+```powershell
+pwsh -NoProfile -File Invoke-SaveMigrationTool.ps1 -StarsectorRoot <install>                            # newest failed load
+pwsh -NoProfile -File Invoke-SaveMigrationTool.ps1 -StarsectorRoot <install> -SaveFolder <save folder>  # a named save
+```
+
+The text report names the save,
+the newest load of it with its cause and what that cause was read as,
+then how many mods the save was last written with.
+The list itself gives a person nothing to act on,
+so the text leaves it to `Get-SaveModDrift.ps1`.
+A named save may have no load in the logs;
+the report says so.
+With no failed load and no `-SaveFolder`,
+the report is one line saying no save is diagnosed.
+
+With `-AsJson` the report is one object:
+`SaveFolder`,
+`Load` (one load as [`Get-SaveLoadAttempt.ps1`](#output) prints it, or null),
+and `Mods` (as [`Get-SaveModDrift.ps1`](#mod-list-output) prints them).
 
 ## Get-SaveLoadAttempt.ps1
 
@@ -204,6 +247,77 @@ or dropped mod copies of a core class.
 or `campaign.zip` for a compressed save.
 The log does not say which.
 
+## Get-SaveModDrift.ps1
+
+Lists the mods a save was last written with,
+from its `descriptor.xml`.
+That small file sits beside `campaign.xml`,
+and the game's load list reads only it.
+Its mod list is the one the load list's hover tooltip compares against the installed mods.
+
+```powershell
+pwsh -NoProfile -File Get-SaveModDrift.ps1 -StarsectorRoot <install> -SaveFolder <save folder> -AsJson
+```
+
+`-SaveFolder` is the folder name under `saves\`,
+as `Get-SaveLoadAttempt.ps1` reports it in `SaveFolder`.
+
+### How a save stores its mod list
+
+The game writes the descriptor through XStream,
+which writes each object in full once, tagged `z="N"`.
+Every later use of that object is an empty element with `ref="N"`.
+
+The descriptor holds two mod lists:
+
+- `allModsEverEnabled` holds every mod this save has been written with, each spec in full;
+- `enabledMods` holds the mods enabled at the last save.
+  It comes second,
+  so its entries are usually back-pointers into the first list.
+
+The script lists `enabledMods`,
+following each entry, its spec and the spec's version wherever they point.
+A back-pointer that no `z` answers fails the run, naming it:
+the file is damaged, and reading the entry as empty would hide that.
+
+A mod enabled once and dropped since stays in `allModsEverEnabled`,
+and the save can still hold its content.
+Stderr names each such mod;
+stdout does not list it.
+
+The descriptor is loaded with DTDs refused.
+A save can come from another player,
+and a DTD can expand a small file past memory.
+XStream never writes one.
+
+### Mod list output
+
+One object per enabled mod, in the descriptor's order:
+
+| Field | Meaning |
+| --- | --- |
+| `Id` | The mod's ID |
+| `Version` | The version the save was last written with, in the form `Get-ModRoster.ps1` prints for the same `mod_info.json` |
+| `Name` | The mod's name, as the save wrote it, leading spaces included |
+
+On a console the mods print as a table of these three columns,
+the same table `Get-ModRoster.ps1` prints for the installed mods.
+
+A `mod_info.json` that gives its version as a string,
+such as `"1.14.1aa"`,
+leaves that string in the save,
+and `Version` is that string.
+One that gives `{ major, minor, patch }` leaves only the parts,
+and `Version` joins them with dots,
+skipping an empty one.
+So an unchanged mod reads the same on both sides.
+
+Stderr names the descriptor read,
+when and under which game version the save was written,
+how many mods it lists,
+and the mods enabled once and dropped since.
+A descriptor with no `enabledMods` list warns and lists no mods.
+
 ## Get-ModRoster.ps1
 
 Resolves the installed side of a save's mod list:
@@ -224,8 +338,11 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 - A `mod_info.json` nothing can parse stays in the roster as `unparsed`, under its folder name, with a warning.
   Dropping it would hide a real mod with nothing to say so.
 
-Each entry carries `Id`, `Version`, `Folder`, `RelativePath` (under the install root),
+Each entry carries `Id`, `Version`, `Name`, `Folder`, `RelativePath` (under the install root),
 `Jars` (the JARs `mod_info.json` declares, as full paths), `Status` (`parsed` or `unparsed`) and `SupersededCount`.
+On a console the entries print as a table of `Id`, `Version` and `Name`,
+the same table `Get-SaveModDrift.ps1` prints for a save's mods;
+every field stays on the object.
 
 ### How the game reads its JSON
 
@@ -254,6 +371,11 @@ runs the script against hand-written install roots under
 whose logs are shaped as 0.98a writes them.
 A case that resolves class owners copies its fixture to a temporary folder and writes the JARs there,
 so the repository holds no binary fixture.
+[`Get-SaveModDrift.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-SaveModDrift.IntegrationTests.Tests.ps1)
+runs the script against a hand-written descriptor shaped as 0.98a writes it,
+and writes damaged descriptors under a temporary folder.
+[`Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1)
+copies a log fixture to a temporary folder and gives its failed save that descriptor.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
 

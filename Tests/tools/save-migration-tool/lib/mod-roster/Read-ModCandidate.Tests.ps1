@@ -38,14 +38,15 @@ Describe 'Read-ModCandidate' {
         Mock Get-VersionSortKey { "key-$Version" }
     }
 
-    It 'reads the id, version and sort key of a parsed mod_info.json' {
+    It 'reads the id, name, version and sort key of a parsed mod_info.json' {
 
-        Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ id = 'alpha'; version = '1.2' } }
+        Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ id = 'alpha'; name = ' Alpha'; version = '1.2' } }
 
         $folder = New-ModFolder -Name 'Alpha-1.2'
         $candidate = Read-ModCandidate -Folder $folder
 
         $candidate.Id | Should -Be 'alpha'
+        $candidate.Name | Should -Be ' Alpha'
         $candidate.Version | Should -Be '1.2'
         $candidate.SortKey | Should -Be 'key-1.2'
         $candidate.Status | Should -Be 'P'
@@ -77,6 +78,7 @@ Describe 'Read-ModCandidate' {
             -WarningVariable warnings -WarningAction SilentlyContinue
 
         $candidate.Id | Should -Be "Broken $($Reason.Length)"
+        $candidate.Name | Should -BeNullOrEmpty
         $candidate.Status | Should -Be 'U'
         $candidate.Jars.Count | Should -Be 0
         $warnings | ForEach-Object { "$_" } |

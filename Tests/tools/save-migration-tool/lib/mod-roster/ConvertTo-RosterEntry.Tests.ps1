@@ -1,5 +1,6 @@
 BeforeAll {
 
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Add-ModDefaultDisplay.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Format-ModVersion.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\ConvertTo-RosterEntry.ps1"
 }
@@ -9,10 +10,12 @@ Describe 'ConvertTo-RosterEntry' {
     BeforeEach {
 
         Mock Format-ModVersion { "formatted-$Version" }
+        Mock Add-ModDefaultDisplay { $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru }
 
         $script:ModGroup = [pscustomobject]@{
             Winner     = [pscustomobject]@{
                 Id      = 'alpha'
+                Name    = 'Alpha'
                 Version = '1.2'
                 Jars    = @('jars/alpha.jar', 'jars\..\lib.jar')
                 Folder  = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
@@ -27,7 +30,9 @@ Describe 'ConvertTo-RosterEntry' {
         $entry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
 
         $entry.Id | Should -Be 'alpha'
+        $entry.Name | Should -Be 'Alpha'
         $entry.Version | Should -Be 'formatted-1.2'
+        $entry.Display | Should -Be 'added'
         $entry.Folder | Should -Be 'C:\Games\Starsector\mods\Alpha-1.2'
         $entry.Status | Should -Be 'parsed'
         $entry.SupersededCount | Should -Be 1
