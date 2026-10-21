@@ -42,7 +42,7 @@ so no script lists the functions it calls or what those call in turn.
 | Folder | Holds |
 | --- | --- |
 | [`lib/`](lib/) | The library loader, and `Write-DiagnosticLine`, which every script logs through |
-| [`lib/class-index/`](lib/class-index/) | Finding which mods' jars, or the game's own, hold a class |
+| [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log` and what their causes name |
 | [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions |
 | [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
@@ -145,25 +145,25 @@ so a market can sit under a mod's script that happens to hold a reference to it.
 
 ### Class owners
 
-The classes the chains name are looked up in the install's jars:
-the jars each enabled mod's `mod_info.json` declares,
+The classes the chains name are looked up in the install's JARs:
+the JARs each enabled mod's `mod_info.json` declares,
 and the game's own classpath from `vmparams`.
 The install is the folder above the log's,
 since the log sits in `starsector-core`.
 
 - The game's own classes have the owner `vanilla`.
 - A mod can bundle copies of another mod's classes,
-  so `Owners` lists every mod whose jars hold the class.
+  so `Owners` lists every mod whose JARs hold the class.
 - A mod can bundle copies of the game's classes too,
   and those never load.
-  The game loads every mod jar through one class loader whose parent is its own,
+  The game loads every mod JAR through one class loader whose parent is its own,
   and that loader asks its parent first.
-  So a class the game's own jars hold keeps `vanilla` as its only owner.
-- A class no jar holds has no owners:
+  So a class the game's own JARs hold keeps `vanilla` as its only owner.
+- A class no JAR holds has no owners:
   one of the Java runtime's,
   such as `java.util.ArrayList`,
   or one no installed mod ships any more.
-- A declared jar that is not on disk,
+- A declared JAR that is not on disk,
   or that no zip reader opens,
   is skipped,
   and stderr names it with the reason.
@@ -194,8 +194,8 @@ and, when it names one,
 the chain's length and its nearest mod class.
 When owners are resolved,
 stderr names the install they come from,
-each jar skipped,
-how many jars were read and how long that took,
+each JAR skipped,
+how many JARs were read and how long that took,
 and how many classes found owners,
 more than one mod,
 or dropped mod copies of a core class.
@@ -225,7 +225,7 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
   Dropping it would hide a real mod with nothing to say so.
 
 Each entry carries `Id`, `Version`, `Folder`, `RelativePath` (under the install root),
-`Jars` (the jars `mod_info.json` declares, as full paths), `Status` (`parsed` or `unparsed`) and `SupersededCount`.
+`Jars` (the JARs `mod_info.json` declares, as full paths), `Status` (`parsed` or `unparsed`) and `SupersededCount`.
 
 ### How the game reads its JSON
 
@@ -252,13 +252,13 @@ Each script has an integration suite, which runs it with its `lib/` functions un
 runs the script against hand-written install roots under
 [`fixtures/`](../../Tests/tools/save-migration-tool/fixtures/),
 whose logs are shaped as 0.98a writes them.
-A case that resolves class owners copies its fixture to a temporary folder and writes the jars there,
+A case that resolves class owners copies its fixture to a temporary folder and writes the JARs there,
 so the repository holds no binary fixture.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
 
 [`helpers/`](../../Tests/tools/save-migration-tool/helpers/) holds what the suites share:
-running a script with its stderr and warnings captured, and writing a test mod or jar.
+running a script with its stderr and warnings captured, and writing a test mod or JAR.
 
 No test reads a real install, log or save.
 

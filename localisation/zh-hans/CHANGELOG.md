@@ -141,8 +141,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。未提交 `localisation/manifest.json` 的 Mod 不区分语言区域，每个发布版本只有一个下载量。
 - **`mod-release.yml` 与 `publish-download-badges.yml` 运行的每个操作，都会在日志中记录它读取了什么、做出了什么判断，以及它的每一项输出**，因此仅凭一次运行的日志，就能看出后续步骤拿到了什么。
 - **存档迁移工具（SMT）脚本**（位于 `tools/save-migration-tool/`），从仓库的检出副本运行，从不随压缩包发布：
-  - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因、该原因指出的缺失内容，以及失败所在的对象链，链中每个类都注明其 jar 含有该类的 Mod。游戏自身的重试归入它们所属的那次读取。
-  - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹、版本和声明的 jar，并按游戏的方式读取每个 `mod_info.json`。
+  - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因、该原因指出的缺失内容，以及失败所在的对象链，链中每个类都注明其 JAR 含有该类的 Mod。游戏自身的重试归入它们所属的那次读取。
+  - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹、版本和声明的 JAR，并按游戏的方式读取每个 `mod_info.json`。
 - **`ci-powershell.yml`**：通过 Common-PowerShell 的可复用工作流，在每个拉取请求上检查仓库的 PowerShell 代码，并运行其 Pester 测试套件。`mod-release.yml` 在打包前重新运行同一门禁，与其他门禁一样；不含 PowerShell 的 Mod 也能通过。
 
 #### 变更
@@ -423,7 +423,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - 切换语言区域时 `jar` 和 `test` 会重新运行。`localisation/` 或根目录的 `CHANGELOG.md` 变化时，`test` 也会重新运行。
 - **`mod_info.base.json`**：按语言区域保存启动器文本的 Mod 提交该基础文件，并在 gitignore 中忽略由其写出的 `mod_info.json`。每个构建脚本和发布 Action 都会在基础文件存在时读取它。
   - `mod-info-reader.gradle`：读取一次该元数据，发布为 `modInfo` 和 `modInfoFile`，并提供用于读取另一个检出的 `readModInfo(File)`。
-- **按语言区域发布**：对于提交了 `localisation/manifest.json` 的 Mod，`mod-release.yml` 用同一个 jar 为每个语言区域发布一个压缩包和一个版本文件。未提交清单的 Mod 发布方式不变。
+- **按语言区域发布**：对于提交了 `localisation/manifest.json` 的 Mod，`mod-release.yml` 用同一个 JAR 为每个语言区域发布一个压缩包和一个版本文件。未提交清单的 Mod 发布方式不变。
   - `read-locales`：Mod 发布的语言区域，默认语言区域排在首位。
   - `package-release`：为每个语言区域写出、压缩并填写版本文件。每个压缩包都带有本语言区域的 `CHANGELOG.md`。
   - `compose-locale-note`：发布说明中的 _Builds by language_ 列表（链接每个语言区域所需的核心本地化），以及折叠在各自名称之下的每份译文说明。译文缺少该版本的章节会使发布失败。
@@ -700,7 +700,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 
 #### 测试夹具
 
-作为 jar 旁的第二个构件发布，供使用方自己的测试套件使用。伪实现充当程序库所反转的接缝的替身；夹具则构建测试用例所依托的世界。
+作为 JAR 旁的第二个构件发布，供使用方自己的测试套件使用。伪实现充当程序库所反转的接缝的替身；夹具则构建测试用例所依托的世界。
 
 - `kmlib.testfixtures.logging`
 - `kmlib.testfixtures.mods.console`

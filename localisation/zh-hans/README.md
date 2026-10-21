@@ -143,7 +143,7 @@ A mod's own reference may add rules for its own features.
 What the core localisation writes for each vanilla English term KMLib's text touches.
 Each row was read off the core localisation itself,
 by pairing its text with vanilla's at the same location:
-the same `strings.json` key, the same CSV row, or the same string constant in the same class of the game jars.
+the same `strings.json` key, the same CSV row, or the same string constant in the same class of the game JARs.
 The core localisation at `startup-optimization` 2026.09.04 was the edition read;
 the typeface editions share its text.
 The Dialog, Dialog option, Entity, Fighter wing, Hull, Hullmod, Interaction, Screen, Target and Weapon rows were read off the installed `startup-optimization` edition,
@@ -288,7 +288,7 @@ A term the console text shares with the changelog, such as a parameter, is under
 | map spoilers | 星图剧透 | vanilla's 星图 with 剧透, the usual word for a spoiler |
 | named parameter (one given as `name=value`) | 具名参数 | 具名, named, the usual computing word |
 | orbit tree, focus (what an orbit goes round) | 轨道树, 焦点 | 轨道, orbit; 焦点 as the [orbit-focus chain](#geometry) row writes it |
-| stockpiling, accrued unrest (what a colony's old owner arranged) | 囤积, 累积的动荡 | plain words, unchecked against the game jar |
+| stockpiling, accrued unrest (what a colony's old owner arranged) | 囤积, 累积的动荡 | plain words, unchecked against the game JAR |
 | system center (a system's middle where no star sits) | 星系中心 | vanilla's 星系 with 中心, center; vanilla never names it. Not 质心, barycentre, which is true only where stars orbit it, and false for a starless system such as a nebula |
 | territorial, non-territorial (a faction) | 领土, 非领土 | `territorial` in a faction's `punitiveExpeditionData`, read by `Misc.getClaimingFaction`: only a territorial faction claims a system dynamically. 非领土势力 in prose; 领土 is also the word for territory |
 | timings (what a profiler measured) | 性能计时 | 性能, performance, with 计时, timing |
@@ -406,7 +406,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
 | missing content (an ID a save holds and no installed mod defines) | 缺失内容 | 缺失, missing, with 内容, content |
 | base hull (the hull a (D) hull is built from) | 基础船体 | 基础 as the vanilla Blueprint row's 基础舰船蓝图, with the vanilla Hull row's 船体 |
-| variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game jar, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
+| variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game JAR, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
 | object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
 | JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
 | load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
@@ -489,7 +489,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
 | campaign message (a `MessageIntel` notification) | 战役消息 | 战役, campaign, as 战役加速 writes it, with 消息, message |
-| campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game jar, which the cached core localisation does not hold, so it is unchecked |
+| campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game JAR, which the cached core localisation does not hold, so it is unchecked |
 | lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
 | location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |
 | placement (of a map icon among the others), unplaceable | 叠放情况, 无法定位 | 叠放, stacking, as the `0.5.0` entry's 重新叠放; 定位, to locate, kept apart from 位置 for a location |
@@ -527,13 +527,13 @@ A version heading is never translated; see [translating the changelog](#translat
 | submarket (one of a market's trading counters), cargo | 子市场, 货物 | the game never names the kind to a player, only each counter, as `submarkets.csv` writes 开放市场 and 仓库, so 子市场 follows the API's `SubmarketAPI`; 货物 as that file's 仓库 description writes it |
 | storage, one-time access fee, paid to unlock | 仓库, 一次性使用费, 已付费解锁 | 仓库 and 一次性使用费 as vanilla's `StoragePlugin` dialog writes them (使用此地仓库需要缴纳一次性使用费); 已付费解锁 is the plain reading of `setPlayerPaidToUnlock`, which the game never shows |
 | buy, sell (the player's side of a trade), unit price | 买入, 卖出, 每单位价格 | as the trade screen's cargo tooltips write them (每单位买入的价格, 每单位价格是基于一次性买入或卖出) |
-| average price, price modifier | 平均价格, 价格修正 | plain words; 修正 for a modifier is unchecked against the game jar |
+| average price, price modifier | 平均价格, 价格修正 | plain words; 修正 for a modifier is unchecked against the game JAR |
 
 #### Monthly report
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| monthly report (the income and expenses the game totals and pays each month), income, expenses | 月度收支报告, 收益, 支出 | 收益 and 支出 as vanilla's month-end message writes them (每月收益, 每月支出, `CoreScript`); the report's own title sits in the game jar and is unchecked |
+| monthly report (the income and expenses the game totals and pays each month), income, expenses | 月度收支报告, 收益, 支出 | 收益 and 支出 as vanilla's month-end message writes them (每月收益, 每月支出, `CoreScript`); the report's own title sits in the game JAR and is unchecked |
 | row (one line of the report), fleet (its parent line) | 条目, 舰队 | 舰队 as `CoreScript` names the fleet line; 条目, an entry, for a line under it |
 | economy step (one of the month's economy iterations), month end | 经济步进, 月末 | 步进, a step, as a script's 推进 is an advance; the game never names the step to a player |
 
@@ -541,7 +541,7 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| drop roller, drop list | 掉落抽取器, 掉落列表 | as the `SalvageEntityMock` entry writes 掉落抽取器; 掉落, drop, is the plain word, unchecked against the game jar |
+| drop roller, drop list | 掉落抽取器, 掉落列表 | as the `SalvageEntityMock` entry writes 掉落抽取器; 掉落, drop, is the plain word, unchecked against the game JAR |
 | random drop, value drop, drop group | 随机掉落, 价值掉落, 掉落组 | from 掉落 |
 | roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
 | weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
@@ -635,7 +635,7 @@ The words of a reply to a player's crash or bug report in the thread.
 
 1. Look the term up here.
    A vanilla concept missing here is looked up in the core localisation before it is translated:
-   find the English in vanilla's `data/` or game jars, and read what the core localisation has at the same place.
+   find the English in vanilla's `data/` or game JARs, and read what the core localisation has at the same place.
 2. Translate by the [rules](#rules), and add a row for any new term to the [KMLib terms](#kmlib-terms).
 3. Check the characters render.
    Every character must be in the core localisation's font atlases,

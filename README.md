@@ -3,7 +3,7 @@
 Starsector library/dependency mod that hosts reusable(feature-agnostic) code,
 and primarily serves other KM mod series members
 (e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)).
-Its jar is what those mods depend on at compile and runtime;
+Its JAR is what those mods depend on at compile and runtime;
 beyond it KMLib ships a [settings tab](#requirements),
 a set of [console commands](#console-commands),
 and a mod plugin that binds the settings and registers its
@@ -128,7 +128,7 @@ Sources, one tree per audience:
   see [Packages](#packages).
 - [`src/testFixtures/java/`](src/testFixtures/java/) -
   the fakes and builders a consumer's tests may take,
-  published as a variant beside the jar rather than inside it.
+  published as a variant beside the JAR rather than inside it.
   See [Test fixtures](#test-fixtures).
 - [`src/test/java/`](src/test/java/) -
   JUnit 5 and Mockito suites,
@@ -150,9 +150,9 @@ Build:
   the build entry points.
 - [`gradle/starsector-mod.gradle`](gradle/starsector-mod.gradle) -
   the Starsector build conventions every KM mod applies by path:
-  the game's API jars on the compile and test classpath,
+  the game's API JARs on the compile and test classpath,
   the mod's metadata as the version source,
-  the jar output location the launcher expects,
+  the JAR output location the launcher expects,
   and the two facts about the game every mod would otherwise restate -
   which namespace the game's type names are not promised in,
   and which package inside it is the published API.
@@ -166,8 +166,8 @@ Build:
 - [`gradle/starsector-install-locator.gradle`](gradle/starsector-install-locator.gradle) -
   the lookups those conventions and a mod's own build call:
   the install root,
-  a core jar by name or by pattern,
-  an installed mod's jar,
+  a core JAR by name or by pattern,
+  an installed mod's JAR,
   and this checkout.
   Applied by the conventions script,
   so a consumer gets it from the one `apply from`.
@@ -301,7 +301,7 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
 
 One line each,
 saying what the package is for.
-Every package the jar ships has a line here;
+Every package the JAR ships has a line here;
 where a package has more behind it than a line can carry,
 the line ends with where to read it.
 
@@ -1129,7 +1129,7 @@ by two mechanisms that differ in what a broken link costs the caller.
 The obf-cast seams,
 [`starsector/ui/intel/`](src/main/java/kmlib/starsector/ui/intel/) and
 [`starsector/ui/map/`](src/main/java/kmlib/starsector/ui/map/),
-compile against the obfuscated jars and cast.
+compile against the obfuscated JARs and cast.
 Both fail closed -
 an unresolvable link reports "nothing there" instead of throwing on a live screen.
 
@@ -1148,7 +1148,7 @@ where a consumer of the cast seams inherits one.
 Reaching by name means reflection,
 and the game's mod classloader refuses `java.lang.reflect` to mod code
 alongside `java.io`, `javax.script` and `java.util.prefs` -
-a sandbox over what a downloaded jar can reach on a player's machine.
+a sandbox over what a downloaded JAR can reach on a player's machine.
 [`ReflectionBypass`](src/main/java/kmlib/starsector/ui/coreui/ReflectionBypass.java)
 routes around it,
 by asking the bootstrap loader for the reflection types and driving them through method handles,
@@ -1197,12 +1197,12 @@ its `outputs:` block is the statement of that convention:
 
 - The mod ID and version verbatim,
   the `<mod-id>-runner` label,
-  the first declared jar,
+  the first declared JAR,
   and the repos to clone beside the checkout.
 - The shipped folder name,
   the `dist/<mod-folder-name>/` directory
   and the `<mod-folder-name>-<version>.zip` release name,
-  all named after that jar rather than after the mod ID,
+  all named after that JAR rather than after the mod ID,
   so a zip install and a hand-deployed one share one folder layout.
 - `zip-name-regex`,
   which that zip's name matches in every release whatever its version and locale,
@@ -1305,7 +1305,7 @@ Without `changelog.sh`, only the list is composed.
 **[package-release](.github/actions/package-release/action.yml)**
 takes read-locales' `locales` and `default-locale`,
 a `mod-root` and an `output-dir`,
-and turns a checkout whose jar is built into the release's assets.
+and turns a checkout whose JAR is built into the release's assets.
 Per locale it runs `./gradlew writeLocaleFiles -Plocale=<tag>`,
 assembles the runtime payload into a fresh `dist/<folder>/`,
 fills the version file into it for that locale,
@@ -1318,7 +1318,7 @@ writing no locale and suffixing nothing.
   because the work is a loop and a workflow cannot loop a `uses:` step.
   Here the loop calls the fill script by its path beside this one,
   so every version file comes out of one implementation.
-- The jar is built once, before it runs:
+- The JAR is built once, before it runs:
   it is identical across locales,
   which is what makes this a loop rather than a matrix rebuilding it per locale on one runner.
 - Inside each zip the version file keeps the bare `<mod-id>.version`,
@@ -1526,9 +1526,9 @@ located on Windows from the git on `PATH`.
   no template,
   no task,
   which is where the KM mods that publish no update information stay.
-- Tied to the jar rather than to `assemble`,
-  because refreshing a dev install is what building the jar is:
-  the install picks up the new jar immediately,
+- Tied to the JAR rather than to `assemble`,
+  because refreshing a dev install is what building the JAR is:
+  the install picks up the new JAR immediately,
   and a version file left behind would report a version that is no longer there.
 - Outside Actions there is no release to name the zip and no `GITHUB_REPOSITORY`,
   so the script derives the zip name from the metadata
@@ -1578,7 +1578,7 @@ each of its editions with others of its own line heights and glyph sets.
 - Every build needs the network and the game's fonts,
   and fails rather than skipping without either:
   a skipped check reads as a passed one.
-  A CI runner carries `starsector-core/graphics/fonts/*.fnt` beside the game's jars for this.
+  A CI runner carries `starsector-core/graphics/fonts/*.fnt` beside the game's JARs for this.
 - An edition's own `settings.json` is not laid over:
   KMLib reads whatever default the running game declares,
   so an edition root reads the game's own.
@@ -1773,7 +1773,7 @@ must name the same version,
 and both move in the same commit -
 see [versioning](docs/dev/versioning.md).
 
-Downstream mods pull the built jar as `compileOnly` in `build.gradle`
+Downstream mods pull the built JAR as `compileOnly` in `build.gradle`
 so the file is visible at compile time
 and supplied by Starsector's mod classloader at runtime:
 
@@ -1781,7 +1781,7 @@ and supplied by Starsector's mod classloader at runtime:
 compileOnly files("${configuredStarsectorRoot}/mods/KMLib/jars/KMLib.jar")
 ```
 
-Tests in consuming mods that touch KMLib types also add the same jar as
+Tests in consuming mods that touch KMLib types also add the same JAR as
 `testCompileOnly` / `testRuntimeOnly`.
 KMLib's hard dependencies apply to every mod that depends on it -
 see [Requirements](#requirements).
@@ -1913,7 +1913,7 @@ The shared conventions open the JDK packages the serialiser reflects into on eve
 the same set the game's own JVM opens.
 
 They are a source set of their own,
-published as a variant beside the jar.
+published as a variant beside the JAR.
 A consumer takes them with `testCompileOnly testFixtures('kmlib:KMLib')`,
 which resolves through the included build
 the same substitution already carries the main artifact over.
@@ -1925,9 +1925,9 @@ three audiences:
 `src/test` stays private.
 That boundary is the reason for the split rather than a consequence of it -
 a fixture is a test artefact,
-and the jar the launcher loads must not carry classes that link against a test library.
+and the JAR the launcher loads must not carry classes that link against a test library.
 It is also what lets a fixture here mock a vanilla type,
-which nothing inside the shipped jar could do.
+which nothing inside the shipped JAR could do.
 A fixture only KMLib's own suites use therefore stays in `src/test`:
 what moves here is what a consumer actually asks for,
 so the published surface stays a decision rather than a default.
@@ -1988,7 +1988,7 @@ KMLib's map and UI code draws straight against OpenGL,
 where two things are not visible from the source:
 how the campaign UI sets up its matrices,
 and how the widely-installed Fast Rendering mod (`com.genir.renderer`)
-rebinds GL calls in every mod jar to its own batching bridge.
+rebinds GL calls in every mod JAR to its own batching bridge.
 That bridge tracks the modelview on the CPU,
 so GL state reads do not mean what they appear to mean.
 

@@ -141,8 +141,8 @@ The reusable release workflow extracts the section matching the released version
 - **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll. A mod committing no `localisation/manifest.json` keeps no locales, and gets one count per release.
 - **Every action `mod-release.yml` and `publish-download-badges.yml` run logs what it read, what it decided and each output it emits**, so a run's log alone explains what a later step was handed.
 - **Save Migration Tool (SMT) scripts** in `tools/save-migration-tool/`, run from a checkout and never shipped:
-  - `Get-SaveLoadAttempt.ps1` lists every save load in the game's logs, newest first, with the cause a failed load hit, the content that cause names as missing, and the chain of objects the failure sat in, each class with the mods whose jars hold it. The game's own retries fold into the load they belong to.
-  - `Get-ModRoster.ps1` lists the folder, version and declared jars the game loads for each enabled mod, reading each `mod_info.json` as the game does.
+  - `Get-SaveLoadAttempt.ps1` lists every save load in the game's logs, newest first, with the cause a failed load hit, the content that cause names as missing, and the chain of objects the failure sat in, each class with the mods whose JARs hold it. The game's own retries fold into the load they belong to.
+  - `Get-ModRoster.ps1` lists the folder, version and declared JARs the game loads for each enabled mod, reading each `mod_info.json` as the game does.
 - **`ci-powershell.yml`**: lints the repository's PowerShell and runs its Pester suites on every pull request, through Common-PowerShell's reusable workflow. `mod-release.yml` re-runs the same gate before packaging, as it does the others; a mod carrying no PowerShell passes it.
 
 #### Changed
@@ -423,7 +423,7 @@ The build and release side of the per-language zips. The localisation fixtures u
   - `jar` and `test` re-run on a locale switch. `test` also re-runs when `localisation/` or the root `CHANGELOG.md` changes.
 - **`mod_info.base.json`**: a mod with per-locale launcher text commits the base and gitignores the `mod_info.json` written from it. Every build script and release action reads the base where one exists.
   - `mod-info-reader.gradle`: reads that metadata once, as `modInfo` and `modInfoFile`, with `readModInfo(File)` for another checkout.
-- **Per-locale releases**: `mod-release.yml` releases a mod committing `localisation/manifest.json` as one zip and one version file per locale, from one jar. A mod with no manifest releases as before.
+- **Per-locale releases**: `mod-release.yml` releases a mod committing `localisation/manifest.json` as one zip and one version file per locale, from one JAR. A mod with no manifest releases as before.
   - `read-locales`: the locales a mod releases in, default first.
   - `package-release`: writes, zips and fills the version file for each locale. Each zip carries its own locale's `CHANGELOG.md`.
   - `compose-locale-note`: the release body's _Builds by language_ list, linking each locale's core localisation, and each translation's notes collapsed under its name. A translation missing the version's section fails the release.
@@ -700,7 +700,7 @@ No Starsector API on the signature.
 
 #### Test fixtures
 
-Shipped as a second artifact beside the jar, for a consumer's own suites. Fakes stand in for a seam the library inverted; fixtures build a world a case is posed against.
+Shipped as a second artifact beside the JAR, for a consumer's own suites. Fakes stand in for a seam the library inverted; fixtures build a world a case is posed against.
 
 - `kmlib.testfixtures.logging`
 - `kmlib.testfixtures.mods.console`
