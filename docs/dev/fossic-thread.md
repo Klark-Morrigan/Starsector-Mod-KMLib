@@ -37,6 +37,8 @@ and the [category guide](https://www.fossic.org/thread-5932-1-1.html).
 ## Review and the mod index
 
 A thread reaches 原创Mod区 (`forum-46-1.html`) and the Mod索引 only once an admin has reviewed it.
+The move keeps the thread's ID,
+so links to the thread and its posts written before the review still work.
 A lightweight mod, 美化, 功能 or 杂项,
 may take 快速审核 straight after posting,
 by contacting 欧瑞捷门, Scythe, 肥龙太刀足 or jn_xyp.
