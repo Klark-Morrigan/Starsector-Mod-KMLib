@@ -30,9 +30,9 @@ threads mark testing in the title, as `[测试]` or `[早期测试]`,
 after the game version in brackets,
 which is how the board's titles open.
 
-The board's rules are thread 13 (Mod区管理规定与细则),
-the review rules thread 6107 (Mod审核规定),
-and the category guide thread 5932.
+The board's rules are [Mod区管理规定与细则](https://www.fossic.org/thread-13-1-1.html),
+the review rules [Mod审核规定](https://www.fossic.org/thread-6107-1-1.html),
+and the [category guide](https://www.fossic.org/thread-5932-1-1.html).
 
 ## Review and the mod index
 
@@ -107,7 +107,7 @@ An uploaded image stays across edits,
 so a release re-uploads only an image that changed.
 Fossic publishes no size limit,
 but a per-file and a daily one exist per user group;
-the FAQ (thread 3316) says to ask an admin to raise them.
+the [FAQ](https://www.fossic.org/thread-3316-1-1.html) says to ask an admin to raise them.
 
 An attachment the post text does not reference is listed under the post.
 A zip referenced by its tag is drawn as a download link where the text names it.
