@@ -14,6 +14,7 @@ Describe 'ConvertTo-RosterEntry' {
             Winner     = [pscustomobject]@{
                 Id      = 'alpha'
                 Version = '1.2'
+                Jars    = @('jars/alpha.jar', 'jars\..\lib.jar')
                 Folder  = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
                 Status  = 'ok'
             }
@@ -30,6 +31,14 @@ Describe 'ConvertTo-RosterEntry' {
         $entry.Folder | Should -Be 'C:\Games\Starsector\mods\Alpha-1.2'
         $entry.Status | Should -Be 'ok'
         $entry.SupersededCount | Should -Be 1
+    }
+
+    It 'resolves each declared jar against the mod''s folder' {
+
+        (ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector').Jars | Should -Be @(
+            'C:\Games\Starsector\mods\Alpha-1.2\jars\alpha.jar'
+            'C:\Games\Starsector\mods\Alpha-1.2\lib.jar'
+        )
     }
 
     It 'reports the folder relative to a root written as <Root>' -ForEach @(

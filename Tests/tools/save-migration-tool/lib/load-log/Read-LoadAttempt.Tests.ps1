@@ -4,12 +4,17 @@ BeforeAll {
 
     . "$libRoot\ConvertFrom-LogLine.ps1"
     . "$libRoot\ConvertFrom-ThrowableHeader.ps1"
+    . "$libRoot\ConvertFrom-XStreamClassLine.ps1"
     . "$libRoot\Get-LoadOutcomeNames.ps1"
     . "$libRoot\Read-LoadAttempt.ps1"
 
     # The parsers are mocked, so a test line only has to name the loader for the cheap check to pass it on.
-    # "<logger>|<level>|<message>" stands for a loader line, and "THROW|<type>|<message>" for a throwable header.
+    # "<logger>|<level>|<message>" stands for a loader line, "THROW|<type>|<message>" for a throwable header,
+    # and "CLASS|<depth>|<class>" for a class line of XStream's debugging information.
     $script:Loader = 'com.fs.starfarer.campaign.save.CampaignGameManager'
+
+    # Not mocked: the reader matches XStream's block opener itself.
+    $script:DebugBlockStart = '---- Debugging information ----'
 
     function script:New-LogFile {
         # Writes one log file under TestDrive from the given lines and returns its path.
@@ -47,6 +52,15 @@ Describe 'Read-LoadAttempt' {
 
             if ($parts[0] -eq 'THROW') {
                 [pscustomobject]@{ Type = $parts[1]; Message = $parts[2] }
+            }
+        }
+
+        Mock ConvertFrom-XStreamClassLine {
+
+            $parts = $Line -split '\|'
+
+            if ($parts[0] -eq 'CLASS') {
+                [pscustomobject]@{ Depth = [int] $parts[1]; Class = $parts[2] }
             }
         }
     }
@@ -111,6 +125,58 @@ Describe 'Read-LoadAttempt' {
         $attempt.Outcome | Should -Be 'F'
         $attempt.CauseType | Should -Be 'java.lang.RuntimeException'
         $attempt.Cause | Should -Be 'Weapon spec [gone] not found!'
+    }
+
+    It 'reads the object chain from the first debugging block of a failure only' {
+
+        $log = New-LogFile -Name 'chain.log' -Lines @(
+            "$script:Loader|INFO|Loading C:\saves\save_G..."
+            "$script:Loader|INFO|Error loading"
+            "$script:Loader|ERROR|Failed calling method"
+            $script:DebugBlockStart
+            'CLASS|0|a.Failed'
+            'CLASS|1|a.Container'
+            'THROW|com.thoughtworks.xstream.converters.ConversionException|Failed calling method'
+            $script:DebugBlockStart
+            'CLASS|0|a.FromTheSecondBlock'
+        )
+
+        $chain = (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts[0].ObjectChain
+
+        $chain.Class | Should -Be @('a.Failed', 'a.Container')
+        $chain.Depth | Should -Be @(0, 1)
+    }
+
+    It 'gives each failure its own chain, and ignores class lines outside a debugging block' {
+
+        $log = New-LogFile -Name 'chains.log' -Lines @(
+            "$script:Loader|INFO|Loading C:\saves\save_H..."
+            "$script:Loader|INFO|Error loading"
+            "$script:Loader|ERROR|Failed calling method"
+            $script:DebugBlockStart
+            'CLASS|0|a.First'
+            "$script:Loader|INFO|Loading C:\saves\save_H..."
+            "$script:Loader|INFO|Error loading"
+            "$script:Loader|ERROR|Failed calling method"
+            'CLASS|0|a.OutsideABlock'
+            $script:DebugBlockStart
+            'CLASS|0|a.Second'
+        )
+
+        $attempts = (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts
+
+        $attempts[0].ObjectChain.Class | Should -Be @('a.First')
+        $attempts[1].ObjectChain.Class | Should -Be @('a.Second')
+    }
+
+    It 'leaves a loaded attempt with no chain' {
+
+        $log = New-LogFile -Name 'nochain.log' -Lines @(
+            "$script:Loader|INFO|Loading C:\saves\save_I..."
+            "$script:Loader|INFO|Finished loading"
+        )
+
+        (Read-LoadAttempt -LogFiles @($log) -SaveBaseDirectory 'C:\').Attempts[0].ObjectChain.Count | Should -Be 0
     }
 
     It 'carries an attempt across files, and counts the lines and attempts each file holds' {

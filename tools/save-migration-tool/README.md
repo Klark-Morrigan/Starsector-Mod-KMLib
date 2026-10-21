@@ -10,6 +10,8 @@ They are repository tooling: the release zip does not carry them.
 - [Get-SaveLoadAttempt.ps1](#get-saveloadattemptps1)
   - [How vanilla logs a load](#how-vanilla-logs-a-load)
   - [Missing content](#missing-content)
+  - [Object chain](#object-chain)
+  - [Class owners](#class-owners)
   - [Output](#output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
   - [How the game reads its JSON](#how-the-game-reads-its-json)
@@ -19,7 +21,7 @@ They are repository tooling: the release zip does not carry them.
 
 | Script | Answers |
 | --- | --- |
-| [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, and why a load failed |
+| [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, why a load failed, and which mods' objects the failure sat in |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
 Every script takes the install it reads as `-StarsectorRoot`; none assumes where the game is installed.
@@ -35,6 +37,7 @@ The functions it calls live one per file under [`lib/`](lib/), named after the f
 | Folder | Holds |
 | --- | --- |
 | [`lib/`](lib/) | `Write-DiagnosticLine`, which every script logs through |
+| [`lib/class-index/`](lib/class-index/) | Indexing which mods' jars, or the game's own, hold each class |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log` and what their causes name |
 | [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions |
 | [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
@@ -93,6 +96,37 @@ A missing d-hull so means a missing base hull, and the base hull is what a mod d
 
 A cause matching none of these, a crash in a mod's script for one, gives no missing content.
 
+### Object chain
+
+When XStream fails on an object, it prints a block of debugging information beneath the ERROR line.
+`class` names the object that failed;
+`class[1]`, `class[2]`, ... name the objects that contain it, counting outwards to `CampaignEngine`.
+The script keeps these as the object chain, `class` at depth 0.
+The ERROR line and the exception header print the same block, so only the first block of an attempt is read.
+
+The nearest class a mod owns is the likeliest holder of the failed object:
+a black market's cargo, a fleet, a script.
+Classes further out mostly show how XStream reached it.
+XStream writes an object where it first meets it,
+so a market can sit under a mod's script that happens to hold a reference to it.
+
+### Class owners
+
+Each class in a chain is looked up in an index of the install's jars:
+the jars each enabled mod's `mod_info.json` declares, and the game's own classpath from `vmparams`.
+The install is the folder above the log's, since the log sits in `starsector-core`.
+
+- The game's own classes have the owner `vanilla`.
+- A mod can bundle copies of another mod's classes, or of the game's,
+  so `Owners` lists every owner whose jars hold the class.
+  The game loads every mod jar through one class loader whose parent is its own,
+  and that loader asks its parent first, so a class `vanilla` holds is the game's whatever else holds it.
+- A class no indexed jar holds has no owners: one of the Java runtime's, such as `java.util.ArrayList`,
+  or one no installed mod ships any more.
+
+Opening every jar takes seconds, so the index is built only when a failure names a chain.
+With no `mods` folder in the install, or no classpath in `vmparams`, the script warns and leaves those owners empty.
+
 ### Output
 
 One object per load, newest first:
@@ -103,10 +137,13 @@ One object per load, newest first:
 | `SavePath` | The full save path, with `..` resolved against the log's folder (the game's working directory) |
 | `Outcome` | `Loaded`, `Failed`, or `Unfinished` when the log ends first: a crash, or a load still running |
 | `CauseType`, `Cause` | The root throwable of the first attempt, read from `campaign.xml`, the newest file. Empty when that attempt loaded |
-| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `Outcome`, `CauseType`, `Cause`, the `LogFile` and `LogLine` it starts on, and its `Missing` |
+| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `Outcome`, `CauseType`, `Cause`, the `LogFile` and `LogLine` it starts on, its `Missing` and its `ObjectChain` |
 | `Missing` | The [missing content](#missing-content) the first attempt's cause names: `Kind`, `Id`, `ReportedId` and `SpecClass`. Empty when the cause names none |
+| `ObjectChain` | The first attempt's [object chain](#object-chain), innermost first: each class's `Depth`, `Class` and [`Owners`](#class-owners). Empty when the log names none |
 
-Stderr gains one line per load with a cause, saying what the cause was read as.
+Stderr gains two lines per load with a cause:
+what the cause was read as, and, when it names one, the chain's length and its nearest mod class.
+When the class index is built, stderr says how many classes and jars it holds, and names each declared jar not on disk.
 
 `campaign` stands for `campaign.xml`, or `campaign.zip` for a compressed save.
 The log does not say which.
@@ -129,7 +166,8 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 - A `mod_info.json` nothing can parse stays in the roster as `unparsed`, under its folder name, with a warning.
   Dropping it would hide a real mod with nothing to say so.
 
-Each entry carries `Id`, `Version`, `Folder`, `RelativePath` (under the install root), `Status` and `SupersededCount`.
+Each entry carries `Id`, `Version`, `Folder`, `RelativePath` (under the install root),
+`Jars` (the jars `mod_info.json` declares, as full paths), `Status` and `SupersededCount`.
 
 ### How the game reads its JSON
 
@@ -156,6 +194,9 @@ Each script has an integration suite, which runs it with its `lib/` functions un
 runs the script against hand-written install roots under
 [`fixtures/`](../../Tests/tools/save-migration-tool/fixtures/),
 whose logs are shaped as 0.98a writes them.
+A case that resolves class owners copies its fixture to a temporary folder and writes the jars there,
+through [`helpers/New-TestJar.ps1`](../../Tests/tools/save-migration-tool/helpers/New-TestJar.ps1),
+so the repository holds no binary fixture.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
 

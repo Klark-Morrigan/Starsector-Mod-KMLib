@@ -126,6 +126,21 @@ Describe 'Get-ModRoster.IntegrationTests' {
         }
     }
 
+    Context 'a mod that declares jars' {
+
+        It 'lists each declared jar as a full path under the mod''s folder' {
+
+            $root = New-ModInstall -Name 'jars' -EnabledModsJson '{ "enabledMods": ["a"] }' -ModInfoByFolder @{
+                'A Mod' = '{ "id": "a", "version": "1", "jars": ["jars/a.jar", "jars/lib/b.jar"] }'
+            }
+
+            (Invoke-ModRoster @{ StarsectorRoot = $root }).Roster.Jars | Should -Be @(
+                "$root\mods\A Mod\jars\a.jar"
+                "$root\mods\A Mod\jars\lib\b.jar"
+            )
+        }
+    }
+
     Context 'a mod_info.json the game reads but strict JSON does not' {
 
         It 'reads it as the game does: # comments, trailing commas and single-quoted values' {

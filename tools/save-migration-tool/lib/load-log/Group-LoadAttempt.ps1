@@ -40,12 +40,13 @@ function Group-LoadAttempt {
             $attempt = $loadAttempts[$index]
 
             [pscustomobject]@{
-                Source    = $attemptSources[$index]
-                Outcome   = $attempt.Outcome
-                CauseType = $attempt.CauseType
-                Cause     = $attempt.Cause
-                LogFile   = $attempt.LogFile
-                LogLine   = $attempt.LogLine
+                Source      = $attemptSources[$index]
+                Outcome     = $attempt.Outcome
+                CauseType   = $attempt.CauseType
+                Cause       = $attempt.Cause
+                ObjectChain = @($attempt.ObjectChain)
+                LogFile     = $attempt.LogFile
+                LogLine     = $attempt.LogLine
             }
         }
 

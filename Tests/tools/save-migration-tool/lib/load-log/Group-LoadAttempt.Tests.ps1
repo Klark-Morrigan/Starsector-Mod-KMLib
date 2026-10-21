@@ -9,16 +9,18 @@ BeforeAll {
             [string] $SavePath,
             [string] $Outcome,
             [string] $Cause = $null,
+            [object[]] $ObjectChain = @(),
             [int] $LogLine = 1
         )
 
         return [pscustomobject]@{
-            SavePath  = $SavePath
-            Outcome   = $Outcome
-            CauseType = if ($Cause) { 'java.lang.RuntimeException' } else { $null }
-            Cause     = $Cause
-            LogFile   = 'C:\starsector.log'
-            LogLine   = $LogLine
+            SavePath    = $SavePath
+            Outcome     = $Outcome
+            CauseType   = if ($Cause) { 'java.lang.RuntimeException' } else { $null }
+            Cause       = $Cause
+            ObjectChain = [System.Collections.Generic.List[object]]::new($ObjectChain)
+            LogFile     = 'C:\starsector.log'
+            LogLine     = $LogLine
         }
     }
 }
@@ -40,6 +42,19 @@ Describe 'Group-LoadAttempt' {
         $loads.Count | Should -Be 1
         $loads[0].Attempts.Source | Should -Be @('campaign', 'campaign.bak', 'campaign.inprogress')
         $loads[0].Attempts.LogLine | Should -Be @(10, 20, 30)
+    }
+
+    It 'carries each attempt''s object chain' {
+
+        $link = [pscustomobject]@{ Depth = 0; Class = 'a.Failed' }
+
+        $load = Group-LoadAttempt -Attempts @(
+            (New-Attempt -SavePath 'C:\saves\a' -Outcome 'F' -Cause 'first' -ObjectChain @($link))
+            (New-Attempt -SavePath 'C:\saves\a' -Outcome 'L')
+        )
+
+        $load.Attempts[0].ObjectChain.Class | Should -Be @('a.Failed')
+        $load.Attempts[1].ObjectChain.Count | Should -Be 0
     }
 
     It 'takes the cause of the first attempt, and the outcome of the last' {

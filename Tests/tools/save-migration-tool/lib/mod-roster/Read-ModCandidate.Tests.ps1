@@ -50,6 +50,18 @@ Describe 'Read-ModCandidate' {
         $candidate.SortKey | Should -Be 'key-1.2'
         $candidate.Status | Should -Be 'P'
         $candidate.Folder.FullName | Should -Be $folder.FullName
+        $candidate.Jars.Count | Should -Be 0
+    }
+
+    It 'keeps the jars mod_info.json declares, as it writes them' {
+
+        Mock ConvertFrom-StarsectorJson {
+            [pscustomobject]@{ id = 'alpha'; jars = @('jars/alpha.jar', '', 'jars/lib.jar') }
+        }
+
+        $candidate = Read-ModCandidate -Folder (New-ModFolder -Name 'Alpha-jars')
+
+        $candidate.Jars | Should -Be @('jars/alpha.jar', 'jars/lib.jar')
     }
 
     It 'keeps <Description> under its folder name, warning why' -ForEach @(
@@ -66,6 +78,7 @@ Describe 'Read-ModCandidate' {
 
         $candidate.Id | Should -Be "Broken $($Reason.Length)"
         $candidate.Status | Should -Be 'U'
+        $candidate.Jars.Count | Should -Be 0
         $warnings | ForEach-Object { "$_" } |
             Should -Be @("Unparseable mod_info.json, keeping in roster: Broken $($Reason.Length) ($Reason)")
     }
