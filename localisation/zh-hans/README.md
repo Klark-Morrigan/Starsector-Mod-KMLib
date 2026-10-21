@@ -408,6 +408,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | base hull (the hull a (D) hull is built from) | 基础船体 | 基础 as the vanilla Blueprint row's 基础舰船蓝图, with the vanilla Hull row's 船体 |
 | variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game jar, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
 | object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
+| JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
 | load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
 | cause (the exception a failed load hit) | 原因 | the plain word |
 
@@ -576,13 +577,18 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | --- | --- | --- |
 | attachment | 附件 | a file uploaded to a forum post |
 | download panel | 下载面板 | the posting form's word, from its 插入Mod文件下载面板到帖子正文中 button |
+| fast review (an admin review asked for straight after posting) | 快速审核 | [the review rules'](https://www.fossic.org/thread-6107-1-1.html) word, for a lightweight mod |
 | forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
 | Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
+| mod index (Fossic's list of reviewed mods) | Mod索引 | the forum's own name, written as it writes it, with no space |
 | mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
 | OP (a thread's first post) | 主楼 | the players' word on Chinese forums, where replies are numbered floors |
+| original mod board (where a reviewed thread moves) | 原创Mod区 | the board's own name, written as the forum writes it, with no space |
 | pre-release | 预发布 | Fossic's word for its pre-release board |
+| private message | 私信 | the usual forum word, for messaging one user directly |
 | Q&A (a post's section of player questions and answers) | 常见问题; 问 and 答 open each question and answer | the usual heading for that section of a mod post; 问答 reads as a quiz or an interview |
 | repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
+| review (an admin's check before a thread is listed) | 审核 | the review rules' word, as [Mod审核规定](https://www.fossic.org/thread-6107-1-1.html) writes it |
 | testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
 | translation (a translated build) | 汉化 | a Fossic board |
 
