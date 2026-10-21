@@ -3,7 +3,7 @@
 function Get-ModStatusNames {
 
     return [pscustomobject]@{
-        Parsed   = 'ok'
+        Parsed   = 'parsed'
         Unparsed = 'unparsed'
     }
 }

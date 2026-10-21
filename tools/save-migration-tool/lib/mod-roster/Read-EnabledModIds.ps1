@@ -2,7 +2,6 @@
 # IsListRead is false when the file is missing or holds no list:
 # an unreadable list must not empty the roster, so the caller treats every installed mod as enabled, and a warning
 # says so.
-#   Depends on ConvertFrom-StarsectorJson being dot-sourced into the same scope.
 function Read-EnabledModIds {
 
     [CmdletBinding()]

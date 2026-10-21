@@ -4,5 +4,28 @@
 1010 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Loading stage 3
 1100 [Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - Error loading
 1100 [Thread-3] ERROR com.fs.starfarer.campaign.save.CampaignGameManager  - Failed calling method
+---- Debugging information ----
+message             : Failed calling method
+cause-exception     : java.lang.RuntimeException
+cause-message       : Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!
+method              : com.fs.starfarer.loading.specs.HullVariantSpec.readResolve()
+class               : com.fs.starfarer.loading.specs.HullVariantSpec
+required-type       : com.fs.starfarer.loading.specs.HullVariantSpec
+converter-type      : com.thoughtworks.xstream.converters.reflection.ReflectionConverter
+line number         : 490228
+class[1]            : com.fs.starfarer.campaign.fleet.FleetMember
+class[2]            : java.util.ArrayList
+converter-type[1]   : com.thoughtworks.xstream.converters.collections.CollectionConverter
+class[3]            : data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin
+class[4]            : starlords.person.Lord
+class[5]            : com.fs.starfarer.campaign.CampaignEngine
+converter-type[2]   : com.fs.starfarer.campaign.save.O
+version             : not available
+-------------------------------
 com.thoughtworks.xstream.converters.ConversionException: Failed calling method
+---- Debugging information ----
+message             : Failed calling method
+class               : com.fs.starfarer.loading.specs.HullVariantSpec
+class[1]            : com.fs.starfarer.campaign.fleet.FleetMember
+-------------------------------
 	at com.thoughtworks.xstream.core.util.SerializationMembers.callReadResolve(SerializationMembers.java:78)

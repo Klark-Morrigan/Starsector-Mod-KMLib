@@ -1,7 +1,6 @@
-# Folds vanilla's retries into the load that caused them.
+# Folds vanilla's retries into the load that caused them, and names the file each attempt read as its Source.
 # An attempt is a retry when the one before it failed on the same save and the load has not yet used every source.
 # A player loading the same broken save twice so still reads as two loads.
-#   Depends on Get-LoadOutcomeNames being dot-sourced into the same scope.
 function Group-LoadAttempt {
 
     param([object[]] $Attempts)
@@ -29,25 +28,13 @@ function Group-LoadAttempt {
             $loads.Add($currentAttempts)
         }
 
+        $attempt | Add-Member -NotePropertyName 'Source' -NotePropertyValue $attemptSources[$currentAttempts.Count]
         $currentAttempts.Add($attempt)
     }
 
     foreach ($loadAttempts in $loads) {
 
         $firstAttempt = $loadAttempts[0]
-        $sourcedAttempts = for ($index = 0; $index -lt $loadAttempts.Count; $index++) {
-
-            $attempt = $loadAttempts[$index]
-
-            [pscustomobject]@{
-                Source    = $attemptSources[$index]
-                Outcome   = $attempt.Outcome
-                CauseType = $attempt.CauseType
-                Cause     = $attempt.Cause
-                LogFile   = $attempt.LogFile
-                LogLine   = $attempt.LogLine
-            }
-        }
 
         [pscustomobject]@{
             SaveFolder = Split-Path -Leaf $firstAttempt.SavePath
@@ -55,7 +42,7 @@ function Group-LoadAttempt {
             Outcome    = $loadAttempts[$loadAttempts.Count - 1].Outcome
             CauseType  = $firstAttempt.CauseType
             Cause      = $firstAttempt.Cause
-            Attempts   = @($sourcedAttempts)
+            Attempts   = $loadAttempts.ToArray()
         }
     }
 }

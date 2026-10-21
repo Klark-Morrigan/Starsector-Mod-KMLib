@@ -1,9 +1,11 @@
-# Streams log files as one log and returns every save load attempt in order,
+# Reads log files as one log and returns every save load attempt in order,
 # with how many lines and attempts each file held.
+# A failed attempt carries its root cause, and the object chain XStream's debugging information names.
 # An attempt's lines may straddle a rotation, so the parse state carries across files.
 # A relative save path resolves against SaveBaseDirectory, the game's working directory.
-#   Depends on ConvertFrom-LogLine, ConvertFrom-ThrowableHeader and Get-LoadOutcomeNames
-#   being dot-sourced into the same scope.
+#
+# Each file is read whole, and only the lines naming the loader are parsed one by one.
+# A failure's trace is every other line up to the loader's next non-ERROR line.
 function Read-LoadAttempt {
 
     param(
@@ -12,7 +14,6 @@ function Read-LoadAttempt {
     )
 
     # Every load line comes from this logger.
-    # Its name is checked with Contains first, which spares the regex on almost every line of a long log.
     $loaderLoggerName = 'com.fs.starfarer.campaign.save.CampaignGameManager'
 
     $attemptStartPattern = '^Loading (?<path>.+)\.\.\.$'
@@ -25,42 +26,40 @@ function Read-LoadAttempt {
     $outcomes = Get-LoadOutcomeNames
     $attempts = [System.Collections.Generic.List[object]]::new()
     $fileReads = [System.Collections.Generic.List[object]]::new()
+    $traces = [System.Collections.Generic.List[object]]::new()
     $currentAttempt = $null
-    $isReadingCause = $false
+
+    # The trace being read, or null outside one.
+    $traceLines = $null
 
     foreach ($logFile in $LogFiles) {
 
-        $lineNumber = 0
+        $lines = [System.IO.File]::ReadAllLines($logFile)
         $attemptCountBefore = $attempts.Count
 
-        foreach ($line in [System.IO.File]::ReadLines($logFile)) {
+        # A trace the previous file ended inside goes on from this file's first line.
+        $traceFrom = 0
 
-            $lineNumber++
-            $loaderLine = if ($line.Contains($loaderLoggerName)) {
-                ConvertFrom-LogLine -Line $line -LoggerName $loaderLoggerName
-            }
+        foreach ($index in Find-MatchingLineIndex -Lines $lines -Text $loaderLoggerName) {
 
-            if ($isReadingCause) {
-                if ($null -eq $loaderLine) {
-
-                    $header = ConvertFrom-ThrowableHeader -Line $line
-
-                    # Java prints the chain outermost first, so the last header is the root cause.
-                    if ($null -ne $header) {
-                        $currentAttempt.CauseType = $header.Type
-                        $currentAttempt.Cause = $header.Message
-                    }
-                    continue
-                }
-
-                if ($loaderLine.Level -eq $exceptionLogLevel) { continue }
-
-                $isReadingCause = $false
-                $currentAttempt = $null
-            }
+            # Null for a stack frame naming the loader's class, which a trace takes with its other lines.
+            $loaderLine = ConvertFrom-LogLine -Line $lines[$index] -LoggerName $loaderLoggerName
 
             if ($null -eq $loaderLine) {
                 continue
+            }
+
+            if ($null -ne $traceLines) {
+
+                Add-LineRange -Target $traceLines -Lines $lines -From $traceFrom -To ($index - 1)
+                $traceFrom = $index + 1
+
+                if ($loaderLine.Level -eq $exceptionLogLevel) {
+                    continue
+                }
+
+                $traceLines = $null
+                $currentAttempt = $null
             }
 
             $start = [regex]::Match($loaderLine.Message, $attemptStartPattern)
@@ -68,12 +67,13 @@ function Read-LoadAttempt {
             if ($start.Success) {
 
                 $currentAttempt = [pscustomobject]@{
-                    SavePath  = [System.IO.Path]::GetFullPath($start.Groups['path'].Value, $SaveBaseDirectory)
-                    Outcome   = $outcomes.Unfinished
-                    CauseType = $null
-                    Cause     = $null
-                    LogFile   = $logFile
-                    LogLine   = $lineNumber
+                    SavePath    = [System.IO.Path]::GetFullPath($start.Groups['path'].Value, $SaveBaseDirectory)
+                    Outcome     = $outcomes.Unfinished
+                    CauseType   = $null
+                    Cause       = $null
+                    ObjectChain = @()
+                    LogFile     = $logFile
+                    LogLine     = $index + 1
                 }
 
                 $attempts.Add($currentAttempt)
@@ -92,15 +92,30 @@ function Read-LoadAttempt {
             } elseif ($loaderLine.Message -eq $attemptFailureMessage) {
 
                 $currentAttempt.Outcome = $outcomes.Failed
-                $isReadingCause = $true
+                $traceLines = [System.Collections.Generic.List[string]]::new()
+                $traceFrom = $index + 1
+                $traces.Add([pscustomobject]@{ Attempt = $currentAttempt; Lines = $traceLines })
             }
+        }
+
+        if ($null -ne $traceLines) {
+            Add-LineRange -Target $traceLines -Lines $lines -From $traceFrom -To ($lines.Length - 1)
         }
 
         $fileReads.Add([pscustomobject]@{
             LogFile      = $logFile
-            LineCount    = $lineNumber
+            LineCount    = $lines.Length
             AttemptCount = $attempts.Count - $attemptCountBefore
         })
+    }
+
+    foreach ($trace in $traces) {
+
+        $failure = ConvertFrom-FailureTrace -Lines $trace.Lines.ToArray()
+
+        $trace.Attempt.CauseType = $failure.CauseType
+        $trace.Attempt.Cause = $failure.Cause
+        $trace.Attempt.ObjectChain = $failure.ObjectChain
     }
 
     return [pscustomobject]@{

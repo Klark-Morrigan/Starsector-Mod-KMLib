@@ -1,7 +1,6 @@
 # Builds an ordinally comparable key from either version shape:
 # the "1.2.3" string form or the { major, minor, patch } object form.
 # Components keep their leading digits only, so "91.DEV" ranks as 91 and "1.3.1b" as 1 rather than collapsing to zero.
-#   Depends on Get-VersionObjectParts being dot-sourced into the same scope.
 function Get-VersionSortKey {
 
     param([object] $Version)

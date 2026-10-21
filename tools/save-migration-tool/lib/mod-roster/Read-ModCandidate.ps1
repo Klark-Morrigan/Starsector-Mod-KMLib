@@ -1,9 +1,8 @@
-# Reads one mods\ folder as a roster candidate: its mod id, version and the key its version sorts by.
+# Reads one mods\ folder as a roster candidate: its mod id, version, the key its version sorts by,
+# and the jars it declares, as mod_info.json writes them.
 # Returns null for a folder with no mod_info.json, which the game does not load as a mod.
 # Fails open: a mod_info.json nothing can parse still yields a candidate, under its folder name, with a warning.
 # A filter that hides a real mod is worse than no filter, because nothing signals that it happened.
-#   Depends on ConvertFrom-StarsectorJson, Get-JsonPropertyValue, Get-ModStatusNames and Get-VersionSortKey
-#   being dot-sourced into the same scope.
 function Read-ModCandidate {
 
     [CmdletBinding()]
@@ -38,6 +37,7 @@ function Read-ModCandidate {
             Id      = $Folder.Name
             Version = $null
             SortKey = ''
+            Jars    = @()
             Folder  = $Folder
             Status  = $statuses.Unparsed
         }
@@ -49,6 +49,7 @@ function Read-ModCandidate {
         Id      = [string] $modId
         Version = $version
         SortKey = Get-VersionSortKey -Version $version
+        Jars    = @(Get-JsonPropertyValue -Object $info -Name 'jars' | Where-Object { $_ })
         Folder  = $Folder
         Status  = $statuses.Parsed
     }
