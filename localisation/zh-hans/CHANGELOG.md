@@ -52,6 +52,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的悬停框。
 - **`ClaimDecreeReader`**（位于 `kmlib.starsector.systems.claims`）：星系的宣称势力标记所强加的势力，只需一次记忆读取，无需遍历殖民地。`StarSystems::readDecreedFactionId` 是原版绑定。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
+- **`Colours.normaliseChannel(int)`**：把一个 0-255 的颜色通道换算为 GL 使用的 0..1 比例。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都不为正时为空。
 - **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`：单个市场的每单位价格。

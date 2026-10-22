@@ -38,11 +38,24 @@ public final class Colours {
      */
     public static float[] getGlComponents(Color colour, float alphaMult) {
         return new float[] {
-            colour.getRed() / MAX_CHANNEL,
-            colour.getGreen() / MAX_CHANNEL,
-            colour.getBlue() / MAX_CHANNEL,
-            colour.getAlpha() / MAX_CHANNEL * alphaMult,
+            normaliseChannel(colour.getRed()),
+            normaliseChannel(colour.getGreen()),
+            normaliseChannel(colour.getBlue()),
+            normaliseChannel(colour.getAlpha()) * alphaMult,
         };
+    }
+
+    /**
+     * One 0-255 channel as the 0..1 fraction GL takes.
+     *
+     * <p>The one channel conversion {@link #getGlComponents} is made of, offered on its own for a caller
+     * that issues one colour per draw and cannot afford an array per call to carry four floats.
+     *
+     * @param channel an 8-bit channel value, as {@link Color} hands it back
+     * @return the same channel in [0, 1]
+     */
+    public static float normaliseChannel(int channel) {
+        return channel / MAX_CHANNEL;
     }
 
     /**

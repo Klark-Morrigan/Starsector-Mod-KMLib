@@ -52,6 +52,7 @@ The reusable release workflow extracts the section matching the released version
 - **`ClaimBreakdownReaderSource`** in `kmlib.starsector.systems.claims`: a `ClaimReaderSource` whose readers also explain the claims they read, so one source serves a map's fills and the box explaining them.
 - **`ClaimDecreeReader`** in `kmlib.starsector.systems.claims`: the faction a system's claiming-faction flag imposes, one memory read with no colony walk. `StarSystems::readDecreedFactionId` is the vanilla binding.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
+- **`Colours.normaliseChannel(int)`**: one 0-255 colour channel as the 0..1 fraction GL takes.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, empty where neither is positive.
 - **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`: one market's price for one unit.
