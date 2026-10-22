@@ -457,6 +457,7 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| allocate (memory, per call) | 分配内存 | the usual computing words |
 | body colour (of text) | 正文颜色 | |
 | colour channel (one of red, green, blue and alpha) | 颜色通道 | the usual graphics word; 通道 alone in 渲染通道 is a pass, so the colour stays named |
 | eased ramp, turn (of a ramp heading the other way) | 缓动过渡, 转向 | 缓动, easing, with 过渡, transition |

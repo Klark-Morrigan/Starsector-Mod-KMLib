@@ -152,6 +152,7 @@ The reusable release workflow extracts the section matching the released version
 #### Changed
 
 - **KMLib's console command table is kept per locale**: `localisation/<locale>/commands.csv` is written to `data/console/commands.csv`, which is no longer committed.
+- **`GlColour.set(Color, float)` allocates nothing per call**, so a renderer can set a colour per draw every frame.
 
 #### Public contracts changed (**breaking**)
 

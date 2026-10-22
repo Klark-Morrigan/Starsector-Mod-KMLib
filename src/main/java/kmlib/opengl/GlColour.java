@@ -9,7 +9,7 @@ import java.awt.Color;
 /**
  * Sets the current OpenGL draw colour from an AWT {@link Color}.
  *
- * <p>The thin GL binding over {@link Colours#getGlComponents}: it normalizes
+ * <p>The thin GL binding over {@link Colours#normaliseChannel}: it normalises
  * the colour and issues the {@code glColor4f} call so a draw routine names a
  * single {@link Color} (a literal, a palette entry, or a live faction colour)
  * instead of unpacking four channel floats at the call site.
@@ -19,12 +19,6 @@ import java.awt.Color;
  * only in-engine.
  */
 public final class GlColour {
-    // Channel positions in the [r, g, b, a] array Colours#getGlComponents returns,
-    // named so the glColor4f call reads by channel rather than bare index.
-    private static final int RED = 0;
-    private static final int GREEN = 1;
-    private static final int BLUE = 2;
-    private static final int ALPHA = 3;
 
     private GlColour() {
     }
@@ -34,11 +28,19 @@ public final class GlColour {
      * {@code alphaMult} (e.g. a viewport/map fade). Must be called with a
      * current GL context, like any other immediate-mode GL call.
      *
+     * <p>Normalises channel by channel rather than through
+     * {@link Colours#getGlComponents}: a renderer sets a colour per band or per
+     * layer every frame, and the array that method answers would be garbage at
+     * that rate.
+     *
      * @param colour    the colour to set; its own alpha is honoured
      * @param alphaMult extra alpha scale; 1 keeps the colour's own alpha
      */
     public static void set(Color colour, float alphaMult) {
-        var rgba = Colours.getGlComponents(colour, alphaMult);
-        GL11.glColor4f(rgba[RED], rgba[GREEN], rgba[BLUE], rgba[ALPHA]);
+        GL11.glColor4f(
+            Colours.normaliseChannel(colour.getRed()),
+            Colours.normaliseChannel(colour.getGreen()),
+            Colours.normaliseChannel(colour.getBlue()),
+            Colours.normaliseChannel(colour.getAlpha()) * alphaMult);
     }
 }

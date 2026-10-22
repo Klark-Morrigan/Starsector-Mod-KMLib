@@ -152,6 +152,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 #### 变更
 
 - **KMLib 的控制台指令表按语言区域存放**：`localisation/<locale>/commands.csv` 会写入 `data/console/commands.csv`，后者不再提交到仓库。
+- **`GlColour.set(Color, float)` 每次调用都不分配内存**，因此渲染器可以在每一帧为每次绘制设置颜色。
 
 #### 公共契约变更（**破坏性**）
 
