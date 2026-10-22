@@ -64,7 +64,14 @@ public final class MarketSubmarkets {
             .map(pluginType::cast);
     }
 
-    private static Optional<SubmarketAPI> findSubmarket(MarketAPI market, String submarketId) {
+    /**
+     * One of a market's trading counters.
+     *
+     * @param market      the market whose counter is read; null yields empty
+     * @param submarketId the counter's submarket ID
+     * @return the counter, or empty where the market has no such counter
+     */
+    public static Optional<SubmarketAPI> findSubmarket(MarketAPI market, String submarketId) {
 
         return market == null
             ? Optional.empty()

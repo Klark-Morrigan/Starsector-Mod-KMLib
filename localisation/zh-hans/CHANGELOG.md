@@ -93,7 +93,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`LocaleParity` 以默认语言区域核对控制台指令表**：`findConsoleCommandRowMismatches()` 找出某个语言区域缺少或多出的指令，`findConsoleCommandBehaviourMismatches()` 找出类、语法或标签不同的指令，因为只有帮助文字需要翻译。`findAllMismatches()` 会运行这两项检查；未指定核心本地化的语言区域，其帮助文字限于 Latin-1。`LocaleBundle.readConsoleCommands()` 读取单个语言区域的指令表。
 - **`LocaleParity` 以默认语言区域核对控制台文字的英文副本**：`findConsoleHelpEnglishCopyMismatches()` 检查指令表的帮助文字，`findConsoleStringEnglishCopyMismatches()` 检查每个 `console_` 字符串，找出含有 Latin-1 以外字符却没有英文副本的译文，以及副本与默认语言区域不同的译文。`findAllMismatches()` 会运行这两项检查，`findFormatArgumentMismatches()` 只比较控制台字符串的译文部分。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
-- **`MarketSubmarkets.findSubmarketCargo(MarketAPI, String)`**：市场某个子市场中的货物；市场没有该子市场时为空。
+- **`MarketSubmarkets.findSubmarket(MarketAPI, String)`** 与 **`findSubmarketCargo(MarketAPI, String)`**：市场的某个子市场，以及其中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
   - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。
 - **`MonthlyReportRows.openFleetRow(MonthlyReport, String, String)`**（位于 `kmlib.starsector.economy.report`）：Mod 自己在月度收支报告舰队条目下的条目，首次写入时命名；无人设置舰队条目时，按原版的方式设置它。
