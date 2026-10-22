@@ -13,10 +13,57 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the contracts of {@link MarketSubmarkets#findSubmarketCargo} and
+ * Pins the contracts of {@link MarketSubmarkets#findSubmarket}, {@link MarketSubmarkets#findSubmarketCargo} and
  * {@link MarketSubmarkets#findSubmarketPlugin}, one {@link Nested} group per method.
  */
 final class MarketSubmarketsTests {
+
+    @Nested
+    class FindSubmarket {
+
+        @Test
+        void findsTheCounter() {
+
+            // ARRANGE
+            var expectedSubmarketMock = mock(SubmarketAPI.class);
+            var marketMock = mock(MarketAPI.class);
+
+            when(marketMock.getSubmarket("storage"))
+                .thenReturn(expectedSubmarketMock);
+
+            // ACT
+            var actualSubmarket = MarketSubmarkets.findSubmarket(marketMock, "storage");
+
+            // ASSERT
+            assertThat(actualSubmarket)
+                .containsSame(expectedSubmarketMock);
+        }
+
+        @Test
+        void findsNothingWhereTheMarketKeepsNoSuchCounter() {
+
+            // ARRANGE
+            var marketMock = mock(MarketAPI.class);
+
+            // ACT
+            var actualSubmarket = MarketSubmarkets.findSubmarket(marketMock, "storage");
+
+            // ASSERT
+            assertThat(actualSubmarket)
+                .isEmpty();
+        }
+
+        @Test
+        void findsNothingForANullMarket() {
+
+            // ACT
+            var actualSubmarket = MarketSubmarkets.findSubmarket(null, "storage");
+
+            // ASSERT
+            assertThat(actualSubmarket)
+                .isEmpty();
+        }
+    }
 
     @Nested
     class FindSubmarketCargo {
