@@ -543,6 +543,74 @@ final class RingPathTests {
     }
 
     @Nested
+    class CollectStretchPoints {
+
+        // Each stretch is its own line, in the order the stretches came: a stretch along the top
+        // edge, and one opening on the corner at 3 and walking down the right-hand side.
+        @Test
+        void eachStretchIsItsOwnPolylineInOrder() {
+
+            // ARRANGE
+            var stretches = List.of(
+                new RingStretch(1, 2),
+                new RingStretch(3, 4));
+
+            // ACT
+            var actualPolylines = traceReferenceSquare().collectStretchPoints(stretches);
+
+            // ASSERT
+            assertThat(actualPolylines)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                actualPolylines.get(0),
+                List.of(new double[] {6, 8}, new double[] {7, 8}));
+
+            assertThatPointsAre(
+                actualPolylines.get(1),
+                List.of(new double[] {8, 8}, new double[] {8, 7}));
+        }
+
+        // A stretch fused across the start is walked on round rather than split.
+        @Test
+        void aStretchClosingPastThePerimeterCarriesOnRound() {
+
+            // ARRANGE
+            var stretches = List.of(new RingStretch(23, 25));
+
+            // ACT
+            var actualPolylines = traceReferenceSquare().collectStretchPoints(stretches);
+
+            // ASSERT
+            assertThat(actualPolylines)
+                .hasSize(1);
+
+            assertThatPointsAre(
+                actualPolylines.get(0),
+                List.of(
+                    new double[] {4, 8},
+                    new double[] {5, 8},
+                    new double[] {6, 8}));
+        }
+
+        @Test
+        void noStretchesWalkNothing() {
+
+            // ARRANGE
+            List<RingStretch> stretches = List.of();
+
+            // ACT
+            var actualPolylines = RingPath
+                .nothingLeftToTrace()
+                .collectStretchPoints(stretches);
+
+            // ASSERT
+            assertThat(actualPolylines)
+                .isEmpty();
+        }
+    }
+
+    @Nested
     class FindClearArcs {
 
         @Test
