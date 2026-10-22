@@ -10,8 +10,6 @@ import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pins the contracts of {@link Colours}:
- *  - {@link Colours#getGlComponents} - 0-255 channels normalize to 0..1, the colour's
- *    own alpha is honoured, and alphaMult scales the final alpha and nothing else;
  *  - {@link Colours#normaliseChannel} - the 0-255 range maps onto 0..1, both ends exactly;
  *  - {@link Colours#scaleAlpha} - RGB is kept, the colour's own alpha folds into the
  *    multiplier as a rounded channel, and an over-1 multiplier saturates rather than
@@ -28,48 +26,6 @@ import static org.assertj.core.api.Assertions.within;
  *    at white rather than wrapping.
  */
 final class ColoursTests {
-
-    @Nested
-    class GetGlComponents {
-
-        @Test
-        void normalizesChannelsToUnitRange() {
-
-            var rgba = Colours.getGlComponents(
-                Color.YELLOW,
-                1f);
-
-            assertThat(rgba[0]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[1]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[2]).isCloseTo(0f, within(1e-6f));
-            assertThat(rgba[3]).isCloseTo(1f, within(1e-6f));
-        }
-
-        @Test
-        void scalesOnlyAlphaByTheMultiplier() {
-
-            var rgba = Colours.getGlComponents(
-                Color.YELLOW,
-                0.5f);
-
-            assertThat(rgba[0]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[1]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[2]).isCloseTo(0f, within(1e-6f));
-            assertThat(rgba[3]).isCloseTo(0.5f, within(1e-6f));
-        }
-
-        @Test
-        void foldsTheColoursOwnAlphaIntoTheMultiplier() {
-
-            var rgba = Colours.getGlComponents(
-                new Color(0, 0, 0, 128),
-                0.5f);
-
-            // 128/255 * 0.5
-            assertThat(rgba[3])
-                .isCloseTo(128f / 255f * 0.5f, within(1e-6f));
-        }
-    }
 
     @Nested
     class NormaliseChannel {

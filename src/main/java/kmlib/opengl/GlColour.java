@@ -28,10 +28,8 @@ public final class GlColour {
      * {@code alphaMult} (e.g. a viewport/map fade). Must be called with a
      * current GL context, like any other immediate-mode GL call.
      *
-     * <p>Normalises channel by channel rather than through
-     * {@link Colours#getGlComponents}: a renderer sets a colour per band or per
-     * layer every frame, and the array that method answers would be garbage at
-     * that rate.
+     * <p>Normalises channel by channel and allocates nothing: a renderer sets a
+     * colour per band or per layer every frame.
      *
      * @param colour    the colour to set; its own alpha is honoured
      * @param alphaMult extra alpha scale; 1 keeps the colour's own alpha

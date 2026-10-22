@@ -59,5 +59,25 @@ final class GlColourTests {
                 eq(expectedBlue),
                 eq(expectedAlpha)));
         }
+
+        // A translucent colour stays translucent under the fade, which scales its own alpha
+        // rather than replacing it.
+        @Test
+        void foldsTheColoursOwnAlphaIntoTheFade() {
+
+            // ARRANGE
+            var colour = new Color(0, 0, 0, 51);
+            var expectedAlpha = 0.1f;
+
+            // ACT
+            GlColour.set(colour, 0.5f);
+
+            // ASSERT
+            glMock.verify(() -> GL11.glColor4f(
+                eq(0f),
+                eq(0f),
+                eq(0f),
+                floatThat(alpha -> Math.abs(alpha - expectedAlpha) < CHANNEL_SLACK)));
+        }
     }
 }

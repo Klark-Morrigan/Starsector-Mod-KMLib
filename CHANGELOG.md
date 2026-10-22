@@ -180,6 +180,7 @@ The reusable release workflow extracts the section matching the released version
 | `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | The same. |
 | `VanillaClaimBreakdownReader(KnownColonyReader)`, and a null index in `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` | Removed: open the reader over a pass's `SectorPassIndex`. For the decree alone, read `StarSystems::readDecreedFactionId` as a `ClaimDecreeReader`. | A reader with no pass read `Global.getSector()` rather than the sector it was asked about. |
 | `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
+| `Colours.getGlComponents(Color, float)` | Removed. Draw with `GlColour.set(Color, float)`, or convert each channel with `Colours.normaliseChannel(int)`. | It allocated an array per call, and the one renderer calling it set a colour every draw. |
 
 </details>
 
