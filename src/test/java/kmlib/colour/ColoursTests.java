@@ -10,8 +10,7 @@ import static org.assertj.core.api.Assertions.within;
 
 /**
  * Pins the contracts of {@link Colours}:
- *  - {@link Colours#getGlComponents} - 0-255 channels normalize to 0..1, the colour's
- *    own alpha is honoured, and alphaMult scales the final alpha and nothing else;
+ *  - {@link Colours#normaliseChannel} - the 0-255 range maps onto 0..1, both ends exactly;
  *  - {@link Colours#scaleAlpha} - RGB is kept, the colour's own alpha folds into the
  *    multiplier as a rounded channel, and an over-1 multiplier saturates rather than
  *    throwing;
@@ -29,37 +28,38 @@ import static org.assertj.core.api.Assertions.within;
 final class ColoursTests {
 
     @Nested
-    class GetGlComponents {
+    class NormaliseChannel {
 
+        // The two ends of the range are the values GL reads as none and full, so they must land
+        // exactly rather than near.
         @Test
-        void normalizesChannelsToUnitRange() {
+        void theChannelsEndsLandOnTheUnitRangesEnds() {
 
-            var rgba = Colours.getGlComponents(Color.YELLOW, 1f);
+            // ARRANGE
+            var expectedEmpty = 0f;
+            var expectedFull = 1f;
 
-            assertThat(rgba[0]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[1]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[2]).isCloseTo(0f, within(1e-6f));
-            assertThat(rgba[3]).isCloseTo(1f, within(1e-6f));
+            // ACT
+            var actualEmpty = Colours.normaliseChannel(0);
+            var actualFull = Colours.normaliseChannel(255);
+
+            // ASSERT
+            assertThat(actualEmpty).isEqualTo(expectedEmpty);
+            assertThat(actualFull).isEqualTo(expectedFull);
         }
 
         @Test
-        void scalesOnlyAlphaByTheMultiplier() {
+        void aChannelBetweenIsItsShareOfTheRange() {
 
-            var rgba = Colours.getGlComponents(Color.YELLOW, 0.5f);
+            // ARRANGE
+            var expectedFraction = 0.2f;
 
-            assertThat(rgba[0]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[1]).isCloseTo(1f, within(1e-6f));
-            assertThat(rgba[2]).isCloseTo(0f, within(1e-6f));
-            assertThat(rgba[3]).isCloseTo(0.5f, within(1e-6f));
-        }
+            // ACT
+            var actualFraction = Colours.normaliseChannel(51);
 
-        @Test
-        void foldsTheColoursOwnAlphaIntoTheMultiplier() {
-
-            var rgba = Colours.getGlComponents(new Color(0, 0, 0, 128), 0.5f);
-
-            // 128/255 * 0.5
-            assertThat(rgba[3]).isCloseTo(128f / 255f * 0.5f, within(1e-6f));
+            // ASSERT
+            assertThat(actualFraction)
+                .isCloseTo(expectedFraction, within(1e-6f));
         }
     }
 
@@ -69,7 +69,9 @@ final class ColoursTests {
         @Test
         void keepsTheRgbChannelsAndScalesAFullAlpha() {
 
-            var faded = Colours.scaleAlpha(new Color(10, 20, 30, 255), 0.5f);
+            var faded = Colours.scaleAlpha(
+                new Color(10, 20, 30, 255),
+                0.5f);
 
             assertThat(faded.getRed()).isEqualTo(10);
             assertThat(faded.getGreen()).isEqualTo(20);
@@ -82,27 +84,36 @@ final class ColoursTests {
         @Test
         void foldsTheColoursOwnAlphaIntoTheMultiplier() {
 
-            var faded = Colours.scaleAlpha(new Color(0, 0, 0, 128), 0.5f);
+            var faded = Colours.scaleAlpha(
+                new Color(0, 0, 0, 128),
+                0.5f);
 
             // 128 * 0.5 = 64.
-            assertThat(faded.getAlpha()).isEqualTo(64);
+            assertThat(faded.getAlpha())
+                .isEqualTo(64);
         }
 
         @Test
         void saturatesAtTheMaxChannelWhenTheMultiplierExceedsOne() {
             // 200 * 2 = 400 would overflow Color's 0-255 range, so it clamps to 255
             // instead of throwing.
-            var faded = Colours.scaleAlpha(new Color(0, 0, 0, 200), 2f);
+            var faded = Colours.scaleAlpha(
+                new Color(0, 0, 0, 200),
+                2f);
 
-            assertThat(faded.getAlpha()).isEqualTo(255);
+            assertThat(faded.getAlpha())
+                .isEqualTo(255);
         }
 
         @Test
         void reachesZeroAlphaAtAZeroMultiplier() {
 
-            var faded = Colours.scaleAlpha(new Color(0, 0, 0, 255), 0f);
+            var faded = Colours.scaleAlpha(
+                new Color(0, 0, 0, 255),
+                0f);
 
-            assertThat(faded.getAlpha()).isEqualTo(0);
+            assertThat(faded.getAlpha())
+                .isEqualTo(0);
         }
     }
 
@@ -112,7 +123,9 @@ final class ColoursTests {
         @Test
         void scalesEachRgbChannelByTheFactorAndKeepsTheAlpha() {
 
-            var darker = Colours.darken(new Color(200, 100, 40, 255), 0.5f);
+            var darker = Colours.darken(
+                new Color(200, 100, 40, 255),
+                0.5f);
 
             assertThat(darker.getRed()).isEqualTo(100);
             assertThat(darker.getGreen()).isEqualTo(50);
@@ -125,7 +138,9 @@ final class ColoursTests {
         @Test
         void leavesTheColourUnchangedAtAFactorOfOne() {
 
-            var same = Colours.darken(new Color(10, 20, 30, 128), 1f);
+            var same = Colours.darken(
+                new Color(10, 20, 30, 128),
+                1f);
 
             assertThat(same.getRed()).isEqualTo(10);
             assertThat(same.getGreen()).isEqualTo(20);
@@ -136,7 +151,9 @@ final class ColoursTests {
         @Test
         void returnsBlackAtAFactorOfZero() {
 
-            var black = Colours.darken(new Color(200, 150, 100, 200), 0f);
+            var black = Colours.darken(
+                new Color(200, 150, 100, 200),
+                0f);
 
             assertThat(black.getRed()).isEqualTo(0);
             assertThat(black.getGreen()).isEqualTo(0);
@@ -149,9 +166,12 @@ final class ColoursTests {
         @Test
         void saturatesAtTheMaxChannelWhenTheFactorExceedsOne() {
             // 200 * 2 = 400 would overflow Color's 0-255 range, so it clamps to 255.
-            var brighter = Colours.darken(new Color(200, 0, 0, 255), 2f);
+            var brighter = Colours.darken(
+                new Color(200, 0, 0, 255),
+                2f);
 
-            assertThat(brighter.getRed()).isEqualTo(255);
+            assertThat(brighter.getRed())
+                .isEqualTo(255);
         }
     }
 
@@ -161,7 +181,9 @@ final class ColoursTests {
         @Test
         void multipliesEachChannelAsAFractionOfFullStrength() {
 
-            var tinted = Colours.multiplyBy(new Color(200, 100, 40, 255), new Color(128, 255, 0, 255));
+            var tinted = Colours.multiplyBy(
+                new Color(200, 100, 40, 255),
+                new Color(128, 255, 0, 255));
 
             // 200 * 128/255 = 100.4, rounded.
             assertThat(tinted.getRed()).isEqualTo(100);
@@ -174,7 +196,9 @@ final class ColoursTests {
         void leavesTheColourUnchangedUnderWhite() {
             // The no-op multiply, which is what "states no tint" resolves to - so an untinted image and a
             // white-tinted one are the same draw rather than two paths through the pass that makes it.
-            var same = Colours.multiplyBy(new Color(10, 20, 30, 128), Color.WHITE);
+            var same = Colours.multiplyBy(
+                new Color(10, 20, 30, 128),
+                Color.WHITE);
 
             assertThat(same.getRed()).isEqualTo(10);
             assertThat(same.getGreen()).isEqualTo(20);
@@ -187,7 +211,9 @@ final class ColoursTests {
             // A translucent tint thins what it is laid over rather than only shading it, which is what a
             // multiplied draw does - an alpha carried across whole would leave it solid under a wash that
             // was not.
-            var thinned = Colours.multiplyBy(new Color(200, 200, 200, 200), new Color(255, 255, 255, 128));
+            var thinned = Colours.multiplyBy(
+                new Color(200, 200, 200, 200),
+                new Color(255, 255, 255, 128));
 
             assertThat(thinned.getRed()).isEqualTo(200);
 
@@ -198,7 +224,9 @@ final class ColoursTests {
         @Test
         void returnsBlackUnderBlack() {
 
-            var black = Colours.multiplyBy(new Color(200, 150, 100, 255), Color.BLACK);
+            var black = Colours.multiplyBy(
+                new Color(200, 150, 100, 255),
+                Color.BLACK);
 
             assertThat(black.getRed()).isEqualTo(0);
             assertThat(black.getGreen()).isEqualTo(0);
@@ -264,7 +292,8 @@ final class ColoursTests {
                 new Color(255, 0, 0, 255),
                 2f);
 
-            assertThat(washed.getRed()).isEqualTo(255);
+            assertThat(washed.getRed())
+                .isEqualTo(255);
         }
     }
 
@@ -295,7 +324,8 @@ final class ColoursTests {
                 new Color(21, 65, 77, 255),
                 1f);
 
-            assertThat(blended.getAlpha()).isEqualTo(255);
+            assertThat(blended.getAlpha())
+                .isEqualTo(255);
         }
 
         @Test
@@ -306,7 +336,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 255),
                 0f);
 
-            assertThat(blended).isEqualTo(new Color(10, 20, 30, 128));
+            assertThat(blended)
+                .isEqualTo(new Color(10, 20, 30, 128));
         }
 
         @Test
@@ -319,7 +350,8 @@ final class ColoursTests {
                 new Color(255, 255, 255, 255),
                 2f);
 
-            assertThat(blended).isEqualTo(new Color(255, 255, 255, 255));
+            assertThat(blended)
+                .isEqualTo(new Color(255, 255, 255, 255));
         }
     }
 
@@ -348,7 +380,8 @@ final class ColoursTests {
                 new Color(10, 20, 30, 255),
                 new Color(200, 200, 200, 255));
 
-            assertThat(flattened).isEqualTo(new Color(10, 20, 30, 255));
+            assertThat(flattened)
+                .isEqualTo(new Color(10, 20, 30, 255));
         }
 
         @Test
@@ -358,7 +391,8 @@ final class ColoursTests {
                 new Color(10, 20, 30, 0),
                 new Color(200, 150, 100, 255));
 
-            assertThat(flattened).isEqualTo(new Color(200, 150, 100, 255));
+            assertThat(flattened)
+                .isEqualTo(new Color(200, 150, 100, 255));
         }
 
         @Test
@@ -369,7 +403,8 @@ final class ColoursTests {
                 new Color(0, 0, 0, 0),
                 new Color(100, 100, 100, 10));
 
-            assertThat(flattened).isEqualTo(new Color(100, 100, 100, 255));
+            assertThat(flattened)
+                .isEqualTo(new Color(100, 100, 100, 255));
         }
     }
 
@@ -400,7 +435,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 255),
                 1f);
 
-            assertThat(lit.getAlpha()).isEqualTo(128);
+            assertThat(lit.getAlpha())
+                .isEqualTo(128);
         }
 
         @Test
@@ -411,7 +447,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 255),
                 0f);
 
-            assertThat(lit).isEqualTo(new Color(20, 30, 40, 255));
+            assertThat(lit)
+                .isEqualTo(new Color(20, 30, 40, 255));
         }
 
         @Test
@@ -422,7 +459,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 255),
                 1f);
 
-            assertThat(lit.getRed()).isEqualTo(255);
+            assertThat(lit.getRed())
+                .isEqualTo(255);
         }
     }
 
@@ -454,7 +492,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 255),
                 0.25f);
 
-            assertThat(lit.getAlpha()).isEqualTo(64);
+            assertThat(lit.getAlpha())
+                .isEqualTo(64);
         }
 
         @Test
@@ -466,7 +505,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 100),
                 1f);
 
-            assertThat(lit.getAlpha()).isEqualTo(255);
+            assertThat(lit.getAlpha())
+                .isEqualTo(255);
         }
 
         @Test
@@ -478,7 +518,8 @@ final class ColoursTests {
                 new Color(200, 200, 200, 255),
                 0f);
 
-            assertThat(lit).isEqualTo(new Color(20, 30, 40, 0));
+            assertThat(lit)
+                .isEqualTo(new Color(20, 30, 40, 0));
         }
     }
 
@@ -490,7 +531,9 @@ final class ColoursTests {
             // The round trip is the whole contract: a caller measures the pass between two settled shades
             // here and lays it on something else, so what comes back has to be what the additive blend
             // takes from one to the other.
-            var light = Colours.subtractLight(new Color(200, 160, 120), new Color(20, 40, 60));
+            var light = Colours.subtractLight(
+                new Color(200, 160, 120),
+                new Color(20, 40, 60));
 
             assertThat(light.getRed()).isEqualTo(180);
             assertThat(light.getGreen()).isEqualTo(120);
@@ -501,18 +544,24 @@ final class ColoursTests {
         void givesBackNothingOnAChannelTheLitShadeIsDarkerOn() {
             // Light only ever adds, so there is no light that could carry a channel down - and a negative
             // one handed to Color would throw rather than dim anything.
-            var light = Colours.subtractLight(new Color(200, 10, 120), new Color(20, 40, 60));
+            var light = Colours.subtractLight(
+                new Color(200, 10, 120),
+                new Color(20, 40, 60));
 
-            assertThat(light.getGreen()).isEqualTo(0);
+            assertThat(light.getGreen())
+                .isEqualTo(0);
         }
 
         @Test
         void comesBackOpaqueWhateverEitherSideWasDrawnAt() {
             // A light's own alpha scales how much of it lands, so one inheriting a see-through surface's
             // alpha would arrive at a fraction of the difference it was measured as.
-            var light = Colours.subtractLight(new Color(200, 160, 120, 40), new Color(20, 40, 60, 0));
+            var light = Colours.subtractLight(
+                new Color(200, 160, 120, 40),
+                new Color(20, 40, 60, 0));
 
-            assertThat(light.getAlpha()).isEqualTo(255);
+            assertThat(light.getAlpha())
+                .isEqualTo(255);
         }
     }
 }

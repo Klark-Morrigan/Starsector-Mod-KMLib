@@ -52,6 +52,7 @@ The reusable release workflow extracts the section matching the released version
 - **`ClaimBreakdownReaderSource`** in `kmlib.starsector.systems.claims`: a `ClaimReaderSource` whose readers also explain the claims they read, so one source serves a map's fills and the box explaining them.
 - **`ClaimDecreeReader`** in `kmlib.starsector.systems.claims`: the faction a system's claiming-faction flag imposes, one memory read with no colony walk. `StarSystems::readDecreedFactionId` is the vanilla binding.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
+- **`Colours.normaliseChannel(int)`**: one 0-255 colour channel as the 0..1 fraction GL takes.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, empty where neither is positive.
 - **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`: one market's price for one unit.
@@ -151,6 +152,7 @@ The reusable release workflow extracts the section matching the released version
 #### Changed
 
 - **KMLib's console command table is kept per locale**: `localisation/<locale>/commands.csv` is written to `data/console/commands.csv`, which is no longer committed.
+- **`GlColour.set(Color, float)` allocates nothing per call**, so a renderer can set a colour per draw every frame.
 
 #### Public contracts changed (**breaking**)
 
@@ -178,6 +180,7 @@ The reusable release workflow extracts the section matching the released version
 | `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | The same. |
 | `VanillaClaimBreakdownReader(KnownColonyReader)`, and a null index in `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` | Removed: open the reader over a pass's `SectorPassIndex`. For the decree alone, read `StarSystems::readDecreedFactionId` as a `ClaimDecreeReader`. | A reader with no pass read `Global.getSector()` rather than the sector it was asked about. |
 | `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
+| `Colours.getGlComponents(Color, float)` | Removed. Draw with `GlColour.set(Color, float)`, or convert each channel with `Colours.normaliseChannel(int)`. | It allocated an array per call, and the one renderer calling it set a colour every draw. |
 
 </details>
 

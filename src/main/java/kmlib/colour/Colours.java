@@ -23,33 +23,22 @@ public final class Colours {
     }
 
     /**
-     * Converts {@code colour} to normalized {r, g, b, a} float components in
-     * [0, 1], with the alpha further scaled by {@code alphaMult}.
+     * One 0-255 channel as the 0..1 fraction GL takes.
      *
-     * <p>Lets a caller hand a single {@link Color} - a literal, a palette
-     * entry, or a live faction colour - straight to a {@code glColor4f} call
-     * without per-channel float bookkeeping, and fade a whole render pass by
-     * passing its viewport alpha as {@code alphaMult}.
+     * <p>Per channel rather than per colour, so a caller setting a colour every draw passes four floats
+     * straight on instead of allocating an array to carry them.
      *
-     * @param colour    the source colour; its own alpha is honoured
-     * @param alphaMult extra alpha scale (e.g. a map/viewport fade); 1 keeps
-     *                  the colour's own alpha
-     * @return {r, g, b, a}, each in [0, 1]
+     * @param channel an 8-bit channel value, as {@link Color} hands it back
+     * @return the same channel in [0, 1]
      */
-    public static float[] getGlComponents(Color colour, float alphaMult) {
-        return new float[] {
-            colour.getRed() / MAX_CHANNEL,
-            colour.getGreen() / MAX_CHANNEL,
-            colour.getBlue() / MAX_CHANNEL,
-            colour.getAlpha() / MAX_CHANNEL * alphaMult,
-        };
+    public static float normaliseChannel(int channel) {
+        return channel / MAX_CHANNEL;
     }
 
     /**
-     * A copy of {@code colour} with its own alpha scaled by {@code alphaMult} - the AWT
-     * {@link Color} counterpart of {@link #getGlComponents}, for a consumer that needs a
-     * faded {@link Color} object (e.g. a LazyLib DrawableString's base colour) rather
-     * than GL float components. The red, green, and blue channels are unchanged; the
+     * A copy of {@code colour} with its own alpha scaled by {@code alphaMult}, for a
+     * consumer that needs a faded {@link Color} object (e.g. a LazyLib DrawableString's
+     * base colour) rather than GL float components. The red, green, and blue channels are unchanged; the
      * scaled alpha is rounded to the nearest channel value and clamped into range, so an
      * {@code alphaMult} above 1 saturates instead of throwing from {@link Color}'s
      * constructor.

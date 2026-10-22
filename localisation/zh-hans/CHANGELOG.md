@@ -52,6 +52,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的悬停框。
 - **`ClaimDecreeReader`**（位于 `kmlib.starsector.systems.claims`）：星系的宣称势力标记所强加的势力，只需一次记忆读取，无需遍历殖民地。`StarSystems::readDecreedFactionId` 是原版绑定。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
+- **`Colours.normaliseChannel(int)`**：把一个 0-255 的颜色通道换算为 GL 使用的 0..1 比例。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都不为正时为空。
 - **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
   - `findUnitPrice(MarketAPI, String, PlayerTradeSide)`：单个市场的每单位价格。
@@ -151,6 +152,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 #### 变更
 
 - **KMLib 的控制台指令表按语言区域存放**：`localisation/<locale>/commands.csv` 会写入 `data/console/commands.csv`，后者不再提交到仓库。
+- **`GlColour.set(Color, float)` 每次调用都不分配内存**，因此渲染器可以在每一帧为每次绘制设置颜色。
 
 #### 公共契约变更（**破坏性**）
 
@@ -178,6 +180,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `StarSystems.readFactionClaimOverride(StarSystemAPI)` | `readDecreedFactionId(StarSystemAPI)` | 同上。 |
 | `VanillaClaimBreakdownReader(KnownColonyReader)`，以及 `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` 中为 null 的索引 | 已移除：在一次遍历的 `SectorPassIndex` 之上打开读取器。只需无条件宣称时，把 `StarSystems::readDecreedFactionId` 当作 `ClaimDecreeReader` 读取。 | 没有遍历的读取器读取的是 `Global.getSector()`，而不是被询问的那个星域。 |
 | `MarketTargetRequirement(Predicate, String)`，其 `requirementPhrase()` 返回短语 | `MarketTargetRequirement(Predicate, Supplier)`，通过 `readRequirementPhrase()` 读取短语 | 短语是翻译后的字符串，在拒绝的措辞成形时读取，而不是在构建要求时读取，后者可能早于游戏字符串加载。 |
+| `Colours.getGlComponents(Color, float)` | 已移除。用 `GlColour.set(Color, float)` 绘制，或用 `Colours.normaliseChannel(int)` 逐个换算颜色通道。 | 它每次调用都会分配一个数组，而唯一调用它的渲染器在每次绘制时都要设置颜色。 |
 
 </details>
 
