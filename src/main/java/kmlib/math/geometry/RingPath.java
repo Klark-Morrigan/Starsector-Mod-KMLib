@@ -367,6 +367,28 @@ public final class RingPath {
     }
 
     /**
+     * Each stretch as the polyline {@link #collectPointsBetween} walks it, corners included.
+     *
+     * <p>The form a caller drawing a set of stretches wants - the ones a ring held, the ones it
+     * gave up - where each stretch is its own line rather than one span of a longer layout.
+     *
+     * @param stretches the stretches to walk, as this path's own clear-arc and inset reads hand
+     *                  them back; one closing past the perimeter carries on round
+     * @return one polyline per stretch, in the stretches' own order
+     * @throws IllegalStateException when the path is empty and there is a stretch to walk
+     */
+    public List<List<double[]>> collectStretchPoints(List<RingStretch> stretches) {
+
+        var polylines = new ArrayList<List<double[]>>(stretches.size());
+
+        for (var stretch : stretches) {
+            polylines.add(collectPointsBetween(stretch.startArcLength(), stretch.endArcLength()));
+        }
+
+        return polylines;
+    }
+
+    /**
      * The same stretches with the one crossing the path's start read as the single stretch it
      * is: the last and the first fused into one running on past the perimeter.
      *

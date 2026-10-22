@@ -119,6 +119,8 @@ The reusable release workflow extracts the section matching the released version
   - `isPointInsideAnyRing(List, double, double)`: whether any one ring holds the point, rather than an even-odd count across them.
   - `orientRing(List, boolean)`: a copy of a ring wound counter-clockwise or clockwise.
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
+- **`RingPath`** walks several stretches in one call:
+  - `collectStretchPoints(List)`: each stretch as a polyline, the corners it turns at included.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.

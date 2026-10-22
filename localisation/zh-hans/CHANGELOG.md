@@ -119,6 +119,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `isPointInsideAnyRing(List, double, double)`：是否有任何一个环单独包含该点，而不是对所有环做奇偶计数。
   - `orientRing(List, boolean)`：按逆时针或顺时针方向绕行的环的副本。
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**：一组范围被限制在一个外围环之内后的轮廓；环为 null 时不作限制。
+- **`RingPath`** 一次调用遍历多个路段：
+  - `collectStretchPoints(List)`：每个路段各为一条折线，包含它在其中转折的拐角。
 - **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
