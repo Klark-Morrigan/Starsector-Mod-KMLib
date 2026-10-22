@@ -169,7 +169,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $broken.Version | Should -Be ''
         }
 
-        It 'keeps a mod_info.json with no id as unparsed' {
+        It 'keeps a mod_info.json with no "id" field as unparsed' {
             ($script:Run.Output | Where-Object Id -EQ 'No Id').Status | Should -Be 'unparsed'
         }
 

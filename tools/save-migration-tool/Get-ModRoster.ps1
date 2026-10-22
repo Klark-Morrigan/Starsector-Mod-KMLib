@@ -1,11 +1,11 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Lists the installed mods the game loads: for each enabled mod id, the one folder that wins, at its version.
+    Lists the installed mods the game loads: for each enabled mod ID, the one folder that wins, at its version.
 
 .DESCRIPTION
     Folder names are not a usable key: the same mod ships as both "bmo" and "Building Menu Overhaul-2.1.0".
-    mod_info.json's "id" is the identity and "version" the recency; enabled_mods.json says which ids the game loads.
+    mod_info.json's "id" is the identity and "version" the recency; enabled_mods.json says which IDs the game loads.
     Disabled mods and superseded copies stay on disk; the roster only leaves them out.
 
     Stdout carries the roster only. What the script read and decided goes to stderr, and warnings name each
@@ -66,8 +66,12 @@ foreach ($folder in Get-ChildItem -LiteralPath $modsRoot -Directory) {
 
 if ($skippedFolders.Count -gt 0) {
 
+    $folderList = @($skippedFolders | ForEach-Object { Format-ConsoleText -Role 'Path' -Text $_ }) -join ', '
+
     Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        "skipped $($skippedFolders.Count) folders with no mod_info.json: $($skippedFolders -join ', ')")
+        "skipped $(Format-ConsoleNumber $skippedFolders.Count) folders " +
+        "with no $(Format-ConsoleText -Role 'Path' -Text 'mod_info.json'): " +
+        $folderList)
 }
 
 $parsedStatus = (Get-ModStatusNames).Parsed
@@ -82,13 +86,14 @@ foreach ($modGroup in (Group-ModCandidate -Candidates $candidates.ToArray())) {
     foreach ($loser in $modGroup.Superseded) {
 
         $supersededCount++
-        $winnerCopy = "$($winner.Folder.Name) ($(Format-ModVersion -Version $winner.Version))"
-        $loserCopy = "$($loser.Folder.Name) ($(Format-ModVersion -Version $loser.Version))"
+        $winnerCopy = Format-ModCopy -Candidate $winner
+        $loserCopy = Format-ModCopy -Candidate $loser
+        $modId = Format-ConsoleText -Role 'Mod' -Text $modGroup.Id
 
-        Write-DiagnosticLine -Source $DiagnosticSource -Message "$($modGroup.Id): $winnerCopy wins over $loserCopy"
+        Write-DiagnosticLine -Source $DiagnosticSource -Message "${modId}: $winnerCopy wins over $loserCopy"
     }
 
-    # Unparsed entries bypass the enabled filter: their id is unknown, so the
+    # Unparsed entries bypass the enabled filter: their ID is unknown, so the
     # only safe assumption is that they might matter.
     $isListed = $isEveryModListed -or
         $winner.Status -ne $parsedStatus -or
@@ -106,8 +111,11 @@ foreach ($modGroup in (Group-ModCandidate -Candidates $candidates.ToArray())) {
 $unparsedCount = @($roster | Where-Object { $_.Status -ne $parsedStatus }).Count
 
 Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "read $($candidates.Count) mod folders under $modsRoot and $($enabled.Ids.Count) enabled IDs; " +
-    "listing $($roster.Count) mods ($unparsedCount unparsed), " +
-    "skipping $disabledCount disabled and $supersededCount superseded copies")
+    "read $(Format-ConsoleNumber $candidates.Count) mod folders " +
+    "under $(Format-ConsoleText -Role 'Path' -Text $modsRoot) " +
+    "and $(Format-ConsoleNumber $enabled.Ids.Count) enabled IDs; " +
+    "listing $(Format-ConsoleNumber $roster.Count) mods ($(Format-ConsoleNumber $unparsedCount) unparsed), " +
+    "skipping $(Format-ConsoleNumber $disabledCount) disabled " +
+    "and $(Format-ConsoleNumber $supersededCount) superseded copies")
 
 $roster

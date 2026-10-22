@@ -4,7 +4,7 @@ BeforeAll {
 
 Describe 'Group-ModCandidate' {
 
-    It 'picks the highest sort key per id as the winner, the rest highest first as superseded' {
+    It 'picks the highest sort key per ID as the winner, the rest highest first as superseded' {
 
         $groups = @(Group-ModCandidate -Candidates @(
             [pscustomobject]@{ Id = 'alpha'; SortKey = '000001'; Name = 'old' }

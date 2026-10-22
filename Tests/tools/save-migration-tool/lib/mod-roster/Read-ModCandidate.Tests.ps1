@@ -38,7 +38,7 @@ Describe 'Read-ModCandidate' {
         Mock Get-VersionSortKey { "key-$Version" }
     }
 
-    It 'reads the id, name, version and sort key of a parsed mod_info.json' {
+    It 'reads the ID, name, version and sort key of a parsed mod_info.json' {
 
         Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ id = 'alpha'; name = ' Alpha'; version = '1.2' } }
 

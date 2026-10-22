@@ -38,27 +38,28 @@ $DiagnosticSource = 'Invoke-SaveMigrationTool'
 # Deep enough for a class owner in the load's object chain, one level below Get-SaveLoadAttempt's own output.
 $JsonDepth = 7
 
-$loads = @(& (Join-Path $PSScriptRoot 'Get-SaveLoadAttempt.ps1') -StarsectorRoot $StarsectorRoot)
+# Only the one load the report shows is asked for, so class owners are resolved for that load alone.
+$loadFilter = if ($SaveFolder) {
+    @{ SaveFolder = $SaveFolder }
+} else {
+    @{ Outcome = (Get-LoadOutcomeNames).Failed }
+}
+
+$load = & (Join-Path $PSScriptRoot 'Get-SaveLoadAttempt.ps1') -StarsectorRoot $StarsectorRoot -Newest @loadFilter
 
 if ($SaveFolder) {
 
-    $load = $loads | Where-Object { $_.SaveFolder -eq $SaveFolder } | Select-Object -First 1
-    Write-DiagnosticLine -Source $DiagnosticSource -Message "diagnosing $SaveFolder, as asked"
+    Write-DiagnosticLine -Source $DiagnosticSource -Message (
+        "diagnosing $(Format-ConsoleText -Role 'Path' -Text $SaveFolder), as asked")
+
+} elseif ($null -ne $load) {
+
+    $SaveFolder = $load.SaveFolder
+    Write-DiagnosticLine -Source $DiagnosticSource -Message (
+        "diagnosing the save of the newest failed load, $(Format-ConsoleText -Role 'Path' -Text $SaveFolder)")
 
 } else {
-
-    $failedOutcome = (Get-LoadOutcomeNames).Failed
-    $load = $loads | Where-Object { $_.Outcome -eq $failedOutcome } | Select-Object -First 1
-    $chosenSave = 'no save, since none failed'
-
-    if ($null -ne $load) {
-
-        $SaveFolder = $load.SaveFolder
-        $chosenSave = $SaveFolder
-    }
-
-    Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        "of $($loads.Count) loads, diagnosing the newest failed: $chosenSave")
+    Write-DiagnosticLine -Source $DiagnosticSource -Message 'no load failed, so no save is diagnosed'
 }
 
 $mods = @()
@@ -75,7 +76,6 @@ $report = [pscustomobject]@{
 
 if ($AsJson) {
     ConvertTo-Json -InputObject $report -Depth $JsonDepth
-
 } else {
-    Format-DiagnosisReport -Report $report
+    Format-DiagnosisReport -Report $report | ForEach-Object { Resolve-ConsoleText -Text $_ -Stream 'Output' }
 }

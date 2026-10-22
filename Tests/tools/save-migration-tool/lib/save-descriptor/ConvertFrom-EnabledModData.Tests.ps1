@@ -44,7 +44,7 @@ Describe 'ConvertFrom-EnabledModData' {
         Mock Add-ModDefaultDisplay { $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru }
     }
 
-    It 'reads the id, name and version of a spec written in place' {
+    It 'reads the ID, name and version of a spec written in place' {
 
         $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[0] -IdIndex $script:IdIndex
 

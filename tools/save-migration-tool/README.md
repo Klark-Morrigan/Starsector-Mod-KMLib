@@ -7,6 +7,7 @@ They are repository tooling:
 the release zip does not carry them.
 
 - [Scripts](#scripts)
+  - [Colour](#colour)
 - [Layout](#layout)
 - [Invoke-SaveMigrationTool.ps1](#invoke-savemigrationtoolps1)
 - [Get-SaveLoadAttempt.ps1](#get-saveloadattemptps1)
@@ -37,9 +38,47 @@ The others are its parts, each runnable alone.
 Every script takes the install it reads as `-StarsectorRoot`;
 none assumes where the game is installed.
 Every script writes data to stdout and what it read and decided to stderr.
+A blank line on stderr parts blocks:
+wherever the writing script changes, as when one script runs another,
+and before each load's readings.
+A reading too long for one line continues on the next, indented under its first.
 `Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1` and `Get-SaveModDrift.ps1`
 print their data as JSON with `-AsJson`;
 `Get-ModRoster.ps1` returns objects for another script to consume.
+`Get-SaveLoadAttempt.ps1 -AsText` writes its loads as text for a person,
+since PowerShell lays out its nested objects as unreadable lists.
+
+### Colour
+
+On a console, the text a person reads paints each kind of value in one colour:
+the runner's report, and the lines on stderr.
+The words around the values keep the console's own text colour.
+[`lib/console/Get-ConsolePalette.ps1`](lib/console/Get-ConsolePalette.ps1) holds the one table.
+Three yellows run from saturated to pale:
+the mods, the content they ship, the files on disk.
+They are exact colours,
+since a console scheme decides what the named ones look like.
+
+| Value | Colour |
+| --- | --- |
+| Script names, dates, times, durations | Grey |
+| Errors, a failed load | Red |
+| Warnings, an unfinished load | Amber |
+| A load that worked | Green |
+| Numbers and counts | Faint green |
+| Mod IDs, names, versions | Yellow |
+| Content IDs and names: hulls, weapons, items | Light yellow |
+| File names and paths, save folders | Palest yellow |
+| Code: class names, exception types, parameters | Cyan |
+
+Colour reaches only a console.
+When a stream goes to a file or into another program, or `NO_COLOR` is set,
+its text is written without colour codes,
+so a caller parsing the output never reads them as data.
+Objects and JSON are never painted.
+The mod tables stay plain:
+every column there is the same kind of value.
+Warnings take PowerShell's own warning colour.
 
 ## Layout
 
@@ -53,8 +92,9 @@ so no script lists the functions it calls or what those call in turn.
 | --- | --- |
 | [`lib/`](lib/) | The library loader, and `Write-DiagnosticLine`, which every script logs through |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
+| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, and stripping it where a stream is not a console |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
-| [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log` and what their causes name |
+| [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, what their causes name, and keeping the loads asked for |
 | [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, mod versions, and the columns every mod list prints |
 | [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
 | [`lib/save-descriptor/`](lib/save-descriptor/) | Reading the mod list out of a save's `descriptor.xml` |
@@ -65,9 +105,10 @@ so no script lists the functions it calls or what those call in turn.
 Diagnoses one save end to end,
 running the other scripts in order:
 
-1. `Get-SaveLoadAttempt.ps1` lists the loads in the logs.
-   Without `-SaveFolder`,
-   the save of the newest failed load is the one diagnosed.
+1. `Get-SaveLoadAttempt.ps1` finds the one load the report shows:
+   the newest of the named save,
+   or without `-SaveFolder` the newest failed load, whose save is the one diagnosed.
+   It reads the JARs for that load's class owners alone.
 2. `Get-SaveModDrift.ps1` lists the mods that save was last written with.
 
 ```powershell
@@ -76,7 +117,7 @@ pwsh -NoProfile -File Invoke-SaveMigrationTool.ps1 -StarsectorRoot <install> -Sa
 ```
 
 The text report names the save,
-the newest load of it with its cause and what that cause was read as,
+then the newest load of it as `Get-SaveLoadAttempt.ps1 -AsText` writes a load,
 then how many mods the save was last written with.
 The list itself gives a person nothing to act on,
 so the text leaves it to `Get-SaveModDrift.ps1`.
@@ -96,9 +137,30 @@ Lists every save load in `starsector-core\starsector.log` and its rotated siblin
 An older load is likelier to describe a save or a mod set that has changed since.
 
 ```powershell
-pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -StarsectorRoot <install> -AsJson   # every load, as JSON
-pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -LogPath <log>                      # another log
+pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -StarsectorRoot <install> -AsJson                  # every load, as JSON
+pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -LogPath <log>                                     # another log
+pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -StarsectorRoot <install> -Outcome Failed -Newest  # newest failure
+pwsh -NoProfile -File Get-SaveLoadAttempt.ps1 -StarsectorRoot <install> -AsText                  # for a person
 ```
+
+`-AsText` writes each load under a line naming its save and how it ended:
+the cause and what it was read as,
+each retry vanilla made, in order, with where in the log it starts,
+and each class in the object chain that a mod owns, with its depth and owners.
+Each value of a cause or a retry takes a line of its own, nested under what it belongs to.
+A blank line opens each load, the first too, so the text stands apart from the stderr lines above it.
+A load tried once lists no retries,
+and the classes only the game owns, or no JAR holds, are left out.
+`-AsJson` keeps the whole chain.
+
+Three filters narrow the list:
+`-SaveFolder` keeps one save's loads,
+`-Outcome` keeps the loads that ended `Loaded`, `Failed` or `Unfinished`,
+and `-Newest` keeps only the newest load the others leave.
+They apply before [class owners](#class-owners) are resolved,
+so a filtered run reads only the JARs its loads need,
+and none when they name no object chain.
+Reading every mod's JARs takes seconds.
 
 ### How vanilla logs a load
 

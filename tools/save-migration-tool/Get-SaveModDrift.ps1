@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Lists the mods a save was last written with: each enabled mod's id, name and version, from the save's descriptor.
+    Lists the mods a save was last written with: each enabled mod's ID, name and version, from the save's descriptor.
 
 .DESCRIPTION
     The descriptor is the small file beside campaign.xml that the game's load list reads.
@@ -45,10 +45,12 @@ $descriptor = Read-XmlDocument -Path $descriptorPath
 $idIndex = New-XStreamIdIndex -Document $descriptor
 $saveData = $descriptor.DocumentElement
 
+$savedAt = Format-ConsoleText -Role 'Time' -Text (Get-XmlChildText -Element $saveData -Name 'saveDate')
+$gameVersion = Format-ConsoleText -Role 'Mod' -Text (Get-XmlChildText -Element $saveData -Name 'gameVersion')
+
 Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "read $descriptorPath, saved $(Get-XmlChildText -Element $saveData -Name 'saveDate') " +
-    "under Starsector $(Get-XmlChildText -Element $saveData -Name 'gameVersion'); " +
-    "$($idIndex.Count) objects carry an id for back-pointers")
+    "read $(Format-ConsoleText -Role 'Path' -Text $descriptorPath), saved $savedAt under Starsector $gameVersion; " +
+    "$(Format-ConsoleNumber $idIndex.Count) objects carry an ID for back-pointers")
 
 $mods = Read-SaveModList -SaveData $saveData -ListName 'enabledMods' -IdIndex $idIndex
 $everEnabledMods = Read-SaveModList -SaveData $saveData -ListName 'allModsEverEnabled' -IdIndex $idIndex
@@ -63,14 +65,14 @@ if ($null -eq $mods) {
 # A foreach over a missing list runs no iteration, where a pipeline would pass one null through.
 $enabledIds = @(foreach ($mod in $mods) { $mod.Id })
 $droppedIds = @(foreach ($mod in $everEnabledMods) { if ($mod.Id -cnotin $enabledIds) { $mod.Id } })
-$droppedSummary = "$($droppedIds.Count) more were enabled in an earlier save and are not now"
+$droppedSummary = "$(Format-ConsoleNumber $droppedIds.Count) more were enabled in an earlier save and are not now"
 
 if ($droppedIds.Count -gt 0) {
-    $droppedSummary += ": $($droppedIds -join ', ')"
+    $droppedSummary += ": $(@($droppedIds | ForEach-Object { Format-ConsoleText -Role 'Mod' -Text $_ }) -join ', ')"
 }
 
 Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "listing $($mods.Count) enabled mods as the save last wrote them; $droppedSummary")
+    "listing $(Format-ConsoleNumber $mods.Count) enabled mods as the save last wrote them; $droppedSummary")
 
 if ($AsJson) {
     ConvertTo-Json -InputObject $mods

@@ -16,7 +16,7 @@ Describe 'New-XStreamIdIndex' {
         $index['3'].OuterXml | Should -Be '<item z="3"><st>x</st></item>'
     }
 
-    It 'returns an empty index for a document with no ids' {
+    It 'returns an empty index for a document with no IDs' {
 
         $document = [System.Xml.XmlDocument]::new()
         $document.LoadXml('<root><item/></root>')

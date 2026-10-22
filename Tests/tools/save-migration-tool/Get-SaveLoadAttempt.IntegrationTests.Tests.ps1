@@ -173,7 +173,7 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             $brokenJar = "$script:FixtureRoot\mods\broken\jars\broken.jar"
 
-            @($script:Run.Diagnostics -like "Get-SaveLoadAttempt: skipped jar ${brokenJar}: ?*").Count | Should -Be 1
+            @($script:Run.Diagnostics -like "Get-SaveLoadAttempt: skipped JAR ${brokenJar}: ?*").Count | Should -Be 1
         }
 
         It 'logs what it read and decided to stderr' {
@@ -187,16 +187,17 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.2: 44 lines, 3 load attempts start here"
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.1: 31 lines, 1 load attempts start here"
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log: 20 lines, 2 load attempts start here"
+                'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
                 ('Get-SaveLoadAttempt: resolving the owners of 7 object chain classes ' +
                     "from the install at $script:FixtureRoot")
                 ("Get-ModRoster: read 4 mod folders under $script:FixtureRoot\mods and 4 enabled IDs; " +
                     'listing 4 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
-                "Get-SaveLoadAttempt: skipped jar $logFolder\starfarer.api.jar: not on disk"
-                ('Get-SaveLoadAttempt: read 4 jars of 4 mods and 2 core classpath entries in <n> ms; ' +
+                "Get-SaveLoadAttempt: skipped JAR $logFolder\starfarer.api.jar: not on disk"
+                ('Get-SaveLoadAttempt: read 4 JARs of 4 mods and 2 core classpath entries in <n> ms; ' +
                     'owners found for 5 classes, more than one mod for 1, mod copies of core classes dropped for 1')
-                'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
-                ('Get-SaveLoadAttempt: save_Alpha_1: object chain length 6, mod classes 2, nearest ' +
+                'Get-SaveLoadAttempt: save_Alpha_1: object chain length 6, mod classes 2,'
+                ((' ' * 'Get-SaveLoadAttempt: '.Length) + '  nearest ' +
                     'data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin (aotd_theory_of_toolbox) ' +
                     'at depth 3')
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Weapon tania_boomerang_launcher'
@@ -215,7 +216,79 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $loads[0].Attempts[1].Missing.Id | Should -Be 'BSC_Hammerhead_MK2'
             $loads[0].Missing.ReportedId | Should -Be 'BSC_Buffalo_Mk3_default_D'
             $loads[0].Attempts[0].ObjectChain[4].Owners | Should -Be @('nexerelin', 'starlords')
+
             $run.Warnings.Count | Should -Be 0
+        }
+
+        It 'lists only the newest failed load with -Outcome Failed -Newest, resolving owners for its chain alone' {
+
+            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; Outcome = 'Failed'; Newest = $true }
+
+            @($run.Output).Cause | Should -Be @('Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!')
+
+            $run.Diagnostics | Should -Contain (
+                'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
+                'listing 1 newest first: ending Failed, the newest only')
+
+            $run.Diagnostics | Should -Contain (
+                'Get-SaveLoadAttempt: resolving the owners of 6 object chain classes ' +
+                "from the install at $script:FixtureRoot")
+
+            @($run.Diagnostics -like '*save_Alpha_1: missing*').Count | Should -Be 1
+        }
+
+        It 'lists only the loads of the save named by -SaveFolder, resolving no owners when there are none' {
+
+            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; SaveFolder = 'save_Other_9' }
+
+            @($run.Output).Count | Should -Be 0
+            $run.Diagnostics | Should -Contain (
+                'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners')
+        }
+
+        It 'writes the newest failure as text with -AsText: its readings, its retries and its mod classes' {
+
+            $run = Invoke-SaveLoadAttempt @{
+                StarsectorRoot = $script:FixtureRoot
+                Outcome        = 'Failed'
+                Newest         = $true
+                AsText         = $true
+            }
+
+            $run.Output | Should -Be @(
+                ''
+                'save_Alpha_1: Failed'
+                '  Cause:'
+                '    java.lang.RuntimeException'
+                '    Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+                '  save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
+                '  save_Alpha_1: object chain length 6, mod classes 2,'
+                ('    nearest data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin ' +
+                    '(aotd_theory_of_toolbox) at depth 3')
+                '  Attempts, in order:'
+                '    campaign:'
+                '      Failed at starsector.log.1:2'
+                '      java.lang.RuntimeException'
+                '      Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+                '    campaign.bak:'
+                '      Failed at starsector.log:7'
+                '      java.lang.RuntimeException'
+                '      Ship hull spec [BSC_Hammerhead_MK2_default_D] not found!'
+                '    campaign.inprogress:'
+                '      Failed at starsector.log:15'
+                '      java.io.FileNotFoundException'
+                ('      C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\campaign.xml.inprogress ' +
+                    '(The system cannot find the file specified)')
+                '  Mod classes in the object chain, innermost first:'
+                '    depth 3: data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin (aotd_theory_of_toolbox)'
+                '    depth 4: starlords.person.Lord (nexerelin, starlords)'
+            )
+        }
+
+        It 'refuses -AsJson and -AsText together' {
+
+            { Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; AsJson = $true; AsText = $true } } |
+                Should -Throw '-AsJson and -AsText each choose the output; pass one'
         }
 
         It 'reads the same loads from a log named by -LogPath' {
@@ -305,7 +378,7 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
         It 'resolves no class owners when no failure names a chain' {
 
             (Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }).Diagnostics |
-                Should -Contain 'Get-SaveLoadAttempt: no failure names an object chain; resolving no class owners'
+                Should -Contain 'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners'
         }
     }
 
@@ -316,8 +389,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = (Get-FixtureRoot 'no-loads'); AsJson = $true }
 
             $run.Output | Should -Be '[]'
-            $run.Diagnostics[-1] |
-                Should -Be 'Get-SaveLoadAttempt: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
+            $run.Diagnostics |
+                Should -Contain 'Get-SaveLoadAttempt: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
         }
     }
 

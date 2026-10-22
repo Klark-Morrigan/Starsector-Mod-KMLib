@@ -1,5 +1,5 @@
 # Finds which owners' jars hold each of the given classes, so a class a failure names resolves to the mods behind it.
-# A source is an owner and its jars: a mod id with the jars its mod_info.json declares, or the core owner.
+# A source is an owner and its JARs: a mod ID with the JARs its mod_info.json declares, or the core owner.
 # A mod can bundle another mod's classes, so a class keeps every mod whose jars hold it, in source order.
 # A jar that is not on disk, or that no zip reader opens, is skipped and returned with the reason.
 function New-ClassOwnerIndex {

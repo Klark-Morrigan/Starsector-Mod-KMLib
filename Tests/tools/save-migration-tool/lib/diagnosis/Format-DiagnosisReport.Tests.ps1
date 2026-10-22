@@ -1,16 +1,24 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Format-MissingContentLine.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Format-ObjectChainLine.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\diagnosis\Format-DiagnosisReport.ps1"
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
+
+    . "$libRoot\console\Format-ConsoleNumber.ps1"
+    . "$libRoot\console\Format-ConsoleText.ps1"
+    . "$libRoot\load-log\Format-LoadDetailLines.ps1"
+    . "$libRoot\load-log\Format-LoadOutcome.ps1"
+    . "$libRoot\diagnosis\Format-DiagnosisReport.ps1"
 }
 
 Describe 'Format-DiagnosisReport' {
 
     BeforeEach {
 
-        Mock Format-MissingContentLine { "missing line for $($Load.SaveFolder)" }
-        Mock Format-ObjectChainLine { "chain line for $($Load.SaveFolder)" }
+        Mock Format-LoadOutcome { "<$Outcome>" }
+        Mock Format-LoadDetailLines { ,@("  details of $($Load.SaveFolder)") }
+
+        # Marks each painted value with its role, so a case pins the colour of every value it names.
+        Mock Format-ConsoleText { "<$Role>$Text" }
+        Mock Format-ConsoleNumber { "<Number>$Number" }
 
         $script:Mods = @(
             [pscustomobject]@{ Id = 'alpha'; Name = ' Alpha'; Version = '1.40.0' }
@@ -22,53 +30,38 @@ Describe 'Format-DiagnosisReport' {
 
         $report = [pscustomobject]@{ SaveFolder = $null; Load = $null; Mods = @() }
 
-        Format-DiagnosisReport -Report $report |
-            Should -Be @('No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.')
+        Format-DiagnosisReport -Report $report | Should -Be @(
+            ''
+            'No load failed in the logs, so no save is diagnosed. Name one with <Code>-SaveFolder.'
+        )
     }
 
-    It 'reports a failed load''s cause and readings, then how many mods the save holds, not the list' {
+    It 'reports the save, the newest load with its details, then how many mods the save holds, not the list' {
 
-        $load = [pscustomobject]@{
-            SaveFolder  = 'save_Test'
-            Outcome     = 'Failed'
-            CauseType   = 'java.lang.RuntimeException'
-            Cause       = 'Weapon spec [w] not found!'
-            ObjectChain = @([pscustomobject]@{ Depth = 0 })
-        }
-
+        $load = [pscustomobject]@{ SaveFolder = 'save_Test'; Outcome = 'Failed' }
         $report = [pscustomobject]@{ SaveFolder = 'save_Test'; Load = $load; Mods = $script:Mods }
 
         Format-DiagnosisReport -Report $report | Should -Be @(
-            'Save: save_Test'
-            'Newest load: Failed'
-            '  Cause: java.lang.RuntimeException: Weapon spec [w] not found!'
-            '  missing line for save_Test'
-            '  chain line for save_Test'
             ''
-            'Mods the save was last written with: 2; Get-SaveModDrift.ps1 lists them'
-        )
-    }
-
-    It 'reports a load with no cause and no chain by its outcome alone' {
-
-        $load = [pscustomobject]@{ SaveFolder = 'save_Test'; Outcome = 'Loaded'; CauseType = $null; ObjectChain = @() }
-        $report = [pscustomobject]@{ SaveFolder = 'save_Test'; Load = $load; Mods = @() }
-
-        Format-DiagnosisReport -Report $report | Should -Be @(
-            'Save: save_Test'
-            'Newest load: Loaded'
+            'Save: <Path>save_Test'
+            'Newest load: <Failed>'
+            '  details of save_Test'
             ''
-            'Mods the save was last written with: 0; Get-SaveModDrift.ps1 lists them'
+            'Mods the save was last written with: <Number>2; <Script>Get-SaveModDrift.ps1 lists them'
         )
-
-        Should -Invoke Format-MissingContentLine -Times 0
-        Should -Invoke Format-ObjectChainLine -Times 0
     }
 
     It 'says the logs hold no load of a named save' {
 
-        $report = [pscustomobject]@{ SaveFolder = 'save_Test'; Load = $null; Mods = $script:Mods }
+        $report = [pscustomobject]@{ SaveFolder = 'save_Test'; Load = $null; Mods = @() }
 
-        (Format-DiagnosisReport -Report $report)[1] | Should -Be 'Newest load: none in the logs'
+        Format-DiagnosisReport -Report $report | Should -Be @(
+            ''
+            'Save: <Path>save_Test'
+            'Newest load: none in the logs'
+            ''
+            'Mods the save was last written with: <Number>0; <Script>Get-SaveModDrift.ps1 lists them'
+        )
+        Should -Invoke Format-LoadDetailLines -Times 0
     }
 }

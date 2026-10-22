@@ -1,4 +1,4 @@
-# Reads the mod ids enabled_mods.json says the game loads.
+# Reads the mod IDs enabled_mods.json says the game loads.
 # IsListRead is false when the file is missing or holds no list:
 # an unreadable list must not empty the roster, so the caller treats every installed mod as enabled, and a warning
 # says so.

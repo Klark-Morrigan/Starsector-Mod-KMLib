@@ -1,4 +1,4 @@
-# Groups roster candidates by mod id, and picks the copy the game loads in each: the highest version.
+# Groups roster candidates by mod ID, and picks the copy the game loads in each: the highest version.
 # Superseded holds the other copies, highest first.
 function Group-ModCandidate {
 

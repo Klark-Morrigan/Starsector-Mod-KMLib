@@ -51,14 +51,31 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
             $script:Run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
         }
 
-        It 'reports the newest failed load, then how many mods its save was last written with' {
+        It 'reports the newest failed load with its retries, then how many mods its save was last written with' {
 
             $script:Run.Output | Should -Be @(
+                ''
                 'Save: save_Alpha_1'
                 'Newest load: Failed'
-                '  Cause: java.lang.RuntimeException: Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+                '  Cause:'
+                '    java.lang.RuntimeException'
+                '    Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
                 '  save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
                 '  save_Alpha_1: object chain length 6, mod classes 0'
+                '  Attempts, in order:'
+                '    campaign:'
+                '      Failed at starsector.log.1:2'
+                '      java.lang.RuntimeException'
+                '      Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+                '    campaign.bak:'
+                '      Failed at starsector.log:7'
+                '      java.lang.RuntimeException'
+                '      Ship hull spec [BSC_Hammerhead_MK2_default_D] not found!'
+                '    campaign.inprogress:'
+                '      Failed at starsector.log:15'
+                '      java.io.FileNotFoundException'
+                ('      C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\campaign.xml.inprogress ' +
+                    '(The system cannot find the file specified)')
                 ''
                 'Mods the save was last written with: 3; Get-SaveModDrift.ps1 lists them'
             )
@@ -67,14 +84,18 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
         It 'logs which save it chose, beside what the scripts it runs log' {
 
             $script:Run.Diagnostics |
-                Should -Contain 'Invoke-SaveMigrationTool: of 2 loads, diagnosing the newest failed: save_Alpha_1'
+                Should -Contain 'Invoke-SaveMigrationTool: diagnosing the save of the newest failed load, save_Alpha_1'
+
+            $script:Run.Diagnostics | Should -Contain (
+                'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
+                'listing 1 newest first: ending Failed, the newest only')
+
             @($script:Run.Diagnostics -like 'Get-SaveModDrift: listing 3 enabled mods*').Count | Should -Be 1
         }
 
         It 'prints the report object as JSON with -AsJson' {
 
             $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; AsJson = $true }
-
             $report = $run.Output -join "`n" | ConvertFrom-Json
 
             $report.SaveFolder | Should -Be 'save_Alpha_1'
@@ -91,8 +112,10 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
 
         It 'says no save is diagnosed' {
 
-            (Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }).Output |
-                Should -Be @('No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.')
+            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
+
+            $run.Output | Should -Be @('', 'No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.')
+            $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: no load failed, so no save is diagnosed'
         }
 
         It 'diagnoses a save named with -SaveFolder, though the logs hold no load of it' {
@@ -100,12 +123,17 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
             $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
 
             $run.Output | Should -Be @(
+                ''
                 'Save: save_Alpha_1'
                 'Newest load: none in the logs'
                 ''
                 'Mods the save was last written with: 3; Get-SaveModDrift.ps1 lists them'
             )
+
             $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
+            $run.Diagnostics | Should -Contain (
+                'Get-SaveLoadAttempt: grouped 2 attempts into 1 loads, 0 failed; ' +
+                'listing 0 newest first: of save save_Alpha_1, the newest only')
         }
     }
 }

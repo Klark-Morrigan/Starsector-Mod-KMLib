@@ -1,4 +1,4 @@
-# Reads one EnabledModData entry of a save's descriptor into the mod's id, name and version,
+# Reads one EnabledModData entry of a save's descriptor into the mod's ID, name and version,
 # as the save last wrote them.
 # The descriptor writes each mod's spec in full under allModsEverEnabled first,
 # so an entry under enabledMods is usually a back-pointer to it.

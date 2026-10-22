@@ -69,7 +69,7 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $script:Run.Diagnostics | Should -Be @(
                 ("Get-SaveModDrift: read $script:FixtureRoot\saves\$script:FixtureSave\descriptor.xml, " +
                     'saved 2026-10-16 14:05:27.228 UTC under Starsector 0.98a-RC8; ' +
-                    '19 objects carry an id for back-pointers')
+                    '19 objects carry an ID for back-pointers')
                 ('Get-SaveModDrift: listing 3 enabled mods as the save last wrote them; ' +
                     '1 more were enabled in an earlier save and are not now: retired')
             )

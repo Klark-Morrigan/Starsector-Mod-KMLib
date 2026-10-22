@@ -24,7 +24,7 @@ BeforeAll {
 
 Describe 'Read-EnabledModIds' {
 
-    It 'reads the listed ids, skipping blank ones' {
+    It 'reads the listed IDs, skipping blank ones' {
 
         Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ enabledMods = @('alpha', '', 'beta') } }
 
@@ -34,7 +34,7 @@ Describe 'Read-EnabledModIds' {
         $enabled.IsListRead | Should -BeTrue
     }
 
-    It 'reads an empty list as read, with no ids' {
+    It 'reads an empty list as read, with no IDs' {
 
         Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ enabledMods = @() } }
 

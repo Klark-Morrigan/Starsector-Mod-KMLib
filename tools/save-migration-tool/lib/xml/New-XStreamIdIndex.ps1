@@ -1,4 +1,4 @@
-# Maps each XStream object id in a document to the element that holds the object.
+# Maps each XStream object ID in a document to the element that holds the object.
 # XStream writes an object in full once, tagged z="N", and writes each later use as an empty element with ref="N".
 function New-XStreamIdIndex {
 
