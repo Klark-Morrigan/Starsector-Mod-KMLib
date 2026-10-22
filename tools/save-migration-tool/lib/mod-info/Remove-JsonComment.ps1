@@ -1,39 +1,31 @@
 # Strips # comments the way the game's LoadingUtils does before org.json parses a file.
-# A # outside a string starts a comment that runs to the end of its line.
-# The game flips its in-string flag on every double quote, escaped or not, and clears both flags at each line break.
 # Matching that exactly keeps a file the game rejects from parsing here.
 # Neither // nor /* */ is a comment to the game, so both stay.
-# The game also drops every carriage return, keeping only the line feed.
+# The game drops every carriage return, keeping only the line feed.
+#
+# The game resets its string and comment state at each line break, so each line is read on its own,
+# and only a line holding a # needs reading character by character.
 function Remove-JsonComment {
 
     param([string] $Text)
 
-    $builder = [System.Text.StringBuilder]::new($Text.Length)
-    $isInComment = $false
-    $isInString = $false
+    $lineFeed = "`n"
+    $carriageReturn = "`r"
 
-    foreach ($char in $Text.ToCharArray()) {
+    if (-not $Text.Contains('#')) {
+        return $Text.Replace($carriageReturn, '')
+    }
 
-        if ($char -eq '"') {
-            $isInString = -not $isInString
-        }
+    $lines = $Text.Split($lineFeed)
 
-        if ($char -eq "`n" -or $char -eq "`r") {
+    for ($index = 0; $index -lt $lines.Count; $index++) {
 
-            $isInComment = $false
-            $isInString = $false
-
-            if ($char -eq "`n") {
-                [void] $builder.Append($char)
-            }
-
-        } elseif ($char -eq '#' -and -not $isInString) {
-            $isInComment = $true
-
-        } elseif (-not $isInComment) {
-            [void] $builder.Append($char)
+        $lines[$index] = if ($lines[$index].Contains('#')) {
+            Remove-JsonLineComment -Line $lines[$index]
+        } else {
+            $lines[$index].Replace($carriageReturn, '')
         }
     }
 
-    return $builder.ToString()
+    return $lines -join $lineFeed
 }

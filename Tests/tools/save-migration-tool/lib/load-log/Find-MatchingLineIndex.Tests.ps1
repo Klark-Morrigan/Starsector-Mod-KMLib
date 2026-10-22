@@ -1,4 +1,7 @@
 BeforeAll {
+
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Find-MatchingLineIndex.ps1"
 }
 

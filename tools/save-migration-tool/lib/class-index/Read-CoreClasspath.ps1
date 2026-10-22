@@ -1,6 +1,6 @@
-# Reads the jars the vanilla launcher puts on the classpath, as full paths.
-# The launcher passes vmparams to java from starsector-core, so the jars it names are relative to that folder.
-# Returns no paths when vmparams is missing or names no classpath.
+# Reads the JARs the vanilla launcher puts on the classpath, as full paths.
+# The launcher passes vmparams to java from starsector-core, so the JARs it names are relative to that folder.
+# Problem says why no JAR was read: vmparams is missing, or names no classpath. It is null when JARs were read.
 function Read-CoreClasspath {
 
     param([string] $StarsectorRoot)
@@ -15,21 +15,22 @@ function Read-CoreClasspath {
     $vmparamsPath = Join-Path $StarsectorRoot $vmparamsFileName
 
     if (-not (Test-Path -LiteralPath $vmparamsPath -PathType Leaf)) {
-        return
+        return [pscustomobject]@{ Jars = @(); Problem = "$vmparamsPath not found" }
     }
 
     $match = [regex]::Match([System.IO.File]::ReadAllText($vmparamsPath), $classpathPattern)
 
     if (-not $match.Success) {
-        return
+        return [pscustomobject]@{ Jars = @(); Problem = "$vmparamsPath names no classpath" }
     }
 
     $coreFolder = Join-Path $StarsectorRoot $coreFolderName
-
-    foreach ($jar in $match.Groups['classpath'].Value.Split($classpathSeparator)) {
+    $jars = @(foreach ($jar in $match.Groups['classpath'].Value.Split($classpathSeparator)) {
 
         if ($jar) {
             [System.IO.Path]::GetFullPath($jar, $coreFolder)
         }
-    }
+    })
+
+    return [pscustomobject]@{ Jars = $jars; Problem = $null }
 }

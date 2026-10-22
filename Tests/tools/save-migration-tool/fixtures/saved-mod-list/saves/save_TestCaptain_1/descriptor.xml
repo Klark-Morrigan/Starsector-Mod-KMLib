@@ -1,0 +1,77 @@
+<?xml version="1.0" ?>
+<SaveGameData z="1">
+<characterName>Test Captain</characterName>
+<saveFileVersion>0.6</saveFileVersion>
+<gameVersion>0.98a-RC8</gameVersion>
+<compressed>false</compressed>
+<saveDate z="2">2026-10-16 14:05:27.228 UTC</saveDate>
+<allModsEverEnabled z="3">
+<EnabledModData z="4">
+<spec z="5">
+<id>alpha</id>
+<name> Alpha</name>
+<versionInfo z="6">
+<major>1</major>
+<minor>40</minor>
+<patch>0</patch>
+<minorIsRC>false</minorIsRC>
+</versionInfo>
+<dirName>Alpha-1.40.0</dirName>
+</spec>
+</EnabledModData>
+<EnabledModData z="7">
+<spec z="8">
+<id>beta</id>
+<name>Beta</name>
+<versionInfo z="9">
+<major>1</major>
+<minor>14</minor>
+<patch>1</patch>
+<string>1.14.1aa</string>
+<minorIsRC>false</minorIsRC>
+</versionInfo>
+<dirName>Beta</dirName>
+</spec>
+</EnabledModData>
+<EnabledModData z="10">
+<spec z="11">
+<id>retired</id>
+<name>Retired</name>
+<versionInfo z="12">
+<major>2</major>
+<minor>40</minor>
+<patch></patch>
+<string>2.40</string>
+<minorIsRC>false</minorIsRC>
+</versionInfo>
+<dirName>Retired</dirName>
+</spec>
+</EnabledModData>
+<EnabledModData z="13">
+<spec z="14">
+<id>gamma</id>
+<name>Gamma</name>
+<versionInfo z="15">
+<major></major>
+<minor></minor>
+<patch></patch>
+<string>2025-03-29</string>
+<minorIsRC>false</minorIsRC>
+</versionInfo>
+<dirName>Gamma</dirName>
+</spec>
+</EnabledModData>
+</allModsEverEnabled>
+<enabledMods z="16">
+<EnabledModData z="17">
+<spec ref="5"></spec>
+</EnabledModData>
+<EnabledModData z="18">
+<spec ref="8"></spec>
+</EnabledModData>
+<EnabledModData z="19">
+<spec ref="14"></spec>
+</EnabledModData>
+</enabledMods>
+<autosave>false</autosave>
+</SaveGameData>

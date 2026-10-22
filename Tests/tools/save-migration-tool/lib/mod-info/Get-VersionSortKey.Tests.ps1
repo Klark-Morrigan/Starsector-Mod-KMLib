@@ -1,41 +1,62 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Get-JsonPropertyValue.ps1"
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Get-VersionObjectParts.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Test-VersionObjectForm.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Get-VersionSortKey.ps1"
+
+    function script:Format-ExpectedKey {
+        # The key for four numbers, each padded to the key's width, so a case states its numbers alone.
+        param([string[]] $Numbers)
+
+        return @($Numbers | ForEach-Object { $_.PadLeft(20, '0') }) -join '.'
+    }
 }
 
 Describe 'Get-VersionSortKey' {
 
     BeforeEach {
+
+        Mock Test-VersionObjectForm { $Version -is [System.Management.Automation.PSCustomObject] }
         Mock Get-VersionObjectParts { ,@(2, $null, 3) }
     }
 
-    It 'pads <Version> to <Key>' -ForEach @(
-        @{ Version = '1.10.0'; Key = '000001.000010.000000.000000' }
-        @{ Version = '91.DEV'; Key = '000091.000000.000000.000000' }
-        @{ Version = '1.3.1b'; Key = '000001.000003.000001.000000' }
-        @{ Version = '0.1.98-RC2'; Key = '000000.000001.000098.000000' }
+    It 'pads <Version> to <Numbers>' -ForEach @(
+        @{ Version = '1.10.0'; Numbers = @('1', '10', '0', '0') }
+        @{ Version = '91.DEV'; Numbers = @('91', '0', '0', '0') }
+        @{ Version = '1.3.1b'; Numbers = @('1', '3', '1', '0') }
+        @{ Version = '0.1.98-RC2'; Numbers = @('0', '1', '98', '0') }
+        @{ Version = '1.0.20240615123045'; Numbers = @('1', '0', '20240615123045', '0') }
+        @{ Version = '007.1'; Numbers = @('7', '1', '0', '0') }
     ) {
-        Get-VersionSortKey -Version $Version | Should -Be $Key
+        Get-VersionSortKey -Version $Version | Should -Be (Format-ExpectedKey $Numbers)
     }
 
-    It 'sorts 1.10.0 above 1.9.0' {
-        (Get-VersionSortKey -Version '1.10.0') -gt (Get-VersionSortKey -Version '1.9.0') | Should -BeTrue
+    It 'sorts <Higher> above <Lower>' -ForEach @(
+        @{ Higher = '1.10.0'; Lower = '1.9.0' }
+        @{ Higher = '1.0.20240615123045'; Lower = '1.0.999999' }
+        @{ Higher = '2'; Lower = '1.5' }
+    ) {
+        (Get-VersionSortKey -Version $Higher) -gt (Get-VersionSortKey -Version $Lower) | Should -BeTrue
     }
 
-    It 'reads a bare number as its digits' {
-        Get-VersionSortKey -Version 1.5 | Should -Be '000001.000005.000000.000000'
+    It 'reads a <Description> as its digits' -ForEach @(
+        @{ Description = 'decimal number'; Version = 1.5; Numbers = @('1', '5', '0', '0') }
+        @{ Description = 'whole number'; Version = [long] 2; Numbers = @('2', '0', '0', '0') }
+    ) {
+        Get-VersionSortKey -Version $Version | Should -Be (Format-ExpectedKey $Numbers)
     }
 
     It 'reads the object form through its parts, a missing part as zero' {
 
-        Get-VersionSortKey -Version ([pscustomobject]@{ major = 2 }) | Should -Be '000002.000000.000003.000000'
+        Get-VersionSortKey -Version ([pscustomobject]@{ major = 2 }) |
+            Should -Be (Format-ExpectedKey '2', '0', '3', '0')
 
         Should -Invoke Get-VersionObjectParts -Times 1 -Exactly
     }
 
     It 'reads no version as all zeros' {
-        Get-VersionSortKey -Version $null | Should -Be '000000.000000.000000.000000'
+        Get-VersionSortKey -Version $null | Should -Be (Format-ExpectedKey '0', '0', '0', '0')
     }
 }

@@ -1,5 +1,8 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-StarsectorJson.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\Read-EnabledModIds.ps1"
 
@@ -12,10 +15,10 @@ BeforeAll {
 
         $modsRoot = Join-Path $TestDrive $Name
 
-        New-Item -ItemType Directory -Path $modsRoot | Out-Null
+        New-Item -ItemType Directory -Path $modsRoot -Force | Out-Null
 
         if ($HasEnabledFile) {
-            New-Item -ItemType File -Path (Join-Path $modsRoot 'enabled_mods.json') | Out-Null
+            New-TestFile -Name "$Name\enabled_mods.json" | Out-Null
         }
 
         return $modsRoot
@@ -24,7 +27,7 @@ BeforeAll {
 
 Describe 'Read-EnabledModIds' {
 
-    It 'reads the listed ids, skipping blank ones' {
+    It 'reads the listed IDs, skipping blank ones' {
 
         Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ enabledMods = @('alpha', '', 'beta') } }
 
@@ -34,7 +37,7 @@ Describe 'Read-EnabledModIds' {
         $enabled.IsListRead | Should -BeTrue
     }
 
-    It 'reads an empty list as read, with no ids' {
+    It 'reads an empty list as read, with no IDs' {
 
         Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ enabledMods = @() } }
 

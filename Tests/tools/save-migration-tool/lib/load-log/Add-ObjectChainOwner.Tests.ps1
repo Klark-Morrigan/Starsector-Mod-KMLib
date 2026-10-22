@@ -1,4 +1,7 @@
 BeforeAll {
+
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Add-ObjectChainOwner.ps1"
 }
 
@@ -12,7 +15,7 @@ Describe 'Add-ObjectChainOwner' {
         }
     }
 
-    It 'adds each class in each attempt''s chain its owners, and the load its first attempt''s chain' {
+    It 'adds each class in each attempt''s chain its owners' {
 
         $load = [pscustomobject]@{
             Attempts = @(
@@ -26,28 +29,21 @@ Describe 'Add-ObjectChainOwner' {
 
         $result = Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass
 
-        $result.ObjectChain.Class | Should -Be @('a.Mod', 'a.Engine')
-        $result.ObjectChain[0].Owners | Should -Be @('alpha', 'beta')
+        $result.Attempts[0].ObjectChain.Class | Should -Be @('a.Mod', 'a.Engine')
+        $result.Attempts[0].ObjectChain[0].Owners | Should -Be @('alpha', 'beta')
         , $result.Attempts[1].ObjectChain[0].Owners | Should -BeOfType [object[]]
         $result.Attempts[1].ObjectChain[0].Owners | Should -Be @('vanilla')
     }
 
-    It 'gives a class no indexed jar holds no owners' {
+    It 'gives a class no indexed JAR holds no owners' {
 
         $link = [pscustomobject]@{ Depth = 2; Class = 'java.util.ArrayList' }
         $load = [pscustomobject]@{ Attempts = @([pscustomobject]@{ ObjectChain = @($link) }) }
 
-        $owned = (Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass).ObjectChain[0]
+        $owned = (Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass).Attempts[0].ObjectChain[0]
 
         $owned.Depth | Should -Be 2
         , $owned.Owners | Should -BeOfType [object[]]
         $owned.Owners.Count | Should -Be 0
-    }
-
-    It 'gives the load an empty chain when the first attempt names none' {
-
-        $load = [pscustomobject]@{ Attempts = @([pscustomobject]@{ ObjectChain = @() }) }
-
-        @((Add-ObjectChainOwner -Load $load -OwnersByClass @{}).ObjectChain).Count | Should -Be 0
     }
 }
