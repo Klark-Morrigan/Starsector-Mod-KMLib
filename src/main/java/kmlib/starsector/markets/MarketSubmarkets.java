@@ -22,10 +22,20 @@ public final class MarketSubmarkets {
     }
 
     /**
-     * The goods held at one of a market's trading counters.
+     * One of a market's trading counters.
      *
-     * <p>A counter a mod adds exists only once that mod has wired it onto the market, so an absent
-     * counter is an ordinary state rather than a fault.
+     * @param market      the market whose counter is read; null yields empty
+     * @param submarketId the counter's submarket ID
+     * @return the counter, or empty where the market has no such counter
+     */
+    public static Optional<SubmarketAPI> findSubmarket(MarketAPI market, String submarketId) {
+
+        return Optional.ofNullable(market)
+            .map(presentMarket -> presentMarket.getSubmarket(submarketId));
+    }
+
+    /**
+     * The goods held at one of a market's trading counters.
      *
      * @param market      the market whose counter is read; null yields empty
      * @param submarketId the counter's submarket ID
@@ -62,19 +72,5 @@ public final class MarketSubmarkets {
             .map(SubmarketAPI::getPlugin)
             .filter(pluginType::isInstance)
             .map(pluginType::cast);
-    }
-
-    /**
-     * One of a market's trading counters.
-     *
-     * @param market      the market whose counter is read; null yields empty
-     * @param submarketId the counter's submarket ID
-     * @return the counter, or empty where the market has no such counter
-     */
-    public static Optional<SubmarketAPI> findSubmarket(MarketAPI market, String submarketId) {
-
-        return market == null
-            ? Optional.empty()
-            : Optional.ofNullable(market.getSubmarket(submarketId));
     }
 }
