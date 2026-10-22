@@ -1,6 +1,8 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Add-ModDefaultDisplay.ps1"
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Add-ModDefaultDisplay.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Get-XmlChildText.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Resolve-XStreamReference.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-SaveModVersion.ps1"
@@ -39,9 +41,18 @@ Describe 'ConvertFrom-EnabledModData' {
             if ($null -ne $child -and $child.InnerText) { $child.InnerText }
         }
 
-        Mock ConvertFrom-SaveModVersion { if ($VersionInfo) { "version-z$($VersionInfo.GetAttribute('z'))" } else { '' } }
+        Mock ConvertFrom-SaveModVersion {
 
-        Mock Add-ModDefaultDisplay { $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru }
+            if ($VersionInfo) {
+                "version-z$($VersionInfo.GetAttribute('z'))"
+            } else {
+                ''
+            }
+        }
+
+        Mock Add-ModDefaultDisplay {
+            $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru
+        }
     }
 
     It 'reads the ID, name and version of a spec written in place' {

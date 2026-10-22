@@ -1,16 +1,15 @@
-# Says in one line what a load's cause was read as, so the diagnostics show each reading.
+# Says in one line what a load's cause was read as. The caller names the load the line belongs to.
 function Format-MissingContentLine {
 
     param([object] $Load)
 
     $missing = $Load.Missing
-    $save = Format-ConsoleText -Role 'Path' -Text $Load.SaveFolder
 
     if ($null -eq $missing) {
-        return "${save}: the cause names no missing content"
+        return 'the cause names no missing content'
     }
 
-    $line = "${save}: missing $($missing.Kind) $(Format-ConsoleText -Role 'Content' -Text $missing.Id)"
+    $line = "missing $($missing.Kind) $(Format-ConsoleText -Role 'Content' -Text $missing.Id)"
 
     if ($missing.SpecClass) {
         $line += " of spec class $(Format-ConsoleText -Role 'Code' -Text $missing.SpecClass)"

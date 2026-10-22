@@ -1,6 +1,6 @@
 # Turns one mod ID's winning copy into its roster entry.
 # RelativePath is the folder relative to the install root, however the root was written.
-# Jars are full paths, each declared jar resolved against the mod's folder as the game resolves it.
+# Jars are full paths, each declared JAR resolved against the mod's folder as the game resolves it.
 function ConvertTo-RosterEntry {
 
     param(

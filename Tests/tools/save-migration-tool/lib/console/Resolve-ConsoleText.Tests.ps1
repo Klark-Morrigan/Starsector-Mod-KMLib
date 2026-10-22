@@ -1,5 +1,7 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Test-ConsoleStreamRedirected.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Resolve-ConsoleText.ps1"
 }

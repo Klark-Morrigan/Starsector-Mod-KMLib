@@ -4,10 +4,12 @@
 #
 # Each fixture under fixtures\ is a hand-written install root holding only starsector-core\starsector.log
 # and its rotated siblings. The lines are trimmed copies of what 0.98a writes. No test reads a real log.
-# A case that resolves class owners copies its fixture under TestDrive and adds the jars there,
+# A case that resolves class owners copies its fixture under TestDrive and adds the JARs there,
 # so no binary file sits in the repository.
 
 BeforeAll {
+
+    Set-StrictMode -Version Latest
 
     . "$PSScriptRoot\helpers\Invoke-ScriptCapturingOutput.ps1"
     . "$PSScriptRoot\helpers\New-TestJar.ps1"
@@ -30,7 +32,7 @@ BeforeAll {
         # Blanks the one timing a run logs, so a list of diagnostics compares as text.
         param([string[]] $Diagnostics)
 
-        return $Diagnostics -replace ' in \d+ ms;', ' in <n> ms;'
+        return $Diagnostics -replace ' in \d+ ms', ' in <n> ms'
     }
 
     function script:Get-FixtureRoot {
@@ -51,7 +53,7 @@ BeforeAll {
     }
 
     function script:Add-ModJar {
-        # Writes mods\<id>\mod_info.json declaring one jar, and the jar holding the given classes.
+        # Writes `mods\<id>\mod_info.json` declaring one JAR, and the JAR holding the given classes.
         param(
             [string] $Root,
             [string] $ModId,
@@ -73,7 +75,7 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             $script:FixtureRoot = Copy-FixtureRoot 'two-failed-loads'
 
-            # The launcher names a second core jar the install lacks, so the index skips it.
+            # The launcher names a second core JAR the install lacks, so the index skips it.
             [System.IO.File]::WriteAllText((Join-Path $script:FixtureRoot 'vmparams'),
                 'java.exe -Xms1536m -classpath starfarer_obf.jar;starfarer.api.jar -Dx=y')
 
@@ -93,7 +95,7 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             # Nexerelin bundles Starlords' Lord, so the class has two mod owners.
             Add-ModJar -Root $script:FixtureRoot -ModId 'nexerelin' -Classes @('starlords.person.Lord')
 
-            # A jar no zip reader opens is skipped, and the other mods still resolve.
+            # A JAR no zip reader opens is skipped, and the other mods still resolve.
             $brokenFolder = New-TestMod -StarsectorRoot $script:FixtureRoot -Folder 'broken' `
                 -ModInfo '{ "id": "broken", "version": "1.0", "jars": ["jars/broken.jar"] }'
             New-Item -ItemType Directory -Path (Join-Path $brokenFolder 'jars') | Out-Null
@@ -169,14 +171,14 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $chain[5].Owners | Should -Be @('vanilla')
         }
 
-        It 'skips a jar no zip reader opens, naming it and the reason' {
+        It 'skips a JAR no zip reader opens, naming it and the reason' {
 
             $brokenJar = "$script:FixtureRoot\mods\broken\jars\broken.jar"
 
             @($script:Run.Diagnostics -like "Get-SaveLoadAttempt: skipped JAR ${brokenJar}: ?*").Count | Should -Be 1
         }
 
-        It 'logs what it read and decided to stderr' {
+        It 'logs what it read and decided to stderr, blank lines parting scripts and each load''s readings' {
 
             $logFolder = "$script:FixtureRoot\starsector-core"
             $diagnostics = Format-StableDiagnostics $script:Run.Diagnostics |
@@ -190,16 +192,21 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
                 ('Get-SaveLoadAttempt: resolving the owners of 7 object chain classes ' +
                     "from the install at $script:FixtureRoot")
+                ''
                 ("Get-ModRoster: read 4 mod folders under $script:FixtureRoot\mods and 4 enabled IDs; " +
                     'listing 4 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
+                ''
                 "Get-SaveLoadAttempt: skipped JAR $logFolder\starfarer.api.jar: not on disk"
-                ('Get-SaveLoadAttempt: read 4 JARs of 4 mods and 2 core classpath entries in <n> ms; ' +
+                ('Get-SaveLoadAttempt: read 4 JARs of 4 mods and 2 core classpath entries in <n> ms, ' +
+                    'the JARs of 0 unparsed mods unknown; ' +
                     'owners found for 5 classes, more than one mod for 1, mod copies of core classes dropped for 1')
+                ''
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
                 'Get-SaveLoadAttempt: save_Alpha_1: object chain length 6, mod classes 2,'
                 ((' ' * 'Get-SaveLoadAttempt: '.Length) + '  nearest ' +
                     'data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin (aotd_theory_of_toolbox) ' +
                     'at depth 3')
+                ''
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Weapon tania_boomerang_launcher'
                 'Get-SaveLoadAttempt: save_Alpha_1: object chain length 1, mod classes 0'
             )
@@ -261,8 +268,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 '  Cause:'
                 '    java.lang.RuntimeException'
                 '    Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
-                '  save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
-                '  save_Alpha_1: object chain length 6, mod classes 2,'
+                '  missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
+                '  object chain length 6, mod classes 2,'
                 ('    nearest data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin ' +
                     '(aotd_theory_of_toolbox) at depth 3')
                 '  Attempts, in order:'
@@ -280,7 +287,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 ('      C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\campaign.xml.inprogress ' +
                     '(The system cannot find the file specified)')
                 '  Mod classes in the object chain, innermost first:'
-                '    depth 3: data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin (aotd_theory_of_toolbox)'
+                ('    depth 3: data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin ' +
+                    '(aotd_theory_of_toolbox)')
                 '    depth 4: starlords.person.Lord (nexerelin, starlords)'
             )
         }
@@ -335,9 +343,9 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
         }
     }
 
-    Context 'an install whose vmparams names no classpath' {
+    Context 'an install with no vmparams' {
 
-        It 'indexes the mods, and warns that vanilla classes stay without owners' {
+        It 'indexes the mods, and warns why vanilla classes stay without owners' {
 
             $root = Copy-FixtureRoot 'recovered-from-bak'
 
@@ -348,7 +356,7 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $root }
 
             @($run.Output)[0].ObjectChain[0].Owners | Should -Be @('gone_mod')
-            $run.Warnings | Should -Be @("vmparams in $root names no classpath; vanilla classes stay without owners")
+            $run.Warnings | Should -Be @("$root\vmparams not found; vanilla classes stay without owners")
         }
     }
 
@@ -378,7 +386,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
         It 'resolves no class owners when no failure names a chain' {
 
             (Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }).Diagnostics |
-                Should -Contain 'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners'
+                Should -Contain (
+                    'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners')
         }
     }
 
@@ -390,7 +399,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             $run.Output | Should -Be '[]'
             $run.Diagnostics |
-                Should -Contain 'Get-SaveLoadAttempt: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
+                Should -Contain (
+                    'Get-SaveLoadAttempt: grouped 0 attempts into 0 loads, 0 failed; listing them newest first')
         }
     }
 

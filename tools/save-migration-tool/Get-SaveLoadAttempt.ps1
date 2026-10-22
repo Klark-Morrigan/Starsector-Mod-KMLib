@@ -53,6 +53,10 @@ if ($AsJson -and $AsText) {
 
 . (Join-Path $PSScriptRoot 'lib\Import-SaveMigrationToolLibrary.ps1')
 
+if ($Outcome) {
+    Assert-LoadOutcomeName -Outcome $Outcome
+}
+
 $DiagnosticSource = 'Get-SaveLoadAttempt'
 
 # The game's log location relative to the install root.
@@ -92,7 +96,7 @@ foreach ($fileRead in $read.FileReads) {
 }
 
 $attempts = @($read.Attempts)
-$allLoads = @(Group-LoadAttempt -Attempts $attempts | ForEach-Object { Add-MissingContent -Load $_ })
+$allLoads = @(Group-LoadAttempt -Attempts $attempts)
 
 [array]::Reverse($allLoads)
 
@@ -116,6 +120,9 @@ Write-DiagnosticLine -Source $DiagnosticSource -Message (
     "grouped $(Format-ConsoleNumber $attempts.Count) attempts into $(Format-ConsoleNumber $allLoads.Count) loads, " +
     "$(Format-ConsoleNumber $failedCount) failed; $keptSummary")
 
+# Traces are read only for the loads kept, since reading them is the slow part of a load's readings.
+$loads = @($loads | ForEach-Object { Add-FailureReading -Load $_ -TraceLinesByAttempt $read.TraceLinesByAttempt })
+
 $chainClassNames = @(
     $loads |
         ForEach-Object { $_.Attempts } |
@@ -124,55 +131,30 @@ $chainClassNames = @(
         Select-Object -Unique
 )
 
-$hasObjectChain = $chainClassNames.Count -gt 0
-$ownersByClass = @{}
-
-if (-not $hasObjectChain) {
-    Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        'no listed failure names an object chain; resolving no class owners')
-
-} elseif (-not (Test-Path -LiteralPath (Join-Path $installRoot 'mods') -PathType Container)) {
-    Write-Warning "no mods folder in the log's install, $installRoot; object chain classes stay without owners"
-
-} else {
-
-    Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        "resolving the owners of $(Format-ConsoleNumber $chainClassNames.Count) object chain classes " +
-        "from the install at $(Format-ConsoleText -Role 'Path' -Text $installRoot)")
-
-    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    $roster = @(& (Join-Path $PSScriptRoot 'Get-ModRoster.ps1') -StarsectorRoot $installRoot)
-    $resolved = Resolve-ClassOwner -StarsectorRoot $installRoot -Roster $roster -ClassNames $chainClassNames
-    $ownersByClass = $resolved.OwnersByClass
-
-    if ($resolved.CoreJarCount -eq 0) {
-        Write-Warning "vmparams in $installRoot names no classpath; vanilla classes stay without owners"
-    }
-
-    foreach ($skippedJar in $resolved.SkippedJars) {
-
-        Write-DiagnosticLine -Source $DiagnosticSource -Message (
-            "skipped JAR $(Format-ConsoleText -Role 'Path' -Text $skippedJar.Path): $($skippedJar.Reason)")
-    }
-
-    Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        "read $(Format-ConsoleNumber $resolved.JarCount) JARs of $(Format-ConsoleNumber $roster.Count) mods " +
-        "and $(Format-ConsoleNumber $resolved.CoreJarCount) core classpath entries " +
-        "in $(Format-ConsoleText -Role 'Time' -Text "$($stopwatch.ElapsedMilliseconds) ms"); " +
-        "owners found for $(Format-ConsoleNumber $ownersByClass.Count) classes, " +
-        "more than one mod for $(Format-ConsoleNumber $resolved.SharedClassCount), " +
-        "mod copies of core classes dropped for $(Format-ConsoleNumber $resolved.ShadowedClassCount)")
+$ownerResolution = @{
+    InstallRoot      = $installRoot
+    ClassNames       = $chainClassNames
+    RosterScriptPath = Join-Path $PSScriptRoot 'Get-ModRoster.ps1'
+    DiagnosticSource = $DiagnosticSource
 }
 
-$loads = @($loads | ForEach-Object { Add-ObjectChainOwner -Load $_ -OwnersByClass $ownersByClass })
+$ownersByClass = Resolve-ChainClassOwners @ownerResolution
+
+$loads = @($loads | ForEach-Object {
+    Copy-FirstAttemptReading -Load (Add-ObjectChainOwner -Load $_ -OwnersByClass $ownersByClass)
+})
 
 # Each load's readings are a block of their own, parted from the lines around them and from the next load's.
 foreach ($load in $loads | Where-Object { $_.CauseType }) {
 
-    Write-DiagnosticLine -Source $DiagnosticSource -Message (Format-MissingContentLine -Load $load) -IsBlockStart
+    $save = Format-ConsoleText -Role 'Path' -Text $load.SaveFolder
+    $missingReading = "${save}: $(Format-MissingContentLine -Load $load)"
+
+    Write-DiagnosticLine -Source $DiagnosticSource -Message $missingReading -IsBlockStart
 
     if ($load.ObjectChain.Count -gt 0) {
-        Write-DiagnosticLine -Source $DiagnosticSource -Message ((Format-ObjectChainLines -Load $load) -join "`n")
+        Write-DiagnosticLine -Source $DiagnosticSource -Message (
+            "${save}: $((Format-ObjectChainLines -Load $load) -join "`n")")
     }
 }
 
@@ -180,7 +162,7 @@ if ($AsJson) {
     ConvertTo-Json -InputObject $loads -Depth $JsonDepth
 
 } elseif ($AsText) {
-    Format-LoadListText -Loads $loads | ForEach-Object { Resolve-ConsoleText -Text $_ -Stream 'Output' }
+    Resolve-OutputLines -Lines (Format-LoadListText -Loads $loads)
 
 } else {
     $loads

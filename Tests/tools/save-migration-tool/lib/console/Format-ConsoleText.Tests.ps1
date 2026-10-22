@@ -1,5 +1,7 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Get-ConsolePalette.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Format-ConsoleText.ps1"
 }

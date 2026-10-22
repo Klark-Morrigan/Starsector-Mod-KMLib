@@ -1,5 +1,5 @@
 # The outcomes a save load attempt ends in.
-# Reading the log sets them and grouping the attempts reads them, so they are named in one place.
+# Named once, so the code that sets an outcome and the code that reads it agree.
 function Get-LoadOutcomeNames {
 
     return [pscustomobject]@{

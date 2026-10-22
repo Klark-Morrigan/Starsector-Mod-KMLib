@@ -8,6 +8,8 @@
 
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\helpers\Invoke-ScriptCapturingOutput.ps1"
 
     # Tests\ mirrors the repo, so the script sits at the same relative path under the repo root.
@@ -49,7 +51,10 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
     Context 'a descriptor whose enabled mods point back at allModsEverEnabled' {
 
         BeforeAll {
-            $script:Run = Invoke-SaveModDrift @{ StarsectorRoot = $script:FixtureRoot; SaveFolder = $script:FixtureSave }
+            $script:Run = Invoke-SaveModDrift @{
+                StarsectorRoot = $script:FixtureRoot
+                SaveFolder     = $script:FixtureSave
+            }
         }
 
         It 'lists each enabled mod in the descriptor''s order, following its back-pointer' {

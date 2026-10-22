@@ -1,5 +1,5 @@
 # Keeps the loads a caller asked for, newest first as given: one save's, one outcome's, or only the newest.
-# It runs before class owners are resolved, since reading every mod's JARs costs seconds,
+# It runs before any trace is read or class owner resolved, since those cost seconds,
 # and a caller asking about one load should not pay for every load in the logs.
 function Select-SaveLoad {
 
@@ -10,10 +10,8 @@ function Select-SaveLoad {
         [switch] $IsNewestOnly
     )
 
-    $outcomeNames = @((Get-LoadOutcomeNames).PSObject.Properties.Value)
-
-    if ($Outcome -and $Outcome -cnotin $outcomeNames) {
-        throw "no load outcome $Outcome; the outcomes are $($outcomeNames -join ', ')"
+    if ($Outcome) {
+        Assert-LoadOutcomeName -Outcome $Outcome
     }
 
     $selected = @($Loads | Where-Object {

@@ -1,5 +1,5 @@
 # Reads which content a failed load's root cause names: its kind and ID.
-# Id is what to look for in a mod; ReportedId is the ID as the message names it.
+# `Id` is what to look for in a mod; `ReportedId` is the ID as the message names it.
 # The two differ for a d-hull, which names its base hull.
 # Returns null when the cause names no missing content.
 function Get-MissingContent {
@@ -25,7 +25,6 @@ function Get-MissingContent {
     # XStream throws this when a save names a class no loaded JAR holds; its message is the class name alone.
     $unresolvedClassExceptionType = 'com.thoughtworks.xstream.mapper.CannotResolveClassException'
     $missingClassKind = 'Class'
-
     $hullKind = 'Hull'
 
     # Vanilla builds every hull's d-hull at startup, under the hull ID plus this suffix (Misc.D_HULL_SUFFIX).
@@ -45,15 +44,28 @@ function Get-MissingContent {
         }
 
         $reportedId = $match.Groups['id'].Value
-        $isDHull = $missingSpec.Kind -eq $hullKind -and $reportedId.EndsWith($dHullSuffix)
-        $id = if ($isDHull) { $reportedId.Substring(0, $reportedId.Length - $dHullSuffix.Length) } else { $reportedId }
+        $isDHull = $missingSpec.Kind -eq $hullKind -and
+            $reportedId.EndsWith($dHullSuffix, [System.StringComparison]::Ordinal)
+
         $specClass = $match.Groups['class']
+
+        $id = if ($isDHull) {
+            $reportedId.Substring(0, $reportedId.Length - $dHullSuffix.Length)
+        } else {
+            $reportedId
+        }
+
+        $specClassName = if ($specClass.Success) {
+            $specClass.Value
+        } else {
+            $null
+        }
 
         return [pscustomobject]@{
             Kind       = $missingSpec.Kind
             Id         = $id
             ReportedId = $reportedId
-            SpecClass  = if ($specClass.Success) { $specClass.Value } else { $null }
+            SpecClass  = $specClassName
         }
     }
 

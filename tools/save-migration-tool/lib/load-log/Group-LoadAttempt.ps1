@@ -1,6 +1,7 @@
 # Folds vanilla's retries into the load that caused them, and names the file each attempt read as its Source.
 # An attempt is a retry when the one before it failed on the same save and the load has not yet used every source.
 # A player loading the same broken save twice so still reads as two loads.
+# The load's own cause, missing content and chain stay empty until Copy-FirstAttemptReading fills them.
 function Group-LoadAttempt {
 
     param([object[]] $Attempts)
@@ -16,7 +17,12 @@ function Group-LoadAttempt {
 
     foreach ($attempt in $Attempts) {
 
-        $previous = if ($null -ne $currentAttempts) { $currentAttempts[$currentAttempts.Count - 1] } else { $null }
+        $previous = if ($null -ne $currentAttempts) {
+            $currentAttempts[$currentAttempts.Count - 1]
+        } else {
+            $null
+        }
+
         $isRetry = $null -ne $previous -and
             $previous.Outcome -eq $failedOutcome -and
             $previous.SavePath -eq $attempt.SavePath -and
@@ -37,12 +43,14 @@ function Group-LoadAttempt {
         $firstAttempt = $loadAttempts[0]
 
         [pscustomobject]@{
-            SaveFolder = Split-Path -Leaf $firstAttempt.SavePath
-            SavePath   = $firstAttempt.SavePath
-            Outcome    = $loadAttempts[$loadAttempts.Count - 1].Outcome
-            CauseType  = $firstAttempt.CauseType
-            Cause      = $firstAttempt.Cause
-            Attempts   = $loadAttempts.ToArray()
+            SaveFolder  = Split-Path -Leaf $firstAttempt.SavePath
+            SavePath    = $firstAttempt.SavePath
+            Outcome     = $loadAttempts[$loadAttempts.Count - 1].Outcome
+            CauseType   = $null
+            Cause       = $null
+            Attempts    = $loadAttempts.ToArray()
+            Missing     = $null
+            ObjectChain = @()
         }
     }
 }

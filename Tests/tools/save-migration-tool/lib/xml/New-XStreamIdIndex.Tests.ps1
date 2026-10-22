@@ -1,4 +1,7 @@
 BeforeAll {
+
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\New-XStreamIdIndex.ps1"
 }
 

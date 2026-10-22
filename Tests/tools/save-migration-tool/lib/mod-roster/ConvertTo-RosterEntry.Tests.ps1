@@ -1,6 +1,8 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Add-ModDefaultDisplay.ps1"
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Add-ModDefaultDisplay.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Format-ModVersion.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\ConvertTo-RosterEntry.ps1"
 }
@@ -10,7 +12,9 @@ Describe 'ConvertTo-RosterEntry' {
     BeforeEach {
 
         Mock Format-ModVersion { "formatted-$Version" }
-        Mock Add-ModDefaultDisplay { $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru }
+        Mock Add-ModDefaultDisplay {
+            $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru
+        }
 
         $script:ModGroup = [pscustomobject]@{
             Winner     = [pscustomobject]@{
@@ -38,7 +42,7 @@ Describe 'ConvertTo-RosterEntry' {
         $entry.SupersededCount | Should -Be 1
     }
 
-    It 'resolves each declared jar against the mod''s folder' {
+    It 'resolves each declared JAR against the mod''s folder' {
 
         (ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector').Jars | Should -Be @(
             'C:\Games\Starsector\mods\Alpha-1.2\jars\alpha.jar'

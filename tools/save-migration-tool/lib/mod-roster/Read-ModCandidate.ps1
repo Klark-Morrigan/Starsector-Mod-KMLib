@@ -1,14 +1,16 @@
 # Reads one mods\ folder as a roster candidate: its mod ID, name, version, the key its version sorts by,
 # and the JARs it declares, as mod_info.json writes them.
 # Returns null for a folder with no mod_info.json, which the game does not load as a mod.
-# Fails open: a mod_info.json nothing can parse still yields a candidate, under its folder name, with a warning.
+# Fails open: a mod_info.json nothing can parse, or one naming no ID, still yields a candidate,
+# under its folder name, with a warning.
 # A filter that hides a real mod is worse than no filter, because nothing signals that it happened.
 function Read-ModCandidate {
 
     [CmdletBinding()]
     param([System.IO.DirectoryInfo] $Folder)
 
-    $infoPath = Join-Path $Folder.FullName 'mod_info.json'
+    $modInfoFileName = 'mod_info.json'
+    $infoPath = Join-Path $Folder.FullName $modInfoFileName
 
     if (-not (Test-Path -LiteralPath $infoPath -PathType Leaf)) {
         return $null
@@ -31,7 +33,7 @@ function Read-ModCandidate {
 
         $reason = if ($parseError) { $parseError } else { 'no "id" field' }
 
-        Write-Warning "Unparseable mod_info.json, keeping in roster: $($Folder.Name) ($reason)"
+        Write-Warning "No mod ID read from $modInfoFileName, keeping in roster: $($Folder.Name) ($reason)"
 
         return [pscustomobject]@{
             Id      = $Folder.Name

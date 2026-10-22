@@ -1,47 +1,29 @@
 BeforeAll {
+
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Remove-JsonLineComment.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Remove-JsonComment.ps1"
 }
 
-# Each expectation is what the game's LoadingUtils comment strip leaves of the same text.
 Describe 'Remove-JsonComment' {
 
-    It 'strips a whole-line # comment and a trailing one' {
-
-        $text = "{`n# a comment line`n`"id`": `"a`", # trailing`n}"
-
-        Remove-JsonComment -Text $text | Should -Be "{`n`n`"id`": `"a`", `n}"
+    BeforeEach {
+        Mock Remove-JsonLineComment { "<stripped $Line>" }
     }
 
-    It 'keeps a # inside a string' {
+    It 'drops carriage returns from a text holding no #, reading no line on its own' {
 
-        $text = '{ "url": "https://example.com/#top" }'
+        Remove-JsonComment -Text "{`r`n`"a`": 1`r`n}" | Should -Be "{`n`"a`": 1`n}"
 
-        Remove-JsonComment -Text $text | Should -Be $text
+        Should -Invoke Remove-JsonLineComment -Times 0
     }
 
-    It 'keeps a # after an even number of escaped quotes, since every quote flips the string' {
+    It 'strips only the lines holding a #, dropping the carriage returns of the rest' {
 
-        $text = '{ "name": "The \"Quoted\" # Mod" }'
+        Remove-JsonComment -Text "{`r`n# a comment`r`n`"a`": 1`r`n}" |
+            Should -Be "{`n<stripped # a comment`r>`n`"a`": 1`n}"
 
-        Remove-JsonComment -Text $text | Should -Be $text
-    }
-
-    It 'strips from a # after an odd number of escaped quotes, as the game does' {
-        Remove-JsonComment -Text '{ "name": "say \"#1 twice" }' | Should -Be '{ "name": "say \"'
-    }
-
-    It 'keeps // and /* */, which are not comments to the game' {
-
-        $text = '{ "a": 1 // not a comment' + "`n" + '/* nor this */ }'
-
-        Remove-JsonComment -Text $text | Should -Be $text
-    }
-
-    It 'ends a string at a line break, so a quote left open on one line does not hide the next line''s comment' {
-        Remove-JsonComment -Text "{ `"a`": `"open`n# comment`n}" | Should -Be "{ `"a`": `"open`n`n}"
-    }
-
-    It 'drops carriage returns, keeping line feeds' {
-        Remove-JsonComment -Text "{`r`n}" | Should -Be "{`n}"
+        Should -Invoke Remove-JsonLineComment -Times 1 -Exactly
     }
 }

@@ -7,6 +7,8 @@
 
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\helpers\Invoke-ScriptCapturingOutput.ps1"
 
     # Tests\ mirrors the repo, so the script sits at the same relative path under the repo root.
@@ -27,8 +29,9 @@ BeforeAll {
 
         Copy-Item -LiteralPath (Join-Path $script:FixturesRoot $LogFixture) -Destination $root -Recurse
         New-Item -ItemType Directory -Path $saveFolder -Force | Out-Null
-        Copy-Item -LiteralPath (Join-Path $script:FixturesRoot 'saved-mod-list\saves\save_TestCaptain_1\descriptor.xml') `
-            -Destination $saveFolder
+        $descriptor = Join-Path $script:FixturesRoot 'saved-mod-list\saves\save_TestCaptain_1\descriptor.xml'
+
+        Copy-Item -LiteralPath $descriptor -Destination $saveFolder
 
         return $root
     }
@@ -60,8 +63,8 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 '  Cause:'
                 '    java.lang.RuntimeException'
                 '    Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
-                '  save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
-                '  save_Alpha_1: object chain length 6, mod classes 0'
+                '  missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
+                '  object chain length 6, mod classes 0'
                 '  Attempts, in order:'
                 '    campaign:'
                 '      Failed at starsector.log.1:2'
@@ -114,7 +117,10 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
 
             $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
 
-            $run.Output | Should -Be @('', 'No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.')
+            $run.Output | Should -Be @(
+                ''
+                'No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.'
+            )
             $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: no load failed, so no save is diagnosed'
         }
 

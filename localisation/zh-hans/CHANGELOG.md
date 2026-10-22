@@ -141,8 +141,11 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`publish-download-badges.yml`**：可复用工作流，把模组的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。未提交 `localisation/manifest.json` 的 Mod 不区分语言区域，每个发布版本只有一个下载量。
 - **`mod-release.yml` 与 `publish-download-badges.yml` 运行的每个操作，都会在日志中记录它读取了什么、做出了什么判断，以及它的每一项输出**，因此仅凭一次运行的日志，就能看出后续步骤拿到了什么。
 - **存档迁移工具（SMT）脚本**（位于 `tools/save-migration-tool/`），从仓库的检出副本运行，从不随压缩包发布：
-  - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因、该原因指出的缺失内容，以及失败所在的对象链，链中每个类都注明其 JAR 含有该类的 Mod。游戏自身的重试归入它们所属的那次读取。
+  - `Invoke-SaveMigrationTool.ps1` 对一个存档做完整诊断：最新一次读取失败的存档，或指定的存档，给出其原因、每次重试以及失败所在的 Mod 类，再给出该存档最后一次写入时使用了多少个 Mod。
+  - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因、该原因指出的缺失内容，以及失败所在的对象链，链中每个类都注明其 JAR 含有该类的 Mod。游戏自身的重试归入它们所属的那次读取。`-SaveFolder`、`-Outcome` 和 `-Newest` 在任何耗时的读取之前缩小列表，`-AsText` 则把列表写成供人阅读的文本。
+  - `Get-SaveModDrift.ps1` 根据存档的描述文件，列出该存档最后一次写入时使用的 Mod。
   - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹、版本和声明的 JAR，并按游戏的方式读取每个 `mod_info.json`。
+  - 供人阅读的文本在终端中按每个值的种类着色，在其他地方不带颜色。
 - **`ci-powershell.yml`**：通过 Common-PowerShell 的可复用工作流，在每个拉取请求上检查仓库的 PowerShell 代码，并运行其 Pester 测试套件。`mod-release.yml` 在打包前重新运行同一门禁，与其他门禁一样；不含 PowerShell 的 Mod 也能通过。
 
 #### 变更

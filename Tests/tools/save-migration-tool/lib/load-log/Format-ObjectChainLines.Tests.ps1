@@ -1,9 +1,14 @@
 BeforeAll {
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Format-ConsoleNumber.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Format-ConsoleText.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Select-ModChainLink.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Format-ObjectChainLines.ps1"
+    Set-StrictMode -Version Latest
+
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
+
+    . "$libRoot\console\Format-ConsoleNumber.ps1"
+    . "$libRoot\console\Format-ConsoleText.ps1"
+    . "$libRoot\load-log\Format-OwnerList.ps1"
+    . "$libRoot\load-log\Select-ModChainLink.ps1"
+    . "$libRoot\load-log\Format-ObjectChainLines.ps1"
 
     function script:New-Link {
         # One class of an object chain, as Add-ObjectChainOwner leaves it.
@@ -27,9 +32,10 @@ Describe 'Format-ObjectChainLines' {
         # Marks each painted value with its role, so a case pins the colour of every value it names.
         Mock Format-ConsoleText { "<$Role>$Text" }
         Mock Format-ConsoleNumber { "<Number>$Number" }
+        Mock Format-OwnerList { "<Owners>$($Owners -join '+')" }
     }
 
-    It 'counts the chain, then names the nearest mod class with every owner on an indented line' {
+    It 'counts the chain, then names the nearest mod class with its owners on an indented line' {
 
         $load = [pscustomobject]@{
             SaveFolder  = 'save_A'
@@ -42,8 +48,8 @@ Describe 'Format-ObjectChainLines' {
         }
 
         Format-ObjectChainLines -Load $load | Should -Be @(
-            '<Path>save_A: object chain length <Number>4, mod classes <Number>2,'
-            '  nearest <Code>m.Market (<Mod>alpha, <Mod>beta) at depth <Number>2'
+            'object chain length <Number>4, mod classes <Number>2,'
+            '  nearest <Code>m.Market (<Owners>alpha+beta) at depth <Number>2'
         )
     }
 
@@ -57,7 +63,6 @@ Describe 'Format-ObjectChainLines' {
             )
         }
 
-        Format-ObjectChainLines -Load $load |
-            Should -Be @('<Path>save_A: object chain length <Number>2, mod classes <Number>0')
+        Format-ObjectChainLines -Load $load | Should -Be @('object chain length <Number>2, mod classes <Number>0')
     }
 }

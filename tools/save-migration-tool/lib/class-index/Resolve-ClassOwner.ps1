@@ -1,6 +1,6 @@
 # Resolves the owners of the given classes in an install,
-# from the jars its roster's mods declare and from the game's own classpath.
-# CoreJarCount says how many classpath entries vmparams named: none leaves every core class without an owner.
+# from the JARs its roster's mods declare and from the game's own classpath.
+# CoreJarCount says how many classpath entries vmparams named, and CoreClasspathProblem why there are none.
 function Resolve-ClassOwner {
 
     param(
@@ -12,13 +12,14 @@ function Resolve-ClassOwner {
         [string[]] $ClassNames
     )
 
-    $coreJars = @(Read-CoreClasspath -StarsectorRoot $StarsectorRoot)
+    $coreClasspath = Read-CoreClasspath -StarsectorRoot $StarsectorRoot
 
-    $sources = @([pscustomobject]@{ Owner = (Get-CoreOwnerName); Jars = $coreJars }) +
+    $sources = @([pscustomobject]@{ Owner = (Get-CoreOwnerName); Jars = $coreClasspath.Jars }) +
         @($Roster | ForEach-Object { [pscustomobject]@{ Owner = $_.Id; Jars = $_.Jars } })
 
     $index = New-ClassOwnerIndex -Sources $sources -ClassNames $ClassNames
-    $index | Add-Member -NotePropertyName 'CoreJarCount' -NotePropertyValue $coreJars.Count
+    $index | Add-Member -NotePropertyName 'CoreJarCount' -NotePropertyValue @($coreClasspath.Jars).Count
+    $index | Add-Member -NotePropertyName 'CoreClasspathProblem' -NotePropertyValue $coreClasspath.Problem
 
     return $index
 }

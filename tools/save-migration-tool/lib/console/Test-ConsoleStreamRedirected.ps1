@@ -1,4 +1,5 @@
-# Says whether the process's stdout or stderr goes somewhere other than a console: a file, or a pipe into another program.
+# Says whether the process's stdout or stderr goes somewhere other than a console:
+# a file, or a pipe into another program.
 function Test-ConsoleStreamRedirected {
 
     param(

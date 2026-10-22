@@ -92,10 +92,10 @@ so no script lists the functions it calls or what those call in turn.
 | --- | --- |
 | [`lib/`](lib/) | The library loader, and `Write-DiagnosticLine`, which every script logs through |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
-| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, and stripping it where a stream is not a console |
+| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns every mod list prints |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
-| [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, what their causes name, and keeping the loads asked for |
-| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, mod versions, and the columns every mod list prints |
+| [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
+| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions |
 | [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
 | [`lib/save-descriptor/`](lib/save-descriptor/) | Reading the mod list out of a save's `descriptor.xml` |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
@@ -157,9 +157,10 @@ Three filters narrow the list:
 `-SaveFolder` keeps one save's loads,
 `-Outcome` keeps the loads that ended `Loaded`, `Failed` or `Unfinished`,
 and `-Newest` keeps only the newest load the others leave.
-They apply before [class owners](#class-owners) are resolved,
-so a filtered run reads only the JARs its loads need,
-and none when they name no object chain.
+A mistyped `-Outcome` fails before any log is read.
+They apply before any failure's trace is read and before [class owners](#class-owners) are resolved,
+so a filtered run reads only the traces and JARs its loads need,
+and no JAR when they name no object chain.
 Reading every mod's JARs takes seconds.
 
 ### How vanilla logs a load
@@ -192,6 +193,8 @@ so a reported log position holds only until the game rotates again.
 Each file is read whole,
 and the lines naming the loader are found as one array operation.
 A loop over every line would take seconds on a log of a million lines.
+A failure's trace is set aside as raw lines,
+and read for its cause and chain only once the filters have kept its load.
 
 ### Missing content
 
@@ -272,12 +275,17 @@ since the log sits in `starsector-core`.
   or that no zip reader opens,
   is skipped,
   and stderr names it with the reason.
+- A mod whose `mod_info.json` gives no ID declares no JARs here,
+  so its classes resolve to no owner;
+  stderr counts such mods.
 
 Owners are resolved only when a failure names a chain,
 and only for the classes the chains name.
+Each class is looked up in a JAR by its entry path, `a/b/C.class`,
+so a JAR of thousands of entries costs one lookup per class.
 With no `mods` folder in the install,
-or no classpath in `vmparams`,
-the script warns and leaves those owners empty.
+or `vmparams` missing or naming no classpath,
+the script warns, saying which, and leaves those owners empty.
 
 ### Output
 
@@ -293,14 +301,15 @@ One object per load, newest first:
 | `Missing` | The [missing content](#missing-content) the first attempt's cause names: `Kind`, `Id`, `ReportedId` and `SpecClass`. Empty when the cause names none |
 | `ObjectChain` | The first attempt's [object chain](#object-chain), innermost first: each class's `Depth`, `Class` and [`Owners`](#class-owners). Empty when the log names none |
 
-Stderr gains two lines per load with a cause:
+Stderr gains a block for each listed load with a cause:
 what the cause was read as,
 and, when it names one,
-the chain's length and its nearest mod class.
+the chain's length and, on a second line, its nearest mod class.
 When owners are resolved,
 stderr names the install they come from,
 each JAR skipped,
 how many JARs were read and how long that took,
+how many unparsed mods left their JARs unknown,
 and how many classes found owners,
 more than one mod,
 or dropped mod copies of a core class.
@@ -392,12 +401,16 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 ```
 
 - `mod_info.json`'s `id` is the identity, not the folder name: one mod can sit in several folders.
-- When it does, the highest `version` wins, compared number by number (`1.10.0` above `1.9.0`).
-  `SupersededCount` says how many copies lost, and stderr names each winner and loser.
+- When it does, the highest `version` wins, compared number by number (`1.10.0` above `1.9.0`),
+  however many digits a part holds.
+  Copies whose numbers tie are ordered by the version as written, so `1.5b` beats `1.5a`,
+  and copies at the very same version by folder name, so the same install always picks the same one.
+  `SupersededCount` says how many copies lost, and stderr names each winner and loser, and each tie.
 - `enabled_mods.json` decides what loads.
   A missing or unreadable one warns and lists every mod.
 - A folder with no `mod_info.json` is not a mod; stderr names each one skipped.
-- A `mod_info.json` nothing can parse stays in the roster as `unparsed`, under its folder name, with a warning.
+- A `mod_info.json` nothing can parse, or one naming no `id`,
+  stays in the roster as `unparsed`, under its folder name, with a warning.
   Dropping it would hide a real mod with nothing to say so.
 
 Each entry carries `Id`, `Version`, `Name`, `Folder`, `RelativePath` (under the install root),
@@ -414,11 +427,14 @@ Every file is read as the game reads its data files, neither stricter nor looser
 - A `#` outside a string starts a comment that runs to the end of its line.
   The game tracks strings by flipping on every `"`, escaped or not, and forgets an open string at each line break;
   the reader does the same, so a `#` after an odd number of `\"` is a comment here too.
-- `//` and `/* */` are not comments to the game, and a file holding them fails to parse.
+  Only a line holding a `#` is read character by character, so a file with none costs a single pass.
+- `//` and `/* */` are not comments to the game, and a file holding one outside a string fails to parse.
+  ConvertFrom-Json would skip them, so the reader looks for them itself.
 - A file opening with a byte order mark fails, as it does in the game.
 - org.json accepts trailing commas, single-quoted strings and unquoted values.
-  ConvertFrom-Json rejects the last two, so the reader repairs them,
-  each repair tried only after the ones before it fail, since a repair can corrupt a file that needed none.
+  ConvertFrom-Json accepts the first two as they are.
+  An unquoted value is quoted only when the file fails without the repair,
+  since a repair can corrupt a file that needed none.
 
 ## Tests
 
@@ -442,7 +458,11 @@ copies a log fixture to a temporary folder and gives its failed save that descri
 builds a small install per case.
 
 [`helpers/`](../../Tests/tools/save-migration-tool/helpers/) holds what the suites share:
-running a script with its stderr and warnings captured, and writing a test mod or JAR.
+running a script with its stderr and warnings captured, blank lines kept,
+and writing a test file, mod or JAR under the suite's temporary folder.
+
+Every suite runs under `Set-StrictMode -Version Latest`, as the scripts do,
+so a read the scripts would fail on fails in the suites too.
 
 No test reads a real install, log or save.
 

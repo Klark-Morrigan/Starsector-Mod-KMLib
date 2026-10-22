@@ -1,5 +1,7 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log"
 
     . "$libRoot\ConvertFrom-FailureTrace.ps1"

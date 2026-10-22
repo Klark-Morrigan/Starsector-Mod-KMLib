@@ -1,5 +1,7 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Resolve-XStreamReference.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-EnabledModData.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\Read-SaveModList.ps1"

@@ -1,5 +1,7 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\class-index\Get-CoreOwnerName.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Select-ModChainLink.ps1"
 }
@@ -24,7 +26,9 @@ Describe 'Select-ModChainLink' {
 
     It 'returns an empty list for a chain with no mod class' {
 
-        $links = Select-ModChainLink -ObjectChain @([pscustomobject]@{ Depth = 0; Class = 'a.Spec'; Owners = @('core') })
+        $coreLink = [pscustomobject]@{ Depth = 0; Class = 'a.Spec'; Owners = @('core') }
+
+        $links = Select-ModChainLink -ObjectChain @($coreLink)
 
         $null -eq $links | Should -BeFalse
         $links.Count | Should -Be 0

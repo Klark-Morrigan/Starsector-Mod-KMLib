@@ -1,5 +1,5 @@
-# Writes a jar at the given path holding an empty entry for each entry name and each class, and returns the path.
-# EntryNames are named as a jar stores them, data/config/x.json, so a test controls the entries that hold no class.
+# Writes a JAR at the given path holding an empty entry for each entry name and each class, and returns the path.
+# EntryNames are named as a JAR stores them, data/config/x.json, so a test controls the entries that hold no class.
 # ClassNames are Java names, a.b.C, stored as a/b/C.class.
 function New-TestJar {
 

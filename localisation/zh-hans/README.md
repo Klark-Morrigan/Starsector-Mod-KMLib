@@ -411,6 +411,13 @@ A version heading is never translated; see [translating the changelog](#translat
 | JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
 | load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
 | cause (the exception a failed load hit) | 原因 | the plain word |
+| diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |
+| descriptor (a save's `descriptor.xml`) | 描述文件 | 描述, to describe, with 文件, file: the small file that describes the save |
+| mod class (a class a mod's JAR holds) | Mod 类 | Mod stays in Latin as the [mod](#mods) row writes it; 类, a Java class |
+| narrow (a list, by a filter) | 缩小 | to make smaller, as a filter makes a list |
+| text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |
+| console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
+| colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 颜色 as the colour rows of [Text and rendering](#text-and-rendering) write it |
 
 #### Releases and badges
 

@@ -1,37 +1,23 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Remove-JsonComment.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Test-JsonSlashComment.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-StarsectorJson.ps1"
-
-    function script:New-JsonFile {
-        # Writes one file under TestDrive, as the given bytes when there are any, and returns its path.
-        param(
-            [string] $Name,
-            [string] $Text,
-            [byte[]] $Bytes
-        )
-
-        $path = Join-Path $TestDrive $Name
-
-        if ($Bytes) {
-            [System.IO.File]::WriteAllBytes($path, $Bytes)
-
-        } else {
-            [System.IO.File]::WriteAllText($path, $Text)
-        }
-
-        return $path
-    }
 }
 
 Describe 'ConvertFrom-StarsectorJson' {
 
     BeforeEach {
+
         Mock Remove-JsonComment { $Text }
+        Mock Test-JsonSlashComment { $false }
     }
 
     It 'parses strict JSON from a path' {
-        (ConvertFrom-StarsectorJson -Path (New-JsonFile 'strict.json' '{ "id": "a" }')).id | Should -Be 'a'
+        (ConvertFrom-StarsectorJson -Path (New-TestFile -Name 'strict.json' -Text '{ "id": "a" }')).id | Should -Be 'a'
     }
 
     It 'parses text it is given' {
@@ -45,12 +31,16 @@ Describe 'ConvertFrom-StarsectorJson' {
         Should -Invoke Remove-JsonComment -Times 1 -Exactly
     }
 
-    It 'drops trailing commas' {
-        (ConvertFrom-StarsectorJson -Text '{ "ids": ["a", "b",], }').ids | Should -Be @('a', 'b')
+    It 'takes the trailing commas and single-quoted strings org.json takes, with no repair' {
+
+        $parsed = ConvertFrom-StarsectorJson -Text "{ `"major`": '3', `"ids`": [`"a`", `"b`",], }"
+
+        $parsed.major | Should -Be '3'
+        $parsed.ids | Should -Be @('a', 'b')
     }
 
-    It 'quotes single-quoted values' {
-        (ConvertFrom-StarsectorJson -Text '{ "major": ''3'' }').major | Should -Be '3'
+    It 'keeps a comma and brace inside a string as they are' {
+        (ConvertFrom-StarsectorJson -Text '{ "a": "x,}" }').a | Should -Be 'x,}'
     }
 
     It 'quotes a bare-word value, leaving true, false and null as literals' {
@@ -61,34 +51,28 @@ Describe 'ConvertFrom-StarsectorJson' {
         $parsed.flag | Should -BeTrue
     }
 
-    It 'applies both repairs to a file that needs both' {
+    It 'rejects a // or /* */ comment, as the game does' {
 
-        $parsed = ConvertFrom-StarsectorJson -Text '{ "major": ''1'', "patch":a }'
+        Mock Test-JsonSlashComment { $true }
 
-        $parsed.major | Should -Be '1'
-        $parsed.patch | Should -Be 'a'
-    }
-
-    It 'keeps prose apostrophes when the file parses without the single-quote repair' {
-
-        $parsed = ConvertFrom-StarsectorJson -Text '{ "description": "the fleet''s, the crew''s" }'
-
-        $parsed.description | Should -Be 'the fleet''s, the crew''s'
+        { ConvertFrom-StarsectorJson -Text '{ "id": "a" }' } |
+            Should -Throw 'holds a // or /* */ comment, which the game rejects: the given text'
     }
 
     It 'rejects a file opening with a byte order mark, as the game does' {
 
         $bytes = [byte[]] (0xEF, 0xBB, 0xBF) + [System.Text.Encoding]::UTF8.GetBytes('{}')
-        $path = New-JsonFile -Name 'bom.json' -Bytes $bytes
+        $path = New-TestFile -Name 'bom.json' -Bytes $bytes
 
         { ConvertFrom-StarsectorJson -Path $path } |
             Should -Throw "starts with a byte order mark, which the game rejects: $path"
     }
 
-    It 'fails naming the file when no repair parses' {
+    It 'fails naming the file when even the repair does not parse' {
 
-        $path = New-JsonFile 'broken.json' '{ "id": '
+        $path = New-TestFile -Name 'broken.json' -Text '{ "id": '
 
-        { ConvertFrom-StarsectorJson -Path $path } | Should -Throw "no repair produced valid JSON: $path *"
+        { ConvertFrom-StarsectorJson -Path $path } |
+            Should -Throw "not valid JSON, even with unquoted values quoted: $path *"
     }
 }

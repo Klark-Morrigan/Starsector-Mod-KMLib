@@ -7,6 +7,8 @@
 
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\helpers\Invoke-ScriptCapturingOutput.ps1"
     . "$PSScriptRoot\helpers\New-TestMod.ps1"
 
@@ -114,9 +116,27 @@ Describe 'Get-ModRoster.IntegrationTests' {
         }
     }
 
-    Context 'a mod that declares jars' {
+    Context 'two copies of a mod at the same version' {
 
-        It 'lists each declared jar as a full path under the mod''s folder' {
+        It 'picks the first by folder name, and says the version tied' {
+
+            $root = New-ModInstall -Name 'tie' -EnabledModsJson '{ "enabledMods": ["beta"] }' -ModInfoByFolder @{
+                'Beta B' = '{ "id": "beta", "version": "1.0" }'
+                'Beta A' = '{ "id": "beta", "version": "1.0" }'
+            }
+
+            $run = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            $run.Output.RelativePath | Should -Be @('mods\Beta A')
+            $run.Diagnostics | Should -Contain (
+                'Get-ModRoster: beta: Beta A (1.0) wins over Beta B (1.0), ' +
+                'the same version, so first by folder name')
+        }
+    }
+
+    Context 'a mod that declares JARs' {
+
+        It 'lists each declared JAR as a full path under the mod''s folder' {
 
             $root = New-ModInstall -Name 'jars' -EnabledModsJson '{ "enabledMods": ["a"] }' -ModInfoByFolder @{
                 'A Mod' = '{ "id": "a", "version": "1", "jars": ["jars/a.jar", "jars/lib/b.jar"] }'
@@ -178,8 +198,10 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $warnings = @($script:Run.Warnings | Sort-Object)
 
             $warnings.Count | Should -Be 2
-            $warnings[0] | Should -BeLike 'Unparseable mod_info.json, keeping in roster: Broken Mod (no repair produced valid JSON: *'
-            $warnings[1] | Should -Be 'Unparseable mod_info.json, keeping in roster: No Id (no "id" field)'
+            $warnings[0] | Should -BeLike (
+                'No mod ID read from mod_info.json, keeping in roster: Broken Mod ' +
+                '(not valid JSON, even with unquoted values quoted: *')
+            $warnings[1] | Should -Be 'No mod ID read from mod_info.json, keeping in roster: No Id (no "id" field)'
         }
     }
 

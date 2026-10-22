@@ -1,4 +1,7 @@
 BeforeAll {
+
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-MissingContent.ps1"
 }
 
@@ -20,7 +23,7 @@ Describe 'Get-MissingContent' {
         $missing.SpecClass | Should -BeNullOrEmpty
     }
 
-    It 'reads a missing d-hull as its base hull, keeping the reported id' {
+    It 'reads a missing d-hull as its base hull, keeping the reported ID' {
 
         $missing = Get-MissingContent -CauseType 'java.lang.RuntimeException' `
             -Cause 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'

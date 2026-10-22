@@ -65,7 +65,9 @@ if ($SaveFolder) {
 $mods = @()
 
 if ($SaveFolder) {
-    $mods = @(& (Join-Path $PSScriptRoot 'Get-SaveModDrift.ps1') -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder)
+
+    $modListScript = Join-Path $PSScriptRoot 'Get-SaveModDrift.ps1'
+    $mods = @(& $modListScript -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder)
 }
 
 $report = [pscustomobject]@{
@@ -77,5 +79,5 @@ $report = [pscustomobject]@{
 if ($AsJson) {
     ConvertTo-Json -InputObject $report -Depth $JsonDepth
 } else {
-    Format-DiagnosisReport -Report $report | ForEach-Object { Resolve-ConsoleText -Text $_ -Stream 'Output' }
+    Resolve-OutputLines -Lines (Format-DiagnosisReport -Report $report)
 }

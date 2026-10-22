@@ -1,5 +1,8 @@
 BeforeAll {
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Add-ModDefaultDisplay.ps1"
+
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Add-ModDefaultDisplay.ps1"
 }
 
 Describe 'Add-ModDefaultDisplay' {

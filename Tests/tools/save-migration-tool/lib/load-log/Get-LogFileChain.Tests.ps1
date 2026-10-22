@@ -1,23 +1,22 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
+    . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-LogFileChain.ps1"
 
     function script:New-LogFolder {
-        # Writes empty files with the given names into a fresh folder under TestDrive and returns the folder.
+        # Writes empty files with the given names into a folder under TestDrive and returns the folder.
         param(
             [string] $Name,
             [string[]] $FileNames
         )
 
-        $folder = Join-Path $TestDrive $Name
-
-        New-Item -ItemType Directory -Path $folder | Out-Null
-
         foreach ($fileName in $FileNames) {
-            New-Item -ItemType File -Path (Join-Path $folder $fileName) | Out-Null
+            New-TestFile -Name "$Name\$fileName" | Out-Null
         }
 
-        return $folder
+        return Join-Path $TestDrive $Name
     }
 }
 

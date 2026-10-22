@@ -1,5 +1,7 @@
 BeforeAll {
 
+    Set-StrictMode -Version Latest
+
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Format-ModVersion.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Get-XmlChildText.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-SaveModVersion.ps1"
@@ -48,11 +50,14 @@ Describe 'ConvertFrom-SaveModVersion' {
         ConvertFrom-SaveModVersion -VersionInfo $versionInfo | Should -Be 'formatted-1-5-'
     }
 
-    It 'returns an empty string for no string and no parts' {
+    It 'hands Format-ModVersion no parts at all for no string and no parts' {
 
         $versionInfo = New-VersionInfo '<versionInfo><major></major><minor></minor><patch></patch></versionInfo>'
 
-        ConvertFrom-SaveModVersion -VersionInfo $versionInfo | Should -Be ''
-        Should -Invoke Format-ModVersion -Times 0
+        ConvertFrom-SaveModVersion -VersionInfo $versionInfo | Should -Be 'formatted---'
+
+        Should -Invoke Format-ModVersion -Times 1 -Exactly -ParameterFilter {
+            $null -eq $Version.major -and $null -eq $Version.minor -and $null -eq $Version.patch
+        }
     }
 }
