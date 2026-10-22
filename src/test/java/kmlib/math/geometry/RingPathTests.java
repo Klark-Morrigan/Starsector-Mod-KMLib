@@ -50,6 +50,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * past the start carries on round, one ending behind its start has no length, and one
  * longer than the perimeter is cut to a lap.
  *
+ * <p>And of {@link RingPath#collectStretchPoints}, one polyline per stretch in order, and of
+ * {@link RingPath#collectSpansEndToEnd}, each span opening where the one before it closed - a span
+ * of no length kept as its point, and a run past the perimeter carrying on round.
+ *
  * <p>And of {@link RingPath#findClearArcs}: the whole path is clear where nothing covers it,
  * a shape over it leaves the stretches either side, a cover spanning several edges is one
  * stretch rather than one per edge, a shape over the start leaves what lies between its two
@@ -611,6 +615,81 @@ final class RingPathTests {
     }
 
     @Nested
+    class CollectSpansEndToEnd {
+
+        // The second span opens where the first closed, on the corner at 3, so the two meet
+        // exactly and the second walks down the right-hand side from there.
+        @Test
+        void eachSpanOpensWhereTheOneBeforeItClosed() {
+
+            // ARRANGE
+            var spanLengths = new double[] {1.5, 3};
+
+            // ACT
+            var actualSpans = traceReferenceSquare().collectSpansEndToEnd(1.5, spanLengths);
+
+            // ASSERT
+            assertThat(actualSpans)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                actualSpans.get(0),
+                List.of(new double[] {6.5, 8}, new double[] {8, 8}));
+
+            assertThatPointsAre(
+                actualSpans.get(1),
+                List.of(new double[] {8, 8}, new double[] {8, 5}));
+        }
+
+        // A span of no length keeps its place in the answer, so the spans stay readable by
+        // position against the lengths they were laid from.
+        @Test
+        void aSpanOfNoLengthIsTheSinglePointItSitsAt() {
+
+            // ARRANGE
+            var spanLengths = new double[] {0, 1};
+
+            // ACT
+            var actualSpans = traceReferenceSquare().collectSpansEndToEnd(5, spanLengths);
+
+            // ASSERT
+            assertThat(actualSpans)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                actualSpans.get(0),
+                List.of(new double[] {8, 6}));
+
+            assertThatPointsAre(
+                actualSpans.get(1),
+                List.of(new double[] {8, 6}, new double[] {8, 5}));
+        }
+
+        // The run carries on round the start like any single stretch does.
+        @Test
+        void spansRunningPastThePerimeterCarryOnRound() {
+
+            // ARRANGE
+            var spanLengths = new double[] {1, 1};
+
+            // ACT
+            var actualSpans = traceReferenceSquare().collectSpansEndToEnd(23, spanLengths);
+
+            // ASSERT
+            assertThat(actualSpans)
+                .hasSize(2);
+
+            assertThatPointsAre(
+                actualSpans.get(0),
+                List.of(new double[] {4, 8}, new double[] {5, 8}));
+
+            assertThatPointsAre(
+                actualSpans.get(1),
+                List.of(new double[] {5, 8}, new double[] {6, 8}));
+        }
+    }
+
+    @Nested
     class FindClearArcs {
 
         @Test
@@ -867,6 +946,7 @@ final class RingPathTests {
     // from (2,2) to (8,8), traced clockwise from (5,8) - a 24-long path whose corners fall at
     // 3, 9, 15 and 21.
     private static RingPath traceReferenceSquare() {
+
         return RingPath.traceInsetRing(
             buildReferenceSquare(),
             INSET_DISTANCE,
@@ -887,6 +967,7 @@ final class RingPathTests {
     // path opens at (10,18) and the mouth sits 15 to 19.24 along, while from beside the mouth
     // the path opens on the pinch itself.
     private static RingPath traceTabbedSquare(double[] topAnchor) {
+
         return RingPath.traceInsetRing(
             List.of(
                 new double[] {0, 0},

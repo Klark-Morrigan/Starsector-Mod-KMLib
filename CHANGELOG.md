@@ -121,6 +121,7 @@ The reusable release workflow extracts the section matching the released version
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
 - **`RingPath`** walks several stretches in one call:
   - `collectStretchPoints(List)`: each stretch as a polyline, the corners it turns at included.
+  - `collectSpansEndToEnd(double, double[])`: spans of the given lengths laid end to end from one arc length, each opening where the one before it closed.
 - **`SalvageDrops`**: drop lists for the game's salvage roller, and the roll.
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.

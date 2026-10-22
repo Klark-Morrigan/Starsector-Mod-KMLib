@@ -111,7 +111,6 @@ public final class RingPath {
             double[] topAnchor) {
 
         var counterClockwise = PolygonRegions.orientRing(ring, true);
-
         var inset = PolygonOffsets.removeReversedLoops(
             PolygonOffsets.insetPolygonByMiter(
                 counterClockwise,
@@ -120,7 +119,6 @@ public final class RingPath {
             COMPARE_EVERY_EDGE_PAIR);
 
         var cleaned = Rings.removeConsecutiveDuplicates(inset);
-
         if (cleaned.size() < Limits.MIN_VERTICES_TO_ENCLOSE_AREA) {
             return nothingLeftToTrace();
         }
@@ -248,6 +246,7 @@ public final class RingPath {
         if (isEmpty()) {
             return new ArrayList<>();
         }
+
         var covered = RingPathArcs.collectCoveredArcs(points, arcLengthAtPoint, keepOutRings);
 
         covered.addAll(overrunArcs);
@@ -295,6 +294,7 @@ public final class RingPath {
         for (var arc : overrunArcs) {
             failing.add(new RingStretch(arc[0], arc[1]));
         }
+
         return failing;
     }
 
@@ -361,6 +361,7 @@ public final class RingPath {
             appendUnlessCoincident(walked, points.get(edge));
             walkedLength += arcLengthAtPoint[edge + 1] - arcLengthAtPoint[edge];
         }
+
         appendUnlessCoincident(walked, computePointAt(start + span));
 
         return walked;
@@ -389,6 +390,37 @@ public final class RingPath {
     }
 
     /**
+     * Spans of the given lengths laid end to end from {@code startArcLength}, each as the polyline
+     * {@link #collectPointsBetween} walks it.
+     *
+     * <p>A layout in pieces - one band in several colours along its length - is a run of lengths
+     * rather than of positions. Each span opens exactly where the one before it closed, so the
+     * pieces meet without a gap or an overlap however the lengths round, and a caller never keeps
+     * the running position itself.
+     *
+     * @param startArcLength where the first span opens
+     * @param spanLengths    each span's length, in layout order; a span of no length is the
+     *                       single point it sits at
+     * @return one polyline per span, in the order the lengths were given
+     * @throws IllegalStateException when the path is empty and there is a span to walk
+     */
+    public List<List<double[]>> collectSpansEndToEnd(double startArcLength, double[] spanLengths) {
+
+        var spans = new ArrayList<List<double[]>>(spanLengths.length);
+        var cursor = startArcLength;
+
+        for (var spanLength : spanLengths) {
+
+            var spanEnd = cursor + spanLength;
+
+            spans.add(collectPointsBetween(cursor, spanEnd));
+            cursor = spanEnd;
+        }
+
+        return spans;
+    }
+
+    /**
      * The same stretches with the one crossing the path's start read as the single stretch it
      * is: the last and the first fused into one running on past the perimeter.
      *
@@ -414,6 +446,7 @@ public final class RingPath {
         if (clearArcs.size() < 2) {
             return clearArcs;
         }
+
         var first = clearArcs.get(0);
         var last = clearArcs.get(clearArcs.size() - 1);
 
@@ -422,6 +455,7 @@ public final class RingPath {
 
             return clearArcs;
         }
+
         var fused = new ArrayList<>(clearArcs.subList(1, clearArcs.size() - 1));
 
         fused.add(new RingStretch(
@@ -476,9 +510,11 @@ public final class RingPath {
         if (pathStart <= latestStart) {
             return pathStart;
         }
+
         if (pathStart <= stretch.endArcLength()) {
             return latestStart;
         }
+
         return selectNearerEndOfStretch(stretch, latestStart, pathStart);
     }
 
@@ -522,9 +558,11 @@ public final class RingPath {
         var arcLengths = new double[points.size() + 1];
 
         for (var i = 0; i < points.size(); i++) {
+
             arcLengths[i + 1] = arcLengths[i]
                 + Points.computeDistance(points.get(i), points.get((i + 1) % points.size()));
         }
+
         return arcLengths;
     }
 
@@ -544,7 +582,9 @@ public final class RingPath {
     private double wrapArcLength(double arcLength) {
 
         var wrapped = arcLength % getPerimeter();
-        return wrapped < 0 ? wrapped + getPerimeter() : wrapped;
+        return wrapped < 0
+            ? wrapped + getPerimeter()
+            : wrapped;
     }
 
     // The edge a distance round the ring falls on: the last one starting at or before it.
@@ -554,10 +594,12 @@ public final class RingPath {
     private int findEdgeAt(double arcLength) {
 
         for (var edge = points.size() - 1; edge > 0; edge--) {
+
             if (arcLengthAtPoint[edge] <= arcLength) {
                 return edge;
             }
         }
+
         return 0;
     }
 
@@ -567,5 +609,4 @@ public final class RingPath {
             throw new IllegalStateException("Cannot measure along a path with no points");
         }
     }
-
 }

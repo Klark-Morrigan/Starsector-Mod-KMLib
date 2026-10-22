@@ -192,6 +192,9 @@ and a point midway along an edge can stand nearer the ring than either end of it
 a stretch spanning a corner bends,
 and whatever gives it girth has to bend with it.
 `collectStretchPoints` walks a set of stretches the same way, one polyline each.
+`collectSpansEndToEnd` lays a run of lengths end to end from one position,
+each span opening exactly where the one before it closed,
+so the pieces of one layout meet without the caller keeping a running position.
 
 A layout rarely has the whole ring to itself,
 so `findClearArcs` answers which stretches of the path a set of keep-out shapes -

@@ -121,6 +121,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**：一组范围被限制在一个外围环之内后的轮廓；环为 null 时不作限制。
 - **`RingPath`** 一次调用遍历多个路段：
   - `collectStretchPoints(List)`：每个路段各为一条折线，包含它在其中转折的拐角。
+  - `collectSpansEndToEnd(double, double[])`：从一个弧长位置起首尾相接地铺设给定长度的各个跨度，每个跨度从前一个结束处开始。
 - **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
