@@ -55,19 +55,15 @@ public record Segment(
      */
     public List<double[]> computeBandCorners(double thickness) {
 
-        var unit = Points.computeUnitVector(
-            endX - startX,
-            endY - startY,
-            Limits.MIN_EDGE_LENGTH);
-
-        if (unit == null || thickness < Limits.MIN_EDGE_LENGTH) {
+        var normal = computeUnitNormal();
+        if (normal == null || thickness < Limits.MIN_EDGE_LENGTH) {
             return List.of();
         }
 
-        // Half the girth along the centreline's perpendicular - its direction turned a
-        // quarter turn - which is the offset from the centreline to each long edge.
-        var halfX = -unit[1] * thickness / 2;
-        var halfY = unit[0] * thickness / 2;
+        // Half the girth along the normal, which is the offset from the centreline to each
+        // long edge.
+        var halfX = normal[0] * thickness / 2;
+        var halfY = normal[1] * thickness / 2;
 
         return List.of(
             new double[] {startX + halfX, startY + halfY},
