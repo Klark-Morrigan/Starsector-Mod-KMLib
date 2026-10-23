@@ -134,6 +134,8 @@ The reusable release workflow extracts the section matching the released version
 - **`SectorMarkets.readMarketIds(SectorAPI)`**: the ID of every market in the sector, whether the economy lists it or not.
 - **`SectorMarkets.readMarkets(SectorAPI)`**: every market the sector's economy lists.
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`** in `kmlib.starsector`: the one traversal of the sector's system list every sector-wide read goes through, charged as one walk. A null sector, or one listing no systems, visits nothing.
+- **`Segment`** reads across a segment, and a way in from its middle:
+  - `computeUnitNormal()`: the unit vector on the left of the direction of travel, null for a segment too short to take a direction from.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StarsectorStrings.fillTemplate(String, Object...)`**: a template already read, filled as `format(String, String, Object...)` fills the one it reads.

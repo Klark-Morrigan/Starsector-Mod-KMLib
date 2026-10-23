@@ -1,5 +1,6 @@
 package kmlib.math.geometry;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -73,6 +74,30 @@ public record Segment(
             new double[] {endX + halfX, endY + halfY},
             new double[] {endX - halfX, endY - halfY},
             new double[] {startX - halfX, startY - halfY});
+    }
+
+    /**
+     * The unit vector perpendicular to the segment, on the left of its direction of travel - the
+     * direction turned a quarter turn anticlockwise.
+     *
+     * <p>What anything given girth across the segment is offset along, so a band's edges and the lines
+     * within it agree on which way across is.
+     *
+     * @return the normal as {@code {x, y}}; null when the segment is too short to take a direction
+     *         from ({@link Limits#MIN_EDGE_LENGTH})
+     */
+    public double[] computeUnitNormal() {
+
+        var unit = Points.computeUnitVector(
+            endX - startX,
+            endY - startY,
+            Limits.MIN_EDGE_LENGTH);
+
+        return unit == null
+            ? null
+            : new double[] {
+                -unit[1],
+                unit[0]};
     }
 
     /**
