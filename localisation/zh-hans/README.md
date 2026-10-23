@@ -83,6 +83,12 @@ A mod's own reference may add rules for its own features.
   Where the game already names a concept, a KM mod uses the core localisation's word for it,
   so a player reads the same word in a KM screen as in the game's own.
   The [vanilla terms](#vanilla-terms) below are that evidence.
+- **A reason gives the word's meaning.**
+  A row's note says what the word means, or names its upstream source:
+  vanilla's own text, a forum, another row of a reference.
+  Text the mods ship - the settings, the strings, the changelog - follows the reference,
+  so it is never the reason for a word:
+  a wrong word that had shipped would otherwise keep itself.
 - **Radio options stay English.**
   LunaLib saves the label of the option picked, not its position,
   so a translated option would lose the player's setting and break the code reading it.
@@ -102,7 +108,7 @@ A mod's own reference may add rules for its own features.
   ASCII stays where the text is markup or a number:
   LunaLib's `[` `]` highlight marks, `%%` and format slots, and numeric runs.
   A name's parenthesised suffix keeps ASCII parentheses and a leading space,
-  as the core localisation writes names (`通讯中继站 (隐藏)`):
+  following the core localisation's names (`通讯中继站 (隐藏)`):
   `Klark Morrigan 的程序库 (KMLib)`.
 - **No em dash (`——`).**
   An aside becomes a comma, a colon or parentheses.
@@ -132,7 +138,7 @@ A mod's own reference may add rules for its own features.
   The parity suite holds the English to the English bundle's,
   and the Chinese to its slots.
 - **Defaults read `[默认值：X]`, on a line of their own.**
-  `X` is the shipped value as the English file writes it,
+  `X` is the shipped value, spelled exactly as in the English file,
   except a Boolean, which reads `开启` for true and `关闭` for false.
   The default ends the description, after a line break and with no full stop, as `[Default: X]` does in English.
   A Radio's option translations are the one thing that follows it.
@@ -268,7 +274,7 @@ so the values line up as they do in English.
 | Log verbosity | 日志详细程度 | verbosity alone is 详细程度 |
 | OFF / ERROR / WARN / INFO / DEBUG / ALL (log levels) | 关闭 / 错误 / 警告 / 信息 / 调试 / 全部 | the usual logging words; OFF follows a switch's 关闭 |
 | probes that read the game's UI by reflection | 通过反射读取游戏界面的探测器 | reflection is 反射, a probe 探测器 |
-| settings slider | 设置滑块 | 滑块 as KMU's settings descriptions write it |
+| settings slider | 设置滑块 | 设置, settings, with 滑块, a slider: the block slid along a track |
 
 ### Console commands
 
@@ -281,13 +287,13 @@ A term the console text shares with the changelog, such as a parameter, is under
 | discoverable (a place the player has still to find) | 可发现 | `SectorEntityToken.isDiscoverable()`: kept off the system map until the player's sensors find it |
 | drift rate (an orbit's speed) | 漂移速率 | 漂移, drift, with 速率, rate |
 | flag (an argument given as a bare keyword) | 开关参数 | 开关, a switch, with 参数: a parameter that is on by being given |
-| game log | 游戏日志 | 日志 as the [log](#support-replies) row writes it |
+| game log | 游戏日志 | 游戏, the game, with 日志, a log (see the [log](#support-replies) row) |
 | holdings (the places a faction holds) | 持有地 | 持有, to hold, with 地, a place |
 | hyperspace entrance (of a jump point) | 超空间入口 | the vanilla Hyperspace row with 入口, entrance |
 | intel entry | 情报条目 | 情报, vanilla's intel item, with 条目, an entry |
 | map spoilers | 星图剧透 | vanilla's 星图 with 剧透, the usual word for a spoiler |
 | named parameter (one given as `name=value`) | 具名参数 | 具名, named, the usual computing word |
-| orbit tree, focus (what an orbit goes round) | 轨道树, 焦点 | 轨道, orbit; 焦点 as the [orbit-focus chain](#geometry) row writes it |
+| orbit tree, focus (what an orbit goes round) | 轨道树, 焦点 | 轨道, orbit, with 树, a tree; 焦点, a focus (see the [orbit-focus chain](#geometry) row) |
 | stockpiling, accrued unrest (what a colony's old owner arranged) | 囤积, 累积的动荡 | plain words, unchecked against the game JAR |
 | system center (a system's middle where no star sits) | 星系中心 | vanilla's 星系 with 中心, center; vanilla never names it. Not 质心, barycentre, which is true only where stars orbit it, and false for a starless system such as a nebula |
 | territorial, non-territorial (a faction) | 领土, 非领土 | `territorial` in a faction's `punitiveExpeditionData`, read by `Misc.getClaimingFaction`: only a territorial faction claims a system dynamically. 非领土势力 in prose; 领土 is also the word for territory |
@@ -333,17 +339,18 @@ A version heading is never translated; see [translating the changelog](#translat
 | cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
 | class, syntax, tags, help (the columns of a console command table) | 类, 语法, 标签, 帮助文字 | the usual computing words; 帮助文字, help text, so the column reads as words rather than as the help command |
-| command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread writes `help <指令名>` |
+| command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread uses it in `help <指令名>` |
 | compile | 编译 | the usual computing word |
-| console command, console command table (a mod's `commands.csv`) | 控制台指令, 控制台指令表 | 指令 as [Console Commands' Fossic thread](https://www.fossic.org/thread-14602-1-1.html) writes it throughout, never 命令: that thread is where a Chinese player installs the mod from, and it names the mod itself 控制台. 表, a table |
+| console command, console command table (a mod's `commands.csv`) | 控制台指令, 控制台指令表 | 指令, an instruction, the word [Console Commands' Fossic thread](https://www.fossic.org/thread-14602-1-1.html) uses throughout, never 命令: that thread is where a Chinese player installs the mod from, and it names the mod itself 控制台. 表, a table |
 | constructor, no-arg constructor | 构造函数, 无参构造函数 | |
 | consumer mod | 使用方 Mod | |
 | control character | 控制字符 | the usual computing word |
+| conventions (rules a family of builds share, such as the Starsector conventions) | 约定 | the plain word for what is agreed and held to |
 | conversion (between units, such as fraction and percent) | 换算 | not 转换, which reads as a change of type or format |
 | envelope (a value's rise and fall over time) | 包络 | the signal-processing word |
 | event, unconsumed (an input event no panel has taken) | 事件, 未被消费的 | the usual UI words |
-| exception, exception message, field (of a Java type) | 异常, 异常消息, 字段 | the usual computing words; 字段 as the `mod_info.json` row writes it |
-| extend (an interface extending another), implementer | 继承, 实现方 | the usual computing words; 方 for the party, as 调用方 writes it |
+| exception, exception message, field (of a Java type) | 异常, 异常消息, 字段 | the usual computing words; 字段, a field (see the `mod_info.json` row) |
+| extend (an interface extending another), implementer | 继承, 实现方 | the usual computing words; 方, a party to something, as in 调用方, the caller |
 | final class (one nothing may extend) | 不可继承的类 | said plainly rather than left as the keyword |
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | ideographic space (U+3000) | 全角空格 | what a Chinese typist calls it; not the literal 表意空格 |
@@ -353,19 +360,20 @@ A version heading is never translated; see [translating the changelog](#translat
 | library | 程序库 | |
 | listener manager (the game's registry of event listeners) | 监听器管理器 | 监听器, the usual computing word for a listener, with 管理器, a manager |
 | listener, saved or transient (registered on the sector) | 监听器, 存档的或临时的 | 临时, temporary, for one kept out of the save; 存档的 for one written into it |
-| log line | 日志行 | as the settings description and the `0.5.0` entries write it |
-| map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words, as the `0.4.0` and `0.5.0` entries write them |
+| log line | 日志行 | 日志, a log, with 行, a line |
+| map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words: 映射, a mapping; 列表, a list; 记录, a record |
 | method handle | 方法句柄 | |
 | named group (of a regex) | 命名分组 | the usual computing word |
 | overload (one of several same-named methods) | 重载 | the usual computing word |
 | parameter, positional parameter, parameter spec (of a console command) | 参数, 位置参数, 参数规范 | the usual computing words; 位置, position, for one filled by where it stands |
 | parser, value parser | 解析器, 值解析器 | the usual computing words |
+| phrase (a run of words a rule looks for) | 短语 | the plain word for a run of words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
-| reader, source (a port opening readers) | 读取器, 来源 | 读取器 as the `0.5.0` entries write it; 来源, where something comes from |
+| reader, source (a port opening readers) | 读取器, 来源 | 读取, to read, with 器, a thing that does a job; 来源, where something comes from |
 | record (a Java value type) | 记录类型 | 记录 with 类型, a type: the type itself, where 记录 is one value of it |
-| reflection | 反射 | as in the settings description |
-| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配 as the changelog's own preamble writes it |
-| register (a store of records kept under one key) | 登记表 | from 登记, to record, as the `0.5.0` compatibility entries write it |
+| reflection | 反射 | 反射, to reflect back: the usual computing word for code reading its own types |
+| regex, match (a name a regex accepts) | 正则表达式, 匹配 | the usual computing words; 匹配, to match |
+| register (a store of records kept under one key) | 登记表 | from 登记, to record, with 表, a table |
 | relay (a listener passing events on) | 转发器 | 转发, to pass on |
 | revision (a number that moves when content changes) | 修订号 | 修订, a revision, with 号, its number |
 | sampling (one read of a live value) | 采样 | the usual word for taking one reading of something that changes |
@@ -377,10 +385,11 @@ A version heading is never translated; see [translating the changelog](#translat
 | strings category (the namespace in strings.json) | 字符串类别 | 字符串 before 类别, a category |
 | supplier (a function a caller hands in) | 供应器 | |
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
-| told (a listener hearing of an event) | 得到通知 | as the `MarketTransferListener` entry writes it |
-| trigger (a moment that sets an animation off) | 触发 | as the `MarketTransferListener` entry writes it for a listener |
-| usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, as command-line help writes it |
-| word (a run of text between whitespace), part into words | 词, 划分词 | 词 as 关键词 writes it |
+| told (a listener hearing of an event) | 得到通知 | 得到, to receive, with 通知, a notice |
+| trigger (a moment that sets an animation off) | 触发 | the usual word for setting something off |
+| usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, with 行, a line |
+| word (a run of text between whitespace), part into words | 词, 划分词 | 词, a word, as in 关键词, a keyword; 划分, to divide, before 词 |
+| wording (the words a text puts something in) | 措辞 | the plain word for how something is put into words |
 
 #### CI and git
 
@@ -389,9 +398,9 @@ A version heading is never translated; see [translating the changelog](#translat
 | action (what a workflow step runs) | 操作 | GitHub's own Chinese documentation word |
 | branch (of a git repository) | 分支 | the usual git word |
 | checkout (a repository's working copy) | 检出副本 | 检出, git's own word for checking out, with 副本, a copy |
-| gate (a CI check a change must pass) | 门禁 | |
+| gate (a CI check a change must pass) | 门禁 | 门, a door, with 禁, to bar: what a change has to pass to get in |
 | lint (a YAML, shell or PowerShell check) | 检查 | a tool's name, such as yamllint or Pester, stays in English |
-| output (a value one step hands the next) | 输出 | GitHub's own Chinese documentation word, as the `zip-name-regex` entry writes it |
+| output (a value one step hands the next) | 输出 | 输出, to put out: GitHub's Chinese documentation word for it |
 | pull request | 拉取请求 | GitHub's own Chinese interface word |
 | reusable workflow | 可复用工作流 | GitHub's own Chinese documentation words |
 | runner (the machine a CI job runs on) | 运行器 | GitHub's own Chinese documentation word |
@@ -409,15 +418,15 @@ A version heading is never translated; see [translating the changelog](#translat
 | variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game JAR, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
 | object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
 | JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
-| load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载 as the failed load (of a font) row writes it, kept apart from a save's 读取; 启用 as the `MarketTransferListener` entry writes it |
+| load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载, to load in (see the failed load row, of a font), kept apart from a save's 读取; 已, already, with 启用, to put into use |
 | cause (the exception a failed load hit) | 原因 | the plain word |
 | diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |
 | descriptor (a save's `descriptor.xml`) | 描述文件 | 描述, to describe, with 文件, file: the small file that describes the save |
-| mod class (a class a mod's JAR holds) | Mod 类 | Mod stays in Latin as the [mod](#mods) row writes it; 类, a Java class |
+| mod class (a class a mod's JAR holds) | Mod 类 | Mod stays in Latin (see the [mod](#mods) row); 类, a Java class |
 | narrow (a list, by a filter) | 缩小 | to make smaller, as a filter makes a list |
 | text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |
 | console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
-| colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 颜色 as the colour rows of [Text and rendering](#text-and-rendering) write it |
+| colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
 
 #### Releases and badges
 
@@ -438,7 +447,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | data file | 数据文件 | a CSV or JSON a mod ships |
-| field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, as the developer notes write it |
+| field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, the usual computing word |
 | object-holding array (in JSON) | 对象数组 | 对象, object, before 数组, array: an array whose elements are objects |
 | root, nested record (of a JSON file) | 根层级, 嵌套的记录 | 层级, level, so 根 reads as the file's top level rather than a root directory |
 
@@ -448,10 +457,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | bundle | 语言包 | |
 | core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
-| English copy (the English a console text carries after its translation) | 英文副本 | 副本, a copy, as 检出副本 writes it |
+| English copy (the English a console text carries after its translation) | 英文副本 | 英文, English, with 副本, a copy, as in 检出副本, a checkout |
 | locale | 语言区域 | |
 | locale tag (such as `zh-hans`) | 语言区域标签 | 标签, tag |
-| translation (the translated text of a string) | 译文 | as the `0.5.0` entry on highlight order writes it; kept apart from 汉化, a translated build |
+| translation (the translated text of a string) | 译文 | 译, translated, with 文, text; kept apart from 汉化, a translated build |
 
 #### Text and rendering
 
@@ -465,27 +474,27 @@ A version heading is never translated; see [translating the changelog](#translat
 | digits (of a figure) | 位数 | how many digits a figure carries, as in 保留全部位数, every digit kept; one digit on its own is 数字 |
 | failed load (of a font) | 加载失败 | the noun form of 无法加载 |
 | font atlas, face, cut | 字体图集, 字体, 字号 | a cut is one size of a face |
-| hatch, stroke, spacing, pattern | 斜线, 描边, 间距, 图样 | 斜线, 描边 and 间距 as the `0.4.0` `HatchPattern` entry writes them |
+| hatch, stroke, spacing, pattern | 斜线, 描边, 间距, 图样 | 斜线, a slanted line; 描边, to stroke an edge; 间距, the distance between; 图样, a pattern |
 | fraction (a share in `[0, 1]`, such as `0.20` for 20%) | 比例 | not 分数, which reads as a ratio of two integers such as 1/5 |
 | highlight, highlighted run | 高亮, 高亮片段 | a run is the span of text one highlight tints |
 | highlight colour | 高亮颜色 | |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
-| pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距 as the hatch row writes spacing; 提示框 as the `0.5.0` entries write it |
+| pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距, the distance between (see the hatch row); 提示框, a prompt box |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
-| modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板 as the `0.5.0` notice entries write it; 宿主, host; 占用, to take up |
-| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示窗口 as the `0.5.0` notice entry writes it; 对话框 as the vanilla Dialog row |
+| modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板, a panel; 宿主, host; 占用, to take up |
+| dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示, a prompt, with 窗口, a window; 对话框, vanilla's word (see the vanilla Dialog row) |
 | interaction dialog, option (in one), visual panel | 交互对话框, 选项, 视觉面板 | the vanilla Interaction and Dialog rows joined; 选项 as the vanilla Dialog option row; 视觉, visual, with 面板 as vanilla names its screens, the visual panel having no name a player sees |
-| text panel (the column of paragraphs in an interaction dialog) | 文本面板 | 文本, text, with 面板 as the visual panel row writes it, the text panel having no name a player sees |
+| text panel (the column of paragraphs in an interaction dialog) | 文本面板 | 文本, text, with 面板, a panel (see the visual panel row), the text panel having no name a player sees |
 | balance (the credits a player holds) | 余额 | the usual word for what an account holds |
 | interaction target (the entity a dialog is open on) | 交互目标 | the vanilla Interaction and Target rows joined; kept apart from 目标版本, a targeted version |
-| plugin (the class the game runs a feature through), hand off (a dialog to a plugin), start (a plugin) | 插件, 移交, 启动 | 插件 as the `StorageAccess` entry writes it. Vanilla shows players no plugin in this sense, and reads a bare 插件 as a hullmod (see the Hullmod row), so an entry names the kind where it is not plain: 对话框插件, 插件类. 移交, to transfer; 启动 as vanilla starts the game, a system or an ability |
-| fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出 as the `0.5.0` notice entry writes it; 节奏, rhythm |
+| plugin (the class the game runs a feature through), hand off (a dialog to a plugin), start (a plugin) | 插件, 移交, 启动 | 插件, something plugged in. Vanilla shows players no plugin in this sense, and reads a bare 插件 as a hullmod (see the Hullmod row), so an entry names the kind where it is not plain: 对话框插件, 插件类. 移交, to transfer; 启动 as vanilla starts the game, a system or an ability |
+| fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出, to fade in and fade out; 节奏, rhythm |
 | close key (a key that closes a panel) | 关闭键 | 关闭, close, with 键, key |
-| public API | 公共 API | 公共 as 公共契约 writes it; API stays in Latin letters |
+| public API | 公共 API | 公共, public, as in 公共契约, a public contract; API stays in Latin letters |
 | paragraph | 段落 | |
 | renderer, render pass | 渲染器, 渲染通道 | |
 | round, truncate (a figure) | 四舍五入, 截断 | 四舍五入, four down and five up, is rounding half up, the rule `Math.round` follows; 截断, cut off, drops the fraction outright |
-| row (one line of a list or hover box) | 行 | as 日志行 writes it |
+| row (one line of a list or hover box) | 行 | 行, a line, as in 日志行, a log line |
 | scientific notation, trailing zero (of a figure) | 科学计数法, 末尾零 | |
 | slot (in a format string) | 槽位 | |
 | solid filled rectangle (a glyph drawn without its atlas) | 实心矩形 | 实心, filled, with 矩形, rectangle |
@@ -496,17 +505,17 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| advance (one step of a script) | 推进 | as the `0.3.0` and `0.5.0` entries write it |
-| campaign message (a `MessageIntel` notification) | 战役消息 | 战役, campaign, as 战役加速 writes it, with 消息, message |
+| advance (one step of a script) | 推进 | 推进, to push forward |
+| campaign message (a `MessageIntel` notification) | 战役消息 | 战役, campaign, as in 战役加速, campaign speed-up, with 消息, message |
 | campaign speed-up | 战役加速, 加速 for short | settled in the `0.5.0` entries; vanilla's own "Speeding up time" sits in the game JAR, which the cached core localisation does not hold, so it is unchecked |
-| lift (an icon moved past the map's nebulae) | 抬升 | as the `0.5.0` entries write it |
-| location (what holds entities: a star system or hyperspace) | 位置 | as the `0.3.0` entries write it |
+| lift (an icon moved past the map's nebulae) | 抬升 | 抬升, to raise up |
+| location (what holds entities: a star system or hyperspace) | 位置 | 位置, a position, the place something is at |
 | placement (of a map icon among the others), unplaceable | 叠放情况, 无法定位 | 叠放, stacking, as the `0.5.0` entry's 重新叠放; 定位, to locate, kept apart from 位置 for a location |
 | put back (an entity taken out of its location) | 放回 | the counterpart of 移出 |
-| reading (what one advance found and ordered) | 读数 | as the `0.5.0` entries write it |
-| reseat (the removal and put-back a lift is made of) | 重新安置 | as the `0.3.0` entries write it |
+| reading (what one advance found and ordered) | 读数 | 读数, a reading, what a measurement shows |
+| reseat (the removal and put-back a lift is made of) | 重新安置 | 重新, again, with 安置, to settle in place |
 | wait (an advance spent with the entity out) | 等待 | the plain word |
-| walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | as the `0.5.0` entries write 遍历; 计数, count |
+| walk (a read over every item of a set), sector walk counters | 遍历, 星域遍历计数 | 遍历, to go over every item; 星域, the sector; 计数, count |
 
 #### Factions
 
@@ -514,7 +523,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | alliance lead | 盟主 | the alliance's leading member |
 | change hands (a colony passing to another owner) | 易手 | the plain word, kept apart from 移交, a hand-over a caller makes |
-| friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | the reputation levels' words, as KMU's hover boxes write them; 一组势力 for a set of factions |
+| friendly, neutral (a disposition between two factions), set (of factions) | 友好, 中立, 组 | vanilla's words for the reputation levels; 一组势力 for a set of factions |
 | long name (of a faction) | 长名称 | 长, long, before 名称, name |
 | teach (what an item gives a faction to know), know | 传授, 掌握 | |
 
@@ -524,25 +533,25 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | claim, claimant (the faction claiming a system) | 宣称, 宣称方 | KMU's words, from vanilla's 无宣称领土; 方 for the party holding it |
 | decree (a claim the system's memory flag imposes) | 无条件宣称 | KMU's word for the `$claimingFaction` flag, which wins over any scored claim |
-| contest, standing (one faction's place in it), score | 争夺, 排名, 得分 | 争夺 and 得分 as KMU writes them; 排名, ranking, for a place the scores order |
+| contest, standing (one faction's place in it), score | 争夺, 排名, 得分 | 争夺, to contend for; 得分, a score; 排名, ranking, for a place the scores order |
 | breakdown (the whole scored contest behind a claim) | 明细 | the itemised account, as a bill's 明细 lists its lines |
-| fill (a map cell's paint), hover box | 填充, 悬停框 | both as KMU writes them; 悬停框, a box raised on hover, kept apart from 提示框, a tooltip |
+| fill (a map cell's paint), hover box | 填充, 悬停框 | 填充, a fill; 悬停框, a box raised on hover, kept apart from 提示框, a tooltip |
 | index (of one pass's walk), memory read (of a flag) | 索引, 记忆读取 | the usual computing word; 记忆, memory, the API's `MemoryAPI` read literally, since no player ever sees the term |
 
 #### Markets
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| submarket (one of a market's trading counters), cargo | 子市场, 货物 | the game never names the kind to a player, only each counter, as `submarkets.csv` writes 开放市场 and 仓库, so 子市场 follows the API's `SubmarketAPI`; 货物 as that file's 仓库 description writes it |
-| storage, one-time access fee, paid to unlock | 仓库, 一次性使用费, 已付费解锁 | 仓库 and 一次性使用费 as vanilla's `StoragePlugin` dialog writes them (使用此地仓库需要缴纳一次性使用费); 已付费解锁 is the plain reading of `setPlayerPaidToUnlock`, which the game never shows |
-| buy, sell (the player's side of a trade), unit price | 买入, 卖出, 每单位价格 | as the trade screen's cargo tooltips write them (每单位买入的价格, 每单位价格是基于一次性买入或卖出) |
+| submarket (one of a market's trading counters), cargo | 子市场, 货物 | the game never names the kind to a player, only each counter (`submarkets.csv` names 开放市场 and 仓库), so 子市场 follows the API's `SubmarketAPI`; 货物, goods, vanilla's word in that file's 仓库 description |
+| storage, one-time access fee, paid to unlock | 仓库, 一次性使用费, 已付费解锁 | 仓库 and 一次性使用费, vanilla's words in its `StoragePlugin` dialog (使用此地仓库需要缴纳一次性使用费); 已付费解锁 is the plain reading of `setPlayerPaidToUnlock`, which the game never shows |
+| buy, sell (the player's side of a trade), unit price | 买入, 卖出, 每单位价格 | vanilla's words in the trade screen's cargo tooltips (每单位买入的价格, 每单位价格是基于一次性买入或卖出) |
 | average price, price modifier | 平均价格, 价格修正 | plain words; 修正 for a modifier is unchecked against the game JAR |
 
 #### Monthly report
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| monthly report (the income and expenses the game totals and pays each month), income, expenses | 月度收支报告, 收益, 支出 | 收益 and 支出 as vanilla's month-end message writes them (每月收益, 每月支出, `CoreScript`); the report's own title sits in the game JAR and is unchecked |
+| monthly report (the income and expenses the game totals and pays each month), income, expenses | 月度收支报告, 收益, 支出 | 收益 and 支出, vanilla's words in its month-end message (每月收益, 每月支出, `CoreScript`); the report's own title sits in the game JAR and is unchecked |
 | row (one line of the report), fleet (its parent line) | 条目, 舰队 | 舰队 as `CoreScript` names the fleet line; 条目, an entry, for a line under it |
 | economy step (one of the month's economy iterations), month end | 经济步进, 月末 | 步进, a step, as a script's 推进 is an advance; the game never names the step to a player |
 
@@ -550,22 +559,31 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| drop roller, drop list | 掉落抽取器, 掉落列表 | as the `SalvageEntityMock` entry writes 掉落抽取器; 掉落, drop, is the plain word, unchecked against the game JAR |
+| drop roller, drop list | 掉落抽取器, 掉落列表 | 掉落, drop, the plain word, unchecked against the game JAR; 抽取器, a thing that draws; 列表, a list |
 | random drop, value drop, drop group | 随机掉落, 价值掉落, 掉落组 | from 掉落 |
-| roll (one draw from the roller) | 抽取 | as 掉落抽取器 writes it |
+| roll (one draw from the roller) | 抽取 | 抽取, to draw one out |
 | weight (of a random drop), multiplier, neutral (a multiplier of 1) | 权重, 倍率, 中性 | the usual words |
 
 #### Geometry
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| arc length, path (a ring walked from one start), stretch (a piece of a path), span (one piece of a layout laid along a path) | 弧长, 路径, 路段, 跨度 | 弧长, the usual geometry word; 路段, a stretch of a road, so it reads as part of the 路径; 跨度, the extent a piece reaches, kept apart from 区段, a scrolling section |
+| band (a strip either side of a centreline), centreline, girth, lane, divider | 带状区域, 中心线, 宽度, 分道, 分隔线 | 带状, strip-shaped, with 区域; 分道, a lane as a road is split into them; 分隔线, a dividing line |
 | body (an entity in orbit), orbit-focus chain | 天体, 轨道焦点链 | 焦点, focus, with 链, chain |
+| body (the main part of a shape), arm (a thin part reaching out of it) | 主体, 伸出部分 | 主体, the main part, kept apart from 天体, a body in orbit; 伸出部分, a part that reaches out |
+| corner (where a polyline turns), polyline | 拐角, 折线 | 拐角, a turn of a road; 折线, the usual geometry word for a line of joined segments |
 | directed line, even-odd count | 有向直线, 奇偶计数 | the usual geometry words |
 | extent (one painted shape), outline | 范围, 轮廓 | |
-| hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 单元 as the controls entries write a cell |
+| hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 哈希, hash, with 网格, a grid; 单元, a unit, for a cell; 边界框, a bounding box |
+| inset (a ring moved inward), miter (a corner joined by extending its two edges), fold (a loop where an inset crosses itself) | 内缩, 斜接, 折叠 | 内缩, drawing inward; 斜接, the usual word for a miter joint; 折叠, folding over, since the loop runs back against the rest of the ring |
+| normal (the unit vector perpendicular to a segment), direction of travel, bearing | 单位法向量, 行进方向, 方位 | 法向量, the usual geometry word; 行进, moving forward, for the way a segment runs from start to end |
 | region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
+| segment (a line between two ends), centre (its middle) | 线段, 中心 | the usual geometry words |
 | stride, triangle list | 步长, 三角形列表 | the usual words |
+| winding (which way round a ring runs), counter-clockwise, net area (the area left once loops wound opposite ways cancel) | 绕行方向, 逆时针, 净面积 | 绕行, going round, with 方向, direction; 净, net, as in 净值 |
+| window (how many edges apart two edges may be and still be compared), edge | 窗口, 边 | the usual words |
 
 #### Lists and sorting
 
@@ -587,17 +605,17 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | attachment | 附件 | a file uploaded to a forum post |
 | download panel | 下载面板 | the posting form's word, from its 插入Mod文件下载面板到帖子正文中 button |
 | fast review (an admin review asked for straight after posting) | 快速审核 | [the review rules'](https://www.fossic.org/thread-6107-1-1.html) word, for a lightweight mod |
-| forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, as its 发表帖子 button writes it |
+| forum thread | 论坛帖子, 帖子 for short; 本帖 for this thread | 帖子, a post or thread, the forum's own word, on its 发表帖子 button |
 | Fossic (the forum) | Fossic, with 远行星号中文论坛 beside it | the forum's own site name, "the Starsector Chinese forum", for a reader who knows it by that |
-| mod index (Fossic's list of reviewed mods) | Mod索引 | the forum's own name, written as it writes it, with no space |
+| mod index (Fossic's list of reviewed mods) | Mod索引 | the forum's own name, spelled with no space |
 | mod release (a thread tag) | mod发布 | the one tag Fossic's mod threads share; tags there are free text, so a thread's others are the words a player would search for |
 | OP (a thread's first post) | 主楼 | the players' word on Chinese forums, where replies are numbered floors |
-| original mod board (where a reviewed thread moves) | 原创Mod区 | the board's own name, written as the forum writes it, with no space |
+| original mod board (where a reviewed thread moves) | 原创Mod区 | the board's own name on the forum, spelled with no space |
 | pre-release | 预发布 | Fossic's word for its pre-release board |
 | private message | 私信 | the usual forum word, for messaging one user directly |
 | Q&A (a post's section of player questions and answers) | 常见问题; 问 and 答 open each question and answer | the usual heading for that section of a mod post; 问答 reads as a quiz or an interview |
 | repost | 搬运 | a Fossic board, for mods posted by someone other than their author |
-| review (an admin's check before a thread is listed) | 审核 | the review rules' word, as [Mod审核规定](https://www.fossic.org/thread-6107-1-1.html) writes it |
+| review (an admin's check before a thread is listed) | 审核 | the review rules' word, in [Mod审核规定](https://www.fossic.org/thread-6107-1-1.html) |
 | testing (a title tag) | 测试 | how Fossic titles mark a pre-release |
 | translation (a translated build) | 汉化 | a Fossic board |
 
@@ -608,6 +626,7 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | English edition | 英文版 | the counterpart of 简体中文版 |
 | rationale (for a term's choice) | 选词理由 | 选词, choosing a word, with 理由, reason: what each row's note records |
 | Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
+| terminology reference (a bundle's `README.md`) | 术语参考 | 术语, terminology, with 参考, a reference |
 | the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
 | translation (the act) | 翻译 | the plain word; 汉化 is a translated build, the forum's sense |
 | translation reference (the terminology reference, as a post names it) | 翻译参考 | 参考, reference, after 翻译, translation |
@@ -619,7 +638,7 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | changelog | 更新日志 | [KMLib's](https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/blob/master/localisation/zh-hans/README.md#the-changelog) |
 | dependency (a required mod) | 前置 | Fossic's word; its posting form says 依赖Mod |
 | install mid-run | 中途安装 | 中途, partway through |
-| mod author | Mod 作者 | Mod kept Latin as vanilla does, with 作者, author; the posting form writes Mod作者 |
+| mod author | Mod 作者 | Mod kept Latin as vanilla does, with 作者, author; the posting form spells it Mod作者 |
 | mod installer (a third-party tool) | Mod 安装工具 | 安装, install, with 工具, tool; Mod kept Latin as in Mod 作者 |
 | uninstall, uninstall procedure | 卸载, 卸载步骤 | the usual software word; 步骤 for the steps |
 | vanilla (the base game) | 原版 | the players' word; the game leaves "vanilla" in English |

@@ -19,6 +19,14 @@ import java.util.List;
  */
 public final class PolygonOffsets {
 
+    /**
+     * The window {@link #removeReversedLoops} compares every pair of edges at.
+     *
+     * <p>For a ring offset past its own width, where the two sides that cross can sit anywhere
+     * along it rather than either side of one corner.
+     */
+    public static final int COMPARE_EVERY_EDGE_PAIR = 0;
+
     // Below this a ring encloses nothing worth the name: an inset that took a ring down to a
     // hairline has consumed it, whichever way the hairline happens to wind.
     private static final double COLLAPSED_RING_AREA = 1e-6;
@@ -495,7 +503,7 @@ public final class PolygonOffsets {
      * ring are considered. A fold is two sides of ONE corner, so its segments sit close together;
      * scanning every pair costs quadratically more to find the same folds. A caller who has
      * offset by more than the shape's own scale, where distant parts of a ring can cross,
-     * should pass a window covering the ring.
+     * should pass {@link #COMPARE_EVERY_EDGE_PAIR}.
      *
      * @param polygon           closed polygon vertices as {x, y} pairs
      * @param windowVertexCount how far apart along the ring two segments may be and still be

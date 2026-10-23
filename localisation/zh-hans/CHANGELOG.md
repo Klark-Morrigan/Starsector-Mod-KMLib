@@ -43,6 +43,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`KmlibStrings.splitIntoWords(String)` 和 `abbreviateToInitials(String)` 按 `Character.isWhitespace` 划分词**，即 `hasText(String)` 所读取的规则。此前它们不会在词之间的全角空格处划分，并会去掉首尾的控制字符。
 - **`KmlibStrings.collectTexts(Iterable, Function)` 会去除所保留的每个文本的首尾空白**，与 `normaliseText(String)` 的做法一致。
 - **在 `VanillaClaimBreakdownReader` 中，未指向任何势力的宣称势力标记会让星系无人宣称**，与原版的读法一致：标记为空白，或指向星域不认识的势力时，星系在权衡任何市场之前就判给了无人。此前读取器会把标记的文本报告为宣称方。
+- **`RingPath.traceInsetRing(List, double, double, double[])` 会保留带有细长伸出部分的环的主体。** 内缩留下的折叠按环被赋予的绕行方向剔除，而不是按净面积。此前，伸出部分的折叠所围面积一旦大于主体，主体就会被剔除，路径沿折叠延伸。
+- **`RingPath.getPoints()` 和 `collectPointsBetween(double, double)` 交回的是路径拐角的副本**，`collectStretchPoints(List)` 和 `collectSpansEndToEnd(double, double[])` 也是如此。此前，移动交回的点会连带移动路径自身的拐角。
 
 #### 新增
 
@@ -113,6 +115,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`PlayerCreditsFixture`**（位于 `kmlib.testfixtures.starsector.fleet`）：星域替身背后的玩家星币，沿玩家舰队货舱的每一次读取都得到同一个星币替身。
 - **`PlayerPriceOverrides`**（位于 `kmlib.starsector.commodities.pricing`）：`overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` 把市场向玩家报出的商品价格设为指定数值，无论该市场原本如何报价；`clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` 将其撤回。
 - **`PlayerTradeSide`**（位于 `kmlib.starsector.commodities`）：玩家买入或卖出，以及这一方向读取的市场价格与玩家价格修正。
+- **`PolygonOffsets.COMPARE_EVERY_EDGE_PAIR`**：`removeReversedLoops(List, boolean, int)` 比较每一对边时所用的窗口。
 - **`PolygonRegions`** 中关于环的读取：
   - `findRingHolding(List, double, double)`：第一个包含该点的环，没有时为 `NO_RING`。
   - `findSmallestEnclosingRing(List, double, double)`：包含该点且面积最小的环，因此嵌套的环解析为最内层。
@@ -121,6 +124,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**：一组范围被限制在一个外围环之内后的轮廓；环为 null 时不作限制。
 - **`RingPath`** 一次调用遍历多个路段：
   - `collectStretchPoints(List)`：每个路段各为一条折线，包含它在其中转折的拐角。
+  - `collectSpansEndToEnd(double, double[])`：从一个弧长位置起首尾相接地铺设给定长度的各个跨度，每个跨度从前一个结束处开始。
 - **`SalvageDrops`**：供游戏的掉落抽取器使用的掉落列表，以及抽取本身。
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
@@ -183,6 +187,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `VanillaClaimBreakdownReader(KnownColonyReader)`，以及 `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` 中为 null 的索引 | 已移除：在一次遍历的 `SectorPassIndex` 之上打开读取器。只需无条件宣称时，把 `StarSystems::readDecreedFactionId` 当作 `ClaimDecreeReader` 读取。 | 没有遍历的读取器读取的是 `Global.getSector()`，而不是被询问的那个星域。 |
 | `MarketTargetRequirement(Predicate, String)`，其 `requirementPhrase()` 返回短语 | `MarketTargetRequirement(Predicate, Supplier)`，通过 `readRequirementPhrase()` 读取短语 | 短语是翻译后的字符串，在拒绝的措辞成形时读取，而不是在构建要求时读取，后者可能早于游戏字符串加载。 |
 | `Colours.getGlComponents(Color, float)` | 已移除。用 `GlColour.set(Color, float)` 绘制，或用 `Colours.normaliseChannel(int)` 逐个换算颜色通道。 | 它每次调用都会分配一个数组，而唯一调用它的渲染器在每次绘制时都要设置颜色。 |
+| `RingPath.findClearArcs(List)` | `findClearStretches(List)` | 它返回的是 `RingStretch`，与路径上其他读取路段的方法的名称一致。 |
 
 </details>
 
