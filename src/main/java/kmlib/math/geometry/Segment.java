@@ -86,7 +86,7 @@ public record Segment(
      */
     public List<double[]> computeBandCorners(double thickness) {
 
-        var normal = computeUnitNormal();
+        var normal = computeLeftUnitNormal();
         if (normal == null || thickness < Limits.MIN_EDGE_LENGTH) {
             return List.of();
         }
@@ -122,7 +122,7 @@ public record Segment(
             return List.of();
         }
 
-        var normal = computeUnitNormal();
+        var normal = computeLeftUnitNormal();
         if (normal == null) {
             return List.of();
         }
