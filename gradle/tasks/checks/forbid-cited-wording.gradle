@@ -1,0 +1,39 @@
+// A localisation reference's reasons never cite where some text already writes a word.
+//
+// A reference is the source of truth for the words a mod's bundle uses. Each row settles a word and
+// gives the reason for it. A reason of the form "as the settings write it" points the other way: it
+// makes a copy of the word the authority for the word. A wrong word that had already shipped then
+// keeps itself, because each later row finds it in the shipped text and cites it. A reason gives what
+// the word means, or names its upstream source - vanilla's own text, a forum - as a source, not as
+// wording to copy.
+//
+// Declared once here for every KM mod, because the rule is the same in every reference. The
+// mechanism is Common-Java's enforceNoForbiddenPhrases, which the conventions apply ahead of this.
+// Every line of a reference's prose is read, its sentences as well as its tables: a sentence citing
+// wording is the same habit as a row doing it.
+
+def localisationReferences = 'localisation/*/README.md'
+
+// Each phrase family a reference has carried, with what it cites in place of a meaning.
+def citedWordingPhrases = [
+    [pattern: /(?i)\bwrites?\s+(it|them)\b/, cited: 'wording ("writes it")'],
+    [pattern: /(?i)\bas\b[^|]{0,80}?\bwrites?\b/, cited: 'wording ("as ... writes")'],
+    [pattern: /(?i)\bas\s+(in\s+)?the\s+settings?\b/, cited: 'the settings, which follow the reference'],
+    [pattern: /(?i)\bown\s+wording\b/, cited: 'a text\'s own wording, which follows the reference']]
+
+// Declared only where a reference exists: the gate fails a rule that judges no file, and a mod with no
+// translated bundle carries none.
+def hasLocalisationReference = !fileTree(projectDir) { include localisationReferences }.isEmpty()
+
+if (hasLocalisationReference) {
+
+    enforceNoForbiddenPhrases {
+
+        citedWordingPhrases.each { phrase ->
+
+            forbidPhrase pattern: phrase.pattern,
+                inFiles: localisationReferences,
+                reason: "a reason cites ${phrase.cited}; give what the word means, or name its upstream source"
+        }
+    }
+}

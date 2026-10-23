@@ -154,6 +154,7 @@ The reusable release workflow extracts the section matching the released version
   - `Get-ModRoster.ps1` lists the folder, version and declared JARs the game loads for each enabled mod, reading each `mod_info.json` as the game does.
   - Text for a person is coloured by the kind of each value in a console, and plain everywhere else.
 - **`ci-powershell.yml`**: lints the repository's PowerShell and runs its Pester suites on every pull request, through Common-PowerShell's reusable workflow. `mod-release.yml` re-runs the same gate before packaging, as it does the others; a mod carrying no PowerShell passes it.
+- **A localisation reference may not cite wording as a reason**: the Starsector conventions declare the phrases, such as `as the settings write it`, for Common-Java's `enforceNoForbiddenPhrases` to fail in every KM mod's `localisation/<locale>/README.md`. A reason says what the word means, or names its upstream source, since the shipped text follows the reference.
 
 #### Changed
 

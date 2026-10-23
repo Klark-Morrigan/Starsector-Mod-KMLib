@@ -184,6 +184,11 @@ Build:
   Applied by the conventions script.
 - [`gradle/tasks/checks/report-kmlib-version-mismatch.gradle`](gradle/tasks/checks/report-kmlib-version-mismatch.gradle) -
   warns when a mod compiles against one KMLib and asks players for another.
+- [`gradle/tasks/checks/forbid-cited-wording.gradle`](gradle/tasks/checks/forbid-cited-wording.gradle) -
+  declares the phrases a mod's localisation reference may not give as a reason,
+  for Common-Java's `enforceNoForbiddenPhrases`:
+  where some text already has a word is no reason for it,
+  since the reference is what that text follows.
 - [`gradle/tasks/checks/check-font-editions.gradle`](gradle/tasks/checks/check-font-editions.gradle) -
   KMLib's own:
   lays each localisation edition's descriptors,
