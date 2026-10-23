@@ -170,6 +170,10 @@ public final class PolylineBands {
 
     // One join per point of the centreline: a straight cap at each end, where the band
     // simply stops, and a miter or bevel at every corner in between.
+    //
+    // No normal taken here or in buildCorner comes back null: the centreline was
+    // deduplicated at Limits.MIN_EDGE_LENGTH, which is the length below which a segment
+    // has no direction.
     private static List<BandJoin> buildJoins(
             List<double[]> points,
             double halfWidth,
@@ -180,7 +184,7 @@ public final class PolylineBands {
 
         joins.add(buildCap(
             points.get(0),
-            computeLeftUnitNormal(points.get(0), points.get(1)),
+            Segments.computeLeftUnitNormal(points.get(0), points.get(1)),
             halfWidth));
 
         for (var corner = 1; corner < last; corner++) {
@@ -189,7 +193,7 @@ public final class PolylineBands {
 
         joins.add(buildCap(
             points.get(last),
-            computeLeftUnitNormal(points.get(last - 1), points.get(last)),
+            Segments.computeLeftUnitNormal(points.get(last - 1), points.get(last)),
             halfWidth));
 
         return joins;
@@ -216,8 +220,8 @@ public final class PolylineBands {
         var at = points.get(corner);
         var next = points.get(corner + 1);
 
-        var arrivingNormal = computeLeftUnitNormal(previous, at);
-        var leavingNormal = computeLeftUnitNormal(at, next);
+        var arrivingNormal = Segments.computeLeftUnitNormal(previous, at);
+        var leavingNormal = Segments.computeLeftUnitNormal(at, next);
 
         var arrivingLeft = offsetPoint(at, arrivingNormal, halfWidth);
         var arrivingRight = offsetPoint(at, arrivingNormal, -halfWidth);
@@ -366,21 +370,6 @@ public final class PolylineBands {
             }
         }
         return new SpannedCentreline(points, spanOfSegment);
-    }
-
-    // The left-hand unit normal of the directed segment a -> b: its direction turned 90
-    // degrees left, so the band's left rail sits at a positive offset along it.
-    //
-    // No zero-length guard: the centreline was deduplicated at Limits.MIN_EDGE_LENGTH,
-    // which is the length below which a segment has no direction, so nothing here divides
-    // by ~zero.
-    private static double[] computeLeftUnitNormal(double[] a, double[] b) {
-
-        var segmentX = b[0] - a[0];
-        var segmentY = b[1] - a[1];
-        var length = Points.computeVectorLength(segmentX, segmentY);
-
-        return new double[] {-segmentY / length, segmentX / length};
     }
 
     private static double[] offsetPoint(double[] point, double[] normal, double distance) {

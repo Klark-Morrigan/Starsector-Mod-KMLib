@@ -145,27 +145,14 @@ public record Segment(
     }
 
     /**
-     * The unit vector perpendicular to the segment, on the left of its direction of travel - the
-     * direction turned a quarter turn anticlockwise.
-     *
-     * <p>What anything given girth across the segment is offset along, so a band's edges and the lines
-     * within it agree on which way across is.
+     * The unit vector perpendicular to the segment, on the left of its direction of travel, as
+     * {@link Segments#computeLeftUnitNormal} states it.
      *
      * @return the normal as {@code {x, y}}; null when the segment is too short to take a direction
      *         from ({@link Limits#MIN_EDGE_LENGTH})
      */
-    public double[] computeUnitNormal() {
-
-        var unit = Points.computeUnitVector(
-            endX - startX,
-            endY - startY,
-            Limits.MIN_EDGE_LENGTH);
-
-        return unit == null
-            ? null
-            : new double[] {
-                -unit[1],
-                unit[0]};
+    public double[] computeLeftUnitNormal() {
+        return Segments.computeLeftUnitNormal(readStart(), readEnd());
     }
 
     /**

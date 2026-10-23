@@ -135,7 +135,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`SectorMarkets.readMarkets(SectorAPI)`**：星域经济系统列出的每一个市场。
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`**（位于 `kmlib.starsector`）：所有星域范围的读取共用的、对星域星系列表的唯一一次遍历，计为一次 walk。星域为 null 或未列出任何星系时不访问任何星系。
 - **`Segment`** 跨线段方向的读取，以及从中点构造线段：
-  - `computeUnitNormal()`：位于行进方向左侧的单位法向量；线段过短、无法确定方向时为 null。
+  - `computeLeftUnitNormal()`：位于行进方向左侧的单位法向量；线段过短、无法确定方向时为 null。`Segments.computeLeftUnitNormal(double[], double[])` 对两个单独的端点给出同样的结果。
   - `computeLaneDividers(double, int)`：把以该线段为中心线的带状区域分成等宽分道的分隔线。
   - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位、具有给定长度的线段。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。

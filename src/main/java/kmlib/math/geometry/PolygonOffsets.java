@@ -817,24 +817,11 @@ public final class PolygonOffsets {
             normal[1]);
     }
 
-    // The inward unit normal of directed edge {@code a -> b} for a CCW polygon:
-    // {@code (-edgeY, edgeX)} normalized, pointing to the polygon interior (the
-    // left of the directed edge). Null when the edge is shorter than
-    // {@link Limits#MIN_EDGE_LENGTH} and so has no defined direction, so the caller
-    // skips it rather than dividing by ~zero. Shared by the inset and edge-offset
-    // passes, which both step inward along this normal.
+    // The inward unit normal of directed edge {@code a -> b} for a CCW polygon: its left
+    // normal, since a counter-clockwise ring's interior lies to the left of each edge.
+    // Null when the edge is too short to have a direction, so the caller skips it.
+    // Shared by the inset passes, which step inward along it.
     private static double[] computeInwardUnitNormal(double[] a, double[] b) {
-
-        var edgeX = b[0] - a[0];
-        var edgeY = b[1] - a[1];
-        var unitEdge = Points.computeUnitVector(edgeX, edgeY, Limits.MIN_EDGE_LENGTH);
-
-        if (unitEdge == null) {
-            return null;
-        }
-
-        // Rotate the unit edge 90 degrees left (x, y) -> (-y, x) to face the CCW
-        // polygon's interior, which lies to the left of the directed edge.
-        return new double[] {-unitEdge[1], unitEdge[0]};
+        return Segments.computeLeftUnitNormal(a, b);
     }
 }

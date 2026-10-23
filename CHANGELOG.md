@@ -135,7 +135,7 @@ The reusable release workflow extracts the section matching the released version
 - **`SectorMarkets.readMarkets(SectorAPI)`**: every market the sector's economy lists.
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`** in `kmlib.starsector`: the one traversal of the sector's system list every sector-wide read goes through, charged as one walk. A null sector, or one listing no systems, visits nothing.
 - **`Segment`** reads across a segment, and a way in from its middle:
-  - `computeUnitNormal()`: the unit vector on the left of the direction of travel, null for a segment too short to take a direction from.
+  - `computeLeftUnitNormal()`: the unit vector on the left of the direction of travel, null for a segment too short to take a direction from. `Segments.computeLeftUnitNormal(double[], double[])` is the same for two loose endpoints.
   - `computeLaneDividers(double, int)`: the lines splitting the band the segment is the centreline of into lanes of equal girth.
   - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.

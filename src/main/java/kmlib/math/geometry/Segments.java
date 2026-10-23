@@ -118,6 +118,34 @@ public final class Segments {
                 start[1] + alongSegment * spanY});
     }
 
+    /**
+     * The unit vector perpendicular to the segment start..end, on the left of its direction of
+     * travel - the direction turned a quarter turn anticlockwise.
+     *
+     * <p>The one statement of which way is left, for every offset taken across a segment: the
+     * edges of a band, the dividers inside it, and a ring's edges pulled inward, since the
+     * interior of a counter-clockwise ring lies to the left of each edge. Passes stating it apart
+     * could each be right alone and still disagree with each other.
+     *
+     * @param start the segment's start
+     * @param end   its end
+     * @return the normal as {@code {x, y}}; null when the segment is shorter than
+     *         {@link Limits#MIN_EDGE_LENGTH} and so has no direction
+     */
+    public static double[] computeLeftUnitNormal(double[] start, double[] end) {
+
+        var unit = Points.computeUnitVector(
+            end[0] - start[0],
+            end[1] - start[1],
+            Limits.MIN_EDGE_LENGTH);
+
+        return unit == null
+            ? null
+            : new double[] {
+                -unit[1],
+                unit[0]};
+    }
+
     // The point on segment start..end where a value that is signedStart at start
     // and signedEnd at end crosses zero, at parameter signedStart / (signedStart -
     // signedEnd) along the segment - bounded interpolation between the endpoints,
