@@ -1,5 +1,7 @@
 package kmlib.math.geometry;
 
+import java.util.List;
+
 /**
  * A stretch of a {@link RingPath}, as the two arc lengths it opens and closes at.
  *
@@ -21,6 +23,30 @@ package kmlib.math.geometry;
 public record RingStretch(
     double startArcLength,
     double endArcLength) {
+
+    /**
+     * The longest of a set of stretches - the one a layout wanting a single run of path takes.
+     *
+     * <p>Read on {@link #computeLength}, so a stretch fused across the path's start competes on
+     * its whole run. Hand it the stretches after {@link RingPath#fuseStretchAcrossStart} where
+     * that run matters, or the two halves either side of the start compete separately.
+     *
+     * @param stretches the stretches to choose between
+     * @return the longest, the first of them where two tie; null when there are none
+     */
+    public static RingStretch selectLongest(List<RingStretch> stretches) {
+
+        RingStretch longest = null;
+
+        for (var stretch : stretches) {
+
+            if (longest == null || stretch.computeLength() > longest.computeLength()) {
+                longest = stretch;
+            }
+        }
+
+        return longest;
+    }
 
     /**
      * @return how far along the path the stretch reaches

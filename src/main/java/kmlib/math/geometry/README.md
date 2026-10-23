@@ -234,6 +234,8 @@ and a caller reading them the wrong way round lays every layout backwards and co
 An end past the perimeter is expected -
 that is how a stretch crossing the start is stated,
 and `collectPointsBetween` walks one as it stands.
+`RingStretch.selectLongest` picks the longest of a set on that whole length,
+which is why a caller wanting one run hands it the stretches after fusing them across the start.
 
 Two answers sit on top of the carve,
 both opt-in so a caller pays only for what it asks:
