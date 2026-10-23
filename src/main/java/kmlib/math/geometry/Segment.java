@@ -22,6 +22,34 @@ public record Segment(
     double endY) {
 
     /**
+     * The segment of a given length centred on a point and running in a given direction.
+     *
+     * <p>The shape a centre-anchored run takes - a line of text hung from its middle, say - where the
+     * caller knows the middle and the bearing rather than either end.
+     *
+     * @param centreX          the x the segment's midpoint sits at
+     * @param centreY          the y the segment's midpoint sits at
+     * @param directionRadians the bearing from start to end, anticlockwise from the x axis
+     * @param length           the whole length, half of it either side of the centre
+     * @return the segment, its start half the length behind the centre and its end half ahead
+     */
+    public static Segment createCentredOn(
+            double centreX,
+            double centreY,
+            double directionRadians,
+            double length) {
+
+        var halfX = Math.cos(directionRadians) * length / 2;
+        var halfY = Math.sin(directionRadians) * length / 2;
+
+        return new Segment(
+            centreX - halfX,
+            centreY - halfY,
+            centreX + halfX,
+            centreY + halfY);
+    }
+
+    /**
      * The segment from one point to another.
      *
      * <p>The way in from point arithmetic, as {@link #readStart} and {@link #readEnd} are the
