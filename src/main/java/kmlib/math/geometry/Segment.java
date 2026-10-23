@@ -22,6 +22,34 @@ public record Segment(
     double endY) {
 
     /**
+     * The segment of a given length centred on a point and running in a given direction.
+     *
+     * <p>The shape a centre-anchored run takes - a line of text hung from its middle, say - where the
+     * caller knows the middle and the bearing rather than either end.
+     *
+     * @param centreX          the x the segment's midpoint sits at
+     * @param centreY          the y the segment's midpoint sits at
+     * @param directionRadians the bearing from start to end, anticlockwise from the x axis
+     * @param length           the whole length, half of it either side of the centre
+     * @return the segment, its start half the length behind the centre and its end half ahead
+     */
+    public static Segment createCentredOn(
+            double centreX,
+            double centreY,
+            double directionRadians,
+            double length) {
+
+        var halfX = Math.cos(directionRadians) * length / 2;
+        var halfY = Math.sin(directionRadians) * length / 2;
+
+        return new Segment(
+            centreX - halfX,
+            centreY - halfY,
+            centreX + halfX,
+            centreY + halfY);
+    }
+
+    /**
      * The segment from one point to another.
      *
      * <p>The way in from point arithmetic, as {@link #readStart} and {@link #readEnd} are the
@@ -55,19 +83,15 @@ public record Segment(
      */
     public List<double[]> computeBandCorners(double thickness) {
 
-        var unit = Points.computeUnitVector(
-            endX - startX,
-            endY - startY,
-            Limits.MIN_EDGE_LENGTH);
-
-        if (unit == null || thickness < Limits.MIN_EDGE_LENGTH) {
+        var normal = computeUnitNormal();
+        if (normal == null || thickness < Limits.MIN_EDGE_LENGTH) {
             return List.of();
         }
 
-        // Half the girth along the centreline's perpendicular - its direction turned a
-        // quarter turn - which is the offset from the centreline to each long edge.
-        var halfX = -unit[1] * thickness / 2;
-        var halfY = unit[0] * thickness / 2;
+        // Half the girth along the normal, which is the offset from the centreline to each
+        // long edge.
+        var halfX = normal[0] * thickness / 2;
+        var halfY = normal[1] * thickness / 2;
 
         return List.of(
             new double[] {startX + halfX, startY + halfY},

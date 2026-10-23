@@ -109,6 +109,37 @@ final class SegmentTests {
     }
 
     @Nested
+    class CreateCentredOn {
+
+        @Test
+        void theSegmentRunsHalfItsLengthEitherSideOfTheCentre() {
+
+            // ARRANGE
+            var expectedSegment = new Segment(0, 0, 10, 0);
+
+            // ACT
+            var actualSegment = Segment.createCentredOn(5, 0, 0, 10);
+
+            // ASSERT
+            assertThat(actualSegment)
+                .isEqualTo(expectedSegment);
+        }
+
+        // A quarter turn runs the segment from below the centre to above it.
+        @Test
+        void theSegmentRunsAlongTheDirectionGiven() {
+
+            // ACT
+            var actualSegment = Segment.createCentredOn(5, 5, Angles.QUARTER_TURN, 4);
+
+            // ASSERT
+            assertThatPointsAre(
+                List.of(actualSegment.readStart(), actualSegment.readEnd()),
+                List.of(new double[] {5, 3}, new double[] {5, 7}));
+        }
+    }
+
+    @Nested
     class JoinPoints {
 
         @Test
