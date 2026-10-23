@@ -43,6 +43,8 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStrings.splitIntoWords(String)` and `abbreviateToInitials(String)` part words by `Character.isWhitespace`**, the rule `hasText(String)` reads. They missed a CJK ideographic space between words and stripped control characters off the ends.
 - **`KmlibStrings.collectTexts(Iterable, Function)` strips each text it keeps**, as `normaliseText(String)` does.
 - **A claiming-faction flag naming no faction leaves the system unclaimed** in `VanillaClaimBreakdownReader`, as vanilla reads it: a blank flag, or one naming a faction the sector does not know, settles the system on nobody before any market is weighed. The reader reported the flag's text as the claimant.
+- **`RingPath.traceInsetRing(List, double, double, double[])` keeps the body of a ring with a long thin arm.** The folds of its inset are spliced out by the winding the ring was given, not by the net area. Where the arm's fold enclosed more than the body, the body was spliced out and the path ran along the fold.
+- **`RingPath.collectPointsBetween(double, double)` hands back copies of the corners it turns at**, and so do `collectStretchPoints(List)` and `collectSpansEndToEnd(double, double[])`. Moving a returned point moved the path's own corner.
 
 #### Added
 
@@ -113,6 +115,7 @@ The reusable release workflow extracts the section matching the released version
 - **`PlayerCreditsFixture`** in `kmlib.testfixtures.starsector.fleet`: the player's credits behind a sector mock, one credits mock that every walk down the player fleet's cargo reaches.
 - **`PlayerPriceOverrides`** in `kmlib.starsector.commodities.pricing`: `overrideUnitPrice(MarketAPI, String, PlayerTradeSide, String, float)` sets the price a market quotes the player for a commodity to a chosen figure, whatever it would quote on its own; `clearUnitPriceOverride(MarketAPI, String, PlayerTradeSide, String)` takes it back.
 - **`PlayerTradeSide`** in `kmlib.starsector.commodities`: the player buying or selling, with the market price and the player price modifier that side reads.
+- **`PolygonOffsets.COMPARE_EVERY_EDGE_PAIR`**: the window at which `removeReversedLoops(List, boolean, int)` compares every pair of edges.
 - **`PolygonRegions`** ring reads:
   - `findRingHolding(List, double, double)`: the first ring holding a point, or `NO_RING`.
   - `findSmallestEnclosingRing(List, double, double)`: the holding ring of smallest area, so nested rings resolve to the innermost.
@@ -184,6 +187,7 @@ The reusable release workflow extracts the section matching the released version
 | `VanillaClaimBreakdownReader(KnownColonyReader)`, and a null index in `VanillaClaimBreakdownReader(KnownColonyReader, SectorPassIndex)` | Removed: open the reader over a pass's `SectorPassIndex`. For the decree alone, read `StarSystems::readDecreedFactionId` as a `ClaimDecreeReader`. | A reader with no pass read `Global.getSector()` rather than the sector it was asked about. |
 | `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
 | `Colours.getGlComponents(Color, float)` | Removed. Draw with `GlColour.set(Color, float)`, or convert each channel with `Colours.normaliseChannel(int)`. | It allocated an array per call, and the one renderer calling it set a colour every draw. |
+| `RingPath.findClearArcs(List)` | `findClearStretches(List)` | It answers `RingStretch`es, as the path's other stretch reads name them. |
 
 </details>
 

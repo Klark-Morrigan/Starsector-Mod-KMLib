@@ -170,9 +170,15 @@ built entirely of backwards edges -
 so the check is a measurement
 (each corner must stand its inset distance off the original ring, by `PolygonRegions.computeDistanceToBoundary`) rather than a winding or vertex-count test.
 
+The folds the miter leaves are spliced out by `PolygonOffsets.removeReversedLoops`,
+told to keep the counter-clockwise loops the ring was wound into before the offset.
+Read off the net area instead,
+a thin tab long enough that its fold outweighs the body would net clockwise,
+and the body would be spliced out in place of the fold.
+
 What it does with a corner that fails is carve,
 not refuse:
-the stretch from the corner before it to the corner after it is subtracted from what `findClearArcs` offers,
+the stretch from the corner before it to the corner after it is subtracted from what `findClearStretches` offers,
 and the rest of the ring stands.
 A shape pinched in one place is the ordinary case,
 and giving up its whole outline for one narrow spot loses ring that was several times wide enough.
@@ -197,7 +203,7 @@ each span opening exactly where the one before it closed,
 so the pieces of one layout meet without the caller keeping a running position.
 
 A layout rarely has the whole ring to itself,
-so `findClearArcs` answers which stretches of the path a set of keep-out shapes -
+so `findClearStretches` answers which stretches of the path a set of keep-out shapes -
 and the path's own carved stretches -
 leave free,
 as arc-length intervals in the path's own frame.

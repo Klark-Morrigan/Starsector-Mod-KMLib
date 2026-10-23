@@ -559,13 +559,22 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
+| arc length, path (a ring walked from one start), stretch (a piece of a path), span (one piece of a layout laid along a path) | 弧长, 路径, 路段, 跨度 | 弧长, the usual geometry word; 路段, a stretch of a road, so it reads as part of the 路径; 跨度, the extent a piece reaches, kept apart from 区段, a scrolling section |
+| band (a strip either side of a centreline), centreline, girth, lane, divider | 带状区域, 中心线, 宽度, 分道, 分隔线 | 带状, strip-shaped, with 区域; 分道, a lane as a road is split into them; 分隔线, a dividing line |
 | body (an entity in orbit), orbit-focus chain | 天体, 轨道焦点链 | 焦点, focus, with 链, chain |
+| body (the main part of a shape), arm (a thin part reaching out of it) | 主体, 伸出部分 | 主体, the main part, kept apart from 天体, a body in orbit; 伸出部分, a part that reaches out |
+| corner (where a polyline turns), polyline | 拐角, 折线 | 拐角, a turn of a road; 折线, the usual geometry word for a line of joined segments |
 | directed line, even-odd count | 有向直线, 奇偶计数 | the usual geometry words |
 | extent (one painted shape), outline | 范围, 轮廓 | |
 | hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 单元 as the controls entries write a cell |
+| inset (a ring moved inward), miter (a corner joined by extending its two edges), fold (a loop where an inset crosses itself) | 内缩, 斜接, 折叠 | 内缩, drawing inward; 斜接, the usual word for a miter joint; 折叠, folding over, since the loop runs back against the rest of the ring |
+| normal (the unit vector perpendicular to a segment), direction of travel, bearing | 单位法向量, 行进方向, 方位 | 法向量, the usual geometry word; 行进, moving forward, for the way a segment runs from start to end |
 | region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
+| segment (a line between two ends), centre (its middle) | 线段, 中心 | the usual geometry words |
 | stride, triangle list | 步长, 三角形列表 | the usual words |
+| winding (which way round a ring runs), counter-clockwise, net area (the area left once loops wound opposite ways cancel) | 绕行方向, 逆时针, 净面积 | 绕行, going round, with 方向, direction; 净, net, as in 净值 |
+| window (how many edges apart two edges may be and still be compared), edge | 窗口, 边 | the usual words |
 
 #### Lists and sorting
 
@@ -608,6 +617,7 @@ How such a thread works is [docs/dev/fossic-thread.md](../../docs/dev/fossic-thr
 | English edition | 英文版 | the counterpart of 简体中文版 |
 | rationale (for a term's choice) | 选词理由 | 选词, choosing a word, with 理由, reason: what each row's note records |
 | Simplified Chinese edition | 简体中文版 | the usual way a Chinese edition is named |
+| terminology reference (a bundle's `README.md`) | 术语参考 | 术语, terminology, with 参考, a reference |
 | the Chinese core localisation | 远行星号中文汉化, 汉化包 for short | the name of its Fossic thread |
 | translation (the act) | 翻译 | the plain word; 汉化 is a translated build, the forum's sense |
 | translation reference (the terminology reference, as a post names it) | 翻译参考 | 参考, reference, after 翻译, translation |
