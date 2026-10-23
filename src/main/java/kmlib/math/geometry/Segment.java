@@ -21,6 +21,9 @@ public record Segment(
     double endX,
     double endY) {
 
+    // Below two lanes a band has no boundary between lanes to draw.
+    private static final int MIN_LANES_TO_DIVIDE = 2;
+
     /**
      * The segment of a given length centred on a point and running in a given direction.
      *
@@ -98,6 +101,47 @@ public record Segment(
             new double[] {endX + halfX, endY + halfY},
             new double[] {endX - halfX, endY - halfY},
             new double[] {startX - halfX, startY - halfY});
+    }
+
+    /**
+     * The lines dividing the band this segment is the centreline of into lanes of equal girth - the
+     * rules between stacked lines of text, say.
+     *
+     * <p>Each divider runs the segment's whole length, parallel to it, so a band and its lanes are
+     * read off the one centreline and girth {@link #computeBandCorners} reads.
+     *
+     * @param thickness the band's full girth across the centreline
+     * @param laneCount how many lanes the band holds
+     * @return {@code laneCount - 1} dividers, from the right of the direction of travel to the left.
+     *         Empty for fewer than two lanes, which have no boundary between them, and for a segment
+     *         too short to take a direction from
+     */
+    public List<Segment> computeLaneDividers(double thickness, int laneCount) {
+
+        if (laneCount < MIN_LANES_TO_DIVIDE) {
+            return List.of();
+        }
+
+        var normal = computeUnitNormal();
+        if (normal == null) {
+            return List.of();
+        }
+
+        var dividers = new ArrayList<Segment>(laneCount - 1);
+
+        for (var divider = 1; divider < laneCount; divider++) {
+
+            // Stepped from the right-hand edge (minus half the girth) across in whole lanes.
+            var offset = -thickness / 2 + thickness * divider / laneCount;
+
+            dividers.add(new Segment(
+                startX + normal[0] * offset,
+                startY + normal[1] * offset,
+                endX + normal[0] * offset,
+                endY + normal[1] * offset));
+        }
+
+        return dividers;
     }
 
     /**
