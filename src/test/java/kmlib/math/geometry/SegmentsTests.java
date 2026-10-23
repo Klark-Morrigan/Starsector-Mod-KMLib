@@ -3,6 +3,9 @@ package kmlib.math.geometry;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
 import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,6 +74,39 @@ class SegmentsTests {
                     new double[] {10, 0},
                     new double[] {0, 5},
                     new double[] {10, 5}))
+                .isNull();
+        }
+    }
+
+    @Nested
+    class ComputeLeftUnitNormal {
+
+        // A 3-4-5 segment, so the unit direction is (0.6, 0.8) and the quarter turn anticlockwise
+        // that puts it on the left of travel is (-0.8, 0.6).
+        @Test
+        void theNormalIsTheUnitDirectionTurnedAQuarterTurnAnticlockwise() {
+
+            // ARRANGE
+            var expectedNormal = new double[] {-0.8, 0.6};
+
+            // ACT
+            var actualNormal = Segments.computeLeftUnitNormal(new double[] {1, 1}, new double[] {4, 5});
+
+            // ASSERT
+            assertThatPointsAre(
+                List.of(actualNormal),
+                List.of(expectedNormal));
+        }
+
+        // Shorter than the length below which an edge has no direction, so there is no left of it.
+        @Test
+        void isNullForASegmentTooShortToTakeADirectionFrom() {
+
+            // ACT
+            var actualNormal = Segments.computeLeftUnitNormal(new double[] {3, 3}, new double[] {3, 3});
+
+            // ASSERT
+            assertThat(actualNormal)
                 .isNull();
         }
     }

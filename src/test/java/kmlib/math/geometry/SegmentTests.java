@@ -126,7 +126,7 @@ final class SegmentTests {
     }
 
     @Nested
-    class ComputeUnitNormal {
+    class ComputeLeftUnitNormal {
 
         // The left of travel: east turns to north, north turns to west.
         @Test
@@ -136,8 +136,8 @@ final class SegmentTests {
             var northward = new Segment(0, 0, 0, 5);
 
             // ACT
-            var actualEastwardNormal = EASTWARD.computeUnitNormal();
-            var actualNorthwardNormal = northward.computeUnitNormal();
+            var actualEastwardNormal = EASTWARD.computeLeftUnitNormal();
+            var actualNorthwardNormal = northward.computeLeftUnitNormal();
 
             // ASSERT
             assertThatPointsAre(
@@ -152,7 +152,7 @@ final class SegmentTests {
             var pointSegment = new Segment(3, 3, 3, 3);
 
             // ACT
-            var actualNormal = pointSegment.computeUnitNormal();
+            var actualNormal = pointSegment.computeLeftUnitNormal();
 
             // ASSERT
             assertThat(actualNormal)

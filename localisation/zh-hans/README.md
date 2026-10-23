@@ -579,10 +579,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | extent (one painted shape), outline | 范围, 轮廓 | |
 | hash grid, cell, bounds (a bounding box) | 哈希网格, 单元, 边界框 | 哈希, hash, with 网格, a grid; 单元, a unit, for a cell; 边界框, a bounding box |
 | inset (a ring moved inward), miter (a corner joined by extending its two edges), fold (a loop where an inset crosses itself) | 内缩, 斜接, 折叠 | 内缩, drawing inward; 斜接, the usual word for a miter joint; 折叠, folding over, since the loop runs back against the rest of the ring |
-| normal (the unit vector perpendicular to a segment), direction of travel, bearing | 单位法向量, 行进方向, 方位 | 法向量, the usual geometry word; 行进, moving forward, for the way a segment runs from start to end |
+| normal (the unit vector perpendicular to a segment), direction of travel, bearing, radian (the unit a bearing is given in) | 单位法向量, 行进方向, 方位, 弧度 | 法向量, the usual geometry word; 行进, moving forward, for the way a segment runs from start to end; 弧度, the usual word for the unit |
 | region (the area a set of rings bounds) | 区域 | the usual geometry word; 语言区域 keeps it for a locale |
 | ring, enclosing loop | 环, 外围环 | 外围, surrounding, before 环 |
-| segment (a line between two ends), centre (its middle) | 线段, 中心 | the usual geometry words |
+| segment (a line between two ends), centre (its middle), endpoint (one of its ends) | 线段, 中心, 端点 | the usual geometry words; 端点 is the same word as the endpoint file's, the two never sharing a sentence |
 | stride, triangle list | 步长, 三角形列表 | the usual words |
 | winding (which way round a ring runs), counter-clockwise, net area (the area left once loops wound opposite ways cancel) | 绕行方向, 逆时针, 净面积 | 绕行, going round, with 方向, direction; 净, net, as in 净值 |
 | window (how many edges apart two edges may be and still be compared), edge | 窗口, 边 | the usual words |
