@@ -134,6 +134,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`SectorMarkets.readMarketIds(SectorAPI)`**：星域中每一个市场的 ID，无论经济系统是否列出该市场。
 - **`SectorMarkets.readMarkets(SectorAPI)`**：星域经济系统列出的每一个市场。
 - **`SectorWalks.walkStarSystems(SectorAPI, Consumer)`**（位于 `kmlib.starsector`）：所有星域范围的读取共用的、对星域星系列表的唯一一次遍历，计为一次 walk。星域为 null 或未列出任何星系时不访问任何星系。
+- **`Segment`** 跨线段方向的读取，以及从中点构造线段：
+  - `computeUnitNormal()`：位于行进方向左侧的单位法向量；线段过短、无法确定方向时为 null。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StarsectorStrings.fillTemplate(String, Object...)`**：填充一个已读取的模板，填充方式与 `format(String, String, Object...)` 填充它所读取的模板相同。

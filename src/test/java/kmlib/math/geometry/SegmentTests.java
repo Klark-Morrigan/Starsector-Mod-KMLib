@@ -74,6 +74,41 @@ final class SegmentTests {
     }
 
     @Nested
+    class ComputeUnitNormal {
+
+        // The left of travel: east turns to north, north turns to west.
+        @Test
+        void theNormalIsTheDirectionTurnedAQuarterTurnAnticlockwise() {
+
+            // ARRANGE
+            var northward = new Segment(0, 0, 0, 5);
+
+            // ACT
+            var actualEastwardNormal = EASTWARD.computeUnitNormal();
+            var actualNorthwardNormal = northward.computeUnitNormal();
+
+            // ASSERT
+            assertThatPointsAre(
+                List.of(actualEastwardNormal, actualNorthwardNormal),
+                List.of(new double[] {0, 1}, new double[] {-1, 0}));
+        }
+
+        @Test
+        void aSegmentWithNoDirectionHasNoNormal() {
+
+            // ARRANGE
+            var pointSegment = new Segment(3, 3, 3, 3);
+
+            // ACT
+            var actualNormal = pointSegment.computeUnitNormal();
+
+            // ASSERT
+            assertThat(actualNormal)
+                .isNull();
+        }
+    }
+
+    @Nested
     class JoinPoints {
 
         @Test
