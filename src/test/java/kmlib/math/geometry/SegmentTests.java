@@ -17,6 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Worth pinning in coordinates because more than one thing reads this box off the same
  * segment - what is drawn from it, and what keeps clear of it - so which side of the centreline
  * each corner falls on is a fact both depend on rather than an internal detail.
+ *
+ * <p>Also the reads beside it: the normal every offset across the segment steps along, the lane
+ * dividers within the same band, and the segment hung centred on a point.
  */
 final class SegmentTests {
 
@@ -69,6 +72,55 @@ final class SegmentTests {
             // A collapsed fit reports zero girth, and a line encloses no area - so it takes up
             // no room and stands in nothing's way.
             assertThat(EASTWARD.computeBandCorners(0))
+                .isEmpty();
+        }
+    }
+
+    @Nested
+    class ComputeLaneDividers {
+
+        // Three lanes across a girth of 6 are two apart: the dividers stand 1 either side of the
+        // centreline, the right-hand one first, each running the whole length.
+        @Test
+        void dividersSplitTheGirthIntoEqualLanes() {
+
+            // ARRANGE
+            var expectedDividers = List.of(
+                new Segment(0, -1, 10, -1),
+                new Segment(0, 1, 10, 1));
+
+            // ACT
+            var actualDividers = EASTWARD.computeLaneDividers(6, 3);
+
+            // ASSERT
+            assertThat(actualDividers)
+                .isEqualTo(expectedDividers);
+        }
+
+        // One lane has no boundary inside it.
+        @Test
+        void aSingleLaneHasNoDivider() {
+
+            // ACT
+            var actualDividers = EASTWARD.computeLaneDividers(GIRTH, 1);
+
+            // ASSERT
+            assertThat(actualDividers)
+                .isEmpty();
+        }
+
+        // Both ends at one point: there is no direction to step across.
+        @Test
+        void aSegmentWithNoDirectionHasNoDivider() {
+
+            // ARRANGE
+            var pointSegment = new Segment(3, 3, 3, 3);
+
+            // ACT
+            var actualDividers = pointSegment.computeLaneDividers(GIRTH, 2);
+
+            // ASSERT
+            assertThat(actualDividers)
                 .isEmpty();
         }
     }
