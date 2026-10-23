@@ -1,0 +1,34 @@
+// A localisation reference's reasons never cite where some text already writes a word.
+//
+// A reference is the source of truth for the words a mod's bundle uses. Each row settles a word and
+// gives the reason for it. A reason of the form "as the settings write it" points the other way: it
+// makes a copy of the word the authority for the word. A wrong word that had already shipped then
+// keeps itself, because each later row finds it in the shipped text and cites it. A reason gives what
+// the word means, or names its upstream source - vanilla's own text, a forum - as a source, not as
+// wording to copy.
+//
+// Declared once here for every KM mod, because the rule is the same in every reference. The
+// mechanism is Common-Java's enforceNoForbiddenPhrases, which the conventions apply ahead of this.
+// Every line of a reference's prose is read, its sentences as well as its tables: a sentence citing
+// wording is the same habit as a row doing it. A mod carrying no reference is held to nothing.
+
+def localisationReferences = 'localisation/*/README.md'
+
+enforceNoForbiddenPhrases {
+
+    forbidPhrase pattern: /(?i)\bwrites?\s+(it|them)\b/,
+        inFiles: localisationReferences,
+        reason: 'a reason cites wording ("writes it"); give what the word means, or name its upstream source'
+
+    forbidPhrase pattern: /(?i)\bas\b[^|]{0,80}?\bwrites?\b/,
+        inFiles: localisationReferences,
+        reason: 'a reason cites wording ("as ... writes"); give what the word means, or name its upstream source'
+
+    forbidPhrase pattern: /(?i)\bas\s+(in\s+)?the\s+settings?\b/,
+        inFiles: localisationReferences,
+        reason: 'a reason cites the settings, which follow the reference'
+
+    forbidPhrase pattern: /(?i)\bown\s+wording\b/,
+        inFiles: localisationReferences,
+        reason: 'a reason cites a text\'s own wording, which follows the reference'
+}

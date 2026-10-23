@@ -154,6 +154,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹、版本和声明的 JAR，并按游戏的方式读取每个 `mod_info.json`。
   - 供人阅读的文本在终端中按每个值的种类着色，在其他地方不带颜色。
 - **`ci-powershell.yml`**：通过 Common-PowerShell 的可复用工作流，在每个拉取请求上检查仓库的 PowerShell 代码，并运行其 Pester 测试套件。`mod-release.yml` 在打包前重新运行同一门禁，与其他门禁一样；不含 PowerShell 的 Mod 也能通过。
+- **术语参考不得以引用的措辞作为选词理由**：Starsector 约定声明了这些短语（例如 `as the settings write it`），由 Common-Java 的 `enforceNoForbiddenPhrases` 在每个 KM Mod 的 `localisation/<locale>/README.md` 中检查，出现即构建失败。选词理由须说明这个词的含义，或指明其上游来源，因为发布的文字以术语参考为准。
 
 #### 变更
 

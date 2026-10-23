@@ -89,6 +89,8 @@ A mod's own reference may add rules for its own features.
   Text the mods ship - the settings, the strings, the changelog - follows the reference,
   so it is never the reason for a word:
   a wrong word that had shipped would otherwise keep itself.
+  The build's `enforceNoForbiddenPhrases` fails a reference giving where a text has the word as its reason,
+  over the phrases [forbid-cited-wording.gradle](../../gradle/tasks/checks/forbid-cited-wording.gradle) declares.
 - **Radio options stay English.**
   LunaLib saves the label of the option picked, not its position,
   so a translated option would lose the player's setting and break the code reading it.
