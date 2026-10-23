@@ -10,25 +10,30 @@
 // Declared once here for every KM mod, because the rule is the same in every reference. The
 // mechanism is Common-Java's enforceNoForbiddenPhrases, which the conventions apply ahead of this.
 // Every line of a reference's prose is read, its sentences as well as its tables: a sentence citing
-// wording is the same habit as a row doing it. A mod carrying no reference is held to nothing.
+// wording is the same habit as a row doing it.
 
 def localisationReferences = 'localisation/*/README.md'
 
-enforceNoForbiddenPhrases {
+// Each phrase family a reference has carried, with what it cites in place of a meaning.
+def citedWordingPhrases = [
+    [pattern: /(?i)\bwrites?\s+(it|them)\b/, cited: 'wording ("writes it")'],
+    [pattern: /(?i)\bas\b[^|]{0,80}?\bwrites?\b/, cited: 'wording ("as ... writes")'],
+    [pattern: /(?i)\bas\s+(in\s+)?the\s+settings?\b/, cited: 'the settings, which follow the reference'],
+    [pattern: /(?i)\bown\s+wording\b/, cited: 'a text\'s own wording, which follows the reference']]
 
-    forbidPhrase pattern: /(?i)\bwrites?\s+(it|them)\b/,
-        inFiles: localisationReferences,
-        reason: 'a reason cites wording ("writes it"); give what the word means, or name its upstream source'
+// Declared only where a reference exists: the gate fails a rule that judges no file, and a mod with no
+// translated bundle carries none.
+def hasLocalisationReference = !fileTree(projectDir) { include localisationReferences }.isEmpty()
 
-    forbidPhrase pattern: /(?i)\bas\b[^|]{0,80}?\bwrites?\b/,
-        inFiles: localisationReferences,
-        reason: 'a reason cites wording ("as ... writes"); give what the word means, or name its upstream source'
+if (hasLocalisationReference) {
 
-    forbidPhrase pattern: /(?i)\bas\s+(in\s+)?the\s+settings?\b/,
-        inFiles: localisationReferences,
-        reason: 'a reason cites the settings, which follow the reference'
+    enforceNoForbiddenPhrases {
 
-    forbidPhrase pattern: /(?i)\bown\s+wording\b/,
-        inFiles: localisationReferences,
-        reason: 'a reason cites a text\'s own wording, which follows the reference'
+        citedWordingPhrases.each { phrase ->
+
+            forbidPhrase pattern: phrase.pattern,
+                inFiles: localisationReferences,
+                reason: "a reason cites ${phrase.cited}; give what the word means, or name its upstream source"
+        }
+    }
 }

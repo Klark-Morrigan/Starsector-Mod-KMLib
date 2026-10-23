@@ -43,7 +43,8 @@ final class ForbidCitedWordingIntegrationTests {
     // The row every case writes sits on this line of the reference.
     private static final String ROW_LOCATION = "localisation/zh-hans/README.md:5";
 
-    // Writes a project applying the gate and the rule, with the given reference text.
+    // Writes a project applying the gate and the rule, with the given reference text, or with no reference
+    // where the text is null.
     private static Path writeProject(Path workspace, String referenceText) throws IOException {
 
         var projectDirectory = Files.createDirectories(workspace.resolve("consumer"));
@@ -59,9 +60,12 @@ final class ForbidCitedWordingIntegrationTests {
                 "apply from: '" + GATE_SCRIPT.replace('\\', '/') + "'",
                 "apply from: '" + RULE_SCRIPT.replace('\\', '/') + "'"));
 
-        var localeDirectory = Files.createDirectories(projectDirectory.resolve("localisation/zh-hans"));
+        if (referenceText != null) {
 
-        Files.writeString(localeDirectory.resolve("README.md"), referenceText);
+            var localeDirectory = Files.createDirectories(projectDirectory.resolve("localisation/zh-hans"));
+
+            Files.writeString(localeDirectory.resolve("README.md"), referenceText);
+        }
 
         return projectDirectory;
     }
@@ -84,6 +88,23 @@ final class ForbidCitedWordingIntegrationTests {
             var projectDirectory = writeProject(
                 workspace,
                 REFERENCE_HEADER + "\n| centreline | 中线 | 中, the middle, with 线, a line |\n");
+
+            // ACT
+            var actualOutput = createRunner(projectDirectory)
+                .build()
+                .getOutput();
+
+            // ASSERT
+            assertThat(actualOutput)
+                .contains("BUILD SUCCESSFUL");
+        }
+
+        // The gate fails a rule judging no file, so a mod with no translated bundle must be handed none.
+        @Test
+        void passesAModCarryingNoReference(@TempDir Path workspace) throws IOException {
+
+            // ARRANGE
+            var projectDirectory = writeProject(workspace, null);
 
             // ACT
             var actualOutput = createRunner(projectDirectory)
