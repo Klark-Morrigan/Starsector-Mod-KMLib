@@ -44,7 +44,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`KmlibStrings.collectTexts(Iterable, Function)` 会去除所保留的每个文本的首尾空白**，与 `normaliseText(String)` 的做法一致。
 - **在 `VanillaClaimBreakdownReader` 中，未指向任何势力的宣称势力标记会让星系无人宣称**，与原版的读法一致：标记为空白，或指向星域不认识的势力时，星系在权衡任何市场之前就判给了无人。此前读取器会把标记的文本报告为宣称方。
 - **`RingPath.traceInsetRing(List, double, double, double[])` 会保留带有细长伸出部分的环的主体。** 内缩留下的折叠按环被赋予的绕行方向剔除，而不是按净面积。此前，伸出部分的折叠所围面积一旦大于主体，主体就会被剔除，路径沿折叠延伸。
-- **`RingPath.collectPointsBetween(double, double)` 交回的是它转折处拐角的副本**，`collectStretchPoints(List)` 和 `collectSpansEndToEnd(double, double[])` 也是如此。此前，移动交回的点会连带移动路径自身的拐角。
+- **`RingPath.getPoints()` 和 `collectPointsBetween(double, double)` 交回的是路径拐角的副本**，`collectStretchPoints(List)` 和 `collectSpansEndToEnd(double, double[])` 也是如此。此前，移动交回的点会连带移动路径自身的拐角。
 
 #### 新增
 

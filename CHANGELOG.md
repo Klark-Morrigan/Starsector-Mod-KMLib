@@ -44,7 +44,7 @@ The reusable release workflow extracts the section matching the released version
 - **`KmlibStrings.collectTexts(Iterable, Function)` strips each text it keeps**, as `normaliseText(String)` does.
 - **A claiming-faction flag naming no faction leaves the system unclaimed** in `VanillaClaimBreakdownReader`, as vanilla reads it: a blank flag, or one naming a faction the sector does not know, settles the system on nobody before any market is weighed. The reader reported the flag's text as the claimant.
 - **`RingPath.traceInsetRing(List, double, double, double[])` keeps the body of a ring with a long thin arm.** The folds of its inset are spliced out by the winding the ring was given, not by the net area. Where the arm's fold enclosed more than the body, the body was spliced out and the path ran along the fold.
-- **`RingPath.collectPointsBetween(double, double)` hands back copies of the corners it turns at**, and so do `collectStretchPoints(List)` and `collectSpansEndToEnd(double, double[])`. Moving a returned point moved the path's own corner.
+- **`RingPath.getPoints()` and `collectPointsBetween(double, double)` hand back copies of the path's corners**, and so do `collectStretchPoints(List)` and `collectSpansEndToEnd(double, double[])`. Moving a returned point moved the path's own corner.
 
 #### Added
 

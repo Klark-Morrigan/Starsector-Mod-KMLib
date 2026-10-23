@@ -482,6 +482,30 @@ final class RingPathTests {
     }
 
     @Nested
+    class GetPoints {
+
+        // The corners handed back are the caller's to change. Moving one must not move the path's
+        // own corner, which every later position query reads.
+        @Test
+        void changingAReturnedCornerLeavesThePathAlone() {
+
+            // ARRANGE
+            var path = traceReferenceSquare();
+            var points = path.getPoints();
+            var expectedCorner = new double[] {8, 8};
+
+            // ACT
+            points.get(1)[0] = 100;
+
+            var actualCorner = path.computePointAt(3);
+
+            // ASSERT
+            assertThat(actualCorner)
+                .containsExactly(expectedCorner, buildAssertionSlack());
+        }
+    }
+
+    @Nested
     class ComputePointAt {
 
         @Test

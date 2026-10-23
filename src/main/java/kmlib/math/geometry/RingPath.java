@@ -127,11 +127,18 @@ public final class RingPath {
     }
 
     /**
-     * @return the path's corners in traversal order, the start first, with no repeated closing vertex. A fresh
-     *         list, though the point arrays themselves are shared
+     * @return the path's corners in traversal order, the start first, with no repeated closing vertex, as a fresh
+     *         list of fresh {x, y} points
      */
     public List<double[]> getPoints() {
-        return new ArrayList<>(points);
+
+        var copies = new ArrayList<double[]>(points.size());
+
+        for (var point : points) {
+            copies.add(point.clone());
+        }
+
+        return copies;
     }
 
     /**
