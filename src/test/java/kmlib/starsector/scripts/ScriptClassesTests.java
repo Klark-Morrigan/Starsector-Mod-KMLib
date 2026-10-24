@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
  * Builds real classes by name, so each case runs the lookup the game runs rather than a stand-in for it.
@@ -19,59 +19,83 @@ final class ScriptClassesTests {
         @Test
         void buildsTheNamedClassAsTheRequestedType() {
 
-            var script = ScriptClasses.instantiateScript(BuildableScript.class.getName(), Runnable.class);
+            // ACT
+            var actualScript = ScriptClasses.instantiateScript(BuildableScript.class.getName(), Runnable.class);
 
-            assertThat(script)
+            // ASSERT
+            assertThat(actualScript)
                 .isInstanceOf(BuildableScript.class);
         }
 
+        // Object has no defining loader of its own to resolve the name through.
         @Test
         void resolvesThroughThisLibrarysLoaderForAJdkType() {
 
-            // Object has no defining loader of its own to resolve the name through.
-            var script = ScriptClasses.instantiateScript(BuildableScript.class.getName(), Object.class);
+            // ACT
+            var actualScript = ScriptClasses.instantiateScript(BuildableScript.class.getName(), Object.class);
 
-            assertThat(script)
+            // ASSERT
+            assertThat(actualScript)
                 .isInstanceOf(BuildableScript.class);
         }
 
         @Test
         void throwsNamingTheClassWhenItIsMissing() {
 
-            var missing = "kmlib.does.not.Exist";
+            // ARRANGE
+            var missingName = "kmlib.does.not.Exist";
 
-            assertThatThrownBy(() -> ScriptClasses.instantiateScript(missing, Object.class))
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(missingName, Object.class));
+
+            // ASSERT
+            assertThat(actualFailure)
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(missing);
+                .hasMessageContaining(missingName);
         }
 
         @Test
         void throwsNamingTheClassWhenItIsNotTheRequestedType() {
 
+            // ARRANGE
             var name = BuildableScript.class.getName();
 
-            assertThatThrownBy(() -> ScriptClasses.instantiateScript(name, Comparable.class))
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Comparable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(name)
                 .hasMessageContaining(Comparable.class.getName());
         }
 
+        // The throwing script's constructor would surface as IllegalStateException had it run.
         @Test
         void refusesTheWrongTypeBeforeRunningItsConstructor() {
 
+            // ARRANGE
             var name = ThrowingScript.class.getName();
 
-            // The throwing script's constructor would surface as IllegalStateException had it run.
-            assertThatThrownBy(() -> ScriptClasses.instantiateScript(name, Comparable.class))
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Comparable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
                 .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void throwsNamingTheClassWhenItHasNoNoArgConstructor() {
 
+            // ARRANGE
             var name = ArgumentTakingScript.class.getName();
 
-            assertThatThrownBy(() -> ScriptClasses.instantiateScript(name, Runnable.class))
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(name)
                 .hasMessageContaining("public no-arg constructor");
@@ -80,9 +104,14 @@ final class ScriptClassesTests {
         @Test
         void throwsNamingTheClassWhenTheClassIsNotPublic() {
 
+            // ARRANGE
             var name = HiddenScript.class.getName();
 
-            assertThatThrownBy(() -> ScriptClasses.instantiateScript(name, Runnable.class))
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(name);
         }
@@ -90,9 +119,14 @@ final class ScriptClassesTests {
         @Test
         void wrapsAConstructorFailureNamingTheClass() {
 
+            // ARRANGE
             var name = ThrowingScript.class.getName();
 
-            assertThatThrownBy(() -> ScriptClasses.instantiateScript(name, Runnable.class))
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(name)
                 .hasRootCauseMessage(ThrowingScript.FAILURE_MESSAGE);

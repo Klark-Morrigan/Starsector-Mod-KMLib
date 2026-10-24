@@ -47,21 +47,12 @@ public final class ScriptClasses {
      */
     public static <T> T instantiateScript(String className, Class<T> scriptType) {
 
-        var scriptClass = loadScriptClass(className, scriptType);
+        var constructor = findBuildableConstructor(className, scriptType);
 
-        if (!scriptType.isAssignableFrom(scriptClass)) {
-
-            throw new IllegalArgumentException("Script class '" + className + "' is not a "
-                + scriptType.getName() + ".");
-        }
-
-        return scriptType.cast(constructScript(scriptClass));
+        return scriptType.cast(constructScript(className, constructor));
     }
 
-    private static Object constructScript(Class<?> scriptClass) {
-
-        var className = scriptClass.getName();
-        var constructor = findNoArgConstructor(scriptClass);
+    private static Object constructScript(String className, MethodHandle constructor) {
 
         try {
             return constructor.invoke();
@@ -69,11 +60,25 @@ public final class ScriptClasses {
         } catch (Error error) {
             throw error;
 
-        } catch (Throwable constructorFailure) {
+        } catch (Throwable exception) {
 
-            throw new IllegalStateException("Script class '" + className + "' threw while being built.",
-                constructorFailure);
+            throw new IllegalStateException(
+                "Script class '" + className + "' threw while being built.",
+                exception);
         }
+    }
+
+    // The type is checked before the constructor is looked up, so a class of the wrong type is refused
+    // for its type rather than for its constructor.
+    private static MethodHandle findBuildableConstructor(String className, Class<?> scriptType) {
+
+        var scriptClass = loadScriptClass(className, scriptType);
+        if (!scriptType.isAssignableFrom(scriptClass)) {
+
+            throw new IllegalArgumentException("Script class '" + className + "' is not a "
+                + scriptType.getName() + ".");
+        }
+        return findNoArgConstructor(scriptClass);
     }
 
     private static MethodHandle findNoArgConstructor(Class<?> scriptClass) {
@@ -83,10 +88,12 @@ public final class ScriptClasses {
                 .publicLookup()
                 .findConstructor(scriptClass, NO_ARG_CONSTRUCTOR);
 
-        } catch (NoSuchMethodException | IllegalAccessException unreachable) {
+        } catch (NoSuchMethodException | IllegalAccessException exception) {
 
-            throw new IllegalArgumentException("Script class '" + scriptClass.getName()
-                + "' must be public and have a public no-arg constructor.", unreachable);
+            throw new IllegalArgumentException(
+                "Script class '" + scriptClass.getName()
+                    + "' must be public and have a public no-arg constructor.",
+                exception);
         }
     }
 
@@ -100,8 +107,11 @@ public final class ScriptClasses {
         try {
             return Class.forName(className, true, loader);
 
-        } catch (ClassNotFoundException missing) {
-            throw new IllegalArgumentException("Script class '" + className + "' was not found.", missing);
+        } catch (ClassNotFoundException classNotFoundException) {
+
+            throw new IllegalArgumentException(
+                "Script class '" + className + "' was not found.",
+                classNotFoundException);
         }
     }
 }
