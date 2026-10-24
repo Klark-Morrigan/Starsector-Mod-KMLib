@@ -159,6 +159,19 @@ final class SegmentTests {
             assertThat(actualDividers)
                 .isEmpty();
         }
+
+        // A girth too small to enclose area is no band, so there is nothing to divide - the same
+        // reading the band's corners take of it.
+        @Test
+        void aBandWithNoGirthHasNoDivider() {
+
+            // ACT
+            var actualDividers = EASTWARD.computeLaneDividers(0, 3);
+
+            // ASSERT
+            assertThat(actualDividers)
+                .isEmpty();
+        }
     }
 
     @Nested
