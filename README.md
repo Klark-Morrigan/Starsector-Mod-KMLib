@@ -223,6 +223,11 @@ all with a `.sh` and a `.bat` face:
   for `gradlew test` and `gradlew coverage`.
 - `fix-permissions` -
   re-stages `+x` on tracked `*.sh` files.
+- `show-download-counts [mod-root]` -
+  a dry run of the download-badge pipeline:
+  the counts and figures a badge run would publish,
+  publishing nothing.
+  See [Reusable CI / release actions](#reusable-ci--release-actions).
 
 Tools run from a checkout,
 never shipped in the release zip:
@@ -1489,6 +1494,17 @@ A caller runs it on a `schedule` and on `workflow_dispatch`,
 as KMLib's own [publish-badges.yml](.github/workflows/publish-badges.yml) does.
 The first run creates the `badges` branch,
 so dispatch it by hand once the caller is merged rather than waiting for the schedule.
+
+[scripts/show-download-counts.sh](scripts/show-download-counts.sh) runs the same pipeline dry, from a checkout.
+It derives the inputs as the workflow does,
+from the mod root it is given or from KMLib's own,
+and takes the repository from the root's `origin` remote.
+It prints each stage's log and each figure it would publish,
+and publishes nothing.
+A mod's own shim hands it the mod's root.
+It needs `gh` on Git Bash's `PATH`,
+logged in with `gh auth login`,
+and Common-Automation as a sibling checkout.
 
 ## Build & Test
 
