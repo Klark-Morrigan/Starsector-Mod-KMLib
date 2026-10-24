@@ -147,11 +147,26 @@ public record Segment(
     }
 
     /**
-     * The end as a point.
+     * The segment moved sideways by {@code distance}, parallel to this one, as long and running
+     * the same way.
      *
-     * <p>The record holds its ends as four doubles so geometry reads by role, while the point
-     * arithmetic beside it takes {@code {x, y}} arrays. These two readers are the one crossing
-     * between the two, so no caller spells the array out for itself.
+     * <p>Positive distances move it to the left of the direction of travel and negative ones to
+     * the right, along {@link #computeLeftUnitNormal}.
+     *
+     * @param distance how far to move it, signed by side
+     * @return the moved segment; null when the segment is too short to take a direction from
+     */
+    public Segment computeOffsetSegment(double distance) {
+
+        var normal = computeLeftUnitNormal();
+
+        return normal == null
+            ? null
+            : offsetAlongNormal(normal, distance);
+    }
+
+    /**
+     * The end as a point.
      *
      * @return {@code {endX, endY}}, freshly allocated so a caller may keep it
      */
