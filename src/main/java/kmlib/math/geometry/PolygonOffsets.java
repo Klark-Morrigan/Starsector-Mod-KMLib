@@ -599,7 +599,9 @@ public final class PolygonOffsets {
             // steps into the polygon.
             var a = polygon.get(i);
             var b = polygon.get((i + 1) % count);
-            var offsetEdge = Segment.joinPoints(a, b).computeOffsetSegment(distance);
+            var offsetEdge = Segment
+                .joinPoints(a, b)
+                .computeOffsetSegment(distance);
 
             if (offsetEdge != null) {
                 segments.add(offsetEdge);

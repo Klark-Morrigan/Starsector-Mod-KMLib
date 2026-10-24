@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static kmlib.math.geometry.GeometryTestSupport.assertThatPointsAre;
+import static kmlib.math.geometry.GeometryTestSupport.buildAssertionSlack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,6 +78,41 @@ final class SegmentTests {
     }
 
     @Nested
+    class ComputeDirectionRadians {
+
+        // Anticlockwise from the x axis, so a segment running north stands a quarter turn round.
+        @Test
+        void theBearingIsMeasuredAnticlockwiseFromTheXAxis() {
+
+            // ARRANGE
+            var northward = new Segment(0, 0, 0, 5);
+
+            // ACT
+            var actualBearing = northward.computeDirectionRadians();
+
+            // ASSERT
+            assertThat(actualBearing)
+                .isCloseTo(Angles.QUARTER_TURN, buildAssertionSlack());
+        }
+
+        // Both ends at one point: there is no way it runs, and the bearing reads as zero rather
+        // than as noise.
+        @Test
+        void aSegmentWithNoLengthHasABearingOfZero() {
+
+            // ARRANGE
+            var pointSegment = new Segment(3, 3, 3, 3);
+
+            // ACT
+            var actualBearing = pointSegment.computeDirectionRadians();
+
+            // ASSERT
+            assertThat(actualBearing)
+                .isZero();
+        }
+    }
+
+    @Nested
     class ComputeLaneDividers {
 
         // Three lanes across a girth of 6 are two apart: the dividers stand 1 either side of the
@@ -118,6 +154,19 @@ final class SegmentTests {
 
             // ACT
             var actualDividers = pointSegment.computeLaneDividers(GIRTH, 2);
+
+            // ASSERT
+            assertThat(actualDividers)
+                .isEmpty();
+        }
+
+        // A girth too small to enclose area is no band, so there is nothing to divide - the same
+        // reading the band's corners take of it.
+        @Test
+        void aBandWithNoGirthHasNoDivider() {
+
+            // ACT
+            var actualDividers = EASTWARD.computeLaneDividers(0, 3);
 
             // ASSERT
             assertThat(actualDividers)
