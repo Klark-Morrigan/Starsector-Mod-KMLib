@@ -45,6 +45,7 @@ The reusable release workflow extracts the section matching the released version
 - **A claiming-faction flag naming no faction leaves the system unclaimed** in `VanillaClaimBreakdownReader`, as vanilla reads it: a blank flag, or one naming a faction the sector does not know, settles the system on nobody before any market is weighed. The reader reported the flag's text as the claimant.
 - **`RingPath.traceInsetRing(List, double, double, double[])` keeps the body of a ring with a long thin arm.** The folds of its inset are spliced out by the winding the ring was given, not by the net area. Where the arm's fold enclosed more than the body, the body was spliced out and the path ran along the fold.
 - **`RingPath.getPoints()` and `collectPointsBetween(double, double)` hand back copies of the path's corners**, and so do `collectStretchPoints(List)` and `collectSpansEndToEnd(double, double[])`. Moving a returned point moved the path's own corner.
+- **`ScriptClasses.instantiateScript(String, Class)` names the class when it cannot be loaded or a type it uses is missing**: a static initialiser that throws, a type no installed mod provides, or one the game refuses mod code. These escaped as the JVM's own error, without the class's name.
 
 #### Added
 

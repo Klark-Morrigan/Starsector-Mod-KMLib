@@ -131,6 +131,38 @@ final class ScriptClassesTests {
                 .hasMessageContaining(name)
                 .hasRootCauseMessage(ThrowingScript.FAILURE_MESSAGE);
         }
+
+        @Test
+        void throwsNamingTheClassWhenItsStaticInitialiserThrows() {
+
+            // ARRANGE
+            var name = InitialiserFailingScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(name);
+        }
+
+        // A JVM error, which the constructor path otherwise lets through unwrapped.
+        @Test
+        void wrapsAMissingTypeInTheConstructorNamingTheClass() {
+
+            // ARRANGE
+            var name = DependencyMissingScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.instantiateScript(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(name)
+                .hasCauseInstanceOf(NoClassDefFoundError.class);
+        }
     }
 
     @Nested
@@ -211,10 +243,26 @@ final class ScriptClassesTests {
                 .hasMessageContaining(name)
                 .hasMessageContaining("public no-arg constructor");
         }
+
+        @Test
+        void throwsNamingTheClassWhenItsStaticInitialiserThrows() {
+
+            // ARRANGE
+            var name = InitialiserFailingScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.requireScriptClass(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(name);
+        }
     }
 
     // Public with a public no-arg constructor: the one shape a data-named class has to take.
-    public static final class BuildableScript implements Runnable {
+    public static final class BuildableScript
+            implements Runnable {
 
         @Override
         public void run() {
@@ -222,7 +270,8 @@ final class ScriptClassesTests {
     }
 
     // Public, but only buildable with an argument no data file can supply.
-    public static final class ArgumentTakingScript implements Runnable {
+    public static final class ArgumentTakingScript
+            implements Runnable {
 
         public ArgumentTakingScript(String required) {
         }
@@ -233,7 +282,8 @@ final class ScriptClassesTests {
     }
 
     // A public constructor on a class the public lookup cannot see.
-    static final class HiddenScript implements Runnable {
+    static final class HiddenScript
+            implements Runnable {
 
         public HiddenScript() {
         }
@@ -243,12 +293,40 @@ final class ScriptClassesTests {
         }
     }
 
-    public static final class ThrowingScript implements Runnable {
+    // Stands in for a constructor reaching a type no installed mod provides, which the JVM reports on first use.
+    public static final class DependencyMissingScript
+            implements Runnable {
+
+        public DependencyMissingScript() {
+            throw new NoClassDefFoundError("kmlib/does/not/Exist");
+        }
+
+        @Override
+        public void run() {
+        }
+    }
+
+    // Fails on its first load; every later load is refused with NoClassDefFoundError, which is wrapped alike.
+    public static final class InitialiserFailingScript
+            implements Runnable {
+
+        static final Object NEVER_ASSIGNED = failInitialiser();
+
+        private static Object failInitialiser() {
+            throw new UnsupportedOperationException("static initialiser failed");
+        }
+
+        @Override
+        public void run() {
+        }
+    }
+
+    public static final class ThrowingScript
+            implements Runnable {
 
         static final String FAILURE_MESSAGE = "constructor failed";
 
         public ThrowingScript() {
-
             throw new UnsupportedOperationException(FAILURE_MESSAGE);
         }
 

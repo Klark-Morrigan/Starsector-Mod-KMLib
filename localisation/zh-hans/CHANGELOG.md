@@ -45,6 +45,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **在 `VanillaClaimBreakdownReader` 中，未指向任何势力的宣称势力标记会让星系无人宣称**，与原版的读法一致：标记为空白，或指向星域不认识的势力时，星系在权衡任何市场之前就判给了无人。此前读取器会把标记的文本报告为宣称方。
 - **`RingPath.traceInsetRing(List, double, double, double[])` 会保留带有细长伸出部分的环的主体。** 内缩留下的折叠按环被赋予的绕行方向剔除，而不是按净面积。此前，伸出部分的折叠所围面积一旦大于主体，主体就会被剔除，路径沿折叠延伸。
 - **`RingPath.getPoints()` 和 `collectPointsBetween(double, double)` 交回的是路径拐角的副本**，`collectStretchPoints(List)` 和 `collectSpansEndToEnd(double, double[])` 也是如此。此前，移动交回的点会连带移动路径自身的拐角。
+- **`ScriptClasses.instantiateScript(String, Class)` 在类无法加载、或其用到的类型缺失时指出类名**：静态初始化器抛出异常、所需类型没有任何已安装的 Mod 提供，或该类型是游戏不允许 Mod 代码使用的。此前这些情况以 JVM 自身的错误抛出，不含类名。
 
 #### 新增
 

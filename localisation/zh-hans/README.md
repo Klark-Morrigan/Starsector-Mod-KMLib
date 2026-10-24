@@ -385,6 +385,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | script (a PowerShell file run from a terminal) | 脚本 | the usual computing word |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
+| static initialiser (code a class runs once, as it is first loaded) | 静态初始化器 | 静态, static, with 初始化器, an initialiser: the Java Language Specification's Chinese name for it |
 | standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
 | string ID, key class | 字符串 ID, 键类 | 字符串, the computing word for a string; a key class is the class holding one reader's string IDs |
 | strings category (the namespace in strings.json) | 字符串类别 | 字符串 before 类别, a category |
@@ -392,6 +393,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
 | told (a listener hearing of an event) | 得到通知 | 得到, to receive, with 通知, a notice |
 | trigger (a moment that sets an animation off) | 触发 | the usual word for setting something off |
+| type (the class or interface code holds a value as) | 类型 | the usual computing word |
 | usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, with 行, a line |
 | word (a run of text between whitespace), part into words | 词, 划分词 | 词, a word, as in 关键词, a keyword; 划分, to divide, before 词 |
 | wording (the words a text puts something in) | 措辞 | the plain word for how something is put into words |
