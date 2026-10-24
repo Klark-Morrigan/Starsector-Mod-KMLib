@@ -232,7 +232,8 @@ as `computeOffsetSegment` does,
 so a band's edges and the lines within it agree on which way across is,
 and both find no band where the girth is too thin to enclose area.
 `createCentredOn` builds the centreline from its middle and a bearing,
-the form a line of text hung from its centre arrives in.
+the form a line of text hung from its centre arrives in,
+and `computeCentre` and `computeDirectionRadians` read both back.
 
 Each stretch is a `RingStretch`,
 a named start and end rather than a bare pair of distances:

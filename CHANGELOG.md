@@ -138,7 +138,7 @@ The reusable release workflow extracts the section matching the released version
   - `computeLeftUnitNormal()`: the unit vector on the left of the direction of travel, null for a segment too short to take a direction from. `Segments.computeLeftUnitNormal(double[], double[])` is the same for two loose endpoints.
   - `computeOffsetSegment(double)`: the segment moved sideways, to its left for a positive distance and its right for a negative one.
   - `computeLaneDividers(double, int)`: the lines splitting the band the segment is the centreline of into lanes of equal girth.
-  - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing.
+  - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing in radians. `computeCentre()` and `computeDirectionRadians()` read both back.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StarsectorStrings.fillTemplate(String, Object...)`**: a template already read, filled as `format(String, String, Object...)` fills the one it reads.

@@ -138,7 +138,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `computeLeftUnitNormal()`：位于行进方向左侧的单位法向量；线段过短、无法确定方向时为 null。`Segments.computeLeftUnitNormal(double[], double[])` 对两个单独的端点给出同样的结果。
   - `computeOffsetSegment(double)`：侧向平移后的线段；距离为正时移向左侧，为负时移向右侧。
   - `computeLaneDividers(double, int)`：把以该线段为中心线的带状区域分成等宽分道的分隔线。
-  - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位、具有给定长度的线段。
+  - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位（以弧度表示）、具有给定长度的线段。`computeCentre()` 和 `computeDirectionRadians()` 读回这两者。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StarsectorStrings.fillTemplate(String, Object...)`**：填充一个已读取的模板，填充方式与 `format(String, String, Object...)` 填充它所读取的模板相同。

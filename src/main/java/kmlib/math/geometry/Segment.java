@@ -7,13 +7,14 @@ import java.util.List;
  * A directed line segment as its two endpoints, named by role so geometry reads
  * {@code start}/{@code end} rather than indexing a four-double array.
  *
- * <p>The shared currency between the edge-offset pass that emits one segment per
- * polygon edge and the chainer that welds a bag of segments back into closed
- * rings: both speak in whole segments, so neither side has to agree on which
- * array slot holds which coordinate. The direction (start to end) is meaningful -
- * a caller tracing a region orients every segment so the interior lies
- * consistently to one side, and the chainer follows each segment's end to the
- * next segment's start.
+ * <p>The direction (start to end) is meaningful. It decides which side is left, so every offset
+ * across the segment - an edge pulled into a ring, the edges of a band, the dividers inside it -
+ * steps the same way. A caller tracing a region orients its segments so the interior lies on one
+ * side, and a chainer follows each segment's end to the next segment's start.
+ *
+ * <p>The ends are held as four doubles, while the point arithmetic beside this record takes
+ * {@code {x, y}} arrays. {@link #joinPoints} is the way in from those arrays and {@link #readStart}
+ * and {@link #readEnd} the way out, so no caller spells the coordinates across by hand.
  */
 public record Segment(
     double startX,
@@ -28,7 +29,8 @@ public record Segment(
      * The segment of a given length centred on a point and running in a given direction.
      *
      * <p>The shape a centre-anchored run takes - a line of text hung from its middle, say - where the
-     * caller knows the middle and the bearing rather than either end.
+     * caller knows the middle and the bearing rather than either end. {@link #computeCentre} and
+     * {@link #computeDirectionRadians} read both back.
      *
      * @param centreX          the x the segment's midpoint sits at
      * @param centreY          the y the segment's midpoint sits at
@@ -99,6 +101,21 @@ public record Segment(
     }
 
     /**
+     * The point halfway along the segment.
+     *
+     * <p>The centre {@link #createCentredOn} takes, read back, so a segment can be hung from its
+     * middle again without the caller restating the midpoint.
+     *
+     * @return the midpoint as {@code {x, y}}
+     */
+    public double[] computeCentre() {
+
+        return new double[] {
+            (startX + endX) / 2,
+            (startY + endY) / 2};
+    }
+
+    /**
      * The bearing from start to end, in radians anticlockwise from the x axis, as
      * {@link Math#atan2} gives it.
      *
@@ -121,8 +138,8 @@ public record Segment(
      * @param thickness the band's full girth across the centreline
      * @param laneCount how many lanes the band holds
      * @return {@code laneCount - 1} dividers, from the right of the direction of travel to the left.
-     *         Empty for fewer than two lanes, which have no boundary between them, and for a segment
-     *         too short to take a direction from
+     *         Empty for fewer than two lanes, which have no boundary between them, and wherever
+     *         {@link #computeBandCorners} finds no band
      */
     public List<Segment> computeLaneDividers(double thickness, int laneCount) {
 
