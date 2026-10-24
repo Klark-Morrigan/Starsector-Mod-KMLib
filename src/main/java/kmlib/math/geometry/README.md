@@ -226,9 +226,11 @@ which is what "the layout begins at the start" means.
 `Segment.computeBandCorners` builds one such shape from a centreline and a girth,
 so what is drawn as a band and what keeps clear of it are one rectangle
 rather than two derivations of it.
-`computeLaneDividers` splits that same band into lanes of equal girth,
-and both step across it along `computeUnitNormal`,
-so a band's edges and the lines within it agree on which way across is.
+`computeLaneDividers` splits that same band into lanes of equal girth.
+Both step across it along `computeLeftUnitNormal`,
+as `computeOffsetSegment` does,
+so a band's edges and the lines within it agree on which way across is,
+and both find no band where the girth is too thin to enclose area.
 `createCentredOn` builds the centreline from its middle and a bearing,
 the form a line of text hung from its centre arrives in.
 
