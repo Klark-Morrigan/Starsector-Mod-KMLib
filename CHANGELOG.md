@@ -130,6 +130,7 @@ The reusable release workflow extracts the section matching the released version
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
   - `rollDrops(Random, float, List, List)`: the roll, with every multiplier but the overall one neutral.
+- **`ScriptClasses.requireScriptClass(String, Class)`**: checks that a class a data file names could be built as a type, without building one, so a loader can refuse a bad name while the file loads.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`SectorMarkets.readMarketIds(SectorAPI)`**: the ID of every market in the sector, whether the economy lists it or not.
 - **`SectorMarkets.readMarkets(SectorAPI)`**: every market the sector's economy lists.

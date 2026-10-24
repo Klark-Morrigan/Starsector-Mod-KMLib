@@ -338,9 +338,11 @@ A version heading is never translated; see [translating the changelog](#translat
 | animation, cycle (repetition nobody triggered) | 动画, 循环 | the usual computing words |
 | binding | 绑定 | |
 | blank (text holding only whitespace) | 空白 | |
+| build (an instance of a class a data file names) | 构建 | the usual computing word |
 | cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
 | class, syntax, tags, help (the columns of a console command table) | 类, 语法, 标签, 帮助文字 | the usual computing words; 帮助文字, help text, so the column reads as words rather than as the help command |
+| class name | 类名 | 类, a class, with 名, name |
 | command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread uses it in `help <指令名>` |
 | compile | 编译 | the usual computing word |
 | console command, console command table (a mod's `commands.csv`) | 控制台指令, 控制台指令表 | 指令, an instruction, the word [Console Commands' Fossic thread](https://www.fossic.org/thread-14602-1-1.html) uses throughout, never 命令: that thread is where a Chinese player installs the mod from, and it names the mod itself 控制台. 表, a table |
@@ -362,6 +364,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | library | 程序库 | |
 | listener manager (the game's registry of event listeners) | 监听器管理器 | 监听器, the usual computing word for a listener, with 管理器, a manager |
 | listener, saved or transient (registered on the sector) | 监听器, 存档的或临时的 | 临时, temporary, for one kept out of the save; 存档的 for one written into it |
+| loader (code reading a data file in) | 加载器 | 加载, to load in, with 器, a thing that does a job |
 | log line | 日志行 | 日志, a log, with 行, a line |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words: 映射, a mapping; 列表, a list; 记录, a record |
 | method handle | 方法句柄 | |

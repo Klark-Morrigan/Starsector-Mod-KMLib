@@ -52,6 +52,23 @@ public final class ScriptClasses {
         return scriptType.cast(constructScript(className, constructor));
     }
 
+    /**
+     * Checks that {@code className} could be built as a {@code scriptType}, without building one. A data
+     * file is read long before the first call that builds what it names, so checking while the file loads
+     * reports a bad name where the data is, rather than on whichever later call first builds it.
+     *
+     * <p>Loading the class runs its static initialiser, as building one would.
+     *
+     * @param className  the fully qualified name the data file gives
+     * @param scriptType the type the caller will hold an instance as
+     * @throws IllegalArgumentException when the class is missing, is not a {@code scriptType}, or is not a
+     *                                  public class with a public no-arg constructor
+     */
+    public static void requireScriptClass(String className, Class<?> scriptType) {
+
+        findBuildableConstructor(className, scriptType);
+    }
+
     private static Object constructScript(String className, MethodHandle constructor) {
 
         try {

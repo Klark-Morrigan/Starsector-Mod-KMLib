@@ -133,6 +133,86 @@ final class ScriptClassesTests {
         }
     }
 
+    @Nested
+    class RequireScriptClass {
+
+        @Test
+        void acceptsAPublicClassOfTheTypeWithAPublicNoArgConstructor() {
+
+            // ARRANGE
+            var name = BuildableScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.requireScriptClass(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isNull();
+        }
+
+        // The check never builds what it checks, so a constructor that would throw is not run.
+        @Test
+        void acceptsAClassWithoutRunningItsConstructor() {
+
+            // ARRANGE
+            var name = ThrowingScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.requireScriptClass(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isNull();
+        }
+
+        @Test
+        void throwsNamingTheClassWhenItIsMissing() {
+
+            // ARRANGE
+            var missingName = "kmlib.does.not.Exist";
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.requireScriptClass(missingName, Object.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(missingName);
+        }
+
+        @Test
+        void throwsNamingTheClassWhenItIsNotTheRequestedType() {
+
+            // ARRANGE
+            var name = BuildableScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.requireScriptClass(name, Comparable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(name)
+                .hasMessageContaining(Comparable.class.getName());
+        }
+
+        @Test
+        void throwsNamingTheClassWhenItHasNoNoArgConstructor() {
+
+            // ARRANGE
+            var name = ArgumentTakingScript.class.getName();
+
+            // ACT
+            var actualFailure = catchThrowable(() -> ScriptClasses.requireScriptClass(name, Runnable.class));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(name)
+                .hasMessageContaining("public no-arg constructor");
+        }
+    }
+
     // Public with a public no-arg constructor: the one shape a data-named class has to take.
     public static final class BuildableScript implements Runnable {
 
