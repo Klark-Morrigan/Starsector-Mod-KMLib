@@ -99,6 +99,19 @@ public record Segment(
     }
 
     /**
+     * The bearing from start to end, in radians anticlockwise from the x axis, as
+     * {@link Math#atan2} gives it.
+     *
+     * <p>Radians because that is the unit {@link #createCentredOn} takes, so the two compose
+     * without a conversion between them.
+     *
+     * @return the bearing in {@code [-PI, PI]}; zero for a segment whose ends coincide
+     */
+    public double computeDirectionRadians() {
+        return Math.atan2(endY - startY, endX - startX);
+    }
+
+    /**
      * The lines dividing the band this segment is the centreline of into lanes of equal girth - the
      * rules between stacked lines of text, say.
      *
