@@ -161,6 +161,54 @@ final class SegmentTests {
     }
 
     @Nested
+    class ComputeOffsetSegment {
+
+        // A positive distance steps along the left normal, which for a segment running east is north.
+        @Test
+        void aPositiveDistanceMovesTheSegmentToItsLeft() {
+
+            // ARRANGE
+            var expectedSegment = new Segment(0, 3, 10, 3);
+
+            // ACT
+            var actualSegment = EASTWARD.computeOffsetSegment(3);
+
+            // ASSERT
+            assertThat(actualSegment)
+                .isEqualTo(expectedSegment);
+        }
+
+        @Test
+        void aNegativeDistanceMovesTheSegmentToItsRight() {
+
+            // ARRANGE
+            var expectedSegment = new Segment(0, -3, 10, -3);
+
+            // ACT
+            var actualSegment = EASTWARD.computeOffsetSegment(-3);
+
+            // ASSERT
+            assertThat(actualSegment)
+                .isEqualTo(expectedSegment);
+        }
+
+        // Both ends at one point: there is no side to move it to.
+        @Test
+        void aSegmentWithNoDirectionHasNoOffset() {
+
+            // ARRANGE
+            var pointSegment = new Segment(3, 3, 3, 3);
+
+            // ACT
+            var actualSegment = pointSegment.computeOffsetSegment(3);
+
+            // ASSERT
+            assertThat(actualSegment)
+                .isNull();
+        }
+    }
+
+    @Nested
     class CreateCentredOn {
 
         @Test
