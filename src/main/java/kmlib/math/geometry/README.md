@@ -341,6 +341,9 @@ positive on the left.
 `Segments` answers the first two within a segment's two endpoints:
 where two actually cross,
 and how far a point lies from the nearest place on one.
+It also states which way is left of a segment (`computeLeftUnitNormal`),
+the one side every offset across a segment steps to,
+whether it moves the edges of a band or pulls a ring's edges inward.
 `Spans` works on intervals along a line:
 what a line crosses,
 and the longest run of it left clear by a set of obstacles.
