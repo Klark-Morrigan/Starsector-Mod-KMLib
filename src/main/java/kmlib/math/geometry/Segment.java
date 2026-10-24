@@ -55,9 +55,6 @@ public record Segment(
     /**
      * The segment from one point to another.
      *
-     * <p>The way in from point arithmetic, as {@link #readStart} and {@link #readEnd} are the
-     * way out, so no caller spells the four coordinates out of two arrays for itself.
-     *
      * @param start where the segment starts, as {@code {x, y}}
      * @param end   where it ends
      * @return the segment, holding copies of the coordinates rather than the arrays
@@ -79,8 +76,8 @@ public record Segment(
      * the result drops straight into the polygon operations here.
      *
      * @param thickness the band's full girth across the centreline
-     * @return the corners in ring order: both ends of one long edge, then both ends of the
-     *         other, walked back. Empty when the segment is too short to take a direction
+     * @return the corners in ring order: both ends of the left edge, then both ends of the
+     *         right edge, walked back. Empty when the segment is too short to take a direction
      *         from, or the girth too small to enclose area - in either case there is no
      *         rectangle to state
      */
@@ -91,16 +88,14 @@ public record Segment(
             return List.of();
         }
 
-        // Half the girth along the normal, which is the offset from the centreline to each
-        // long edge.
-        var halfX = normal[0] * thickness / 2;
-        var halfY = normal[1] * thickness / 2;
+        var leftEdge = offsetAlongNormal(normal, thickness / 2);
+        var rightEdge = offsetAlongNormal(normal, -thickness / 2);
 
         return List.of(
-            new double[] {startX + halfX, startY + halfY},
-            new double[] {endX + halfX, endY + halfY},
-            new double[] {endX - halfX, endY - halfY},
-            new double[] {startX - halfX, startY - halfY});
+            leftEdge.readStart(),
+            leftEdge.readEnd(),
+            rightEdge.readEnd(),
+            rightEdge.readStart());
     }
 
     /**
@@ -134,11 +129,7 @@ public record Segment(
             // Stepped from the right-hand edge (minus half the girth) across in whole lanes.
             var offset = -thickness / 2 + thickness * divider / laneCount;
 
-            dividers.add(new Segment(
-                startX + normal[0] * offset,
-                startY + normal[1] * offset,
-                endX + normal[0] * offset,
-                endY + normal[1] * offset));
+            dividers.add(offsetAlongNormal(normal, offset));
         }
 
         return dividers;
@@ -175,5 +166,19 @@ public record Segment(
      */
     public double[] readStart() {
         return new double[] {startX, startY};
+    }
+
+    // This segment moved along a normal already worked out, so a band offsetting it more than once
+    // takes the normal once.
+    private Segment offsetAlongNormal(double[] normal, double distance) {
+
+        var shiftX = normal[0] * distance;
+        var shiftY = normal[1] * distance;
+
+        return new Segment(
+            startX + shiftX,
+            startY + shiftY,
+            endX + shiftX,
+            endY + shiftY);
     }
 }
