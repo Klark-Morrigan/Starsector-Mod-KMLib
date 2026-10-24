@@ -84,7 +84,7 @@ public record Segment(
     public List<double[]> computeBandCorners(double thickness) {
 
         var normal = computeLeftUnitNormal();
-        if (normal == null || thickness < Limits.MIN_EDGE_LENGTH) {
+        if (!canHoldBand(normal, thickness)) {
             return List.of();
         }
 
@@ -118,7 +118,7 @@ public record Segment(
         }
 
         var normal = computeLeftUnitNormal();
-        if (normal == null) {
+        if (!canHoldBand(normal, thickness)) {
             return List.of();
         }
 
@@ -166,6 +166,14 @@ public record Segment(
      */
     public double[] readStart() {
         return new double[] {startX, startY};
+    }
+
+    // Whether there is a band to describe: a direction to spend the girth across, and a girth that
+    // encloses area. Asked once for the corners and the dividers, so the two never disagree on it.
+    private static boolean canHoldBand(double[] normal, double thickness) {
+
+        return normal != null
+            && thickness >= Limits.MIN_EDGE_LENGTH;
     }
 
     // This segment moved along a normal already worked out, so a band offsetting it more than once
