@@ -14,14 +14,24 @@
 #
 # Hands the inputs to Common-Automation's show-download-counts.sh, which runs
 # the action's chain dry. Common-Automation is expected as a sibling checkout
-# of this repository.
+# of this repository; its section headings and checkout description are used
+# here too, so the whole dry run reads as one log.
+#
+# Everything runs from working trees, which may sit on another branch or hold
+# edits a scheduled run, reading the default branch and KMLib at @master,
+# would not see. So each checkout's state is logged first.
 #
 # Needs gh on PATH, logged in with gh auth login.
 set -euo pipefail
 
-# The origin URL forms that name a GitHub repository, once a trailing .git is
-# cut: https, scp-like ssh, and ssh:// URLs.
-GITHUB_REMOTE_REGEX='^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)([^/]+/[^/]+)$'
+# shellcheck disable=SC2034 # the sourced _lib functions name it in their failures
+SCRIPT_NAME="show-download-counts"
+
+# The workflow's read scripts, in the order it runs them, under .github/actions.
+READ_SCRIPTS=(
+    read-mod-info/scripts/read_mod_info.sh
+    read-locales/scripts/read_locales.sh
+)
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 kmlib_root="$(cd "${script_dir}/.." && pwd)"
@@ -29,68 +39,51 @@ actions_dir="${kmlib_root}/.github/actions"
 common_automation_root="$(cd "${kmlib_root}/../Common-Automation" && pwd)"
 mod_root="$(cd "${1:-${kmlib_root}}" && pwd)"
 
+# shellcheck source=../.github/actions/_lib/log_output_value.sh
+source "${actions_dir}/_lib/log_output_value.sh"
+
+# shellcheck source=../.github/actions/_lib/read_github_output.sh
+source "${actions_dir}/_lib/read_github_output.sh"
+
+# shellcheck source=../.github/actions/_lib/read_origin_repository.sh
+source "${actions_dir}/_lib/read_origin_repository.sh"
+
+# shellcheck source=/dev/null # a sibling checkout's file, absent in CI's
+source "${common_automation_root}/.github/lib/describe-git-checkout.sh"
+
+# shellcheck source=/dev/null # a sibling checkout's file, absent in CI's
+source "${common_automation_root}/.github/lib/print-section-heading.sh"
+
 outputs_file="$(mktemp)"
 trap 'rm -f "${outputs_file}"' EXIT
 
-# Runs one of the workflow's read scripts in the mod root, as the workflow's
-# checkout does, writing its outputs where read_output_value finds them.
-#   run_read_script <script path>
-run_read_script() {
+print_section_heading "Checkouts" >&2
+describe_git_checkout "${mod_root}" >&2
 
-    (cd "${mod_root}" && GITHUB_OUTPUT="${outputs_file}" "$1")
-}
+if [[ "${kmlib_root}" != "${mod_root}" ]]; then
+    describe_git_checkout "${kmlib_root}" >&2
+fi
 
-# Prints the value a read script wrote for the given output key.
-#   read_output_value <key>
-read_output_value() {
+# Each runs in the mod root, as the workflow's checkout does, and logs every
+# output it writes.
+for read_script in "${READ_SCRIPTS[@]}"; do
 
-    local key value
+    read_script_file_name="${read_script##*/}"
 
-    while IFS='=' read -r key value; do
+    print_section_heading "${read_script_file_name%.sh}" >&2
+    (cd "${mod_root}" && GITHUB_OUTPUT="${outputs_file}" "${actions_dir}/${read_script}")
+done
 
-        if [[ "${key}" == "$1" ]]; then
+repository="$(read_origin_repository "${mod_root}")"
+asset_name_regex="$(read_github_output "${outputs_file}" "zip-name-regex")"
+default_locale="$(read_github_output "${outputs_file}" "default-locale")"
+label="$(read_github_output "${outputs_file}" "mod-folder-name")"
 
-            printf '%s' "${value}"
-
-            return
-        fi
-    done < "${outputs_file}"
-}
-
-# Prints the owner/name of the GitHub repository the mod root's origin names.
-read_origin_repository() {
-
-    local origin_url
-
-    if ! origin_url="$(git -C "${mod_root}" remote get-url origin)"; then
-
-        echo "show-download-counts: ${mod_root} has no origin remote to read the repository from." >&2
-        exit 1
-    fi
-
-    if ! [[ "${origin_url%.git}" =~ ${GITHUB_REMOTE_REGEX} ]]; then
-
-        echo "show-download-counts: origin '${origin_url}' of ${mod_root} is not a GitHub repository." >&2
-        exit 1
-    fi
-
-    printf '%s' "${BASH_REMATCH[2]}"
-}
-
-echo "Deriving the inputs from ${mod_root}, as publish-download-badges.yml does." >&2
-
-run_read_script "${actions_dir}/read-mod-info/scripts/read_mod_info.sh"
-run_read_script "${actions_dir}/read-locales/scripts/read_locales.sh"
-
-repository="$(read_origin_repository)"
-asset_name_regex="$(read_output_value "zip-name-regex")"
-default_locale="$(read_output_value "default-locale")"
-label="$(read_output_value "mod-folder-name")"
-
-echo "repository: ${repository}" >&2
-echo "asset-name-regex: ${asset_name_regex}" >&2
-echo "default-locale:${default_locale:+ ${default_locale}}" >&2
-echo "label: ${label}" >&2
+print_section_heading "Inputs" >&2
+log_output_value "repository" "${repository}"
+log_output_value "asset-name-regex" "${asset_name_regex}"
+log_output_value "default-locale" "${default_locale}"
+log_output_value "label" "${label}"
 
 "${common_automation_root}/scripts/show-download-counts.sh" \
     --repository "${repository}" \

@@ -304,6 +304,13 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   where a mod keeps its locale bundles and its translated changelogs.
 - [`actions/_lib/github_output.sh`](.github/actions/_lib/github_output.sh) -
   writes every step output the action scripts emit, and logs it.
+- [`actions/_lib/log_output_value.sh`](.github/actions/_lib/log_output_value.sh),
+  [`read_github_output.sh`](.github/actions/_lib/read_github_output.sh) and
+  [`read_origin_repository.sh`](.github/actions/_lib/read_origin_repository.sh) -
+  one function each:
+  an output's log line,
+  reading an output back,
+  and the GitHub repository a checkout's `origin` names.
 - [`tests/`](.github/tests/) -
   bats-core tests for the action scripts.
 
@@ -1439,6 +1446,13 @@ so no output can be written unlogged.
 A multi-line value handed to the one-line writer fails the run,
 since the runner would read its second line as a key of its own.
 A secret must be masked before it is written, since the log shows every value.
+[_lib/log_output_value.sh](.github/actions/_lib/log_output_value.sh) holds that log line's form,
+`key: value`, or `key:` alone for an empty value.
+[_lib/read_github_output.sh](.github/actions/_lib/read_github_output.sh) reads an output back,
+in either form,
+for a script that runs the read actions outside Actions.
+[_lib/read_origin_repository.sh](.github/actions/_lib/read_origin_repository.sh) reads which GitHub repository a checkout's `origin` names,
+which outside Actions no run states.
 
 `mod-release.yml` names the actions in registry form
 (`Klark-Morrigan/Starsector-Mod-KMLib/.github/actions/<name>@master`),
@@ -1501,6 +1515,9 @@ from the mod root it is given or from KMLib's own,
 and takes the repository from the root's `origin` remote.
 It prints each stage's log and each figure it would publish,
 and publishes nothing.
+Each part of its output sits under a heading:
+the checkouts it runs from, each read script's log, the derived inputs, then each stage.
+The checkouts come first because a working tree may hold edits a scheduled run would not see.
 A mod's own shim hands it the mod's root.
 It needs `gh` on Git Bash's `PATH`,
 logged in with `gh auth login`,

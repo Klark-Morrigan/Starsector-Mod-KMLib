@@ -12,6 +12,9 @@
 # run --separate-stderr arrived in 1.5.0.
 bats_require_minimum_version 1.5.0
 
+# shellcheck source=mod_root_fixtures.bash
+source "$BATS_TEST_DIRNAME/mod_root_fixtures.bash"
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/read-mod-info/scripts/read_mod_info.sh"
 
 setup() {
@@ -28,20 +31,8 @@ teardown() {
     rm -f "$GITHUB_OUTPUT"
 }
 
-# Writes a mod_info.json fixture into the temp working dir.
-write_mod_info() {
-
-    cat > "$WORK_DIR/mod_info.json" <<EOF
-{
-  "id": "$1",
-  "version": "$2",
-  "jars": ["$3"]
-}
-EOF
-}
-
 # Writes a fixture that also pins KMLib, for the cases exercising the
-# dependency read. Separate from write_mod_info so the cases above keep
+# dependency read. Separate from write_mod_info_file so the cases above keep
 # stating the no-dependency shape they are about.
 write_mod_info_with_kmlib() {
 
@@ -64,7 +55,7 @@ read_output_value() {
 
 @test "emits all derived values for a well-formed mod_info.json" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -85,7 +76,7 @@ read_output_value() {
 
 @test "names the shipped folder after the jar, not after the mod id" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -101,7 +92,7 @@ read_output_value() {
 
 @test "names the version file after the mod id, not after the jar" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -117,7 +108,7 @@ read_output_value() {
 
 @test "strips only the jar extension from a nested jar path" {
 
-    write_mod_info "kmu" "0.1.0" "jars/internal/KMU-Core.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/internal/KMU-Core.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -131,7 +122,7 @@ read_output_value() {
 
 @test "works for KMLib itself (no transformation of id)" {
 
-    write_mod_info "kmlib" "1.0.0" "jars/KMLib.jar"
+    write_mod_info_file "$WORK_DIR" "kmlib" "1.0.0" "jars/KMLib.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -149,7 +140,7 @@ read_output_value() {
 
 @test "emits Common-Java and KMLib as siblings for a consumer mod" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -167,7 +158,7 @@ read_output_value() {
 
 @test "omits the KMLib sibling when the mod being built is KMLib" {
 
-    write_mod_info "kmlib" "0.1.0" "jars/KMLib.jar"
+    write_mod_info_file "$WORK_DIR" "kmlib" "0.1.0" "jars/KMLib.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -182,7 +173,7 @@ read_output_value() {
 
 @test "emits the sibling set on a single line so it parses as one output key" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -194,7 +185,7 @@ read_output_value() {
 
 @test "emits the KMLib repository the sibling checkout set names" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -212,7 +203,7 @@ read_output_value() {
 
 @test "emits the KMLib repository even for KMLib itself" {
 
-    write_mod_info "kmlib" "0.1.0" "jars/KMLib.jar"
+    write_mod_info_file "$WORK_DIR" "kmlib" "0.1.0" "jars/KMLib.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -238,7 +229,7 @@ read_output_value() {
 
 @test "emits an empty kmlib dependency version when none is declared" {
 
-    write_mod_info "kmlib" "0.1.0" "jars/KMLib.jar"
+    write_mod_info_file "$WORK_DIR" "kmlib" "0.1.0" "jars/KMLib.jar"
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -274,7 +265,7 @@ EOF
 
 @test "reads the base over a generated mod_info.json" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cat > "$WORK_DIR/mod_info.base.json" <<EOF
 { "id": "kmu", "version": "0.2.0", "jars": ["jars/KMU.jar"] }
@@ -324,7 +315,7 @@ EOF
 
 @test "logs the base as the file it read over a generated mod_info.json" {
 
-    write_mod_info "kmu" "0.1.0" "jars/KMU.jar"
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
 
     cat > "$WORK_DIR/mod_info.base.json" <<EOF
 { "id": "kmu", "version": "0.2.0", "jars": ["jars/KMU.jar"] }

@@ -11,6 +11,9 @@
 # run --separate-stderr arrived in 1.5.0.
 bats_require_minimum_version 1.5.0
 
+# shellcheck source=mod_root_fixtures.bash
+source "$BATS_TEST_DIRNAME/mod_root_fixtures.bash"
+
 SCRIPT="$BATS_TEST_DIRNAME/../actions/read-locales/scripts/read_locales.sh"
 CORE_LOCALISATION_URL="https://github.com/TruthOriginem/Starsector-Localization-CN"
 
@@ -33,17 +36,12 @@ teardown() {
     rm -f "$GITHUB_OUTPUT"
 }
 
-# Writes the manifest fixture with the given raw JSON body.
-write_manifest() {
-    printf '%s\n' "$1" > "$WORK_DIR/localisation/manifest.json"
-}
-
 # Writes the two-locale manifest most cases read: English by default, and a
 # locale naming a core localisation. Listed out of tag order, so a case can
 # see the default put first.
 write_two_locale_manifest() {
 
-    write_manifest "{
+    write_manifest_file "$WORK_DIR" "{
       \"defaultLocale\": \"en\",
       \"files\": { \"strings.json\": \"data/strings/strings.json\" },
       \"locales\": {
@@ -183,7 +181,7 @@ read_output_value() {
 
 @test "fails when the manifest names no default locale" {
 
-    write_manifest '{ "locales": { "en": { "displayName": "English" } } }'
+    write_manifest_file "$WORK_DIR" '{ "locales": { "en": { "displayName": "English" } } }'
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -194,7 +192,7 @@ read_output_value() {
 
 @test "fails when the default locale is not among the locales" {
 
-    write_manifest '{ "defaultLocale": "fr", "locales": { "en": { "displayName": "English" } } }'
+    write_manifest_file "$WORK_DIR" '{ "defaultLocale": "fr", "locales": { "en": { "displayName": "English" } } }'
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -206,7 +204,7 @@ read_output_value() {
 
 @test "fails on a tag that could step out of a file name" {
 
-    write_manifest '{ "defaultLocale": "en", "locales": { "en": {}, "../x": {} } }'
+    write_manifest_file "$WORK_DIR" '{ "defaultLocale": "en", "locales": { "en": {}, "../x": {} } }'
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -218,7 +216,7 @@ read_output_value() {
 
 @test "fails on a tag that is not lowercased" {
 
-    write_manifest '{ "defaultLocale": "en", "locales": { "en": {}, "zh-Hans": {} } }'
+    write_manifest_file "$WORK_DIR" '{ "defaultLocale": "en", "locales": { "en": {}, "zh-Hans": {} } }'
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"
@@ -229,7 +227,7 @@ read_output_value() {
 
 @test "writes no output when the manifest fails a check" {
 
-    write_manifest '{ "defaultLocale": "fr", "locales": { "en": {} } }'
+    write_manifest_file "$WORK_DIR" '{ "defaultLocale": "fr", "locales": { "en": {} } }'
 
     cd "$WORK_DIR"
     run bash "$SCRIPT"

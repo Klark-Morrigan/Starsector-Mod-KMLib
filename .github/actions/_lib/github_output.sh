@@ -18,8 +18,11 @@
 
 SCRIPT_NAME="${SCRIPT_NAME:-github_output}"
 
-# Appends "key=value" to $GITHUB_OUTPUT and logs it as "key: value", or as
-# "key:" alone for an empty value, which a trailing space would leave unseen.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=log_output_value.sh
+source "${BASH_SOURCE[0]%/*}/log_output_value.sh"
+
+# Appends "key=value" to $GITHUB_OUTPUT and logs it through log_output_value.
 #   write_github_output <key> <value>
 #
 # A value spanning lines fails the run, naming the key: in this form its
@@ -35,7 +38,7 @@ write_github_output() {
   fi
 
   echo "${outputKey}=${outputValue}" >> "${GITHUB_OUTPUT}"
-  echo "${outputKey}:${outputValue:+ ${outputValue}}" >&2
+  log_output_value "${outputKey}" "${outputValue}"
 }
 
 # Appends one output in the multi-line form - "key<<delimiter", the value,

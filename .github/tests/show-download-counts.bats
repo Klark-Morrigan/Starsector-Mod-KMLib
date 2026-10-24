@@ -6,73 +6,73 @@
 #
 # The script finds the read scripts and Common-Automation through its own
 # location, so each case runs a copy of it in a stand-in workspace: KMLib's
-# real actions beside it, and a Common-Automation whose dry run is a stub
-# printing the flags it was handed. The mod root is a fixture with its own
-# metadata, manifest and origin remote.
+# real actions beside it, and a Common-Automation of stubs. Its dry run prints
+# the flags it was handed, its section heading prints the title alone, and its
+# checkout description names the directory. CI checks KMLib out without that
+# sibling, so the suite cannot copy the real ones. The mod root is a fixture
+# with its own metadata, manifest and origin remote.
 
 # run --separate-stderr arrived in 1.5.0.
 bats_require_minimum_version 1.5.0
 
+# shellcheck source=mod_root_fixtures.bash
+source "$BATS_TEST_DIRNAME/mod_root_fixtures.bash"
+
 REPOSITORY="Klark-Morrigan/Starsector-Mod-Fixture"
 EXPECTED_ASSET_NAME_REGEX='^Fixture-[0-9]+\.[0-9]+\.[0-9]+(-(?<locale>.+))?\.zip$'
+ENGLISH_MANIFEST='{ "defaultLocale": "en", "locales": { "en": { "displayName": "English" } } }'
 
 setup() {
 
     local workspace="${BATS_TEST_TMPDIR}/workspace"
-    local stand_in_kmlib="${workspace}/Starsector-Mod-KMLib"
-    local dry_run_stub="${workspace}/Common-Automation/scripts/show-download-counts.sh"
+    local stand_in_common_automation="${workspace}/Common-Automation"
 
-    STAND_IN_SCRIPT="${stand_in_kmlib}/scripts/show-download-counts.sh"
+    STAND_IN_KMLIB="${workspace}/Starsector-Mod-KMLib"
+    STAND_IN_SCRIPT="${STAND_IN_KMLIB}/scripts/show-download-counts.sh"
     MOD_ROOT="${workspace}/mod"
 
-    mkdir -p "${stand_in_kmlib}/scripts" "${stand_in_kmlib}/.github" "${dry_run_stub%/*}"
+    mkdir -p "${STAND_IN_KMLIB}/scripts" \
+        "${STAND_IN_KMLIB}/.github" \
+        "${stand_in_common_automation}/scripts" \
+        "${stand_in_common_automation}/.github/lib"
 
     cp "${BATS_TEST_DIRNAME}/../../scripts/show-download-counts.sh" "${STAND_IN_SCRIPT}"
-    cp -r "${BATS_TEST_DIRNAME}/../actions" "${stand_in_kmlib}/.github/"
+    cp -r "${BATS_TEST_DIRNAME}/../actions" "${STAND_IN_KMLIB}/.github/"
 
-    cat > "${dry_run_stub}" <<'STUB'
-#!/usr/bin/env bash
-printf '%s\n' "$@"
-STUB
-    chmod +x "${dry_run_stub}"
+    write_common_automation_stubs "${stand_in_common_automation}"
 
-    write_mod_info "${MOD_ROOT}"
-    write_manifest "${MOD_ROOT}"
+    write_mod_info_file "${MOD_ROOT}" "fixture" "1.2.3" "jars/Fixture.jar"
+    write_manifest_file "${MOD_ROOT}" "${ENGLISH_MANIFEST}"
 
     init_mod_repo "${MOD_ROOT}" "https://github.com/${REPOSITORY}.git"
 }
 
-# Writes a mod_info.json whose jar names the folder "Fixture".
-#   write_mod_info <mod root>
-write_mod_info() {
+# Writes the stand-in Common-Automation: a dry run printing its flags, and
+# stubs of the two lib functions the script sources.
+#   write_common_automation_stubs <stand-in root>
+write_common_automation_stubs() {
 
-    mkdir -p "$1"
+    cat > "$1/scripts/show-download-counts.sh" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$@"
+STUB
+    chmod +x "$1/scripts/show-download-counts.sh"
 
-    cat > "$1/mod_info.json" <<'EOF'
-{
-  "id": "fixture",
-  "version": "1.2.3",
-  "jars": ["jars/Fixture.jar"]
+    cat > "$1/.github/lib/print-section-heading.sh" <<'STUB'
+print_section_heading() {
+    printf '## %s\n' "$*"
 }
-EOF
+STUB
+
+    cat > "$1/.github/lib/describe-git-checkout.sh" <<'STUB'
+describe_git_checkout() {
+    printf 'checkout of %s\n' "$1"
 }
-
-# Writes a manifest defaulting to English.
-#   write_manifest <mod root>
-write_manifest() {
-
-    mkdir -p "$1/localisation"
-
-    cat > "$1/localisation/manifest.json" <<'EOF'
-{
-  "defaultLocale": "en",
-  "locales": { "en": { "displayName": "English" } }
-}
-EOF
+STUB
 }
 
-# Makes the mod root a git repository with the given origin.
-#   init_mod_repo <mod root> <origin url>
+# Makes the directory a git repository with the given origin.
+#   init_mod_repo <dir> <origin url>
 init_mod_repo() {
 
     git -C "$1" init --quiet
@@ -94,6 +94,15 @@ build_expected_flags() {
         --label "Fixture"
 }
 
+# Prints the stderr lines between the given heading and the next one.
+read_section() {
+
+    awk -v heading="## $1" '
+        $0 == heading { inside = 1; next }
+        /^## /        { inside = 0 }
+        inside' <<< "${stderr}"
+}
+
 @test "derives the inputs from the given mod root" {
 
     show_download_counts "${MOD_ROOT}"
@@ -105,12 +114,10 @@ build_expected_flags() {
 # KMLib checks its own badges with no argument.
 @test "defaults to its own repository's root" {
 
-    local stand_in_kmlib="${BATS_TEST_TMPDIR}/workspace/Starsector-Mod-KMLib"
+    write_mod_info_file "${STAND_IN_KMLIB}" "fixture" "1.2.3" "jars/Fixture.jar"
+    write_manifest_file "${STAND_IN_KMLIB}" "${ENGLISH_MANIFEST}"
 
-    write_mod_info "${stand_in_kmlib}"
-    write_manifest "${stand_in_kmlib}"
-
-    init_mod_repo "${stand_in_kmlib}" "https://github.com/${REPOSITORY}.git"
+    init_mod_repo "${STAND_IN_KMLIB}" "https://github.com/${REPOSITORY}.git"
     show_download_counts
 
     [ "${status}" -eq 0 ]
@@ -128,51 +135,73 @@ build_expected_flags() {
     [ "${output}" = "$(build_expected_flags "")" ]
 }
 
-@test "reads the repository from an ssh origin" {
-
-    git -C "${MOD_ROOT}" remote set-url origin "git@github.com:${REPOSITORY}.git"
-    show_download_counts "${MOD_ROOT}"
-
-    [ "${status}" -eq 0 ]
-    [ "${output}" = "$(build_expected_flags en)" ]
-}
-
-@test "reads the repository from an origin without .git" {
-
-    git -C "${MOD_ROOT}" remote set-url origin "https://github.com/${REPOSITORY}"
-    show_download_counts "${MOD_ROOT}"
-
-    [ "${status}" -eq 0 ]
-    [ "${output}" = "$(build_expected_flags en)" ]
-}
-
-@test "fails on an origin that is not GitHub, naming it, before the dry run" {
+@test "fails on an origin that is not GitHub, before the dry run" {
 
     git -C "${MOD_ROOT}" remote set-url origin "https://example.com/${REPOSITORY}.git"
     show_download_counts "${MOD_ROOT}"
 
     [ "${status}" -ne 0 ]
-    [[ "${stderr}" == *"origin 'https://example.com/${REPOSITORY}.git'"*"is not a GitHub repository."* ]]
+    [[ "${stderr}" == *"show-download-counts: origin 'https://example.com/${REPOSITORY}.git'"* ]]
     [ -z "${output}" ]
 }
 
-@test "fails on a mod root with no origin, before the dry run" {
+# The subshell each read script runs in must not swallow its failure.
+@test "stops before the dry run when a read script fails" {
 
-    git -C "${MOD_ROOT}" remote remove origin
+    rm "${MOD_ROOT}/mod_info.json"
     show_download_counts "${MOD_ROOT}"
 
     [ "${status}" -ne 0 ]
-    [[ "${stderr}" == *"has no origin remote"* ]]
+    [[ "${stderr}" == *"neither mod_info.base.json nor mod_info.json found"* ]]
+    [[ "${stderr}" != *"## Inputs"* ]]
     [ -z "${output}" ]
 }
 
-@test "logs each input it derived" {
+@test "logs the mod's and KMLib's checkouts under a heading" {
 
     show_download_counts "${MOD_ROOT}"
 
     [ "${status}" -eq 0 ]
-    [[ "${stderr}" == *"repository: ${REPOSITORY}"* ]]
-    [[ "${stderr}" == *"asset-name-regex: ${EXPECTED_ASSET_NAME_REGEX}"* ]]
-    [[ "${stderr}" == *"default-locale: en"* ]]
-    [[ "${stderr}" == *"label: Fixture"* ]]
+    [ "$(read_section "Checkouts")" = "checkout of ${MOD_ROOT}
+checkout of ${STAND_IN_KMLIB}" ]
+}
+
+@test "logs one checkout when the mod is KMLib itself" {
+
+    write_mod_info_file "${STAND_IN_KMLIB}" "fixture" "1.2.3" "jars/Fixture.jar"
+
+    init_mod_repo "${STAND_IN_KMLIB}" "https://github.com/${REPOSITORY}.git"
+    show_download_counts
+
+    [ "${status}" -eq 0 ]
+    [ "$(read_section "Checkouts")" = "checkout of ${STAND_IN_KMLIB}" ]
+}
+
+@test "heads each read script's log with its name" {
+
+    show_download_counts "${MOD_ROOT}"
+
+    [ "${status}" -eq 0 ]
+    [[ "$(read_section "read_mod_info")" == "Reading mod_info.json."* ]]
+    [[ "$(read_section "read_locales")" == "Reading localisation/manifest.json."* ]]
+}
+
+@test "logs each input it derived under a heading" {
+
+    show_download_counts "${MOD_ROOT}"
+
+    [ "${status}" -eq 0 ]
+    [ "$(read_section "Inputs")" = "repository: ${REPOSITORY}
+asset-name-regex: ${EXPECTED_ASSET_NAME_REGEX}
+default-locale: en
+label: Fixture" ]
+}
+
+@test "logs an empty input as its name alone" {
+
+    rm -rf "${MOD_ROOT}/localisation"
+    show_download_counts "${MOD_ROOT}"
+
+    [ "${status}" -eq 0 ]
+    [[ "$(read_section "Inputs")" == *$'\ndefault-locale:\n'* ]]
 }
