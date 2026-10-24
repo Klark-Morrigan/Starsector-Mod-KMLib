@@ -19,8 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * segment - what is drawn from it, and what keeps clear of it - so which side of the centreline
  * each corner falls on is a fact both depend on rather than an internal detail.
  *
- * <p>Also the reads beside it: the normal every offset across the segment steps along, the lane
- * dividers within the same band, and the segment hung centred on a point.
+ * <p>Also the reads beside it: the normal every offset across the segment steps along, the offset
+ * itself, the lane dividers within the same band, and the segment hung centred on a point with the
+ * centre and bearing it reads back.
  */
 final class SegmentTests {
 
@@ -74,6 +75,24 @@ final class SegmentTests {
             // no room and stands in nothing's way.
             assertThat(EASTWARD.computeBandCorners(0))
                 .isEmpty();
+        }
+    }
+
+    @Nested
+    class ComputeCentre {
+
+        @Test
+        void theCentreIsHalfwayBetweenTheEnds() {
+
+            // ARRANGE
+            var diagonal = new Segment(2, 4, 8, 10);
+
+            // ACT
+            var actualCentre = diagonal.computeCentre();
+
+            // ASSERT
+            assertThat(actualCentre)
+                .containsExactly(5, 7);
         }
     }
 
