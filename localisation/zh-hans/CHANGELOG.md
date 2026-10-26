@@ -197,6 +197,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `MarketTargetRequirement(Predicate, String)`，其 `requirementPhrase()` 返回短语 | `MarketTargetRequirement(Predicate, Supplier)`，通过 `readRequirementPhrase()` 读取短语 | 短语是翻译后的字符串，在拒绝的措辞成形时读取，而不是在构建要求时读取，后者可能早于游戏字符串加载。 |
 | `Colours.getGlComponents(Color, float)` | 已移除。用 `GlColour.set(Color, float)` 绘制，或用 `Colours.normaliseChannel(int)` 逐个换算颜色通道。 | 它每次调用都会分配一个数组，而唯一调用它的渲染器在每次绘制时都要设置颜色。 |
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | 它返回的是 `RingStretch`，与路径上其他读取路段的方法的名称一致。 |
+| 位于 `kmlib.starsector.scripts` 中的 `SectorScripts` 和 `InstalledTransientScript` | 位于 `kmlib.starsector.scripts.everyframe` 中的同名类 | 游戏所说的脚本指两样东西：数据文件所指的任何类，由 `ScriptClasses` 构建；以及星域上的逐帧脚本，由这两个类注册。 |
 
 </details>
 

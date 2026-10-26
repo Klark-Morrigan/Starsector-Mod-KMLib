@@ -372,6 +372,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | overload (one of several same-named methods) | 重载 | the usual computing word |
 | parameter, positional parameter, parameter spec (of a console command) | 参数, 位置参数, 参数规范 | the usual computing words; 位置, position, for one filled by where it stands |
 | parser, value parser | 解析器, 值解析器 | the usual computing words |
+| per-frame (run once every frame) | 逐帧 | 逐, one after another, with 帧, a frame |
 | phrase (a run of words a rule looks for) | 短语 | the plain word for a run of words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reader, source (a port opening readers) | 读取器, 来源 | 读取, to read, with 器, a thing that does a job; 来源, where something comes from |
@@ -383,6 +384,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | revision (a number that moves when content changes) | 修订号 | 修订, a revision, with 号, its number |
 | sampling (one read of a live value) | 采样 | the usual word for taking one reading of something that changes |
 | script (a PowerShell file run from a terminal) | 脚本 | the usual computing word |
+| script (a class the game builds from a name a data file gives, or one run every frame on a sector) | 脚本 | the usual computing word; one word for both, as the game has one for both |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
 | static initialiser (code a class runs once, as it is first loaded) | 静态初始化器 | 静态, static, with 初始化器, an initialiser: the Java Language Specification's Chinese name for it |

@@ -10,7 +10,7 @@ import kmlib.opengl.FastRendering;
 import kmlib.settings.KmlibLunaSettings;
 import kmlib.starsector.compatibility.CompatibilityFailures;
 import kmlib.starsector.compatibility.CompatibilityNotice;
-import kmlib.starsector.scripts.SectorScripts;
+import kmlib.starsector.scripts.everyframe.SectorScripts;
 import kmlib.starsector.startup.WiringSteps;
 import kmlib.starsector.ui.font.installed.InstalledFaceCheck;
 

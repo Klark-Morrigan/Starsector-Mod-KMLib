@@ -197,6 +197,7 @@ The reusable release workflow extracts the section matching the released version
 | `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
 | `Colours.getGlComponents(Color, float)` | Removed. Draw with `GlColour.set(Color, float)`, or convert each channel with `Colours.normaliseChannel(int)`. | It allocated an array per call, and the one renderer calling it set a colour every draw. |
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | It answers `RingStretch`es, as the path's other stretch reads name them. |
+| `SectorScripts` and `InstalledTransientScript` in `kmlib.starsector.scripts` | The same, in `kmlib.starsector.scripts.everyframe` | The game says script for two things: any class a data file names, which `ScriptClasses` builds, and a per-frame script on a sector, which these two register. |
 
 </details>
 
