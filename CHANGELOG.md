@@ -143,6 +143,7 @@ The reusable release workflow extracts the section matching the released version
   - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing in radians. `computeCentre()` and `computeDirectionRadians()` read both back.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
+- **`StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(SectorAPI, PlanetAPI, float)`**: whether the player fleet of the sector handed in is in orbit of a planet, false for a null sector. The form without a sector reads `Global.getSector()`.
 - **`StarsectorStrings.fillTemplate(String, Object...)`**: a template already read, filled as `format(String, String, Object...)` fills the one it reads.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.
 - **`SystemClaimBreakdown`** answers about its claimant:

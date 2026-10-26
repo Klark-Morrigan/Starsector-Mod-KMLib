@@ -2,6 +2,7 @@ package kmlib.starsector.fleet;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.PlanetAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 
 import kmlib.starsector.geometry.StarsectorPoints;
 
@@ -20,8 +21,8 @@ import kmlib.starsector.geometry.StarsectorPoints;
  * the helper stays a single-purpose primitive rather than growing
  * usage-specific knobs.
  *
- * <p>Both a {@code null} planet and a {@code null} player fleet read
- * as <strong>not</strong> in orbit. Callers that want a different
+ * <p>A {@code null} planet, sector or player fleet reads as
+ * <strong>not</strong> in orbit. Callers that want a different
  * default (e.g. "fee stays on when sector state is incomplete") branch
  * on the returned boolean rather than asking the helper to invert its
  * defensive default.
@@ -32,27 +33,45 @@ public final class StarsectorPlayerFleetProximity {
     }
 
     /**
-     * Returns {@code true} when the player fleet sits within
-     * {@code planet.getRadius() + orbitOffset} of the planet. A
-     * {@code null} planet or a missing player fleet returns
-     * {@code false} - see the class doc for the defensive-default
-     * rationale.
+     * Returns {@code true} when the player fleet of the sector {@code Global} holds sits within
+     * {@code planet.getRadius() + orbitOffset} of the planet. Prefer
+     * {@link #isPlayerFleetInOrbitOf(SectorAPI, PlanetAPI, float)}, which reads the sector the caller hands in.
      *
-     * <p>The threshold is inclusive ({@code <=}) so a hairline-precise
-     * approach does not flip the classification mid-frame when the
-     * fleet velocity happens to land it exactly on the band.
+     * @param planet      the planet to measure from
+     * @param orbitOffset the distance past the planet's radius that still counts as orbit
+     * @return whether the player fleet is in orbit
      */
     public static boolean isPlayerFleetInOrbitOf(PlanetAPI planet, float orbitOffset) {
-        if (planet == null) {
+
+        return isPlayerFleetInOrbitOf(Global.getSector(), planet, orbitOffset);
+    }
+
+    /**
+     * Returns {@code true} when {@code sector}'s player fleet sits within {@code planet.getRadius() + orbitOffset}
+     * of the planet. A {@code null} planet, sector or player fleet returns {@code false} - see the class doc for the
+     * defensive-default rationale.
+     *
+     * <p>The threshold is inclusive ({@code <=}) so a hairline-precise approach does not flip the classification
+     * mid-frame when the fleet velocity happens to land it exactly on the band.
+     *
+     * @param sector      the sector whose player fleet is measured
+     * @param planet      the planet to measure from
+     * @param orbitOffset the distance past the planet's radius that still counts as orbit
+     * @return whether the player fleet is in orbit
+     */
+    public static boolean isPlayerFleetInOrbitOf(SectorAPI sector, PlanetAPI planet, float orbitOffset) {
+
+        if (planet == null || sector == null) {
             return false;
         }
-        var playerFleet = Global.getSector() == null
-            ? null
-            : Global.getSector().getPlayerFleet();
+
+        var playerFleet = sector.getPlayerFleet();
         if (playerFleet == null) {
             return false;
         }
+
         var distance = StarsectorPoints.computeDistanceBetween(playerFleet, planet);
+
         return distance <= planet.getRadius() + orbitOffset;
     }
 }

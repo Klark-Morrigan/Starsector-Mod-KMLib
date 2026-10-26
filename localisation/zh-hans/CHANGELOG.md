@@ -143,6 +143,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位（以弧度表示）、具有给定长度的线段。`computeCentre()` 和 `computeDirectionRadians()` 读回这两者。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
+- **`StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(SectorAPI, PlanetAPI, float)`**：传入星域的玩家舰队是否处于某颗行星的轨道上；星域为 null 时为 false。不带星域的形式读取 `Global.getSector()`。
 - **`StarsectorStrings.fillTemplate(String, Object...)`**：填充一个已读取的模板，填充方式与 `format(String, String, Object...)` 填充它所读取的模板相同。
 - **`StorageAccess.unlockStorage(MarketAPI, String)`**（位于 `kmlib.starsector.markets.storage`）：把市场的仓库标记为已付费解锁，使其无需原版的一次性使用费即可打开。插件被其他 Mod 替换的仓库保持不变。
 - **`SystemClaimBreakdown`** 回答关于其宣称方的问题：
