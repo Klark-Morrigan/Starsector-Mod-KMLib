@@ -46,6 +46,7 @@ The reusable release workflow extracts the section matching the released version
 - **`RingPath.traceInsetRing(List, double, double, double[])` keeps the body of a ring with a long thin arm.** The folds of its inset are spliced out by the winding the ring was given, not by the net area. Where the arm's fold enclosed more than the body, the body was spliced out and the path ran along the fold.
 - **`RingPath.getPoints()` and `collectPointsBetween(double, double)` hand back copies of the path's corners**, and so do `collectStretchPoints(List)` and `collectSpansEndToEnd(double, double[])`. Moving a returned point moved the path's own corner.
 - **`ScriptClasses.instantiateScript(String, Class)` names the class when it cannot be loaded or a type it uses is missing**: a static initialiser that throws, a type no installed mod provides, or one the game refuses mod code. These escaped as the JVM's own error, without the class's name.
+- **`PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` answers false while the player fleet is in another star system or in hyperspace.** Coordinates are local to a location, and under its old name the check compared them across locations.
 
 #### Added
 
@@ -143,7 +144,6 @@ The reusable release workflow extracts the section matching the released version
   - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing in radians. `computeCentre()` and `computeDirectionRadians()` read both back.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
-- **`StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(SectorAPI, PlanetAPI, float)`**: whether the player fleet of the sector handed in is in orbit of a planet, false for a null sector. The form without a sector reads `Global.getSector()`.
 - **`StarsectorStrings.fillTemplate(String, Object...)`**: a template already read, filled as `format(String, String, Object...)` fills the one it reads.
 - **`StorageAccess.unlockStorage(MarketAPI, String)`** in `kmlib.starsector.markets.storage`: marks a market's storage as paid to unlock, so it opens without vanilla's access fee. A storage whose plugin a mod replaced is left alone.
 - **`SystemClaimBreakdown`** answers about its claimant:
@@ -199,6 +199,7 @@ The reusable release workflow extracts the section matching the released version
 | `Colours.getGlComponents(Color, float)` | Removed. Draw with `GlColour.set(Color, float)`, or convert each channel with `Colours.normaliseChannel(int)`. | It allocated an array per call, and the one renderer calling it set a colour every draw. |
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | It answers `RingStretch`es, as the path's other stretch reads name them. |
 | `SectorScripts` and `InstalledTransientScript` in `kmlib.starsector.scripts` | The same, in `kmlib.starsector.scripts.everyframe` | The game says script for two things: any class a data file names, which `ScriptClasses` builds, and a per-frame script on a sector, which these two register. |
+| `StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(PlanetAPI, float)` | `PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` | One naming shape across `kmlib.starsector.fleet`. The check reads the sector it is handed, never `Global`, and measures any entity with a radius. |
 
 </details>
 

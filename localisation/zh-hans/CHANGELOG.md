@@ -46,6 +46,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`RingPath.traceInsetRing(List, double, double, double[])` 会保留带有细长伸出部分的环的主体。** 内缩留下的折叠按环被赋予的绕行方向剔除，而不是按净面积。此前，伸出部分的折叠所围面积一旦大于主体，主体就会被剔除，路径沿折叠延伸。
 - **`RingPath.getPoints()` 和 `collectPointsBetween(double, double)` 交回的是路径拐角的副本**，`collectStretchPoints(List)` 和 `collectSpansEndToEnd(double, double[])` 也是如此。此前，移动交回的点会连带移动路径自身的拐角。
 - **`ScriptClasses.instantiateScript(String, Class)` 在类无法加载、或其用到的类型缺失时指出类名**：静态初始化器抛出异常、所需类型没有任何已安装的 Mod 提供，或该类型是游戏不允许 Mod 代码使用的。此前这些情况以 JVM 自身的错误抛出，不含类名。
+- **`PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` 在玩家舰队位于另一个星系或超空间时返回 false。** 坐标只在所处位置内有效，而此前以旧名称存在时，该检查会跨位置比较坐标。
 
 #### 新增
 
@@ -143,7 +144,6 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位（以弧度表示）、具有给定长度的线段。`computeCentre()` 和 `computeDirectionRadians()` 读回这两者。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
-- **`StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(SectorAPI, PlanetAPI, float)`**：传入星域的玩家舰队是否处于某颗行星的轨道上；星域为 null 时为 false。不带星域的形式读取 `Global.getSector()`。
 - **`StarsectorStrings.fillTemplate(String, Object...)`**：填充一个已读取的模板，填充方式与 `format(String, String, Object...)` 填充它所读取的模板相同。
 - **`StorageAccess.unlockStorage(MarketAPI, String)`**（位于 `kmlib.starsector.markets.storage`）：把市场的仓库标记为已付费解锁，使其无需原版的一次性使用费即可打开。插件被其他 Mod 替换的仓库保持不变。
 - **`SystemClaimBreakdown`** 回答关于其宣称方的问题：
@@ -199,6 +199,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `Colours.getGlComponents(Color, float)` | 已移除。用 `GlColour.set(Color, float)` 绘制，或用 `Colours.normaliseChannel(int)` 逐个换算颜色通道。 | 它每次调用都会分配一个数组，而唯一调用它的渲染器在每次绘制时都要设置颜色。 |
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | 它返回的是 `RingStretch`，与路径上其他读取路段的方法的名称一致。 |
 | 位于 `kmlib.starsector.scripts` 中的 `SectorScripts` 和 `InstalledTransientScript` | 位于 `kmlib.starsector.scripts.everyframe` 中的同名类 | 游戏所说的脚本指两样东西：数据文件所指的任何类，由 `ScriptClasses` 构建；以及星域上的逐帧脚本，由这两个类注册。 |
+| `StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(PlanetAPI, float)` | `PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` | `kmlib.starsector.fleet` 中统一为一种命名形式。该检查读取传入的星域，从不读取 `Global`，并可测量任何带半径的实体。 |
 
 </details>
 
