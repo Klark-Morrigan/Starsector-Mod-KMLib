@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Diagnoses one save end to end: its newest load in the logs, and the mods it was last written with.
+    Diagnoses one save end to end: its newest load in the logs, and how its mods differ from the installed ones.
 
 .DESCRIPTION
     Runs the other scripts beside this one in order, so a person gets one report from one command.
@@ -62,18 +62,18 @@ if ($SaveFolder) {
     Write-DiagnosticLine -Source $DiagnosticSource -Message 'no load failed, so no save is diagnosed'
 }
 
-$mods = @()
+$modDrift = @()
 
 if ($SaveFolder) {
 
-    $modListScript = Join-Path $PSScriptRoot 'Get-SaveModDrift.ps1'
-    $mods = @(& $modListScript -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder)
+    $modDriftScript = Join-Path $PSScriptRoot 'Get-SaveModDrift.ps1'
+    $modDrift = @(& $modDriftScript -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder)
 }
 
 $report = [pscustomobject]@{
     SaveFolder = $SaveFolder
     Load       = $load
-    Mods       = $mods
+    ModDrift   = $modDrift
 }
 
 if ($AsJson) {

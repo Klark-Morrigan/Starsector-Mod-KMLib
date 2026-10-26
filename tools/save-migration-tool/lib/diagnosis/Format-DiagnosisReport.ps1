@@ -27,11 +27,8 @@ function Format-DiagnosisReport {
         $lines.AddRange([string[]] @(Format-LoadDetailLines -Load $load))
     }
 
-    # The list alone says nothing a person acts on, so the text gives its size; JSON keeps the list for a caller.
     $lines.Add('')
-    $lines.Add(
-        "Mods the save was last written with: $(Format-ConsoleNumber (@($Report.Mods).Count)); " +
-        "$(Format-ConsoleText -Role 'Script' -Text 'Get-SaveModDrift.ps1') lists them")
+    $lines.AddRange([string[]] @(Format-ModDriftLines -Rows $Report.ModDrift))
 
     return $lines.ToArray()
 }

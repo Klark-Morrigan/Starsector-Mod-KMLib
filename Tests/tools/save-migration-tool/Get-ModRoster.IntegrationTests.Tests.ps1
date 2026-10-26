@@ -93,6 +93,15 @@ Describe 'Get-ModRoster.IntegrationTests' {
             ($script:Run.Output | Where-Object Id -EQ 'beta').Version | Should -Be '2.0.3'
         }
 
+        It 'gives each mod the version parts the game compares by, from either version form' {
+
+            $alphaParts = ($script:Run.Output | Where-Object Id -EQ 'alpha').VersionInfo
+            $betaParts = ($script:Run.Output | Where-Object Id -EQ 'beta').VersionInfo
+
+            "$($alphaParts.Major)|$($alphaParts.Minor)|$($alphaParts.Patch)" | Should -Be '1|10|0'
+            "$($betaParts.Major)|$($betaParts.Minor)|$($betaParts.Patch)" | Should -Be '2|0|3'
+        }
+
         It 'logs which copy won over which, and what it read and decided, to stderr' {
             $script:Run.Diagnostics | Should -Be @(
                 'Get-ModRoster: alpha: Alpha-1.10.0 (1.10.0) wins over Alpha (1.9.0)'

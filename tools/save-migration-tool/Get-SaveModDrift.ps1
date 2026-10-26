@@ -1,22 +1,23 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Lists the mods a save was last written with: each enabled mod's ID, name and version, from the save's descriptor.
+    Compares the mods a save was last written with against the installed ones: changed, missing, added.
 
 .DESCRIPTION
-    The descriptor is the small file beside campaign.xml that the game's load list reads.
-    It holds the same mod list the load list's hover tooltip compares against the installed mods.
-    Stdout carries the mods only. What the script read and decided goes to stderr.
-    The README beside this script explains how the descriptor stores the list.
+    The save's side comes from its descriptor, the small file beside campaign.xml that the game's load list reads.
+    The installed side is Get-ModRoster.ps1's roster of the enabled mods.
+    A changed mod's level, major, minor or patch, follows the rule the game's load list warns by.
+    Stdout carries one row per mod on either side. What the script read and decided goes to stderr.
+    The README beside this script explains how the descriptor stores the list and how versions compare.
 
 .EXAMPLE
     Get-SaveModDrift.ps1 -StarsectorRoot <install> -SaveFolder <save folder> -AsJson
-    Lists the mods the save was last written with, as JSON.
+    Compares the save's mods with the installed ones, as JSON.
 #>
 
 [CmdletBinding()]
 param(
-    # Starsector install root; the save is resolved beneath it.
+    # Starsector install root; the save and the mods are resolved beneath it.
     [Parameter(Mandatory)]
     [string] $StarsectorRoot,
 
@@ -32,6 +33,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'lib\Import-SaveMigrationToolLibrary.ps1')
+
+# Six columns would print as a list, so the rows get a table view of their own.
+Update-FormatData -PrependPath (Join-Path $PSScriptRoot 'formats\ModDriftRow.format.ps1xml')
 
 $DiagnosticSource = 'Get-SaveModDrift'
 
@@ -52,19 +56,21 @@ Write-DiagnosticLine -Source $DiagnosticSource -Message (
     "read $(Format-ConsoleText -Role 'Path' -Text $descriptorPath), saved $savedAt under Starsector $gameVersion; " +
     "$(Format-ConsoleNumber $idIndex.Count) objects carry an ID for back-pointers")
 
-$mods = Read-SaveModList -SaveData $saveData -ListName 'enabledMods' -IdIndex $idIndex
+$savedMods = Read-SaveModList -SaveData $saveData -ListName 'enabledMods' -IdIndex $idIndex
 $everEnabledMods = Read-SaveModList -SaveData $saveData -ListName 'allModsEverEnabled' -IdIndex $idIndex
 
-if ($null -eq $mods) {
+# No list says nothing about the save's mods, where an empty list says it had none, so no drift is guessed.
+if ($null -eq $savedMods) {
 
-    Write-Warning "the descriptor lists no enabled mods: $descriptorPath"
-    $mods = @()
+    Write-Warning "the descriptor lists no enabled mods, so no drift is reported: $descriptorPath"
+
+    return
 }
 
 # A mod enabled once and dropped since can still have content in the save, so stderr names it.
 # A foreach over a missing list runs no iteration, where a pipeline would pass one null through.
-$enabledIds = @(foreach ($mod in $mods) { $mod.Id })
-$droppedIds = @(foreach ($mod in $everEnabledMods) { if ($mod.Id -cnotin $enabledIds) { $mod.Id } })
+$savedIds = @(foreach ($mod in $savedMods) { $mod.Id })
+$droppedIds = @(foreach ($mod in $everEnabledMods) { if ($mod.Id -cnotin $savedIds) { $mod.Id } })
 $droppedSummary = "$(Format-ConsoleNumber $droppedIds.Count) more were enabled in an earlier save and are not now"
 
 if ($droppedIds.Count -gt 0) {
@@ -72,11 +78,17 @@ if ($droppedIds.Count -gt 0) {
 }
 
 Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "listing $(Format-ConsoleNumber $mods.Count) enabled mods as the save last wrote them; $droppedSummary")
+    "read $(Format-ConsoleNumber $savedMods.Count) enabled mods as the save last wrote them; $droppedSummary")
+
+$roster = @(& (Join-Path $PSScriptRoot 'Get-ModRoster.ps1') -StarsectorRoot $StarsectorRoot)
+$rows = @(Compare-SaveModRoster -SavedMods $savedMods -Roster $roster)
+
+Write-DiagnosticLine -Source $DiagnosticSource -Message (
+    "compared them with $(Format-ConsoleNumber $roster.Count) installed mods: $(Format-ModDriftCounts -Rows $rows)")
 
 if ($AsJson) {
-    ConvertTo-Json -InputObject $mods
+    ConvertTo-Json -InputObject $rows
 
 } else {
-    $mods
+    $rows
 }

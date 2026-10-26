@@ -6,6 +6,7 @@ BeforeAll {
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Get-XmlChildText.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Resolve-XStreamReference.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-SaveModVersion.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-SaveVersionInfo.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-EnabledModData.ps1"
 }
 
@@ -50,18 +51,28 @@ Describe 'ConvertFrom-EnabledModData' {
             }
         }
 
+        Mock ConvertFrom-SaveVersionInfo {
+
+            if ($VersionInfo) {
+                "parts-z$($VersionInfo.GetAttribute('z'))"
+            } else {
+                'no parts'
+            }
+        }
+
         Mock Add-ModDefaultDisplay {
             $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru
         }
     }
 
-    It 'reads the ID, name and version of a spec written in place' {
+    It 'reads the ID, name, version and version parts of a spec written in place' {
 
         $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[0] -IdIndex $script:IdIndex
 
         $mod.Id | Should -Be 'alpha'
         $mod.Name | Should -Be 'Alpha'
         $mod.Version | Should -Be 'version-z3'
+        $mod.VersionInfo | Should -Be 'parts-z3'
     }
 
     It 'gives the mod the display every mod list shares' {
@@ -78,8 +89,11 @@ Describe 'ConvertFrom-EnabledModData' {
     }
 
     It 'follows a versionInfo back-pointer' {
-        (ConvertFrom-EnabledModData -EnabledModData $script:Entries[2] -IdIndex $script:IdIndex).Version |
-            Should -Be 'version-z3'
+
+        $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[2] -IdIndex $script:IdIndex
+
+        $mod.Version | Should -Be 'version-z3'
+        $mod.VersionInfo | Should -Be 'parts-z3'
     }
 
     It 'reads a spec with no versionInfo, and no name, as empty' {
@@ -89,6 +103,7 @@ Describe 'ConvertFrom-EnabledModData' {
         $mod.Id | Should -Be 'gamma'
         $mod.Name | Should -BeNullOrEmpty
         $mod.Version | Should -Be ''
+        $mod.VersionInfo | Should -Be 'no parts'
     }
 
     It 'fails naming an entry that holds no spec' {

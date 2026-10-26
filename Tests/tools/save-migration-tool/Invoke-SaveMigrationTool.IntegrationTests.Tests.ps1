@@ -2,8 +2,9 @@
 # run together, unmocked. Each script's own cases are pinned by its own integration suite.
 # Run with: Invoke-Pester -Path .\Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1
 #
-# Each case copies the two-failed-loads fixture's logs under TestDrive and adds the saved-mod-list fixture's
-# descriptor as the failed save's, so one install holds both a failed load and its save. No test reads a real install.
+# Each case copies a log fixture under TestDrive and adds the saved-mod-list fixture's descriptor as the failed save's,
+# and its mods\ folder as the install's, so one install holds a failed load, its save and the mods the save drifted
+# from. No test reads a real install.
 
 BeforeAll {
 
@@ -18,7 +19,8 @@ BeforeAll {
     $script:FixturesRoot = Join-Path $PSScriptRoot 'fixtures'
 
     function script:New-DiagnosisInstall {
-        # Copies a fixture's logs under TestDrive, with the saved-mod-list descriptor as save_Alpha_1's.
+        # Copies a fixture's logs under TestDrive, with the saved-mod-list descriptor as save_Alpha_1's
+        # and the saved-mod-list mods as the installed ones.
         param(
             [string] $Name,
             [string] $LogFixture
@@ -26,12 +28,13 @@ BeforeAll {
 
         $root = Join-Path $TestDrive $Name
         $saveFolder = Join-Path $root 'saves\save_Alpha_1'
+        $modListFixture = Join-Path $script:FixturesRoot 'saved-mod-list'
+        $descriptor = Join-Path $modListFixture 'saves\save_TestCaptain_1\descriptor.xml'
 
         Copy-Item -LiteralPath (Join-Path $script:FixturesRoot $LogFixture) -Destination $root -Recurse
         New-Item -ItemType Directory -Path $saveFolder -Force | Out-Null
-        $descriptor = Join-Path $script:FixturesRoot 'saved-mod-list\saves\save_TestCaptain_1\descriptor.xml'
-
         Copy-Item -LiteralPath $descriptor -Destination $saveFolder
+        Copy-Item -LiteralPath (Join-Path $modListFixture 'mods') -Destination $root -Recurse
 
         return $root
     }
@@ -54,7 +57,7 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
             $script:Run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
         }
 
-        It 'reports the newest failed load with its retries, then how many mods its save was last written with' {
+        It 'reports the newest failed load with its retries, then how its save''s mods drifted' {
 
             $script:Run.Output | Should -Be @(
                 ''
@@ -80,7 +83,10 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 ('      C:\Games\Starsector\starsector-core\..\saves\save_Alpha_1\campaign.xml.inprogress ' +
                     '(The system cannot find the file specified)')
                 ''
-                'Mods the save was last written with: 3; Get-SaveModDrift.ps1 lists them'
+                'Mod drift against the install: 1 changed, 1 missing, 1 added, 1 unchanged'
+                '  Beta (beta): 1.14.1aa -> 1.15.0, minor change'
+                '  Gamma (gamma): missing, saved at 2025-03-29'
+                '  Delta (delta): added, installed at 0.9.1'
             )
         }
 
@@ -93,7 +99,7 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
                 'listing 1 newest first: ending Failed, the newest only')
 
-            @($script:Run.Diagnostics -like 'Get-SaveModDrift: listing 3 enabled mods*').Count | Should -Be 1
+            @($script:Run.Diagnostics -like 'Get-SaveModDrift: compared them with 3 installed mods*').Count | Should -Be 1
         }
 
         It 'prints the report object as JSON with -AsJson' {
@@ -103,7 +109,8 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
 
             $report.SaveFolder | Should -Be 'save_Alpha_1'
             $report.Load.Missing.Id | Should -Be 'BSC_Buffalo_Mk3'
-            $report.Mods.Id | Should -Be @('alpha', 'beta', 'gamma')
+            $report.ModDrift.Id | Should -Be @('alpha', 'beta', 'gamma', 'delta')
+            $report.ModDrift.Change | Should -Be @('Unchanged', 'Changed', 'Missing', 'Added')
         }
     }
 
@@ -133,7 +140,10 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 'Save: save_Alpha_1'
                 'Newest load: none in the logs'
                 ''
-                'Mods the save was last written with: 3; Get-SaveModDrift.ps1 lists them'
+                'Mod drift against the install: 1 changed, 1 missing, 1 added, 1 unchanged'
+                '  Beta (beta): 1.14.1aa -> 1.15.0, minor change'
+                '  Gamma (gamma): missing, saved at 2025-03-29'
+                '  Delta (delta): added, installed at 0.9.1'
             )
 
             $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'

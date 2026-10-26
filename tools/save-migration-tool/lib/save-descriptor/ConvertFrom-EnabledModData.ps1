@@ -1,5 +1,5 @@
 # Reads one EnabledModData entry of a save's descriptor into the mod's ID, name and version,
-# as the save last wrote them.
+# as the save last wrote them, and the parts the game compares that version by.
 # The descriptor writes each mod's spec in full under allModsEverEnabled first,
 # so an entry under enabledMods is usually a back-pointer to it.
 # The entry, its spec and the spec's version are each followed wherever they point.
@@ -25,9 +25,10 @@ function ConvertFrom-EnabledModData {
     }
 
     $mod = [pscustomobject]@{
-        Id      = Get-XmlChildText -Element $spec -Name 'id'
-        Version = ConvertFrom-SaveModVersion -VersionInfo $versionInfo
-        Name    = Get-XmlChildText -Element $spec -Name 'name'
+        Id          = Get-XmlChildText -Element $spec -Name 'id'
+        Version     = ConvertFrom-SaveModVersion -VersionInfo $versionInfo
+        VersionInfo = ConvertFrom-SaveVersionInfo -VersionInfo $versionInfo
+        Name        = Get-XmlChildText -Element $spec -Name 'name'
     }
 
     return Add-ModDefaultDisplay -Mod $mod
