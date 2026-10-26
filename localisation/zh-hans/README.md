@@ -338,9 +338,11 @@ A version heading is never translated; see [translating the changelog](#translat
 | animation, cycle (repetition nobody triggered) | 动画, 循环 | the usual computing words |
 | binding | 绑定 | |
 | blank (text holding only whitespace) | 空白 | |
+| build (an instance of a class a data file names) | 构建 | the usual computing word |
 | cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
 | class, syntax, tags, help (the columns of a console command table) | 类, 语法, 标签, 帮助文字 | the usual computing words; 帮助文字, help text, so the column reads as words rather than as the help command |
+| class name | 类名 | 类, a class, with 名, name |
 | command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread uses it in `help <指令名>` |
 | compile | 编译 | the usual computing word |
 | console command, console command table (a mod's `commands.csv`) | 控制台指令, 控制台指令表 | 指令, an instruction, the word [Console Commands' Fossic thread](https://www.fossic.org/thread-14602-1-1.html) uses throughout, never 命令: that thread is where a Chinese player installs the mod from, and it names the mod itself 控制台. 表, a table |
@@ -362,6 +364,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | library | 程序库 | |
 | listener manager (the game's registry of event listeners) | 监听器管理器 | 监听器, the usual computing word for a listener, with 管理器, a manager |
 | listener, saved or transient (registered on the sector) | 监听器, 存档的或临时的 | 临时, temporary, for one kept out of the save; 存档的 for one written into it |
+| loader (code reading a data file in) | 加载器 | 加载, to load in, with 器, a thing that does a job |
 | log line | 日志行 | 日志, a log, with 行, a line |
 | map (a Java `Map`), list, record | 映射, 列表, 记录 | the usual computing words: 映射, a mapping; 列表, a list; 记录, a record |
 | method handle | 方法句柄 | |
@@ -369,6 +372,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | overload (one of several same-named methods) | 重载 | the usual computing word |
 | parameter, positional parameter, parameter spec (of a console command) | 参数, 位置参数, 参数规范 | the usual computing words; 位置, position, for one filled by where it stands |
 | parser, value parser | 解析器, 值解析器 | the usual computing words |
+| per-frame (run once every frame) | 逐帧 | 逐, one after another, with 帧, a frame |
 | phrase (a run of words a rule looks for) | 短语 | the plain word for a run of words |
 | profiler, capture (what a profiler has timed) | 性能分析器, 采集结果 | the usual computing words |
 | reader, source (a port opening readers) | 读取器, 来源 | 读取, to read, with 器, a thing that does a job; 来源, where something comes from |
@@ -380,8 +384,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | revision (a number that moves when content changes) | 修订号 | 修订, a revision, with 号, its number |
 | sampling (one read of a live value) | 采样 | the usual word for taking one reading of something that changes |
 | script (a PowerShell file run from a terminal) | 脚本 | the usual computing word |
+| script (a class the game builds from a name a data file gives, or one run every frame on a sector) | 脚本 | the usual computing word; one word for both, as the game has one for both |
 | seam (an interface one part answers another through) | 接缝 | where two parts are joined |
 | stand-in (a test double) | 替身 | |
+| static initialiser (code a class runs once, as it is first loaded) | 静态初始化器 | 静态, static, with 初始化器, an initialiser: the Java Language Specification's Chinese name for it |
 | standalone (a parameter that is a whole invocation by itself) | 本身即构成一次完整调用 | written out as a clause; no single word says it |
 | string ID, key class | 字符串 ID, 键类 | 字符串, the computing word for a string; a key class is the class holding one reader's string IDs |
 | strings category (the namespace in strings.json) | 字符串类别 | 字符串 before 类别, a category |
@@ -389,6 +395,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | test suite, fake, fixture | 测试套件, 伪实现, 夹具 | |
 | told (a listener hearing of an event) | 得到通知 | 得到, to receive, with 通知, a notice |
 | trigger (a moment that sets an animation off) | 触发 | the usual word for setting something off |
+| type (the class or interface code holds a value as) | 类型 | the usual computing word |
 | usage line (the grammar a console command prints when mistyped) | 用法行 | 用法, usage, with 行, a line |
 | word (a run of text between whitespace), part into words | 词, 划分词 | 词, a word, as in 关键词, a keyword; 划分, to divide, before 词 |
 | wording (the words a text puts something in) | 措辞 | the plain word for how something is put into words |

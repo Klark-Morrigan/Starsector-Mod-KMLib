@@ -37,12 +37,15 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/json.sh
 source "${LIB_DIR}/json.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/localisation.sh
 source "${LIB_DIR}/localisation.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/github_output.sh
 source "${LIB_DIR}/github_output.sh"
 
@@ -69,6 +72,7 @@ compose_translated_notes() {
 
   # This function runs inside a command substitution, which does not inherit
   # set -e, so a failure returns explicitly.
+  # shellcheck disable=SC2310  # the function returns each failure itself
   changelogFile="$(localisation_require_translated_changelog "${localeTag}")" || return 1
   section="$(changelog_section "${changelogFile}" "${VERSION}")"
 

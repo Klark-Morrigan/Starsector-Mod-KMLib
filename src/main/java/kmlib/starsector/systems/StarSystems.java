@@ -29,7 +29,7 @@ import java.util.function.Predicate;
  * answering both grows with no rule for what else belongs in it.
  *
  * <p>Final class with a private constructor: pure-function utility, no
- * instance state. Matches {@link kmlib.starsector.scripts.SectorScripts}'s
+ * instance state. Matches {@link kmlib.starsector.scripts.everyframe.SectorScripts}'s
  * shape, and is null-sector defensive like the rest of the library.
  */
 public final class StarSystems {

@@ -45,6 +45,7 @@ The reusable release workflow extracts the section matching the released version
 - **A claiming-faction flag naming no faction leaves the system unclaimed** in `VanillaClaimBreakdownReader`, as vanilla reads it: a blank flag, or one naming a faction the sector does not know, settles the system on nobody before any market is weighed. The reader reported the flag's text as the claimant.
 - **`RingPath.traceInsetRing(List, double, double, double[])` keeps the body of a ring with a long thin arm.** The folds of its inset are spliced out by the winding the ring was given, not by the net area. Where the arm's fold enclosed more than the body, the body was spliced out and the path ran along the fold.
 - **`RingPath.getPoints()` and `collectPointsBetween(double, double)` hand back copies of the path's corners**, and so do `collectStretchPoints(List)` and `collectSpansEndToEnd(double, double[])`. Moving a returned point moved the path's own corner.
+- **`ScriptClasses.instantiateScript(String, Class)` names the class when it cannot be loaded or a type it uses is missing**: a static initialiser that throws, a type no installed mod provides, or one the game refuses mod code. These escaped as the JVM's own error, without the class's name.
 
 #### Added
 
@@ -130,6 +131,7 @@ The reusable release workflow extracts the section matching the released version
   - `buildRandomDrop(String, int)` and `buildRandomDrop(String, int, float)`: a random drop by weight, its value optionally scaled.
   - `buildValueDrop(String, int)`: a credit budget spent on one drop group.
   - `rollDrops(Random, float, List, List)`: the roll, with every multiplier but the overall one neutral.
+- **`ScriptClasses.requireScriptClass(String, Class)`**: checks that a class a data file names could be built as a type, without building one, so a loader can refuse a bad name while the file loads.
 - **`SectorFactions.findFaction(SectorAPI, String)`**: the faction an ID names, null for a null sector, a blank ID or an ID the sector does not know.
 - **`SectorMarkets.readMarketIds(SectorAPI)`**: the ID of every market in the sector, whether the economy lists it or not.
 - **`SectorMarkets.readMarkets(SectorAPI)`**: every market the sector's economy lists.
@@ -195,6 +197,7 @@ The reusable release workflow extracts the section matching the released version
 | `MarketTargetRequirement(Predicate, String)`, its `requirementPhrase()` answering the phrase | `MarketTargetRequirement(Predicate, Supplier)`, its phrase read by `readRequirementPhrase()` | The phrase is a translated string, read when a refusal is worded rather than when the requirement is built, which may be before the game's strings load. |
 | `Colours.getGlComponents(Color, float)` | Removed. Draw with `GlColour.set(Color, float)`, or convert each channel with `Colours.normaliseChannel(int)`. | It allocated an array per call, and the one renderer calling it set a colour every draw. |
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | It answers `RingStretch`es, as the path's other stretch reads name them. |
+| `SectorScripts` and `InstalledTransientScript` in `kmlib.starsector.scripts` | The same, in `kmlib.starsector.scripts.everyframe` | The game says script for two things: any class a data file names, which `ScriptClasses` builds, and a per-frame script on a sector, which these two register. |
 
 </details>
 

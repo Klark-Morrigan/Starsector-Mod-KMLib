@@ -15,6 +15,13 @@ import java.lang.invoke.MethodType;
  * the refusal: a public class with a public no-arg constructor is all it can reach, and all a data-named
  * class needs to be.
  *
+ * <p>Vanilla's own route, {@code SettingsAPI.getInstanceOfScript}, is not taken. It hands back an
+ * {@code Object} already built, so a class of the wrong type has run its constructor before the caller
+ * can refuse it, and it has no way to check a name without building it. It is also reached through
+ * {@code Global}, which only answers once the game is running. The cost is that a class compiled from a loose
+ * {@code .java} source is out of reach: the game compiles those through a loader beneath the one mod
+ * jars share, and this class resolves through that shared loader.
+ *
  * <p>Each failure is rethrown naming the class, so a typo in the data reads as a typo in the data rather
  * than as the lookup's own message.
  */
@@ -41,39 +48,77 @@ public final class ScriptClasses {
      * @param scriptType the type the caller holds the instance as
      * @param <T>        that type
      * @return a new instance of {@code className}
-     * @throws IllegalArgumentException when the class is missing, is not a {@code scriptType}, or is not a
-     *                                  public class with a public no-arg constructor
-     * @throws IllegalStateException    when the constructor itself throws
+     * @throws IllegalArgumentException when the class is missing or cannot be loaded, is not a
+     *                                  {@code scriptType}, or is not a public class with a public no-arg
+     *                                  constructor
+     * @throws IllegalStateException    when the constructor itself throws, or a type it uses cannot be
+     *                                  loaded
      */
     public static <T> T instantiateScript(String className, Class<T> scriptType) {
 
-        var scriptClass = loadScriptClass(className, scriptType);
+        var constructor = findBuildableConstructor(className, scriptType);
 
-        if (!scriptType.isAssignableFrom(scriptClass)) {
-
-            throw new IllegalArgumentException("Script class '" + className + "' is not a "
-                + scriptType.getName() + ".");
-        }
-
-        return scriptType.cast(constructScript(scriptClass));
+        return scriptType.cast(constructScript(className, constructor));
     }
 
-    private static Object constructScript(Class<?> scriptClass) {
+    /**
+     * Checks that {@code className} could be built as a {@code scriptType}, without building one. A data
+     * file is read long before the first call that builds what it names, so checking while the file loads
+     * reports a bad name where the data is, rather than on whichever later call first builds it.
+     *
+     * <p>Loading the class runs its static initialiser, as building one would.
+     *
+     * @param className  the fully qualified name the data file gives
+     * @param scriptType the type the caller will hold an instance as
+     * @throws IllegalArgumentException when the class is missing or cannot be loaded, is not a
+     *                                  {@code scriptType}, or is not a public class with a public no-arg
+     *                                  constructor
+     */
+    public static void requireScriptClass(String className, Class<?> scriptType) {
 
-        var className = scriptClass.getName();
-        var constructor = findNoArgConstructor(scriptClass);
+        findBuildableConstructor(className, scriptType);
+    }
+
+    private static Object constructScript(String className, MethodHandle constructor) {
 
         try {
             return constructor.invoke();
 
+        } catch (LinkageError linkageError) {
+
+            // Types resolve on first use, so a type the constructor names that no installed mod provides
+            // surfaces here rather than at load. It is the class's fault, not the JVM's, so it is named.
+            throw new IllegalStateException(
+                describeScriptClass(className) + " could not be built: a type it uses could not be loaded.",
+                linkageError);
+
         } catch (Error error) {
             throw error;
 
-        } catch (Throwable constructorFailure) {
+        } catch (Throwable exception) {
 
-            throw new IllegalStateException("Script class '" + className + "' threw while being built.",
-                constructorFailure);
+            throw new IllegalStateException(
+                describeScriptClass(className) + " threw while being built.",
+                exception);
         }
+    }
+
+    private static String describeScriptClass(String className) {
+
+        return "Script class '" + className + "'";
+    }
+
+    // The type is checked before the constructor is looked up, so a class of the wrong type is refused
+    // for its type rather than for its constructor.
+    private static MethodHandle findBuildableConstructor(String className, Class<?> scriptType) {
+
+        var scriptClass = loadScriptClass(className, scriptType);
+        if (!scriptType.isAssignableFrom(scriptClass)) {
+
+            throw new IllegalArgumentException(
+                describeScriptClass(className) + " is not a " + scriptType.getName() + ".");
+        }
+        return findNoArgConstructor(scriptClass);
     }
 
     private static MethodHandle findNoArgConstructor(Class<?> scriptClass) {
@@ -83,10 +128,11 @@ public final class ScriptClasses {
                 .publicLookup()
                 .findConstructor(scriptClass, NO_ARG_CONSTRUCTOR);
 
-        } catch (NoSuchMethodException | IllegalAccessException unreachable) {
+        } catch (NoSuchMethodException | IllegalAccessException exception) {
 
-            throw new IllegalArgumentException("Script class '" + scriptClass.getName()
-                + "' must be public and have a public no-arg constructor.", unreachable);
+            throw new IllegalArgumentException(
+                describeScriptClass(scriptClass.getName()) + " must be public and have a public no-arg constructor.",
+                exception);
         }
     }
 
@@ -100,8 +146,20 @@ public final class ScriptClasses {
         try {
             return Class.forName(className, true, loader);
 
-        } catch (ClassNotFoundException missing) {
-            throw new IllegalArgumentException("Script class '" + className + "' was not found.", missing);
+        } catch (ClassNotFoundException classNotFoundException) {
+
+            throw new IllegalArgumentException(
+                describeScriptClass(className) + " was not found.",
+                classNotFoundException);
+
+        } catch (LinkageError | SecurityException exception) {
+
+            // A class that is there but cannot be loaded is still a fault in the data or the install, so
+            // it is named like a missing one: a static initialiser that throws, a type it names that no
+            // installed mod provides, or one the game's loader refuses mod code.
+            throw new IllegalArgumentException(
+                describeScriptClass(className) + " could not be loaded.",
+                exception);
         }
     }
 }

@@ -45,6 +45,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **在 `VanillaClaimBreakdownReader` 中，未指向任何势力的宣称势力标记会让星系无人宣称**，与原版的读法一致：标记为空白，或指向星域不认识的势力时，星系在权衡任何市场之前就判给了无人。此前读取器会把标记的文本报告为宣称方。
 - **`RingPath.traceInsetRing(List, double, double, double[])` 会保留带有细长伸出部分的环的主体。** 内缩留下的折叠按环被赋予的绕行方向剔除，而不是按净面积。此前，伸出部分的折叠所围面积一旦大于主体，主体就会被剔除，路径沿折叠延伸。
 - **`RingPath.getPoints()` 和 `collectPointsBetween(double, double)` 交回的是路径拐角的副本**，`collectStretchPoints(List)` 和 `collectSpansEndToEnd(double, double[])` 也是如此。此前，移动交回的点会连带移动路径自身的拐角。
+- **`ScriptClasses.instantiateScript(String, Class)` 在类无法加载、或其用到的类型缺失时指出类名**：静态初始化器抛出异常、所需类型没有任何已安装的 Mod 提供，或该类型是游戏不允许 Mod 代码使用的。此前这些情况以 JVM 自身的错误抛出，不含类名。
 
 #### 新增
 
@@ -130,6 +131,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `buildRandomDrop(String, int)` 和 `buildRandomDrop(String, int, float)`：按权重抽取的随机掉落，其价值可按倍率缩放。
   - `buildValueDrop(String, int)`：花在一个掉落组上的星币预算。
   - `rollDrops(Random, float, List, List)`：执行抽取，除总倍率外的所有倍率均保持中性。
+- **`ScriptClasses.requireScriptClass(String, Class)`**：检查数据文件所指的类能否作为某个类型构建，但不实际构建，让加载器在文件加载时就拒绝错误的类名。
 - **`SectorFactions.findFaction(SectorAPI, String)`**：ID 所指的势力；星域为 null、ID 为空白或星域不认识该 ID 时为 null。
 - **`SectorMarkets.readMarketIds(SectorAPI)`**：星域中每一个市场的 ID，无论经济系统是否列出该市场。
 - **`SectorMarkets.readMarkets(SectorAPI)`**：星域经济系统列出的每一个市场。
@@ -195,6 +197,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `MarketTargetRequirement(Predicate, String)`，其 `requirementPhrase()` 返回短语 | `MarketTargetRequirement(Predicate, Supplier)`，通过 `readRequirementPhrase()` 读取短语 | 短语是翻译后的字符串，在拒绝的措辞成形时读取，而不是在构建要求时读取，后者可能早于游戏字符串加载。 |
 | `Colours.getGlComponents(Color, float)` | 已移除。用 `GlColour.set(Color, float)` 绘制，或用 `Colours.normaliseChannel(int)` 逐个换算颜色通道。 | 它每次调用都会分配一个数组，而唯一调用它的渲染器在每次绘制时都要设置颜色。 |
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | 它返回的是 `RingStretch`，与路径上其他读取路段的方法的名称一致。 |
+| 位于 `kmlib.starsector.scripts` 中的 `SectorScripts` 和 `InstalledTransientScript` | 位于 `kmlib.starsector.scripts.everyframe` 中的同名类 | 游戏所说的脚本指两样东西：数据文件所指的任何类，由 `ScriptClasses` 构建；以及星域上的逐帧脚本，由这两个类注册。 |
 
 </details>
 

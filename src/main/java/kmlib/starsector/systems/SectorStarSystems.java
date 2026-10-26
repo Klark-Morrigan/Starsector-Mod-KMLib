@@ -32,7 +32,7 @@ import java.util.Map;
  * walk for themselves, so as to charge what they went over rather than the whole sector.
  *
  * <p>Final class with a private constructor: pure-function utility, no instance state. Matches
- * {@link kmlib.starsector.scripts.SectorScripts}'s shape, and is null-sector defensive like the
+ * {@link kmlib.starsector.scripts.everyframe.SectorScripts}'s shape, and is null-sector defensive like the
  * rest of the library.
  */
 public final class SectorStarSystems {
