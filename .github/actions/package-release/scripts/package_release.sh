@@ -42,9 +42,11 @@ ACTIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=../../_lib/mod_info.sh
 source "${ACTIONS_DIR}/_lib/mod_info.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/json.sh
 source "${ACTIONS_DIR}/_lib/json.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/localisation.sh
 source "${ACTIONS_DIR}/_lib/localisation.sh"
 

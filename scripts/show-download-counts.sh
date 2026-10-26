@@ -39,12 +39,15 @@ actions_dir="${kmlib_root}/.github/actions"
 common_automation_root="$(cd "${kmlib_root}/../Common-Automation" && pwd)"
 mod_root="$(cd "${1:-${kmlib_root}}" && pwd)"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../.github/actions/_lib/log_output_value.sh
 source "${actions_dir}/_lib/log_output_value.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../.github/actions/_lib/read_github_output.sh
 source "${actions_dir}/_lib/read_github_output.sh"
 
+# shellcheck source-path=SCRIPTDIR
 # shellcheck source=../.github/actions/_lib/read_origin_repository.sh
 source "${actions_dir}/_lib/read_origin_repository.sh"
 
