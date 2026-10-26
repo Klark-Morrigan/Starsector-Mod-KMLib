@@ -1,5 +1,7 @@
 package kmlib.starsector.fleet;
 
+import com.fs.starfarer.api.campaign.CampaignFleetAPI;
+import com.fs.starfarer.api.campaign.CargoAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.util.MutableValue;
 
@@ -11,8 +13,9 @@ import java.util.Optional;
  * <p>Every charge, refund and affordability check walks the same fleet-to-cargo-to-credits chain. Reading it here
  * gives that walk one home, so a caller states what it does with the credits rather than where they are kept.
  *
- * <p>A sector without a player fleet, or a fleet without cargo, holds no credits. The read answers empty rather than
- * throwing, so the caller can refuse its action and tell the player why instead of ending their game.
+ * <p>A sector without a player fleet, or a fleet without cargo, holds no credits. A sector has no player fleet while
+ * a new game is being generated. The read answers empty rather than throwing, so the caller can refuse its action and
+ * tell the player why instead of ending their game.
  */
 public final class PlayerCredits {
 
@@ -38,13 +41,9 @@ public final class PlayerCredits {
      */
     public static Optional<MutableValue> findPlayerCredits(SectorAPI sector) {
 
-        var playerFleet = sector.getPlayerFleet();
-        if (playerFleet == null || playerFleet.getCargo() == null) {
-            return Optional.empty();
-        }
-
-        return Optional.ofNullable(playerFleet
-            .getCargo()
-            .getCredits());
+        return Optional
+            .ofNullable(sector.getPlayerFleet())
+            .map(CampaignFleetAPI::getCargo)
+            .map(CargoAPI::getCredits);
     }
 }
