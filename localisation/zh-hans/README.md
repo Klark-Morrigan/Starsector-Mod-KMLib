@@ -185,6 +185,7 @@ which records no date of its own.
 | Mod | Mod | `starfarer_obf.jar`, "Found mod: %s" is 发现 Mod：%s |
 | ModSpec (the item) | 船体插件 | `special_items.csv` `modspec`: "Base ModSpec" is 基础船体插件; the hullmod it teaches is 舰船插件 |
 | Ok (a dialog's confirm button) | 确认 | `starfarer.api.jar`, `SetFlagship`: the picker's `"Ok"` / `"Cancel"` pair is 确认 / 取消 |
+| Orbit | 轨道 | `ship_data.csv` `station1`: "Orbital Station" is 轨道空间站 |
 | Outpost | 前哨站 | `market_conditions.csv` |
 | Planet | 行星 | `rules.csv` `surveyPrintFullData`: "You have full survey data for this planet." is 你已获得该行星的完整调查数据。 |
 | Population & Infrastructure (industry) | 居住区 & 基础设施 | `industries.csv` `population` |
