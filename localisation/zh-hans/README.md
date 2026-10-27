@@ -55,6 +55,7 @@ so the two can never disagree.
   - [Editions and translation](#editions-and-translation)
   - [Mods](#mods)
   - [Support replies](#support-replies)
+  - [Development replies](#development-replies)
 - [Adding a string](#adding-a-string)
 - [Translating the changelog](#translating-the-changelog)
 
@@ -669,6 +670,23 @@ The words of a reply to a player's crash or bug report in the thread.
 | mod list (the mods a player has enabled) | Mod 列表 | Mod kept Latin as in Mod 作者, with 列表, list |
 | pop-up (an error dialog) | 弹窗 | the players' word for a dialog that pops up |
 | setting (one entry on a settings screen) | 设置项 | 项, item, after 设置; 设置 alone is the settings as a whole |
+
+### Development replies
+
+The words of a reply to a player asking about a feature in progress.
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| architecture (how a codebase's parts are laid out) | 架构 | the usual software word |
+| code churn (code changing on a large scale) | 代码改动 | 改动, changes made, with 代码 (see the code row); the scale goes in the words beside it, as 最大的一波 |
+| codebase | 代码库 | 代码 with 库, a store |
+| gameplay | 游戏玩法 | 玩法, how a game is played |
+| iteration (one version of a feature in progress) | 版, as 一版 or 这一版 | the plain way to count versions of a work; not 迭代, which names the process |
+| on hold (work paused) | 搁置 | to set aside for later |
+| prototyping | 原型验证 | 原型, a prototype, with 验证, to test an idea out |
+| refactor | 重构 | the usual software word |
+| ship (put a feature into a release) | 发布 | to release, the forum's word in its mod发布 tag |
+| stop-gap | 权宜之计 | a measure for the time being, until the real one lands |
 
 ## Adding a string
 
