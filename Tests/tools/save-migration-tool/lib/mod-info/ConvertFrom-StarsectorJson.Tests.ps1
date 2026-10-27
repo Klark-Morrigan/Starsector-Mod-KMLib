@@ -2,8 +2,9 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Read-StarsectorText.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Remove-JsonComment.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Repair-JsonLeniency.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Test-JsonSlashComment.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-StarsectorJson.ps1"
 }
@@ -14,10 +15,18 @@ Describe 'ConvertFrom-StarsectorJson' {
 
         Mock Remove-JsonComment { $Text }
         Mock Test-JsonSlashComment { $false }
+
+        # The repair quotes a bare word "a"; anything else it leaves as it is.
+        Mock Repair-JsonLeniency { $Text.Replace(':a', ':"a"') }
     }
 
     It 'parses strict JSON from a path' {
-        (ConvertFrom-StarsectorJson -Path (New-TestFile -Name 'strict.json' -Text '{ "id": "a" }')).id | Should -Be 'a'
+
+        Mock Read-StarsectorText { '{ "id": "a" }' }
+
+        (ConvertFrom-StarsectorJson -Path 'C:\mods\a\strict.json').id | Should -Be 'a'
+
+        Should -Invoke Read-StarsectorText -ParameterFilter { $Path -eq 'C:\mods\a\strict.json' } -Times 1 -Exactly
     }
 
     It 'parses text it is given' {
@@ -43,12 +52,32 @@ Describe 'ConvertFrom-StarsectorJson' {
         (ConvertFrom-StarsectorJson -Text '{ "a": "x,}" }').a | Should -Be 'x,}'
     }
 
-    It 'quotes a bare-word value, leaving true, false and null as literals' {
+    It 'repairs what org.json takes and JSON refuses, when the text does not parse without it' {
 
         $parsed = ConvertFrom-StarsectorJson -Text '{ "patch":a, "flag": true }'
 
         $parsed.patch | Should -Be 'a'
         $parsed.flag | Should -BeTrue
+
+        Should -Invoke Repair-JsonLeniency -Times 1 -Exactly
+    }
+
+    # A rewrite can corrupt a file that did not need one.
+    It 'leaves text that parses as it is' {
+
+        ConvertFrom-StarsectorJson -Text '{ "id": "a" }' | Out-Null
+
+        Should -Invoke Repair-JsonLeniency -Times 0 -Exactly
+    }
+
+    # org.json keeps keys that differ only in case apart, and ConvertFrom-Json refuses them outside a hashtable.
+    It 'returns a hashtable keyed case-sensitively with -AsHashtable' {
+
+        $parsed = ConvertFrom-StarsectorJson -Text '{ "a": { "x": 1 }, "A": 2 }' -AsHashtable
+
+        @($parsed.Keys) | Should -Be @('a', 'A')
+        $parsed['a']['x'] | Should -Be 1
+        $parsed.ContainsKey('B') | Should -BeFalse
     }
 
     It 'rejects a // or /* */ comment, as the game does' {
@@ -61,18 +90,17 @@ Describe 'ConvertFrom-StarsectorJson' {
 
     It 'rejects a file opening with a byte order mark, as the game does' {
 
-        $bytes = [byte[]] (0xEF, 0xBB, 0xBF) + [System.Text.Encoding]::UTF8.GetBytes('{}')
-        $path = New-TestFile -Name 'bom.json' -Bytes $bytes
+        Mock Read-StarsectorText { "$([char] 0xFEFF){}" }
 
-        { ConvertFrom-StarsectorJson -Path $path } |
-            Should -Throw "starts with a byte order mark, which the game rejects: $path"
+        { ConvertFrom-StarsectorJson -Path 'C:\mods\a\bom.json' } |
+            Should -Throw 'starts with a byte order mark, which the game rejects: C:\mods\a\bom.json'
     }
 
     It 'fails naming the file when even the repair does not parse' {
 
-        $path = New-TestFile -Name 'broken.json' -Text '{ "id": '
+        Mock Read-StarsectorText { '{ "id": ' }
 
-        { ConvertFrom-StarsectorJson -Path $path } |
-            Should -Throw "not valid JSON, even with unquoted values quoted: $path *"
+        { ConvertFrom-StarsectorJson -Path 'C:\mods\a\broken.json' } |
+            Should -Throw "not valid JSON, even with org.json's leniencies repaired: C:\mods\a\broken.json *"
     }
 }

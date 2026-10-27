@@ -20,6 +20,11 @@ the release zip does not carry them.
   - [How a save stores its mod list](#how-a-save-stores-its-mod-list)
   - [How versions compare](#how-versions-compare)
   - [Drift output](#drift-output)
+- [Get-ContentCatalogue.ps1](#get-contentcatalogueps1)
+  - [Where the game defines each kind](#where-the-game-defines-each-kind)
+  - [How the game combines copies](#how-the-game-combines-copies)
+  - [How the game reads a spreadsheet](#how-the-game-reads-a-spreadsheet)
+  - [Catalogue output](#catalogue-output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
   - [How the game reads its JSON](#how-the-game-reads-its-json)
 - [Tests](#tests)
@@ -31,6 +36,7 @@ the release zip does not carry them.
 | [`Invoke-SaveMigrationTool.ps1`](Invoke-SaveMigrationTool.ps1) | Everything the scripts below can say about one save, as one report |
 | [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, why a load failed, and which mods' objects the failure sat in |
 | [`Get-SaveModDrift.ps1`](Get-SaveModDrift.ps1) | How the mods a save was last written with differ from the installed ones: changed, missing, added |
+| [`Get-ContentCatalogue.ps1`](Get-ContentCatalogue.ps1) | Which content IDs the install defines, of every kind the game keeps by ID, and which mods define each |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
 `Invoke-SaveMigrationTool.ps1` is the one to run.
@@ -44,7 +50,7 @@ wherever the writing script changes, as when one script runs another,
 and before each load's readings.
 A reading too long for one line continues on the next, indented under its first.
 A library function that reads or decides writes under the name of the script that called it.
-`Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1` and `Get-SaveModDrift.ps1`
+`Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1`, `Get-SaveModDrift.ps1` and `Get-ContentCatalogue.ps1`
 print their data as JSON with `-AsJson`;
 `Get-ModRoster.ps1` returns objects for another script to consume.
 `Get-SaveLoadAttempt.ps1 -AsText` writes its loads as text for a person,
@@ -98,12 +104,13 @@ Loading the library takes about half a second.
 | [`formats/`](formats/) | Console table views for rows with too many columns for PowerShell's default table |
 | [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, and the name of the process-wide slot it remembers the last writer in |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
-| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns every mod list prints |
+| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns an object prints as a table, every mod list's included |
+| [`lib/content-catalogue/`](lib/content-catalogue/) | The kinds of content a save names by ID, where the game defines each, and reading the IDs the install defines with the mods behind them |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
 | [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
 | [`lib/mod-drift/`](lib/mod-drift/) | Comparing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
-| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions as text and as the parts the game compares |
+| [`lib/mod-info/`](lib/mod-info/) | Reading a data file's text and JSON as the game does, and mod versions as text and as the parts the game compares |
 | [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads |
 | [`lib/save-descriptor/`](lib/save-descriptor/) | Finding a save's `descriptor.xml` and reading its mod lists |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
@@ -488,6 +495,230 @@ An empty list reports every installed mod as added.
 A `mod_info.json` the roster keeps as `unparsed` takes its folder name as its ID,
 so its mod reads as missing on one side and added on the other.
 
+## Get-ContentCatalogue.ps1
+
+Lists the content IDs the install defines,
+each with the mods that define it.
+An ID a save names and the catalogue lacks is content no installed mod provides any more.
+It reads the game's own data under `starsector-core\data` and every enabled mod's `data` folder,
+as the game reads them at startup,
+and adds the IDs the game builds from them.
+
+```powershell
+pwsh -NoProfile -File Get-ContentCatalogue.ps1 -StarsectorRoot <install> -Id 'ssp_*'           # IDs by pattern
+pwsh -NoProfile -File Get-ContentCatalogue.ps1 -StarsectorRoot <install> -Kind FighterWing -AsJson
+pwsh -NoProfile -File Get-ContentCatalogue.ps1 -StarsectorRoot <install> -GroupByOwner -OutFile <file>
+```
+
+A full list runs to tens of thousands of lines, more than a console's scrollback holds.
+`-OutFile` writes the JSON to a file instead, creating its folder,
+and `-GroupByOwner` gives one entry per mod,
+so the file folds and searches by mod in an editor.
+
+`-Kind` reads only the kinds it names,
+so a run for one kind skips the other kinds' files,
+except those of the kinds it is [built from](#where-the-game-defines-each-kind).
+A mistyped kind fails before any file is read.
+`-Id` keeps the IDs matching any of its wildcard patterns, ignoring case;
+every file of the asked kinds is still read,
+since any file could define a matching ID.
+`-Roster` hands over the installed mods from a caller that has read them already.
+
+A full run on an install of 400 mods reads about 47,000 content files and 2,300 spreadsheets,
+and takes about a minute.
+Parsing each content file in full would take minutes more,
+so an ID is taken by pattern when its key appears once with a plain string value,
+and read as absent when the key never appears.
+The pattern takes the key quoted or bare, as the game's own `.faction` files write `id:"hegemony"`.
+Any other file gets the full parse the game makes.
+
+### Where the game defines each kind
+
+The catalogue covers every kind of content the game keeps by ID from its data files, as of 0.98a.
+It reads each from one or more of four sources:
+
+- **content files**, one spec each, found in a folder by how their names end, or listed by a spreadsheet;
+- **spreadsheets**, one row per spec;
+- **JSON files keyed by ID**, whose top-level keys are the IDs;
+- **IDs the game builds in its own code**.
+
+| Kind | Read from |
+| --- | --- |
+| `Hull` | `data/hulls/*.ship` by `hullId`, each with its `data/hulls/ship_data.csv` row; and `data/hulls/skins/*.skin` by `skinHullId` |
+| `Weapon` | `data/weapons/*.wpn` and `data/shipsystems/wpn/*.wpn` by `id`, each with its `data/weapons/weapon_data.csv` row |
+| `FighterWing` | `data/hulls/wing_data.csv` |
+| `Hullmod` | `data/hullmods/hull_mods.csv` |
+| `Variant` | `data/variants/*.variant` by `variantId`, and the 51 variants the game builds in its own code, such as `omen1` |
+| `ShipSystem` | `data/shipsystems/*.system` by `id`, each with its `data/shipsystems/ship_systems.csv` row |
+| `Projectile` | `data/weapons/proj/*.proj` and `data/shipsystems/proj/*.proj` by `id` |
+| `MarketCondition` | `data/campaign/market_conditions.csv` |
+| `Industry` | `data/campaign/industries.csv` |
+| `SpecialItem` | `data/campaign/special_items.csv` |
+| `Commodity` | `data/campaign/commodities.csv` |
+| `Ability` | `data/campaign/abilities.csv` |
+| `Submarket` | `data/campaign/submarkets.csv` |
+| `Faction` | Each `.faction` file `data/world/factions/factions.csv` lists in its `faction` column, by `id` |
+| `Skill` | `data/characters/skills/*.skill` by `id`, each listed in `skill_data.csv` or named as an aptitude's `effect_skill_id` in `aptitude_data.csv` |
+| `Aptitude` | `data/characters/skills/aptitude_data.csv` |
+| `Personality` | `data/characters/personalities.csv` |
+| `PersonMission` | `data/campaign/person_missions.csv`, keyed by `mission id` |
+| `BarEvent` | `data/campaign/bar_events.csv`, keyed by `bar event id` |
+| `CustomEntity` | `data/config/custom_entities.json` |
+| `Planet` | `data/config/planets.json`, object entries only |
+| `Terrain` | `data/campaign/terrain.json`, object entries only |
+| `BattleObjective` | `data/config/battle_objectives.json` |
+| `EngineStyle` | `data/config/engine_styles.json`, object entries only |
+| `HullStyle` | `data/config/hull_styles.json`, object entries only |
+| `CampaignEvent` | `data/campaign/events.json` |
+| `Ping` | `data/campaign/pings.json`, object entries only |
+| `IntelTag` | `data/config/tag_data.json` |
+| `ContactTag` | `data/config/contact_tag_data.json` |
+| `Sound` | `data/config/sounds.json`, every key but `music` |
+| `MusicSet` | `data/config/sounds.json`, the keys under `music` |
+| `Description` | `data/strings/descriptions.csv`, keyed by `id` and `type` together, as `<id>_<type>` |
+| `StarGenData`, `AgeGenData`, `ObjectiveGenData`, `LocationGenData`, `ConditionGenData`, `SalvageEntityGenData` | The matching `data/campaign/procgen/*_gen_data.csv` |
+| `NameGenData` | `data/campaign/procgen/name_gen_data.csv`, keyed by `name` and `tags` together, as `<name>_\|_<tags>` |
+| `PlanetGenData`, `CategoryGenData`, `TerrainGenData` | The `PLANET`, `CATEGORY` and `TERRAIN` rows of `data/campaign/procgen/planet_gen_data.csv`; a category by its `category` column |
+| `DropGroup` | `data/campaign/procgen/drop_groups.csv`, keyed by `commodity` and `group` together, as `<commodity>_\|_<group>` |
+| `Mission` | `data/missions/mission_list.csv`, keyed by `mission` |
+| `Rule` | `data/campaign/rules.csv` |
+
+A spreadsheet keys its rows by its `id` column unless the table says otherwise.
+A key joined from several columns that opens with `#` is a comment, as it is for a mission or a rule.
+
+Kinds read from content files and spreadsheets together need both:
+the game drops a hull, weapon, ship system or skill whose file has no row,
+and ignores a row whose file is missing.
+A skin copies its base hull's row, so it needs none.
+
+The game lists a folder's own files.
+For skins and variants it lists one level of subfolders too,
+skipping hidden ones and those whose name opens with a dot.
+It matches a file by how its name ends,
+case-sensitively and without the dot,
+so `a.variant.bak` is not read.
+
+The game also builds content at startup that no file names,
+from every hull and skin the files define:
+
+- a d-hull under the hull ID plus `_default_D`, unless the ID already ends so;
+- an empty variant under the hull ID plus `_Hull`.
+
+A d-hull gets neither.
+The catalogue lists these IDs too, each owned as its hull is,
+so a save's d-hulls and empty variants read as defined while their hull is.
+
+Two of the game's rules are not followed:
+
+- A custom entity whose `baseId` names no other entity is dropped by the game.
+  The catalogue keeps it, so its ID never reads as missing when it is not.
+- A total conversion gets none of the game's built-in variants,
+  and drops core skins and variants of hulls it lacks.
+  The catalogue reads every install as one that is not a total conversion.
+
+[`lib/content-catalogue/Get-ContentDefinitions.ps1`](lib/content-catalogue/Get-ContentDefinitions.ps1)
+holds this table and these rules.
+
+### How the game combines copies
+
+The game searches the enabled mods first, then its own data.
+It orders the mods by each `mod_info.json`'s `sortString`, or by its name when it gives none,
+comparing the text code unit by code unit,
+so `Zeta` sorts before `alpha`.
+A mod the roster keeps as unparsed sorts by its folder name.
+Its content still counts:
+calling it undefined would mark it for removal.
+
+The same file path can sit in several sources.
+
+- **A content file** is merged key by key, as the game merges any data JSON.
+  The game's own copy is the base,
+  and each mod's copy is laid over it in search order.
+  So the last copy that sets the ID decides it,
+  and a mod's copy that sets no ID only patches the others:
+  a mod can rename a hull without restating its `hullId`.
+- **A JSON file keyed by ID** is merged the same way,
+  so its IDs are the keys any copy holds.
+  Where only object entries count, the copy the merge takes last decides whether an entry is one.
+- **A spreadsheet's rows** are merged by their key:
+  each source's copy adds its rows,
+  and a key already read keeps its first row.
+  That row's filter and ID column decide whether the key defines an ID.
+- **A mod that lists a path under `replace`** in its `mod_info.json` stands alone.
+  The game reads only that mod's copy, the first such mod's in search order,
+  and drops every other copy.
+  A content file's path may be written with either slash;
+  a spreadsheet's must be written with forward slashes, as the game compares it as written.
+
+### How the game reads a spreadsheet
+
+The game reads its spreadsheets with a reader of its own,
+neither stricter nor looser:
+
+- The first line is the header.
+  It splits on every comma, quoted or not,
+  and each name is trimmed and loses one enclosing quote.
+- A name the header repeats takes the value of its last column.
+  `Import-Csv` refuses such a header,
+  and LLI's `wing_data.csv` repeats a column name eleven times.
+- A row that opens with `#` is a comment,
+  and an empty line is no row.
+- A double quote turns quoting on or off;
+  a comma or line break inside quotes is text.
+  Two double quotes in a row are one literal quote, inside quotes or out.
+- Values are not trimmed.
+  Carriage returns are dropped.
+- Before it reads `rules.csv`, the game turns curly quotes straight,
+  a run of curly double quotes into one double quote,
+  which can move where a value ends.
+- A quote left open, or a row too short to reach a column the game reads,
+  stops the game at startup.
+  The catalogue skips that copy instead and names it on stderr.
+
+### Catalogue output
+
+One row per defined ID,
+by kind in the order of the table above,
+then by ID, code unit by code unit:
+
+| Field | Meaning |
+| --- | --- |
+| `Kind` | One of the kinds in the [table above](#where-the-game-defines-each-kind) |
+| `Id` | The ID, as the game looks it up, case-sensitively |
+| `Owners` | Each source whose file or row defines the ID, in search order: mod IDs, then `vanilla` for the game's own |
+
+Owners name every source that would keep the ID defined without the others,
+so a mod that restates the game's own file is listed beside `vanilla`:
+
+- A content file's owners are every copy that sets the ID the merge ends with.
+- A spreadsheet's owners are every source whose own row defines the ID,
+  though the game keeps only the first.
+- A JSON file keyed by ID is owned by every source whose copy holds the key.
+- A kind read from files and rows together lists the owners of both,
+  so a mod that adds a row for a vanilla hull is listed beside `vanilla`.
+
+With `-GroupByOwner`, one entry per owner instead,
+in search order, leaving out owners that define nothing:
+
+| Field | Meaning |
+| --- | --- |
+| `Owner` | The mod ID, or `vanilla` |
+| `Name` | The mod's name, or `Starsector` for the game's own data |
+| `Version` | The installed version; null for the game's own data |
+| `IdCount` | How many IDs the entry holds |
+| `Ids` | The IDs by kind, kinds and IDs in the order of the rows above. An ID several owners define sits under each |
+
+On a console an entry prints as a table row of its owner, version, name and ID count.
+
+Stderr names what reading the installed mods found, unless `-Roster` handed them over,
+the kinds catalogued and from how many mods,
+each copy skipped with the reason it does not parse,
+each spreadsheet a mod replaces,
+how many content files and spreadsheets were read and how long that took,
+how many IDs each kind holds and how many of them the game builds,
+how many of them the filters kept, and under how many owners when grouped,
+and the file written, when `-OutFile` names one.
+
 ## Get-ModRoster.ps1
 
 Resolves the installed side of a save's mod list:
@@ -515,7 +746,10 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 Each entry carries `Id`, `Version`,
 `VersionInfo` (the `Major`, `Minor`, `Patch` and `MinorIsRC` the game [compares versions by](#how-versions-compare)),
 `Name`, `Folder`, `RelativePath` (under the install root),
-`Jars` (the JARs `mod_info.json` declares, as full paths), `Status` (`parsed` or `unparsed`) and `SupersededCount`.
+`Jars` (the JARs `mod_info.json` declares, as full paths),
+`SortString` and `ReplacedPaths` (what decides [how the game reads the mod's data](#how-the-game-combines-copies),
+as `mod_info.json` writes them, less a replaced `settings.json`, which the game ignores),
+`Status` (`parsed` or `unparsed`) and `SupersededCount`.
 On a console the entries print as a table of `Id`, `Version` and `Name`;
 every field stays on the object.
 
@@ -531,10 +765,16 @@ Every file is read as the game reads its data files, neither stricter nor looser
 - `//` and `/* */` are not comments to the game, and a file holding one outside a string fails to parse.
   ConvertFrom-Json would skip them, so the reader looks for them itself.
 - A file opening with a byte order mark fails, as it does in the game.
-- org.json accepts trailing commas, single-quoted strings and unquoted values.
-  ConvertFrom-Json accepts the first two as they are.
-  An unquoted value is quoted only when the file fails without the repair,
-  since a repair can corrupt a file that needed none.
+- org.json accepts trailing commas and single-quoted strings, and ConvertFrom-Json accepts them as they are.
+- org.json takes more that ConvertFrom-Json refuses, and the reader repairs it,
+  only when the file fails without the repair, since a repair can corrupt a file that needed none:
+  - an unquoted value, kept as text unless it is `true`, `false` or `null` in any case, or a number Java parses,
+    so `0.5f`, `049` and `True` all load;
+  - `;` between entries, and `=` or `=>` between a key and its value;
+  - text after the root value, which org.json never reads.
+- org.json keeps keys that differ only in case apart.
+  ConvertFrom-Json refuses them unless it builds hashtables,
+  so a reader that needs every key, such as the content catalogue, asks for hashtables.
 
 ## Tests
 
@@ -559,10 +799,18 @@ and gives its failed save that descriptor and its install those mods;
 a case removes the descriptor, or empties its mod lists.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
+[`Get-ContentCatalogue.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ContentCatalogue.IntegrationTests.Tests.ps1)
+builds one install of the game's own data and three mods:
+one patching a game hull file and a game faction, and adding a hull, a faction and a planet,
+one whose wing header repeats a column name,
+and one replacing a spreadsheet.
+The game's own data holds a case of each other kind of source:
+skills from both spreadsheets, a description keyed by two columns, and a planets.json entry that is not an object.
 
 [`helpers/`](../../Tests/tools/save-migration-tool/helpers/) holds what the suites share:
 running a script with its stderr and warnings captured, blank lines kept,
-and writing a test file, mod or JAR under the suite's temporary folder.
+writing a test file, mod or JAR under the suite's temporary folder,
+and building and writing the owner index the content catalogue passes around.
 
 Every suite runs under `Set-StrictMode -Version Latest`, as the scripts do,
 so a read the scripts would fail on fails in the suites too.

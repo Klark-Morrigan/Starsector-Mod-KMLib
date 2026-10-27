@@ -66,6 +66,30 @@ Describe 'Read-ModCandidate' {
         $candidate.Status | Should -Be 'P'
         $candidate.Folder.FullName | Should -Be $folder.FullName
         $candidate.Jars.Count | Should -Be 0
+        $candidate.SortString | Should -BeNullOrEmpty
+        $candidate.ReplacedPaths.Count | Should -Be 0
+    }
+
+    It 'reads the text the game sorts the mod by' {
+
+        Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ id = 'alpha'; sortString = 'zz last' } }
+
+        (Read-ModCandidate -Folder (New-ModFolder -Name 'Alpha-sort')).SortString | Should -Be 'zz last'
+    }
+
+    # The game ignores a replaced settings.json, whichever folder it names.
+    It 'keeps the paths the mod replaces, leaving out empty ones and settings.json' {
+
+        Mock ConvertFrom-StarsectorJson {
+            [pscustomobject]@{
+                id      = 'alpha'
+                replace = @('data/hulls/ship_data.csv', '', 'data/config/settings.json', 'data\weapons\a.wpn')
+            }
+        }
+
+        $candidate = Read-ModCandidate -Folder (New-ModFolder -Name 'Alpha-replace')
+
+        $candidate.ReplacedPaths | Should -Be @('data/hulls/ship_data.csv', 'data\weapons\a.wpn')
     }
 
     It 'keeps the JARs mod_info.json declares, as it writes them' {
@@ -95,6 +119,8 @@ Describe 'Read-ModCandidate' {
         $candidate.Name | Should -BeNullOrEmpty
         $candidate.Status | Should -Be 'U'
         $candidate.Jars.Count | Should -Be 0
+        $candidate.SortString | Should -BeNullOrEmpty
+        $candidate.ReplacedPaths.Count | Should -Be 0
         $warnings | ForEach-Object { "$_" } |
             Should -Be @("No mod ID read from mod_info.json, keeping in roster: Broken $($Reason.Length) ($Reason)")
     }

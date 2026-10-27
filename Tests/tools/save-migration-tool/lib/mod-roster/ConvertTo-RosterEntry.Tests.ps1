@@ -20,12 +20,14 @@ Describe 'ConvertTo-RosterEntry' {
 
         $script:ModGroup = [pscustomobject]@{
             Winner     = [pscustomobject]@{
-                Id      = 'alpha'
-                Name    = 'Alpha'
-                Version = '1.2'
-                Jars    = @('jars/alpha.jar', 'jars\..\lib.jar')
-                Folder  = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
-                Status  = 'parsed'
+                Id            = 'alpha'
+                Name          = 'Alpha'
+                Version       = '1.2'
+                Jars          = @('jars/alpha.jar', 'jars\..\lib.jar')
+                SortString    = 'aa alpha'
+                ReplacedPaths = @('data/hulls/ship_data.csv')
+                Folder        = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
+                Status        = 'parsed'
             }
             Superseded = @('older copy')
         }
@@ -43,6 +45,14 @@ Describe 'ConvertTo-RosterEntry' {
         $entry.Folder | Should -Be 'C:\Games\Starsector\mods\Alpha-1.2'
         $entry.Status | Should -Be 'parsed'
         $entry.SupersededCount | Should -Be 1
+    }
+
+    It 'keeps the sort string and the replaced paths as mod_info.json writes them' {
+
+        $entry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+
+        $entry.SortString | Should -Be 'aa alpha'
+        $entry.ReplacedPaths | Should -Be @('data/hulls/ship_data.csv')
     }
 
     It 'resolves each declared JAR against the mod''s folder' {

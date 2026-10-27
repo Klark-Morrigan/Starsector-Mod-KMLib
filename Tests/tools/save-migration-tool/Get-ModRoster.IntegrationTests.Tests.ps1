@@ -209,7 +209,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $warnings.Count | Should -Be 2
             $warnings[0] | Should -BeLike (
                 'No mod ID read from mod_info.json, keeping in roster: Broken Mod ' +
-                '(not valid JSON, even with unquoted values quoted: *')
+                "(not valid JSON, even with org.json's leniencies repaired: *")
             $warnings[1] | Should -Be 'No mod ID read from mod_info.json, keeping in roster: No Id (no "id" field)'
         }
     }

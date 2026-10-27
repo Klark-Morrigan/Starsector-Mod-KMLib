@@ -2,17 +2,33 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\Get-ContentKindNames.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Get-MissingContent.ps1"
 }
 
 Describe 'Get-MissingContent' {
 
+    BeforeEach {
+
+        Mock Get-ContentKindNames {
+            [pscustomobject]@{
+                Weapon      = 'kind-Weapon'
+                Hull        = 'kind-Hull'
+                Variant     = 'kind-Variant'
+                FighterWing = 'kind-FighterWing'
+                Hullmod     = 'kind-Hullmod'
+                Spec        = 'kind-Spec'
+                Class       = 'kind-Class'
+            }
+        }
+    }
+
     It 'reads <Cause> as <Kind> <Id>' -ForEach @(
-        @{ Cause = 'Weapon spec [gone_gun] not found!'; Kind = 'Weapon'; Id = 'gone_gun' }
-        @{ Cause = 'Ship hull spec [gone_hull] not found!'; Kind = 'Hull'; Id = 'gone_hull' }
-        @{ Cause = 'Ship hull variant [gone_hull_Standard] not found!'; Kind = 'Variant'; Id = 'gone_hull_Standard' }
-        @{ Cause = 'Fighter wing spec [gone_wing] not found'; Kind = 'FighterWing'; Id = 'gone_wing' }
-        @{ Cause = 'Hullmod with id [gone_dmod] not found'; Kind = 'Hullmod'; Id = 'gone_dmod' }
+        @{ Cause = 'Weapon spec [gone_gun] not found!'; Kind = 'kind-Weapon'; Id = 'gone_gun' }
+        @{ Cause = 'Ship hull spec [gone_hull] not found!'; Kind = 'kind-Hull'; Id = 'gone_hull' }
+        @{ Cause = 'Ship hull variant [gone_Standard] not found!'; Kind = 'kind-Variant'; Id = 'gone_Standard' }
+        @{ Cause = 'Fighter wing spec [gone_wing] not found'; Kind = 'kind-FighterWing'; Id = 'gone_wing' }
+        @{ Cause = 'Hullmod with id [gone_dmod] not found'; Kind = 'kind-Hullmod'; Id = 'gone_dmod' }
     ) {
 
         $missing = Get-MissingContent -CauseType 'java.lang.RuntimeException' -Cause $Cause
@@ -28,7 +44,7 @@ Describe 'Get-MissingContent' {
         $missing = Get-MissingContent -CauseType 'java.lang.RuntimeException' `
             -Cause 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
 
-        $missing.Kind | Should -Be 'Hull'
+        $missing.Kind | Should -Be 'kind-Hull'
         $missing.Id | Should -Be 'BSC_Buffalo_Mk3'
         $missing.ReportedId | Should -Be 'BSC_Buffalo_Mk3_default_D'
     }
@@ -46,7 +62,7 @@ Describe 'Get-MissingContent' {
         $missing = Get-MissingContent -CauseType 'java.lang.RuntimeException' `
             -Cause 'Spec of class [com.fs.starfarer.loading.SpecialItemSpec] with id [gone_item] not found'
 
-        $missing.Kind | Should -Be 'Spec'
+        $missing.Kind | Should -Be 'kind-Spec'
         $missing.Id | Should -Be 'gone_item'
         $missing.SpecClass | Should -Be 'com.fs.starfarer.loading.SpecialItemSpec'
     }
@@ -56,7 +72,7 @@ Describe 'Get-MissingContent' {
         $missing = Get-MissingContent -CauseType 'com.thoughtworks.xstream.mapper.CannotResolveClassException' `
             -Cause 'data.scripts.removed.GoneScript'
 
-        $missing.Kind | Should -Be 'Class'
+        $missing.Kind | Should -Be 'kind-Class'
         $missing.Id | Should -Be 'data.scripts.removed.GoneScript'
     }
 
