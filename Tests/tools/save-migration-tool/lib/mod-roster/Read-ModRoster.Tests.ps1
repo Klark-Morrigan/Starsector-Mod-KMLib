@@ -128,16 +128,21 @@ Describe 'Read-ModRoster' {
         $script:Diagnostics | Should -Be $expectedDiagnostics
     }
 
-    It 'fails naming the path when the install has no mods folder' {
+    # The game loads no mods from an install with no mods folder, and its own content still reads.
+    It 'lists no mods, and warns naming the path, when the install has no mods folder' {
 
         # ARRANGE
         $bareRoot = Join-Path $TestDrive 'bare'
-        $expectedMessage = "mods directory not found: $bareRoot\mods"
+        $expectedCount = 0
+        $expectedWarnings = @("mods directory not found, listing no mods: $bareRoot\mods")
 
         # ACT
-        $actualError = { Read-ModRoster -StarsectorRoot $bareRoot -DiagnosticSource 'Test' } | Should -Throw -PassThru
+        $actualRoster = @(Read-ModRoster -StarsectorRoot $bareRoot -DiagnosticSource 'Test' `
+            -WarningVariable actualWarnings -WarningAction SilentlyContinue)
 
         # ASSERT
-        $actualError.Exception.Message | Should -Be $expectedMessage
+        $actualRoster.Count | Should -Be $expectedCount
+        @($actualWarnings | ForEach-Object { "$_" }) | Should -Be $expectedWarnings
+        Should -Invoke Read-ModFolderCandidates -Times 0
     }
 }

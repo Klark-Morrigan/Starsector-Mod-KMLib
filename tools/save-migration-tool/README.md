@@ -121,6 +121,8 @@ Diagnoses one save end to end, in order:
 
 1. It reads the installed mods once, as `Get-ModRoster.ps1` does.
    Both parts below need them, and each read takes seconds on a large install.
+   It reads them before it knows a save to diagnose,
+   since without `-SaveFolder` the load that names the save needs them first.
 2. `Get-SaveLoadAttempt.ps1` finds the one load the report shows:
    the newest of the named save,
    or without `-SaveFolder` the newest failed load, whose save is the one diagnosed.
@@ -737,6 +739,9 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
   as the game keeps the first copy of an ID it reads.
   NTFS lists folders by name, but not as a sort by name does: `[Repack] Foo` comes after `Foo`.
   `SupersededCount` says how many copies lost, and stderr names each winner and loser.
+- An install with no `mods\` folder loads no mods,
+  so the roster is empty, with a warning naming the path.
+  Every script still runs on such an install.
 - `enabled_mods.json` decides what loads.
   A missing or unreadable one warns and lists every mod.
 - A folder with no `mod_info.json` is not a mod; stderr names each one skipped.

@@ -31,17 +31,7 @@ function Resolve-ChainClassOwners {
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
     if (-not $PSBoundParameters.ContainsKey('Roster')) {
-
-        $modsFolder = Join-Path $InstallRoot (Get-InstallPathNames).ModsFolder
-
-        # The game's own classes still resolve with no mods installed.
-        if (Test-Path -LiteralPath $modsFolder -PathType Container) {
-            $Roster = @(Read-ModRoster -StarsectorRoot $InstallRoot -DiagnosticSource $DiagnosticSource)
-
-        } else {
-            Write-Warning "no mods folder in the log's install, $InstallRoot; mod classes stay without owners"
-            $Roster = @()
-        }
+        $Roster = @(Read-ModRoster -StarsectorRoot $InstallRoot -DiagnosticSource $DiagnosticSource)
     }
 
     $resolved = Resolve-ClassOwner -StarsectorRoot $InstallRoot -Roster $Roster -ClassNames $ClassNames

@@ -432,22 +432,25 @@ Describe 'Get-ModRoster.IntegrationTests' {
         }
     }
 
+    # The game loads no mods from an install with no mods folder.
     Context 'an install with no mods folder' {
 
-        It 'fails naming the path' {
+        It 'lists no mods, and warns naming the path' {
 
             # ARRANGE
             $root = Join-Path $TestDrive 'empty'
 
             New-Item -ItemType Directory -Path $root | Out-Null
 
-            $expectedMessage = "mods directory not found: $root\mods"
+            $expectedCount = 0
+            $expectedWarnings = @("mods directory not found, listing no mods: $root\mods")
 
             # ACT
-            $actualError = { Invoke-ModRoster @{ StarsectorRoot = $root } } | Should -Throw -PassThru
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
 
             # ASSERT
-            $actualError.Exception.Message | Should -Be $expectedMessage
+            $actualRun.Output.Count | Should -Be $expectedCount
+            $actualRun.Warnings | Should -Be $expectedWarnings
         }
     }
 }

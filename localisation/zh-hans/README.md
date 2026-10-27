@@ -433,6 +433,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | define (an ID, in a data file) | 定义 | the usual computing word |
 | descriptor (a save's `descriptor.xml`) | 描述文件 | 描述, to describe, with 文件, file: the small file that describes the save |
 | diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |
+| folder (such as `mods`), warning (one a script prints) | 文件夹, 警告 | 文件夹, the usual Windows word; 警告 as the WARN row of the log levels |
 | installed (a mod the install loads) | 已安装 | 已, already, with 安装, to install |
 | JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
 | level (of a version change) | 变更级别 | 变更, a change, with 级别, level |
