@@ -6,8 +6,8 @@
 # The game rejects a leading byte order mark, so this does too.
 #
 # Takes the text instead of the path when the caller has already read the file.
-# With -AsHashtable, objects come back as ordered hashtables whose keys match case-sensitively, as org.json's do.
-# Without it, keys differing only in case, which org.json keeps apart, fail the parse.
+# Objects come back as ordered hashtables whose keys match case-sensitively, as org.json's do.
+# Any other shape fails a file holding keys that differ only in case, which org.json keeps apart.
 function ConvertFrom-StarsectorJson {
 
     [CmdletBinding(DefaultParameterSetName = 'Path')]
@@ -17,9 +17,7 @@ function ConvertFrom-StarsectorJson {
 
         [Parameter(Mandatory, ParameterSetName = 'Text')]
         [AllowEmptyString()]
-        [string] $Text,
-
-        [switch] $AsHashtable
+        [string] $Text
     )
 
     $byteOrderMark = [char] 0xFEFF
@@ -44,14 +42,14 @@ function ConvertFrom-StarsectorJson {
     }
 
     try {
-        return $json | ConvertFrom-Json -AsHashtable:$AsHashtable
+        return $json | ConvertFrom-Json -AsHashtable
 
     } catch {
         $strictError = $_.Exception.Message
     }
 
     try {
-        return Repair-JsonLeniency -Text $json | ConvertFrom-Json -AsHashtable:$AsHashtable
+        return Repair-JsonLeniency -Text $json | ConvertFrom-Json -AsHashtable
 
     } catch {
         throw "not valid JSON, even with org.json's leniencies repaired: $source ($strictError)"

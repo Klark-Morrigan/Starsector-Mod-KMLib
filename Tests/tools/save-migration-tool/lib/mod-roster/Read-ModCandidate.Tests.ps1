@@ -44,21 +44,6 @@ Describe 'Read-ModCandidate' {
         }
     }
 
-    # The game's parser keeps keys that differ only in case apart, and only hashtables can hold both.
-    It 'parses mod_info.json into hashtables' {
-
-        # ARRANGE
-        Mock ConvertFrom-StarsectorJson { [ordered]@{ id = 'alpha' } }
-
-        $folder = New-ModFolder -Name 'Alpha-hashtable'
-
-        # ACT
-        Read-ModCandidate -Folder $folder | Out-Null
-
-        # ASSERT
-        Should -Invoke ConvertFrom-StarsectorJson -Times 1 -Exactly -ParameterFilter { $AsHashtable }
-    }
-
     It 'reads the ID, name and version of a parsed mod_info.json' {
 
         # ARRANGE

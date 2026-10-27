@@ -24,7 +24,7 @@ function Read-ModCandidate {
     $parseError = $null
 
     try {
-        $info = ConvertFrom-StarsectorJson -Path $infoPath -AsHashtable
+        $info = ConvertFrom-StarsectorJson -Path $infoPath
 
     } catch {
         $parseError = $_.Exception.Message

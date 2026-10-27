@@ -42,6 +42,7 @@ Describe 'Read-KeyedFileOwners' {
 
     It 'defines each key any copy holds, with every owner whose copy holds it, keys matched case-sensitively' {
 
+        # ARRANGE
         $script:JsonByOwner['core'] = [ordered]@{ planet = @{}; shared = @{} }
 
         $alphaJson = [System.Collections.Specialized.OrderedDictionary]::new([System.StringComparer]::Ordinal)
@@ -49,58 +50,79 @@ Describe 'Read-KeyedFileOwners' {
         $alphaJson['Shared'] = @{}
         $script:JsonByOwner['alpha'] = $alphaJson
 
-        $read = Read-KeyedFileOwners -Sources @('sources') -KeyedFile (
-            New-KeyedFileSource -Path 'data/config/planets.json')
+        $keyedFile = New-KeyedFileSource -Path 'data/config/planets.json'
+        $expectedOwners = 'Shared=alpha planet=core shared=core+alpha'
+        $expectedFileCount = 2
 
-        Format-OwnerIndex -OwnersById $read.OwnersById | Should -Be 'Shared=alpha planet=core shared=core+alpha'
-        $read.FileCount | Should -Be 2
+        # ACT
+        $actualRead = Read-KeyedFileOwners -Sources @('sources') -KeyedFile $keyedFile
 
+        # ASSERT
+        Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
+        $actualRead.FileCount | Should -Be $expectedFileCount
         Should -Invoke Find-ListedContentFiles -ParameterFilter {
             "$Sources" -eq 'sources' -and "$RelativePaths" -eq 'data/config/planets.json'
         } -Times 1 -Exactly
-        Should -Invoke ConvertFrom-StarsectorJson -ParameterFilter { $AsHashtable } -Times 2 -Exactly
     }
 
-    It 'reads the keys under a nested key, leaving out the excluded ones' {
+    It 'reads the keys under <Description>' -ForEach @(
+        @{ Description = 'a nested key'; Options = @{ NestedKey = 'music' }; Owners = 'set_a=core' }
+        @{ Description = 'the root, leaving out the excluded ones'; Options = @{ ExcludedKeys = @('music') }
+            Owners = 'sound_a=core sound_b=alpha' }
+    ) {
 
+        # ARRANGE
         $script:JsonByOwner['core'] = [ordered]@{ music = [ordered]@{ set_a = @() }; sound_a = @{} }
         $script:JsonByOwner['alpha'] = [ordered]@{ sound_b = @{} }
 
-        $musicSets = Read-KeyedFileOwners -Sources @() -KeyedFile (
-            New-KeyedFileSource -Path 'sounds.json' -NestedKey 'music')
-        $sounds = Read-KeyedFileOwners -Sources @() -KeyedFile (
-            New-KeyedFileSource -Path 'sounds.json' -ExcludedKeys @('music'))
+        $keyedFile = New-KeyedFileSource -Path 'sounds.json' @Options
+        $expectedOwners = $Owners
 
-        Format-OwnerIndex -OwnersById $musicSets.OwnersById | Should -Be 'set_a=core'
-        Format-OwnerIndex -OwnersById $sounds.OwnersById | Should -Be 'sound_a=core sound_b=alpha'
+        # ACT
+        $actualRead = Read-KeyedFileOwners -Sources @() -KeyedFile $keyedFile
+
+        # ASSERT
+        Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
     }
 
     # The merge keeps the last copy's value, so that copy decides whether the entry is an object.
     It 'keeps only object entries when asked, judged by the last copy in merge order' {
 
+        # ARRANGE
         $script:JsonByOwner['core'] = [ordered]@{ kept = @{}; dropped = 'x'; turned = @{}; restored = 'y' }
         $script:JsonByOwner['alpha'] = [ordered]@{ turned = 'z'; restored = @{} }
 
-        $read = Read-KeyedFileOwners -Sources @() -KeyedFile (
-            New-KeyedFileSource -Path 'planets.json' -IsObjectEntryOnly)
+        $keyedFile = New-KeyedFileSource -Path 'planets.json' -IsObjectEntryOnly
+        $expectedOwners = 'kept=core restored=core+alpha'
 
-        Format-OwnerIndex -OwnersById $read.OwnersById | Should -Be 'kept=core restored=core+alpha'
+        # ACT
+        $actualRead = Read-KeyedFileOwners -Sources @() -KeyedFile $keyedFile
+
+        # ASSERT
+        Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
     }
 
     It 'reads nothing when no source holds the file' {
 
+        # ARRANGE
         Mock Find-ListedContentFiles { }
 
-        $read = Read-KeyedFileOwners -Sources @() -KeyedFile (New-KeyedFileSource -Path 'planets.json')
+        $keyedFile = New-KeyedFileSource -Path 'planets.json'
+        $expectedOwnerCount = 0
+        $expectedFileCount = 0
 
-        $read.OwnersById.Count | Should -Be 0
-        $read.FileCount | Should -Be 0
+        # ACT
+        $actualRead = Read-KeyedFileOwners -Sources @() -KeyedFile $keyedFile
 
+        # ASSERT
+        $actualRead.OwnersById.Count | Should -Be $expectedOwnerCount
+        $actualRead.FileCount | Should -Be $expectedFileCount
         Should -Invoke Select-MergedCopies -Times 0 -Exactly
     }
 
     It 'skips a copy that does not parse, returning it with the reason, and reads the others' {
 
+        # ARRANGE
         $script:JsonByOwner['alpha'] = [ordered]@{ planet = @{} }
 
         Mock ConvertFrom-StarsectorJson {
@@ -112,10 +134,17 @@ Describe 'Read-KeyedFileOwners' {
             $script:JsonByOwner[$Path]
         }
 
-        $read = Read-KeyedFileOwners -Sources @() -KeyedFile (New-KeyedFileSource -Path 'planets.json')
+        $keyedFile = New-KeyedFileSource -Path 'planets.json'
+        $expectedOwners = 'planet=alpha'
+        $expectedSkippedPaths = @('core')
+        $expectedSkippedReasons = @('not valid JSON')
 
-        Format-OwnerIndex -OwnersById $read.OwnersById | Should -Be 'planet=alpha'
-        $read.SkippedFiles.Path | Should -Be @('core')
-        $read.SkippedFiles.Reason | Should -Be @('not valid JSON')
+        # ACT
+        $actualRead = Read-KeyedFileOwners -Sources @() -KeyedFile $keyedFile
+
+        # ASSERT
+        Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
+        $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
+        $actualRead.SkippedFiles.Reason | Should -Be $expectedSkippedReasons
     }
 }

@@ -781,7 +781,7 @@ Every file is read as the game reads its data files, neither stricter nor looser
   - text after the root value, which org.json never reads.
 - org.json keeps keys that differ only in case apart.
   ConvertFrom-Json refuses them unless it builds hashtables,
-  so every reader asks for hashtables and looks a key up spelt as the game spells it.
+  so the reader always builds hashtables, and a key is looked up spelt as the game spells it.
 
 ## Tests
 

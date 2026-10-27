@@ -22,7 +22,7 @@ function Read-EnabledModIds {
 
     try {
 
-        $enabledMods = ConvertFrom-StarsectorJson -Path $enabledFile -AsHashtable
+        $enabledMods = ConvertFrom-StarsectorJson -Path $enabledFile
 
         # Index the list, not Get-JsonPropertyValue: returning an empty list from a function unrolls it to null,
         # and an install with no mod enabled holds exactly that.

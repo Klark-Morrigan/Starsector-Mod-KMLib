@@ -32,21 +32,6 @@ Describe 'Read-EnabledModIds' {
         Mock Get-InstallPathNames { [pscustomobject]@{ EnabledModsFile = 'enabled_mods.json' } }
     }
 
-    # The game's parser keeps keys that differ only in case apart, and only hashtables can hold both.
-    It 'parses enabled_mods.json into hashtables' {
-
-        # ARRANGE
-        Mock ConvertFrom-StarsectorJson { [ordered]@{ enabledMods = @('alpha') } }
-
-        $modsRoot = New-ModsRoot -Name 'hashtable' -HasEnabledFile
-
-        # ACT
-        Read-EnabledModIds -ModsRoot $modsRoot | Out-Null
-
-        # ASSERT
-        Should -Invoke ConvertFrom-StarsectorJson -Times 1 -Exactly -ParameterFilter { $AsHashtable }
-    }
-
     It 'reads the listed IDs, skipping blank ones' {
 
         # ARRANGE

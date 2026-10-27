@@ -42,7 +42,7 @@ function Read-ContentFileId {
         }
     }
 
-    $id = Get-JsonPropertyValue -Object (ConvertFrom-StarsectorJson -Text $text -AsHashtable) -Name $IdKey
+    $id = Get-JsonPropertyValue -Object (ConvertFrom-StarsectorJson -Text $text) -Name $IdKey
 
     if ($null -ne $id -and $id -isnot [string]) {
         throw "its $IdKey is not text"

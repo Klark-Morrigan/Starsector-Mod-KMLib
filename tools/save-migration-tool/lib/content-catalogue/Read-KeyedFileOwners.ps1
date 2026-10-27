@@ -31,8 +31,7 @@ function Read-KeyedFileOwners {
         $copyCount++
 
         try {
-            # Keys match case-sensitively, as the game's do: one file can define both a and A.
-            $json = ConvertFrom-StarsectorJson -Path $copy.Path -AsHashtable
+            $json = ConvertFrom-StarsectorJson -Path $copy.Path
 
         } catch {
 

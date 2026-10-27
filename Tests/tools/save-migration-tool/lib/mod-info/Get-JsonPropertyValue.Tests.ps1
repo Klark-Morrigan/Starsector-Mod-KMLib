@@ -7,33 +7,56 @@ BeforeAll {
 
 Describe 'Get-JsonPropertyValue' {
 
-    It 'reads a property an object holds' {
-        Get-JsonPropertyValue -Object ([pscustomobject]@{ id = 'a' }) -Name 'id' | Should -Be 'a'
-    }
-
-    It 'reads null for <Description>' -ForEach @(
-        @{ Description = 'a property the object lacks'; Object = [pscustomobject]@{ id = 'a' } }
-        @{ Description = 'no object'; Object = $null }
-        @{ Description = 'a key the hashtable lacks'; Object = @{ id = 'a' } }
-    ) {
-        Get-JsonPropertyValue -Object $Object -Name 'name' | Should -BeNullOrEmpty
-    }
-
     It 'reads a key of a <Description>' -ForEach @(
         @{ Description = 'hashtable'; Object = @{ id = 'a' } }
         @{ Description = 'ordered dictionary, which has no ContainsKey'; Object = [ordered]@{ id = 'a' } }
     ) {
-        Get-JsonPropertyValue -Object $Object -Name 'id' | Should -Be 'a'
+
+        # ARRANGE
+        $expectedValue = 'a'
+
+        # ACT
+        $actualValue = Get-JsonPropertyValue -Object $Object -Name 'id'
+
+        # ASSERT
+        $actualValue | Should -Be $expectedValue
+    }
+
+    # A string's Length is no key of the file, though PowerShell would read it as a property.
+    It 'reads null for <Description>' -ForEach @(
+        @{ Description = 'a key the hashtable lacks'; Object = @{ id = 'a' }; Name = 'name' }
+        @{ Description = 'no object'; Object = $null; Name = 'name' }
+        @{ Description = 'a string where an object was expected'; Object = 'text'; Name = 'Length' }
+        @{ Description = 'a list where an object was expected'; Object = @('a', 'b'); Name = 'Count' }
+    ) {
+
+        # ARRANGE
+        $expectedValue = $null
+
+        # ACT
+        $actualValue = Get-JsonPropertyValue -Object $Object -Name $Name
+
+        # ASSERT
+        $actualValue | Should -Be $expectedValue
     }
 
     # A hashtable parsed as org.json keys its objects matches as they do, case-sensitively.
-    It 'matches a key of a case-sensitive hashtable case-sensitively' {
+    It 'reads <Name> from a case-sensitive hashtable as <Description>' -ForEach @(
+        @{ Description = 'the value under that exact spelling'; Name = 'A'; Value = 'upper' }
+        @{ Description = 'null when only another case is held'; Name = 'B'; Value = $null }
+    ) {
 
+        # ARRANGE
         $object = [System.Collections.Generic.Dictionary[string, object]]::new()
         $object.Add('a', 'lower')
         $object.Add('A', 'upper')
+        $object.Add('b', 'other')
+        $expectedValue = $Value
 
-        Get-JsonPropertyValue -Object $object -Name 'A' | Should -Be 'upper'
-        Get-JsonPropertyValue -Object $object -Name 'b' | Should -BeNullOrEmpty
+        # ACT
+        $actualValue = Get-JsonPropertyValue -Object $object -Name $Name
+
+        # ASSERT
+        $actualValue | Should -Be $expectedValue
     }
 }

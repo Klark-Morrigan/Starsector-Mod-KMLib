@@ -22,85 +22,154 @@ Describe 'ConvertFrom-StarsectorJson' {
 
     It 'parses strict JSON from a path' {
 
+        # ARRANGE
         Mock Read-StarsectorText { '{ "id": "a" }' }
 
-        (ConvertFrom-StarsectorJson -Path 'C:\mods\a\strict.json').id | Should -Be 'a'
+        $path = 'C:\mods\a\strict.json'
+        $expectedId = 'a'
 
+        # ACT
+        $actualParsed = ConvertFrom-StarsectorJson -Path $path
+
+        # ASSERT
+        $actualParsed['id'] | Should -Be $expectedId
         Should -Invoke Read-StarsectorText -ParameterFilter { $Path -eq 'C:\mods\a\strict.json' } -Times 1 -Exactly
     }
 
     It 'parses text it is given' {
-        (ConvertFrom-StarsectorJson -Text '{ "id": "a" }').id | Should -Be 'a'
+
+        # ARRANGE
+        $expectedId = 'a'
+
+        # ACT
+        $actualParsed = ConvertFrom-StarsectorJson -Text '{ "id": "a" }'
+
+        # ASSERT
+        $actualParsed['id'] | Should -Be $expectedId
     }
 
     It 'hands the text to the comment stripper first' {
 
-        ConvertFrom-StarsectorJson -Text '{ "id": "a" }' | Out-Null
+        # ARRANGE
+        $text = '{ "id": "a" }'
 
+        # ACT
+        ConvertFrom-StarsectorJson -Text $text | Out-Null
+
+        # ASSERT
         Should -Invoke Remove-JsonComment -Times 1 -Exactly
     }
 
     It 'takes the trailing commas and single-quoted strings org.json takes, with no repair' {
 
-        $parsed = ConvertFrom-StarsectorJson -Text "{ `"major`": '3', `"ids`": [`"a`", `"b`",], }"
+        # ARRANGE
+        $text = "{ `"major`": '3', `"ids`": [`"a`", `"b`",], }"
+        $expectedMajor = '3'
+        $expectedIds = @('a', 'b')
 
-        $parsed.major | Should -Be '3'
-        $parsed.ids | Should -Be @('a', 'b')
+        # ACT
+        $actualParsed = ConvertFrom-StarsectorJson -Text $text
+
+        # ASSERT
+        $actualParsed['major'] | Should -Be $expectedMajor
+        $actualParsed['ids'] | Should -Be $expectedIds
+        Should -Invoke Repair-JsonLeniency -Times 0 -Exactly
     }
 
     It 'keeps a comma and brace inside a string as they are' {
-        (ConvertFrom-StarsectorJson -Text '{ "a": "x,}" }').a | Should -Be 'x,}'
+
+        # ARRANGE
+        $expectedValue = 'x,}'
+
+        # ACT
+        $actualParsed = ConvertFrom-StarsectorJson -Text '{ "a": "x,}" }'
+
+        # ASSERT
+        $actualParsed['a'] | Should -Be $expectedValue
     }
 
     It 'repairs what org.json takes and JSON refuses, when the text does not parse without it' {
 
-        $parsed = ConvertFrom-StarsectorJson -Text '{ "patch":a, "flag": true }'
+        # ARRANGE
+        $expectedPatch = 'a'
 
-        $parsed.patch | Should -Be 'a'
-        $parsed.flag | Should -BeTrue
+        # ACT
+        $actualParsed = ConvertFrom-StarsectorJson -Text '{ "patch":a, "flag": true }'
 
+        # ASSERT
+        $actualParsed['patch'] | Should -Be $expectedPatch
+        $actualParsed['flag'] | Should -BeTrue
         Should -Invoke Repair-JsonLeniency -Times 1 -Exactly
     }
 
     # A rewrite can corrupt a file that did not need one.
     It 'leaves text that parses as it is' {
 
-        ConvertFrom-StarsectorJson -Text '{ "id": "a" }' | Out-Null
+        # ARRANGE
+        $text = '{ "id": "a" }'
 
+        # ACT
+        ConvertFrom-StarsectorJson -Text $text | Out-Null
+
+        # ASSERT
         Should -Invoke Repair-JsonLeniency -Times 0 -Exactly
     }
 
     # org.json keeps keys that differ only in case apart, and ConvertFrom-Json refuses them outside a hashtable.
-    It 'returns a hashtable keyed case-sensitively with -AsHashtable' {
+    It 'returns objects, nested ones too, as hashtables keyed case-sensitively' {
 
-        $parsed = ConvertFrom-StarsectorJson -Text '{ "a": { "x": 1 }, "A": 2 }' -AsHashtable
+        # ARRANGE
+        $expectedKeys = @('a', 'A')
+        $expectedNestedValue = 1
 
-        @($parsed.Keys) | Should -Be @('a', 'A')
-        $parsed['a']['x'] | Should -Be 1
-        $parsed.ContainsKey('B') | Should -BeFalse
+        # ACT
+        $actualParsed = ConvertFrom-StarsectorJson -Text '{ "a": { "x": 1 }, "A": 2 }'
+
+        # ASSERT
+        @($actualParsed.Keys) | Should -Be $expectedKeys
+        $actualParsed['a']['x'] | Should -Be $expectedNestedValue
+        $actualParsed.ContainsKey('B') | Should -BeFalse
     }
 
     It 'rejects a // or /* */ comment, as the game does' {
 
+        # ARRANGE
         Mock Test-JsonSlashComment { $true }
 
-        { ConvertFrom-StarsectorJson -Text '{ "id": "a" }' } |
-            Should -Throw 'holds a // or /* */ comment, which the game rejects: the given text'
+        $expectedMessage = 'holds a // or /* */ comment, which the game rejects: the given text'
+
+        # ACT
+        $actualError = { ConvertFrom-StarsectorJson -Text '{ "id": "a" }' } | Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -Be $expectedMessage
     }
 
     It 'rejects a file opening with a byte order mark, as the game does' {
 
+        # ARRANGE
         Mock Read-StarsectorText { "$([char] 0xFEFF){}" }
 
-        { ConvertFrom-StarsectorJson -Path 'C:\mods\a\bom.json' } |
-            Should -Throw 'starts with a byte order mark, which the game rejects: C:\mods\a\bom.json'
+        $expectedMessage = 'starts with a byte order mark, which the game rejects: C:\mods\a\bom.json'
+
+        # ACT
+        $actualError = { ConvertFrom-StarsectorJson -Path 'C:\mods\a\bom.json' } | Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -Be $expectedMessage
     }
 
     It 'fails naming the file when even the repair does not parse' {
 
+        # ARRANGE
         Mock Read-StarsectorText { '{ "id": ' }
 
-        { ConvertFrom-StarsectorJson -Path 'C:\mods\a\broken.json' } |
-            Should -Throw "not valid JSON, even with org.json's leniencies repaired: C:\mods\a\broken.json *"
+        $expectedMessage = "not valid JSON, even with org.json's leniencies repaired: C:\mods\a\broken.json *"
+
+        # ACT
+        $actualError = { ConvertFrom-StarsectorJson -Path 'C:\mods\a\broken.json' } | Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -BeLike $expectedMessage
     }
 }
