@@ -60,10 +60,13 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             $script:InstallRoot = New-ModInstall -Name 'mixed' -EnabledModsJson '{ "enabledMods": ["alpha", "beta"] }' `
                 -ModInfoByFolder @{
-                    'Alpha'                 = '{ "id": "alpha", "name": "Alpha", "version": "1.9.0" }'
-                    '[Repack] Alpha-1.10.0' = '{ "id": "alpha", "name": "Alpha", "version": "1.10.0" }'
-                    'beta'                  = '{ "id": "beta", "version": { "major": 2, "minor": 0, "patch": 3 } }'
-                    'gamma'                 = '{ "id": "gamma", "version": "0.1" }'
+                    'Alpha'                 =
+                        '{ "id": "alpha", "name": "Alpha", "description": "", "version": "1.9.0" }'
+                    '[Repack] Alpha-1.10.0' =
+                        '{ "id": "alpha", "name": "Alpha", "description": "", "version": "1.10.0" }'
+                    'beta'                  = ('{ "id": "beta", "name": "Beta", "description": "", ' +
+                        '"version": { "major": 2, "minor": 0, "patch": 3 } }')
+                    'gamma'                 = '{ "id": "gamma", "name": "Gamma", "description": "", "version": "0.1" }'
                 }
 
             $script:Run = Invoke-ModRoster @{ StarsectorRoot = $script:InstallRoot }
@@ -186,20 +189,29 @@ Describe 'Get-ModRoster.IntegrationTests' {
     }
 
     # The game skips a copy whose mod_info.json it cannot read, so that copy never claims the mod's ID.
-    Context 'a first copy of a mod nothing can parse' {
+    Context 'a first copy of a mod the game skips' {
 
-        It 'picks the next copy as the winner, and keeps the first apart as unparsed' {
+        # The game reads "description" with getString, which throws on a missing key.
+        It 'picks the next copy as the winner over <Description>, and keeps the first apart as unparsed' -ForEach @(
+            @{ Description = 'a file nothing parses'; Name = 'unparsedFirst'; FirstModInfo = '{ "id": "beta", '
+                Reason = "not valid JSON, even with org.json's leniencies repaired: *" }
+            @{ Description = 'a file with no description'; Name = 'noDescriptionFirst'
+                FirstModInfo = '{ "id": "beta", "name": "Beta", "version": "2.0" }'
+                Reason = 'no "description" field)' }
+        ) {
 
             # ARRANGE
-            $root = New-ModInstall -Name 'unparsedFirst' -EnabledModsJson '{ "enabledMods": ["beta"] }' `
+            $root = New-ModInstall -Name $Name -EnabledModsJson '{ "enabledMods": ["beta"] }' `
                 -ModInfoByFolder @{
-                    'Beta A' = '{ "id": "beta", '
-                    'Beta B' = '{ "id": "beta", "version": "1.0" }'
+                    'Beta A' = $FirstModInfo
+                    'Beta B' = '{ "id": "beta", "name": "Beta", "description": "", "version": "1.0" }'
                 }
 
             $expectedBetaPath = 'mods\Beta B'
             $expectedBetaSupersededCount = 0
             $expectedUnparsedStatus = 'unparsed'
+            $expectedWarningCount = 1
+            $expectedWarningPattern = "No mod read from mod_info.json, keeping in roster: Beta A ($Reason"
             $expectedSummaryPattern = '*listing 2 mods (1 unparsed), skipping 0 disabled and 0 superseded copies'
 
             # ACT
@@ -209,6 +221,8 @@ Describe 'Get-ModRoster.IntegrationTests' {
             ($actualRun.Output | Where-Object Id -EQ 'beta').RelativePath | Should -Be $expectedBetaPath
             ($actualRun.Output | Where-Object Id -EQ 'beta').SupersededCount | Should -Be $expectedBetaSupersededCount
             ($actualRun.Output | Where-Object Id -EQ 'Beta A').Status | Should -Be $expectedUnparsedStatus
+            @($actualRun.Warnings).Count | Should -Be $expectedWarningCount
+            @($actualRun.Warnings)[0] | Should -BeLike $expectedWarningPattern
 
             @($actualRun.Diagnostics)[-1] | Should -BeLike $expectedSummaryPattern
         }
@@ -222,8 +236,8 @@ Describe 'Get-ModRoster.IntegrationTests' {
             # ARRANGE
             $root = New-ModInstall -Name 'idCase' -EnabledModsJson '{ "enabledMods": ["foo", "Foo"] }' `
                 -ModInfoByFolder @{
-                    'Upper' = '{ "id": "Foo", "version": "2.0" }'
-                    'Lower' = '{ "id": "foo", "version": "1.0" }'
+                    'Upper' = '{ "id": "Foo", "name": "Foo", "description": "", "version": "2.0" }'
+                    'Lower' = '{ "id": "foo", "name": "foo", "description": "", "version": "1.0" }'
                 }
             $expectedUpperPath = 'mods\Upper'
             $expectedLowerPath = 'mods\Lower'
@@ -242,7 +256,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $root = New-ModInstall -Name 'enabledCase' -EnabledModsJson '{ "enabledMods": ["Foo"] }' `
-                -ModInfoByFolder @{ 'a' = '{ "id": "foo", "version": "1" }' }
+                -ModInfoByFolder @{ 'a' = '{ "id": "foo", "name": "foo", "description": "", "version": "1" }' }
             $expectedCount = 0
             $expectedSummaryPattern = '*listing 0 mods (0 unparsed), skipping 1 disabled*'
 
@@ -261,7 +275,8 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $root = New-ModInstall -Name 'jars' -EnabledModsJson '{ "enabledMods": ["a"] }' -ModInfoByFolder @{
-                'A Mod' = '{ "id": "a", "version": "1", "jars": ["jars/a.jar", "jars/lib/b.jar"] }'
+                'A Mod' = ('{ "id": "a", "name": "A", "description": "", "version": "1", ' +
+                    '"jars": ["jars/a.jar", "jars/lib/b.jar"] }')
             }
             $expectedJars = @(
                 "$root\mods\A Mod\jars\a.jar"
@@ -282,6 +297,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $modInfo = "{`n  # a comment line`n  `"id`": `"a`", # a trailing comment`n" +
+                "  `"name`": 'A', `"description`": '',`n" +
                 "  `"version`": { `"major`": '1', `"minor`": 2, },`n}"
             $root = New-ModInstall -Name 'lenient' -EnabledModsJson '{ "enabledMods": ["a"] }' `
                 -ModInfoByFolder @{ 'a' = $modInfo }
@@ -305,7 +321,10 @@ Describe 'Get-ModRoster.IntegrationTests' {
             # ARRANGE
             $root = New-ModInstall -Name 'keyCase' `
                 -EnabledModsJson '{ "enabledMods": ["lower"], "EnabledMods": [] }' `
-                -ModInfoByFolder @{ 'a' = '{ "id": "lower", "ID": "UPPER", "version": "1", "Version": "9" }' }
+                -ModInfoByFolder @{
+                    'a' = ('{ "id": "lower", "ID": "UPPER", "name": "A", "description": "", ' +
+                        '"version": "1", "Version": "9" }')
+                }
             $expectedIds = @('lower')
             $expectedVersion = '1'
             $expectedWarningCount = 0
@@ -329,7 +348,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
                 StarsectorRoot = (New-ModInstall -Name 'unparsed' -EnabledModsJson '{ "enabledMods": [] }' `
                     -ModInfoByFolder @{
                         'Broken Mod' = '{ "id": "broken", '
-                        'No Id'      = '{ "name": "Nameless" }'
+                        'No Id'      = '{ "name": "Nameless", "description": "" }'
                     })
             }
         }
@@ -364,9 +383,9 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $expectedWarningCount = 2
-            $expectedBrokenWarning = 'No mod ID read from mod_info.json, keeping in roster: Broken Mod ' +
+            $expectedBrokenWarning = 'No mod read from mod_info.json, keeping in roster: Broken Mod ' +
                 "(not valid JSON, even with org.json's leniencies repaired: *"
-            $expectedNoIdWarning = 'No mod ID read from mod_info.json, keeping in roster: No Id (no "id" field)'
+            $expectedNoIdWarning = 'No mod read from mod_info.json, keeping in roster: No Id (no "id" field)'
 
             # ACT
             $actualWarnings = @($script:Run.Warnings | Sort-Object)
@@ -384,7 +403,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $root = New-ModInstall -Name 'noneEnabled' -EnabledModsJson '{ "enabledMods": [] }' `
-                -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
+                -ModInfoByFolder @{ 'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
             $expectedCount = 0
             $expectedWarningCount = 0
 
@@ -403,7 +422,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $root = New-ModInstall -Name 'noEnabledFile' -ModInfoByFolder @{
-                'a' = '{ "id": "a", "version": "1" }'
+                'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }'
             }
             $expectedIds = @('a')
             $expectedWarnings = @('enabled_mods.json not found, treating all mods as enabled.')
@@ -420,7 +439,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $root = New-ModInstall -Name 'noEnabledList' -EnabledModsJson '{ "mods": [] }' `
-                -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
+                -ModInfoByFolder @{ 'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
             $expectedIds = @('a')
             $expectedWarnings = @(
                 'enabled_mods.json unparseable, treating all mods as enabled: it holds no enabledMods list'
@@ -441,7 +460,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $root = New-ModInstall -Name 'noInfo' -EnabledModsJson '{ "enabledMods": ["a"] }' `
-                -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
+                -ModInfoByFolder @{ 'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
 
             New-Item -ItemType Directory -Path (Join-Path $root 'mods\loose-assets') | Out-Null
 

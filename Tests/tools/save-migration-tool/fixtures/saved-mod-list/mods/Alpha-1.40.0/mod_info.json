@@ -1,5 +1,6 @@
 {
   "id": "alpha",
   "name": "Alpha",
+  "description": "",
   "version": { "major": 1, "minor": 40, "patch": 0 }
 }

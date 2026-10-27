@@ -446,7 +446,9 @@ A version heading is never translated; see [translating the changelog](#translat
 | narrow (a list, by a filter) | 缩小 | to make smaller, as a filter makes a list |
 | newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
 | object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
+| parse (a `mod_info.json`, as the game reads it) | 解析 | as the parser row's 解析器, without 器, a thing that does a job |
 | Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
+| skip (a copy the game cannot read, and so does not load), required (a `mod_info.json` field the game cannot do without) | 跳过, 必需 | 跳过, to pass over, the plain word; 必需, needed, the plain word |
 | sort string (a `mod_info.json`'s `sortString`) | 排序字符串 | 排序 as the sort mode row of [Lists and sorting](#lists-and-sorting), with 字符串 as the string ID row |
 | spreadsheet (a CSV data file the game reads row by row) | 表格 | 表格, a table, the plain word |
 | text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |

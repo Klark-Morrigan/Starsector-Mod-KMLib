@@ -61,7 +61,8 @@ BeforeAll {
             [string[]] $Classes
         )
 
-        $modInfo = "{ `"id`": `"$ModId`", `"version`": `"1.0`", `"jars`": [`"jars/$ModId.jar`"] }"
+        $modInfo = "{ `"id`": `"$ModId`", `"name`": `"$ModId`", `"description`": `"`", `"version`": `"1.0`", " +
+            "`"jars`": [`"jars/$ModId.jar`"] }"
         $modFolder = New-TestMod -StarsectorRoot $Root -Folder $ModId -ModInfo $modInfo
 
         New-TestJar -Path (Join-Path $modFolder "jars\$ModId.jar") -ClassNames $Classes | Out-Null
@@ -98,7 +99,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             # A JAR no zip reader opens is skipped, and the other mods still resolve.
             $brokenFolder = New-TestMod -StarsectorRoot $script:FixtureRoot -Folder 'broken' `
-                -ModInfo '{ "id": "broken", "version": "1.0", "jars": ["jars/broken.jar"] }'
+                -ModInfo ('{ "id": "broken", "name": "Broken", "description": "", "version": "1.0", ' +
+                    '"jars": ["jars/broken.jar"] }')
             New-Item -ItemType Directory -Path (Join-Path $brokenFolder 'jars') | Out-Null
             [System.IO.File]::WriteAllText((Join-Path $brokenFolder 'jars\broken.jar'), 'not a zip')
 

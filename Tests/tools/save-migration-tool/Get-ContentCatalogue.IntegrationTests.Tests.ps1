@@ -4,6 +4,7 @@
 #
 # The install is built once under TestDrive: the game's own data under starsector-core\data, and three enabled mods.
 # No test reads a real install.
+# A context sharing one run makes it in BeforeAll; each case's act then reads its part of that run.
 
 BeforeAll {
 
@@ -57,8 +58,8 @@ BeforeAll {
         '{ "variantId": "core_hull_Standard", "hullId": "core_hull" }') | Out-Null
 
     # alpha patches the game's hull file without naming a hull, and adds a hull of its own.
-    New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'Alpha' -ModInfo '{ "id": "alpha", "name": "Alpha" }' |
-        Out-Null
+    New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'Alpha' `
+        -ModInfo '{ "id": "alpha", "name": "Alpha", "description": "" }' | Out-Null
     New-TestFile -Name 'install\mods\Alpha\data\hulls\patched.ship' -Text '{ "hullName": "Patched by Alpha" }' |
         Out-Null
     New-TestFile -Name 'install\mods\Alpha\data\hulls\alpha_hull.ship' -Text '{ "hullId": "alpha_hull" }' | Out-Null
@@ -76,7 +77,8 @@ BeforeAll {
     ) | Out-Null
 
     # LLI repeats a column name in its wing header, and keeps its fighter variants one folder down.
-    New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'LLI' -ModInfo '{ "id": "LLI", "name": "LLI" }' | Out-Null
+    New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'LLI' `
+        -ModInfo '{ "id": "LLI", "name": "LLI", "description": "" }' | Out-Null
     New-TestFile -Name 'install\mods\LLI\data\hulls\wing_data.csv' -Lines @(
         'id,variant,tags,02,02'
         'ssp_wing,ssp_wing_variant,"fighter,ssp_bp",,'
@@ -86,7 +88,8 @@ BeforeAll {
 
     # Gamma replaces the hullmod spreadsheet, so the game's own hullmods are gone.
     New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'Gamma' `
-        -ModInfo '{ "id": "gamma", "name": "Gamma", "replace": ["data/hullmods/hull_mods.csv"] }' | Out-Null
+        -ModInfo '{ "id": "gamma", "name": "Gamma", "description": "", "replace": ["data/hullmods/hull_mods.csv"] }' |
+        Out-Null
     New-TestFile -Name 'install\mods\Gamma\data\hullmods\hull_mods.csv' -Lines @('id', 'gamma_mod') | Out-Null
 
     # factions.csv lists the .faction files; alpha lists one of its own and patches the game's without an ID.
@@ -151,9 +154,8 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
         # fixtures' IDs all hold an underscore, so the listing reads without the built-in ones.
         It 'lists each defined ID by kind, IDs in code-unit order, with its owners in the game''s search order' {
 
-            $fixtureRows = $script:Run.Output | Where-Object { $_.Id -notmatch '^[a-z]+\d$' }
-
-            Format-CatalogueRows -Rows $fixtureRows | Should -Be @(
+            # ARRANGE
+            $expectedRows = @(
                 'Hull alpha_hull: alpha'
                 'Hull alpha_hull_default_D: alpha'
                 'Hull core_hull: vanilla'
@@ -182,52 +184,88 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
                 'Planet core_planet: vanilla'
                 'Description core_hull_SHIP: vanilla'
             )
+
+            # ACT
+            $actualRows = Format-CatalogueRows -Rows (
+                $script:Run.Output | Where-Object { $_.Id -notmatch '^[a-z]+\d$' })
+
+            # ASSERT
+            $actualRows | Should -Be $expectedRows
         }
 
         It 'lists the 51 variants the game builds in its own code, owned by the game' {
 
-            $builtInRows = @($script:Run.Output | Where-Object { $_.Id -match '^[a-z]+\d$' })
+            # ARRANGE
+            $expectedCount = 51
+            $expectedOtherRowCount = 0
+            $expectedId = 'omen1'
 
-            $builtInRows.Count | Should -Be 51
-            @($builtInRows | Where-Object { $_.Kind -ne 'Variant' -or "$($_.Owners)" -ne 'vanilla' }).Count |
-                Should -Be 0
-            $builtInRows.Id | Should -Contain 'omen1'
+            # ACT
+            $actualBuiltInRows = @($script:Run.Output | Where-Object { $_.Id -match '^[a-z]+\d$' })
+
+            # ASSERT
+            $actualBuiltInRows.Count | Should -Be $expectedCount
+            @($actualBuiltInRows | Where-Object { $_.Kind -ne 'Variant' -or "$($_.Owners)" -ne 'vanilla' }).Count |
+                Should -Be $expectedOtherRowCount
+            $actualBuiltInRows.Id | Should -Contain $expectedId
         }
 
         It 'leaves out a faction no factions.csv lists, and a skill no spreadsheet lists' {
 
-            $ids = $script:Run.Output.Id
+            # ARRANGE
+            $unexpectedFactionId = 'unlisted'
+            $unexpectedSkillId = 'unlisted_skill'
 
-            $ids | Should -Not -Contain 'unlisted'
-            $ids | Should -Not -Contain 'unlisted_skill'
+            # ACT
+            $actualIds = $script:Run.Output.Id
+
+            # ASSERT
+            $actualIds | Should -Not -Contain $unexpectedFactionId
+            $actualIds | Should -Not -Contain $unexpectedSkillId
         }
 
         It 'leaves out a planets.json key whose value is not an object' {
-            $script:Run.Output.Id | Should -Not -Contain 'note'
+
+            # ARRANGE
+            $unexpectedId = 'note'
+
+            # ACT
+            $actualIds = $script:Run.Output.Id
+
+            # ASSERT
+            $actualIds | Should -Not -Contain $unexpectedId
         }
 
         It 'leaves out a hull whose file has no row, a row whose file is missing, and a commented row' {
 
-            $hullIds = ($script:Run.Output | Where-Object Kind -EQ 'Hull').Id
+            # ARRANGE
+            $unexpectedIds = @('rowless_hull', 'fileless_hull', 'commented_hull')
 
-            $hullIds | Should -Not -Contain 'rowless_hull'
-            $hullIds | Should -Not -Contain 'fileless_hull'
-            $hullIds | Should -Not -Contain 'commented_hull'
+            # ACT
+            $actualHullIds = ($script:Run.Output | Where-Object Kind -EQ 'Hull').Id
+
+            # ASSERT
+            foreach ($unexpectedId in $unexpectedIds) {
+                $actualHullIds | Should -Not -Contain $unexpectedId
+            }
         }
 
         It 'says what it read, which spreadsheet a mod replaces, and what each kind holds, to stderr' {
 
-            $script:Run.Diagnostics | Should -Contain (
+            # ARRANGE
+            $expectedKindsLine =
                 'Get-ContentCatalogue: cataloguing Hull, Weapon, FighterWing, Hullmod, Variant, ShipSystem, ' +
                 'Projectile, MarketCondition, Industry, SpecialItem, Commodity, Ability, Submarket, Faction, Skill, ' +
                 'Aptitude, Personality, PersonMission, BarEvent, CustomEntity, Planet, Terrain, BattleObjective, ' +
                 'EngineStyle, HullStyle, CampaignEvent, Ping, IntelTag, ContactTag, Sound, MusicSet, Description, ' +
                 'StarGenData, AgeGenData, ObjectiveGenData, LocationGenData, NameGenData, PlanetGenData, ' +
                 'CategoryGenData, TerrainGenData, ConditionGenData, DropGroup, SalvageEntityGenData, Mission, Rule ' +
-                "from 3 mods and the game's own data, in the game's search order")
-            $script:Run.Diagnostics | Should -Contain (
-                'Get-ContentCatalogue: gamma replaces data/hullmods/hull_mods.csv, so no other copy of it is read')
-            @($script:Run.Diagnostics -like (
+                "from 3 mods and the game's own data, in the game's search order"
+            $expectedReplaceLine =
+                'Get-ContentCatalogue: gamma replaces data/hullmods/hull_mods.csv, so no other copy of it is read'
+            $expectedReadLineCount = 1
+            $expectedLastLine = 'Get-ContentCatalogue: listing 78 of 78 defined IDs'
+            $expectedReadLinePattern =
                 'Get-ContentCatalogue: read 17 content files and 13 spreadsheets in * ms, skipping 0; ' +
                 'defined: 8 Hull, 1 Weapon, 1 FighterWing, 1 Hullmod, 57 Variant, 0 ShipSystem, 0 Projectile, ' +
                 '2 MarketCondition, 0 Industry, 0 SpecialItem, 0 Commodity, 0 Ability, 0 Submarket, 2 Faction, ' +
@@ -236,8 +274,16 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
                 '0 ContactTag, 0 Sound, 0 MusicSet, 1 Description, 0 StarGenData, 0 AgeGenData, 0 ObjectiveGenData, ' +
                 '0 LocationGenData, 0 NameGenData, 0 PlanetGenData, 0 CategoryGenData, 0 TerrainGenData, ' +
                 '0 ConditionGenData, 0 DropGroup, 0 SalvageEntityGenData, 0 Mission, 0 Rule, ' +
-                '8 of them built by the game at startup')).Count | Should -Be 1
-            $script:Run.Diagnostics[-1] | Should -Be 'Get-ContentCatalogue: listing 78 of 78 defined IDs'
+                '8 of them built by the game at startup'
+
+            # ACT
+            $actualDiagnostics = $script:Run.Diagnostics
+
+            # ASSERT
+            $actualDiagnostics | Should -Contain $expectedKindsLine
+            $actualDiagnostics | Should -Contain $expectedReplaceLine
+            @($actualDiagnostics -like $expectedReadLinePattern).Count | Should -Be $expectedReadLineCount
+            $actualDiagnostics[-1] | Should -Be $expectedLastLine
         }
     }
 
@@ -249,25 +295,52 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
 
         It 'gives each owner one entry, in the game''s search order, with its name, version and ID count' {
 
-            $script:Run.Output.Owner | Should -Be @('alpha', 'gamma', 'LLI', 'vanilla')
-            $script:Run.Output.Name | Should -Be @('Alpha', 'Gamma', 'LLI', 'Starsector')
-            $script:Run.Output.IdCount | Should -Be @(7, 1, 2, 69)
+            # ARRANGE
+            $expectedOwners = @('alpha', 'gamma', 'LLI', 'vanilla')
+            $expectedNames = @('Alpha', 'Gamma', 'LLI', 'Starsector')
+            $expectedIdCounts = @(7, 1, 2, 69)
+
+            # ACT
+            $actualGroups = $script:Run.Output
+
+            # ASSERT
+            $actualGroups.Owner | Should -Be $expectedOwners
+            $actualGroups.Name | Should -Be $expectedNames
+            $actualGroups.IdCount | Should -Be $expectedIdCounts
         }
 
         It 'holds an owner''s IDs by kind' {
 
-            $alpha = $script:Run.Output[0]
+            # ARRANGE
+            $expectedKinds = @('Hull', 'Variant', 'MarketCondition', 'Faction', 'Planet')
+            $expectedHullIds = @('alpha_hull', 'alpha_hull_default_D')
+            $expectedVariantIds = @('alpha_hull_Hull')
+            $expectedConditionIds = @('alpha_condition', 'core_condition')
+            $expectedFactionIds = @('alpha_faction')
+            $expectedPlanetIds = @('alpha_planet')
 
-            @($alpha.Ids.Keys) | Should -Be @('Hull', 'Variant', 'MarketCondition', 'Faction', 'Planet')
-            $alpha.Ids['Hull'] | Should -Be @('alpha_hull', 'alpha_hull_default_D')
-            $alpha.Ids['Variant'] | Should -Be @('alpha_hull_Hull')
-            $alpha.Ids['MarketCondition'] | Should -Be @('alpha_condition', 'core_condition')
-            $alpha.Ids['Faction'] | Should -Be @('alpha_faction')
-            $alpha.Ids['Planet'] | Should -Be @('alpha_planet')
+            # ACT
+            $actualAlpha = $script:Run.Output[0]
+
+            # ASSERT
+            @($actualAlpha.Ids.Keys) | Should -Be $expectedKinds
+            $actualAlpha.Ids['Hull'] | Should -Be $expectedHullIds
+            $actualAlpha.Ids['Variant'] | Should -Be $expectedVariantIds
+            $actualAlpha.Ids['MarketCondition'] | Should -Be $expectedConditionIds
+            $actualAlpha.Ids['Faction'] | Should -Be $expectedFactionIds
+            $actualAlpha.Ids['Planet'] | Should -Be $expectedPlanetIds
         }
 
         It 'says how many owners the IDs fall under' {
-            $script:Run.Diagnostics[-1] | Should -Be 'Get-ContentCatalogue: listing 78 of 78 defined IDs under 4 owners'
+
+            # ARRANGE
+            $expectedLastLine = 'Get-ContentCatalogue: listing 78 of 78 defined IDs under 4 owners'
+
+            # ACT
+            $actualLastLine = $script:Run.Diagnostics[-1]
+
+            # ASSERT
+            $actualLastLine | Should -Be $expectedLastLine
         }
     }
 
@@ -275,16 +348,23 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
 
         It 'writes the JSON there, creating its folder, and prints nothing to stdout' {
 
+            # ARRANGE
             $outFile = Join-Path $TestDrive 'out\nested\catalogue.json'
+            $expectedOutputCount = 0
+            $expectedOwners = @('alpha', 'gamma', 'LLI', 'vanilla')
+            $expectedWingIds = @('ssp_wing')
+            $expectedLastLine = "Get-ContentCatalogue: wrote the JSON to $outFile"
 
-            $run = Invoke-ContentCatalogue @{ GroupByOwner = $true; OutFile = $outFile }
+            # ACT
+            $actualRun = Invoke-ContentCatalogue @{ GroupByOwner = $true; OutFile = $outFile }
 
-            $groups = Get-Content -Raw -LiteralPath $outFile | ConvertFrom-Json
+            # ASSERT
+            $actualGroups = Get-Content -Raw -LiteralPath $outFile | ConvertFrom-Json
 
-            $run.Output.Count | Should -Be 0
-            $groups.Owner | Should -Be @('alpha', 'gamma', 'LLI', 'vanilla')
-            $groups[2].Ids.FighterWing | Should -Be @('ssp_wing')
-            $run.Diagnostics[-1] | Should -Be "Get-ContentCatalogue: wrote the JSON to $outFile"
+            $actualRun.Output.Count | Should -Be $expectedOutputCount
+            $actualGroups.Owner | Should -Be $expectedOwners
+            $actualGroups[2].Ids.FighterWing | Should -Be $expectedWingIds
+            $actualRun.Diagnostics[-1] | Should -Be $expectedLastLine
         }
     }
 
@@ -292,39 +372,62 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
 
         It 'lists only the IDs matching a pattern, ignoring case' {
 
-            $run = Invoke-ContentCatalogue @{ Id = @('SSP_*', 'core_gun') }
-
-            Format-CatalogueRows -Rows $run.Output | Should -Be @(
+            # ARRANGE
+            $expectedRows = @(
                 'Weapon core_gun: vanilla'
                 'FighterWing ssp_wing: LLI'
                 'Variant ssp_wing_variant: LLI'
             )
+
+            # ACT
+            $actualRun = Invoke-ContentCatalogue @{ Id = @('SSP_*', 'core_gun') }
+
+            # ASSERT
+            Format-CatalogueRows -Rows $actualRun.Output | Should -Be $expectedRows
         }
 
         It 'lists the variants the game builds from hulls when only variants are asked for' {
 
-            $run = Invoke-ContentCatalogue @{ Kind = @('Variant'); Id = @('*_Hull') }
-
-            Format-CatalogueRows -Rows $run.Output | Should -Be @(
+            # ARRANGE
+            $expectedRows = @(
                 'Variant alpha_hull_Hull: alpha'
                 'Variant core_hull_Hull: vanilla'
                 'Variant core_skin_Hull: vanilla'
                 'Variant patched_hull_Hull: vanilla'
             )
+
+            # ACT
+            $actualRun = Invoke-ContentCatalogue @{ Kind = @('Variant'); Id = @('*_Hull') }
+
+            # ASSERT
+            Format-CatalogueRows -Rows $actualRun.Output | Should -Be $expectedRows
         }
 
         It 'reads only the kinds asked for' {
 
-            $run = Invoke-ContentCatalogue @{ Kind = @('FighterWing') }
+            # ARRANGE
+            $expectedRows = @('FighterWing ssp_wing: LLI')
+            $expectedReadLineCount = 1
 
-            Format-CatalogueRows -Rows $run.Output | Should -Be @('FighterWing ssp_wing: LLI')
-            @($run.Diagnostics -like '*read 0 content files and 1 spreadsheets*').Count | Should -Be 1
+            # ACT
+            $actualRun = Invoke-ContentCatalogue @{ Kind = @('FighterWing') }
+
+            # ASSERT
+            Format-CatalogueRows -Rows $actualRun.Output | Should -Be $expectedRows
+            @($actualRun.Diagnostics -like '*read 0 content files and 1 spreadsheets*').Count |
+                Should -Be $expectedReadLineCount
         }
 
         It 'fails on an unknown kind before reading anything, naming the kinds' {
 
-            { Invoke-ContentCatalogue @{ Kind = @('Hull', 'Ship') } } |
-                Should -Throw 'unknown kind: Ship; the kinds are Hull, Weapon, FighterWing, *, Mission, Rule'
+            # ARRANGE
+            $expectedMessagePattern = 'unknown kind: Ship; the kinds are Hull, Weapon, FighterWing, *, Mission, Rule'
+
+            # ACT
+            $actualError = { Invoke-ContentCatalogue @{ Kind = @('Hull', 'Ship') } } | Should -Throw -PassThru
+
+            # ASSERT
+            $actualError.Exception.Message | Should -BeLike $expectedMessagePattern
         }
     }
 
@@ -332,11 +435,18 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
 
         It 'prints the rows as JSON, owners as a list' {
 
-            $rows = (Invoke-ContentCatalogue @{ Id = @('ssp_wing'); AsJson = $true }).Output -join "`n" |
-                ConvertFrom-Json
+            # ARRANGE
+            $expectedKinds = @('FighterWing')
+            $expectedOwners = @('LLI')
 
-            $rows.Kind | Should -Be @('FighterWing')
-            $rows.Owners | Should -Be @('LLI')
+            # ACT
+            $actualRun = Invoke-ContentCatalogue @{ Id = @('ssp_wing'); AsJson = $true }
+
+            # ASSERT
+            $actualRows = $actualRun.Output -join "`n" | ConvertFrom-Json
+
+            $actualRows.Kind | Should -Be $expectedKinds
+            $actualRows.Owners | Should -Be $expectedOwners
         }
     }
 }

@@ -745,10 +745,14 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 - `enabled_mods.json` decides what loads.
   A missing or unreadable one warns and lists every mod.
 - A folder with no `mod_info.json` is not a mod; stderr names each one skipped.
-- A `mod_info.json` nothing can parse, or one naming no `id`,
-  stays in the roster as `unparsed`, under its folder name, with a warning.
+- The game skips a `mod_info.json` it cannot read:
+  one nothing can parse, one missing `id`, `name` or `description`,
+  a version object (`version`, `gameVersion` or a dependency's `version`) with no `major`,
+  or `dependencies` that are not a list of objects each with an `id`.
+  Such a copy stays in the roster as `unparsed`, under its folder name,
+  with a warning naming what the game throws on.
   Dropping it would hide a real mod with nothing to say so.
-  It never wins over a copy that parses: the game skips it, and loads the next copy of the mod.
+  It never wins over a copy the game reads: the game skips it, and loads the next copy of the mod.
 
 Each entry carries `Id`, `Version`,
 `VersionInfo` (the `Major`, `Minor`, `Patch` and `MinorIsRC` the game [compares versions by](#how-versions-compare)),

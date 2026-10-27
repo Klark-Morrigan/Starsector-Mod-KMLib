@@ -7,6 +7,7 @@ BeforeAll {
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$libRoot\mod-info\ConvertFrom-StarsectorJson.ps1"
     . "$libRoot\mod-info\Get-JsonPropertyValue.ps1"
+    . "$libRoot\mod-roster\Find-ModInfoProblem.ps1"
     . "$libRoot\mod-roster\Get-ModStatusNames.ps1"
     . "$libRoot\mod-roster\Read-ModCandidate.ps1"
     . "$libRoot\install\Get-InstallPathNames.ps1"
@@ -34,6 +35,7 @@ Describe 'Read-ModCandidate' {
 
         Mock Get-ModStatusNames { [pscustomobject]@{ Parsed = 'P'; Unparsed = 'U' } }
         Mock Get-InstallPathNames { [pscustomobject]@{ ModInfoFile = 'mod_info.json' } }
+        Mock Find-ModInfoProblem { $null }
 
         # The parser hands back ordered hashtables, so the fake looks the key up in one.
         Mock Get-JsonPropertyValue {
@@ -126,15 +128,17 @@ Describe 'Read-ModCandidate' {
     }
 
     # A filter that hides a real mod is worse than no filter, because nothing signals that it happened.
+    # The game skips such a copy, so keeping it under its folder name stops it claiming the mod's ID.
     It 'keeps <Description> under its folder name, warning why' -ForEach @(
         @{ Description = 'a file nothing parses'; Reader = { throw 'no repair produced valid JSON' }
-            Reason = 'no repair produced valid JSON' }
-        @{ Description = 'a file with no ID'; Reader = { [ordered]@{ name = 'Nameless' } }
-            Reason = 'no "id" field' }
+            Problem = { $null }; Reason = 'no repair produced valid JSON' }
+        @{ Description = 'a file the game throws on'; Reader = { [ordered]@{ id = 'alpha'; name = 'Alpha' } }
+            Problem = { 'no "description" field' }; Reason = 'no "description" field' }
     ) {
 
         # ARRANGE
         Mock ConvertFrom-StarsectorJson $Reader
+        Mock Find-ModInfoProblem $Problem
 
         $folderName = "Broken $($Reason.Length)"
         $folder = New-ModFolder -Name $folderName
@@ -142,7 +146,7 @@ Describe 'Read-ModCandidate' {
         $expectedStatus = 'U'
         $expectedJarCount = 0
         $expectedReplacedPathCount = 0
-        $expectedWarnings = @("No mod ID read from mod_info.json, keeping in roster: $folderName ($Reason)")
+        $expectedWarnings = @("No mod read from mod_info.json, keeping in roster: $folderName ($Reason)")
 
         # ACT
         $actualCandidate = Read-ModCandidate -Folder $folder `
