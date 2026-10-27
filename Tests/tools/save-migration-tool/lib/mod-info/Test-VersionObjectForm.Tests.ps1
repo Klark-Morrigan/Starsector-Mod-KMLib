@@ -7,8 +7,20 @@ BeforeAll {
 
 Describe 'Test-VersionObjectForm' {
 
-    It 'reads a parsed JSON object as the object form, whichever parts it holds' {
-        Test-VersionObjectForm -Version ('{ "minor": 2 }' | ConvertFrom-Json) | Should -BeTrue
+    It 'reads <Description> as the object form, whichever parts it holds' -ForEach @(
+        @{ Description = 'a JSON object parsed into a hashtable'
+            Version = ('{ "minor": 2 }' | ConvertFrom-Json -AsHashtable) }
+        @{ Description = 'an ordered dictionary of parts'; Version = [ordered]@{ major = '1' } }
+    ) {
+
+        # ARRANGE
+        $expectedIsObjectForm = $true
+
+        # ACT
+        $actualIsObjectForm = Test-VersionObjectForm -Version $Version
+
+        # ASSERT
+        $actualIsObjectForm | Should -Be $expectedIsObjectForm
     }
 
     It 'reads <Description> as no object form' -ForEach @(
@@ -17,6 +29,14 @@ Describe 'Test-VersionObjectForm' {
         @{ Description = 'a decimal number'; Version = 1.5 }
         @{ Description = 'no version'; Version = $null }
     ) {
-        Test-VersionObjectForm -Version $Version | Should -BeFalse
+
+        # ARRANGE
+        $expectedIsObjectForm = $false
+
+        # ACT
+        $actualIsObjectForm = Test-VersionObjectForm -Version $Version
+
+        # ASSERT
+        $actualIsObjectForm | Should -Be $expectedIsObjectForm
     }
 }

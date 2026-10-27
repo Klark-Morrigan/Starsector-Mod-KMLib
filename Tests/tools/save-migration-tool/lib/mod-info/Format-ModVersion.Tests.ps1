@@ -11,17 +11,34 @@ Describe 'Format-ModVersion' {
 
     BeforeEach {
 
-        # The object form is any pscustomobject here; a string or number is not.
-        Mock Test-VersionObjectForm { $Version -is [System.Management.Automation.PSCustomObject] }
+        # The object form is any dictionary here; a string or number is not.
+        Mock Test-VersionObjectForm { $Version -is [System.Collections.IDictionary] }
         Mock Get-VersionObjectParts { ,@($null, 2, $null) }
     }
 
     It 'returns an empty string for no version' {
-        Format-ModVersion -Version $null | Should -Be ''
+
+        # ARRANGE
+        $expectedText = ''
+
+        # ACT
+        $actualText = Format-ModVersion -Version $null
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'joins the parts of the object form, skipping a missing one' {
-        Format-ModVersion -Version ([pscustomobject]@{ minor = 2 }) | Should -Be '2'
+
+        # ARRANGE
+        $version = [ordered]@{ minor = 2 }
+        $expectedText = '2'
+
+        # ACT
+        $actualText = Format-ModVersion -Version $version
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'returns <Description> as its text' -ForEach @(
@@ -29,6 +46,14 @@ Describe 'Format-ModVersion' {
         @{ Description = 'a whole number'; Version = [long] 2; Text = '2' }
         @{ Description = 'a decimal number'; Version = 1.5; Text = '1.5' }
     ) {
-        Format-ModVersion -Version $Version | Should -Be $Text
+
+        # ARRANGE
+        $expectedText = $Text
+
+        # ACT
+        $actualText = Format-ModVersion -Version $Version
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 }

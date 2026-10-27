@@ -196,6 +196,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
                     'Beta A' = '{ "id": "beta", '
                     'Beta B' = '{ "id": "beta", "version": "1.0" }'
                 }
+
             $expectedBetaPath = 'mods\Beta B'
             $expectedBetaSupersededCount = 0
             $expectedUnparsedStatus = 'unparsed'
@@ -208,6 +209,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
             ($actualRun.Output | Where-Object Id -EQ 'beta').RelativePath | Should -Be $expectedBetaPath
             ($actualRun.Output | Where-Object Id -EQ 'beta').SupersededCount | Should -Be $expectedBetaSupersededCount
             ($actualRun.Output | Where-Object Id -EQ 'Beta A').Status | Should -Be $expectedUnparsedStatus
+
             @($actualRun.Diagnostics)[-1] | Should -BeLike $expectedSummaryPattern
         }
     }
@@ -290,6 +292,29 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
 
             # ASSERT
+            $actualRun.Output.Version | Should -Be $expectedVersion
+            $actualRun.Warnings.Count | Should -Be $expectedWarningCount
+        }
+    }
+
+    # org.json keeps keys that differ only in case apart, and the game reads the ones spelt as it asks.
+    Context 'JSON files holding keys that differ only in case' {
+
+        It 'reads the keys the game reads from mod_info.json and enabled_mods.json, and does not warn' {
+
+            # ARRANGE
+            $root = New-ModInstall -Name 'keyCase' `
+                -EnabledModsJson '{ "enabledMods": ["lower"], "EnabledMods": [] }' `
+                -ModInfoByFolder @{ 'a' = '{ "id": "lower", "ID": "UPPER", "version": "1", "Version": "9" }' }
+            $expectedIds = @('lower')
+            $expectedVersion = '1'
+            $expectedWarningCount = 0
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output.Id | Should -BeExactly $expectedIds
             $actualRun.Output.Version | Should -Be $expectedVersion
             $actualRun.Warnings.Count | Should -Be $expectedWarningCount
         }

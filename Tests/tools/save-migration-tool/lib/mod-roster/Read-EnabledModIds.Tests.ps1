@@ -32,48 +32,94 @@ Describe 'Read-EnabledModIds' {
         Mock Get-InstallPathNames { [pscustomobject]@{ EnabledModsFile = 'enabled_mods.json' } }
     }
 
-    It 'reads the listed IDs, skipping blank ones' {
+    # The game's parser keeps keys that differ only in case apart, and only hashtables can hold both.
+    It 'parses enabled_mods.json into hashtables' {
 
-        Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ enabledMods = @('alpha', '', 'beta') } }
+        # ARRANGE
+        Mock ConvertFrom-StarsectorJson { [ordered]@{ enabledMods = @('alpha') } }
 
-        $enabled = Read-EnabledModIds -ModsRoot (New-ModsRoot -Name 'listed' -HasEnabledFile)
+        $modsRoot = New-ModsRoot -Name 'hashtable' -HasEnabledFile
 
-        $enabled.Ids | Should -Be @('alpha', 'beta')
-        $enabled.IsListRead | Should -BeTrue
+        # ACT
+        Read-EnabledModIds -ModsRoot $modsRoot | Out-Null
+
+        # ASSERT
+        Should -Invoke ConvertFrom-StarsectorJson -Times 1 -Exactly -ParameterFilter { $AsHashtable }
     }
 
+    It 'reads the listed IDs, skipping blank ones' {
+
+        # ARRANGE
+        Mock ConvertFrom-StarsectorJson { [ordered]@{ enabledMods = @('alpha', '', 'beta') } }
+
+        $modsRoot = New-ModsRoot -Name 'listed' -HasEnabledFile
+        $expectedIds = @('alpha', 'beta')
+
+        # ACT
+        $actualEnabled = Read-EnabledModIds -ModsRoot $modsRoot
+
+        # ASSERT
+        $actualEnabled.Ids | Should -Be $expectedIds
+        $actualEnabled.IsListRead | Should -BeTrue
+    }
+
+    # An install with no mod enabled holds an empty list, which must not read as no list.
     It 'reads an empty list as read, with no IDs' {
 
-        Mock ConvertFrom-StarsectorJson { [pscustomobject]@{ enabledMods = @() } }
+        # ARRANGE
+        Mock ConvertFrom-StarsectorJson { [ordered]@{ enabledMods = @() } }
 
-        $enabled = Read-EnabledModIds -ModsRoot (New-ModsRoot -Name 'empty' -HasEnabledFile)
+        $modsRoot = New-ModsRoot -Name 'empty' -HasEnabledFile
+        $expectedIdCount = 0
 
-        $enabled.Ids.Count | Should -Be 0
-        $enabled.IsListRead | Should -BeTrue
+        # ACT
+        $actualEnabled = Read-EnabledModIds -ModsRoot $modsRoot
+
+        # ASSERT
+        $actualEnabled.Ids.Count | Should -Be $expectedIdCount
+        $actualEnabled.IsListRead | Should -BeTrue
     }
 
     It 'warns and reports no list when <Description>' -ForEach @(
-        @{ Description = 'the file holds no list'; Reader = { [pscustomobject]@{ mods = @() } }
+        @{ Description = 'the file holds no list'; Reader = { [ordered]@{ mods = @() } }
+            Warning = 'enabled_mods.json unparseable, treating all mods as enabled: it holds no enabledMods list' }
+        # An [ordered] literal matches keys case-blind, where the parser's hashtables do not.
+        @{ Description = 'the list key differs in case'
+            Reader = { '{ "EnabledMods": ["alpha"] }' | ConvertFrom-Json -AsHashtable }
+            Warning = 'enabled_mods.json unparseable, treating all mods as enabled: it holds no enabledMods list' }
+        @{ Description = 'the root is not an object'; Reader = { , @('alpha') }
             Warning = 'enabled_mods.json unparseable, treating all mods as enabled: it holds no enabledMods list' }
         @{ Description = 'the file does not parse'; Reader = { throw 'bad json' }
             Warning = 'enabled_mods.json unparseable, treating all mods as enabled: bad json' }
     ) {
 
+        # ARRANGE
         Mock ConvertFrom-StarsectorJson $Reader
 
-        $enabled = Read-EnabledModIds -ModsRoot (New-ModsRoot -Name "unread$($Warning.Length)" -HasEnabledFile) `
-            -WarningVariable warnings -WarningAction SilentlyContinue
+        $modsRoot = New-ModsRoot -Name "unread $Description" -HasEnabledFile
+        $expectedWarnings = @($Warning)
 
-        $enabled.IsListRead | Should -BeFalse
-        $warnings | ForEach-Object { "$_" } | Should -Be @($Warning)
+        # ACT
+        $actualEnabled = Read-EnabledModIds -ModsRoot $modsRoot -WarningVariable actualWarnings `
+            -WarningAction SilentlyContinue
+
+        # ASSERT
+        $actualEnabled.IsListRead | Should -BeFalse
+        $actualWarnings | ForEach-Object { "$_" } | Should -Be $expectedWarnings
     }
 
     It 'warns and reports no list when the file is missing' {
 
-        $enabled = Read-EnabledModIds -ModsRoot (New-ModsRoot -Name 'missing') `
-            -WarningVariable warnings -WarningAction SilentlyContinue
+        # ARRANGE
+        $modsRoot = New-ModsRoot -Name 'missing'
+        $expectedWarnings = @('enabled_mods.json not found, treating all mods as enabled.')
 
-        $enabled.IsListRead | Should -BeFalse
-        $warnings | ForEach-Object { "$_" } | Should -Be @('enabled_mods.json not found, treating all mods as enabled.')
+        # ACT
+        $actualEnabled = Read-EnabledModIds -ModsRoot $modsRoot -WarningVariable actualWarnings `
+            -WarningAction SilentlyContinue
+
+        # ASSERT
+        $actualEnabled.IsListRead | Should -BeFalse
+        $actualWarnings | ForEach-Object { "$_" } | Should -Be $expectedWarnings
     }
 }
