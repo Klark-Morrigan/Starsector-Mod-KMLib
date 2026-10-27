@@ -11,6 +11,7 @@ function New-ClassOwnerIndex {
     )
 
     $coreOwner = Get-CoreOwnerName
+    $idComparer = Get-ModIdComparer
     $ownersByClass = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]::new()
     $skippedJars = [System.Collections.Generic.List[object]]::new()
     $modJarCount = 0
@@ -35,7 +36,7 @@ function New-ClassOwnerIndex {
                 continue
             }
 
-            if ($source.Owner -eq $coreOwner) {
+            if ($idComparer.Equals($source.Owner, $coreOwner)) {
                 $coreJarCount++
 
             } else {

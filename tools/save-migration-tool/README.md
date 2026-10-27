@@ -731,6 +731,8 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 ```
 
 - `mod_info.json`'s `id` is the identity, not the folder name: one mod can sit in several folders.
+  IDs match case-sensitively, as the game matches them:
+  `Foo` and `foo` are two mods, and `enabled_mods.json` enables only the one it spells.
 - When it does, the highest `version` wins, compared number by number (`1.10.0` above `1.9.0`),
   however many digits a part holds.
   Copies whose numbers tie are ordered by the version as written, so `1.5b` beats `1.5a`,

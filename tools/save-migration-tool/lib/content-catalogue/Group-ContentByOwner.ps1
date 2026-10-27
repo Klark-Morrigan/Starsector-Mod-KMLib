@@ -12,8 +12,8 @@ function Group-ContentByOwner {
         [object[]] $Sources
     )
 
-    # Owners are mod IDs, which the game tells apart case-sensitively, so no hashtable.
-    $idsByKindByOwner = [System.Collections.Generic.Dictionary[string, object]]::new()
+    # Owners are mod IDs, so no hashtable: its keys ignore case.
+    $idsByKindByOwner = [System.Collections.Generic.Dictionary[string, object]]::new((Get-ModIdComparer))
 
     foreach ($row in $Rows) {
         foreach ($owner in $row.Owners) {

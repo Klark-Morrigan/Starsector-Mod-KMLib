@@ -4,6 +4,7 @@
 #
 # Each case builds a small install under TestDrive: a mods\ folder of hand-written mod_info.json files and,
 # where the case needs one, an enabled_mods.json. No test reads a real install.
+# A context sharing one run makes it in BeforeAll; each case's act then reads its part of that run.
 
 BeforeAll {
 
@@ -69,59 +70,115 @@ Describe 'Get-ModRoster.IntegrationTests' {
         }
 
         It 'lists only the enabled mods' {
-            $script:Run.Output.Id | Sort-Object | Should -Be @('alpha', 'beta')
+
+            # ARRANGE
+            $expectedIds = @('alpha', 'beta')
+
+            # ACT
+            $actualIds = $script:Run.Output.Id | Sort-Object
+
+            # ASSERT
+            $actualIds | Should -Be $expectedIds
         }
 
         It 'picks the newest copy of a mod, comparing versions numerically' {
 
-            $alpha = $script:Run.Output | Where-Object Id -EQ 'alpha'
+            # ARRANGE
+            $expectedVersion = '1.10.0'
+            $expectedRelativePath = 'mods\Alpha-1.10.0'
+            $expectedSupersededCount = 1
 
-            $alpha.Version | Should -Be '1.10.0'
-            $alpha.RelativePath | Should -Be 'mods\Alpha-1.10.0'
-            $alpha.SupersededCount | Should -Be 1
+            # ACT
+            $actualAlpha = $script:Run.Output | Where-Object Id -EQ 'alpha'
+
+            # ASSERT
+            $actualAlpha.Version | Should -Be $expectedVersion
+            $actualAlpha.RelativePath | Should -Be $expectedRelativePath
+            $actualAlpha.SupersededCount | Should -Be $expectedSupersededCount
         }
 
         It 'prints as a table of ID, version and name, as Get-SaveModDrift.ps1 prints a save''s mods' {
 
-            $lines = @($script:Run.Output | Out-String -Width 200) -split "`r?`n" | Where-Object { $_.Trim() }
+            # ARRANGE
+            $expectedHeaderPattern = '^Id\s+Version\s+Name$'
+            $expectedAlphaRowPattern = '^alpha\s+1\.10\.0\s+Alpha$'
+            $expectedAlphaRowCount = 1
 
-            $lines[0] | Should -Match '^Id\s+Version\s+Name$'
-            @($lines -match '^alpha\s+1\.10\.0\s+Alpha$').Count | Should -Be 1
+            # ACT
+            $actualLines = @($script:Run.Output | Out-String -Width 200) -split "`r?`n" | Where-Object { $_.Trim() }
+
+            # ASSERT
+            $actualLines[0] | Should -Match $expectedHeaderPattern
+            @($actualLines -match $expectedAlphaRowPattern).Count | Should -Be $expectedAlphaRowCount
         }
 
         It 'reads the major, minor, patch version form' {
-            ($script:Run.Output | Where-Object Id -EQ 'beta').Version | Should -Be '2.0.3'
+
+            # ARRANGE
+            $expectedVersion = '2.0.3'
+
+            # ACT
+            $actualVersion = ($script:Run.Output | Where-Object Id -EQ 'beta').Version
+
+            # ASSERT
+            $actualVersion | Should -Be $expectedVersion
         }
 
         It 'gives each mod the version parts the game compares by, from either version form' {
 
-            $alphaParts = ($script:Run.Output | Where-Object Id -EQ 'alpha').VersionInfo
-            $betaParts = ($script:Run.Output | Where-Object Id -EQ 'beta').VersionInfo
+            # ARRANGE
+            $expectedAlphaParts = '1|10|0'
+            $expectedBetaParts = '2|0|3'
 
-            "$($alphaParts.Major)|$($alphaParts.Minor)|$($alphaParts.Patch)" | Should -Be '1|10|0'
-            "$($betaParts.Major)|$($betaParts.Minor)|$($betaParts.Patch)" | Should -Be '2|0|3'
+            # ACT
+            $actualAlphaParts = ($script:Run.Output | Where-Object Id -EQ 'alpha').VersionInfo
+            $actualBetaParts = ($script:Run.Output | Where-Object Id -EQ 'beta').VersionInfo
+
+            # ASSERT
+            "$($actualAlphaParts.Major)|$($actualAlphaParts.Minor)|$($actualAlphaParts.Patch)" |
+                Should -Be $expectedAlphaParts
+            "$($actualBetaParts.Major)|$($actualBetaParts.Minor)|$($actualBetaParts.Patch)" |
+                Should -Be $expectedBetaParts
         }
 
         It 'logs which copy won over which, and what it read and decided, to stderr' {
-            $script:Run.Diagnostics | Should -Be @(
+
+            # ARRANGE
+            $expectedDiagnostics = @(
                 'Get-ModRoster: alpha: Alpha-1.10.0 (1.10.0) wins over Alpha (1.9.0)'
                 ("Get-ModRoster: read 4 mod folders under $script:InstallRoot\mods and 2 enabled IDs; " +
                     'listing 2 mods (0 unparsed), skipping 1 disabled and 1 superseded copies')
             )
+
+            # ACT
+            $actualDiagnostics = $script:Run.Diagnostics
+
+            # ASSERT
+            $actualDiagnostics | Should -Be $expectedDiagnostics
         }
 
         It 'lists disabled mods with -IncludeDisabled' {
 
-            $run = Invoke-ModRoster @{ StarsectorRoot = $script:InstallRoot; IncludeDisabled = $true }
+            # ARRANGE
+            $expectedIds = @('alpha', 'beta', 'gamma')
 
-            $run.Output.Id | Sort-Object | Should -Be @('alpha', 'beta', 'gamma')
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $script:InstallRoot; IncludeDisabled = $true }
+
+            # ASSERT
+            $actualRun.Output.Id | Sort-Object | Should -Be $expectedIds
         }
 
         It 'reports the same relative path for a root written with a trailing slash' {
 
-            $run = Invoke-ModRoster @{ StarsectorRoot = "$script:InstallRoot\" }
+            # ARRANGE
+            $expectedRelativePath = 'mods\Alpha-1.10.0'
 
-            ($run.Output | Where-Object Id -EQ 'alpha').RelativePath | Should -Be 'mods\Alpha-1.10.0'
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = "$script:InstallRoot\" }
+
+            # ASSERT
+            ($actualRun.Output | Where-Object Id -EQ 'alpha').RelativePath | Should -Be $expectedRelativePath
         }
     }
 
@@ -129,17 +186,62 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'picks the first by folder name, and says the version tied' {
 
+            # ARRANGE
             $root = New-ModInstall -Name 'tie' -EnabledModsJson '{ "enabledMods": ["beta"] }' -ModInfoByFolder @{
                 'Beta B' = '{ "id": "beta", "version": "1.0" }'
                 'Beta A' = '{ "id": "beta", "version": "1.0" }'
             }
+            $expectedRelativePaths = @('mods\Beta A')
+            $expectedTieLine = 'Get-ModRoster: beta: Beta A (1.0) wins over Beta B (1.0), ' +
+                'the same version, so first by folder name'
 
-            $run = Invoke-ModRoster @{ StarsectorRoot = $root }
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
 
-            $run.Output.RelativePath | Should -Be @('mods\Beta A')
-            $run.Diagnostics | Should -Contain (
-                'Get-ModRoster: beta: Beta A (1.0) wins over Beta B (1.0), ' +
-                'the same version, so first by folder name')
+            # ASSERT
+            $actualRun.Output.RelativePath | Should -Be $expectedRelativePaths
+            $actualRun.Diagnostics | Should -Contain $expectedTieLine
+        }
+    }
+
+    # The game compares mod IDs with String.equals, so IDs differing only in case name two mods.
+    Context 'mod IDs that differ only in case' {
+
+        It 'lists two copies whose IDs differ in case as two mods, neither superseding the other' {
+
+            # ARRANGE
+            $root = New-ModInstall -Name 'idCase' -EnabledModsJson '{ "enabledMods": ["foo", "Foo"] }' `
+                -ModInfoByFolder @{
+                    'Upper' = '{ "id": "Foo", "version": "2.0" }'
+                    'Lower' = '{ "id": "foo", "version": "1.0" }'
+                }
+            $expectedUpperPath = 'mods\Upper'
+            $expectedLowerPath = 'mods\Lower'
+            $expectedSupersededCounts = @(0, 0)
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            ($actualRun.Output | Where-Object Id -CEQ 'Foo').RelativePath | Should -Be $expectedUpperPath
+            ($actualRun.Output | Where-Object Id -CEQ 'foo').RelativePath | Should -Be $expectedLowerPath
+            $actualRun.Output.SupersededCount | Should -Be $expectedSupersededCounts
+        }
+
+        It 'leaves out a mod whose ID enabled_mods.json spells in another case' {
+
+            # ARRANGE
+            $root = New-ModInstall -Name 'enabledCase' -EnabledModsJson '{ "enabledMods": ["Foo"] }' `
+                -ModInfoByFolder @{ 'a' = '{ "id": "foo", "version": "1" }' }
+            $expectedCount = 0
+            $expectedSummaryPattern = '*listing 0 mods (0 unparsed), skipping 1 disabled*'
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output.Count | Should -Be $expectedCount
+            @($actualRun.Diagnostics)[-1] | Should -BeLike $expectedSummaryPattern
         }
     }
 
@@ -147,14 +249,20 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'lists each declared JAR as a full path under the mod''s folder' {
 
+            # ARRANGE
             $root = New-ModInstall -Name 'jars' -EnabledModsJson '{ "enabledMods": ["a"] }' -ModInfoByFolder @{
                 'A Mod' = '{ "id": "a", "version": "1", "jars": ["jars/a.jar", "jars/lib/b.jar"] }'
             }
-
-            (Invoke-ModRoster @{ StarsectorRoot = $root }).Output.Jars | Should -Be @(
+            $expectedJars = @(
                 "$root\mods\A Mod\jars\a.jar"
                 "$root\mods\A Mod\jars\lib\b.jar"
             )
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output.Jars | Should -Be $expectedJars
         }
     }
 
@@ -162,17 +270,20 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'reads it as the game does: # comments, trailing commas and single-quoted values' {
 
+            # ARRANGE
             $modInfo = "{`n  # a comment line`n  `"id`": `"a`", # a trailing comment`n" +
                 "  `"version`": { `"major`": '1', `"minor`": 2, },`n}"
+            $root = New-ModInstall -Name 'lenient' -EnabledModsJson '{ "enabledMods": ["a"] }' `
+                -ModInfoByFolder @{ 'a' = $modInfo }
+            $expectedVersion = '1.2'
+            $expectedWarningCount = 0
 
-            $run = Invoke-ModRoster @{
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
 
-                StarsectorRoot = (New-ModInstall -Name 'lenient' -EnabledModsJson '{ "enabledMods": ["a"] }' `
-                    -ModInfoByFolder @{ 'a' = $modInfo })
-            }
-
-            $run.Output.Version | Should -Be '1.2'
-            $run.Warnings.Count | Should -Be 0
+            # ASSERT
+            $actualRun.Output.Version | Should -Be $expectedVersion
+            $actualRun.Warnings.Count | Should -Be $expectedWarningCount
         }
     }
 
@@ -192,25 +303,45 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'keeps the folder in the roster as unparsed, though no enabled ID names it' {
 
-            $broken = $script:Run.Output | Where-Object Id -EQ 'Broken Mod'
+            # ARRANGE
+            $expectedStatus = 'unparsed'
+            $expectedVersion = ''
 
-            $broken.Status | Should -Be 'unparsed'
-            $broken.Version | Should -Be ''
+            # ACT
+            $actualBroken = $script:Run.Output | Where-Object Id -EQ 'Broken Mod'
+
+            # ASSERT
+            $actualBroken.Status | Should -Be $expectedStatus
+            $actualBroken.Version | Should -Be $expectedVersion
         }
 
         It 'keeps a mod_info.json with no "id" field as unparsed' {
-            ($script:Run.Output | Where-Object Id -EQ 'No Id').Status | Should -Be 'unparsed'
+
+            # ARRANGE
+            $expectedStatus = 'unparsed'
+
+            # ACT
+            $actualStatus = ($script:Run.Output | Where-Object Id -EQ 'No Id').Status
+
+            # ASSERT
+            $actualStatus | Should -Be $expectedStatus
         }
 
         It 'warns for each, naming the folder and the reason' {
 
-            $warnings = @($script:Run.Warnings | Sort-Object)
+            # ARRANGE
+            $expectedWarningCount = 2
+            $expectedBrokenWarning = 'No mod ID read from mod_info.json, keeping in roster: Broken Mod ' +
+                "(not valid JSON, even with org.json's leniencies repaired: *"
+            $expectedNoIdWarning = 'No mod ID read from mod_info.json, keeping in roster: No Id (no "id" field)'
 
-            $warnings.Count | Should -Be 2
-            $warnings[0] | Should -BeLike (
-                'No mod ID read from mod_info.json, keeping in roster: Broken Mod ' +
-                "(not valid JSON, even with org.json's leniencies repaired: *")
-            $warnings[1] | Should -Be 'No mod ID read from mod_info.json, keeping in roster: No Id (no "id" field)'
+            # ACT
+            $actualWarnings = @($script:Run.Warnings | Sort-Object)
+
+            # ASSERT
+            $actualWarnings.Count | Should -Be $expectedWarningCount
+            $actualWarnings[0] | Should -BeLike $expectedBrokenWarning
+            $actualWarnings[1] | Should -Be $expectedNoIdWarning
         }
     }
 
@@ -218,14 +349,18 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'lists no mods, and does not warn' {
 
-            $run = Invoke-ModRoster @{
+            # ARRANGE
+            $root = New-ModInstall -Name 'noneEnabled' -EnabledModsJson '{ "enabledMods": [] }' `
+                -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
+            $expectedCount = 0
+            $expectedWarningCount = 0
 
-                StarsectorRoot = (New-ModInstall -Name 'noneEnabled' -EnabledModsJson '{ "enabledMods": [] }' `
-                    -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' })
-            }
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
 
-            $run.Output.Count | Should -Be 0
-            $run.Warnings.Count | Should -Be 0
+            # ASSERT
+            $actualRun.Output.Count | Should -Be $expectedCount
+            $actualRun.Warnings.Count | Should -Be $expectedWarningCount
         }
     }
 
@@ -233,29 +368,37 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'treats every mod as enabled when the file is missing, and warns' {
 
-            $run = Invoke-ModRoster @{
-
-                StarsectorRoot = (New-ModInstall -Name 'noEnabledFile' -ModInfoByFolder @{
-                    'a' = '{ "id": "a", "version": "1" }'
-                })
+            # ARRANGE
+            $root = New-ModInstall -Name 'noEnabledFile' -ModInfoByFolder @{
+                'a' = '{ "id": "a", "version": "1" }'
             }
+            $expectedIds = @('a')
+            $expectedWarnings = @('enabled_mods.json not found, treating all mods as enabled.')
 
-            $run.Output.Id | Should -Be @('a')
-            $run.Warnings | Should -Be @('enabled_mods.json not found, treating all mods as enabled.')
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output.Id | Should -Be $expectedIds
+            $actualRun.Warnings | Should -Be $expectedWarnings
         }
 
         It 'treats every mod as enabled when the file holds no list, and warns' {
 
-            $run = Invoke-ModRoster @{
-
-                StarsectorRoot = (New-ModInstall -Name 'noEnabledList' -EnabledModsJson '{ "mods": [] }' `
-                    -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' })
-            }
-
-            $run.Output.Id | Should -Be @('a')
-            $run.Warnings | Should -Be @(
+            # ARRANGE
+            $root = New-ModInstall -Name 'noEnabledList' -EnabledModsJson '{ "mods": [] }' `
+                -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
+            $expectedIds = @('a')
+            $expectedWarnings = @(
                 'enabled_mods.json unparseable, treating all mods as enabled: it holds no enabledMods list'
             )
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output.Id | Should -Be $expectedIds
+            $actualRun.Warnings | Should -Be $expectedWarnings
         }
     }
 
@@ -263,15 +406,21 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'skips them, naming them in the log' {
 
+            # ARRANGE
             $root = New-ModInstall -Name 'noInfo' -EnabledModsJson '{ "enabledMods": ["a"] }' `
                 -ModInfoByFolder @{ 'a' = '{ "id": "a", "version": "1" }' }
 
             New-Item -ItemType Directory -Path (Join-Path $root 'mods\loose-assets') | Out-Null
 
-            $run = Invoke-ModRoster @{ StarsectorRoot = $root }
+            $expectedIds = @('a')
+            $expectedSkipLine = 'Get-ModRoster: skipped 1 folders with no mod_info.json: loose-assets'
 
-            $run.Output.Id | Should -Be @('a')
-            $run.Diagnostics[0] | Should -Be 'Get-ModRoster: skipped 1 folders with no mod_info.json: loose-assets'
+            # ACT
+            $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output.Id | Should -Be $expectedIds
+            $actualRun.Diagnostics[0] | Should -Be $expectedSkipLine
         }
     }
 
@@ -279,11 +428,18 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
         It 'fails naming the path' {
 
+            # ARRANGE
             $root = Join-Path $TestDrive 'empty'
 
             New-Item -ItemType Directory -Path $root | Out-Null
 
-            { Invoke-ModRoster @{ StarsectorRoot = $root } } | Should -Throw "mods directory not found: $root\mods"
+            $expectedMessage = "mods directory not found: $root\mods"
+
+            # ACT
+            $actualError = { Invoke-ModRoster @{ StarsectorRoot = $root } } | Should -Throw -PassThru
+
+            # ASSERT
+            $actualError.Exception.Message | Should -Be $expectedMessage
         }
     }
 }

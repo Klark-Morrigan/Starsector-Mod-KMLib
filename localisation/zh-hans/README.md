@@ -193,6 +193,7 @@ which records no date of its own.
 | Screen, tab (of the core UI) | 面板 | `starfarer.api.jar`, the campaign tutorial: "open the intel screen" is 打开情报信息面板, "the character tab" is 角色面板. Vanilla shows no UI "panel" by that name; its English panels are physical ones |
 | Save (a saved game) | 存档 | "Load last save" is 读取最近的存档 |
 | Sector | 星域 | `descriptions.csv` `plasma`: "known to the Persean Sector" is 英仙座星域已知的 |
+| Skill | 技能 | `descriptions.csv` `forgevats_station`: "before any modifiers from skills or hullmods" is 不计入技能或舰船插件带来的任何修正 |
 | Spaceport | 太空港 | `industries.csv` `spaceport` |
 | Star system | 星系 | `starfarer.api.jar`; in tooltips as `Naraka 星系` |
 | Survey data | 调查数据 | `descriptions.csv` `survey_data`: "a recent survey database" is 一个最新的调查数据库 |
@@ -421,27 +422,33 @@ A version heading is never translated; see [translating the changelog](#translat
 
 | English | 简体中文 | Note |
 | --- | --- | --- |
-| Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
-| load (of a save), failed load, retry (vanilla loading the save again from another file) | 读取, 读取失败, 重试 | 读取 as the vanilla Save row's 读取最近的存档; 重试, the usual computing word |
-| newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
-| missing content (an ID a save holds and no installed mod defines) | 缺失内容 | 缺失, missing, with 内容, content |
 | base hull (the hull a (D) hull is built from) | 基础船体 | 基础 as the vanilla Blueprint row's 基础舰船蓝图, with the vanilla Hull row's 船体 |
-| variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game JAR, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
-| object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
-| JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
-| load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载, to load in (see the failed load row, of a font), kept apart from a save's 读取; 已, already, with 启用, to put into use |
+| built-in variant (one the game makes in code), empty hull variant (a hull's variant with nothing fitted) | 内置变体, 空船体变体 | 内置, built in, the plain word; 空, empty, before the vanilla Hull row's 船体 and the variant row's 变体 |
 | cause (the exception a failed load hit) | 原因 | the plain word |
-| diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |
+| changed, missing, added (a mod, between a save and the install) | 已更改, 缺失, 新增 | 已, already, with 更改, to change; 缺失 as the missing content row; 新增 as the Added row |
+| colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
+| console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
+| content ID (an ID the game keeps one piece of content under) | 内容 ID | 内容 as the missing content row; ID stays in English. Its kinds take the kind row of [Code and tests](#code-and-tests) |
+| define (an ID, in a data file) | 定义 | the usual computing word |
 | descriptor (a save's `descriptor.xml`) | 描述文件 | 描述, to describe, with 文件, file: the small file that describes the save |
+| diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |
+| installed (a mod the install loads) | 已安装 | 已, already, with 安装, to install |
+| JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
+| level (of a version change) | 变更级别 | 变更, a change, with 级别, level |
+| load (a mod or file the game reads in), enabled (a mod) | 加载, 已启用 | 加载, to load in (see the failed load row, of a font), kept apart from a save's 读取; 已, already, with 启用, to put into use |
+| load (of a save), failed load, retry (vanilla loading the save again from another file) | 读取, 读取失败, 重试 | 读取 as the vanilla Save row's 读取最近的存档; 重试, the usual computing word |
+| major, minor, patch (the level of a version change) | 主版本, 次版本, 修订 | as the Chinese text of Semantic Versioning names MAJOR, MINOR and PATCH (主版本号, 次版本号, 修订号), without 号, number |
+| merge (the game combining the copies of one file), replace outright (a file a mod lists under `replace`) | 合并, 整体替换 | 合并, the usual word for combining; 整体, as a whole, before 替换, to replace |
+| missing content (an ID a save holds and no installed mod defines) | 缺失内容 | 缺失, missing, with 内容, content |
 | mod class (a class a mod's JAR holds) | Mod 类 | Mod stays in Latin (see the [mod](#mods) row); 类, a Java class |
 | narrow (a list, by a filter) | 缩小 | to make smaller, as a filter makes a list |
+| newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
+| object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
+| Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
+| sort string (a `mod_info.json`'s `sortString`) | 排序字符串 | 排序 as the sort mode row of [Lists and sorting](#lists-and-sorting), with 字符串 as the string ID row |
+| spreadsheet (a CSV data file the game reads row by row) | 表格 | 表格, a table, the plain word |
 | text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |
-| console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
-| colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
-| installed (a mod the install loads) | 已安装 | 已, already, with 安装, to install |
-| changed, missing, added (a mod, between a save and the install) | 已更改, 缺失, 新增 | 已, already, with 更改, to change; 缺失 as the missing content row; 新增 as the Added row |
-| major, minor, patch (the level of a version change) | 主版本, 次版本, 修订 | as the Chinese text of Semantic Versioning names MAJOR, MINOR and PATCH (主版本号, 次版本号, 修订号), without 号, number |
-| level (of a version change) | 变更级别 | 变更, a change, with 级别, level |
+| variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game JAR, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
 
 #### Releases and badges
 
@@ -463,8 +470,11 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | data file | 数据文件 | a CSV or JSON a mod ships |
 | field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, the usual computing word |
+| key (of a JSON object), differ only in case | 键, 仅大小写不同 | 键, the usual computing word; 大小写, upper and lower case, inside 仅...不同, differing only in |
 | object-holding array (in JSON) | 对象数组 | 对象, object, before 数组, array: an array whose elements are objects |
 | root, nested record (of a JSON file) | 根层级, 嵌套的记录 | 层级, level, so 根 reads as the file's top level rather than a root directory |
+| rule (one entry of `rules.csv`) | 规则 | the plain word; a player sees no rule by that name |
+| separator, unquoted value (in a loosely written JSON file) | 分隔符, 不带引号的值 | 分隔符, the usual computing word; 不带, without, before 引号, quote marks |
 
 #### Localisation
 

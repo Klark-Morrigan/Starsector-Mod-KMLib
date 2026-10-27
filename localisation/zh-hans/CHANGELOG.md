@@ -160,7 +160,9 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `Invoke-SaveMigrationTool.ps1` 对一个存档做完整诊断：最新一次读取失败的存档，或指定的存档，给出其原因、每次重试以及失败所在的 Mod 类，再给出该存档的 Mod 与已安装的 Mod 有何不同。
   - `Get-SaveLoadAttempt.ps1` 列出游戏日志中的每一次存档读取，最新的在前，并给出读取失败时遇到的原因、该原因指出的缺失内容，以及失败所在的对象链，链中每个类都注明其 JAR 含有该类的 Mod。游戏自身的重试归入它们所属的那次读取。`-SaveFolder`、`-Outcome` 和 `-Newest` 在任何耗时的读取之前缩小列表，`-AsText` 则把列表写成供人阅读的文本。
   - `Get-SaveModDrift.ps1` 将存档最后一次写入时使用的 Mod 与已安装的 Mod 对比：给出每个已更改的 Mod 及其变更级别（主版本、次版本或修订，按游戏自身的规则判定），以及每个缺失或新增的 Mod。
-  - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹、版本和声明的 JAR，并按游戏的方式读取每个 `mod_info.json`。
+  - `Get-ContentCatalogue.ps1` 列出游戏与已启用的 Mod 定义的每个内容 ID 及定义它的 Mod，涵盖游戏按 ID 存放的全部 45 个种类，从船体和武器到势力、技能、行星和规则。游戏在代码中生成的 (D) 船体、空船体变体和内置变体也一并列出。它按游戏的方式读取游戏自身和每个已启用 Mod 的数据：游戏读取表格的规则、游戏对多个 Mod 复制的同一文件的合并，以及 Mod 整体替换的文件。`-Kind` 和 `-Id` 缩小列表，`-GroupByOwner` 按 Mod 列出，`-OutFile` 把列表以 JSON 写入文件。
+  - `Get-ModRoster.ps1` 列出游戏为每个已启用的 Mod 加载的文件夹、版本、声明的 JAR、排序字符串和整体替换的文件，并按游戏的方式读取每个 `mod_info.json`。仅大小写不同的 Mod ID 是两个 Mod，与游戏一致。
+  - 每个脚本都能读取游戏加载的 JSON 文件，无论写得多么宽松：`0.5f` 或 `True` 这样不带引号的值、作为分隔符的 `;` 和 `=`，以及根层级之后的文本。`Get-ContentCatalogue.ps1` 还能读取仅大小写不同的键。
   - 供人阅读的文本在终端中按每个值的种类着色，在其他地方不带颜色。
 - **`ci-powershell.yml`**：通过 Common-PowerShell 的可复用工作流，在每个拉取请求上检查仓库的 PowerShell 代码，并运行其 Pester 测试套件。`mod-release.yml` 在打包前重新运行同一门禁，与其他门禁一样；不含 PowerShell 的 Mod 也能通过。
 - **术语参考不得以引用的措辞作为选词理由**：Starsector 约定声明了这些短语（例如 `as the settings write it`），由 Common-Java 的 `enforceNoForbiddenPhrases` 在每个 KM Mod 的 `localisation/<locale>/README.md` 中检查，出现即构建失败。选词理由须说明这个词的含义，或指明其上游来源，因为发布的文字以术语参考为准。

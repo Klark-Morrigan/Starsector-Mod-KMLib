@@ -29,7 +29,7 @@ function Read-ModRoster {
     $isEveryModListed = $IncludeDisabled -or -not $enabled.IsListRead
     $enabledSet = [System.Collections.Generic.HashSet[string]]::new(
         [string[]] $enabled.Ids,
-        [System.StringComparer]::OrdinalIgnoreCase)
+        (Get-ModIdComparer))
 
     $candidates = Read-ModFolderCandidates -ModsRoot $modsRoot -DiagnosticSource $DiagnosticSource
     $parsedStatus = (Get-ModStatusNames).Parsed
