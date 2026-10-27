@@ -116,15 +116,13 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
         It 'logs what it read, the mods enabled once and dropped since, the roster, and the counts, to stderr' {
 
             $script:Run.Diagnostics | Should -Be @(
+                ("Get-SaveModDrift: read 3 mod folders under $script:FixtureRoot\mods and 3 enabled IDs; " +
+                    'listing 3 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
                 ("Get-SaveModDrift: read $script:FixtureRoot\saves\$script:FixtureSave\descriptor.xml, " +
                     'saved 2026-10-16 14:05:27.228 UTC under Starsector 0.98a-RC8; ' +
                     '19 objects carry an ID for back-pointers')
                 ('Get-SaveModDrift: read 3 enabled mods as the save last wrote them; ' +
                     '1 more were enabled in an earlier save and are not now: retired')
-                ''
-                ("Get-ModRoster: read 3 mod folders under $script:FixtureRoot\mods and 3 enabled IDs; " +
-                    'listing 3 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
-                ''
                 ('Get-SaveModDrift: compared them with 3 installed mods: ' +
                     '1 changed, 1 missing, 1 added, 1 unchanged')
             )
@@ -181,8 +179,31 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $run = Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' }
 
             $run.Output.Count | Should -Be 0
-            $run.Warnings | Should -Be @(
-                "the descriptor lists no enabled mods, so no drift is reported: $root\saves\save_Test\descriptor.xml")
+            $run.Warnings | Should -Contain (
+                "the descriptor lists no enabled mods: $root\saves\save_Test\descriptor.xml; no drift is reported")
+        }
+    }
+
+    Context 'a roster given with -Roster' {
+
+        # A caller that read the roster for its own use hands it over, so the install's mods are read once.
+        It 'compares against it, reading no mods folder' {
+
+            $roster = @([pscustomobject]@{
+                Id          = 'alpha'
+                Version     = '1.40.0'
+                Name        = 'Alpha'
+                VersionInfo = [pscustomobject]@{ Major = '1'; Minor = '40'; Patch = '0'; MinorIsRC = $false }
+            })
+
+            $run = Invoke-SaveModDrift @{
+                StarsectorRoot = $script:FixtureRoot
+                SaveFolder     = $script:FixtureSave
+                Roster         = $roster
+            }
+
+            $run.Output.Change | Should -Be @('Unchanged', 'Missing', 'Missing')
+            @($run.Diagnostics -like '*mod folders under*').Count | Should -Be 0
         }
     }
 

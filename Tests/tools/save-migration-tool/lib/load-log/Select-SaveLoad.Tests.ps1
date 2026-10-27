@@ -2,15 +2,12 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Assert-LoadOutcomeName.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Select-SaveLoad.ps1"
 }
 
 Describe 'Select-SaveLoad' {
 
     BeforeEach {
-
-        Mock Assert-LoadOutcomeName { }
 
         # Newest first, as Get-SaveLoadAttempt hands them over.
         $script:Loads = @(
@@ -20,22 +17,21 @@ Describe 'Select-SaveLoad' {
         )
     }
 
-    It 'keeps every load, in order, with no filter, checking no outcome' {
-
+    It 'keeps every load, in order, with no filter' {
         (Select-SaveLoad -Loads $script:Loads).Name | Should -Be @('newest', 'middle', 'oldest')
-
-        Should -Invoke Assert-LoadOutcomeName -Times 0
     }
 
     It 'keeps one save''s loads' {
         (Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_A').Name | Should -Be @('newest', 'oldest')
     }
 
-    It 'keeps one outcome''s loads, once the outcome is checked' {
-
+    It 'keeps one outcome''s loads' {
         (Select-SaveLoad -Loads $script:Loads -Outcome 'Failed').Name | Should -Be @('middle', 'oldest')
+    }
 
-        Should -Invoke Assert-LoadOutcomeName -Times 1 -Exactly -ParameterFilter { $Outcome -eq 'Failed' }
+    # Outcome names are case-sensitive, as the script checks them before any log is read.
+    It 'keeps no load for an outcome in another case' {
+        (Select-SaveLoad -Loads $script:Loads -Outcome 'failed').Count | Should -Be 0
     }
 
     It 'keeps the newest load the other filters leave' {

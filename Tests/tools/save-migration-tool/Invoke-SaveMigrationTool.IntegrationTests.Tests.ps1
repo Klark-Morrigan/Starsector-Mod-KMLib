@@ -90,7 +90,7 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
             )
         }
 
-        It 'logs which save it chose, beside what the scripts it runs log' {
+        It 'logs which save it chose and what it wrote, beside what the parts it runs log' {
 
             $script:Run.Diagnostics |
                 Should -Contain 'Invoke-SaveMigrationTool: diagnosing the save of the newest failed load, save_Alpha_1'
@@ -99,7 +99,16 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
                 'listing 1 newest first: ending Failed, the newest only')
 
-            @($script:Run.Diagnostics -like 'Get-SaveModDrift: compared them with 3 installed mods*').Count | Should -Be 1
+            @($script:Run.Diagnostics -like 'Invoke-SaveMigrationTool: compared them with 3 installed mods*').Count |
+                Should -Be 1
+
+            $script:Run.Diagnostics[-1] |
+                Should -Be 'Invoke-SaveMigrationTool: writing the report as text, with 4 mod drift rows'
+        }
+
+        # Both parts need the installed mods, and each read costs seconds on a large install.
+        It 'reads the installed mods once' {
+            @($script:Run.Diagnostics -like '*mod folders under*').Count | Should -Be 1
         }
 
         It 'prints the report object as JSON with -AsJson' {
@@ -111,6 +120,59 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
             $report.Load.Missing.Id | Should -Be 'BSC_Buffalo_Mk3'
             $report.ModDrift.Id | Should -Be @('alpha', 'beta', 'gamma', 'delta')
             $report.ModDrift.Change | Should -Be @('Unchanged', 'Changed', 'Missing', 'Added')
+            $report.ModDriftProblem | Should -BeNullOrEmpty
+        }
+
+        It 'diagnoses a save named with -SaveFolder whose newest load failed' {
+
+            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
+
+            $run.Output[1..2] | Should -Be @('Save: save_Alpha_1', 'Newest load: Failed')
+            $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
+        }
+    }
+
+    Context 'a failed load whose save is gone' {
+
+        # The load's diagnosis is worth reporting though the save cannot be compared.
+        It 'reports the load, and says the mods were not compared and why' {
+
+            $root = New-DiagnosisInstall -Name 'saveGone' -LogFixture 'two-failed-loads'
+            $descriptorPath = Join-Path $root 'saves\save_Alpha_1\descriptor.xml'
+
+            Remove-Item -LiteralPath $descriptorPath
+
+            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $root }
+
+            $run.Output[2] | Should -Be 'Newest load: Failed'
+            $run.Output[-1] |
+                Should -Be "Mod drift against the install: not compared, descriptor not found: $descriptorPath"
+            $run.Diagnostics |
+                Should -Contain "Invoke-SaveMigrationTool: comparing no mods: descriptor not found: $descriptorPath"
+        }
+    }
+
+    Context 'a failed load whose descriptor lists no enabled mods' {
+
+        # Counting nothing as "0 changed" would read as a save that matches the install.
+        It 'says the mods were not compared and why, in text and in JSON' {
+
+            $root = New-DiagnosisInstall -Name 'noList' -LogFixture 'two-failed-loads'
+            $descriptorPath = Join-Path $root 'saves\save_Alpha_1\descriptor.xml'
+
+            $descriptorText = "<?xml version=`"1.0`" ?>`n<SaveGameData z=`"1`">`n" +
+                "<gameVersion>0.98a-RC8</gameVersion>`n</SaveGameData>`n"
+
+            [System.IO.File]::WriteAllText($descriptorPath, $descriptorText)
+
+            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $root }
+            $jsonRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $root; AsJson = $true }
+            $report = $jsonRun.Output -join "`n" | ConvertFrom-Json
+            $problem = "the descriptor lists no enabled mods: $descriptorPath"
+
+            $run.Output[-1] | Should -Be "Mod drift against the install: not compared, $problem"
+            $report.ModDrift | Should -BeNullOrEmpty
+            $report.ModDriftProblem | Should -Be $problem
         }
     }
 

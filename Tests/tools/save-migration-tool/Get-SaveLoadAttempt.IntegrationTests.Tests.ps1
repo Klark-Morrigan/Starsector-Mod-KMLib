@@ -192,12 +192,10 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; listing them newest first'
                 ('Get-SaveLoadAttempt: resolving the owners of 7 object chain classes ' +
                     "from the install at $script:FixtureRoot")
-                ''
-                ("Get-ModRoster: read 4 mod folders under $script:FixtureRoot\mods and 4 enabled IDs; " +
+                ("Get-SaveLoadAttempt: read 4 mod folders under $script:FixtureRoot\mods and 4 enabled IDs; " +
                     'listing 4 mods (0 unparsed), skipping 0 disabled and 0 superseded copies')
-                ''
                 "Get-SaveLoadAttempt: skipped JAR $logFolder\starfarer.api.jar: not on disk"
-                ('Get-SaveLoadAttempt: read 4 JARs of 4 mods and 2 core classpath entries in <n> ms, ' +
+                ('Get-SaveLoadAttempt: read 3 JARs of 4 mods and 1 of 2 core classpath entries in <n> ms, ' +
                     'the JARs of 0 unparsed mods unknown; ' +
                     'owners found for 5 classes, more than one mod for 1, mod copies of core classes dropped for 1')
                 ''
@@ -293,6 +291,21 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             )
         }
 
+        # A caller that read the roster for its own use hands it over, so the install's mods are read once.
+        It 'resolves owners against a roster given with -Roster, reading no mods folder' {
+
+            $roster = @([pscustomobject]@{ Id = 'given'; Jars = @(); Status = 'parsed' })
+            $run = Invoke-SaveLoadAttempt @{
+                StarsectorRoot = $script:FixtureRoot
+                Outcome        = 'Failed'
+                Newest         = $true
+                Roster         = $roster
+            }
+
+            @($run.Diagnostics -like '*mod folders under*').Count | Should -Be 0
+            @($run.Diagnostics -like 'Get-SaveLoadAttempt: read 0 JARs of 1 mods and *').Count | Should -Be 1
+        }
+
         It 'refuses -AsJson and -AsText together' {
 
             { Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; AsJson = $true; AsText = $true } } |
@@ -333,12 +346,13 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $script:Loads[0].Missing.Id | Should -Be 'data.scripts.removed.GoneScript'
         }
 
-        It 'reads the chain, but warns and names no owners when the install holds no mods folder' {
+        It 'reads the chain, and warns that mod classes stay without owners when the install holds no mods folder' {
 
             $script:Loads[0].ObjectChain.Class | Should -Be @('data.scripts.removed.GoneScript')
             @($script:Loads[0].ObjectChain[0].Owners).Count | Should -Be 0
             $script:Run.Warnings | Should -Be @(
-                "no mods folder in the log's install, $script:FixtureRoot; object chain classes stay without owners"
+                "no mods folder in the log's install, $script:FixtureRoot; mod classes stay without owners"
+                "$script:FixtureRoot\vmparams not found; vanilla classes stay without owners"
             )
         }
     }
@@ -411,6 +425,15 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
             $missingLog = Join-Path $TestDrive 'starsector.log'
 
             { Invoke-SaveLoadAttempt @{ LogPath = $missingLog } } | Should -Throw "log not found: $missingLog"
+        }
+
+        # The outcome is checked first, so a typo fails before a log of a million lines is read.
+        It 'fails on a mistyped -Outcome before looking for the log' {
+
+            $missingLog = Join-Path $TestDrive 'starsector.log'
+
+            { Invoke-SaveLoadAttempt @{ LogPath = $missingLog; Outcome = 'failed' } } |
+                Should -Throw 'no load outcome failed; the outcomes are Loaded, Failed, Unfinished'
         }
     }
 }

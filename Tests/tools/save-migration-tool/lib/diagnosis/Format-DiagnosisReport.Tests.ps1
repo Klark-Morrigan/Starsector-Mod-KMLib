@@ -69,4 +69,34 @@ Describe 'Format-DiagnosisReport' {
         )
         Should -Invoke Format-LoadDetailLines -Times 0
     }
+
+    # Counting nothing as "0 changed" would read as a save that matches the install.
+    It 'says why the mods were not compared, rather than counting no drift' {
+
+        $report = [pscustomobject]@{
+            SaveFolder      = 'save_Test'
+            Load            = $null
+            ModDrift        = $null
+            ModDriftProblem = 'descriptor not found'
+        }
+
+        Format-DiagnosisReport -Report $report | Select-Object -Last 1 |
+            Should -Be 'Mod drift against the install: not compared, descriptor not found'
+
+        Should -Invoke Format-ModDriftLines -Times 0
+    }
+
+    # An empty comparison is a real answer: neither side holds a mod.
+    It 'counts an empty comparison as drift' {
+
+        $report = [pscustomobject]@{
+            SaveFolder      = 'save_Test'
+            Load            = $null
+            ModDrift        = @()
+            ModDriftProblem = $null
+        }
+
+        Format-DiagnosisReport -Report $report | Select-Object -Last 2 |
+            Should -Be @('drift of 0 mods', '  a drifted mod')
+    }
 }

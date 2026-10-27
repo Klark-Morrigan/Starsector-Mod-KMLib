@@ -4,10 +4,11 @@
     Diagnoses one save end to end: its newest load in the logs, and how its mods differ from the installed ones.
 
 .DESCRIPTION
-    Runs the other scripts beside this one in order, so a person gets one report from one command.
+    Reads the installed mods once, then runs Get-SaveLoadAttempt.ps1 and compares the save's mods,
+    so a person gets one report from one command.
     With no -SaveFolder it diagnoses the save of the newest failed load.
     Stdout carries the report: text for a person, or the report object as JSON with -AsJson.
-    What each script read and decided goes to stderr, as each script writes it.
+    What each part read and decided goes to stderr.
     The README beside this script lists what each part of the report comes from.
 
 .EXAMPLE
@@ -17,7 +18,7 @@
 
 [CmdletBinding()]
 param(
-    # Starsector install root; the logs and saves are resolved beneath it.
+    # Starsector install root; the logs, saves and mods are resolved beneath it.
     [Parameter(Mandatory)]
     [string] $StarsectorRoot,
 
@@ -35,8 +36,8 @@ $ErrorActionPreference = 'Stop'
 
 $DiagnosticSource = 'Invoke-SaveMigrationTool'
 
-# Deep enough for a class owner in the load's object chain, one level below Get-SaveLoadAttempt's own output.
-$JsonDepth = 7
+# Both parts need the installed mods: the load for its class owners, the drift for its installed side.
+$roster = @(Read-ModRoster -StarsectorRoot $StarsectorRoot -DiagnosticSource $DiagnosticSource)
 
 # Only the one load the report shows is asked for, so class owners are resolved for that load alone.
 $loadFilter = if ($SaveFolder) {
@@ -45,7 +46,8 @@ $loadFilter = if ($SaveFolder) {
     @{ Outcome = (Get-LoadOutcomeNames).Failed }
 }
 
-$load = & (Join-Path $PSScriptRoot 'Get-SaveLoadAttempt.ps1') -StarsectorRoot $StarsectorRoot -Newest @loadFilter
+$loadScript = Join-Path $PSScriptRoot 'Get-SaveLoadAttempt.ps1'
+$load = & $loadScript -StarsectorRoot $StarsectorRoot -Newest -Roster $roster @loadFilter
 
 if ($SaveFolder) {
 
@@ -62,22 +64,51 @@ if ($SaveFolder) {
     Write-DiagnosticLine -Source $DiagnosticSource -Message 'no load failed, so no save is diagnosed'
 }
 
-$modDrift = @()
+$modDrift = $null
+$modDriftProblem = $null
 
 if ($SaveFolder) {
 
-    $modDriftScript = Join-Path $PSScriptRoot 'Get-SaveModDrift.ps1'
-    $modDrift = @(& $modDriftScript -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder)
+    $descriptorPath = Get-SaveDescriptorPath -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder
+
+    # A save deleted or renamed since its load still has a load worth reporting.
+    if (Test-Path -LiteralPath $descriptorPath -PathType Leaf) {
+
+        $drift = Read-SaveModDrift -DescriptorPath $descriptorPath -Roster $roster -DiagnosticSource $DiagnosticSource
+        $modDrift = $drift.Rows
+        $modDriftProblem = $drift.Problem
+
+    } else {
+        $modDriftProblem = "descriptor not found: $descriptorPath"
+    }
+
+    if ($modDriftProblem) {
+        Write-DiagnosticLine -Source $DiagnosticSource -Message "comparing no mods: $modDriftProblem"
+    }
 }
 
 $report = [pscustomobject]@{
-    SaveFolder = $SaveFolder
-    Load       = $load
-    ModDrift   = $modDrift
+    SaveFolder      = $SaveFolder
+    Load            = $load
+    ModDrift        = $modDrift
+    ModDriftProblem = $modDriftProblem
+}
+
+$driftSummary = if ($null -ne $modDrift) {
+    "$(Format-ConsoleNumber $modDrift.Count) mod drift rows"
+} else {
+    'no mod drift'
 }
 
 if ($AsJson) {
-    ConvertTo-Json -InputObject $report -Depth $JsonDepth
+
+    Write-DiagnosticLine -Source $DiagnosticSource -Message "writing the report as JSON, with $driftSummary"
+
+    # The report holds the load one level below Get-SaveLoadAttempt.ps1's own output.
+    ConvertTo-Json -InputObject $report -Depth ((Get-LoadJsonDepth) + 1)
+
 } else {
+
+    Write-DiagnosticLine -Source $DiagnosticSource -Message "writing the report as text, with $driftSummary"
     Resolve-OutputLines -Lines (Format-DiagnosisReport -Report $report)
 }

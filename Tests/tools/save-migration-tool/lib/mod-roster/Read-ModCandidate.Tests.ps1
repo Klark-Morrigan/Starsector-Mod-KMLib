@@ -10,6 +10,7 @@ BeforeAll {
     . "$libRoot\mod-info\Get-VersionSortKey.ps1"
     . "$libRoot\mod-roster\Get-ModStatusNames.ps1"
     . "$libRoot\mod-roster\Read-ModCandidate.ps1"
+    . "$libRoot\install\Get-InstallPathNames.ps1"
 
     function script:New-ModFolder {
         # Writes a mod folder under TestDrive, holding an empty mod_info.json unless told not to, and returns it.
@@ -33,6 +34,7 @@ Describe 'Read-ModCandidate' {
     BeforeEach {
 
         Mock Get-ModStatusNames { [pscustomobject]@{ Parsed = 'P'; Unparsed = 'U' } }
+        Mock Get-InstallPathNames { [pscustomobject]@{ ModInfoFile = 'mod_info.json' } }
         Mock Get-VersionSortKey { "key-$Version" }
 
         # Strict mode throws on a missing property, so the fake looks the name up first.

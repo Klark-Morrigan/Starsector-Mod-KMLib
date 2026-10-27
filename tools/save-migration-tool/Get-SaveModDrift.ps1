@@ -26,7 +26,10 @@ param(
     [string] $SaveFolder,
 
     # Print JSON instead of objects, for a caller that parses the output.
-    [switch] $AsJson
+    [switch] $AsJson,
+
+    # The install's enabled mods, as Get-ModRoster.ps1 lists them, from a caller that has read them already.
+    [object[]] $Roster
 )
 
 Set-StrictMode -Version Latest
@@ -39,56 +42,28 @@ Update-FormatData -PrependPath (Join-Path $PSScriptRoot 'formats\ModDriftRow.for
 
 $DiagnosticSource = 'Get-SaveModDrift'
 
-$descriptorPath = Join-Path $StarsectorRoot "saves\$SaveFolder\descriptor.xml"
+$descriptorPath = Get-SaveDescriptorPath -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder
 
 if (-not (Test-Path -LiteralPath $descriptorPath -PathType Leaf)) {
     throw "descriptor not found: $descriptorPath"
 }
 
-$descriptor = Read-XmlDocument -Path $descriptorPath
-$idIndex = New-XStreamIdIndex -Document $descriptor
-$saveData = $descriptor.DocumentElement
+if (-not $PSBoundParameters.ContainsKey('Roster')) {
+    $Roster = @(Read-ModRoster -StarsectorRoot $StarsectorRoot -DiagnosticSource $DiagnosticSource)
+}
 
-$savedAt = Format-ConsoleText -Role 'Time' -Text (Get-XmlChildText -Element $saveData -Name 'saveDate')
-$gameVersion = Format-ConsoleText -Role 'Mod' -Text (Get-XmlChildText -Element $saveData -Name 'gameVersion')
+$drift = Read-SaveModDrift -DescriptorPath $descriptorPath -Roster $Roster -DiagnosticSource $DiagnosticSource
 
-Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "read $(Format-ConsoleText -Role 'Path' -Text $descriptorPath), saved $savedAt under Starsector $gameVersion; " +
-    "$(Format-ConsoleNumber $idIndex.Count) objects carry an ID for back-pointers")
+if ($null -eq $drift.Rows) {
 
-$savedMods = Read-SaveModList -SaveData $saveData -ListName 'enabledMods' -IdIndex $idIndex
-$everEnabledMods = Read-SaveModList -SaveData $saveData -ListName 'allModsEverEnabled' -IdIndex $idIndex
-
-# No list says nothing about the save's mods, where an empty list says it had none, so no drift is guessed.
-if ($null -eq $savedMods) {
-
-    Write-Warning "the descriptor lists no enabled mods, so no drift is reported: $descriptorPath"
+    Write-Warning "$($drift.Problem); no drift is reported"
 
     return
 }
 
-# A mod enabled once and dropped since can still have content in the save, so stderr names it.
-# A foreach over a missing list runs no iteration, where a pipeline would pass one null through.
-$savedIds = @(foreach ($mod in $savedMods) { $mod.Id })
-$droppedIds = @(foreach ($mod in $everEnabledMods) { if ($mod.Id -cnotin $savedIds) { $mod.Id } })
-$droppedSummary = "$(Format-ConsoleNumber $droppedIds.Count) more were enabled in an earlier save and are not now"
-
-if ($droppedIds.Count -gt 0) {
-    $droppedSummary += ": $(@($droppedIds | ForEach-Object { Format-ConsoleText -Role 'Mod' -Text $_ }) -join ', ')"
-}
-
-Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "read $(Format-ConsoleNumber $savedMods.Count) enabled mods as the save last wrote them; $droppedSummary")
-
-$roster = @(& (Join-Path $PSScriptRoot 'Get-ModRoster.ps1') -StarsectorRoot $StarsectorRoot)
-$rows = @(Compare-SaveModRoster -SavedMods $savedMods -Roster $roster)
-
-Write-DiagnosticLine -Source $DiagnosticSource -Message (
-    "compared them with $(Format-ConsoleNumber $roster.Count) installed mods: $(Format-ModDriftCounts -Rows $rows)")
-
 if ($AsJson) {
-    ConvertTo-Json -InputObject $rows
+    ConvertTo-Json -InputObject $drift.Rows
 
 } else {
-    $rows
+    $drift.Rows
 }

@@ -52,9 +52,21 @@ Describe 'New-ClassOwnerIndex' {
         @($index.OwnersByClass['a.One']) | Should -Be @('alpha')
         @($index.OwnersByClass['a.Two']) | Should -Be @('alpha')
         $index.OwnersByClass.ContainsKey('a.Unwanted') | Should -BeFalse
-        $index.JarCount | Should -Be 2
+        $index.ModJarCount | Should -Be 2
 
         Should -Invoke Select-JarClassNames -ParameterFilter { "$ClassNames" -eq 'a.One a.Two' } -Times 2 -Exactly
+    }
+
+    # A caller reports the mods' JARs against the mods, and the core's against the classpath it listed.
+    It 'counts the JARs read for the mods apart from those read for the core' {
+
+        $index = New-ClassOwnerIndex -ClassNames @('x.A') -Sources @(
+            New-Source -Owner 'core' -Jars @((New-TestFile -Name 'core\a.jar'), (New-TestFile -Name 'core\b.jar'))
+            New-Source -Owner 'alpha' -Jars @(New-TestFile -Name 'alpha\c.jar')
+        )
+
+        $index.CoreJarCount | Should -Be 2
+        $index.ModJarCount | Should -Be 1
     }
 
     It 'keeps every mod owning a class two mods hold, in source order, and counts it as shared' {
@@ -105,7 +117,7 @@ Describe 'New-ClassOwnerIndex' {
 
         $index.SkippedJars.Path | Should -Be @($missing, $broken)
         $index.SkippedJars.Reason | Should -Be @('not on disk', 'End of Central Directory record could not be found.')
-        $index.JarCount | Should -Be 1
+        $index.ModJarCount | Should -Be 1
         @($index.OwnersByClass['x.Kept']) | Should -Be @('alpha')
     }
 }

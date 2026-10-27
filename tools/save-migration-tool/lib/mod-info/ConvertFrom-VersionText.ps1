@@ -11,6 +11,9 @@ function ConvertFrom-VersionText {
     $partSeparatorPattern = '\.|a-RC|a'
     $releaseCandidateMarker = '-RC'
     $leadingZeroPart = '0'
+    $readPartCounts = @(2, 3, 4)
+    $joinedPartCount = 4
+    $versionPartCount = 3
 
     # Java's split drops the empty strings a trailing separator leaves; .NET's keeps them.
     $parts = [System.Collections.Generic.List[string]]::new([regex]::Split($Text, $partSeparatorPattern))
@@ -19,35 +22,24 @@ function ConvertFrom-VersionText {
         $parts.RemoveAt($parts.Count - 1)
     }
 
-    $isMinorRC = $Text.Contains($releaseCandidateMarker)
-    $isLeadingZero = $parts.Count -gt 0 -and $parts[0] -ceq $leadingZeroPart
+    $isRead = $parts.Count -in $readPartCounts
+    $isFirstTwoJoined = $isRead -and ($parts.Count -eq $joinedPartCount -or $parts[0] -ceq $leadingZeroPart)
 
-    switch ($parts.Count) {
+    if (-not $isRead) {
+        $parts.Clear()
 
-        2 {
-            if ($isLeadingZero) {
-                return New-VersionInfo -Major "$($parts[0]).$($parts[1])" -MinorIsRC $isMinorRC
-            }
-
-            return New-VersionInfo -Major $parts[0] -Minor $parts[1] -MinorIsRC $isMinorRC
-        }
-
-        3 {
-            if ($isLeadingZero) {
-                return New-VersionInfo -Major "$($parts[0]).$($parts[1])" -Minor $parts[2] -MinorIsRC $isMinorRC
-            }
-
-            return New-VersionInfo -Major $parts[0] -Minor $parts[1] -Patch $parts[2] -MinorIsRC $isMinorRC
-        }
-
-        4 {
-            return New-VersionInfo `
-                -Major "$($parts[0]).$($parts[1])" `
-                -Minor $parts[2] `
-                -Patch $parts[3] `
-                -MinorIsRC $isMinorRC
-        }
+    } elseif ($isFirstTwoJoined) {
+        $parts[1] = "$($parts[0]).$($parts[1])"
+        $parts.RemoveAt(0)
     }
 
-    return New-VersionInfo -MinorIsRC $isMinorRC
+    while ($parts.Count -lt $versionPartCount) {
+        $parts.Add('')
+    }
+
+    return New-VersionInfo `
+        -Major $parts[0] `
+        -Minor $parts[1] `
+        -Patch $parts[2] `
+        -MinorIsRC $Text.Contains($releaseCandidateMarker)
 }

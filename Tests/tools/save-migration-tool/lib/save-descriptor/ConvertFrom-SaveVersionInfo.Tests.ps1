@@ -42,7 +42,8 @@ Describe 'ConvertFrom-SaveVersionInfo' {
 
     It 'reads a minor part the save marks as a release candidate' {
 
-        $versionInfo = New-VersionInfoElement '<versionInfo><major>0.98</major><minorIsRC>true</minorIsRC></versionInfo>'
+        $versionInfo = New-VersionInfoElement (
+            '<versionInfo><major>0.98</major><minorIsRC>true</minorIsRC></versionInfo>')
 
         ConvertFrom-SaveVersionInfo -VersionInfo $versionInfo | Should -Be '0.98|||True'
     }

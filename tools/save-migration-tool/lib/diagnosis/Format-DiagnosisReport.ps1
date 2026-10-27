@@ -8,7 +8,6 @@ function Format-DiagnosisReport {
     if (-not $Report.SaveFolder) {
 
         $parameter = Format-ConsoleText -Role 'Code' -Text '-SaveFolder'
-
         return @('', "No load failed in the logs, so no save is diagnosed. Name one with $parameter.")
     }
 
@@ -20,7 +19,6 @@ function Format-DiagnosisReport {
 
     if ($null -eq $load) {
         $lines.Add('Newest load: none in the logs')
-
     } else {
 
         $lines.Add("Newest load: $(Format-LoadOutcome -Outcome $load.Outcome)")
@@ -28,7 +26,13 @@ function Format-DiagnosisReport {
     }
 
     $lines.Add('')
-    $lines.AddRange([string[]] @(Format-ModDriftLines -Rows $Report.ModDrift))
+
+    # No drift at all means nothing was compared, which must not read as a save that matches the install.
+    if ($null -eq $Report.ModDrift) {
+        $lines.Add("Mod drift against the install: not compared, $($Report.ModDriftProblem)")
+    } else {
+        $lines.AddRange([string[]] @(Format-ModDriftLines -Rows $Report.ModDrift))
+    }
 
     return $lines.ToArray()
 }

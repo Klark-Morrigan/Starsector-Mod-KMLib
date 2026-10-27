@@ -6,13 +6,12 @@ function Select-SaveLoad {
     param(
         [object[]] $Loads,
         [string] $SaveFolder,
+
+        # A name Assert-LoadOutcomeName has passed, checked before any log is read.
         [string] $Outcome,
+
         [switch] $IsNewestOnly
     )
-
-    if ($Outcome) {
-        Assert-LoadOutcomeName -Outcome $Outcome
-    }
 
     $selected = @($Loads | Where-Object {
         (-not $SaveFolder -or $_.SaveFolder -eq $SaveFolder) -and (-not $Outcome -or $_.Outcome -ceq $Outcome)

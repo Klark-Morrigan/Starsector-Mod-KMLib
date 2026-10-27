@@ -43,6 +43,7 @@ A blank line on stderr parts blocks:
 wherever the writing script changes, as when one script runs another,
 and before each load's readings.
 A reading too long for one line continues on the next, indented under its first.
+A library function that reads or decides writes under the name of the script that called it.
 `Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1` and `Get-SaveModDrift.ps1`
 print their data as JSON with `-AsJson`;
 `Get-ModRoster.ps1` returns objects for another script to consume.
@@ -88,31 +89,39 @@ The functions it calls live one per file under [`lib/`](lib/), named after the f
 A script dot-sources [`lib/Import-SaveMigrationToolLibrary.ps1`](lib/Import-SaveMigrationToolLibrary.ps1),
 which dot-sources every function under `lib/`,
 so no script lists the functions it calls or what those call in turn.
+A script one script runs sees its caller's functions already,
+so the loader leaves a marker and loads nothing for every script that caller runs.
+Loading the library takes about half a second.
 
 | Folder | Holds |
 | --- | --- |
 | [`formats/`](formats/) | Console table views for rows with too many columns for PowerShell's default table |
-| [`lib/`](lib/) | The library loader, and `Write-DiagnosticLine`, which every script logs through |
+| [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, and the name of the process-wide slot it remembers the last writer in |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
 | [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns every mod list prints |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
+| [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
-| [`lib/mod-drift/`](lib/mod-drift/) | Pairing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
+| [`lib/mod-drift/`](lib/mod-drift/) | Comparing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
 | [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions as text and as the parts the game compares |
-| [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
-| [`lib/save-descriptor/`](lib/save-descriptor/) | Reading the mod list out of a save's `descriptor.xml` |
+| [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads |
+| [`lib/save-descriptor/`](lib/save-descriptor/) | Finding a save's `descriptor.xml` and reading its mod lists |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
 
 ## Invoke-SaveMigrationTool.ps1
 
-Diagnoses one save end to end,
-running the other scripts in order:
+Diagnoses one save end to end, in order:
 
-1. `Get-SaveLoadAttempt.ps1` finds the one load the report shows:
+1. It reads the installed mods once, as `Get-ModRoster.ps1` does.
+   Both parts below need them, and each read takes seconds on a large install.
+2. `Get-SaveLoadAttempt.ps1` finds the one load the report shows:
    the newest of the named save,
    or without `-SaveFolder` the newest failed load, whose save is the one diagnosed.
    It reads the JARs for that load's class owners alone.
-2. `Get-SaveModDrift.ps1` compares the mods that save was last written with against the installed ones.
+3. It compares the mods that save was last written with against the installed ones,
+   as `Get-SaveModDrift.ps1` does.
+   A save whose `descriptor.xml` is gone, deleted or renamed since its load,
+   still gets its load reported.
 
 ```powershell
 pwsh -NoProfile -File Invoke-SaveMigrationTool.ps1 -StarsectorRoot <install>                            # newest failed load
@@ -128,6 +137,10 @@ changed first, with both versions and the [level](#how-versions-compare) of the 
 then missing, then added.
 An unchanged mod gives a person nothing to act on,
 so the text only counts it.
+When nothing could be compared,
+because the descriptor is gone or lists no enabled mods,
+the drift is one line saying so and why,
+since counting nothing would read as a save that matches the install.
 A named save may have no load in the logs;
 the report says so.
 With no failed load and no `-SaveFolder`,
@@ -136,7 +149,12 @@ the report is one line saying no save is diagnosed.
 With `-AsJson` the report is one object:
 `SaveFolder`,
 `Load` (one load as [`Get-SaveLoadAttempt.ps1`](#output) prints it, or null),
-and `ModDrift` (as [`Get-SaveModDrift.ps1`](#drift-output) prints it).
+`ModDrift` (as [`Get-SaveModDrift.ps1`](#drift-output) prints it, or null when nothing was compared),
+and `ModDriftProblem` (why nothing was compared, or null).
+
+Stderr holds `Get-SaveLoadAttempt.ps1`'s lines under its own name,
+what the roster read and the comparison found under the runner's,
+and a last line saying whether the report was written as text or JSON, and how many drift rows it holds.
 
 ## Get-SaveLoadAttempt.ps1
 
@@ -169,6 +187,11 @@ They apply before any failure's trace is read and before [class owners](#class-o
 so a filtered run reads only the traces and JARs its loads need,
 and no JAR when they name no object chain.
 Reading every mod's JARs takes seconds.
+
+`-Roster` hands over the installed mods from a caller that has read them already,
+as `Invoke-SaveMigrationTool.ps1` does,
+so the install's mods are read once.
+Without it, they are read only when a kept load names an object chain.
 
 ### How vanilla logs a load
 
@@ -291,8 +314,10 @@ and only for the classes the chains name.
 Each class is looked up in a JAR by its entry path, `a/b/C.class`,
 so a JAR of thousands of entries costs one lookup per class.
 With no `mods` folder in the install,
-or `vmparams` missing or naming no classpath,
-the script warns, saying which, and leaves those owners empty.
+the script warns and leaves the mod owners empty;
+the game's own classes still resolve to `vanilla`.
+With `vmparams` missing or naming no classpath,
+it warns and leaves the `vanilla` owners empty.
 
 ### Output
 
@@ -314,8 +339,9 @@ and, when it names one,
 the chain's length and, on a second line, its nearest mod class.
 When owners are resolved,
 stderr names the install they come from,
+what reading the installed mods found, unless `-Roster` handed them over,
 each JAR skipped,
-how many JARs were read and how long that took,
+how many of the mods' JARs and of the core classpath's entries were read, and how long that took,
 how many unparsed mods left their JARs unknown,
 and how many classes found owners,
 more than one mod,
@@ -340,6 +366,7 @@ pwsh -NoProfile -File Get-SaveModDrift.ps1 -StarsectorRoot <install> -SaveFolder
 
 `-SaveFolder` is the folder name under `saves\`,
 as `Get-SaveLoadAttempt.ps1` reports it in `SaveFolder`.
+`-Roster` hands over the installed mods from a caller that has read them already.
 
 A mod is:
 
@@ -448,14 +475,15 @@ On a console the rows print as a table of these columns,
 through the view in [`formats/ModDriftRow.format.ps1xml`](formats/ModDriftRow.format.ps1xml).
 PowerShell would print an object of six columns as a list.
 
-Stderr names the descriptor read,
+Stderr names what reading the installed mods found, unless `-Roster` handed them over,
+the descriptor read,
 when and under which game version the save was written,
 how many mods it lists,
 the mods enabled once and dropped since,
-what `Get-ModRoster.ps1` read,
 and how many mods changed, went missing, were added and stayed unchanged.
 A descriptor with no `enabledMods` list warns and reports no drift,
 since it says nothing of the save's mods.
+A save folder with no descriptor fails the run, naming the path.
 An empty list reports every installed mod as added.
 A `mod_info.json` the roster keeps as `unparsed` takes its folder name as its ID,
 so its mod reads as missing on one side and added on the other.
@@ -527,7 +555,8 @@ beside a `mods` folder that keeps one of the save's mods, changes one, lacks one
 and writes damaged descriptors under a temporary folder.
 [`Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1)
 copies a log fixture to a temporary folder,
-and gives its failed save that descriptor and its install those mods.
+and gives its failed save that descriptor and its install those mods;
+a case removes the descriptor, or empties its mod lists.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
 

@@ -4,6 +4,7 @@ BeforeAll {
 
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\class-index\Read-CoreClasspath.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\install\Get-InstallPathNames.ps1"
 
     function script:New-Install {
         # Writes an install root under TestDrive, holding vmparams with the given text unless none is given.
@@ -25,6 +26,10 @@ BeforeAll {
 }
 
 Describe 'Read-CoreClasspath' {
+
+    BeforeEach {
+        Mock Get-InstallPathNames { [pscustomobject]@{ VmparamsFile = 'vmparams'; CoreFolder = 'starsector-core' } }
+    }
 
     It 'reads each classpath entry as a full path under starsector-core, with no problem' {
 

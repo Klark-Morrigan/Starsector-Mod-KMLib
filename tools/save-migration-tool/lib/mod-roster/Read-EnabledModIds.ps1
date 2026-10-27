@@ -7,7 +7,7 @@ function Read-EnabledModIds {
     [CmdletBinding()]
     param([string] $ModsRoot)
 
-    $enabledModsFileName = 'enabled_mods.json'
+    $enabledModsFileName = (Get-InstallPathNames).EnabledModsFile
     $enabledModsPropertyName = 'enabledMods'
     $unreadList = [pscustomobject]@{ Ids = @(); IsListRead = $false }
 

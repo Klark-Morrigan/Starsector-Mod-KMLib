@@ -41,7 +41,11 @@ param(
     [switch] $AsJson,
 
     # Print text for a person instead of objects: each load under its save, with its retries and mod classes.
-    [switch] $AsText
+    [switch] $AsText,
+
+    # The install's enabled mods, as Get-ModRoster.ps1 lists them, from a caller that has read them already.
+    # Without it, they are read only when a kept load names an object chain.
+    [object[]] $Roster
 )
 
 Set-StrictMode -Version Latest
@@ -59,14 +63,10 @@ if ($Outcome) {
 
 $DiagnosticSource = 'Get-SaveLoadAttempt'
 
-# The game's log location relative to the install root.
-$DefaultLogRelativePath = 'starsector-core\starsector.log'
-
-# Deep enough for each class owner: a load, its attempts, an attempt's object chain, and a class's owners.
-$JsonDepth = 6
-
 if ($PSCmdlet.ParameterSetName -eq 'Install') {
-    $LogPath = Join-Path $StarsectorRoot $DefaultLogRelativePath
+
+    $pathNames = Get-InstallPathNames
+    $LogPath = Join-Path -Path $StarsectorRoot -ChildPath $pathNames.CoreFolder -AdditionalChildPath $pathNames.LogFile
 }
 
 if (-not (Test-Path -LiteralPath $LogPath -PathType Leaf)) {
@@ -134,8 +134,11 @@ $chainClassNames = @(
 $ownerResolution = @{
     InstallRoot      = $installRoot
     ClassNames       = $chainClassNames
-    RosterScriptPath = Join-Path $PSScriptRoot 'Get-ModRoster.ps1'
     DiagnosticSource = $DiagnosticSource
+}
+
+if ($PSBoundParameters.ContainsKey('Roster')) {
+    $ownerResolution.Roster = $Roster
 }
 
 $ownersByClass = Resolve-ChainClassOwners @ownerResolution
@@ -159,7 +162,7 @@ foreach ($load in $loads | Where-Object { $_.CauseType }) {
 }
 
 if ($AsJson) {
-    ConvertTo-Json -InputObject $loads -Depth $JsonDepth
+    ConvertTo-Json -InputObject $loads -Depth (Get-LoadJsonDepth)
 
 } elseif ($AsText) {
     Resolve-OutputLines -Lines (Format-LoadListText -Loads $loads)

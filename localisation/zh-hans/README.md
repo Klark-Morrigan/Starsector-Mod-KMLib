@@ -438,6 +438,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |
 | console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
 | colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
+| installed (a mod the install loads) | 已安装 | 已, already, with 安装, to install |
+| changed, missing, added (a mod, between a save and the install) | 已更改, 缺失, 新增 | 已, already, with 更改, to change; 缺失 as the missing content row; 新增 as the Added row |
+| major, minor, patch (the level of a version change) | 主版本, 次版本, 修订 | as the Chinese text of Semantic Versioning names MAJOR, MINOR and PATCH (主版本号, 次版本号, 修订号), without 号, number |
+| level (of a version change) | 变更级别 | 变更, a change, with 级别, level |
 
 #### Releases and badges
 
