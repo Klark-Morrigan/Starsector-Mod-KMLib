@@ -2,6 +2,7 @@
 # A source is an owner and its JARs: a mod ID with the JARs its mod_info.json declares, or the core owner.
 # A mod can bundle another mod's classes, so a class keeps every mod whose JARs hold it, in source order.
 # A JAR that is not on disk, or that no zip reader opens, is skipped and returned with the reason.
+# The JARs read are counted apart for the mods and for the core, so a caller reports each against what it listed.
 function New-ClassOwnerIndex {
 
     param(
@@ -12,7 +13,8 @@ function New-ClassOwnerIndex {
     $coreOwner = Get-CoreOwnerName
     $ownersByClass = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]::new()
     $skippedJars = [System.Collections.Generic.List[object]]::new()
-    $jarCount = 0
+    $modJarCount = 0
+    $coreJarCount = 0
 
     foreach ($source in $Sources) {
         foreach ($jar in $source.Jars) {
@@ -33,7 +35,12 @@ function New-ClassOwnerIndex {
                 continue
             }
 
-            $jarCount++
+            if ($source.Owner -eq $coreOwner) {
+                $coreJarCount++
+
+            } else {
+                $modJarCount++
+            }
 
             foreach ($className in $heldClasses) {
 
@@ -76,7 +83,8 @@ function New-ClassOwnerIndex {
 
     return [pscustomobject]@{
         OwnersByClass      = $ownersByClass
-        JarCount           = $jarCount
+        ModJarCount        = $modJarCount
+        CoreJarCount       = $coreJarCount
         SharedClassCount   = $sharedClassCount
         ShadowedClassCount = $shadowedClassCount
         SkippedJars        = $skippedJars.ToArray()

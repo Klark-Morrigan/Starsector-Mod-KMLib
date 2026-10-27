@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lays out mod drift rows as a table on a console.
+  PowerShell prints an object with five or more default columns as a list, which reads poorly for hundreds of mods,
+  so the rows carry a type name this view selects. New-ModDriftRow sets the same name.
+-->
+<Configuration>
+  <ViewDefinitions>
+    <View>
+      <Name>ModDriftRow</Name>
+      <ViewSelectedBy>
+        <TypeName>SaveMigrationTool.ModDriftRow</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader />
+          <TableColumnHeader />
+          <TableColumnHeader />
+          <TableColumnHeader />
+          <TableColumnHeader />
+          <TableColumnHeader />
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Id</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>SavedVersion</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>InstalledVersion</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Change</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Level</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+  </ViewDefinitions>
+</Configuration>

@@ -18,7 +18,8 @@ the release zip does not carry them.
   - [Output](#output)
 - [Get-SaveModDrift.ps1](#get-savemoddriftps1)
   - [How a save stores its mod list](#how-a-save-stores-its-mod-list)
-  - [Mod list output](#mod-list-output)
+  - [How versions compare](#how-versions-compare)
+  - [Drift output](#drift-output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
   - [How the game reads its JSON](#how-the-game-reads-its-json)
 - [Tests](#tests)
@@ -29,7 +30,7 @@ the release zip does not carry them.
 | --- | --- |
 | [`Invoke-SaveMigrationTool.ps1`](Invoke-SaveMigrationTool.ps1) | Everything the scripts below can say about one save, as one report |
 | [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, why a load failed, and which mods' objects the failure sat in |
-| [`Get-SaveModDrift.ps1`](Get-SaveModDrift.ps1) | Which mods, at which versions, a save was last written with |
+| [`Get-SaveModDrift.ps1`](Get-SaveModDrift.ps1) | How the mods a save was last written with differ from the installed ones: changed, missing, added |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
 `Invoke-SaveMigrationTool.ps1` is the one to run.
@@ -42,6 +43,7 @@ A blank line on stderr parts blocks:
 wherever the writing script changes, as when one script runs another,
 and before each load's readings.
 A reading too long for one line continues on the next, indented under its first.
+A library function that reads or decides writes under the name of the script that called it.
 `Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1` and `Get-SaveModDrift.ps1`
 print their data as JSON with `-AsJson`;
 `Get-ModRoster.ps1` returns objects for another script to consume.
@@ -62,8 +64,8 @@ since a console scheme decides what the named ones look like.
 | Value | Colour |
 | --- | --- |
 | Script names, dates, times, durations | Grey |
-| Errors, a failed load | Red |
-| Warnings, an unfinished load | Amber |
+| Errors, a failed load, a major version change, a missing mod | Red |
+| Warnings, an unfinished load, a minor version change, an added mod | Amber |
 | A load that worked | Green |
 | Numbers and counts | Faint green |
 | Mod IDs, names, versions | Yellow |
@@ -87,29 +89,39 @@ The functions it calls live one per file under [`lib/`](lib/), named after the f
 A script dot-sources [`lib/Import-SaveMigrationToolLibrary.ps1`](lib/Import-SaveMigrationToolLibrary.ps1),
 which dot-sources every function under `lib/`,
 so no script lists the functions it calls or what those call in turn.
+A script one script runs sees its caller's functions already,
+so the loader leaves a marker and loads nothing for every script that caller runs.
+Loading the library takes about half a second.
 
 | Folder | Holds |
 | --- | --- |
-| [`lib/`](lib/) | The library loader, and `Write-DiagnosticLine`, which every script logs through |
+| [`formats/`](formats/) | Console table views for rows with too many columns for PowerShell's default table |
+| [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, and the name of the process-wide slot it remembers the last writer in |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
 | [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns every mod list prints |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
+| [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
-| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions |
-| [`lib/mod-roster/`](lib/mod-roster/) | Turning a `mods\` folder into the roster the game loads |
-| [`lib/save-descriptor/`](lib/save-descriptor/) | Reading the mod list out of a save's `descriptor.xml` |
+| [`lib/mod-drift/`](lib/mod-drift/) | Comparing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
+| [`lib/mod-info/`](lib/mod-info/) | Reading JSON as the game does, and mod versions as text and as the parts the game compares |
+| [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads |
+| [`lib/save-descriptor/`](lib/save-descriptor/) | Finding a save's `descriptor.xml` and reading its mod lists |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
 
 ## Invoke-SaveMigrationTool.ps1
 
-Diagnoses one save end to end,
-running the other scripts in order:
+Diagnoses one save end to end, in order:
 
-1. `Get-SaveLoadAttempt.ps1` finds the one load the report shows:
+1. It reads the installed mods once, as `Get-ModRoster.ps1` does.
+   Both parts below need them, and each read takes seconds on a large install.
+2. `Get-SaveLoadAttempt.ps1` finds the one load the report shows:
    the newest of the named save,
    or without `-SaveFolder` the newest failed load, whose save is the one diagnosed.
    It reads the JARs for that load's class owners alone.
-2. `Get-SaveModDrift.ps1` lists the mods that save was last written with.
+3. It compares the mods that save was last written with against the installed ones,
+   as `Get-SaveModDrift.ps1` does.
+   A save whose `descriptor.xml` is gone, deleted or renamed since its load,
+   still gets its load reported.
 
 ```powershell
 pwsh -NoProfile -File Invoke-SaveMigrationTool.ps1 -StarsectorRoot <install>                            # newest failed load
@@ -118,9 +130,17 @@ pwsh -NoProfile -File Invoke-SaveMigrationTool.ps1 -StarsectorRoot <install> -Sa
 
 The text report names the save,
 then the newest load of it as `Get-SaveLoadAttempt.ps1 -AsText` writes a load,
-then how many mods the save was last written with.
-The list itself gives a person nothing to act on,
-so the text leaves it to `Get-SaveModDrift.ps1`.
+then the mod drift.
+The drift opens with a line counting the mods changed, missing, added and unchanged,
+then gives one line to each mod that differs:
+changed first, with both versions and the [level](#how-versions-compare) of the change,
+then missing, then added.
+An unchanged mod gives a person nothing to act on,
+so the text only counts it.
+When nothing could be compared,
+because the descriptor is gone or lists no enabled mods,
+the drift is one line saying so and why,
+since counting nothing would read as a save that matches the install.
 A named save may have no load in the logs;
 the report says so.
 With no failed load and no `-SaveFolder`,
@@ -129,7 +149,12 @@ the report is one line saying no save is diagnosed.
 With `-AsJson` the report is one object:
 `SaveFolder`,
 `Load` (one load as [`Get-SaveLoadAttempt.ps1`](#output) prints it, or null),
-and `Mods` (as [`Get-SaveModDrift.ps1`](#mod-list-output) prints them).
+`ModDrift` (as [`Get-SaveModDrift.ps1`](#drift-output) prints it, or null when nothing was compared),
+and `ModDriftProblem` (why nothing was compared, or null).
+
+Stderr holds `Get-SaveLoadAttempt.ps1`'s lines under its own name,
+what the roster read and the comparison found under the runner's,
+and a last line saying whether the report was written as text or JSON, and how many drift rows it holds.
 
 ## Get-SaveLoadAttempt.ps1
 
@@ -162,6 +187,11 @@ They apply before any failure's trace is read and before [class owners](#class-o
 so a filtered run reads only the traces and JARs its loads need,
 and no JAR when they name no object chain.
 Reading every mod's JARs takes seconds.
+
+`-Roster` hands over the installed mods from a caller that has read them already,
+as `Invoke-SaveMigrationTool.ps1` does,
+so the install's mods are read once.
+Without it, they are read only when a kept load names an object chain.
 
 ### How vanilla logs a load
 
@@ -284,8 +314,10 @@ and only for the classes the chains name.
 Each class is looked up in a JAR by its entry path, `a/b/C.class`,
 so a JAR of thousands of entries costs one lookup per class.
 With no `mods` folder in the install,
-or `vmparams` missing or naming no classpath,
-the script warns, saying which, and leaves those owners empty.
+the script warns and leaves the mod owners empty;
+the game's own classes still resolve to `vanilla`.
+With `vmparams` missing or naming no classpath,
+it warns and leaves the `vanilla` owners empty.
 
 ### Output
 
@@ -307,8 +339,9 @@ and, when it names one,
 the chain's length and, on a second line, its nearest mod class.
 When owners are resolved,
 stderr names the install they come from,
+what reading the installed mods found, unless `-Roster` handed them over,
 each JAR skipped,
-how many JARs were read and how long that took,
+how many of the mods' JARs and of the core classpath's entries were read, and how long that took,
 how many unparsed mods left their JARs unknown,
 and how many classes found owners,
 more than one mod,
@@ -320,11 +353,12 @@ The log does not say which.
 
 ## Get-SaveModDrift.ps1
 
-Lists the mods a save was last written with,
-from its `descriptor.xml`.
+Compares the mods a save was last written with against the installed ones.
+The save's side comes from its `descriptor.xml`.
 That small file sits beside `campaign.xml`,
 and the game's load list reads only it.
-Its mod list is the one the load list's hover tooltip compares against the installed mods.
+The installed side is the roster [`Get-ModRoster.ps1`](#get-modrosterps1) gives for the install's enabled mods.
+The load list's hover tooltip compares the same two lists.
 
 ```powershell
 pwsh -NoProfile -File Get-SaveModDrift.ps1 -StarsectorRoot <install> -SaveFolder <save folder> -AsJson
@@ -332,6 +366,19 @@ pwsh -NoProfile -File Get-SaveModDrift.ps1 -StarsectorRoot <install> -SaveFolder
 
 `-SaveFolder` is the folder name under `saves\`,
 as `Get-SaveLoadAttempt.ps1` reports it in `SaveFolder`.
+`-Roster` hands over the installed mods from a caller that has read them already.
+
+A mod is:
+
+- **unchanged** when both sides hold it at the same version text;
+- **changed** when the version text differs,
+  with the [level](#how-versions-compare) the game ranks the change at;
+- **missing** when the save was last written with it and the install does not load it;
+- **added** when the install loads it and the save was not last written with it.
+
+Mod IDs match case-sensitively, as the game matches them.
+A change counts by the text a person sees,
+so a rebuild the game ranks as the same version still shows.
 
 ### How a save stores its mod list
 
@@ -346,7 +393,7 @@ The descriptor holds two mod lists:
   It comes second,
   so its entries are usually back-pointers into the first list.
 
-The script lists `enabledMods`,
+The script compares `enabledMods`,
 following each entry, its spec and the spec's version wherever they point.
 A back-pointer that no `z` answers fails the run, naming it:
 the file is damaged, and reading the entry as empty would hide that.
@@ -355,39 +402,91 @@ A mod enabled once and dropped since stays in `allModsEverEnabled`,
 and the save can still hold its content.
 Stderr names each such mod;
 stdout does not list it.
+The game's load list does not compare it either.
 
 The descriptor is loaded with DTDs refused.
 A save can come from another player,
 and a DTD can expand a small file past memory.
 XStream never writes one.
 
-### Mod list output
+A `mod_info.json` that gives its version as a string,
+such as `"1.14.1aa"`,
+leaves that string in the save.
+One that gives `{ major, minor, patch }` leaves only the parts,
+and the script joins them with dots,
+skipping an empty one,
+as `Get-ModRoster.ps1` does.
+So an unchanged mod reads the same on both sides.
 
-One object per enabled mod, in the descriptor's order:
+### How versions compare
+
+The level of a change follows the game's own rule,
+the one behind the load list's version warnings (`VersionInfo.getCompatLevel`).
+The game keeps each version as three parts, major, minor and patch,
+and the first of major and minor that differs names the level:
+
+| Level | Meaning | The load list warns |
+| --- | --- | --- |
+| `Major` | The major parts differ | In red: unlikely to load or work |
+| `Minor` | The minor parts differ | In yellow: may fail to load or work |
+| `Patch` | Any other change of the version text | In yellow when the patch parts differ, else nothing |
+
+The game sees no change when the text differs and the parts do not,
+and cannot rank one when either side has no major part.
+The text still changed, so the mod's content may have too,
+and both count as a `Patch`.
+
+The parts compare as exact text, not as numbers, so `02` and `2` differ.
+The game marks a minor part from a version holding `-RC` as a release candidate;
+when both sides are marked, the minor parts are not compared.
+
+The game splits a version given as text the way `VersionInfo.setFromString` does:
+
+- on each dot, and on each letter `a`, so `1.14.1aa` reads as `1`, `14`, `1`.
+  This is why the game reads `1.0.2` and `1.0.2a` as the same version;
+- two parts are major and minor;
+  three are major, minor and patch;
+  four join the first two as the major, as in `0.1.98.7`: major `0.1`, minor `98`, patch `7`;
+- a first part of `0` joins the second as the major for two or three parts too,
+  so `0.8.0` to `0.8.1` is a minor change;
+- one part, or five or more, gives no parts at all, so the game cannot rank the change.
+
+A version given as `{ major, minor, patch }` keeps its parts as written.
+The save keeps the parts the game read when it wrote the save,
+so the save's side takes them from the descriptor, never from its version text.
+The installed side reads them from `mod_info.json` as the game does.
+
+### Drift output
+
+One row per mod on either side:
+the save's mods in the descriptor's order,
+then the added mods in the roster's order.
 
 | Field | Meaning |
 | --- | --- |
 | `Id` | The mod's ID |
-| `Version` | The version the save was last written with, in the form `Get-ModRoster.ps1` prints for the same `mod_info.json` |
-| `Name` | The mod's name, as the save wrote it, leading spaces included |
+| `Name` | The mod's name, as the save wrote it, leading spaces included, else as installed |
+| `SavedVersion` | The version the save was last written with, in the form `Get-ModRoster.ps1` prints for the same `mod_info.json`. Null for an added mod |
+| `InstalledVersion` | The installed version, as `Get-ModRoster.ps1` prints it. Null for a missing mod |
+| `Change` | `Unchanged`, `Changed`, `Missing` or `Added` |
+| `Level` | For a changed mod, how the change [ranks](#how-versions-compare): `Major`, `Minor` or `Patch`. Null otherwise |
 
-On a console the mods print as a table of these three columns,
-the same table `Get-ModRoster.ps1` prints for the installed mods.
+On a console the rows print as a table of these columns,
+through the view in [`formats/ModDriftRow.format.ps1xml`](formats/ModDriftRow.format.ps1xml).
+PowerShell would print an object of six columns as a list.
 
-A `mod_info.json` that gives its version as a string,
-such as `"1.14.1aa"`,
-leaves that string in the save,
-and `Version` is that string.
-One that gives `{ major, minor, patch }` leaves only the parts,
-and `Version` joins them with dots,
-skipping an empty one.
-So an unchanged mod reads the same on both sides.
-
-Stderr names the descriptor read,
+Stderr names what reading the installed mods found, unless `-Roster` handed them over,
+the descriptor read,
 when and under which game version the save was written,
 how many mods it lists,
-and the mods enabled once and dropped since.
-A descriptor with no `enabledMods` list warns and lists no mods.
+the mods enabled once and dropped since,
+and how many mods changed, went missing, were added and stayed unchanged.
+A descriptor with no `enabledMods` list warns and reports no drift,
+since it says nothing of the save's mods.
+A save folder with no descriptor fails the run, naming the path.
+An empty list reports every installed mod as added.
+A `mod_info.json` the roster keeps as `unparsed` takes its folder name as its ID,
+so its mod reads as missing on one side and added on the other.
 
 ## Get-ModRoster.ps1
 
@@ -413,10 +512,11 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
   stays in the roster as `unparsed`, under its folder name, with a warning.
   Dropping it would hide a real mod with nothing to say so.
 
-Each entry carries `Id`, `Version`, `Name`, `Folder`, `RelativePath` (under the install root),
+Each entry carries `Id`, `Version`,
+`VersionInfo` (the `Major`, `Minor`, `Patch` and `MinorIsRC` the game [compares versions by](#how-versions-compare)),
+`Name`, `Folder`, `RelativePath` (under the install root),
 `Jars` (the JARs `mod_info.json` declares, as full paths), `Status` (`parsed` or `unparsed`) and `SupersededCount`.
-On a console the entries print as a table of `Id`, `Version` and `Name`,
-the same table `Get-SaveModDrift.ps1` prints for a save's mods;
+On a console the entries print as a table of `Id`, `Version` and `Name`;
 every field stays on the object.
 
 ### How the game reads its JSON
@@ -451,9 +551,12 @@ A case that resolves class owners copies its fixture to a temporary folder and w
 so the repository holds no binary fixture.
 [`Get-SaveModDrift.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-SaveModDrift.IntegrationTests.Tests.ps1)
 runs the script against a hand-written descriptor shaped as 0.98a writes it,
+beside a `mods` folder that keeps one of the save's mods, changes one, lacks one and adds one,
 and writes damaged descriptors under a temporary folder.
 [`Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Invoke-SaveMigrationTool.IntegrationTests.Tests.ps1)
-copies a log fixture to a temporary folder and gives its failed save that descriptor.
+copies a log fixture to a temporary folder,
+and gives its failed save that descriptor and its install those mods;
+a case removes the descriptor, or empties its mod lists.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
 

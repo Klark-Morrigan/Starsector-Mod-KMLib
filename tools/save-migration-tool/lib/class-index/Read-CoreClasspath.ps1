@@ -5,14 +5,13 @@ function Read-CoreClasspath {
 
     param([string] $StarsectorRoot)
 
-    $vmparamsFileName = 'vmparams'
-    $coreFolderName = 'starsector-core'
+    $pathNames = Get-InstallPathNames
     $classpathPattern = '(?:^|\s)-classpath\s+(?<classpath>\S+)'
 
     # The Windows launcher's separator. The scripts read a Windows install.
     $classpathSeparator = ';'
 
-    $vmparamsPath = Join-Path $StarsectorRoot $vmparamsFileName
+    $vmparamsPath = Join-Path $StarsectorRoot $pathNames.VmparamsFile
 
     if (-not (Test-Path -LiteralPath $vmparamsPath -PathType Leaf)) {
         return [pscustomobject]@{ Jars = @(); Problem = "$vmparamsPath not found" }
@@ -24,7 +23,7 @@ function Read-CoreClasspath {
         return [pscustomobject]@{ Jars = @(); Problem = "$vmparamsPath names no classpath" }
     }
 
-    $coreFolder = Join-Path $StarsectorRoot $coreFolderName
+    $coreFolder = Join-Path $StarsectorRoot $pathNames.CoreFolder
     $jars = @(foreach ($jar in $match.Groups['classpath'].Value.Split($classpathSeparator)) {
 
         if ($jar) {

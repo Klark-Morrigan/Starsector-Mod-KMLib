@@ -55,6 +55,7 @@ so the two can never disagree.
   - [Editions and translation](#editions-and-translation)
   - [Mods](#mods)
   - [Support replies](#support-replies)
+  - [Development replies](#development-replies)
 - [Adding a string](#adding-a-string)
 - [Translating the changelog](#translating-the-changelog)
 
@@ -437,6 +438,10 @@ A version heading is never translated; see [translating the changelog](#translat
 | text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |
 | console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
 | colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
+| installed (a mod the install loads) | 已安装 | 已, already, with 安装, to install |
+| changed, missing, added (a mod, between a save and the install) | 已更改, 缺失, 新增 | 已, already, with 更改, to change; 缺失 as the missing content row; 新增 as the Added row |
+| major, minor, patch (the level of a version change) | 主版本, 次版本, 修订 | as the Chinese text of Semantic Versioning names MAJOR, MINOR and PATCH (主版本号, 次版本号, 修订号), without 号, number |
+| level (of a version change) | 变更级别 | 变更, a change, with 级别, level |
 
 #### Releases and badges
 
@@ -669,6 +674,23 @@ The words of a reply to a player's crash or bug report in the thread.
 | mod list (the mods a player has enabled) | Mod 列表 | Mod kept Latin as in Mod 作者, with 列表, list |
 | pop-up (an error dialog) | 弹窗 | the players' word for a dialog that pops up |
 | setting (one entry on a settings screen) | 设置项 | 项, item, after 设置; 设置 alone is the settings as a whole |
+
+### Development replies
+
+The words of a reply to a player asking about a feature in progress.
+
+| English | 简体中文 | Note |
+| --- | --- | --- |
+| architecture (how a codebase's parts are laid out) | 架构 | the usual software word |
+| code churn (code changing on a large scale) | 代码改动 | 改动, changes made, with 代码 (see the code row); the scale goes in the words beside it, as 最大的一波 |
+| codebase | 代码库 | 代码 with 库, a store |
+| gameplay | 游戏玩法 | 玩法, how a game is played |
+| iteration (one version of a feature in progress) | 版, as 一版 or 这一版 | the plain way to count versions of a work; not 迭代, which names the process |
+| on hold (work paused) | 搁置 | to set aside for later |
+| prototyping | 原型验证 | 原型, a prototype, with 验证, to test an idea out |
+| refactor | 重构 | the usual software word |
+| ship (put a feature into a release) | 发布 | to release, the forum's word in its mod发布 tag |
+| stop-gap | 权宜之计 | a measure for the time being, until the real one lands |
 
 ## Adding a string
 

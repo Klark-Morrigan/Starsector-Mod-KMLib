@@ -3,6 +3,7 @@ BeforeAll {
     Set-StrictMode -Version Latest
 
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Add-ModDefaultDisplay.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertTo-VersionInfo.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Format-ModVersion.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\ConvertTo-RosterEntry.ps1"
 }
@@ -12,6 +13,7 @@ Describe 'ConvertTo-RosterEntry' {
     BeforeEach {
 
         Mock Format-ModVersion { "formatted-$Version" }
+        Mock ConvertTo-VersionInfo { "parts-$Version" }
         Mock Add-ModDefaultDisplay {
             $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru
         }
@@ -29,13 +31,14 @@ Describe 'ConvertTo-RosterEntry' {
         }
     }
 
-    It 'reports the winner with its formatted version and the count of copies it beat' {
+    It 'reports the winner with its formatted version, its version parts and the count of copies it beat' {
 
         $entry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
 
         $entry.Id | Should -Be 'alpha'
         $entry.Name | Should -Be 'Alpha'
         $entry.Version | Should -Be 'formatted-1.2'
+        $entry.VersionInfo | Should -Be 'parts-1.2'
         $entry.Display | Should -Be 'added'
         $entry.Folder | Should -Be 'C:\Games\Starsector\mods\Alpha-1.2'
         $entry.Status | Should -Be 'parsed'

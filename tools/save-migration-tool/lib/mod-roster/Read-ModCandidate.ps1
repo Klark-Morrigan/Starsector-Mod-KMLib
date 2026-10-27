@@ -9,7 +9,7 @@ function Read-ModCandidate {
     [CmdletBinding()]
     param([System.IO.DirectoryInfo] $Folder)
 
-    $modInfoFileName = 'mod_info.json'
+    $modInfoFileName = (Get-InstallPathNames).ModInfoFile
     $infoPath = Join-Path $Folder.FullName $modInfoFileName
 
     if (-not (Test-Path -LiteralPath $infoPath -PathType Leaf)) {

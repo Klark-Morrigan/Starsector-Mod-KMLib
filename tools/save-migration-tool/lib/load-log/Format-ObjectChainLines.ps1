@@ -15,7 +15,8 @@ function Format-ObjectChainLines {
         return $counts
     }
 
-    $nearest = $modLinks | Sort-Object Depth | Select-Object -First 1
+    # The chain runs innermost first, so the first mod link is the nearest.
+    $nearest = $modLinks[0]
     $class = Format-ConsoleText -Role 'Code' -Text $nearest.Class
 
     return @(

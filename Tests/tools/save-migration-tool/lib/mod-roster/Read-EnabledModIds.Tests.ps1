@@ -5,6 +5,7 @@ BeforeAll {
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-StarsectorJson.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\Read-EnabledModIds.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\install\Get-InstallPathNames.ps1"
 
     function script:New-ModsRoot {
         # Writes a mods folder under TestDrive, holding an enabled_mods.json when one is given, and returns it.
@@ -26,6 +27,10 @@ BeforeAll {
 }
 
 Describe 'Read-EnabledModIds' {
+
+    BeforeEach {
+        Mock Get-InstallPathNames { [pscustomobject]@{ EnabledModsFile = 'enabled_mods.json' } }
+    }
 
     It 'reads the listed IDs, skipping blank ones' {
 
