@@ -429,6 +429,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
 | console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
 | content ID (an ID the game keeps one piece of content under) | 内容 ID | 内容 as the missing content row; ID stays in English. Its kinds take the kind row of [Code and tests](#code-and-tests) |
+| copy (one of several folders holding the same mod), file system (what lists a folder's contents) | 副本, 文件系统 | 副本, a copy, as in the checkout row's 检出副本; 文件系统, the usual computing word |
 | define (an ID, in a data file) | 定义 | the usual computing word |
 | descriptor (a save's `descriptor.xml`) | 描述文件 | 描述, to describe, with 文件, file: the small file that describes the save |
 | diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |

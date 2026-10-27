@@ -733,17 +733,17 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 - `mod_info.json`'s `id` is the identity, not the folder name: one mod can sit in several folders.
   IDs match case-sensitively, as the game matches them:
   `Foo` and `foo` are two mods, and `enabled_mods.json` enables only the one it spells.
-- When it does, the highest `version` wins, compared number by number (`1.10.0` above `1.9.0`),
-  however many digits a part holds.
-  Copies whose numbers tie are ordered by the version as written, so `1.5b` beats `1.5a`,
-  and copies at the very same version by folder name, so the same install always picks the same one.
-  `SupersededCount` says how many copies lost, and stderr names each winner and loser, and each tie.
+- When it does, the copy in the folder the file system lists first wins, whatever its version,
+  as the game keeps the first copy of an ID it reads.
+  NTFS lists folders by name, but not as a sort by name does: `[Repack] Foo` comes after `Foo`.
+  `SupersededCount` says how many copies lost, and stderr names each winner and loser.
 - `enabled_mods.json` decides what loads.
   A missing or unreadable one warns and lists every mod.
 - A folder with no `mod_info.json` is not a mod; stderr names each one skipped.
 - A `mod_info.json` nothing can parse, or one naming no `id`,
   stays in the roster as `unparsed`, under its folder name, with a warning.
   Dropping it would hide a real mod with nothing to say so.
+  It never wins over a copy that parses: the game skips it, and loads the next copy of the mod.
 
 Each entry carries `Id`, `Version`,
 `VersionInfo` (the `Major`, `Minor`, `Patch` and `MinorIsRC` the game [compares versions by](#how-versions-compare)),

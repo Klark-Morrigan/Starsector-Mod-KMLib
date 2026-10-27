@@ -1,5 +1,5 @@
-# Reads one mods\ folder as a roster candidate: its mod ID, name, version, the key its version sorts by,
-# and the JARs it declares, as mod_info.json writes them.
+# Reads one mods\ folder as a roster candidate: its mod ID, name, version and the JARs it declares,
+# as mod_info.json writes them.
 # It also reads what decides how the game reads the mod's data: the text the game sorts mods by, and
 # the data files the mod replaces outright. The game ignores a replaced settings.json, so those are left out.
 # Returns null for a folder with no mod_info.json, which the game does not load as a mod.
@@ -42,7 +42,6 @@ function Read-ModCandidate {
             Id            = $Folder.Name
             Name          = $null
             Version       = $null
-            SortKey       = ''
             Jars          = @()
             SortString    = $null
             ReplacedPaths = @()
@@ -60,8 +59,7 @@ function Read-ModCandidate {
         Id            = [string] $modId
         Name          = Get-JsonPropertyValue -Object $info -Name 'name'
         Version       = $version
-        SortKey       = Get-VersionSortKey -Version $version
-        Jars          = @(Get-JsonPropertyValue -Object $info -Name 'jars' | Where-Object { $_ })
+        Jars         = @(Get-JsonPropertyValue -Object $info -Name 'jars' | Where-Object { $_ })
         SortString    = Get-JsonPropertyValue -Object $info -Name 'sortString'
         ReplacedPaths = $replacedPaths
         Folder        = $Folder

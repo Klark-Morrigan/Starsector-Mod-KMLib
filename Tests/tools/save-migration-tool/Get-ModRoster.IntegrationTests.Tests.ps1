@@ -60,10 +60,10 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             $script:InstallRoot = New-ModInstall -Name 'mixed' -EnabledModsJson '{ "enabledMods": ["alpha", "beta"] }' `
                 -ModInfoByFolder @{
-                    'Alpha'           = '{ "id": "alpha", "name": "Alpha", "version": "1.9.0" }'
-                    'Alpha-1.10.0'    = '{ "id": "alpha", "name": "Alpha", "version": "1.10.0" }'
-                    'beta'            = '{ "id": "beta", "version": { "major": 2, "minor": 0, "patch": 3 } }'
-                    'gamma'           = '{ "id": "gamma", "version": "0.1" }'
+                    'Alpha'                 = '{ "id": "alpha", "name": "Alpha", "version": "1.9.0" }'
+                    '[Repack] Alpha-1.10.0' = '{ "id": "alpha", "name": "Alpha", "version": "1.10.0" }'
+                    'beta'                  = '{ "id": "beta", "version": { "major": 2, "minor": 0, "patch": 3 } }'
+                    'gamma'                 = '{ "id": "gamma", "version": "0.1" }'
                 }
 
             $script:Run = Invoke-ModRoster @{ StarsectorRoot = $script:InstallRoot }
@@ -81,11 +81,13 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $actualIds | Should -Be $expectedIds
         }
 
-        It 'picks the newest copy of a mod, comparing versions numerically' {
+        # The game keeps the first copy of a mod the file system lists, whatever its version.
+        # NTFS lists "[" after letters, where a sort by name puts it first.
+        It 'picks the copy whose folder comes first, though another copy is newer' {
 
             # ARRANGE
-            $expectedVersion = '1.10.0'
-            $expectedRelativePath = 'mods\Alpha-1.10.0'
+            $expectedVersion = '1.9.0'
+            $expectedRelativePath = 'mods\Alpha'
             $expectedSupersededCount = 1
 
             # ACT
@@ -101,7 +103,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $expectedHeaderPattern = '^Id\s+Version\s+Name$'
-            $expectedAlphaRowPattern = '^alpha\s+1\.10\.0\s+Alpha$'
+            $expectedAlphaRowPattern = '^alpha\s+1\.9\.0\s+Alpha$'
             $expectedAlphaRowCount = 1
 
             # ACT
@@ -127,7 +129,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
         It 'gives each mod the version parts the game compares by, from either version form' {
 
             # ARRANGE
-            $expectedAlphaParts = '1|10|0'
+            $expectedAlphaParts = '1|9|0'
             $expectedBetaParts = '2|0|3'
 
             # ACT
@@ -145,7 +147,8 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             # ARRANGE
             $expectedDiagnostics = @(
-                'Get-ModRoster: alpha: Alpha-1.10.0 (1.10.0) wins over Alpha (1.9.0)'
+                ('Get-ModRoster: alpha: Alpha (1.9.0) wins over [Repack] Alpha-1.10.0 (1.10.0), ' +
+                    'coming first in folder order')
                 ("Get-ModRoster: read 4 mod folders under $script:InstallRoot\mods and 2 enabled IDs; " +
                     'listing 2 mods (0 unparsed), skipping 1 disabled and 1 superseded copies')
             )
@@ -172,7 +175,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
         It 'reports the same relative path for a root written with a trailing slash' {
 
             # ARRANGE
-            $expectedRelativePath = 'mods\Alpha-1.10.0'
+            $expectedRelativePath = 'mods\Alpha'
 
             # ACT
             $actualRun = Invoke-ModRoster @{ StarsectorRoot = "$script:InstallRoot\" }
@@ -182,25 +185,30 @@ Describe 'Get-ModRoster.IntegrationTests' {
         }
     }
 
-    Context 'two copies of a mod at the same version' {
+    # The game skips a copy whose mod_info.json it cannot read, so that copy never claims the mod's ID.
+    Context 'a first copy of a mod nothing can parse' {
 
-        It 'picks the first by folder name, and says the version tied' {
+        It 'picks the next copy as the winner, and keeps the first apart as unparsed' {
 
             # ARRANGE
-            $root = New-ModInstall -Name 'tie' -EnabledModsJson '{ "enabledMods": ["beta"] }' -ModInfoByFolder @{
-                'Beta B' = '{ "id": "beta", "version": "1.0" }'
-                'Beta A' = '{ "id": "beta", "version": "1.0" }'
-            }
-            $expectedRelativePaths = @('mods\Beta A')
-            $expectedTieLine = 'Get-ModRoster: beta: Beta A (1.0) wins over Beta B (1.0), ' +
-                'the same version, so first by folder name'
+            $root = New-ModInstall -Name 'unparsedFirst' -EnabledModsJson '{ "enabledMods": ["beta"] }' `
+                -ModInfoByFolder @{
+                    'Beta A' = '{ "id": "beta", '
+                    'Beta B' = '{ "id": "beta", "version": "1.0" }'
+                }
+            $expectedBetaPath = 'mods\Beta B'
+            $expectedBetaSupersededCount = 0
+            $expectedUnparsedStatus = 'unparsed'
+            $expectedSummaryPattern = '*listing 2 mods (1 unparsed), skipping 0 disabled and 0 superseded copies'
 
             # ACT
             $actualRun = Invoke-ModRoster @{ StarsectorRoot = $root }
 
             # ASSERT
-            $actualRun.Output.RelativePath | Should -Be $expectedRelativePaths
-            $actualRun.Diagnostics | Should -Contain $expectedTieLine
+            ($actualRun.Output | Where-Object Id -EQ 'beta').RelativePath | Should -Be $expectedBetaPath
+            ($actualRun.Output | Where-Object Id -EQ 'beta').SupersededCount | Should -Be $expectedBetaSupersededCount
+            ($actualRun.Output | Where-Object Id -EQ 'Beta A').Status | Should -Be $expectedUnparsedStatus
+            @($actualRun.Diagnostics)[-1] | Should -BeLike $expectedSummaryPattern
         }
     }
 

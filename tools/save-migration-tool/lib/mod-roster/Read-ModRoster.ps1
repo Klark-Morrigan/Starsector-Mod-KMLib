@@ -47,9 +47,9 @@ function Read-ModRoster {
             $winnerCopy = Format-ModCopy -Candidate $winner
             $loserCopy = Format-ModCopy -Candidate $loser
             $modId = Format-ConsoleText -Role 'Mod' -Text $modGroup.Id
-            $tieNote = Format-TieNote -Winner $winner -Loser $loser
 
-            Write-DiagnosticLine -Source $DiagnosticSource -Message "${modId}: $winnerCopy wins over $loserCopy$tieNote"
+            Write-DiagnosticLine -Source $DiagnosticSource -Message (
+                "${modId}: $winnerCopy wins over $loserCopy, coming first in folder order")
         }
 
         # Unparsed entries bypass the enabled filter: their ID is unknown, so the

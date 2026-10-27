@@ -10,7 +10,6 @@ BeforeAll {
     . "$libRoot\install\Get-InstallPathNames.ps1"
     . "$libRoot\mod-roster\ConvertTo-RosterEntry.ps1"
     . "$libRoot\mod-roster\Format-ModCopy.ps1"
-    . "$libRoot\mod-roster\Format-TieNote.ps1"
     . "$libRoot\mod-roster\Get-ModIdComparer.ps1"
     . "$libRoot\mod-roster\Get-ModStatusNames.ps1"
     . "$libRoot\mod-roster\Get-UnparsedModCount.ps1"
@@ -52,7 +51,6 @@ Describe 'Read-ModRoster' {
         Mock Read-EnabledModIds { [pscustomobject]@{ Ids = @('alpha'); IsListRead = $true } }
         Mock Read-ModFolderCandidates { ,@('candidate one', 'candidate two', 'candidate three') }
         Mock Format-ModCopy { "copy of $($Candidate.Id)" }
-        Mock Format-TieNote { '' }
         Mock ConvertTo-RosterEntry { [pscustomobject]@{ Id = $ModGroup.Id } }
         Mock Group-ModCandidate {
             New-Group -Id 'alpha' -Superseded @([pscustomobject]@{ Id = 'alpha-old' })
@@ -118,7 +116,7 @@ Describe 'Read-ModRoster' {
 
         # ARRANGE
         $expectedDiagnostics = @(
-            'Test: alpha: copy of alpha wins over copy of alpha-old'
+            'Test: alpha: copy of alpha wins over copy of alpha-old, coming first in folder order'
             ("Test: read 3 mod folders under $script:InstallRoot\mods and 1 enabled IDs; " +
                 'listing 2 mods (1 unparsed), skipping 1 disabled and 1 superseded copies')
         )
