@@ -16,5 +16,5 @@ function Format-DroppedModSummary {
         return $summary
     }
 
-    return "${summary}: $(@($droppedIds | ForEach-Object { Format-ConsoleText -Role 'Mod' -Text $_ }) -join ', ')"
+    return "${summary}: $(Format-ConsoleList -Role 'Mod' -Values $droppedIds)"
 }

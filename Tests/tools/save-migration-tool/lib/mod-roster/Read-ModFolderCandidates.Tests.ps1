@@ -5,6 +5,7 @@ BeforeAll {
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
     . "$libRoot\Write-DiagnosticLine.ps1"
+    . "$libRoot\console\Format-ConsoleList.ps1"
     . "$libRoot\console\Format-ConsoleNumber.ps1"
     . "$libRoot\console\Format-ConsoleText.ps1"
     . "$libRoot\install\Get-InstallPathNames.ps1"
@@ -35,6 +36,7 @@ Describe 'Read-ModFolderCandidates' {
 
         Mock Write-DiagnosticLine { $script:Diagnostics.Add("${Source}: $Message") }
         Mock Format-ConsoleText { $Text }
+        Mock Format-ConsoleList { $Values -join ', ' }
         Mock Format-ConsoleNumber { "$Number" }
         Mock Get-InstallPathNames { [pscustomobject]@{ ModInfoFile = 'mod_info.json' } }
 

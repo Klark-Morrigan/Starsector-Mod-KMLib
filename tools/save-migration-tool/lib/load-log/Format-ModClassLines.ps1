@@ -15,7 +15,8 @@ function Format-ModClassLines {
     foreach ($link in $modLinks) {
 
         $class = Format-ConsoleText -Role 'Code' -Text $link.Class
+        $owners = Format-ConsoleList -Role 'Mod' -Values $link.Owners
 
-        "  depth $(Format-ConsoleNumber $link.Depth): $class ($(Format-OwnerList -Owners $link.Owners))"
+        "  depth $(Format-ConsoleNumber $link.Depth): $class ($owners)"
     }
 }

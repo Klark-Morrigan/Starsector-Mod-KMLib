@@ -248,6 +248,10 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             # ARRANGE
             $logFolder = "$script:FixtureRoot\starsector-core"
+
+            # A load's later readings sit under its first, past the script name and the save folder.
+            $readingIndent = ' ' * 'Get-SaveLoadAttempt: save_Alpha_1: '.Length
+
             $expectedDiagnostics = @(
                 'Get-SaveLoadAttempt: reading 3 log files, oldest first'
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.2: 44 lines, 3 load attempts start here"
@@ -264,13 +268,13 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                     'owners found for 5 classes, more than one mod for 1, mod copies of core classes dropped for 1')
                 ''
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
-                'Get-SaveLoadAttempt: save_Alpha_1: object chain length 6, mod classes 2,'
-                ((' ' * 'Get-SaveLoadAttempt: '.Length) + '  nearest ' +
+                "${readingIndent}object chain length 6, mod classes 2,"
+                ("${readingIndent}  nearest " +
                     'data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin (aotd_theory_of_toolbox) ' +
                     'at depth 3')
                 ''
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Weapon tania_boomerang_launcher'
-                'Get-SaveLoadAttempt: save_Alpha_1: object chain length 1, mod classes 0'
+                "${readingIndent}object chain length 1, mod classes 0"
             )
 
             # ACT

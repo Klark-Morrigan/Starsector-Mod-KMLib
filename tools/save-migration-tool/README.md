@@ -342,7 +342,8 @@ One object per load, newest first:
 | `ObjectChain` | The first attempt's [object chain](#object-chain), innermost first: each class's `Depth`, `Class` and [`Owners`](#class-owners). Empty when the log names none |
 | `Attempts` | Each attempt in order, with its `SavePath`, `Outcome`, `CauseType`, `Cause`, `Missing`, `ObjectChain`, the `LogFile` and `LogLine` it starts on, and its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`) |
 
-Stderr gains a block for each listed load with a cause:
+Stderr gains a block for each listed load with a cause,
+the same readings `-AsText` writes under it:
 what the cause was read as,
 and, when it names one,
 the chain's length and, on a second line, its nearest mod class.

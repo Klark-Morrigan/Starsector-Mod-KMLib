@@ -30,7 +30,7 @@ function Read-ModFolderCandidates {
 
     if ($skippedFolders.Count -gt 0) {
 
-        $folderList = @($skippedFolders | ForEach-Object { Format-ConsoleText -Role 'Path' -Text $_ }) -join ', '
+        $folderList = Format-ConsoleList -Role 'Path' -Values $skippedFolders
         $modInfoFileName = Format-ConsoleText -Role 'Path' -Text (Get-InstallPathNames).ModInfoFile
 
         Write-DiagnosticLine -Source $DiagnosticSource -Message (
