@@ -7,6 +7,7 @@ BeforeAll {
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$libRoot\content-catalogue\Add-ContentOwner.ps1"
     . "$libRoot\content-catalogue\ConvertFrom-StarsectorCsv.ps1"
+    . "$libRoot\content-catalogue\ConvertTo-SpreadsheetRowIds.ps1"
     . "$libRoot\content-catalogue\ConvertTo-StraightQuotes.ps1"
     . "$libRoot\content-catalogue\Find-ReplacingSource.ps1"
     . "$libRoot\content-catalogue\New-ContentOwnerIndex.ps1"
@@ -29,6 +30,16 @@ BeforeAll {
 
         return [pscustomobject]@{ Owner = $Owner; Folder = $folder }
     }
+
+    function script:New-CopyRows {
+        # One copy's rows as ConvertTo-SpreadsheetRowIds hands them back: each key, and its ID or empty, by index.
+        param(
+            [string[]] $Keys,
+            [string[]] $Ids
+        )
+
+        return [pscustomobject]@{ Keys = $Keys; Ids = $Ids }
+    }
 }
 
 Describe 'Read-SpreadsheetOwners' {
@@ -38,13 +49,15 @@ Describe 'Read-SpreadsheetOwners' {
         $script:Case = [guid]::NewGuid().ToString('N')
         $script:Added = [System.Collections.Generic.List[string]]::new()
 
-        # Each copy's rows, by owner, as the reader returns them: one array of the asked columns per row.
-        $script:RowsByOwner = @{}
+        # Each copy's rows, by owner, as the row converter fake hands them back.
+        $script:CopyRowsByOwner = @{}
 
-        # Each copy's text is its owner's name, so the reader fake hands back that owner's rows.
+        # Each copy's text is its owner's name, and its one row is that text,
+        # so the row converter fake hands back that owner's rows.
         Mock Read-StarsectorText { Split-Path -Leaf ($Path -replace '[\\/]data[\\/]sheet\.csv$', '') }
-        Mock ConvertFrom-StarsectorCsv { ,[object[]] $script:RowsByOwner[$Text] }
         Mock ConvertTo-StraightQuotes { $Text }
+        Mock ConvertFrom-StarsectorCsv { ,[object[]] @($Text) }
+        Mock ConvertTo-SpreadsheetRowIds { $script:CopyRowsByOwner["$Rows"] }
         Mock Add-ContentOwner { $script:Added.Add("$Id=$Owner") }
         Mock Find-ReplacingSource { $null }
     }
@@ -53,18 +66,20 @@ Describe 'Read-SpreadsheetOwners' {
     It 'reads every copy in search order, owning an ID by every copy defining it, skipping a source without one' {
 
         # ARRANGE
-        $script:RowsByOwner['alpha'] = @(, @('shared'))
-        $script:RowsByOwner['core'] = @(@('shared'), @('core_only'))
+        $script:CopyRowsByOwner['alpha'] = New-CopyRows -Keys @('shared') -Ids @('shared')
+        $script:CopyRowsByOwner['core'] = New-CopyRows -Keys @('shared', 'core_only') -Ids @('shared', 'core_only')
 
         $sources = @(
             (New-Source -Owner 'alpha' -HasSpreadsheet)
             (New-Source -Owner 'beta')
             (New-Source -Owner 'core' -HasSpreadsheet)
         )
-        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv'
+        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -IdColumn 'effect'
 
         $expectedAdded = @('shared=alpha', 'shared=core', 'core_only=core')
         $expectedFileCount = 2
+        $expectedColumnNames = 'id effect'
+        $expectedSpreadsheet = $spreadsheet
 
         # ACT
         $actualRead = Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet
@@ -73,7 +88,12 @@ Describe 'Read-SpreadsheetOwners' {
         $script:Added | Should -Be $expectedAdded
         $actualRead.FileCount | Should -Be $expectedFileCount
         $actualRead.ReplacingOwner | Should -BeNullOrEmpty
-        Should -Invoke ConvertFrom-StarsectorCsv -ParameterFilter { "$ColumnNames" -eq 'id' } -Times 2 -Exactly
+        Should -Invoke ConvertFrom-StarsectorCsv -Times 2 -Exactly -ParameterFilter {
+            "$ColumnNames" -ceq $expectedColumnNames
+        }
+        Should -Invoke ConvertTo-SpreadsheetRowIds -Times 2 -Exactly -ParameterFilter {
+            [object]::ReferenceEquals($Spreadsheet, $expectedSpreadsheet)
+        }
         Should -Invoke ConvertTo-StraightQuotes -Times 0 -Exactly
     }
 
@@ -81,7 +101,7 @@ Describe 'Read-SpreadsheetOwners' {
 
         # ARRANGE
         foreach ($owner in 'alpha', 'beta', 'core') {
-            $script:RowsByOwner[$owner] = @(, @("$owner-row"))
+            $script:CopyRowsByOwner[$owner] = New-CopyRows -Keys @("$owner-row") -Ids @("$owner-row")
         }
 
         $sources = @(
@@ -124,63 +144,22 @@ Describe 'Read-SpreadsheetOwners' {
         }
     }
 
-    # A row whose key is empty is no row to the game; one whose ID is empty claims its key and defines nothing.
-    It 'drops a row with an empty key, and records no empty ID' {
+    # The first copy's row of a key decides it: a later copy's row for that key defines nothing, even with an ID,
+    # and a first row defining nothing still claims its key.
+    It 'defines an ID by the first row of its key in search order' {
 
         # ARRANGE
-        $script:RowsByOwner['alpha'] = @(@('', ''), @('row', ''), @('kept', 'id_kept'))
-        $script:RowsByOwner['core'] = @(@('', 'from_empty_key'), @('row', 'later'))
+        $script:CopyRowsByOwner['alpha'] = New-CopyRows -Keys @('claimed', 'shared') -Ids @('', 'shared_id')
+        $script:CopyRowsByOwner['core'] = New-CopyRows -Keys @('claimed', 'shared', 'core_key') `
+            -Ids @('late_id', 'shared_id', 'core_id')
 
         $sources = @((New-Source -Owner 'alpha' -HasSpreadsheet), (New-Source -Owner 'core' -HasSpreadsheet))
-        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -IdColumn 'effect'
+        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv'
 
-        $expectedAdded = @('id_kept=alpha')
+        $expectedAdded = @('shared_id=alpha', 'shared_id=core', 'core_id=core')
 
         # ACT
         Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
-
-        # ASSERT
-        $script:Added | Should -Be $expectedAdded
-        Should -Invoke ConvertFrom-StarsectorCsv -ParameterFilter { "$ColumnNames" -eq 'id effect' }
-    }
-
-    # The game merges by the key first, then filters, so a filtered row still claims its key,
-    # and a later copy's row for that key defines nothing, though it passes the filter.
-    It 'keeps a row only when its filter column holds the value, after the merge' {
-
-        # ARRANGE
-        $script:RowsByOwner['alpha'] = @(@('star', 'STAR'), @('rock', 'PLANET'), @('none', $null))
-        $script:RowsByOwner['core'] = @(@('star', 'PLANET'), @('ice', 'PLANET'))
-
-        $sources = @((New-Source -Owner 'alpha' -HasSpreadsheet), (New-Source -Owner 'core' -HasSpreadsheet))
-        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -RowFilterColumn 'type' -RowFilterValue 'PLANET'
-
-        $expectedAdded = @('rock=alpha', 'ice=core')
-
-        # ACT
-        Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
-
-        # ASSERT
-        $script:Added | Should -Be $expectedAdded
-        Should -Invoke ConvertFrom-StarsectorCsv -ParameterFilter { "$ColumnNames" -eq 'id type' }
-    }
-
-    It 'joins several key columns into the ID, skipping one opening with # and one missing a part when asked' {
-
-        # ARRANGE
-        $script:RowsByOwner['alpha'] = @(@('a', 'x'), @('#b', 'x'), @('c', ''))
-
-        $sources = @(New-Source -Owner 'alpha' -HasSpreadsheet)
-        $joined = New-SpreadsheetSource -Path 'data/sheet.csv' -KeyColumns @('name', 'tags') -SkipsHashIds
-        $complete = New-SpreadsheetSource -Path 'data/sheet.csv' -KeyColumns @('name', 'tags') -IdJoiner '_' `
-            -RequiresEveryKeyColumn
-
-        $expectedAdded = @('a_|_x=alpha', 'c_|_=alpha', 'a_x=alpha', '#b_x=alpha')
-
-        # ACT
-        foreach ($spreadsheet in $joined, $complete) {
-            Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
-        }
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
@@ -189,7 +168,7 @@ Describe 'Read-SpreadsheetOwners' {
     It 'straightens curly quotes before it reads the text, when the source says so' {
 
         # ARRANGE
-        $script:RowsByOwner['alpha'] = @(, @('a'))
+        $script:CopyRowsByOwner['alpha'] = New-CopyRows -Keys @('a') -Ids @('a')
 
         $sources = @(New-Source -Owner 'alpha' -HasSpreadsheet)
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -ConvertsCurlyQuotes
@@ -201,7 +180,7 @@ Describe 'Read-SpreadsheetOwners' {
         Should -Invoke ConvertTo-StraightQuotes -ParameterFilter { $Text -eq 'alpha' } -Times 1 -Exactly
     }
 
-    It 'skips a copy lacking a column it reads in some row, or that does not parse, and reads the others' {
+    It 'skips a copy whose rows the game rejects, or that does not parse, and reads the others' {
 
         # ARRANGE
         Mock ConvertFrom-StarsectorCsv {
@@ -210,11 +189,19 @@ Describe 'Read-SpreadsheetOwners' {
                 throw 'has a quote left open, at character 3 after the header'
             }
 
-            ,[object[]] $script:RowsByOwner[$Text]
+            ,[object[]] @($Text)
         }
 
-        $script:RowsByOwner['alpha'] = @(@('a', 'x'), @('b', $null))
-        $script:RowsByOwner['core'] = @(, @('c', 'y'))
+        Mock ConvertTo-SpreadsheetRowIds {
+
+            if ("$Rows" -eq 'alpha') {
+                throw 'has no effect column in every row'
+            }
+
+            $script:CopyRowsByOwner["$Rows"]
+        }
+
+        $script:CopyRowsByOwner['core'] = New-CopyRows -Keys @('c') -Ids @('y')
 
         $sources = @(
             (New-Source -Owner 'alpha' -HasSpreadsheet)

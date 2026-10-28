@@ -29,8 +29,19 @@ function New-SpreadsheetSource {
         [switch] $ConvertsCurlyQuotes
     )
 
+    # The columns a row is read with: the key columns, then the ID and filter columns where those differ.
+    $columnNames = [System.Collections.Generic.List[string]]::new($KeyColumns)
+
+    foreach ($extraColumn in @($IdColumn, $RowFilterColumn)) {
+
+        if ($extraColumn -and -not $columnNames.Contains($extraColumn)) {
+            $columnNames.Add($extraColumn)
+        }
+    }
+
     return [pscustomobject]@{
         Path                   = $Path
+        ColumnNames            = $columnNames.ToArray()
         KeyColumns             = $KeyColumns
         IdColumn               = $IdColumn
         IdJoiner               = $IdJoiner
