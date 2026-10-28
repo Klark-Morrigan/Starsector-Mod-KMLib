@@ -338,9 +338,9 @@ One object per load, newest first:
 | `SavePath` | The full save path, with `..` resolved against the log's folder (the game's working directory) |
 | `Outcome` | `Loaded`, `Failed`, or `Unfinished` when the log ends first: a crash, or a load still running |
 | `CauseType`, `Cause` | The root throwable of the first attempt, read from `campaign.xml`, the newest file. Empty when that attempt loaded |
-| `Attempts` | Each attempt in order, with its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`), `SavePath`, `Outcome`, `CauseType`, `Cause`, the `LogFile` and `LogLine` it starts on, its `Missing` and its `ObjectChain` |
 | `Missing` | The [missing content](#missing-content) the first attempt's cause names: `Kind`, `Id`, `ReportedId` and `SpecClass`. Empty when the cause names none |
 | `ObjectChain` | The first attempt's [object chain](#object-chain), innermost first: each class's `Depth`, `Class` and [`Owners`](#class-owners). Empty when the log names none |
+| `Attempts` | Each attempt in order, with its `SavePath`, `Outcome`, `CauseType`, `Cause`, `Missing`, `ObjectChain`, the `LogFile` and `LogLine` it starts on, and its `Source` (`campaign`, `campaign.bak`, `campaign.inprogress`) |
 
 Stderr gains a block for each listed load with a cause:
 what the cause was read as,
