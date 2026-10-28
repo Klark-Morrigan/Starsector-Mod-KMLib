@@ -74,36 +74,8 @@ if (-not $PSBoundParameters.ContainsKey('Roster')) {
 $catalogue = Read-ContentCatalogue -StarsectorRoot $StarsectorRoot -Roster $Roster -Kinds $Kind `
     -DiagnosticSource $DiagnosticSource
 
-$ownersByKind = $catalogue.OwnersByKind
-$idPatterns = @(foreach ($pattern in $Id) { [WildcardPattern]::new($pattern, 'IgnoreCase') })
-$definedCount = 0
-
-$rows = @(foreach ($kindName in $ownersByKind.Keys) {
-
-    $ownersById = $ownersByKind[$kindName]
-    $definedCount += $ownersById.Count
-
-    $ids = [string[]] $ownersById.Keys
-    [System.Array]::Sort($ids, [System.StringComparer]::Ordinal)
-
-    foreach ($definedId in $ids) {
-
-        $isListed = $idPatterns.Count -eq 0
-
-        foreach ($pattern in $idPatterns) {
-
-            if ($pattern.IsMatch($definedId)) {
-
-                $isListed = $true
-                break
-            }
-        }
-
-        if ($isListed) {
-            [pscustomobject]@{ Kind = $kindName; Id = $definedId; Owners = $ownersById[$definedId].ToArray() }
-        }
-    }
-})
+$definedCount = ($catalogue.OwnersByKind.Values | ForEach-Object Count | Measure-Object -Sum).Sum
+$rows = @(ConvertTo-CatalogueRows -OwnersByKind $catalogue.OwnersByKind -IdPatterns $Id)
 
 $listing = "listing $(Format-ConsoleNumber $rows.Count) of $(Format-ConsoleNumber $definedCount) defined IDs"
 
@@ -115,23 +87,21 @@ if ($GroupByOwner) {
 
 Write-DiagnosticLine -Source $DiagnosticSource -Message $listing
 
-if ($OutFile) {
-
-    # .NET resolves a relative path against the process's folder, not the shell's.
-    $outPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutFile)
-
-    New-Item -ItemType Directory -Path (Split-Path -Parent $outPath) -Force | Out-Null
-    [System.IO.File]::WriteAllText(
-        $outPath,
-        (ConvertTo-Json -InputObject $rows -Depth 4),
-        [System.Text.UTF8Encoding]::new($false))
-
-    Write-DiagnosticLine -Source $DiagnosticSource -Message (
-        "wrote the JSON to $(Format-ConsoleText -Role 'Path' -Text $outPath)")
-
-} elseif ($AsJson) {
-    ConvertTo-Json -InputObject $rows -Depth 4
+if (-not $OutFile -and -not $AsJson) {
+    $rows
 
 } else {
-    $rows
+
+    $json = ConvertTo-Json -InputObject $rows -Depth (Get-CatalogueJsonDepth)
+
+    if ($OutFile) {
+
+        $outPath = Write-TextFile -Path $OutFile -Text $json
+
+        Write-DiagnosticLine -Source $DiagnosticSource -Message (
+            "wrote the JSON to $(Format-ConsoleText -Role 'Path' -Text $outPath)")
+
+    } else {
+        $json
+    }
 }

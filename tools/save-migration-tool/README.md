@@ -102,7 +102,7 @@ Loading the library takes about half a second.
 | Folder | Holds |
 | --- | --- |
 | [`formats/`](formats/) | Console table views for rows with too many columns for PowerShell's default table |
-| [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, and the name of the process-wide slot it remembers the last writer in |
+| [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, the name of the process-wide slot it remembers the last writer in, and `Write-TextFile`, which writes a script's output to a file |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
 | [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns an object prints as a table, every mod list's included |
 | [`lib/content-catalogue/`](lib/content-catalogue/) | The kinds of content a save names by ID, where the game defines each, and reading the IDs the install defines with the mods behind them |
