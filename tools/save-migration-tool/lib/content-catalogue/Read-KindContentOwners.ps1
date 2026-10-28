@@ -14,9 +14,8 @@ function Read-KindContentOwners {
         [object] $Definition
     )
 
-    $ownerIndexType = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]
     $coreOwner = Get-CoreOwnerName
-    $kindOwners = $ownerIndexType::new()
+    $kindOwners = New-ContentOwnerIndex
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $replacements = [System.Collections.Generic.List[object]]::new()
     $contentFileCount = 0
@@ -24,8 +23,8 @@ function Read-KindContentOwners {
 
     foreach ($part in $Definition.Parts) {
 
-        $fileOwners = $ownerIndexType::new()
-        $rowOwners = $ownerIndexType::new()
+        $fileOwners = New-ContentOwnerIndex
+        $rowOwners = New-ContentOwnerIndex
 
         foreach ($fileSet in $part.FileSets) {
 

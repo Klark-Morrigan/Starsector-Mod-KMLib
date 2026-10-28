@@ -52,7 +52,7 @@ function Read-SpreadsheetOwners {
         $Sources
     }
 
-    $ownersById = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]::new()
+    $ownersById = New-ContentOwnerIndex
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $seenKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $definedIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)

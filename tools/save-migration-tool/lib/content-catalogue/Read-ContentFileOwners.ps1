@@ -16,7 +16,7 @@ function Read-ContentFileOwners {
         [object] $FileSet
     )
 
-    $ownersById = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]::new()
+    $ownersById = New-ContentOwnerIndex
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $copyCount = 0
     $spreadsheetCount = 0

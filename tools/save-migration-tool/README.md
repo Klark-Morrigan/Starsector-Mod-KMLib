@@ -822,7 +822,7 @@ skills from both spreadsheets, a description keyed by two columns, and a planets
 [`helpers/`](../../Tests/tools/save-migration-tool/helpers/) holds what the suites share:
 running a script with its stderr and warnings captured, blank lines kept,
 writing a test file, mod or JAR under the suite's temporary folder,
-and building and writing the owner index the content catalogue passes around.
+and filling and writing the owner index the content catalogue passes around.
 
 Every suite runs under `Set-StrictMode -Version Latest`, as the scripts do,
 so a read the scripts would fail on fails in the suites too.

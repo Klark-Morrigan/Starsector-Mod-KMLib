@@ -7,7 +7,7 @@ function Select-ContentWithRow {
         [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]] $RowOwners
     )
 
-    $ownersById = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]::new()
+    $ownersById = New-ContentOwnerIndex
 
     foreach ($entry in $FileOwners.GetEnumerator()) {
 

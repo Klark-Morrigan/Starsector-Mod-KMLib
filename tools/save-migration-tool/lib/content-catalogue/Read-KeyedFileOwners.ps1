@@ -13,8 +13,7 @@ function Read-KeyedFileOwners {
         [object] $KeyedFile
     )
 
-    $ownerIndexType = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[string]]]
-    $keyOwners = $ownerIndexType::new()
+    $keyOwners = New-ContentOwnerIndex
     $isObjectByKey = [System.Collections.Generic.Dictionary[string, bool]]::new()
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $file = @(Find-ListedContentFiles -Sources $Sources -RelativePaths @($KeyedFile.Path))
@@ -60,7 +59,7 @@ function Read-KeyedFileOwners {
         }
     }
 
-    $ownersById = $ownerIndexType::new()
+    $ownersById = New-ContentOwnerIndex
 
     foreach ($entry in $keyOwners.GetEnumerator()) {
 

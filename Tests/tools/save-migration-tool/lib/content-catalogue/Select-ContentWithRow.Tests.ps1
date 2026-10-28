@@ -2,9 +2,12 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue"
+
     . "$PSScriptRoot\..\..\helpers\New-OwnerIndex.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\Add-ContentOwner.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\Select-ContentWithRow.ps1"
+    . "$libRoot\Add-ContentOwner.ps1"
+    . "$libRoot\New-ContentOwnerIndex.ps1"
+    . "$libRoot\Select-ContentWithRow.ps1"
 }
 
 Describe 'Select-ContentWithRow' {
@@ -18,26 +21,34 @@ Describe 'Select-ContentWithRow' {
 
     It 'keeps an ID both a file and a row define, with the file''s owners and the row''s' {
 
+        # ARRANGE
         $fileOwners = New-OwnerIndex @{ 'both' = @('alpha'); 'file_only' = @('alpha') }
         $rowOwners = New-OwnerIndex @{ 'both' = @('beta', 'alpha'); 'row_only' = @('beta') }
 
+        $expectedAdded = @('both=alpha', 'both=beta', 'both=alpha')
+
+        # ACT
         Select-ContentWithRow -FileOwners $fileOwners -RowOwners $rowOwners | Out-Null
 
-        $script:Added | Should -Be @('both=alpha', 'both=beta', 'both=alpha')
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
     }
 
+    # Selecting is a read, so the given indexes must come out as they went in.
     It 'returns a new index, leaving both given ones as they were' {
 
+        # ARRANGE
         $fileOwners = New-OwnerIndex @{ 'both' = @('alpha') }
         $rowOwners = New-OwnerIndex @{ 'both' = @('beta') }
 
-        $selected = Select-ContentWithRow -FileOwners $fileOwners -RowOwners $rowOwners
+        # ACT
+        $actualSelected = Select-ContentWithRow -FileOwners $fileOwners -RowOwners $rowOwners
 
-        [object]::ReferenceEquals($selected, $fileOwners) | Should -BeFalse
-        [object]::ReferenceEquals($selected, $rowOwners) | Should -BeFalse
-
+        # ASSERT
+        [object]::ReferenceEquals($actualSelected, $fileOwners) | Should -BeFalse
+        [object]::ReferenceEquals($actualSelected, $rowOwners) | Should -BeFalse
         Should -Invoke Add-ContentOwner -Times 2 -Exactly -ParameterFilter {
-            [object]::ReferenceEquals($OwnersById, $selected)
+            [object]::ReferenceEquals($OwnersById, $actualSelected)
         }
     }
 }

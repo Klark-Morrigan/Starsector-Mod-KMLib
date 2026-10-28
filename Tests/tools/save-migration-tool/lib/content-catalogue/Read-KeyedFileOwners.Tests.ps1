@@ -7,6 +7,7 @@ BeforeAll {
     . "$PSScriptRoot\..\..\helpers\Format-OwnerIndex.ps1"
     . "$libRoot\content-catalogue\Add-ContentOwner.ps1"
     . "$libRoot\content-catalogue\Find-ListedContentFiles.ps1"
+    . "$libRoot\content-catalogue\New-ContentOwnerIndex.ps1"
     . "$libRoot\content-catalogue\New-KeyedFileSource.ps1"
     . "$libRoot\content-catalogue\Read-KeyedFileOwners.ps1"
     . "$libRoot\content-catalogue\Select-MergedCopies.ps1"

@@ -8,6 +8,7 @@ BeforeAll {
     . "$libRoot\Add-ContentOwner.ps1"
     . "$libRoot\Find-ContentFiles.ps1"
     . "$libRoot\Find-ListedContentFiles.ps1"
+    . "$libRoot\New-ContentOwnerIndex.ps1"
     . "$libRoot\Read-ContentFileId.ps1"
     . "$libRoot\Read-ContentFileOwners.ps1"
     . "$libRoot\Read-SpreadsheetOwners.ps1"
@@ -50,15 +51,22 @@ Describe 'Read-ContentFileOwners' {
 
     It 'records the ID each one-copy file sets, with the copy''s owner, reading the set''s key' {
 
+        # ARRANGE
         Mock Find-ContentFiles { (New-File -Name 'a.ship' -Owners 'alpha'), (New-File -Name 'b.ship' -Owners 'core') }
 
-        $read = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
+        $expectedAdded = @('a=alpha', 'b=core')
+        $expectedFileCount = 2
+        $expectedSpreadsheetCount = 0
+        $expectedSkippedCount = 0
 
-        $script:Added | Should -Be @('a=alpha', 'b=core')
-        $read.FileCount | Should -Be 2
-        $read.SpreadsheetCount | Should -Be 0
-        $read.SkippedFiles.Count | Should -Be 0
+        # ACT
+        $actualRead = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
 
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
+        $actualRead.SkippedFiles.Count | Should -Be $expectedSkippedCount
         Should -Invoke Find-ContentFiles -ParameterFilter { "$Sources" -eq 'sources' -and $FileSet.IdKey -eq 'hullId' }
         Should -Invoke Read-ContentFileId -ParameterFilter { $IdKey -eq 'hullId' } -Times 2 -Exactly
         Should -Invoke Select-MergedCopies -Times 0 -Exactly
@@ -67,6 +75,7 @@ Describe 'Read-ContentFileOwners' {
     # factions.csv lists every .faction file the game reads.
     It 'reads the files a spreadsheet lists, counting the spreadsheet and returning what it skipped' {
 
+        # ARRANGE
         $listing = [pscustomobject]@{ Path = 'data/world/factions/factions.csv' }
         $script:FileSet = [pscustomobject]@{ IdKey = 'id'; ListedBy = $listing }
 
@@ -80,12 +89,17 @@ Describe 'Read-ContentFileOwners' {
         Mock Find-ListedContentFiles { New-File -Name 'x.faction' -Owners 'alpha' }
         Mock Find-ContentFiles { }
 
-        $read = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
+        $expectedAdded = @('x=alpha')
+        $expectedSpreadsheetCount = 3
+        $expectedSkippedPaths = @('alpha\factions.csv')
 
-        $script:Added | Should -Be @('x=alpha')
-        $read.SpreadsheetCount | Should -Be 3
-        $read.SkippedFiles.Path | Should -Be @('alpha\factions.csv')
+        # ACT
+        $actualRead = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
 
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
+        $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
         Should -Invoke Read-SpreadsheetOwners -ParameterFilter {
             "$Sources" -eq 'sources' -and [object]::ReferenceEquals($Spreadsheet, $listing)
         } -Times 1 -Exactly
@@ -95,8 +109,10 @@ Describe 'Read-ContentFileOwners' {
         Should -Invoke Find-ContentFiles -Times 0 -Exactly
     }
 
+    # Merge order is core, beta, alpha; beta only patches.
     It 'gives a file of several copies the ID of the last copy in merge order that sets one' {
 
+        # ARRANGE
         Mock Find-ContentFiles { New-File -Name 'a.ship' -Owners 'alpha', 'beta', 'core' }
         Mock Read-ContentFileId {
 
@@ -107,16 +123,22 @@ Describe 'Read-ContentFileOwners' {
             }
         }
 
-        $read = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+        $expectedAdded = @('from_alpha=alpha')
+        $expectedFileCount = 3
 
-        # Merge order is core, beta, alpha; beta only patches.
-        $script:Added | Should -Be @('from_alpha=alpha')
-        $read.FileCount | Should -Be 3
+        # ACT
+        $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualRead.FileCount | Should -Be $expectedFileCount
     }
 
     # Mods often restate the game's own file in full; removing one of them leaves the ID defined.
+    # Merge order is core, renamer, restater: the restater's ID wins, and the core's matches it.
     It 'owns the ID by every copy that sets the ID the merge ends with, and by no copy setting another' {
 
+        # ARRANGE
         Mock Find-ContentFiles { New-File -Name 'a.ship' -Owners 'restater', 'renamer', 'core' }
         Mock Read-ContentFileId {
 
@@ -127,14 +149,18 @@ Describe 'Read-ContentFileOwners' {
             }
         }
 
+        $expectedAdded = @('kept=core', 'kept=restater')
+
+        # ACT
         Read-ContentFileOwners -Sources @() -FileSet $script:FileSet | Out-Null
 
-        # Merge order is core, renamer, restater: the restater's ID wins, and the core's matches it.
-        $script:Added | Should -Be @('kept=core', 'kept=restater')
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
     }
 
     It 'skips a copy that does not parse, keeping the ID the others set, and returns it with the reason' {
 
+        # ARRANGE
         Mock Find-ContentFiles { New-File -Name 'a.ship' -Owners 'alpha', 'core' }
         Mock Read-ContentFileId {
 
@@ -145,15 +171,22 @@ Describe 'Read-ContentFileOwners' {
             'from_core'
         }
 
-        $read = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+        $expectedAdded = @('from_core=core')
+        $expectedSkippedPaths = @('alpha\a.ship')
+        $expectedSkippedReasons = @('not valid JSON')
 
-        $script:Added | Should -Be @('from_core=core')
-        $read.SkippedFiles.Path | Should -Be @('alpha\a.ship')
-        $read.SkippedFiles.Reason | Should -Be @('not valid JSON')
+        # ACT
+        $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
+        $actualRead.SkippedFiles.Reason | Should -Be $expectedSkippedReasons
     }
 
     It 'records nothing for a file whose copies set no ID, or an empty one' {
 
+        # ARRANGE
         Mock Find-ContentFiles {
             (New-File -Name 'patch.ship' -Owners 'alpha'), (New-File -Name 'empty.ship' -Owners 'beta')
         }
@@ -166,8 +199,12 @@ Describe 'Read-ContentFileOwners' {
             $null
         }
 
+        $expectedAddedCount = 0
+
+        # ACT
         Read-ContentFileOwners -Sources @() -FileSet $script:FileSet | Out-Null
 
-        $script:Added.Count | Should -Be 0
+        # ASSERT
+        $script:Added.Count | Should -Be $expectedAddedCount
     }
 }
