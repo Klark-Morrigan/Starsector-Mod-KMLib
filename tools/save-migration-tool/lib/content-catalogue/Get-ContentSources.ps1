@@ -37,25 +37,20 @@ function Get-ContentSources {
 
     $sources = @(foreach ($mod in $modsInLoadOrder) {
 
-        [pscustomobject]@{
-            Owner         = $mod.Id
-            Name          = $mod.Name
-            Version       = $mod.Version
-            Folder        = $mod.Folder
-            IsMod         = $true
-            ReplacedPaths = $mod.ReplacedPaths
-        }
+        New-ContentSource `
+            -Owner $mod.Id `
+            -Name $mod.Name `
+            -Version $mod.Version `
+            -Folder $mod.Folder `
+            -IsMod `
+            -ReplacedPaths $mod.ReplacedPaths
     })
 
-    # The game's own data has no mod_info.json to name it or give its version.
-    $coreSource = [pscustomobject]@{
-        Owner         = Get-CoreOwnerName
-        Name          = 'Starsector'
-        Version       = $null
-        Folder        = Join-Path $StarsectorRoot (Get-InstallPathNames).CoreFolder
-        IsMod         = $false
-        ReplacedPaths = @()
-    }
+    # The game's own data has no mod_info.json to name it, give its version or replace a path.
+    $coreSource = New-ContentSource `
+        -Owner (Get-CoreOwnerName) `
+        -Name 'Starsector' `
+        -Folder (Join-Path $StarsectorRoot (Get-InstallPathNames).CoreFolder)
 
     return $sources + $coreSource
 }

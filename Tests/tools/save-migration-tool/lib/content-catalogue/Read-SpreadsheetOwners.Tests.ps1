@@ -8,6 +8,7 @@ BeforeAll {
     . "$libRoot\content-catalogue\Add-ContentOwner.ps1"
     . "$libRoot\content-catalogue\ConvertFrom-StarsectorCsv.ps1"
     . "$libRoot\content-catalogue\ConvertTo-StraightQuotes.ps1"
+    . "$libRoot\content-catalogue\Find-ReplacingSource.ps1"
     . "$libRoot\content-catalogue\New-ContentOwnerIndex.ps1"
     . "$libRoot\content-catalogue\New-SpreadsheetSource.ps1"
     . "$libRoot\content-catalogue\Read-SpreadsheetOwners.ps1"
@@ -17,7 +18,6 @@ BeforeAll {
         # One data folder under the case's own folder; its spreadsheet is written when -HasSpreadsheet is given.
         param(
             [string] $Owner,
-            [string[]] $ReplacedPaths = @(),
             [switch] $HasSpreadsheet
         )
 
@@ -27,7 +27,7 @@ BeforeAll {
             New-TestFile -Name "$script:Case\$Owner\data\sheet.csv" | Out-Null
         }
 
-        return [pscustomobject]@{ Owner = $Owner; Folder = $folder; ReplacedPaths = $ReplacedPaths }
+        return [pscustomobject]@{ Owner = $Owner; Folder = $folder }
     }
 }
 
@@ -46,6 +46,7 @@ Describe 'Read-SpreadsheetOwners' {
         Mock ConvertFrom-StarsectorCsv { ,[object[]] $script:RowsByOwner[$Text] }
         Mock ConvertTo-StraightQuotes { $Text }
         Mock Add-ContentOwner { $script:Added.Add("$Id=$Owner") }
+        Mock Find-ReplacingSource { $null }
     }
 
     # Removing one owner of an ID leaves it defined while another's row defines it too.
@@ -76,20 +77,22 @@ Describe 'Read-SpreadsheetOwners' {
         Should -Invoke ConvertTo-StraightQuotes -Times 0 -Exactly
     }
 
-    It 'reads only the copy of the first source that replaces the spreadsheet, and names it' {
+    It 'reads only the replacing source''s copy, and names it' {
 
         # ARRANGE
-        foreach ($owner in 'alpha', 'beta', 'gamma', 'core') {
+        foreach ($owner in 'alpha', 'beta', 'core') {
             $script:RowsByOwner[$owner] = @(, @("$owner-row"))
         }
 
         $sources = @(
             (New-Source -Owner 'alpha' -HasSpreadsheet)
-            (New-Source -Owner 'beta' -HasSpreadsheet -ReplacedPaths @('data/sheet.csv'))
-            (New-Source -Owner 'gamma' -HasSpreadsheet -ReplacedPaths @('data/sheet.csv'))
+            (New-Source -Owner 'beta' -HasSpreadsheet)
             (New-Source -Owner 'core' -HasSpreadsheet)
         )
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv'
+        $script:ReplacingSource = $sources[1]
+
+        Mock Find-ReplacingSource { $script:ReplacingSource }
 
         $expectedAdded = @('beta-row=beta')
         $expectedReplacingOwner = 'beta'
@@ -103,26 +106,22 @@ Describe 'Read-SpreadsheetOwners' {
     }
 
     # The game compares a replaced spreadsheet's path as written, unlike a replaced JSON file's.
-    It 'reads every copy when the replaced path is written with backslashes' {
+    It 'asks for the replacing source among all sources, with the path as written' {
 
         # ARRANGE
-        $script:RowsByOwner['alpha'] = @(, @('a'))
-        $script:RowsByOwner['core'] = @(, @('c'))
-
-        $sources = @(
-            (New-Source -Owner 'alpha' -HasSpreadsheet -ReplacedPaths @('data\sheet.csv'))
-            (New-Source -Owner 'core' -HasSpreadsheet)
-        )
+        $sources = @((New-Source -Owner 'alpha'), (New-Source -Owner 'core'))
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv'
 
-        $expectedAdded = @('a=alpha', 'c=core')
+        $expectedPath = 'data/sheet.csv'
+        $expectedOwners = 'alpha core'
 
         # ACT
-        $actualRead = Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet
+        Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
 
         # ASSERT
-        $script:Added | Should -Be $expectedAdded
-        $actualRead.ReplacingOwner | Should -BeNullOrEmpty
+        Should -Invoke Find-ReplacingSource -Times 1 -Exactly -ParameterFilter {
+            $Path -ceq $expectedPath -and "$($Sources.Owner)" -ceq $expectedOwners -and -not $AcceptsEitherSlash
+        }
     }
 
     # A row whose key is empty is no row to the game; one whose ID is empty claims its key and defines nothing.

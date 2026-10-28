@@ -42,9 +42,7 @@ function Read-SpreadsheetOwners {
         -1
     }
 
-    $replacingSource = $Sources |
-        Where-Object { $_.ReplacedPaths -ccontains $Spreadsheet.Path } |
-        Select-Object -First 1
+    $replacingSource = Find-ReplacingSource -Sources $Sources -Path $Spreadsheet.Path
 
     $readSources = if ($replacingSource) {
         @($replacingSource)

@@ -2,7 +2,7 @@
 # The game's own copy is the base, and each mod's copy is laid over it in search order,
 # so a later copy's key wins over an earlier one's.
 # A mod that lists the file's path under "replace" stands alone: the game reads only its copy,
-# the first such mod's in search order. It takes the path written with either slash.
+# as Find-ReplacingSource picks it, taking the path written with either slash.
 function Select-MergedCopies {
 
     param(
@@ -10,26 +10,22 @@ function Select-MergedCopies {
         [object] $File
     )
 
-    $backslashPath = $File.RelativePath.Replace('/', '\')
+    $sources = @(foreach ($copy in $File.Copies) { $copy.Source })
+    $replacingSource = Find-ReplacingSource -Sources $sources -Path $File.RelativePath -AcceptsEitherSlash
     $coreCopies = [System.Collections.Generic.List[object]]::new()
     $modCopies = [System.Collections.Generic.List[object]]::new()
 
     foreach ($copy in $File.Copies) {
 
-        if (-not $copy.Source.IsMod) {
-
-            $coreCopies.Add($copy)
-            continue
-        }
-
-        $isReplacing = $copy.Source.ReplacedPaths -ccontains $File.RelativePath -or
-            $copy.Source.ReplacedPaths -ccontains $backslashPath
-
-        if ($isReplacing) {
+        if ([object]::ReferenceEquals($copy.Source, $replacingSource)) {
             return @($copy)
         }
 
-        $modCopies.Add($copy)
+        if ($copy.Source.IsMod) {
+            $modCopies.Add($copy)
+        } else {
+            $coreCopies.Add($copy)
+        }
     }
 
     return $coreCopies.ToArray() + $modCopies.ToArray()

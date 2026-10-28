@@ -2,17 +2,19 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\Select-MergedCopies.ps1"
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
+
+    . "$libRoot\content-catalogue\Find-ReplacingSource.ps1"
+    . "$libRoot\content-catalogue\Select-MergedCopies.ps1"
 
     function script:New-Copy {
         # One copy of a file, held by a source that is a mod unless told otherwise.
         param(
             [string] $Owner,
-            [string[]] $ReplacedPaths = @(),
             [switch] $IsCore
         )
 
-        $source = [pscustomobject]@{ Owner = $Owner; IsMod = -not $IsCore; ReplacedPaths = $ReplacedPaths }
+        $source = [pscustomobject]@{ Owner = $Owner; IsMod = -not $IsCore }
 
         return [pscustomobject]@{ Source = $source; Path = "C:\$Owner\a.ship" }
     }
@@ -20,44 +22,70 @@ BeforeAll {
 
 Describe 'Select-MergedCopies' {
 
-    It 'puts the game''s own copy first, then the mods'' copies in search order' {
+    BeforeEach {
+        Mock Find-ReplacingSource { $null }
+    }
 
+    # The game lays each mod's copy over its own, so the mods' keys win over the game's.
+    It 'puts the game''s own copy first, then the mods'' copies in search order, with no replacing mod' {
+
+        # ARRANGE
         $file = [pscustomobject]@{
             RelativePath = 'data/hulls/a.ship'
             Copies       = @((New-Copy -Owner 'alpha'), (New-Copy -Owner 'beta'), (New-Copy -Owner 'core' -IsCore))
         }
 
-        (Select-MergedCopies -File $file).Source.Owner | Should -Be @('core', 'alpha', 'beta')
+        $expectedOwners = @('core', 'alpha', 'beta')
+
+        # ACT
+        $actualCopies = Select-MergedCopies -File $file
+
+        # ASSERT
+        $actualCopies.Source.Owner | Should -Be $expectedOwners
     }
 
-    It 'keeps only the copy of the first mod that replaces the path, written with <Description>' -ForEach @(
-        @{ Description = 'forward slashes'; Replaced = 'data/hulls/a.ship' }
-        @{ Description = 'backslashes'; Replaced = 'data\hulls\a.ship' }
-    ) {
+    # The game takes a replaced JSON or content file's path written with either slash.
+    It 'asks for the replacing source among the copies'' sources, in search order, accepting either slash' {
 
+        # ARRANGE
+        $file = [pscustomobject]@{
+            RelativePath = 'data/hulls/a.ship'
+            Copies       = @((New-Copy -Owner 'alpha'), (New-Copy -Owner 'core' -IsCore))
+        }
+
+        $expectedPath = 'data/hulls/a.ship'
+        $expectedOwners = 'alpha core'
+
+        # ACT
+        Select-MergedCopies -File $file | Out-Null
+
+        # ASSERT
+        Should -Invoke Find-ReplacingSource -Times 1 -Exactly -ParameterFilter {
+            $Path -ceq $expectedPath -and "$($Sources.Owner)" -ceq $expectedOwners -and $AcceptsEitherSlash
+        }
+    }
+
+    It 'keeps only the replacing source''s copy' {
+
+        # ARRANGE
         $file = [pscustomobject]@{
             RelativePath = 'data/hulls/a.ship'
             Copies       = @(
                 (New-Copy -Owner 'alpha')
-                (New-Copy -Owner 'beta' -ReplacedPaths @($Replaced))
-                (New-Copy -Owner 'gamma' -ReplacedPaths @($Replaced))
+                (New-Copy -Owner 'beta')
                 (New-Copy -Owner 'core' -IsCore)
             )
         }
+        $script:ReplacingSource = $file.Copies[1].Source
 
-        (Select-MergedCopies -File $file).Source.Owner | Should -Be @('beta')
-    }
+        Mock Find-ReplacingSource { $script:ReplacingSource }
 
-    It 'matches a replaced path case-sensitively' {
+        $expectedOwners = @('beta')
 
-        $file = [pscustomobject]@{
-            RelativePath = 'data/hulls/a.ship'
-            Copies       = @(
-                (New-Copy -Owner 'alpha' -ReplacedPaths @('data/hulls/A.ship'))
-                (New-Copy -Owner 'core' -IsCore)
-            )
-        }
+        # ACT
+        $actualCopies = Select-MergedCopies -File $file
 
-        (Select-MergedCopies -File $file).Source.Owner | Should -Be @('core', 'alpha')
+        # ASSERT
+        $actualCopies.Source.Owner | Should -Be $expectedOwners
     }
 }
