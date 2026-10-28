@@ -271,35 +271,6 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
         }
     }
 
-    Context 'a roster given with -Roster' {
-
-        # A caller that read the roster for its own use hands it over, so the install's mods are read once.
-        It 'compares against it, reading no mods folder' {
-
-            # ARRANGE
-            $roster = @([pscustomobject]@{
-                Id          = 'alpha'
-                Version     = '1.40.0'
-                Name        = 'Alpha'
-                VersionInfo = [pscustomobject]@{ Major = '1'; Minor = '40'; Patch = '0'; MinorIsRC = $false }
-            })
-            $arguments = @{
-                StarsectorRoot = $script:FixtureRoot
-                SaveFolder     = $script:FixtureSave
-                Roster         = $roster
-            }
-            $expectedChanges = @('Unchanged', 'Missing', 'Missing')
-            $expectedRosterLineCount = 0
-
-            # ACT
-            $actualRun = Invoke-SaveModDrift $arguments
-
-            # ASSERT
-            $actualRun.Output.Change | Should -Be $expectedChanges
-            @($actualRun.Diagnostics -like '*mod folders under*').Count | Should -Be $expectedRosterLineCount
-        }
-    }
-
     Context 'a descriptor whose back-pointer names no object' {
 
         It 'fails naming the back-pointer' {
@@ -320,21 +291,23 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
 
     Context 'a save folder with no descriptor' {
 
-        It 'fails naming the path' {
+        It 'reports no drift, and warns naming the path' {
 
             # ARRANGE
             $root = Join-Path $TestDrive 'noDescriptor'
 
             New-Item -ItemType Directory -Path (Join-Path $root 'saves\save_Test') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $root 'mods') -Force | Out-Null
 
-            $expectedMessage = "descriptor not found: $root\saves\save_Test\descriptor.xml"
+            $expectedCount = 0
+            $expectedWarning = "descriptor not found: $root\saves\save_Test\descriptor.xml; no drift is reported"
 
             # ACT
-            $actualError = { Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' } } |
-                Should -Throw -PassThru
+            $actualRun = Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' }
 
             # ASSERT
-            $actualError.Exception.Message | Should -Be $expectedMessage
+            $actualRun.Output.Count | Should -Be $expectedCount
+            $actualRun.Warnings | Should -Contain $expectedWarning
         }
     }
 }

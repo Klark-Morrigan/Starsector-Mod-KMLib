@@ -375,7 +375,6 @@ pwsh -NoProfile -File Get-SaveModDrift.ps1 -StarsectorRoot <install> -SaveFolder
 
 `-SaveFolder` is the folder name under `saves\`,
 as `Get-SaveLoadAttempt.ps1` reports it in `SaveFolder`.
-`-Roster` hands over the installed mods from a caller that has read them already.
 
 A mod is:
 
@@ -484,14 +483,16 @@ On a console the rows print as a table of these columns,
 through the view in [`formats/ModDriftRow.format.ps1xml`](formats/ModDriftRow.format.ps1xml).
 PowerShell would print an object of six columns as a list.
 
-Stderr names what reading the installed mods found, unless `-Roster` handed them over,
+Stderr names what reading the installed mods found,
 the descriptor read,
 when and under which game version the save was written,
 how many mods it lists,
 the mods enabled once and dropped since,
 and how many mods changed, went missing, were added and stayed unchanged.
-A descriptor with no `enabledMods` list warns and reports no drift,
+A save folder with no `descriptor.xml` warns and reports no drift,
+and so does a descriptor with no `enabledMods` list,
 since it says nothing of the save's mods.
+`Invoke-SaveMigrationTool.ps1` puts the same reason in its report instead.
 A save folder with no descriptor fails the run, naming the path.
 An empty list reports every installed mod as added.
 A `mod_info.json` the roster keeps as `unparsed` takes its folder name as its ID,

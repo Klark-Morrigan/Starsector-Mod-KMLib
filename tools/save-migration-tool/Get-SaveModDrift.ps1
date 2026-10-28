@@ -26,10 +26,7 @@ param(
     [string] $SaveFolder,
 
     # Print JSON instead of objects, for a caller that parses the output.
-    [switch] $AsJson,
-
-    # The install's enabled mods, as Get-ModRoster.ps1 lists them, from a caller that has read them already.
-    [object[]] $Roster
+    [switch] $AsJson
 )
 
 Set-StrictMode -Version Latest
@@ -42,17 +39,13 @@ Update-FormatData -PrependPath (Join-Path $PSScriptRoot 'formats\ModDriftRow.for
 
 $DiagnosticSource = 'Get-SaveModDrift'
 
-$descriptorPath = Get-SaveDescriptorPath -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder
+$roster = @(Read-ModRoster -StarsectorRoot $StarsectorRoot -DiagnosticSource $DiagnosticSource)
 
-if (-not (Test-Path -LiteralPath $descriptorPath -PathType Leaf)) {
-    throw "descriptor not found: $descriptorPath"
-}
-
-if (-not $PSBoundParameters.ContainsKey('Roster')) {
-    $Roster = @(Read-ModRoster -StarsectorRoot $StarsectorRoot -DiagnosticSource $DiagnosticSource)
-}
-
-$drift = Read-SaveModDrift -DescriptorPath $descriptorPath -Roster $Roster -DiagnosticSource $DiagnosticSource
+$drift = Read-SaveModDrift `
+    -StarsectorRoot $StarsectorRoot `
+    -SaveFolder $SaveFolder `
+    -Roster $roster `
+    -DiagnosticSource $DiagnosticSource
 
 if ($null -eq $drift.Rows) {
 
