@@ -3,9 +3,9 @@ BeforeAll {
     Set-StrictMode -Version Latest
 
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Add-ModDefaultDisplay.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertTo-VersionInfo.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Format-ModVersion.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\ConvertTo-RosterEntry.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-version\ConvertTo-VersionInfo.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-version\Format-ModVersion.ps1"
 }
 
 Describe 'ConvertTo-RosterEntry' {
@@ -35,32 +35,57 @@ Describe 'ConvertTo-RosterEntry' {
 
     It 'reports the winner with its formatted version, its version parts and the count of copies it beat' {
 
-        $entry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+        # ARRANGE
+        $expectedId = 'alpha'
+        $expectedName = 'Alpha'
+        $expectedVersion = 'formatted-1.2'
+        $expectedVersionInfo = 'parts-1.2'
+        $expectedDisplay = 'added'
+        $expectedFolder = 'C:\Games\Starsector\mods\Alpha-1.2'
+        $expectedStatus = 'parsed'
+        $expectedSupersededCount = 1
 
-        $entry.Id | Should -Be 'alpha'
-        $entry.Name | Should -Be 'Alpha'
-        $entry.Version | Should -Be 'formatted-1.2'
-        $entry.VersionInfo | Should -Be 'parts-1.2'
-        $entry.Display | Should -Be 'added'
-        $entry.Folder | Should -Be 'C:\Games\Starsector\mods\Alpha-1.2'
-        $entry.Status | Should -Be 'parsed'
-        $entry.SupersededCount | Should -Be 1
+        # ACT
+        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+
+        # ASSERT
+        $actualEntry.Id | Should -Be $expectedId
+        $actualEntry.Name | Should -Be $expectedName
+        $actualEntry.Version | Should -Be $expectedVersion
+        $actualEntry.VersionInfo | Should -Be $expectedVersionInfo
+        $actualEntry.Display | Should -Be $expectedDisplay
+        $actualEntry.Folder | Should -Be $expectedFolder
+        $actualEntry.Status | Should -Be $expectedStatus
+        $actualEntry.SupersededCount | Should -Be $expectedSupersededCount
     }
 
     It 'keeps the sort string and the replaced paths as mod_info.json writes them' {
 
-        $entry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+        # ARRANGE
+        $expectedSortString = 'aa alpha'
+        $expectedReplacedPaths = @('data/hulls/ship_data.csv')
 
-        $entry.SortString | Should -Be 'aa alpha'
-        $entry.ReplacedPaths | Should -Be @('data/hulls/ship_data.csv')
+        # ACT
+        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+
+        # ASSERT
+        $actualEntry.SortString | Should -Be $expectedSortString
+        $actualEntry.ReplacedPaths | Should -Be $expectedReplacedPaths
     }
 
     It 'resolves each declared JAR against the mod''s folder' {
 
-        (ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector').Jars | Should -Be @(
+        # ARRANGE
+        $expectedJars = @(
             'C:\Games\Starsector\mods\Alpha-1.2\jars\alpha.jar'
             'C:\Games\Starsector\mods\Alpha-1.2\lib.jar'
         )
+
+        # ACT
+        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+
+        # ASSERT
+        $actualEntry.Jars | Should -Be $expectedJars
     }
 
     It 'reports the folder relative to a root written as <Root>' -ForEach @(
@@ -68,7 +93,14 @@ Describe 'ConvertTo-RosterEntry' {
         @{ Root = 'C:\Games\Starsector\' }
         @{ Root = 'c:\games\starsector' }
     ) {
-        (ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot $Root).RelativePath |
-            Should -Be 'mods\Alpha-1.2'
+
+        # ARRANGE
+        $expectedRelativePath = 'mods\Alpha-1.2'
+
+        # ACT
+        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot $Root
+
+        # ASSERT
+        $actualEntry.RelativePath | Should -Be $expectedRelativePath
     }
 }

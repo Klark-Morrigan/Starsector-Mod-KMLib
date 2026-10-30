@@ -4,10 +4,10 @@ BeforeAll {
 
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
-    . "$libRoot\mod-info\Find-VersionProblem.ps1"
-    . "$libRoot\mod-info\Get-JsonPropertyValue.ps1"
-    . "$libRoot\mod-info\Test-JsonProperty.ps1"
-    . "$libRoot\mod-info\Test-VersionObjectForm.ps1"
+    . "$libRoot\data-file\Get-JsonPropertyValue.ps1"
+    . "$libRoot\data-file\Test-JsonProperty.ps1"
+    . "$libRoot\mod-version\Find-VersionProblem.ps1"
+    . "$libRoot\mod-version\Test-VersionObjectForm.ps1"
 }
 
 Describe 'Find-VersionProblem' {

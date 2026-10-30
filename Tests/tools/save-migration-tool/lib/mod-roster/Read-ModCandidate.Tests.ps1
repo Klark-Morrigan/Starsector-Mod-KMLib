@@ -5,8 +5,8 @@ BeforeAll {
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
-    . "$libRoot\mod-info\ConvertFrom-StarsectorJson.ps1"
-    . "$libRoot\mod-info\Get-JsonPropertyValue.ps1"
+    . "$libRoot\data-file\ConvertFrom-StarsectorJson.ps1"
+    . "$libRoot\data-file\Get-JsonPropertyValue.ps1"
     . "$libRoot\mod-roster\Find-ModInfoProblem.ps1"
     . "$libRoot\mod-roster\Get-ModStatusNames.ps1"
     . "$libRoot\mod-roster\Read-ModCandidate.ps1"

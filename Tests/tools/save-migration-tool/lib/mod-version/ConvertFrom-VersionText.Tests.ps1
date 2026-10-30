@@ -2,8 +2,8 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\New-VersionInfo.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-VersionText.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-version\ConvertFrom-VersionText.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-version\New-VersionInfo.ps1"
 }
 
 Describe 'ConvertFrom-VersionText' {
@@ -26,7 +26,15 @@ Describe 'ConvertFrom-VersionText' {
         @{ Text = '0.98a-RC8'; Expected = '0.98|8||True' }
         @{ Text = '1.2.'; Expected = '1|2||False' }
     ) {
-        ConvertFrom-VersionText -Text $Text | Should -Be $Expected
+
+        # ARRANGE
+        $expectedParts = $Expected
+
+        # ACT
+        $actualParts = ConvertFrom-VersionText -Text $Text
+
+        # ASSERT
+        $actualParts | Should -Be $expectedParts
     }
 
     It 'sets no parts for text of <Case>' -ForEach @(
@@ -34,6 +42,14 @@ Describe 'ConvertFrom-VersionText' {
         @{ Case = 'five parts'; Text = '0.0.1-beta.4+bf.1' }
         @{ Case = 'no characters'; Text = '' }
     ) {
-        ConvertFrom-VersionText -Text $Text | Should -Be '|||False'
+
+        # ARRANGE
+        $expectedParts = '|||False'
+
+        # ACT
+        $actualParts = ConvertFrom-VersionText -Text $Text
+
+        # ASSERT
+        $actualParts | Should -Be $expectedParts
     }
 }

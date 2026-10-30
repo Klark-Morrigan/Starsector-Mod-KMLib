@@ -5,10 +5,10 @@ BeforeAll {
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
     . "$libRoot\content-catalogue\Read-ContentFileId.ps1"
-    . "$libRoot\mod-info\ConvertFrom-StarsectorJson.ps1"
-    . "$libRoot\mod-info\Get-JsonPropertyValue.ps1"
-    . "$libRoot\mod-info\Read-StarsectorText.ps1"
-    . "$libRoot\mod-info\Remove-JsonComment.ps1"
+    . "$libRoot\data-file\ConvertFrom-StarsectorJson.ps1"
+    . "$libRoot\data-file\Get-JsonPropertyValue.ps1"
+    . "$libRoot\data-file\Read-StarsectorText.ps1"
+    . "$libRoot\data-file\Remove-JsonComment.ps1"
 }
 
 Describe 'Read-ContentFileId' {

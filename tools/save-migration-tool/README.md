@@ -106,12 +106,13 @@ Loading the library takes about half a second.
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
 | [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns an object prints as a table, every mod list's included |
 | [`lib/content-catalogue/`](lib/content-catalogue/) | The kinds of content a save names by ID, where the game defines each, and reading the IDs the install defines with the mods behind them |
+| [`lib/data-file/`](lib/data-file/) | Reading a data file's text, JSON and spreadsheets as the game does |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
 | [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
 | [`lib/mod-drift/`](lib/mod-drift/) | Comparing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
-| [`lib/mod-info/`](lib/mod-info/) | Reading a data file's text and JSON as the game does, and mod versions as text and as the parts the game compares |
 | [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads |
+| [`lib/mod-version/`](lib/mod-version/) | Reading mod versions as text and as the parts the game compares |
 | [`lib/save-descriptor/`](lib/save-descriptor/) | Finding a save's `descriptor.xml` and reading its mod lists |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
 

@@ -2,7 +2,7 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Test-VersionObjectForm.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-version\Test-VersionObjectForm.ps1"
 }
 
 Describe 'Test-VersionObjectForm' {

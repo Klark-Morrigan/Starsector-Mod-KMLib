@@ -2,7 +2,7 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Test-JsonProperty.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Test-JsonProperty.ps1"
 }
 
 Describe 'Test-JsonProperty' {

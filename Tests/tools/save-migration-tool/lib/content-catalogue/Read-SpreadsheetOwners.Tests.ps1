@@ -6,14 +6,14 @@ BeforeAll {
 
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
     . "$libRoot\content-catalogue\Add-ContentOwner.ps1"
-    . "$libRoot\content-catalogue\ConvertFrom-StarsectorCsv.ps1"
     . "$libRoot\content-catalogue\ConvertTo-SpreadsheetRowIds.ps1"
-    . "$libRoot\content-catalogue\ConvertTo-StraightQuotes.ps1"
     . "$libRoot\content-catalogue\Find-ReplacingSource.ps1"
     . "$libRoot\content-catalogue\New-ContentOwnerIndex.ps1"
     . "$libRoot\content-catalogue\New-SpreadsheetSource.ps1"
     . "$libRoot\content-catalogue\Read-SpreadsheetOwners.ps1"
-    . "$libRoot\mod-info\Read-StarsectorText.ps1"
+    . "$libRoot\data-file\ConvertFrom-StarsectorCsv.ps1"
+    . "$libRoot\data-file\ConvertTo-StraightQuotes.ps1"
+    . "$libRoot\data-file\Read-StarsectorText.ps1"
 
     function script:New-Source {
         # One data folder under the case's own folder; its spreadsheet is written when -HasSpreadsheet is given.

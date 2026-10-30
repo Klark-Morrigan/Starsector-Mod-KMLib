@@ -4,8 +4,8 @@ BeforeAll {
 
     $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
-    . "$libRoot\mod-info\Get-JsonPropertyValue.ps1"
-    . "$libRoot\mod-info\Test-JsonProperty.ps1"
+    . "$libRoot\data-file\Get-JsonPropertyValue.ps1"
+    . "$libRoot\data-file\Test-JsonProperty.ps1"
 }
 
 Describe 'Get-JsonPropertyValue' {

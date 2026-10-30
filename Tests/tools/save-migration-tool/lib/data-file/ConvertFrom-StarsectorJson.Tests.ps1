@@ -2,11 +2,11 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Read-StarsectorText.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Remove-JsonComment.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Repair-JsonLeniency.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\Test-JsonSlashComment.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-StarsectorJson.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-StarsectorJson.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Read-StarsectorText.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Remove-JsonComment.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Repair-JsonLeniency.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Test-JsonSlashComment.ps1"
 }
 
 Describe 'ConvertFrom-StarsectorJson' {

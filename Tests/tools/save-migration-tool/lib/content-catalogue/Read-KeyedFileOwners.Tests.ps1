@@ -11,8 +11,8 @@ BeforeAll {
     . "$libRoot\content-catalogue\New-KeyedFileSource.ps1"
     . "$libRoot\content-catalogue\Read-KeyedFileOwners.ps1"
     . "$libRoot\content-catalogue\Select-MergedCopies.ps1"
-    . "$libRoot\mod-info\ConvertFrom-StarsectorJson.ps1"
-    . "$libRoot\mod-info\Get-JsonPropertyValue.ps1"
+    . "$libRoot\data-file\ConvertFrom-StarsectorJson.ps1"
+    . "$libRoot\data-file\Get-JsonPropertyValue.ps1"
 
     function script:New-Copy {
         # One copy of the keyed file, held by the named owner; its path is the owner's name.

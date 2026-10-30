@@ -3,9 +3,9 @@ BeforeAll {
     Set-StrictMode -Version Latest
 
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-info\ConvertFrom-StarsectorJson.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\Read-EnabledModIds.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-StarsectorJson.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\install\Get-InstallPathNames.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\Read-EnabledModIds.ps1"
 
     function script:New-ModsRoot {
         # Writes a mods folder under TestDrive, holding an enabled_mods.json when one is given, and returns it.
