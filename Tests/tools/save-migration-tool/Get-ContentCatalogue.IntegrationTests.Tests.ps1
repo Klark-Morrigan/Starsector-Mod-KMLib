@@ -2,7 +2,7 @@
 # Each lib function's own behaviour is pinned by its unit suite under lib\.
 # Run with: Invoke-Pester -Path .\Get-ContentCatalogue.IntegrationTests.Tests.ps1
 #
-# The install is built once under TestDrive: the game's own data under starsector-core\data, and three enabled mods.
+# The install is built once under TestDrive: the game's own data under starsector-core\data, and four enabled mods.
 # No test reads a real install.
 # A context sharing one run makes it in BeforeAll; each case's act then reads its part of that run.
 
@@ -39,6 +39,7 @@ BeforeAll {
     New-TestFile -Name 'install\starsector-core\data\hulls\core_hull.ship' -Text '{ "hullId": "core_hull" }' | Out-Null
     New-TestFile -Name 'install\starsector-core\data\hulls\patched.ship' -Text '{ "hullId": "patched_hull" }' | Out-Null
     New-TestFile -Name 'install\starsector-core\data\hulls\rowless.ship' -Text '{ "hullId": "rowless_hull" }' | Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\hulls\ship_data.csv' -Lines @(
         'name,id'
         'Core,core_hull'
@@ -46,22 +47,29 @@ BeforeAll {
         '#Commented,commented_hull'
         'File-less,fileless_hull'
     ) | Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\hulls\skins\core_skin.skin' -Text (
         '{ "baseHullId": "core_hull", "skinHullId": "core_skin" }') | Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\weapons\core_gun.wpn' -Text (
         "{`n  # the weapon's ID`n  `"id`": `"core_gun`",`n  `"specClass`": `"projectile`",`n}") | Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\weapons\weapon_data.csv' -Lines @('id,name', 'core_gun,Gun') |
         Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\hullmods\hull_mods.csv' -Lines @('name,id', 'Core,core_mod') |
         Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\variants\core_hull_Standard.variant' -Text (
         '{ "variantId": "core_hull_Standard", "hullId": "core_hull" }') | Out-Null
 
     # alpha patches the game's hull file without naming a hull, and adds a hull of its own.
     New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'Alpha' `
         -ModInfo '{ "id": "alpha", "name": "Alpha", "description": "" }' | Out-Null
+
     New-TestFile -Name 'install\mods\Alpha\data\hulls\patched.ship' -Text '{ "hullName": "Patched by Alpha" }' |
         Out-Null
+
     New-TestFile -Name 'install\mods\Alpha\data\hulls\alpha_hull.ship' -Text '{ "hullId": "alpha_hull" }' | Out-Null
     New-TestFile -Name 'install\mods\Alpha\data\hulls\ship_data.csv' -Lines @('id,name', 'alpha_hull,Alpha') | Out-Null
 
@@ -70,6 +78,7 @@ BeforeAll {
         'name,id'
         'Core,core_condition'
     ) | Out-Null
+
     New-TestFile -Name 'install\mods\Alpha\data\campaign\market_conditions.csv' -Lines @(
         'id,name'
         'alpha_condition,Alpha'
@@ -79,10 +88,12 @@ BeforeAll {
     # LLI repeats a column name in its wing header, and keeps its fighter variants one folder down.
     New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'LLI' `
         -ModInfo '{ "id": "LLI", "name": "LLI", "description": "" }' | Out-Null
+
     New-TestFile -Name 'install\mods\LLI\data\hulls\wing_data.csv' -Lines @(
         'id,variant,tags,02,02'
         'ssp_wing,ssp_wing_variant,"fighter,ssp_bp",,'
     ) | Out-Null
+
     New-TestFile -Name 'install\mods\LLI\data\variants\fighters\ssp_wing_variant.variant' -Text (
         '{ "variantId": "ssp_wing_variant", "hullId": "ssp_fighter" }') | Out-Null
 
@@ -90,31 +101,55 @@ BeforeAll {
     New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'Gamma' `
         -ModInfo '{ "id": "gamma", "name": "Gamma", "description": "", "replace": ["data/hullmods/hull_mods.csv"] }' |
         Out-Null
+
     New-TestFile -Name 'install\mods\Gamma\data\hullmods\hull_mods.csv' -Lines @('id', 'gamma_mod') | Out-Null
 
     # factions.csv lists the .faction files; alpha lists one of its own and patches the game's without an ID.
     New-TestFile -Name 'install\starsector-core\data\world\factions\factions.csv' -Lines @(
         'faction'
         'data/world/factions/core.faction'
+        'data/world/factions/rival.faction'
     ) | Out-Null
+
     # The game's own .faction files write their keys bare, as org.json takes them.
     New-TestFile -Name 'install\starsector-core\data\world\factions\core.faction' -Text "{`n`tid:`"core_faction`",`n}" |
         Out-Null
+
+    New-TestFile -Name 'install\starsector-core\data\world\factions\rival.faction' -Text '{ "id": "rival_faction" }' |
+        Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\world\factions\unlisted.faction' -Text '{ "id": "unlisted" }' |
         Out-Null
+
     New-TestFile -Name 'install\mods\Alpha\data\world\factions\factions.csv' -Lines @(
         'faction'
         'data/world/factions/alpha.faction'
     ) | Out-Null
+
     New-TestFile -Name 'install\mods\Alpha\data\world\factions\alpha.faction' -Text '{ "id": "alpha_faction" }' |
         Out-Null
+
     New-TestFile -Name 'install\mods\Alpha\data\world\factions\core.faction' -Text '{ "color": [1, 2, 3] }' |
         Out-Null
 
-    # planets.json is keyed by ID; the game skips a key whose value is not an object, and reads 10f as a number.
-    New-TestFile -Name 'install\starsector-core\data\config\planets.json' -Text (
-        '{ "core_planet": { "size": 10 }, "note": "not a planet" }') | Out-Null
-    New-TestFile -Name 'install\mods\Alpha\data\config\planets.json' -Text '{ "alpha_planet": { "size": 10f } }' |
+    # planets.json is keyed by ID, and every copy adds its keys, unless a mod replaces the file.
+    New-TestFile -Name 'install\starsector-core\data\config\planets.json' -Text '{ "core_planet": { "size": 10 } }' |
+        Out-Null
+
+    New-TestFile -Name 'install\mods\Alpha\data\config\planets.json' -Text '{ "alpha_planet": { "size": 10 } }' |
+        Out-Null
+
+    # Delta replaces planets.json and a game .faction file, so the game reads only its copies.
+    # The game takes a replaced JSON or content file's path with either slash, so the .faction path uses backslashes.
+    New-TestMod -StarsectorRoot $script:InstallRoot -Folder 'Delta' -ModInfo (
+        '{ "id": "delta", "name": "Delta", "description": "", ' +
+        '"replace": ["data/config/planets.json", "data\\world\\factions\\rival.faction"] }') | Out-Null
+
+    # The game skips a planets.json key whose value is not an object, and reads 10f as a number.
+    New-TestFile -Name 'install\mods\Delta\data\config\planets.json' -Text (
+        '{ "core_planet": { "size": 10f }, "delta_planet": { "size": 10 }, "note": "not a planet" }') | Out-Null
+
+    New-TestFile -Name 'install\mods\Delta\data\world\factions\rival.faction' -Text '{ "id": "rival_faction" }' |
         Out-Null
 
     # A skill counts when skill_data.csv lists it or an aptitude names it as its effect, and only then.
@@ -128,6 +163,7 @@ BeforeAll {
         'id,name'
         'core_skill,Core'
     ) | Out-Null
+
     New-TestFile -Name 'install\starsector-core\data\characters\skills\aptitude_data.csv' -Lines @(
         'id,effect_skill_id'
         'core_aptitude,aptitude_skill'
@@ -139,7 +175,8 @@ BeforeAll {
         'core_hull,SHIP,A hull.'
     ) | Out-Null
 
-    New-TestFile -Name 'install\mods\enabled_mods.json' -Text '{ "enabledMods": ["alpha", "LLI", "gamma"] }' | Out-Null
+    New-TestFile -Name 'install\mods\enabled_mods.json' -Text (
+        '{ "enabledMods": ["alpha", "LLI", "gamma", "delta"] }') | Out-Null
 }
 
 Describe 'Get-ContentCatalogue.IntegrationTests' {
@@ -177,11 +214,12 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
                 'MarketCondition core_condition: alpha, vanilla'
                 'Faction alpha_faction: alpha'
                 'Faction core_faction: vanilla'
+                'Faction rival_faction: delta'
                 'Skill aptitude_skill: vanilla'
                 'Skill core_skill: vanilla'
                 'Aptitude core_aptitude: vanilla'
-                'Planet alpha_planet: alpha'
-                'Planet core_planet: vanilla'
+                'Planet core_planet: delta'
+                'Planet delta_planet: delta'
                 'Description core_hull_SHIP: vanilla'
             )
 
@@ -236,6 +274,26 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
             $actualIds | Should -Not -Contain $unexpectedId
         }
 
+        # The game drops other copies of a JSON or content file in its merge, not by the spreadsheet rule,
+        # and that merge matches the replaced path with either slash.
+        It 'reads only the replacing mod''s copy of a JSON or content file, the path written with either slash' {
+
+            # ARRANGE
+            $expectedRows = @(
+                'Faction alpha_faction: alpha'
+                'Faction core_faction: vanilla'
+                'Faction rival_faction: delta'
+                'Planet core_planet: delta'
+                'Planet delta_planet: delta'
+            )
+
+            # ACT
+            $actualRows = Format-CatalogueRows -Rows ($script:Run.Output | Where-Object Kind -In 'Faction', 'Planet')
+
+            # ASSERT
+            $actualRows | Should -Be $expectedRows
+        }
+
         It 'leaves out a hull whose file has no row, a row whose file is missing, and a commented row' {
 
             # ARRANGE
@@ -250,7 +308,7 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
             }
         }
 
-        It 'says what it read, which spreadsheet a mod replaces, and what each kind holds, to stderr' {
+        It 'says what it read, which files mods replace, and what each kind holds, to stderr' {
 
             # ARRANGE
             $expectedKindsLine =
@@ -260,15 +318,18 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
                 'EngineStyle, HullStyle, CampaignEvent, Ping, IntelTag, ContactTag, Sound, MusicSet, Description, ' +
                 'StarGenData, AgeGenData, ObjectiveGenData, LocationGenData, NameGenData, PlanetGenData, ' +
                 'CategoryGenData, TerrainGenData, ConditionGenData, DropGroup, SalvageEntityGenData, Mission, Rule ' +
-                "from 3 mods and the game's own data, in the game's search order"
-            $expectedReplaceLine =
+                "from 4 mods and the game's own data, in the game's search order"
+            $expectedReplaceLines = @(
                 'Get-ContentCatalogue: gamma replaces data/hullmods/hull_mods.csv, so no other copy of it is read'
+                'Get-ContentCatalogue: delta replaces data/world/factions/rival.faction, so no other copy of it is read'
+                'Get-ContentCatalogue: delta replaces data/config/planets.json, so no other copy of it is read'
+            )
             $expectedReadLineCount = 1
-            $expectedLastLine = 'Get-ContentCatalogue: listing 78 of 78 defined IDs'
+            $expectedLastLine = 'Get-ContentCatalogue: listing 79 of 79 defined IDs'
             $expectedReadLinePattern =
                 'Get-ContentCatalogue: read 17 content files and 12 spreadsheets in * ms, skipping 0; ' +
                 'defined: 8 Hull, 1 Weapon, 1 FighterWing, 1 Hullmod, 57 Variant, 0 ShipSystem, 0 Projectile, ' +
-                '2 MarketCondition, 0 Industry, 0 SpecialItem, 0 Commodity, 0 Ability, 0 Submarket, 2 Faction, ' +
+                '2 MarketCondition, 0 Industry, 0 SpecialItem, 0 Commodity, 0 Ability, 0 Submarket, 3 Faction, ' +
                 '2 Skill, 1 Aptitude, 0 Personality, 0 PersonMission, 0 BarEvent, 0 CustomEntity, 2 Planet, ' +
                 '0 Terrain, 0 BattleObjective, 0 EngineStyle, 0 HullStyle, 0 CampaignEvent, 0 Ping, 0 IntelTag, ' +
                 '0 ContactTag, 0 Sound, 0 MusicSet, 1 Description, 0 StarGenData, 0 AgeGenData, 0 ObjectiveGenData, ' +
@@ -281,7 +342,7 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
 
             # ASSERT
             $actualDiagnostics | Should -Contain $expectedKindsLine
-            $actualDiagnostics | Should -Contain $expectedReplaceLine
+            @($actualDiagnostics -like '*replaces*') | Should -Be $expectedReplaceLines
             @($actualDiagnostics -like $expectedReadLinePattern).Count | Should -Be $expectedReadLineCount
             $actualDiagnostics[-1] | Should -Be $expectedLastLine
         }
@@ -296,9 +357,9 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
         It 'gives each owner one entry, in the game''s search order, with its name, version and ID count' {
 
             # ARRANGE
-            $expectedOwners = @('alpha', 'gamma', 'LLI', 'vanilla')
-            $expectedNames = @('Alpha', 'Gamma', 'LLI', 'Starsector')
-            $expectedIdCounts = @(7, 1, 2, 69)
+            $expectedOwners = @('alpha', 'delta', 'gamma', 'LLI', 'vanilla')
+            $expectedNames = @('Alpha', 'Delta', 'Gamma', 'LLI', 'Starsector')
+            $expectedIdCounts = @(6, 3, 1, 2, 68)
 
             # ACT
             $actualGroups = $script:Run.Output
@@ -312,12 +373,11 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
         It 'holds an owner''s IDs by kind' {
 
             # ARRANGE
-            $expectedKinds = @('Hull', 'Variant', 'MarketCondition', 'Faction', 'Planet')
+            $expectedKinds = @('Hull', 'Variant', 'MarketCondition', 'Faction')
             $expectedHullIds = @('alpha_hull', 'alpha_hull_default_D')
             $expectedVariantIds = @('alpha_hull_Hull')
             $expectedConditionIds = @('alpha_condition', 'core_condition')
             $expectedFactionIds = @('alpha_faction')
-            $expectedPlanetIds = @('alpha_planet')
 
             # ACT
             $actualAlpha = $script:Run.Output[0]
@@ -328,13 +388,12 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
             $actualAlpha.Ids['Variant'] | Should -Be $expectedVariantIds
             $actualAlpha.Ids['MarketCondition'] | Should -Be $expectedConditionIds
             $actualAlpha.Ids['Faction'] | Should -Be $expectedFactionIds
-            $actualAlpha.Ids['Planet'] | Should -Be $expectedPlanetIds
         }
 
         It 'says how many owners the IDs fall under' {
 
             # ARRANGE
-            $expectedLastLine = 'Get-ContentCatalogue: listing 78 of 78 defined IDs under 4 owners'
+            $expectedLastLine = 'Get-ContentCatalogue: listing 79 of 79 defined IDs under 5 owners'
 
             # ACT
             $actualLastLine = $script:Run.Diagnostics[-1]
@@ -351,7 +410,7 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
             # ARRANGE
             $outFile = Join-Path $TestDrive 'out\nested\catalogue.json'
             $expectedOutputCount = 0
-            $expectedOwners = @('alpha', 'gamma', 'LLI', 'vanilla')
+            $expectedOwners = @('alpha', 'delta', 'gamma', 'LLI', 'vanilla')
             $expectedWingIds = @('ssp_wing')
             $expectedLastLine = "Get-ContentCatalogue: wrote the JSON to $outFile"
 
@@ -363,7 +422,7 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
 
             $actualRun.Output.Count | Should -Be $expectedOutputCount
             $actualGroups.Owner | Should -Be $expectedOwners
-            $actualGroups[2].Ids.FighterWing | Should -Be $expectedWingIds
+            $actualGroups[3].Ids.FighterWing | Should -Be $expectedWingIds
             $actualRun.Diagnostics[-1] | Should -Be $expectedLastLine
         }
     }

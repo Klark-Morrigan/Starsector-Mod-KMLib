@@ -823,12 +823,14 @@ a case removes the descriptor, or empties its mod lists.
 [`Get-ModRoster.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ModRoster.IntegrationTests.Tests.ps1)
 builds a small install per case.
 [`Get-ContentCatalogue.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Get-ContentCatalogue.IntegrationTests.Tests.ps1)
-builds one install of the game's own data and three mods:
+builds one install of the game's own data and four mods:
 one patching a game hull file and a game faction, and adding a hull, a faction and a planet,
 one whose wing header repeats a column name,
-and one replacing a spreadsheet.
+one replacing a spreadsheet,
+and one replacing `planets.json` and a game faction, that path written with backslashes.
 The game's own data holds a case of each other kind of source:
-skills from both spreadsheets, a description keyed by two columns, and a planets.json entry that is not an object.
+skills from both spreadsheets and a description keyed by two columns.
+The replacing `planets.json` holds an entry that is not an object.
 
 [`helpers/`](../../Tests/tools/save-migration-tool/helpers/) holds what the suites share:
 running a script with its stderr and warnings captured, blank lines kept,
