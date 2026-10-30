@@ -2,36 +2,94 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-StarsectorCsv.ps1"
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
+
+    . "$libRoot\data-file\ConvertFrom-StarsectorCsv.ps1"
+    . "$libRoot\data-file\ConvertTo-StraightQuotes.ps1"
+    . "$libRoot\data-file\Read-StarsectorText.ps1"
 
     function script:Read-CsvLines {
-        # Reads the asked columns and writes each row as one line, values joined by |, a missing value as <null>.
-        param(
-            [string] $Text,
-            [string[]] $ColumnNames
-        )
+        # Reads the text and writes each row as one line, its values joined by |.
+        param([string] $Text)
 
-        $rows = ConvertFrom-StarsectorCsv -Text $Text -ColumnNames $ColumnNames
+        $table = ConvertFrom-StarsectorCsv -Text $Text
 
-        return @(foreach ($row in $rows) {
-            ($row | ForEach-Object { if ($null -eq $_) { '<null>' } else { $_ } }) -join '|'
+        return @(foreach ($row in $table.Rows) {
+            $row -join '|'
         })
+    }
+
+    function script:Format-ColumnIndexes {
+        # Writes the header's column indexes as one line, names sorted: "id=0 name=1".
+        param([object] $Table)
+
+        $names = [string[]] $Table.ColumnIndexByName.Keys
+        [System.Array]::Sort($names, [System.StringComparer]::Ordinal)
+
+        return ($names | ForEach-Object { "$_=$($Table.ColumnIndexByName[$_])" }) -join ' '
     }
 }
 
 Describe 'ConvertFrom-StarsectorCsv' {
 
-    It 'returns the asked columns of each row, in the order asked, rows in file order' {
+    It 'returns every value of each row, rows in file order, and each column''s index by name' {
 
         # ARRANGE
         $text = "id,name,tier`nalpha,Alpha,1`nbeta,Beta,2`n"
-        $expectedLines = @('1|alpha', '2|beta')
+
+        $expectedLines = @('alpha|Alpha|1', 'beta|Beta|2')
+        $expectedIndexes = 'id=0 name=1 tier=2'
 
         # ACT
-        $actualLines = Read-CsvLines -Text $text -ColumnNames @('tier', 'id')
+        $actualTable = ConvertFrom-StarsectorCsv -Text $text
 
         # ASSERT
-        $actualLines | Should -Be $expectedLines
+        @($actualTable.Rows | ForEach-Object { $_ -join '|' }) | Should -Be $expectedLines
+        Format-ColumnIndexes -Table $actualTable | Should -Be $expectedIndexes
+    }
+
+    It 'reads the file at a path when given one' {
+
+        # ARRANGE
+        $path = 'data\sheet.csv'
+
+        Mock Read-StarsectorText { "id`nfrom_file`n" }
+
+        $expectedLines = @('from_file')
+
+        # ACT
+        $actualTable = ConvertFrom-StarsectorCsv -Path $path
+
+        # ASSERT
+        @($actualTable.Rows | ForEach-Object { $_ -join '|' }) | Should -Be $expectedLines
+        Should -Invoke Read-StarsectorText -ParameterFilter { $Path -eq $path } -Times 1 -Exactly
+    }
+
+    It 'straightens curly quotes before it reads the text, when asked' {
+
+        # ARRANGE
+        Mock ConvertTo-StraightQuotes { "id`nstraightened`n" }
+
+        $expectedLines = @('straightened')
+
+        # ACT
+        $actualTable = ConvertFrom-StarsectorCsv -Text "id`ncurly`n" -ConvertsCurlyQuotes
+
+        # ASSERT
+        @($actualTable.Rows | ForEach-Object { $_ -join '|' }) | Should -Be $expectedLines
+        Should -Invoke ConvertTo-StraightQuotes -ParameterFilter { $Text -eq "id`ncurly`n" } -Times 1 -Exactly
+    }
+
+    It 'leaves curly quotes alone when not asked' {
+
+        # ARRANGE
+        Mock ConvertTo-StraightQuotes { $Text }
+
+        # ACT
+        ConvertFrom-StarsectorCsv -Text "id`nalpha`n" | Out-Null
+
+        # ASSERT
+        Should -Invoke ConvertTo-StraightQuotes -Times 0 -Exactly
     }
 
     It 'reads a last row with no line break after it' {
@@ -40,7 +98,7 @@ Describe 'ConvertFrom-StarsectorCsv' {
         $expectedLines = @('alpha', 'beta')
 
         # ACT
-        $actualLines = Read-CsvLines -Text "id`nalpha`nbeta" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "id`nalpha`nbeta"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
@@ -49,16 +107,16 @@ Describe 'ConvertFrom-StarsectorCsv' {
     It 'drops carriage returns' {
 
         # ARRANGE
-        $expectedLines = @('alpha')
+        $expectedLines = @('Alpha|alpha')
 
         # ACT
-        $actualLines = Read-CsvLines -Text "name,id`r`nAlpha,alpha`r`n" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "name,id`r`nAlpha,alpha`r`n"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
     }
 
-    It 'returns an empty array for <Description>' -ForEach @(
+    It 'returns no rows for <Description>' -ForEach @(
         @{ Description = 'a file of one line'; Text = 'id,name' }
         @{ Description = 'a header with only a line break after it'; Text = "id,name`n" }
         @{ Description = 'an empty file'; Text = '' }
@@ -68,59 +126,61 @@ Describe 'ConvertFrom-StarsectorCsv' {
         $expectedCount = 0
 
         # ACT
-        $actualRows = ConvertFrom-StarsectorCsv -Text $Text -ColumnNames @('id')
+        $actualTable = ConvertFrom-StarsectorCsv -Text $Text
 
         # ASSERT
-        Should -ActualValue $actualRows -BeOfType [object[]]
-        $actualRows.Count | Should -Be $expectedCount
+        Should -ActualValue $actualTable.Rows -BeOfType [object[]]
+        $actualTable.Rows.Count | Should -Be $expectedCount
     }
 
-    It 'returns the rows as one array, however many there are' {
+    It 'returns a row of one value as an array, in an array of rows' {
 
         # ARRANGE
-        $expectedCount = 1
-        $expectedFirstValue = 'alpha'
+        $expectedRowCount = 1
+        $expectedValueCount = 1
+        $expectedValue = 'alpha'
 
         # ACT
-        $actualRows = ConvertFrom-StarsectorCsv -Text "id`nalpha`n" -ColumnNames @('id')
+        $actualTable = ConvertFrom-StarsectorCsv -Text "id`nalpha`n"
 
         # ASSERT
-        $actualRows.Count | Should -Be $expectedCount
-        $actualRows[0][0] | Should -Be $expectedFirstValue
+        $actualTable.Rows.Count | Should -Be $expectedRowCount
+        $actualTable.Rows[0].Count | Should -Be $expectedValueCount
+        $actualTable.Rows[0][0] | Should -Be $expectedValue
     }
 
     # LLI's wing_data.csv repeats a column name eleven times, which Import-Csv refuses.
-    It 'reads a header that repeats a column name, taking the last column of that name' {
+    It 'reads a header that repeats a column name, indexing the last column of that name' {
 
         # ARRANGE
-        $expectedLines = @('second|c')
+        $expectedIndexes = '02=2 code=3 id=0'
 
         # ACT
-        $actualLines = Read-CsvLines -Text "id,02,02,code`na,first,second,c`n" -ColumnNames @('02', 'code')
+        $actualTable = ConvertFrom-StarsectorCsv -Text "id,02,02,code`na,first,second,c`n"
 
         # ASSERT
-        $actualLines | Should -Be $expectedLines
+        Format-ColumnIndexes -Table $actualTable | Should -Be $expectedIndexes
     }
 
-    It 'gives null for a column the header lacks, matching names case-sensitively' {
+    It 'indexes column names case-sensitively' {
 
         # ARRANGE
-        $expectedLines = @('<null>|Alpha')
+        $expectedIndexes = 'ID=0 id=1'
 
         # ACT
-        $actualLines = Read-CsvLines -Text "ID,name`nalpha,Alpha`n" -ColumnNames @('id', 'name')
+        $actualTable = ConvertFrom-StarsectorCsv -Text "ID,id`nalpha,beta`n"
 
         # ASSERT
-        $actualLines | Should -Be $expectedLines
+        Format-ColumnIndexes -Table $actualTable | Should -Be $expectedIndexes
     }
 
-    It 'gives null for a column a short row ends before' {
+    It 'keeps only the values a short row holds' {
 
         # ARRANGE
-        $expectedLines = @('a', '<null>')
+        $expectedLines = @('alpha|a', 'short')
 
         # ACT
-        $actualLines = Read-CsvLines -Text "name,id`nalpha,a`nshort`n" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "name,id`nalpha,a`nshort`n"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
@@ -130,35 +190,36 @@ Describe 'ConvertFrom-StarsectorCsv' {
 
         # ARRANGE
         $text = " `"id`" ,`"say `"`"hi`"`"`"`nalpha,x`n"
-        $expectedLines = @('alpha|x')
+
+        $expectedIndexes = 'id=0 say "hi"=1'
 
         # ACT
-        $actualLines = Read-CsvLines -Text $text -ColumnNames @('id', 'say "hi"')
+        $actualTable = ConvertFrom-StarsectorCsv -Text $text
 
         # ASSERT
-        $actualLines | Should -Be $expectedLines
+        Format-ColumnIndexes -Table $actualTable | Should -Be $expectedIndexes
     }
 
     # The game splits the header on every comma, so a quoted comma there makes two names.
     It 'splits the header on a comma inside quotes' {
 
         # ARRANGE
-        $expectedLines = @('alpha')
+        $expectedIndexes = 'a=0 b=1 id=2'
 
         # ACT
-        $actualLines = Read-CsvLines -Text "`"a,b`",id`nx,y,alpha`n" -ColumnNames @('id')
+        $actualTable = ConvertFrom-StarsectorCsv -Text "`"a,b`",id`nx,y,alpha`n"
 
         # ASSERT
-        $actualLines | Should -Be $expectedLines
+        Format-ColumnIndexes -Table $actualTable | Should -Be $expectedIndexes
     }
 
     It 'skips a row opening with # and an empty line, keeping a row that holds only commas' {
 
         # ARRANGE
-        $expectedLines = @('', 'kept')
+        $expectedLines = @('|', 'kept|y')
 
         # ACT
-        $actualLines = Read-CsvLines -Text "id,name`n#gone,x`n`n,`nkept,y`n" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "id,name`n#gone,x`n`n,`nkept,y`n"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
@@ -167,10 +228,10 @@ Describe 'ConvertFrom-StarsectorCsv' {
     It 'keeps a # that is not the first character of its row' {
 
         # ARRANGE
-        $expectedLines = @('#kept')
+        $expectedLines = @('x|#kept')
 
         # ACT
-        $actualLines = Read-CsvLines -Text "name,id`nx,#kept`n" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "name,id`nx,#kept`n"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
@@ -180,10 +241,11 @@ Describe 'ConvertFrom-StarsectorCsv' {
 
         # ARRANGE
         $text = "id,tags`n`"a,b`",`"one`ntwo`"`nc,d`n"
+
         $expectedLines = @("a,b|one`ntwo", 'c|d')
 
         # ACT
-        $actualLines = Read-CsvLines -Text $text -ColumnNames @('id', 'tags')
+        $actualLines = Read-CsvLines -Text $text
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
@@ -201,19 +263,19 @@ Describe 'ConvertFrom-StarsectorCsv' {
         $expectedLines = @($Expected)
 
         # ACT
-        $actualLines = Read-CsvLines -Text "id`n$Raw`n" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "id`n$Raw`n"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
     }
 
-    It 'ignores values past the last header column' {
+    It 'keeps values past the last header column' {
 
         # ARRANGE
-        $expectedLines = @('alpha')
+        $expectedLines = @('alpha|extra|more')
 
         # ACT
-        $actualLines = Read-CsvLines -Text "id`nalpha,extra,more`n" -ColumnNames @('id')
+        $actualLines = Read-CsvLines -Text "id`nalpha,extra,more`n"
 
         # ASSERT
         $actualLines | Should -Be $expectedLines
@@ -225,8 +287,7 @@ Describe 'ConvertFrom-StarsectorCsv' {
         $expectedMessage = 'has a quote left open, at character 6 after the header'
 
         # ACT
-        $actualError = { ConvertFrom-StarsectorCsv -Text "id`nalpha`n`"open,b`n" -ColumnNames @('id') } |
-            Should -Throw -PassThru
+        $actualError = { ConvertFrom-StarsectorCsv -Text "id`nalpha`n`"open,b`n" } | Should -Throw -PassThru
 
         # ASSERT
         $actualError.Exception.Message | Should -Be $expectedMessage

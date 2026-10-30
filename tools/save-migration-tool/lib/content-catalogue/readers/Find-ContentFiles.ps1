@@ -75,9 +75,11 @@ function Find-ContentFiles {
                 }
 
                 $relativePath = "$dataFolder/$fileName"
-                $file = $null
 
-                if (-not $filesByPath.TryGetValue($relativePath, [ref] $file)) {
+                # The indexer answers a missing path with null, at a fraction of a TryGetValue call's cost.
+                $file = $filesByPath[$relativePath]
+
+                if ($null -eq $file) {
 
                     $file = [pscustomobject]@{
                         RelativePath = $relativePath

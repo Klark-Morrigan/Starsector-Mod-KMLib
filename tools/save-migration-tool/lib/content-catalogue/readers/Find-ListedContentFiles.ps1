@@ -40,10 +40,12 @@ function Find-ListedContentFiles {
 
             foreach ($path in [System.IO.Directory]::EnumerateFiles($folderPath)) {
 
-                $copies = $null
                 $listedPath = "$folder/$([System.IO.Path]::GetFileName($path))".TrimStart('/')
 
-                if ($copiesByPath.TryGetValue($listedPath, [ref] $copies)) {
+                # The indexer answers a missing path with null, at a fraction of a TryGetValue call's cost.
+                $copies = $copiesByPath[$listedPath]
+
+                if ($null -ne $copies) {
                     $copies.Add([pscustomobject]@{ Source = $source; Path = $path })
                 }
             }

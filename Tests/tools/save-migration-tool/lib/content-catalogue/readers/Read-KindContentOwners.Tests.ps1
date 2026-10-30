@@ -39,7 +39,7 @@ BeforeAll {
 
         $definition = [pscustomobject]@{ Kind = 'K'; Parts = $Parts }
 
-        return Read-KindContentOwners -Sources @('sources') -Definition $definition
+        return Read-KindContentOwners -Sources @('sources') -Definition $definition -Cache $script:Cache
     }
 }
 
@@ -48,18 +48,18 @@ Describe 'Read-KindContentOwners' {
     BeforeEach {
 
         $script:Added = [System.Collections.Generic.List[string]]::new()
+        $script:Cache = [pscustomobject]@{ Name = 'the run''s cache' }
 
         Mock Get-CoreOwnerName { 'core' }
 
-        # Each source defines one ID named for it, reads 10 files, and skips one.
+        # Each file set defines one ID named for it, reads 10 copies, and skips one.
         # The replacer replaces one file of each file set, and each spreadsheet or keyed file named "replaced".
         Mock Read-ContentFileOwners {
             [pscustomobject]@{
-                OwnersById       = New-OwnerIndex @{ "$($FileSet.Folder)-id" = @('m') }
-                CopyCount        = 10
-                SpreadsheetCount = 1
-                SkippedFiles     = @([pscustomobject]@{ Path = "$($FileSet.Folder)\bad"; Reason = 'broken' })
-                Replacements     = @([pscustomobject]@{ Path = "$($FileSet.Folder)/a.ship"; Owner = 'replacer' })
+                OwnersById   = New-OwnerIndex @{ "$($FileSet.Folder)-id" = @('m') }
+                CopyCount    = 10
+                SkippedFiles = @([pscustomobject]@{ Path = "$($FileSet.Folder)\bad"; Reason = 'broken' })
+                Replacements = @([pscustomobject]@{ Path = "$($FileSet.Folder)/a.ship"; Owner = 'replacer' })
             }
         }
 
@@ -73,7 +73,6 @@ Describe 'Read-KindContentOwners' {
 
             [pscustomobject]@{
                 OwnersById   = New-OwnerIndex @{ "$($Spreadsheet.Path)-id" = @('r') }
-                CopyCount    = 3
                 SkippedFiles = @()
                 Replacement  = $replacement
             }
@@ -89,7 +88,6 @@ Describe 'Read-KindContentOwners' {
 
             [pscustomobject]@{
                 OwnersById   = New-OwnerIndex @{ "$($KeyedFile.Path)-id" = @('j') }
-                CopyCount    = 2
                 SkippedFiles = @([pscustomobject]@{ Path = "$($KeyedFile.Path)\bad"; Reason = 'broken' })
                 Replacement  = $replacement
             }
@@ -154,6 +152,37 @@ Describe 'Read-KindContentOwners' {
         Should -Invoke Read-KeyedFileOwners -ParameterFilter { "$Sources" -eq 'sources' } -Times 1 -Exactly
     }
 
+    # Spreadsheets and keyed files several kinds read are parsed once, through the one cache of the run.
+    It 'hands the run''s cache to every reader' {
+
+        # ARRANGE
+        $parts = @(New-Part -FileFolders 'files' -SpreadsheetPaths 'one.csv' -KeyedPaths 'planets.json')
+
+        $expectedCache = $script:Cache
+
+        # ACT
+        Read-Kind -Parts $parts | Out-Null
+
+        # ASSERT
+        Should `
+            -Invoke Read-ContentFileOwners `
+            -ParameterFilter { [object]::ReferenceEquals($Cache, $expectedCache) } `
+            -Times 1 `
+            -Exactly
+
+        Should `
+            -Invoke Read-SpreadsheetOwners `
+            -ParameterFilter { [object]::ReferenceEquals($Cache, $expectedCache) } `
+            -Times 1 `
+            -Exactly
+
+        Should `
+            -Invoke Read-KeyedFileOwners `
+            -ParameterFilter { [object]::ReferenceEquals($Cache, $expectedCache) } `
+            -Times 1 `
+            -Exactly
+    }
+
     # The game builds some variants in its own code, with no file to find them in.
     It 'adds the game''s built-in IDs, owned by the game' {
 
@@ -169,7 +198,7 @@ Describe 'Read-KindContentOwners' {
         $script:Added | Should -Be $expectedAdded
     }
 
-    It 'sums what every source read, and returns what each skipped and each file a mod replaces' {
+    It 'sums the content file copies read, and returns what each source skipped and each file a mod replaces' {
 
         # ARRANGE
         $parts = @(
@@ -177,8 +206,7 @@ Describe 'Read-KindContentOwners' {
             New-Part -KeyedPaths 'replaced.json', 'kept.json'
         )
 
-        $expectedContentFileCount = 14
-        $expectedSpreadsheetCount = 7
+        $expectedContentFileCount = 10
         $expectedSkippedPaths = @('files\bad', 'replaced.json\bad', 'kept.json\bad')
         $expectedReplacedPaths = @('files/a.ship', 'replaced.csv', 'replaced.json')
         $expectedReplacingOwners = @('replacer', 'replacer', 'replacer')
@@ -188,7 +216,6 @@ Describe 'Read-KindContentOwners' {
 
         # ASSERT
         $actualRead.ContentFileCount | Should -Be $expectedContentFileCount
-        $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
         $actualRead.Replacements.Path | Should -Be $expectedReplacedPaths
         $actualRead.Replacements.Owner | Should -Be $expectedReplacingOwners

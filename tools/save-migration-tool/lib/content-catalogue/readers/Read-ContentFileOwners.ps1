@@ -6,7 +6,10 @@
 # A copy that does not parse is skipped and returned with the reason:
 # one broken copy must not hide the content of every other. An empty ID defines nothing.
 # Each file a mod replaces is returned with that mod.
-# A set listed by a spreadsheet reads that spreadsheet first, and counts it.
+# A set listed by a spreadsheet reads that spreadsheet first, through the run's cache.
+#
+# An install holds tens of thousands of these files, and every .NET method call costs more than the rest
+# of a file's bookkeeping, so the copies' IDs are gathered without one.
 function Read-ContentFileOwners {
 
     param(
@@ -14,20 +17,21 @@ function Read-ContentFileOwners {
         [object[]] $Sources,
 
         # One file set, as New-ContentFileSet describes it.
-        [object] $FileSet
+        [object] $FileSet,
+
+        # The run's parsed files, as New-ParsedFileCache holds them.
+        [object] $Cache
     )
 
     $ownersById = New-ContentOwnerIndex
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $replacements = [System.Collections.Generic.List[object]]::new()
     $copyCount = 0
-    $spreadsheetCount = 0
 
     if ($FileSet.ListedBy) {
 
-        $listing = Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $FileSet.ListedBy
+        $listing = Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $FileSet.ListedBy -Cache $Cache
 
-        $spreadsheetCount = $listing.CopyCount
         $skippedFiles.AddRange([object[]] $listing.SkippedFiles)
 
         if ($listing.Replacement) {
@@ -43,20 +47,22 @@ function Read-ContentFileOwners {
     foreach ($file in $files) {
 
         # Most files have one copy, which needs no ordering and leaves no other copy to replace.
-        $merge = if ($file.Copies.Count -eq 1) {
-            [pscustomobject]@{ Copies = $file.Copies; Replacement = $null }
+        $copies = if ($file.Copies.Count -eq 1) {
+            $file.Copies
         } else {
-            Select-MergedCopies -File $file
-        }
 
-        if ($merge.Replacement) {
-            $replacements.Add($merge.Replacement)
+            $merge = Select-MergedCopies -File $file
+
+            if ($merge.Replacement) {
+                $replacements.Add($merge.Replacement)
+            }
+
+            $merge.Copies
         }
 
         $id = $null
-        $idSetters = [System.Collections.Generic.List[object]]::new()
 
-        foreach ($copy in $merge.Copies) {
+        $idSetters = @(foreach ($copy in $copies) {
 
             $copyCount++
 
@@ -72,9 +78,9 @@ function Read-ContentFileOwners {
             if ($null -ne $copyId) {
 
                 $id = $copyId
-                $idSetters.Add([pscustomobject]@{ Owner = $copy.Source.Owner; Id = $copyId })
+                [pscustomobject]@{ Owner = $copy.Source.Owner; Id = $copyId }
             }
-        }
+        })
 
         if (-not $id) {
             continue
@@ -89,10 +95,9 @@ function Read-ContentFileOwners {
     }
 
     return [pscustomobject]@{
-        OwnersById       = $ownersById
-        CopyCount        = $copyCount
-        SpreadsheetCount = $spreadsheetCount
-        SkippedFiles     = $skippedFiles.ToArray()
-        Replacements     = $replacements.ToArray()
+        OwnersById   = $ownersById
+        CopyCount    = $copyCount
+        SkippedFiles = $skippedFiles.ToArray()
+        Replacements = $replacements.ToArray()
     }
 }

@@ -4,6 +4,7 @@
 # Where only object entries define an ID, the value the merge keeps decides: the last copy's in merge order.
 # A copy that does not parse is skipped and returned with the reason,
 # and a mod that replaces the file is returned with the file's path, or null when none does.
+# Each copy is parsed through the run's cache, so a file several kinds read is parsed once.
 function Read-KeyedFileOwners {
 
     param(
@@ -11,14 +12,16 @@ function Read-KeyedFileOwners {
         [object[]] $Sources,
 
         # The file, as New-KeyedFileSource describes it.
-        [object] $KeyedFile
+        [object] $KeyedFile,
+
+        # The run's parsed files, as New-ParsedFileCache holds them.
+        [object] $Cache
     )
 
     $keyOwners = New-ContentOwnerIndex
     $isObjectByKey = [System.Collections.Generic.Dictionary[string, bool]]::new()
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $file = @(Find-ListedContentFiles -Sources $Sources -RelativePaths @($KeyedFile.Path))
-    $copyCount = 0
 
     $merge = if ($file.Count -eq 0) {
         [pscustomobject]@{ Copies = @(); Replacement = $null }
@@ -28,10 +31,9 @@ function Read-KeyedFileOwners {
 
     foreach ($copy in $merge.Copies) {
 
-        $copyCount++
-
         try {
-            $json = ConvertFrom-StarsectorJson -Path $copy.Path
+            $json = Invoke-CachedRead -Results $Cache.JsonByPath -Key $copy.Path `
+                -Command 'ConvertFrom-StarsectorJson' -Parameters @{ Path = $copy.Path }
 
         } catch {
 
@@ -71,7 +73,6 @@ function Read-KeyedFileOwners {
 
     return [pscustomobject]@{
         OwnersById   = $ownersById
-        CopyCount    = $copyCount
         SkippedFiles = $skippedFiles.ToArray()
         Replacement  = $merge.Replacement
     }

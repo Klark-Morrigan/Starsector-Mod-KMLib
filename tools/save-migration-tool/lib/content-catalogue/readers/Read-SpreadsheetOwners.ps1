@@ -6,6 +6,7 @@
 # The game compares that path as written, slashes included.
 # That mod is returned with the spreadsheet's path, or null when no mod replaces it.
 # A copy that does not parse, or lacks a column the game reads, is skipped and returned with the reason.
+# Each copy is parsed through the run's cache, so a spreadsheet several kinds read is parsed once.
 function Read-SpreadsheetOwners {
 
     param(
@@ -13,7 +14,10 @@ function Read-SpreadsheetOwners {
         [object[]] $Sources,
 
         # The spreadsheet, as New-SpreadsheetSource describes it.
-        [object] $Spreadsheet
+        [object] $Spreadsheet,
+
+        # The run's parsed files, as New-ParsedFileCache holds them.
+        [object] $Cache
     )
 
     $replacingSource = Find-ReplacingSource -Sources $Sources -Path $Spreadsheet.Path
@@ -29,7 +33,6 @@ function Read-SpreadsheetOwners {
     $seenKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $definedIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $readCopies = [System.Collections.Generic.List[object]]::new()
-    $copyCount = 0
 
     foreach ($source in $readSources) {
 
@@ -40,16 +43,14 @@ function Read-SpreadsheetOwners {
             continue
         }
 
-        $copyCount++
+        # A path holds no line break, so the key keeps path and quote handling apart.
+        $cacheKey = "$path`n$($Spreadsheet.ConvertsCurlyQuotes)"
+        $parameters = @{ Path = $path; ConvertsCurlyQuotes = $Spreadsheet.ConvertsCurlyQuotes }
 
         try {
-            $text = Read-StarsectorText -Path $path
-
-            if ($Spreadsheet.ConvertsCurlyQuotes) {
-                $text = ConvertTo-StraightQuotes -Text $text
-            }
-
-            $rows = ConvertFrom-StarsectorCsv -Text $text -ColumnNames $Spreadsheet.ColumnNames
+            $table = Invoke-CachedRead -Results $Cache.SpreadsheetsByKey -Key $cacheKey `
+                -Command 'ConvertFrom-StarsectorCsv' -Parameters $parameters
+            $rows = Select-CsvColumns -Table $table -ColumnNames $Spreadsheet.ColumnNames
             $copyRows = ConvertTo-SpreadsheetRowIds -Rows $rows -Spreadsheet $Spreadsheet
 
         } catch {
@@ -85,7 +86,6 @@ function Read-SpreadsheetOwners {
 
     return [pscustomobject]@{
         OwnersById   = $ownersById
-        CopyCount    = $copyCount
         SkippedFiles = $skippedFiles.ToArray()
         Replacement  = $replacement
     }

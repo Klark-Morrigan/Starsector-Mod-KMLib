@@ -1,5 +1,8 @@
 # Records that an owner defines an ID, keeping each owner once per ID.
 # IDs compare case-sensitively, as the game's spec stores look them up.
+#
+# A catalogue run adds hundreds of thousands of owners, and the indexer costs a fraction of a TryGetValue call,
+# as PowerShell answers a missing key with null.
 function Add-ContentOwner {
 
     param(
@@ -8,15 +11,16 @@ function Add-ContentOwner {
         [string] $Owner
     )
 
-    $owners = $null
+    $owners = $OwnersById[$Id]
 
-    if (-not $OwnersById.TryGetValue($Id, [ref] $owners)) {
+    if ($null -eq $owners) {
 
         $owners = [System.Collections.Generic.List[string]]::new()
-        $OwnersById.Add($Id, $owners)
+        $OwnersById[$Id] = $owners
+
+    } elseif ($owners.Contains($Owner)) {
+        return
     }
 
-    if (-not $owners.Contains($Owner)) {
-        $owners.Add($Owner)
-    }
+    $owners.Add($Owner)
 }

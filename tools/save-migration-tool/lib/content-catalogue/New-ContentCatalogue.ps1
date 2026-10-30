@@ -5,6 +5,7 @@
 # and each file or spreadsheet a mod replaces is returned with that mod.
 # A file several kinds read is returned once however many kinds replaced it, and once per reason they skipped it.
 # Each kind read is returned with how long it took and how many IDs its files define, so a slow run can be traced.
+# Each spreadsheet and keyed JSON file is parsed once, and counted once, however many kinds read it.
 function New-ContentCatalogue {
 
     param(
@@ -30,6 +31,7 @@ function New-ContentCatalogue {
         }
     }
 
+    $cache = New-ParsedFileCache
     $ownersByReadKind = @{}
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $skipKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
@@ -37,7 +39,6 @@ function New-ContentCatalogue {
     $replacedPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $kindReads = [System.Collections.Generic.List[object]]::new()
     $contentFileCount = 0
-    $spreadsheetCount = 0
 
     foreach ($definition in $definitions) {
 
@@ -46,7 +47,7 @@ function New-ContentCatalogue {
         }
 
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-        $read = Read-KindContentOwners -Sources $Sources -Definition $definition
+        $read = Read-KindContentOwners -Sources $Sources -Definition $definition -Cache $cache
 
         $kindReads.Add([pscustomobject]@{
             Kind         = $definition.Kind
@@ -56,7 +57,6 @@ function New-ContentCatalogue {
 
         $ownersByReadKind[$definition.Kind] = $read.OwnersById
         $contentFileCount += $read.ContentFileCount
-        $spreadsheetCount += $read.SpreadsheetCount
 
         foreach ($skippedFile in $read.SkippedFiles) {
 
@@ -105,8 +105,8 @@ function New-ContentCatalogue {
     return [pscustomobject]@{
         OwnersByKind     = $ownersByKind
         GeneratedCount   = $generatedCount
-        ContentFileCount = $contentFileCount
-        SpreadsheetCount = $spreadsheetCount
+        ContentFileCount = $contentFileCount + $cache.JsonByPath.Count
+        SpreadsheetCount = $cache.SpreadsheetsByKey.Count
         SkippedFiles     = $skippedFiles.ToArray()
         Replacements     = $replacements.ToArray()
         KindReads        = $kindReads.ToArray()

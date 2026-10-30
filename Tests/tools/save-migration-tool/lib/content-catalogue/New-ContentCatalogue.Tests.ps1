@@ -10,6 +10,7 @@ BeforeAll {
     . "$libRoot\definitions\Get-ContentDefinitions.ps1"
     . "$libRoot\New-ContentCatalogue.ps1"
     . "$libRoot\owner-index\Set-ContentOwnerOrder.ps1"
+    . "$libRoot\readers\New-ParsedFileCache.ps1"
     . "$libRoot\readers\Read-KindContentOwners.ps1"
 }
 
@@ -32,12 +33,23 @@ Describe 'New-ContentCatalogue' {
             [pscustomobject]@{ Kind = 'Other'; Generated = @() }
         }
 
-        # Each kind defines one ID named for it, reads 10 files and 2 spreadsheets, and skips and replaces one each.
+        $script:Cache = [pscustomobject]@{
+            JsonByPath        = [System.Collections.Generic.Dictionary[string, object]]::new()
+            SpreadsheetsByKey = [System.Collections.Generic.Dictionary[string, object]]::new()
+        }
+
+        Mock New-ParsedFileCache { $script:Cache }
+
+        # Each kind defines one ID named for it, reads 10 content files, and skips and replaces one each.
+        # Through the cache it parses a spreadsheet of its own and the one JSON file every kind shares.
         Mock Read-KindContentOwners {
+
+            $Cache.SpreadsheetsByKey["$($Definition.Kind).csv"] = 'parsed'
+            $Cache.JsonByPath['shared.json'] = 'parsed'
+
             [pscustomobject]@{
                 OwnersById       = New-OwnerIndex @{ "$($Definition.Kind)-id" = @('m') }
                 ContentFileCount = 10
-                SpreadsheetCount = 2
                 SkippedFiles     = @([pscustomobject]@{ Path = "$($Definition.Kind)\bad"; Reason = 'broken' })
                 Replacements     = @([pscustomobject]@{ Path = "$($Definition.Kind).csv"; Owner = 'm' })
             }
@@ -98,6 +110,23 @@ Describe 'New-ContentCatalogue' {
         $actualCatalogue.GeneratedCount | Should -Be $expectedGeneratedCount
     }
 
+    It 'reads every kind with one cache for the run' {
+
+        # ARRANGE
+        $expectedNewCacheCount = 1
+        $expectedReadCount = 2
+        $expectedCache = $script:Cache
+
+        # ACT
+        New-ContentCatalogue -Sources @() -Kinds @('Base', 'Other') | Out-Null
+
+        # ASSERT
+        Should -Invoke New-ParsedFileCache -Times $expectedNewCacheCount -Exactly
+        Should -Invoke Read-KindContentOwners -Times $expectedReadCount -Exactly -ParameterFilter {
+            [object]::ReferenceEquals($Cache, $expectedCache)
+        }
+    }
+
     It 'orders each asked kind''s owners by the sources' {
 
         # ARRANGE
@@ -111,11 +140,12 @@ Describe 'New-ContentCatalogue' {
             -Times $expectedOrderCount -Exactly
     }
 
-    It 'sums what every kind read, the base kinds too, and returns what each skipped and replaced' {
+    # A file several kinds read is parsed once, so the cache, not the kinds, says how many were read.
+    It 'counts every kind''s content files and each file the cache parsed, returning what each skipped and replaced' {
 
         # ARRANGE
-        $expectedContentFileCount = 30
-        $expectedSpreadsheetCount = 6
+        $expectedContentFileCount = 31
+        $expectedSpreadsheetCount = 3
         $expectedSkippedPaths = @('Base\bad', 'Built\bad', 'Other\bad')
         $expectedReplacedPaths = @('Base.csv', 'Built.csv', 'Other.csv')
 
@@ -144,7 +174,6 @@ Describe 'New-ContentCatalogue' {
             [pscustomobject]@{
                 OwnersById       = New-OwnerIndex @{}
                 ContentFileCount = 0
-                SpreadsheetCount = 1
                 SkippedFiles     = @([pscustomobject]@{ Path = 'shared.csv'; Reason = $reason })
                 Replacements     = @([pscustomobject]@{ Path = 'shared.json'; Owner = 'm' })
             }

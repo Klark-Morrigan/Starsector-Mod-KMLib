@@ -8,12 +8,11 @@ BeforeAll {
     . "$libRoot\content-catalogue\owner-index\Add-ContentOwner.ps1"
     . "$libRoot\content-catalogue\readers\ConvertTo-SpreadsheetRowIds.ps1"
     . "$libRoot\content-catalogue\readers\Find-ReplacingSource.ps1"
+    . "$libRoot\content-catalogue\readers\Invoke-CachedRead.ps1"
     . "$libRoot\content-catalogue\owner-index\New-ContentOwnerIndex.ps1"
     . "$libRoot\content-catalogue\definitions\New-SpreadsheetSource.ps1"
     . "$libRoot\content-catalogue\readers\Read-SpreadsheetOwners.ps1"
-    . "$libRoot\data-file\ConvertFrom-StarsectorCsv.ps1"
-    . "$libRoot\data-file\ConvertTo-StraightQuotes.ps1"
-    . "$libRoot\data-file\Read-StarsectorText.ps1"
+    . "$libRoot\data-file\Select-CsvColumns.ps1"
 
     function script:New-Source {
         # One data folder under the case's own folder; its spreadsheet is written when -HasSpreadsheet is given.
@@ -40,6 +39,16 @@ BeforeAll {
 
         return [pscustomobject]@{ Keys = $Keys; Ids = $Ids }
     }
+
+    function script:Read-Spreadsheet {
+        # Reads the spreadsheet across the sources with the case's cache.
+        param(
+            [object[]] $Sources,
+            [object] $Spreadsheet
+        )
+
+        return Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $Spreadsheet -Cache $script:Cache
+    }
 }
 
 Describe 'Read-SpreadsheetOwners' {
@@ -48,15 +57,17 @@ Describe 'Read-SpreadsheetOwners' {
 
         $script:Case = [guid]::NewGuid().ToString('N')
         $script:Added = [System.Collections.Generic.List[string]]::new()
+        $script:Cache = [pscustomobject]@{
+            SpreadsheetsByKey = [System.Collections.Generic.Dictionary[string, object]]::new()
+        }
 
         # Each copy's rows, by owner, as the row converter fake hands them back.
         $script:CopyRowsByOwner = @{}
 
-        # Each copy's text is its owner's name, and its one row is that text,
+        # Each copy parses to its owner's name, and its one row is that name,
         # so the row converter fake hands back that owner's rows.
-        Mock Read-StarsectorText { Split-Path -Leaf ($Path -replace '[\\/]data[\\/]sheet\.csv$', '') }
-        Mock ConvertTo-StraightQuotes { $Text }
-        Mock ConvertFrom-StarsectorCsv { ,[object[]] @($Text) }
+        Mock Invoke-CachedRead { Split-Path -Leaf ($Parameters.Path -replace '[\\/]data[\\/]sheet\.csv$', '') }
+        Mock Select-CsvColumns { ,[object[]] @($Table) }
         Mock ConvertTo-SpreadsheetRowIds { $script:CopyRowsByOwner["$Rows"] }
         Mock Add-ContentOwner { $script:Added.Add("$Id=$Owner") }
         Mock Find-ReplacingSource { $null }
@@ -77,24 +88,48 @@ Describe 'Read-SpreadsheetOwners' {
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -IdColumn 'effect'
 
         $expectedAdded = @('shared=alpha', 'shared=core', 'core_only=core')
-        $expectedCopyCount = 2
         $expectedColumnNames = 'id effect'
         $expectedSpreadsheet = $spreadsheet
 
         # ACT
-        $actualRead = Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet
+        $actualRead = Read-Spreadsheet -Sources $sources -Spreadsheet $spreadsheet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.CopyCount | Should -Be $expectedCopyCount
         $actualRead.Replacement | Should -BeNullOrEmpty
-        Should -Invoke ConvertFrom-StarsectorCsv -Times 2 -Exactly -ParameterFilter {
+
+        Should -Invoke Select-CsvColumns -Times 2 -Exactly -ParameterFilter {
             "$ColumnNames" -ceq $expectedColumnNames
         }
         Should -Invoke ConvertTo-SpreadsheetRowIds -Times 2 -Exactly -ParameterFilter {
             [object]::ReferenceEquals($Spreadsheet, $expectedSpreadsheet)
         }
-        Should -Invoke ConvertTo-StraightQuotes -Times 0 -Exactly
+    }
+
+    # A spreadsheet several kinds read is parsed once for all of them.
+    It 'parses each copy through the run''s cache, keyed by its path and its quote handling' {
+
+        # ARRANGE
+        $script:CopyRowsByOwner['alpha'] = New-CopyRows -Keys @('a') -Ids @('a')
+
+        $sources = @(New-Source -Owner 'alpha' -HasSpreadsheet)
+        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -ConvertsCurlyQuotes
+
+        $expectedPath = "$($sources[0].Folder)\data\sheet.csv"
+        $expectedKey = "$expectedPath`nTrue"
+        $expectedResults = $script:Cache.SpreadsheetsByKey
+
+        # ACT
+        Read-Spreadsheet -Sources $sources -Spreadsheet $spreadsheet | Out-Null
+
+        # ASSERT
+        Should -Invoke Invoke-CachedRead -Times 1 -Exactly -ParameterFilter {
+            [object]::ReferenceEquals($Results, $expectedResults) -and
+                $Key -ceq $expectedKey -and
+                $Command -ceq 'ConvertFrom-StarsectorCsv' -and
+                $Parameters.Path -ceq $expectedPath -and
+                $Parameters.ConvertsCurlyQuotes -eq $true
+        }
     }
 
     It 'reads only the replacing source''s copy, and returns it with the spreadsheet''s path' {
@@ -119,7 +154,7 @@ Describe 'Read-SpreadsheetOwners' {
         $expectedReplacingOwner = 'beta'
 
         # ACT
-        $actualRead = Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet
+        $actualRead = Read-Spreadsheet -Sources $sources -Spreadsheet $spreadsheet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
@@ -138,7 +173,7 @@ Describe 'Read-SpreadsheetOwners' {
         $expectedOwners = 'alpha core'
 
         # ACT
-        Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
+        Read-Spreadsheet -Sources $sources -Spreadsheet $spreadsheet | Out-Null
 
         # ASSERT
         Should -Invoke Find-ReplacingSource -Times 1 -Exactly -ParameterFilter {
@@ -161,37 +196,24 @@ Describe 'Read-SpreadsheetOwners' {
         $expectedAdded = @('shared_id=alpha', 'shared_id=core', 'core_id=core')
 
         # ACT
-        Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
+        Read-Spreadsheet -Sources $sources -Spreadsheet $spreadsheet | Out-Null
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
     }
 
-    It 'straightens curly quotes before it reads the text, when the source says so' {
-
-        # ARRANGE
-        $script:CopyRowsByOwner['alpha'] = New-CopyRows -Keys @('a') -Ids @('a')
-
-        $sources = @(New-Source -Owner 'alpha' -HasSpreadsheet)
-        $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -ConvertsCurlyQuotes
-
-        # ACT
-        Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet | Out-Null
-
-        # ASSERT
-        Should -Invoke ConvertTo-StraightQuotes -ParameterFilter { $Text -eq 'alpha' } -Times 1 -Exactly
-    }
-
     It 'skips a copy whose rows the game rejects, or that does not parse, and reads the others' {
 
         # ARRANGE
-        Mock ConvertFrom-StarsectorCsv {
+        Mock Invoke-CachedRead {
 
-            if ($Text -eq 'beta') {
+            $owner = Split-Path -Leaf ($Parameters.Path -replace '[\\/]data[\\/]sheet\.csv$', '')
+
+            if ($owner -eq 'beta') {
                 throw 'has a quote left open, at character 3 after the header'
             }
 
-            ,[object[]] @($Text)
+            $owner
         }
 
         Mock ConvertTo-SpreadsheetRowIds {
@@ -213,7 +235,6 @@ Describe 'Read-SpreadsheetOwners' {
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -IdColumn 'effect'
 
         $expectedAdded = @('y=core')
-        $expectedCopyCount = 3
         $expectedSkippedPaths = @(
             "$($sources[0].Folder)\data\sheet.csv"
             "$($sources[1].Folder)\data\sheet.csv"
@@ -224,11 +245,10 @@ Describe 'Read-SpreadsheetOwners' {
         )
 
         # ACT
-        $actualRead = Read-SpreadsheetOwners -Sources $sources -Spreadsheet $spreadsheet
+        $actualRead = Read-Spreadsheet -Sources $sources -Spreadsheet $spreadsheet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.CopyCount | Should -Be $expectedCopyCount
         $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
         $actualRead.SkippedFiles.Reason | Should -Be $expectedSkippedReasons
     }

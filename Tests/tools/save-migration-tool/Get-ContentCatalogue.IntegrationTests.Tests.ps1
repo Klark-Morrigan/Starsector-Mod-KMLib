@@ -266,7 +266,7 @@ Describe 'Get-ContentCatalogue.IntegrationTests' {
             $expectedReadLineCount = 1
             $expectedLastLine = 'Get-ContentCatalogue: listing 78 of 78 defined IDs'
             $expectedReadLinePattern =
-                'Get-ContentCatalogue: read 17 content files and 13 spreadsheets in * ms, skipping 0; ' +
+                'Get-ContentCatalogue: read 17 content files and 12 spreadsheets in * ms, skipping 0; ' +
                 'defined: 8 Hull, 1 Weapon, 1 FighterWing, 1 Hullmod, 57 Variant, 0 ShipSystem, 0 Projectile, ' +
                 '2 MarketCondition, 0 Industry, 0 SpecialItem, 0 Commodity, 0 Ability, 0 Submarket, 2 Faction, ' +
                 '2 Skill, 1 Aptitude, 0 Personality, 0 PersonMission, 0 BarEvent, 0 CustomEntity, 2 Planet, ' +

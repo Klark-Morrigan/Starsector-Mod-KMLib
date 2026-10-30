@@ -4,6 +4,8 @@
 # keyed JSON files and the game's built-in IDs add theirs either way.
 # Files and spreadsheets that do not parse are skipped and returned with the reason,
 # and each file or spreadsheet a mod replaces is returned with that mod.
+# Returns how many content file copies it read; spreadsheets and keyed JSON files are parsed through the run's cache,
+# which counts them once however many kinds read them.
 function Read-KindContentOwners {
 
     param(
@@ -11,7 +13,10 @@ function Read-KindContentOwners {
         [object[]] $Sources,
 
         # One definition of Get-ContentDefinitions.
-        [object] $Definition
+        [object] $Definition,
+
+        # The run's parsed files, as New-ParsedFileCache holds them.
+        [object] $Cache
     )
 
     $coreOwner = Get-CoreOwnerName
@@ -19,7 +24,6 @@ function Read-KindContentOwners {
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
     $replacements = [System.Collections.Generic.List[object]]::new()
     $contentFileCount = 0
-    $spreadsheetCount = 0
 
     foreach ($part in $Definition.Parts) {
 
@@ -28,10 +32,9 @@ function Read-KindContentOwners {
 
         foreach ($fileSet in $part.FileSets) {
 
-            $read = Read-ContentFileOwners -Sources $Sources -FileSet $fileSet
+            $read = Read-ContentFileOwners -Sources $Sources -FileSet $fileSet -Cache $Cache
 
             $contentFileCount += $read.CopyCount
-            $spreadsheetCount += $read.SpreadsheetCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
             $replacements.AddRange([object[]] $read.Replacements)
             $fileOwners = Merge-ContentOwners -Into $fileOwners -From $read.OwnersById
@@ -39,9 +42,8 @@ function Read-KindContentOwners {
 
         foreach ($spreadsheet in $part.Spreadsheets) {
 
-            $read = Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $spreadsheet
+            $read = Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $spreadsheet -Cache $Cache
 
-            $spreadsheetCount += $read.CopyCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
 
             if ($read.Replacement) {
@@ -59,9 +61,8 @@ function Read-KindContentOwners {
 
         foreach ($keyedFile in $part.KeyedFiles) {
 
-            $read = Read-KeyedFileOwners -Sources $Sources -KeyedFile $keyedFile
+            $read = Read-KeyedFileOwners -Sources $Sources -KeyedFile $keyedFile -Cache $Cache
 
-            $contentFileCount += $read.CopyCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
 
             if ($read.Replacement) {
@@ -81,7 +82,6 @@ function Read-KindContentOwners {
     return [pscustomobject]@{
         OwnersById       = $kindOwners
         ContentFileCount = $contentFileCount
-        SpreadsheetCount = $spreadsheetCount
         SkippedFiles     = $skippedFiles.ToArray()
         Replacements     = $replacements.ToArray()
     }

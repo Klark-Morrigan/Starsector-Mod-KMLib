@@ -27,6 +27,13 @@ BeforeAll {
 
         return [pscustomobject]@{ RelativePath = "data/hulls/$Name"; Copies = $copies }
     }
+
+    function script:Read-FileSet {
+        # Reads the case's file set across the given sources with the case's cache.
+        param([object[]] $Sources = @())
+
+        return Read-ContentFileOwners -Sources $Sources -FileSet $script:FileSet -Cache $script:Cache
+    }
 }
 
 Describe 'Read-ContentFileOwners' {
@@ -40,6 +47,7 @@ Describe 'Read-ContentFileOwners' {
             ListedBy = $null
         }
         $script:Added = [System.Collections.Generic.List[string]]::new()
+        $script:Cache = [pscustomobject]@{ SpreadsheetsByKey = 'the run''s spreadsheets' }
 
         # Each copy's ID is its file name, unless the case says otherwise.
         Mock Read-ContentFileId { [System.IO.Path]::GetFileNameWithoutExtension($Path) }
@@ -58,17 +66,15 @@ Describe 'Read-ContentFileOwners' {
 
         $expectedAdded = @('a=alpha', 'b=core')
         $expectedCopyCount = 2
-        $expectedSpreadsheetCount = 0
         $expectedSkippedCount = 0
         $expectedReplacementCount = 0
 
         # ACT
-        $actualRead = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
+        $actualRead = Read-FileSet -Sources @('sources')
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
         $actualRead.CopyCount | Should -Be $expectedCopyCount
-        $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Count | Should -Be $expectedSkippedCount
         $actualRead.Replacements.Count | Should -Be $expectedReplacementCount
         Should -Invoke Find-ContentFiles -ParameterFilter { "$Sources" -eq 'sources' -and $FileSet.IdKey -eq 'hullId' }
@@ -77,7 +83,7 @@ Describe 'Read-ContentFileOwners' {
     }
 
     # factions.csv lists every .faction file the game reads.
-    It 'reads the files a spreadsheet lists, counting the spreadsheet and returning what it skipped and replaced' {
+    It 'reads the files a spreadsheet lists, with the run''s cache, returning what it skipped and replaced' {
 
         # ARRANGE
         $listing = [pscustomobject]@{ Path = 'data/world/factions/factions.csv' }
@@ -86,7 +92,6 @@ Describe 'Read-ContentFileOwners' {
         Mock Read-SpreadsheetOwners {
             [pscustomobject]@{
                 OwnersById   = New-OwnerIndex @{ 'data/world/factions/x.faction' = @('core') }
-                CopyCount    = 3
                 SkippedFiles = @([pscustomobject]@{ Path = 'alpha\factions.csv'; Reason = 'broken' })
                 Replacement  = [pscustomobject]@{ Path = 'data/world/factions/factions.csv'; Owner = 'alpha' }
             }
@@ -95,20 +100,21 @@ Describe 'Read-ContentFileOwners' {
         Mock Find-ContentFiles { }
 
         $expectedAdded = @('x=alpha')
-        $expectedSpreadsheetCount = 3
         $expectedSkippedPaths = @('alpha\factions.csv')
         $expectedReplacedPaths = @('data/world/factions/factions.csv')
+        $expectedCache = $script:Cache
 
         # ACT
-        $actualRead = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
+        $actualRead = Read-FileSet -Sources @('sources')
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
         $actualRead.Replacements.Path | Should -Be $expectedReplacedPaths
         Should -Invoke Read-SpreadsheetOwners -ParameterFilter {
-            "$Sources" -eq 'sources' -and [object]::ReferenceEquals($Spreadsheet, $listing)
+            "$Sources" -eq 'sources' -and
+                [object]::ReferenceEquals($Spreadsheet, $listing) -and
+                [object]::ReferenceEquals($Cache, $expectedCache)
         } -Times 1 -Exactly
         Should -Invoke Find-ListedContentFiles -ParameterFilter {
             "$RelativePaths" -eq 'data/world/factions/x.faction'
@@ -134,7 +140,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedCopyCount = 3
 
         # ACT
-        $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+        $actualRead = Read-FileSet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
@@ -166,7 +172,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedReplacingOwners = @('alpha')
 
         # ACT
-        $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+        $actualRead = Read-FileSet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
@@ -193,7 +199,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedAdded = @('kept=core', 'kept=restater')
 
         # ACT
-        Read-ContentFileOwners -Sources @() -FileSet $script:FileSet | Out-Null
+        Read-FileSet | Out-Null
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
@@ -217,7 +223,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedSkippedReasons = @('not valid JSON')
 
         # ACT
-        $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+        $actualRead = Read-FileSet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
@@ -243,7 +249,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedAddedCount = 0
 
         # ACT
-        Read-ContentFileOwners -Sources @() -FileSet $script:FileSet | Out-Null
+        Read-FileSet | Out-Null
 
         # ASSERT
         $script:Added.Count | Should -Be $expectedAddedCount

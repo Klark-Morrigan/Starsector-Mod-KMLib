@@ -535,6 +535,10 @@ since any file could define a matching ID.
 
 A full run on an install of 400 mods reads about 47,000 content files and 2,300 spreadsheets,
 and takes about a minute.
+Each spreadsheet and JSON file keyed by ID is parsed once, and counted once,
+however many kinds read it:
+`sounds.json` holds both sounds and music sets,
+and `planet_gen_data.csv` three kinds of row.
 Parsing each content file in full would take minutes more,
 so an ID is taken by pattern when its key appears once with a plain string value,
 and read as absent when the key never appears.
