@@ -15,15 +15,25 @@ Describe 'Add-LineRange' {
 
     It 'appends the lines from one index to another, both included' {
 
+        # ARRANGE
+        $expectedLines = @('kept', 'b', 'c')
+
+        # ACT
         Add-LineRange -Target $script:Target -Lines @('a', 'b', 'c', 'd') -From 1 -To 2
 
-        $script:Target | Should -Be @('kept', 'b', 'c')
+        # ASSERT
+        $script:Target | Should -Be $expectedLines
     }
 
     It 'appends nothing for an empty range' {
 
+        # ARRANGE
+        $expectedLines = @('kept')
+
+        # ACT
         Add-LineRange -Target $script:Target -Lines @('a', 'b') -From 2 -To 1
 
-        $script:Target | Should -Be @('kept')
+        # ASSERT
+        $script:Target | Should -Be $expectedLines
     }
 }

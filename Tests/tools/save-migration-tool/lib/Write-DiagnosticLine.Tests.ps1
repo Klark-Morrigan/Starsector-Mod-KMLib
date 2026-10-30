@@ -46,30 +46,33 @@ Describe 'Write-DiagnosticLine' {
 
     It 'writes the message to stderr as that stream takes it, opening with the source painted as a script' {
 
-        $run = Invoke-WithStderrCaptured { Write-DiagnosticLine -Source 'Some-Script' -Message 'read 3 files' }
+        # ARRANGE
+        $expectedLines = @('[Error]<Script>Some-Script: read 3 files')
 
-        $run.Lines | Should -Be @('[Error]<Script>Some-Script: read 3 files')
-        $run.Output | Should -BeNullOrEmpty
+        # ACT
+        $actualRun = Invoke-WithStderrCaptured { Write-DiagnosticLine -Source 'Some-Script' -Message 'read 3 files' }
+
+        # ASSERT
+        $actualRun.Lines | Should -Be $expectedLines
+        $actualRun.Output | Should -BeNullOrEmpty
     }
 
     It 'keeps the later lines of a message under its first' {
 
-        $run = Invoke-WithStderrCaptured { Write-DiagnosticLine -Source 'S' -Message "counts,`n  nearest" }
+        # ARRANGE
+        $expectedLines = @('[Error]<Script>S: counts,', '     nearest')
 
-        $run.Lines | Should -Be @('[Error]<Script>S: counts,', '     nearest')
+        # ACT
+        $actualRun = Invoke-WithStderrCaptured { Write-DiagnosticLine -Source 'S' -Message "counts,`n  nearest" }
+
+        # ASSERT
+        $actualRun.Lines | Should -Be $expectedLines
     }
 
     It 'parts a block with a blank line where the source changes, or a block opens, but not before the first line' {
 
-        $run = Invoke-WithStderrCaptured {
-
-            Write-DiagnosticLine -Source 'A' -Message 'one'
-            Write-DiagnosticLine -Source 'A' -Message 'two'
-            Write-DiagnosticLine -Source 'B' -Message 'three'
-            Write-DiagnosticLine -Source 'B' -Message 'four' -IsBlockStart
-        }
-
-        $run.Lines | Should -Be @(
+        # ARRANGE
+        $expectedLines = @(
             '[Error]<Script>A: one'
             '[Error]<Script>A: two'
             ''
@@ -77,5 +80,17 @@ Describe 'Write-DiagnosticLine' {
             ''
             '[Error]<Script>B: four'
         )
+
+        # ACT
+        $actualRun = Invoke-WithStderrCaptured {
+
+            Write-DiagnosticLine -Source 'A' -Message 'one'
+            Write-DiagnosticLine -Source 'A' -Message 'two'
+            Write-DiagnosticLine -Source 'B' -Message 'three'
+            Write-DiagnosticLine -Source 'B' -Message 'four' -IsBlockStart
+        }
+
+        # ASSERT
+        $actualRun.Lines | Should -Be $expectedLines
     }
 }

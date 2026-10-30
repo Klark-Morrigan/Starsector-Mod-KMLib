@@ -21,12 +21,13 @@ Describe 'Format-LoadListText' {
 
     It 'writes each load under its save and outcome, each opening with a blank line, the first too' {
 
+        # ARRANGE
         $loads = @(
             [pscustomobject]@{ SaveFolder = 'save_A'; Outcome = 'Failed' }
             [pscustomobject]@{ SaveFolder = 'save_B'; Outcome = 'Loaded' }
         )
 
-        Format-LoadListText -Loads $loads | Should -Be @(
+        $expectedLines = @(
             ''
             '<Path>save_A: <Failed>'
             '  details of save_A'
@@ -34,9 +35,23 @@ Describe 'Format-LoadListText' {
             '<Path>save_B: <Loaded>'
             '  details of save_B'
         )
+
+        # ACT
+        $actualLines = Format-LoadListText -Loads $loads
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 
     It 'says the logs hold no load when there is none to list' {
-        Format-LoadListText -Loads @() | Should -Be @('', 'The logs hold no load to list.')
+
+        # ARRANGE
+        $expectedLines = @('', 'The logs hold no load to list.')
+
+        # ACT
+        $actualLines = Format-LoadListText -Loads @()
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 }

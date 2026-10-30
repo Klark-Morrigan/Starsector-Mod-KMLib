@@ -20,13 +20,27 @@ Describe 'Format-ModDriftCounts' {
 
     It 'counts each change, changed first and unchanged last, in lower case' {
 
+        # ARRANGE
         $rows = @('Unch', 'Chg', 'Unch', 'Add') | ForEach-Object { [pscustomobject]@{ Change = $_ } }
 
-        Format-ModDriftCounts -Rows $rows |
-            Should -Be '<Number>1 chg, <Number>0 miss, <Number>1 add, <Number>2 unch'
+        $expectedCounts = '<Number>1 chg, <Number>0 miss, <Number>1 add, <Number>2 unch'
+
+        # ACT
+        $actualCounts = Format-ModDriftCounts -Rows $rows
+
+        # ASSERT
+        $actualCounts | Should -Be $expectedCounts
     }
 
     It 'counts no rows as none of each' {
-        Format-ModDriftCounts -Rows @() | Should -Be '<Number>0 chg, <Number>0 miss, <Number>0 add, <Number>0 unch'
+
+        # ARRANGE
+        $expectedCounts = '<Number>0 chg, <Number>0 miss, <Number>0 add, <Number>0 unch'
+
+        # ACT
+        $actualCounts = Format-ModDriftCounts -Rows @()
+
+        # ASSERT
+        $actualCounts | Should -Be $expectedCounts
     }
 }

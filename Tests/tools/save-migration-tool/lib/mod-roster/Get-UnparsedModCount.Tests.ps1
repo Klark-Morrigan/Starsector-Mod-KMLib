@@ -14,12 +14,27 @@ Describe 'Get-UnparsedModCount' {
 
     It 'counts the mods whose status is not parsed' {
 
+        # ARRANGE
         $roster = @('P', 'U', 'P', 'U') | ForEach-Object { [pscustomobject]@{ Status = $_ } }
 
-        Get-UnparsedModCount -Roster $roster | Should -Be 2
+        $expectedCount = 2
+
+        # ACT
+        $actualCount = Get-UnparsedModCount -Roster $roster
+
+        # ASSERT
+        $actualCount | Should -Be $expectedCount
     }
 
     It 'counts none in an empty roster' {
-        Get-UnparsedModCount -Roster @() | Should -Be 0
+
+        # ARRANGE
+        $expectedCount = 0
+
+        # ACT
+        $actualCount = Get-UnparsedModCount -Roster @()
+
+        # ASSERT
+        $actualCount | Should -Be $expectedCount
     }
 }

@@ -20,6 +20,14 @@ Describe 'Format-LoadOutcome' {
         @{ Outcome = 'F'; Role = 'Error' }
         @{ Outcome = 'U'; Role = 'Warning' }
     ) {
-        Format-LoadOutcome -Outcome $Outcome | Should -Be "<$Role>$Outcome"
+
+        # ARRANGE
+        $expectedText = "<$Role>$Outcome"
+
+        # ACT
+        $actualText = Format-LoadOutcome -Outcome $Outcome
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 }

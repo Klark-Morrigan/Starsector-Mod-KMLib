@@ -31,20 +31,28 @@ Describe 'Format-DiagnosisReport' {
 
     It 'says no save is diagnosed when the report names none' {
 
+        # ARRANGE
         $report = [pscustomobject]@{ SaveFolder = $null; Load = $null; ModDrift = @() }
 
-        Format-DiagnosisReport -Report $report | Should -Be @(
+        $expectedLines = @(
             ''
             'No load failed in the logs, so no save is diagnosed. Name one with <Code>-SaveFolder.'
         )
+
+        # ACT
+        $actualLines = Format-DiagnosisReport -Report $report
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 
     It 'reports the save, the newest load with its details, then the mod drift' {
 
+        # ARRANGE
         $load = [pscustomobject]@{ SaveFolder = 'save_Test'; Outcome = 'Failed' }
         $report = [pscustomobject]@{ SaveFolder = 'save_Test'; Load = $load; ModDrift = $script:ModDrift }
 
-        Format-DiagnosisReport -Report $report | Should -Be @(
+        $expectedLines = @(
             ''
             'Save: <Path>save_Test'
             'Newest load: <Failed>'
@@ -53,13 +61,20 @@ Describe 'Format-DiagnosisReport' {
             'drift of 2 mods'
             '  a drifted mod'
         )
+
+        # ACT
+        $actualLines = Format-DiagnosisReport -Report $report
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 
     It 'says the logs hold no load of a named save' {
 
+        # ARRANGE
         $report = [pscustomobject]@{ SaveFolder = 'save_Test'; Load = $null; ModDrift = $script:ModDrift }
 
-        Format-DiagnosisReport -Report $report | Should -Be @(
+        $expectedLines = @(
             ''
             'Save: <Path>save_Test'
             'Newest load: none in the logs'
@@ -67,12 +82,19 @@ Describe 'Format-DiagnosisReport' {
             'drift of 2 mods'
             '  a drifted mod'
         )
+
+        # ACT
+        $actualLines = Format-DiagnosisReport -Report $report
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
         Should -Invoke Format-LoadDetailLines -Times 0
     }
 
     # Counting nothing as "0 changed" would read as a save that matches the install.
     It 'says why the mods were not compared, rather than counting no drift' {
 
+        # ARRANGE
         $report = [pscustomobject]@{
             SaveFolder      = 'save_Test'
             Load            = $null
@@ -80,15 +102,20 @@ Describe 'Format-DiagnosisReport' {
             ModDriftProblem = 'descriptor not found'
         }
 
-        Format-DiagnosisReport -Report $report | Select-Object -Last 1 |
-            Should -Be 'Mod drift against the install: not compared, descriptor not found'
+        $expectedLastLine = 'Mod drift against the install: not compared, descriptor not found'
 
+        # ACT
+        $actualLastLine = Format-DiagnosisReport -Report $report | Select-Object -Last 1
+
+        # ASSERT
+        $actualLastLine | Should -Be $expectedLastLine
         Should -Invoke Format-ModDriftLines -Times 0
     }
 
     # An empty comparison is a real answer: neither side holds a mod.
     It 'counts an empty comparison as drift' {
 
+        # ARRANGE
         $report = [pscustomobject]@{
             SaveFolder      = 'save_Test'
             Load            = $null
@@ -96,7 +123,12 @@ Describe 'Format-DiagnosisReport' {
             ModDriftProblem = $null
         }
 
-        Format-DiagnosisReport -Report $report | Select-Object -Last 2 |
-            Should -Be @('drift of 0 mods', '  a drifted mod')
+        $expectedLastLines = @('drift of 0 mods', '  a drifted mod')
+
+        # ACT
+        $actualLastLines = Format-DiagnosisReport -Report $report | Select-Object -Last 2
+
+        # ASSERT
+        $actualLastLines | Should -Be $expectedLastLines
     }
 }

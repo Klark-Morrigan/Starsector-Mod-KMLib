@@ -9,10 +9,17 @@ Describe 'Get-VersionChangeLevelNames' {
 
     It 'names the three levels a version change ranks at' {
 
-        $levels = Get-VersionChangeLevelNames
+        # ARRANGE
+        $expectedMajor = 'Major'
+        $expectedMinor = 'Minor'
+        $expectedPatch = 'Patch'
 
-        $levels.Major | Should -Be 'Major'
-        $levels.Minor | Should -Be 'Minor'
-        $levels.Patch | Should -Be 'Patch'
+        # ACT
+        $actualLevels = Get-VersionChangeLevelNames
+
+        # ASSERT
+        $actualLevels.Major | Should -Be $expectedMajor
+        $actualLevels.Minor | Should -Be $expectedMinor
+        $actualLevels.Patch | Should -Be $expectedPatch
     }
 }

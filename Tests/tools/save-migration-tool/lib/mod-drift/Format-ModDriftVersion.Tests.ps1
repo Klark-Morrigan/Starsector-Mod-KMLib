@@ -13,10 +13,26 @@ Describe 'Format-ModDriftVersion' {
     }
 
     It 'paints a version as a mod value' {
-        Format-ModDriftVersion -Version '1.2.3' | Should -Be '<Mod>1.2.3'
+
+        # ARRANGE
+        $expectedText = '<Mod>1.2.3'
+
+        # ACT
+        $actualText = Format-ModDriftVersion -Version '1.2.3'
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'says when a side gives no version' {
-        Format-ModDriftVersion -Version '' | Should -Be 'no version'
+
+        # ARRANGE
+        $expectedText = 'no version'
+
+        # ACT
+        $actualText = Format-ModDriftVersion -Version ''
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 }

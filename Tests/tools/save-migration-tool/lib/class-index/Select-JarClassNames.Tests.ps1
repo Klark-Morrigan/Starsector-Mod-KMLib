@@ -18,27 +18,49 @@ Describe 'Select-JarClassNames' {
 
     It 'keeps the wanted classes the JAR holds, an inner class included, in the order asked' {
 
-        Select-JarClassNames -Path $script:Jar -ClassNames @('a.b.Outer$Inner', 'a.b.Absent', 'a.b.Held') |
-            Should -Be @('a.b.Outer$Inner', 'a.b.Held')
+        # ARRANGE
+        $expectedClassNames = @('a.b.Outer$Inner', 'a.b.Held')
+
+        # ACT
+        $actualClassNames = Select-JarClassNames -Path $script:Jar `
+            -ClassNames @('a.b.Outer$Inner', 'a.b.Absent', 'a.b.Held')
+
+        # ASSERT
+        $actualClassNames | Should -Be $expectedClassNames
     }
 
     It 'compares class names by case, as Java does' {
-        @(Select-JarClassNames -Path $script:Jar -ClassNames @('a.b.held')).Count | Should -Be 0
+
+        # ACT
+        $actualClassNames = @(Select-JarClassNames -Path $script:Jar -ClassNames @('a.b.held'))
+
+        # ASSERT
+        $actualClassNames.Count | Should -Be 0
     }
 
     It 'keeps none from a JAR with no entries' {
 
+        # ARRANGE
         $emptyJar = New-TestJar -Path (Join-Path $TestDrive 'empty.jar')
 
-        @(Select-JarClassNames -Path $emptyJar -ClassNames @('a.b.Held')).Count | Should -Be 0
+        # ACT
+        $actualClassNames = @(Select-JarClassNames -Path $emptyJar -ClassNames @('a.b.Held'))
+
+        # ASSERT
+        $actualClassNames.Count | Should -Be 0
     }
 
     It 'fails on a file no zip reader opens' {
 
+        # ARRANGE
         $notAJar = Join-Path $TestDrive 'broken.jar'
 
         [System.IO.File]::WriteAllText($notAJar, 'not a zip')
 
-        { Select-JarClassNames -Path $notAJar -ClassNames @('a.b.Held') } | Should -Throw
+        # ACT
+        $actualCall = { Select-JarClassNames -Path $notAJar -ClassNames @('a.b.Held') }
+
+        # ASSERT
+        $actualCall | Should -Throw
     }
 }

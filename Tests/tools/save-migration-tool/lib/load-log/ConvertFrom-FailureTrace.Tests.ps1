@@ -39,20 +39,29 @@ Describe 'ConvertFrom-FailureTrace' {
 
     It 'takes the last throwable header as the root cause, past stack frames' {
 
-        $failure = ConvertFrom-FailureTrace -Lines @(
+        # ARRANGE
+        $lines = @(
             'THROW|com.thoughtworks.xstream.converters.ConversionException|Failed calling method'
             '    at a.Loader.load(Unknown Source)'
             'THROW|java.lang.RuntimeException|Weapon spec [gone] not found!'
             '    at a.SpecStore.find(Unknown Source)'
         )
 
-        $failure.CauseType | Should -Be 'java.lang.RuntimeException'
-        $failure.Cause | Should -Be 'Weapon spec [gone] not found!'
+        $expectedCauseType = 'java.lang.RuntimeException'
+        $expectedCause = 'Weapon spec [gone] not found!'
+
+        # ACT
+        $actualFailure = ConvertFrom-FailureTrace -Lines $lines
+
+        # ASSERT
+        $actualFailure.CauseType | Should -Be $expectedCauseType
+        $actualFailure.Cause | Should -Be $expectedCause
     }
 
     It 'reads the object chain from the first debugging block only' {
 
-        $failure = ConvertFrom-FailureTrace -Lines @(
+        # ARRANGE
+        $lines = @(
             $script:DebugBlockStart
             'CLASS|0|a.Failed'
             'CLASS|1|a.Container'
@@ -61,22 +70,39 @@ Describe 'ConvertFrom-FailureTrace' {
             'CLASS|0|a.FromTheSecondBlock'
         )
 
-        $failure.ObjectChain.Class | Should -Be @('a.Failed', 'a.Container')
-        $failure.ObjectChain.Depth | Should -Be @(0, 1)
+        $expectedClasses = @('a.Failed', 'a.Container')
+        $expectedDepths = @(0, 1)
+
+        # ACT
+        $actualFailure = ConvertFrom-FailureTrace -Lines $lines
+
+        # ASSERT
+        $actualFailure.ObjectChain.Class | Should -Be $expectedClasses
+        $actualFailure.ObjectChain.Depth | Should -Be $expectedDepths
     }
 
     It 'ignores class lines outside a debugging block' {
 
-        $failure = ConvertFrom-FailureTrace -Lines @('CLASS|0|a.OutsideABlock')
+        # ARRANGE
+        $expectedChainLength = 0
 
-        $failure.ObjectChain.Count | Should -Be 0
+        # ACT
+        $actualFailure = ConvertFrom-FailureTrace -Lines @('CLASS|0|a.OutsideABlock')
+
+        # ASSERT
+        $actualFailure.ObjectChain.Count | Should -Be $expectedChainLength
     }
 
     It 'reads no cause and no chain from a trace naming neither' {
 
-        $failure = ConvertFrom-FailureTrace -Lines @('    at a.Loader.load(Unknown Source)')
+        # ARRANGE
+        $expectedChainLength = 0
 
-        $failure.Cause | Should -BeNullOrEmpty
-        $failure.ObjectChain.Count | Should -Be 0
+        # ACT
+        $actualFailure = ConvertFrom-FailureTrace -Lines @('    at a.Loader.load(Unknown Source)')
+
+        # ASSERT
+        $actualFailure.Cause | Should -BeNullOrEmpty
+        $actualFailure.ObjectChain.Count | Should -Be $expectedChainLength
     }
 }

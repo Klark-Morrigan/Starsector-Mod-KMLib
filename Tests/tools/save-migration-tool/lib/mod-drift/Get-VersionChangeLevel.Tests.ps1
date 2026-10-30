@@ -41,27 +41,49 @@ Describe 'Get-VersionChangeLevel' {
         @{ Case = 'no installed major'; Installed = '|1|1'; Saved = '1|1|1'; Expected = 'PAT' }
         @{ Case = 'no saved major'; Installed = '1|1|1'; Saved = '|1|1'; Expected = 'PAT' }
     ) {
+
+        # ARRANGE
         $installed = $Installed -split '\|'
         $saved = $Saved -split '\|'
         $installedParts = New-Parts -Major $installed[0] -Minor $installed[1] -Patch $installed[2]
         $savedParts = New-Parts -Major $saved[0] -Minor $saved[1] -Patch $saved[2]
 
-        Get-VersionChangeLevel -Installed $installedParts -Saved $savedParts | Should -Be $Expected
+        $expectedLevel = $Expected
+
+        # ACT
+        $actualLevel = Get-VersionChangeLevel -Installed $installedParts -Saved $savedParts
+
+        # ASSERT
+        $actualLevel | Should -Be $expectedLevel
     }
 
     It 'skips the minor part when both sides mark it a release candidate' {
 
+        # ARRANGE
         $installedParts = New-Parts -Major '0.98' -Minor '8' -Patch '' -MinorIsRC $true
         $savedParts = New-Parts -Major '0.98' -Minor '7' -Patch '' -MinorIsRC $true
 
-        Get-VersionChangeLevel -Installed $installedParts -Saved $savedParts | Should -Be 'PAT'
+        $expectedLevel = 'PAT'
+
+        # ACT
+        $actualLevel = Get-VersionChangeLevel -Installed $installedParts -Saved $savedParts
+
+        # ASSERT
+        $actualLevel | Should -Be $expectedLevel
     }
 
     It 'compares the minor part when only one side marks it a release candidate' {
 
+        # ARRANGE
         $installedParts = New-Parts -Major '0.98' -Minor '8' -Patch '' -MinorIsRC $true
         $savedParts = New-Parts -Major '0.98' -Minor '7' -Patch ''
 
-        Get-VersionChangeLevel -Installed $installedParts -Saved $savedParts | Should -Be 'MIN'
+        $expectedLevel = 'MIN'
+
+        # ACT
+        $actualLevel = Get-VersionChangeLevel -Installed $installedParts -Saved $savedParts
+
+        # ASSERT
+        $actualLevel | Should -Be $expectedLevel
     }
 }

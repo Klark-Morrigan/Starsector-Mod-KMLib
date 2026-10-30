@@ -18,33 +18,76 @@ Describe 'Select-SaveLoad' {
     }
 
     It 'keeps every load, in order, with no filter' {
-        (Select-SaveLoad -Loads $script:Loads).Name | Should -Be @('newest', 'middle', 'oldest')
+
+        # ARRANGE
+        $expectedNames = @('newest', 'middle', 'oldest')
+
+        # ACT
+        $actualLoads = Select-SaveLoad -Loads $script:Loads
+
+        # ASSERT
+        $actualLoads.Name | Should -Be $expectedNames
     }
 
     It 'keeps one save''s loads' {
-        (Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_A').Name | Should -Be @('newest', 'oldest')
+
+        # ARRANGE
+        $expectedNames = @('newest', 'oldest')
+
+        # ACT
+        $actualLoads = Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_A'
+
+        # ASSERT
+        $actualLoads.Name | Should -Be $expectedNames
     }
 
     It 'keeps one outcome''s loads' {
-        (Select-SaveLoad -Loads $script:Loads -Outcome 'Failed').Name | Should -Be @('middle', 'oldest')
+
+        # ARRANGE
+        $expectedNames = @('middle', 'oldest')
+
+        # ACT
+        $actualLoads = Select-SaveLoad -Loads $script:Loads -Outcome 'Failed'
+
+        # ASSERT
+        $actualLoads.Name | Should -Be $expectedNames
     }
 
     # Outcome names are case-sensitive, as the script checks them before any log is read.
     It 'keeps no load for an outcome in another case' {
-        (Select-SaveLoad -Loads $script:Loads -Outcome 'failed').Count | Should -Be 0
+
+        # ARRANGE
+        $expectedCount = 0
+
+        # ACT
+        $actualLoads = Select-SaveLoad -Loads $script:Loads -Outcome 'failed'
+
+        # ASSERT
+        $actualLoads.Count | Should -Be $expectedCount
     }
 
     It 'keeps the newest load the other filters leave' {
 
-        (Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_A' -Outcome 'Failed' -IsNewestOnly).Name |
-            Should -Be @('oldest')
+        # ARRANGE
+        $expectedNames = @('oldest')
+
+        # ACT
+        $actualLoads = Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_A' -Outcome 'Failed' -IsNewestOnly
+
+        # ASSERT
+        $actualLoads.Name | Should -Be $expectedNames
     }
 
     It 'returns an empty list when nothing matches' {
 
-        $selected = Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_C' -IsNewestOnly
+        # ARRANGE
+        $expectedCount = 0
 
-        $null -eq $selected | Should -BeFalse
-        $selected.Count | Should -Be 0
+        # ACT
+        $actualLoads = Select-SaveLoad -Loads $script:Loads -SaveFolder 'save_C' -IsNewestOnly
+
+        # ASSERT
+        $null -eq $actualLoads | Should -BeFalse
+        $actualLoads.Count | Should -Be $expectedCount
     }
 }

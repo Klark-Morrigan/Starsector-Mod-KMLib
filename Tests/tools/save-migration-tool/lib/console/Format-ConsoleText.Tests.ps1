@@ -13,10 +13,26 @@ Describe 'Format-ConsoleText' {
     }
 
     It 'wraps the text in its role''s colour and a reset' {
-        Format-ConsoleText -Role 'Mod' -Text 'alpha' | Should -Be '<mod>alpha</>'
+
+        # ARRANGE
+        $expectedText = '<mod>alpha</>'
+
+        # ACT
+        $actualText = Format-ConsoleText -Role 'Mod' -Text 'alpha'
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'fails naming a role the palette lacks' {
-        { Format-ConsoleText -Role 'Nope' -Text 'x' } | Should -Throw 'no console colour for role Nope'
+
+        # ARRANGE
+        $expectedMessage = 'no console colour for role Nope'
+
+        # ACT
+        $actualError = { Format-ConsoleText -Role 'Nope' -Text 'x' } | Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -Be $expectedMessage
     }
 }

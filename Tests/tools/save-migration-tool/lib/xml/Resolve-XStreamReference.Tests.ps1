@@ -17,16 +17,39 @@ Describe 'Resolve-XStreamReference' {
     }
 
     It 'returns an element with no ref as it is' {
-        Resolve-XStreamReference -Element $script:Specs[0] -IdIndex $script:IdIndex | Should -Be $script:Specs[0]
+
+        # ARRANGE
+        $expectedElement = $script:Specs[0]
+
+        # ACT
+        $actualElement = Resolve-XStreamReference -Element $script:Specs[0] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualElement | Should -Be $expectedElement
     }
 
     It 'returns the element a ref points at' {
-        Resolve-XStreamReference -Element $script:Specs[1] -IdIndex $script:IdIndex | Should -Be $script:Specs[0]
+
+        # ARRANGE
+        $expectedElement = $script:Specs[0]
+
+        # ACT
+        $actualElement = Resolve-XStreamReference -Element $script:Specs[1] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualElement | Should -Be $expectedElement
     }
 
     It 'fails naming a ref that points at no element' {
 
-        { Resolve-XStreamReference -Element $script:Specs[2] -IdIndex $script:IdIndex } |
-            Should -Throw '<spec ref="9"> points at no object: no element has z="9"'
+        # ARRANGE
+        $expectedMessage = '<spec ref="9"> points at no object: no element has z="9"'
+
+        # ACT
+        $actualError = { Resolve-XStreamReference -Element $script:Specs[2] -IdIndex $script:IdIndex } |
+            Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -Be $expectedMessage
     }
 }

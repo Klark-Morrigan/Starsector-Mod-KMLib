@@ -9,9 +9,15 @@ Describe 'Get-ModStatusNames' {
 
     It 'names the parsed and unparsed statuses' {
 
-        $statuses = Get-ModStatusNames
+        # ARRANGE
+        $expectedParsed = 'parsed'
+        $expectedUnparsed = 'unparsed'
 
-        $statuses.Parsed | Should -Be 'parsed'
-        $statuses.Unparsed | Should -Be 'unparsed'
+        # ACT
+        $actualStatuses = Get-ModStatusNames
+
+        # ASSERT
+        $actualStatuses.Parsed | Should -Be $expectedParsed
+        $actualStatuses.Unparsed | Should -Be $expectedUnparsed
     }
 }

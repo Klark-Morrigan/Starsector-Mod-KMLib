@@ -9,14 +9,22 @@ BeforeAll {
 Describe 'Format-CauseLines' {
 
     BeforeEach {
+
         Mock Format-ConsoleText { "<$Role>$Text" }
     }
 
     It 'writes the exception type as code, then the message as an error, a line each' {
 
-        Format-CauseLines -CauseType 'java.lang.RuntimeException' -Cause 'Weapon spec [w] not found!' | Should -Be @(
+        # ARRANGE
+        $expectedLines = @(
             '<Code>java.lang.RuntimeException'
             '<Error>Weapon spec [w] not found!'
         )
+
+        # ACT
+        $actualLines = Format-CauseLines -CauseType 'java.lang.RuntimeException' -Cause 'Weapon spec [w] not found!'
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 }

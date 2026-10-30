@@ -20,22 +20,31 @@ Describe 'Add-DefaultDisplay' {
 
     It 'prints the given columns, in the given order, as a table' {
 
-        $text = Add-DefaultDisplay -InputObject $script:Entry -PropertyNames @('Owner', 'Version', 'Name') | Out-String
-
-        $lines = @($text -split "`r?`n" | Where-Object { $_.Trim() })
-
-        $lines | Should -Be @(
+        # ARRANGE
+        $expectedLines = @(
             'Owner Version Name'
             '----- ------- ----'
             'alpha 1.2     Alpha'
         )
+
+        # ACT
+        $actualText = Add-DefaultDisplay -InputObject $script:Entry -PropertyNames @('Owner', 'Version', 'Name') |
+            Out-String
+
+        # ASSERT
+        @($actualText -split "`r?`n" | Where-Object { $_.Trim() }) | Should -Be $expectedLines
     }
 
     It 'keeps every field for a caller that serialises the object' {
 
-        $json = Add-DefaultDisplay -InputObject $script:Entry -PropertyNames @('Owner') | ConvertTo-Json -Compress
-
-        $json | Should -Be (
+        # ARRANGE
+        $expectedJson = (
             '{"Owner":"alpha","Folder":"C:\\mods\\Alpha","Name":"Alpha","Status":"parsed","Version":"1.2"}')
+
+        # ACT
+        $actualJson = Add-DefaultDisplay -InputObject $script:Entry -PropertyNames @('Owner') | ConvertTo-Json -Compress
+
+        # ASSERT
+        $actualJson | Should -Be $expectedJson
     }
 }

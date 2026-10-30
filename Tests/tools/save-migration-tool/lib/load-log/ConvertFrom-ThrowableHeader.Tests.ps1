@@ -17,10 +17,16 @@ Describe 'ConvertFrom-ThrowableHeader' {
             Type = 'java.lang.OutOfMemoryError'; Message = 'Java heap space' }
     ) {
 
-        $header = ConvertFrom-ThrowableHeader -Line $Line
+        # ARRANGE
+        $expectedType = $Type
+        $expectedMessage = $Message
 
-        $header.Type | Should -Be $Type
-        $header.Message | Should -Be $Message
+        # ACT
+        $actualHeader = ConvertFrom-ThrowableHeader -Line $Line
+
+        # ASSERT
+        $actualHeader.Type | Should -Be $expectedType
+        $actualHeader.Message | Should -Be $expectedMessage
     }
 
     It 'returns null for <Description>' -ForEach @(
@@ -29,6 +35,11 @@ Describe 'ConvertFrom-ThrowableHeader' {
         @{ Description = 'a debugging line'; Line = 'cause-exception     : java.lang.RuntimeException' }
         @{ Description = 'a class with no throwable suffix'; Line = 'com.fs.starfarer.Something: text' }
     ) {
-        ConvertFrom-ThrowableHeader -Line $Line | Should -BeNullOrEmpty
+
+        # ACT
+        $actualHeader = ConvertFrom-ThrowableHeader -Line $Line
+
+        # ASSERT
+        $actualHeader | Should -BeNullOrEmpty
     }
 }
