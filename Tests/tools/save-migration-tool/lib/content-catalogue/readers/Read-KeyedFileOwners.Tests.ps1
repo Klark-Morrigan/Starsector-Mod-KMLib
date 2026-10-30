@@ -34,7 +34,7 @@ Describe 'Read-KeyedFileOwners' {
         }
 
         # Merge order is the copies' order, so the fake reads core first.
-        Mock Select-MergedCopies { $File.Copies }
+        Mock Select-MergedCopies { [pscustomobject]@{ Copies = $File.Copies; Replacement = $null } }
         Mock ConvertFrom-StarsectorJson { $script:JsonByOwner[$Path] }
 
         # A plain key lookup, as every object the fake parser returns is a dictionary.
@@ -61,6 +61,7 @@ Describe 'Read-KeyedFileOwners' {
         # ASSERT
         Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
         $actualRead.CopyCount | Should -Be $expectedCopyCount
+        $actualRead.Replacement | Should -BeNullOrEmpty
         Should -Invoke Find-ListedContentFiles -ParameterFilter {
             "$Sources" -eq 'sources' -and "$RelativePaths" -eq 'data/config/planets.json'
         } -Times 1 -Exactly
@@ -103,6 +104,34 @@ Describe 'Read-KeyedFileOwners' {
         Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
     }
 
+    # A mod replacing the file leaves only its copy, so the merge hands back that copy alone.
+    It 'reads only the copies the merge keeps, and returns the mod replacing the file' {
+
+        # ARRANGE
+        $script:JsonByOwner['core'] = [ordered]@{ planet = @{} }
+        $script:JsonByOwner['alpha'] = [ordered]@{ other = @{} }
+
+        Mock Select-MergedCopies {
+            [pscustomobject]@{
+                Copies      = @($File.Copies[1])
+                Replacement = [pscustomobject]@{ Path = $File.RelativePath; Owner = 'alpha' }
+            }
+        }
+
+        $keyedFile = New-KeyedFileSource -Path 'data/config/planets.json'
+        $expectedOwners = 'other=alpha'
+        $expectedReplacedPath = 'data/config/planets.json'
+        $expectedReplacingOwner = 'alpha'
+
+        # ACT
+        $actualRead = Read-KeyedFileOwners -Sources @() -KeyedFile $keyedFile
+
+        # ASSERT
+        Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
+        $actualRead.Replacement.Path | Should -Be $expectedReplacedPath
+        $actualRead.Replacement.Owner | Should -Be $expectedReplacingOwner
+    }
+
     It 'reads nothing when no source holds the file' {
 
         # ARRANGE
@@ -118,6 +147,7 @@ Describe 'Read-KeyedFileOwners' {
         # ASSERT
         $actualRead.OwnersById.Count | Should -Be $expectedOwnerCount
         $actualRead.CopyCount | Should -Be $expectedCopyCount
+        $actualRead.Replacement | Should -BeNullOrEmpty
         Should -Invoke Select-MergedCopies -Times 0 -Exactly
     }
 

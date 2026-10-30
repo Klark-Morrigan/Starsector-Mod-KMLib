@@ -39,7 +39,7 @@ Describe 'New-ContentCatalogue' {
                 ContentFileCount = 10
                 SpreadsheetCount = 2
                 SkippedFiles     = @([pscustomobject]@{ Path = "$($Definition.Kind)\bad"; Reason = 'broken' })
-                Replacements     = @([pscustomobject]@{ Spreadsheet = "$($Definition.Kind).csv"; Owner = 'm' })
+                Replacements     = @([pscustomobject]@{ Path = "$($Definition.Kind).csv"; Owner = 'm' })
             }
         }
 
@@ -117,7 +117,7 @@ Describe 'New-ContentCatalogue' {
         $expectedContentFileCount = 30
         $expectedSpreadsheetCount = 6
         $expectedSkippedPaths = @('Base\bad', 'Built\bad', 'Other\bad')
-        $expectedReplacedSpreadsheets = @('Base.csv', 'Built.csv', 'Other.csv')
+        $expectedReplacedPaths = @('Base.csv', 'Built.csv', 'Other.csv')
 
         # ACT
         $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built', 'Other')
@@ -126,6 +126,57 @@ Describe 'New-ContentCatalogue' {
         $actualCatalogue.ContentFileCount | Should -Be $expectedContentFileCount
         $actualCatalogue.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualCatalogue.SkippedFiles.Path | Should -Be $expectedSkippedPaths
-        $actualCatalogue.Replacements.Spreadsheet | Should -Be $expectedReplacedSpreadsheets
+        $actualCatalogue.Replacements.Path | Should -Be $expectedReplacedPaths
+    }
+
+    # sounds.json holds both sounds and music sets, so two kinds read it, and it would be named twice.
+    It 'returns a file several kinds replaced once, and one several kinds skipped once per reason' {
+
+        # ARRANGE
+        Mock Read-KindContentOwners {
+
+            $reason = if ($Definition.Kind -eq 'Other') {
+                'missing a column'
+            } else {
+                'broken'
+            }
+
+            [pscustomobject]@{
+                OwnersById       = New-OwnerIndex @{}
+                ContentFileCount = 0
+                SpreadsheetCount = 1
+                SkippedFiles     = @([pscustomobject]@{ Path = 'shared.csv'; Reason = $reason })
+                Replacements     = @([pscustomobject]@{ Path = 'shared.json'; Owner = 'm' })
+            }
+        }
+
+        $expectedSkippedReasons = @('broken', 'missing a column')
+        $expectedReplacedPaths = @('shared.json')
+
+        # ACT
+        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Base', 'Built', 'Other')
+
+        # ASSERT
+        $actualCatalogue.SkippedFiles.Reason | Should -Be $expectedSkippedReasons
+        $actualCatalogue.Replacements.Path | Should -Be $expectedReplacedPaths
+    }
+
+    It 'returns each kind read, the base kinds too, with how many IDs its files define and how long it took' {
+
+        # ARRANGE
+        $expectedKinds = @('Base', 'Built')
+        $expectedIdCounts = @(1, 1)
+
+        # A stopwatch's elapsed milliseconds, whose value no run repeats.
+        $expectedTimeType = [long]
+
+        # ACT
+        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built')
+
+        # ASSERT
+        $actualCatalogue.KindReads.Kind | Should -Be $expectedKinds
+        $actualCatalogue.KindReads.IdCount | Should -Be $expectedIdCounts
+        $actualCatalogue.KindReads[0].Milliseconds | Should -BeOfType $expectedTimeType
+        $actualCatalogue.KindReads[1].Milliseconds | Should -BeOfType $expectedTimeType
     }
 }

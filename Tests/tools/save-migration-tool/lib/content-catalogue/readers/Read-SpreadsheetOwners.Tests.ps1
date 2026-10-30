@@ -87,7 +87,7 @@ Describe 'Read-SpreadsheetOwners' {
         # ASSERT
         $script:Added | Should -Be $expectedAdded
         $actualRead.CopyCount | Should -Be $expectedCopyCount
-        $actualRead.ReplacingOwner | Should -BeNullOrEmpty
+        $actualRead.Replacement | Should -BeNullOrEmpty
         Should -Invoke ConvertFrom-StarsectorCsv -Times 2 -Exactly -ParameterFilter {
             "$ColumnNames" -ceq $expectedColumnNames
         }
@@ -97,7 +97,7 @@ Describe 'Read-SpreadsheetOwners' {
         Should -Invoke ConvertTo-StraightQuotes -Times 0 -Exactly
     }
 
-    It 'reads only the replacing source''s copy, and names it' {
+    It 'reads only the replacing source''s copy, and returns it with the spreadsheet''s path' {
 
         # ARRANGE
         foreach ($owner in 'alpha', 'beta', 'core') {
@@ -115,6 +115,7 @@ Describe 'Read-SpreadsheetOwners' {
         Mock Find-ReplacingSource { $script:ReplacingSource }
 
         $expectedAdded = @('beta-row=beta')
+        $expectedReplacedPath = 'data/sheet.csv'
         $expectedReplacingOwner = 'beta'
 
         # ACT
@@ -122,7 +123,8 @@ Describe 'Read-SpreadsheetOwners' {
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.ReplacingOwner | Should -Be $expectedReplacingOwner
+        $actualRead.Replacement.Path | Should -Be $expectedReplacedPath
+        $actualRead.Replacement.Owner | Should -Be $expectedReplacingOwner
     }
 
     # The game compares a replaced spreadsheet's path as written, unlike a replaced JSON file's.

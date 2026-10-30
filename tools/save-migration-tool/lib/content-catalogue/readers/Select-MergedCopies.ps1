@@ -3,6 +3,7 @@
 # so a later copy's key wins over an earlier one's.
 # A mod that lists the file's path under "replace" stands alone: the game reads only its copy,
 # as Find-ReplacingSource picks it, taking the path written with either slash.
+# Returns the copies in merge order, and that replacement's path and mod, or null when no mod replaces the file.
 function Select-MergedCopies {
 
     param(
@@ -18,7 +19,10 @@ function Select-MergedCopies {
     foreach ($copy in $File.Copies) {
 
         if ([object]::ReferenceEquals($copy.Source, $replacingSource)) {
-            return @($copy)
+
+            $replacement = [pscustomobject]@{ Path = $File.RelativePath; Owner = $replacingSource.Owner }
+
+            return [pscustomobject]@{ Copies = @($copy); Replacement = $replacement }
         }
 
         if ($copy.Source.IsMod) {
@@ -28,5 +32,5 @@ function Select-MergedCopies {
         }
     }
 
-    return $coreCopies.ToArray() + $modCopies.ToArray()
+    return [pscustomobject]@{ Copies = $coreCopies.ToArray() + $modCopies.ToArray(); Replacement = $null }
 }

@@ -3,7 +3,7 @@
 # Within a part, content files and spreadsheets together need both, as New-ContentPart describes;
 # keyed JSON files and the game's built-in IDs add theirs either way.
 # Files and spreadsheets that do not parse are skipped and returned with the reason,
-# and each spreadsheet a mod replaces is returned with that mod.
+# and each file or spreadsheet a mod replaces is returned with that mod.
 function Read-KindContentOwners {
 
     param(
@@ -33,6 +33,7 @@ function Read-KindContentOwners {
             $contentFileCount += $read.CopyCount
             $spreadsheetCount += $read.SpreadsheetCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
+            $replacements.AddRange([object[]] $read.Replacements)
             $fileOwners = Merge-ContentOwners -Into $fileOwners -From $read.OwnersById
         }
 
@@ -43,8 +44,8 @@ function Read-KindContentOwners {
             $spreadsheetCount += $read.CopyCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
 
-            if ($read.ReplacingOwner) {
-                $replacements.Add([pscustomobject]@{ Spreadsheet = $spreadsheet.Path; Owner = $read.ReplacingOwner })
+            if ($read.Replacement) {
+                $replacements.Add($read.Replacement)
             }
 
             $rowOwners = Merge-ContentOwners -Into $rowOwners -From $read.OwnersById
@@ -62,6 +63,11 @@ function Read-KindContentOwners {
 
             $contentFileCount += $read.CopyCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
+
+            if ($read.Replacement) {
+                $replacements.Add($read.Replacement)
+            }
+
             $partOwners = Merge-ContentOwners -Into $partOwners -From $read.OwnersById
         }
 

@@ -721,10 +721,11 @@ On a console an entry prints as a table row of its owner, version, name and ID c
 
 Stderr names what reading the installed mods found, unless `-Roster` handed them over,
 the kinds catalogued and from how many mods,
-each copy skipped with the reason it does not parse,
-each spreadsheet a mod replaces,
+the copies skipped, one line per reason they do not parse, naming the first few,
+each file a mod replaces,
 how many content files and spreadsheets were read and how long that took,
 how many IDs each kind holds and how many of them the game builds,
+the five kinds slowest to read, with how long each took,
 how many of them the filters kept, and under how many owners when grouped,
 and the file written, when `-OutFile` names one.
 

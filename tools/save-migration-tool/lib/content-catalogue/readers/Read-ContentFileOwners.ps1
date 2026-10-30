@@ -5,6 +5,7 @@
 # and removing one of them leaves the ID defined.
 # A copy that does not parse is skipped and returned with the reason:
 # one broken copy must not hide the content of every other. An empty ID defines nothing.
+# Each file a mod replaces is returned with that mod.
 # A set listed by a spreadsheet reads that spreadsheet first, and counts it.
 function Read-ContentFileOwners {
 
@@ -18,6 +19,7 @@ function Read-ContentFileOwners {
 
     $ownersById = New-ContentOwnerIndex
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
+    $replacements = [System.Collections.Generic.List[object]]::new()
     $copyCount = 0
     $spreadsheetCount = 0
 
@@ -27,6 +29,11 @@ function Read-ContentFileOwners {
 
         $spreadsheetCount = $listing.CopyCount
         $skippedFiles.AddRange([object[]] $listing.SkippedFiles)
+
+        if ($listing.Replacement) {
+            $replacements.Add($listing.Replacement)
+        }
+
         $files = @(Find-ListedContentFiles -Sources $Sources -RelativePaths ([string[]] $listing.OwnersById.Keys))
 
     } else {
@@ -35,17 +42,21 @@ function Read-ContentFileOwners {
 
     foreach ($file in $files) {
 
-        # Most files have one copy, which needs no ordering.
-        $mergedCopies = if ($file.Copies.Count -eq 1) {
-            $file.Copies
+        # Most files have one copy, which needs no ordering and leaves no other copy to replace.
+        $merge = if ($file.Copies.Count -eq 1) {
+            [pscustomobject]@{ Copies = $file.Copies; Replacement = $null }
         } else {
             Select-MergedCopies -File $file
+        }
+
+        if ($merge.Replacement) {
+            $replacements.Add($merge.Replacement)
         }
 
         $id = $null
         $idSetters = [System.Collections.Generic.List[object]]::new()
 
-        foreach ($copy in $mergedCopies) {
+        foreach ($copy in $merge.Copies) {
 
             $copyCount++
 
@@ -82,5 +93,6 @@ function Read-ContentFileOwners {
         CopyCount        = $copyCount
         SpreadsheetCount = $spreadsheetCount
         SkippedFiles     = $skippedFiles.ToArray()
+        Replacements     = $replacements.ToArray()
     }
 }

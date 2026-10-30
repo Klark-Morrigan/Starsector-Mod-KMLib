@@ -2,7 +2,8 @@
 # The game merges every copy key by key, so the IDs are the keys any copy holds,
 # unless a mod replaces the file, which leaves only that mod's copy.
 # Where only object entries define an ID, the value the merge keeps decides: the last copy's in merge order.
-# A copy that does not parse is skipped and returned with the reason.
+# A copy that does not parse is skipped and returned with the reason,
+# and a mod that replaces the file is returned with the file's path, or null when none does.
 function Read-KeyedFileOwners {
 
     param(
@@ -19,13 +20,13 @@ function Read-KeyedFileOwners {
     $file = @(Find-ListedContentFiles -Sources $Sources -RelativePaths @($KeyedFile.Path))
     $copyCount = 0
 
-    $mergedCopies = if ($file.Count -eq 0) {
-        @()
+    $merge = if ($file.Count -eq 0) {
+        [pscustomobject]@{ Copies = @(); Replacement = $null }
     } else {
         Select-MergedCopies -File $file[0]
     }
 
-    foreach ($copy in $mergedCopies) {
+    foreach ($copy in $merge.Copies) {
 
         $copyCount++
 
@@ -72,5 +73,6 @@ function Read-KeyedFileOwners {
         OwnersById   = $ownersById
         CopyCount    = $copyCount
         SkippedFiles = $skippedFiles.ToArray()
+        Replacement  = $merge.Replacement
     }
 }

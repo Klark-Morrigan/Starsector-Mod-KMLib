@@ -38,10 +38,11 @@ Describe 'Select-MergedCopies' {
         $expectedOwners = @('core', 'alpha', 'beta')
 
         # ACT
-        $actualCopies = Select-MergedCopies -File $file
+        $actualMerge = Select-MergedCopies -File $file
 
         # ASSERT
-        $actualCopies.Source.Owner | Should -Be $expectedOwners
+        $actualMerge.Copies.Source.Owner | Should -Be $expectedOwners
+        $actualMerge.Replacement | Should -BeNullOrEmpty
     }
 
     # The game takes a replaced JSON or content file's path written with either slash.
@@ -65,7 +66,7 @@ Describe 'Select-MergedCopies' {
         }
     }
 
-    It 'keeps only the replacing source''s copy' {
+    It 'keeps only the replacing source''s copy, and returns its owner with the file''s path' {
 
         # ARRANGE
         $file = [pscustomobject]@{
@@ -81,11 +82,15 @@ Describe 'Select-MergedCopies' {
         Mock Find-ReplacingSource { $script:ReplacingSource }
 
         $expectedOwners = @('beta')
+        $expectedReplacedPath = 'data/hulls/a.ship'
+        $expectedReplacingOwner = 'beta'
 
         # ACT
-        $actualCopies = Select-MergedCopies -File $file
+        $actualMerge = Select-MergedCopies -File $file
 
         # ASSERT
-        $actualCopies.Source.Owner | Should -Be $expectedOwners
+        $actualMerge.Copies.Source.Owner | Should -Be $expectedOwners
+        $actualMerge.Replacement.Path | Should -Be $expectedReplacedPath
+        $actualMerge.Replacement.Owner | Should -Be $expectedReplacingOwner
     }
 }

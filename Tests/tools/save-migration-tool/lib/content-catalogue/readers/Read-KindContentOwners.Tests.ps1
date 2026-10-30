@@ -52,36 +52,46 @@ Describe 'Read-KindContentOwners' {
         Mock Get-CoreOwnerName { 'core' }
 
         # Each source defines one ID named for it, reads 10 files, and skips one.
+        # The replacer replaces one file of each file set, and each spreadsheet or keyed file named "replaced".
         Mock Read-ContentFileOwners {
             [pscustomobject]@{
                 OwnersById       = New-OwnerIndex @{ "$($FileSet.Folder)-id" = @('m') }
                 CopyCount        = 10
                 SpreadsheetCount = 1
                 SkippedFiles     = @([pscustomobject]@{ Path = "$($FileSet.Folder)\bad"; Reason = 'broken' })
+                Replacements     = @([pscustomobject]@{ Path = "$($FileSet.Folder)/a.ship"; Owner = 'replacer' })
             }
         }
 
         Mock Read-SpreadsheetOwners {
 
-            $replacingOwner = if ($Spreadsheet.Path -eq 'replaced.csv') {
-                'replacer'
+            $replacement = if ($Spreadsheet.Path -eq 'replaced.csv') {
+                [pscustomobject]@{ Path = $Spreadsheet.Path; Owner = 'replacer' }
             } else {
                 $null
             }
 
             [pscustomobject]@{
-                OwnersById     = New-OwnerIndex @{ "$($Spreadsheet.Path)-id" = @('r') }
-                CopyCount      = 3
-                SkippedFiles   = @()
-                ReplacingOwner = $replacingOwner
+                OwnersById   = New-OwnerIndex @{ "$($Spreadsheet.Path)-id" = @('r') }
+                CopyCount    = 3
+                SkippedFiles = @()
+                Replacement  = $replacement
             }
         }
 
         Mock Read-KeyedFileOwners {
+
+            $replacement = if ($KeyedFile.Path -eq 'replaced.json') {
+                [pscustomobject]@{ Path = $KeyedFile.Path; Owner = 'replacer' }
+            } else {
+                $null
+            }
+
             [pscustomobject]@{
                 OwnersById   = New-OwnerIndex @{ "$($KeyedFile.Path)-id" = @('j') }
                 CopyCount    = 2
                 SkippedFiles = @([pscustomobject]@{ Path = "$($KeyedFile.Path)\bad"; Reason = 'broken' })
+                Replacement  = $replacement
             }
         }
 
@@ -159,19 +169,19 @@ Describe 'Read-KindContentOwners' {
         $script:Added | Should -Be $expectedAdded
     }
 
-    It 'sums what every source read, and returns what each skipped and each spreadsheet a mod replaces' {
+    It 'sums what every source read, and returns what each skipped and each file a mod replaces' {
 
         # ARRANGE
         $parts = @(
-            New-Part -FileFolders 'files' -SpreadsheetPaths 'replaced.csv'
-            New-Part -KeyedPaths 'planets.json'
+            New-Part -FileFolders 'files' -SpreadsheetPaths 'replaced.csv', 'kept.csv'
+            New-Part -KeyedPaths 'replaced.json', 'kept.json'
         )
 
-        $expectedContentFileCount = 12
-        $expectedSpreadsheetCount = 4
-        $expectedSkippedPaths = @('files\bad', 'planets.json\bad')
-        $expectedReplacedSpreadsheets = @('replaced.csv')
-        $expectedReplacingOwners = @('replacer')
+        $expectedContentFileCount = 14
+        $expectedSpreadsheetCount = 7
+        $expectedSkippedPaths = @('files\bad', 'replaced.json\bad', 'kept.json\bad')
+        $expectedReplacedPaths = @('files/a.ship', 'replaced.csv', 'replaced.json')
+        $expectedReplacingOwners = @('replacer', 'replacer', 'replacer')
 
         # ACT
         $actualRead = Read-Kind -Parts $parts
@@ -180,7 +190,7 @@ Describe 'Read-KindContentOwners' {
         $actualRead.ContentFileCount | Should -Be $expectedContentFileCount
         $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
-        $actualRead.Replacements.Spreadsheet | Should -Be $expectedReplacedSpreadsheets
+        $actualRead.Replacements.Path | Should -Be $expectedReplacedPaths
         $actualRead.Replacements.Owner | Should -Be $expectedReplacingOwners
     }
 }

@@ -4,6 +4,7 @@
 # A mod whose mod_info.json lists the spreadsheet's path under "replace" stands alone:
 # the game reads only its copy, the first such mod's in search order, and drops the rows of every other.
 # The game compares that path as written, slashes included.
+# That mod is returned with the spreadsheet's path, or null when no mod replaces it.
 # A copy that does not parse, or lacks a column the game reads, is skipped and returned with the reason.
 function Read-SpreadsheetOwners {
 
@@ -76,16 +77,16 @@ function Read-SpreadsheetOwners {
         }
     }
 
-    $replacingOwner = if ($replacingSource) {
-        $replacingSource.Owner
+    $replacement = if ($replacingSource) {
+        [pscustomobject]@{ Path = $Spreadsheet.Path; Owner = $replacingSource.Owner }
     } else {
         $null
     }
 
     return [pscustomobject]@{
-        OwnersById     = $ownersById
-        CopyCount      = $copyCount
-        SkippedFiles   = $skippedFiles.ToArray()
-        ReplacingOwner = $replacingOwner
+        OwnersById   = $ownersById
+        CopyCount    = $copyCount
+        SkippedFiles = $skippedFiles.ToArray()
+        Replacement  = $replacement
     }
 }

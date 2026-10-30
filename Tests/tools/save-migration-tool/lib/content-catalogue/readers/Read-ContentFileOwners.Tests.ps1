@@ -46,7 +46,9 @@ Describe 'Read-ContentFileOwners' {
         Mock Add-ContentOwner { $script:Added.Add("$Id=$Owner") }
 
         # Merge order is the copies' order reversed, so a case sees whether it was asked.
-        Mock Select-MergedCopies { [object[]] $File.Copies[($File.Copies.Count - 1)..0] }
+        Mock Select-MergedCopies {
+            [pscustomobject]@{ Copies = [object[]] $File.Copies[($File.Copies.Count - 1)..0]; Replacement = $null }
+        }
     }
 
     It 'records the ID each one-copy file sets, with the copy''s owner, reading the set''s key' {
@@ -58,6 +60,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedCopyCount = 2
         $expectedSpreadsheetCount = 0
         $expectedSkippedCount = 0
+        $expectedReplacementCount = 0
 
         # ACT
         $actualRead = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
@@ -67,13 +70,14 @@ Describe 'Read-ContentFileOwners' {
         $actualRead.CopyCount | Should -Be $expectedCopyCount
         $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Count | Should -Be $expectedSkippedCount
+        $actualRead.Replacements.Count | Should -Be $expectedReplacementCount
         Should -Invoke Find-ContentFiles -ParameterFilter { "$Sources" -eq 'sources' -and $FileSet.IdKey -eq 'hullId' }
         Should -Invoke Read-ContentFileId -ParameterFilter { $IdKey -eq 'hullId' } -Times 2 -Exactly
         Should -Invoke Select-MergedCopies -Times 0 -Exactly
     }
 
     # factions.csv lists every .faction file the game reads.
-    It 'reads the files a spreadsheet lists, counting the spreadsheet and returning what it skipped' {
+    It 'reads the files a spreadsheet lists, counting the spreadsheet and returning what it skipped and replaced' {
 
         # ARRANGE
         $listing = [pscustomobject]@{ Path = 'data/world/factions/factions.csv' }
@@ -84,6 +88,7 @@ Describe 'Read-ContentFileOwners' {
                 OwnersById   = New-OwnerIndex @{ 'data/world/factions/x.faction' = @('core') }
                 CopyCount    = 3
                 SkippedFiles = @([pscustomobject]@{ Path = 'alpha\factions.csv'; Reason = 'broken' })
+                Replacement  = [pscustomobject]@{ Path = 'data/world/factions/factions.csv'; Owner = 'alpha' }
             }
         }
         Mock Find-ListedContentFiles { New-File -Name 'x.faction' -Owners 'alpha' }
@@ -92,6 +97,7 @@ Describe 'Read-ContentFileOwners' {
         $expectedAdded = @('x=alpha')
         $expectedSpreadsheetCount = 3
         $expectedSkippedPaths = @('alpha\factions.csv')
+        $expectedReplacedPaths = @('data/world/factions/factions.csv')
 
         # ACT
         $actualRead = Read-ContentFileOwners -Sources @('sources') -FileSet $script:FileSet
@@ -100,6 +106,7 @@ Describe 'Read-ContentFileOwners' {
         $script:Added | Should -Be $expectedAdded
         $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
+        $actualRead.Replacements.Path | Should -Be $expectedReplacedPaths
         Should -Invoke Read-SpreadsheetOwners -ParameterFilter {
             "$Sources" -eq 'sources' -and [object]::ReferenceEquals($Spreadsheet, $listing)
         } -Times 1 -Exactly
@@ -132,6 +139,40 @@ Describe 'Read-ContentFileOwners' {
         # ASSERT
         $script:Added | Should -Be $expectedAdded
         $actualRead.CopyCount | Should -Be $expectedCopyCount
+    }
+
+    # A mod replacing the file leaves only its copy, so the merge hands back that copy alone.
+    It 'reads only the copies the merge keeps, and returns each file a mod replaces with that mod' {
+
+        # ARRANGE
+        Mock Find-ContentFiles {
+            (New-File -Name 'a.ship' -Owners 'alpha', 'core'), (New-File -Name 'b.ship' -Owners 'beta', 'core')
+        }
+        Mock Select-MergedCopies {
+
+            if ($File.RelativePath -ne 'data/hulls/a.ship') {
+                return [pscustomobject]@{ Copies = $File.Copies; Replacement = $null }
+            }
+
+            [pscustomobject]@{
+                Copies      = @($File.Copies[0])
+                Replacement = [pscustomobject]@{ Path = $File.RelativePath; Owner = 'alpha' }
+            }
+        }
+
+        $expectedAdded = @('a=alpha', 'b=beta', 'b=core')
+        $expectedCopyCount = 3
+        $expectedReplacedPaths = @('data/hulls/a.ship')
+        $expectedReplacingOwners = @('alpha')
+
+        # ACT
+        $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
+
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
+        $actualRead.Replacements.Path | Should -Be $expectedReplacedPaths
+        $actualRead.Replacements.Owner | Should -Be $expectedReplacingOwners
     }
 
     # Mods often restate the game's own file in full; removing one of them leaves the ID defined.

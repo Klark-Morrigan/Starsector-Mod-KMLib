@@ -362,6 +362,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | float (a Java `float`) | 浮点数 | the usual computing word |
 | ideographic space (U+3000) | 全角空格 | what a Chinese typist calls it; not the literal 表意空格 |
 | import, compose | 导入, 组合 | the usual computing words for a package naming another and for putting parts together |
+| instance, static (one object made and handed out, against state held by the class itself) | 实例, 静态 | the usual computing words for both |
 | keyword (a word a console command accepts as an argument) | 关键词 | the usual computing word |
 | kind (of a place or a record a reader branches on) | 种类 | the plain word for a sort of thing, kept apart from 类别, a category |
 | library | 程序库 | |
@@ -424,7 +425,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | base hull (the hull a (D) hull is built from) | 基础船体 | 基础 as the vanilla Blueprint row's 基础舰船蓝图, with the vanilla Hull row's 船体 |
 | built-in variant (one the game makes in code), empty hull variant (a hull's variant with nothing fitted) | 内置变体, 空船体变体 | 内置, built in, the plain word; 空, empty, before the vanilla Hull row's 船体 and the variant row's 变体 |
-| cause (the exception a failed load hit) | 原因 | the plain word |
+| cause (the exception a failed load hit), reason (why a copy is skipped) | 原因 | the plain word for both |
 | changed, missing, added (a mod, between a save and the install) | 已更改, 缺失, 新增 | 已, already, with 更改, to change; 缺失 as the missing content row; 新增 as the Added row |
 | colour (text, by the kind of each value), plain (with no colour) | 着色, 不带颜色 | 着色, to apply colour; 不带, without, before 颜色, colour (see the colour rows of [Text and rendering](#text-and-rendering)) |
 | console (the terminal a script runs in) | 终端 | the terminal itself; never 控制台, which the [console command](#console-commands) rows keep for the Console Commands mod |
@@ -451,6 +452,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | skip (a copy the game cannot read, and so does not load), required (a `mod_info.json` field the game cannot do without) | 跳过, 必需 | 跳过, to pass over, the plain word; 必需, needed, the plain word |
 | sort string (a `mod_info.json`'s `sortString`) | 排序字符串 | 排序 as the sort mode row of [Lists and sorting](#lists-and-sorting), with 字符串 as the string ID row |
 | spreadsheet (a CSV data file the game reads row by row) | 表格 | 表格, a table, the plain word |
+| stderr (the stream a script writes what it read and decided to) | 标准错误输出 | the usual computing word: 标准, standard, with 错误, error, and 输出 as the output row of [CI and git](#ci-and-git) |
 | text for a person (rather than data for a caller) | 供人阅读的文本 | 供...阅读, for ... to read; kept apart from the JSON a caller parses |
 | variant (a ship's saved loadout), spec (one entry of a spec store) | 变体, 规格 | the usual words, unchecked against the game JAR, which shows a player neither; 规格 kept apart from 规范, a parameter spec's rules |
 
