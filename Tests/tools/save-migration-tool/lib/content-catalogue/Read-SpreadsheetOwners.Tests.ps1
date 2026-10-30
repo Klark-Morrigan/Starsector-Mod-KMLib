@@ -77,7 +77,7 @@ Describe 'Read-SpreadsheetOwners' {
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -IdColumn 'effect'
 
         $expectedAdded = @('shared=alpha', 'shared=core', 'core_only=core')
-        $expectedFileCount = 2
+        $expectedCopyCount = 2
         $expectedColumnNames = 'id effect'
         $expectedSpreadsheet = $spreadsheet
 
@@ -86,7 +86,7 @@ Describe 'Read-SpreadsheetOwners' {
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
         $actualRead.ReplacingOwner | Should -BeNullOrEmpty
         Should -Invoke ConvertFrom-StarsectorCsv -Times 2 -Exactly -ParameterFilter {
             "$ColumnNames" -ceq $expectedColumnNames
@@ -211,7 +211,7 @@ Describe 'Read-SpreadsheetOwners' {
         $spreadsheet = New-SpreadsheetSource -Path 'data/sheet.csv' -IdColumn 'effect'
 
         $expectedAdded = @('y=core')
-        $expectedFileCount = 3
+        $expectedCopyCount = 3
         $expectedSkippedPaths = @(
             "$($sources[0].Folder)\data\sheet.csv"
             "$($sources[1].Folder)\data\sheet.csv"
@@ -226,7 +226,7 @@ Describe 'Read-SpreadsheetOwners' {
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
         $actualRead.SkippedFiles.Path | Should -Be $expectedSkippedPaths
         $actualRead.SkippedFiles.Reason | Should -Be $expectedSkippedReasons
     }

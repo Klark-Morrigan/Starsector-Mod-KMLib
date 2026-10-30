@@ -1,7 +1,7 @@
-# Resolves the owners of the given classes in an install,
+# Builds an install's index of the owners of the given classes,
 # from the JARs its roster's mods declare and from the game's own classpath.
 # CoreClasspathEntryCount says how many classpath entries vmparams named, and CoreClasspathProblem why there are none.
-function Resolve-ClassOwner {
+function New-InstallClassOwnerIndex {
 
     param(
         [string] $StarsectorRoot,

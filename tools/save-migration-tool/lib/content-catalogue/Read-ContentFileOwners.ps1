@@ -25,7 +25,7 @@ function Read-ContentFileOwners {
 
         $listing = Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $FileSet.ListedBy
 
-        $spreadsheetCount = $listing.FileCount
+        $spreadsheetCount = $listing.CopyCount
         $skippedFiles.AddRange([object[]] $listing.SkippedFiles)
         $files = @(Find-ListedContentFiles -Sources $Sources -RelativePaths ([string[]] $listing.OwnersById.Keys))
 
@@ -79,7 +79,7 @@ function Read-ContentFileOwners {
 
     return [pscustomobject]@{
         OwnersById       = $ownersById
-        FileCount        = $copyCount
+        CopyCount        = $copyCount
         SpreadsheetCount = $spreadsheetCount
         SkippedFiles     = $skippedFiles.ToArray()
     }

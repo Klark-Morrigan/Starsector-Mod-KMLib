@@ -55,7 +55,7 @@ Describe 'Read-ContentFileOwners' {
         Mock Find-ContentFiles { (New-File -Name 'a.ship' -Owners 'alpha'), (New-File -Name 'b.ship' -Owners 'core') }
 
         $expectedAdded = @('a=alpha', 'b=core')
-        $expectedFileCount = 2
+        $expectedCopyCount = 2
         $expectedSpreadsheetCount = 0
         $expectedSkippedCount = 0
 
@@ -64,7 +64,7 @@ Describe 'Read-ContentFileOwners' {
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
         $actualRead.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
         $actualRead.SkippedFiles.Count | Should -Be $expectedSkippedCount
         Should -Invoke Find-ContentFiles -ParameterFilter { "$Sources" -eq 'sources' -and $FileSet.IdKey -eq 'hullId' }
@@ -82,7 +82,7 @@ Describe 'Read-ContentFileOwners' {
         Mock Read-SpreadsheetOwners {
             [pscustomobject]@{
                 OwnersById   = New-OwnerIndex @{ 'data/world/factions/x.faction' = @('core') }
-                FileCount    = 3
+                CopyCount    = 3
                 SkippedFiles = @([pscustomobject]@{ Path = 'alpha\factions.csv'; Reason = 'broken' })
             }
         }
@@ -124,14 +124,14 @@ Describe 'Read-ContentFileOwners' {
         }
 
         $expectedAdded = @('from_alpha=alpha')
-        $expectedFileCount = 3
+        $expectedCopyCount = 3
 
         # ACT
         $actualRead = Read-ContentFileOwners -Sources @() -FileSet $script:FileSet
 
         # ASSERT
         $script:Added | Should -Be $expectedAdded
-        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
     }
 
     # Mods often restate the game's own file in full; removing one of them leaves the ID defined.

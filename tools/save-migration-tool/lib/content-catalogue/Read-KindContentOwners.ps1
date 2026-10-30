@@ -30,7 +30,7 @@ function Read-KindContentOwners {
 
             $read = Read-ContentFileOwners -Sources $Sources -FileSet $fileSet
 
-            $contentFileCount += $read.FileCount
+            $contentFileCount += $read.CopyCount
             $spreadsheetCount += $read.SpreadsheetCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
             $fileOwners = Merge-ContentOwners -Into $fileOwners -From $read.OwnersById
@@ -40,7 +40,7 @@ function Read-KindContentOwners {
 
             $read = Read-SpreadsheetOwners -Sources $Sources -Spreadsheet $spreadsheet
 
-            $spreadsheetCount += $read.FileCount
+            $spreadsheetCount += $read.CopyCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
 
             if ($read.ReplacingOwner) {
@@ -60,7 +60,7 @@ function Read-KindContentOwners {
 
             $read = Read-KeyedFileOwners -Sources $Sources -KeyedFile $keyedFile
 
-            $contentFileCount += $read.FileCount
+            $contentFileCount += $read.CopyCount
             $skippedFiles.AddRange([object[]] $read.SkippedFiles)
             $partOwners = Merge-ContentOwners -Into $partOwners -From $read.OwnersById
         }

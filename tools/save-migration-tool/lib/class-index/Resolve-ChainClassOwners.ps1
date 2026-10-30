@@ -34,7 +34,7 @@ function Resolve-ChainClassOwners {
         $Roster = @(Read-ModRoster -StarsectorRoot $InstallRoot -DiagnosticSource $DiagnosticSource)
     }
 
-    $resolved = Resolve-ClassOwner -StarsectorRoot $InstallRoot -Roster $Roster -ClassNames $ClassNames
+    $resolved = New-InstallClassOwnerIndex -StarsectorRoot $InstallRoot -Roster $Roster -ClassNames $ClassNames
 
     if ($resolved.CoreClasspathProblem) {
         Write-Warning "$($resolved.CoreClasspathProblem); vanilla classes stay without owners"

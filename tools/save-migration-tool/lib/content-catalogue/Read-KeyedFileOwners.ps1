@@ -70,7 +70,7 @@ function Read-KeyedFileOwners {
 
     return [pscustomobject]@{
         OwnersById   = $ownersById
-        FileCount    = $copyCount
+        CopyCount    = $copyCount
         SkippedFiles = $skippedFiles.ToArray()
     }
 }

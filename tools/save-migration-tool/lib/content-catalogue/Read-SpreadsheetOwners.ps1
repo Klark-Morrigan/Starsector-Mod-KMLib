@@ -28,7 +28,7 @@ function Read-SpreadsheetOwners {
     $seenKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $definedIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $readCopies = [System.Collections.Generic.List[object]]::new()
-    $fileCount = 0
+    $copyCount = 0
 
     foreach ($source in $readSources) {
 
@@ -39,7 +39,7 @@ function Read-SpreadsheetOwners {
             continue
         }
 
-        $fileCount++
+        $copyCount++
 
         try {
             $text = Read-StarsectorText -Path $path
@@ -84,7 +84,7 @@ function Read-SpreadsheetOwners {
 
     return [pscustomobject]@{
         OwnersById     = $ownersById
-        FileCount      = $fileCount
+        CopyCount      = $copyCount
         SkippedFiles   = $skippedFiles.ToArray()
         ReplacingOwner = $replacingOwner
     }

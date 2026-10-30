@@ -7,7 +7,7 @@ BeforeAll {
     . "$libRoot\Write-DiagnosticLine.ps1"
     . "$libRoot\console\Format-ConsoleNumber.ps1"
     . "$libRoot\console\Format-ConsoleText.ps1"
-    . "$libRoot\class-index\Resolve-ClassOwner.ps1"
+    . "$libRoot\class-index\New-InstallClassOwnerIndex.ps1"
     . "$libRoot\class-index\Resolve-ChainClassOwners.ps1"
     . "$libRoot\mod-roster\Get-UnparsedModCount.ps1"
     . "$libRoot\mod-roster\Read-ModRoster.ps1"
@@ -29,7 +29,7 @@ Describe 'Resolve-ChainClassOwners' {
         Mock Format-ConsoleNumber { "$Number" }
         Mock Get-UnparsedModCount { 1 }
         Mock Read-ModRoster { $script:Roster }
-        Mock Resolve-ClassOwner {
+        Mock New-InstallClassOwnerIndex {
             [pscustomobject]@{
                 OwnersByClass           = @{ 'x.A' = @('alpha') }
                 ModJarCount             = 3
@@ -63,7 +63,7 @@ Describe 'Resolve-ChainClassOwners' {
         Should -Invoke Read-ModRoster -Times 1 -Exactly -ParameterFilter {
             $StarsectorRoot -eq $script:InstallRoot -and $DiagnosticSource -eq 'Test'
         }
-        Should -Invoke Resolve-ClassOwner -Times 1 -Exactly -ParameterFilter {
+        Should -Invoke New-InstallClassOwnerIndex -Times 1 -Exactly -ParameterFilter {
             "$($Roster.Id)" -eq 'alpha Broken Mod' -and "$ClassNames" -eq 'x.A x.B'
         }
 
@@ -85,13 +85,13 @@ Describe 'Resolve-ChainClassOwners' {
 
         # ASSERT
         Should -Invoke Read-ModRoster -Times 0
-        Should -Invoke Resolve-ClassOwner -Times 1 -Exactly -ParameterFilter { "$($Roster.Id)" -eq 'given' }
+        Should -Invoke New-InstallClassOwnerIndex -Times 1 -Exactly -ParameterFilter { "$($Roster.Id)" -eq 'given' }
     }
 
     It 'warns why vanilla classes stay without owners when the core classpath could not be read' {
 
         # ARRANGE
-        Mock Resolve-ClassOwner {
+        Mock New-InstallClassOwnerIndex {
             [pscustomobject]@{
                 OwnersByClass = @{}; ModJarCount = 0; CoreJarCount = 0; CoreClasspathEntryCount = 0
                 CoreClasspathProblem = 'C:\vmparams not found'; SharedClassCount = 0; ShadowedClassCount = 0
@@ -124,6 +124,6 @@ Describe 'Resolve-ChainClassOwners' {
         $script:Diagnostics | Should -Be $expectedDiagnostics
 
         Should -Invoke Read-ModRoster -Times 0
-        Should -Invoke Resolve-ClassOwner -Times 0
+        Should -Invoke New-InstallClassOwnerIndex -Times 0
     }
 }

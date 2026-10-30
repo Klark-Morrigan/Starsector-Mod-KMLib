@@ -55,7 +55,7 @@ Describe 'Read-KindContentOwners' {
         Mock Read-ContentFileOwners {
             [pscustomobject]@{
                 OwnersById       = New-OwnerIndex @{ "$($FileSet.Folder)-id" = @('m') }
-                FileCount        = 10
+                CopyCount        = 10
                 SpreadsheetCount = 1
                 SkippedFiles     = @([pscustomobject]@{ Path = "$($FileSet.Folder)\bad"; Reason = 'broken' })
             }
@@ -71,7 +71,7 @@ Describe 'Read-KindContentOwners' {
 
             [pscustomobject]@{
                 OwnersById     = New-OwnerIndex @{ "$($Spreadsheet.Path)-id" = @('r') }
-                FileCount      = 3
+                CopyCount      = 3
                 SkippedFiles   = @()
                 ReplacingOwner = $replacingOwner
             }
@@ -80,7 +80,7 @@ Describe 'Read-KindContentOwners' {
         Mock Read-KeyedFileOwners {
             [pscustomobject]@{
                 OwnersById   = New-OwnerIndex @{ "$($KeyedFile.Path)-id" = @('j') }
-                FileCount    = 2
+                CopyCount    = 2
                 SkippedFiles = @([pscustomobject]@{ Path = "$($KeyedFile.Path)\bad"; Reason = 'broken' })
             }
         }

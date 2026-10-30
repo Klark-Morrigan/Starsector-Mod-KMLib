@@ -53,14 +53,14 @@ Describe 'Read-KeyedFileOwners' {
 
         $keyedFile = New-KeyedFileSource -Path 'data/config/planets.json'
         $expectedOwners = 'Shared=alpha planet=core shared=core+alpha'
-        $expectedFileCount = 2
+        $expectedCopyCount = 2
 
         # ACT
         $actualRead = Read-KeyedFileOwners -Sources @('sources') -KeyedFile $keyedFile
 
         # ASSERT
         Format-OwnerIndex -OwnersById $actualRead.OwnersById | Should -Be $expectedOwners
-        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
         Should -Invoke Find-ListedContentFiles -ParameterFilter {
             "$Sources" -eq 'sources' -and "$RelativePaths" -eq 'data/config/planets.json'
         } -Times 1 -Exactly
@@ -110,14 +110,14 @@ Describe 'Read-KeyedFileOwners' {
 
         $keyedFile = New-KeyedFileSource -Path 'planets.json'
         $expectedOwnerCount = 0
-        $expectedFileCount = 0
+        $expectedCopyCount = 0
 
         # ACT
         $actualRead = Read-KeyedFileOwners -Sources @() -KeyedFile $keyedFile
 
         # ASSERT
         $actualRead.OwnersById.Count | Should -Be $expectedOwnerCount
-        $actualRead.FileCount | Should -Be $expectedFileCount
+        $actualRead.CopyCount | Should -Be $expectedCopyCount
         Should -Invoke Select-MergedCopies -Times 0 -Exactly
     }
 
