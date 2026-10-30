@@ -2,7 +2,7 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\console\Add-ModDefaultDisplay.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\mod-roster\Add-ModDefaultDisplay.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Get-XmlChildText.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\xml\Resolve-XStreamReference.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\save-descriptor\ConvertFrom-SaveModVersion.ps1"
@@ -67,48 +67,91 @@ Describe 'ConvertFrom-EnabledModData' {
 
     It 'reads the ID, name, version and version parts of a spec written in place' {
 
-        $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[0] -IdIndex $script:IdIndex
+        # ARRANGE
+        $expectedId = 'alpha'
+        $expectedName = 'Alpha'
+        $expectedVersion = 'version-z3'
+        $expectedVersionInfo = 'parts-z3'
 
-        $mod.Id | Should -Be 'alpha'
-        $mod.Name | Should -Be 'Alpha'
-        $mod.Version | Should -Be 'version-z3'
-        $mod.VersionInfo | Should -Be 'parts-z3'
+        # ACT
+        $actualMod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[0] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMod.Id | Should -Be $expectedId
+        $actualMod.Name | Should -Be $expectedName
+        $actualMod.Version | Should -Be $expectedVersion
+        $actualMod.VersionInfo | Should -Be $expectedVersionInfo
     }
 
     It 'gives the mod the display every mod list shares' {
-        (ConvertFrom-EnabledModData -EnabledModData $script:Entries[0] -IdIndex $script:IdIndex).Display |
-            Should -Be 'added'
+
+        # ARRANGE
+        $expectedDisplay = 'added'
+
+        # ACT
+        $actualMod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[0] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMod.Display | Should -Be $expectedDisplay
     }
 
     It 'follows a spec back-pointer, passing the index on' {
 
-        $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[1] -IdIndex $script:IdIndex
+        # ARRANGE
+        $expectedId = 'alpha'
+        $expectedResolveCount = 3
 
-        $mod.Id | Should -Be 'alpha'
-        Should -Invoke Resolve-XStreamReference -ParameterFilter { $IdIndex['marker'] -eq 'passed through' } -Times 3
+        # ACT
+        $actualMod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[1] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMod.Id | Should -Be $expectedId
+
+        Should -Invoke Resolve-XStreamReference -ParameterFilter { $IdIndex['marker'] -eq 'passed through' } `
+            -Times $expectedResolveCount
     }
 
     It 'follows a versionInfo back-pointer' {
 
-        $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[2] -IdIndex $script:IdIndex
+        # ARRANGE
+        $expectedVersion = 'version-z3'
+        $expectedVersionInfo = 'parts-z3'
 
-        $mod.Version | Should -Be 'version-z3'
-        $mod.VersionInfo | Should -Be 'parts-z3'
+        # ACT
+        $actualMod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[2] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMod.Version | Should -Be $expectedVersion
+        $actualMod.VersionInfo | Should -Be $expectedVersionInfo
     }
 
     It 'reads a spec with no versionInfo, and no name, as empty' {
 
-        $mod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[3] -IdIndex $script:IdIndex
+        # ARRANGE
+        $expectedId = 'gamma'
+        $expectedVersion = ''
+        $expectedVersionInfo = 'no parts'
 
-        $mod.Id | Should -Be 'gamma'
-        $mod.Name | Should -BeNullOrEmpty
-        $mod.Version | Should -Be ''
-        $mod.VersionInfo | Should -Be 'no parts'
+        # ACT
+        $actualMod = ConvertFrom-EnabledModData -EnabledModData $script:Entries[3] -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMod.Id | Should -Be $expectedId
+        $actualMod.Name | Should -BeNullOrEmpty
+        $actualMod.Version | Should -Be $expectedVersion
+        $actualMod.VersionInfo | Should -Be $expectedVersionInfo
     }
 
     It 'fails naming an entry that holds no spec' {
 
-        { ConvertFrom-EnabledModData -EnabledModData $script:Entries[4] -IdIndex $script:IdIndex } |
-            Should -Throw '<EnabledModData z="9"> holds no mod spec'
+        # ARRANGE
+        $expectedMessage = '<EnabledModData z="9"> holds no mod spec'
+
+        # ACT
+        $actualError = { ConvertFrom-EnabledModData -EnabledModData $script:Entries[4] -IdIndex $script:IdIndex } |
+            Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -Be $expectedMessage
     }
 }

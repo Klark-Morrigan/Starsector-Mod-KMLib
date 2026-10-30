@@ -2,9 +2,11 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
+
     . "$PSScriptRoot\..\..\helpers\New-OwnerIndex.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\Add-ContentOwner.ps1"
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\Add-GeneratedContent.ps1"
+    . "$libRoot\content-catalogue\owner-index\Add-ContentOwner.ps1"
+    . "$libRoot\content-catalogue\Add-GeneratedContent.ps1"
 }
 
 Describe 'Add-GeneratedContent' {
@@ -24,15 +26,22 @@ Describe 'Add-GeneratedContent' {
 
     It 'adds each base ID plus the suffix, owned by each owner of its base, and counts the IDs built' {
 
+        # ARRANGE
         $rule = [pscustomobject]@{ Suffix = '_Hull'; IsSuffixedBaseSkipped = $false }
 
-        $count = Add-GeneratedContent -OwnersById $script:Target -BaseIds @('alpha_hull', 'beta_hull') `
+        $expectedAdded = @('alpha_hull_Hull=alpha', 'alpha_hull_Hull=vanilla', 'beta_hull_Hull=beta')
+        $expectedCount = 2
+        $expectedAddCount = 3
+
+        # ACT
+        $actualCount = Add-GeneratedContent -OwnersById $script:Target -BaseIds @('alpha_hull', 'beta_hull') `
             -BaseOwners $script:BaseOwners -Rule $rule
 
-        $script:Added | Should -Be @('alpha_hull_Hull=alpha', 'alpha_hull_Hull=vanilla', 'beta_hull_Hull=beta')
-        $count | Should -Be 2
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualCount | Should -Be $expectedCount
 
-        Should -Invoke Add-ContentOwner -Times 3 -Exactly -ParameterFilter {
+        Should -Invoke Add-ContentOwner -Times $expectedAddCount -Exactly -ParameterFilter {
             [object]::ReferenceEquals($OwnersById, $script:Target)
         }
     }
@@ -40,22 +49,33 @@ Describe 'Add-GeneratedContent' {
     # The game makes no d-hull of a hull whose ID already names one.
     It 'skips a base whose ID already ends in the suffix, when the rule says so' {
 
+        # ARRANGE
         $rule = [pscustomobject]@{ Suffix = '_default_D'; IsSuffixedBaseSkipped = $true }
 
-        $count = Add-GeneratedContent -OwnersById $script:Target -BaseIds @('beta_hull', 'already_default_D') `
+        $expectedAdded = @('beta_hull_default_D=beta')
+        $expectedCount = 1
+
+        # ACT
+        $actualCount = Add-GeneratedContent -OwnersById $script:Target -BaseIds @('beta_hull', 'already_default_D') `
             -BaseOwners $script:BaseOwners -Rule $rule
 
-        $script:Added | Should -Be @('beta_hull_default_D=beta')
-        $count | Should -Be 1
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
+        $actualCount | Should -Be $expectedCount
     }
 
     It 'builds from a suffixed base when the rule does not skip it' {
 
+        # ARRANGE
         $rule = [pscustomobject]@{ Suffix = '_default_D'; IsSuffixedBaseSkipped = $false }
 
+        $expectedAdded = @('already_default_D_default_D=gamma')
+
+        # ACT
         Add-GeneratedContent -OwnersById $script:Target -BaseIds @('already_default_D') `
             -BaseOwners $script:BaseOwners -Rule $rule | Out-Null
 
-        $script:Added | Should -Be @('already_default_D_default_D=gamma')
+        # ASSERT
+        $script:Added | Should -Be $expectedAdded
     }
 }

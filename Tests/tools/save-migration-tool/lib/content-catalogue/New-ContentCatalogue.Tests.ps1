@@ -7,10 +7,10 @@ BeforeAll {
     . "$PSScriptRoot\..\..\helpers\Format-OwnerIndex.ps1"
     . "$PSScriptRoot\..\..\helpers\New-OwnerIndex.ps1"
     . "$libRoot\Add-GeneratedContent.ps1"
-    . "$libRoot\Get-ContentDefinitions.ps1"
+    . "$libRoot\definitions\Get-ContentDefinitions.ps1"
     . "$libRoot\New-ContentCatalogue.ps1"
-    . "$libRoot\Read-KindContentOwners.ps1"
-    . "$libRoot\Set-ContentOwnerOrder.ps1"
+    . "$libRoot\owner-index\Set-ContentOwnerOrder.ps1"
+    . "$libRoot\readers\Read-KindContentOwners.ps1"
 }
 
 Describe 'New-ContentCatalogue' {
@@ -57,13 +57,21 @@ Describe 'New-ContentCatalogue' {
 
     It 'reads each kind asked for, in the definitions'' order' {
 
-        $catalogue = New-ContentCatalogue -Sources @('sources') -Kinds @('Other', 'Base')
+        # ARRANGE
+        $expectedKinds = @('Base', 'Other')
+        $expectedOtherOwners = 'Other-id=m'
+        $expectedReadCount = 2
+        $expectedBaseReadCount = 1
 
-        @($catalogue.OwnersByKind.Keys) | Should -Be @('Base', 'Other')
-        Format-OwnerIndex -OwnersById $catalogue.OwnersByKind['Other'] | Should -Be 'Other-id=m'
+        # ACT
+        $actualCatalogue = New-ContentCatalogue -Sources @('sources') -Kinds @('Other', 'Base')
 
-        Should -Invoke Read-KindContentOwners -Times 2 -Exactly
-        Should -Invoke Read-KindContentOwners -Times 1 -Exactly -ParameterFilter {
+        # ASSERT
+        @($actualCatalogue.OwnersByKind.Keys) | Should -Be $expectedKinds
+        Format-OwnerIndex -OwnersById $actualCatalogue.OwnersByKind['Other'] | Should -Be $expectedOtherOwners
+
+        Should -Invoke Read-KindContentOwners -Times $expectedReadCount -Exactly
+        Should -Invoke Read-KindContentOwners -Times $expectedBaseReadCount -Exactly -ParameterFilter {
             "$Sources" -eq 'sources' -and $Definition.Kind -eq 'Base'
         }
     }
@@ -71,32 +79,53 @@ Describe 'New-ContentCatalogue' {
     # The game builds only from the IDs files define, so no rule sees another rule's IDs.
     It 'adds each rule''s IDs from the base kind''s file-defined IDs, read though not asked for' {
 
-        $catalogue = New-ContentCatalogue -Sources @() -Kinds @('Built')
-
-        @($catalogue.OwnersByKind.Keys) | Should -Be @('Built')
-        Format-OwnerIndex -OwnersById $catalogue.OwnersByKind['Built'] |
-            Should -Be 'Built-id=m added_from_base=m added_from_self=m'
-        $script:Generated | Should -Be @(
+        # ARRANGE
+        $expectedKinds = @('Built')
+        $expectedBuiltOwners = 'Built-id=m added_from_base=m added_from_self=m'
+        $expectedGenerated = @(
             '_from_base: Base-id owned as Base-id'
             '_from_self: Built-id owned as Built-id+added_from_base'
         )
-        $catalogue.GeneratedCount | Should -Be 2
+        $expectedGeneratedCount = 2
+
+        # ACT
+        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built')
+
+        # ASSERT
+        @($actualCatalogue.OwnersByKind.Keys) | Should -Be $expectedKinds
+        Format-OwnerIndex -OwnersById $actualCatalogue.OwnersByKind['Built'] | Should -Be $expectedBuiltOwners
+        $script:Generated | Should -Be $expectedGenerated
+        $actualCatalogue.GeneratedCount | Should -Be $expectedGeneratedCount
     }
 
     It 'orders each asked kind''s owners by the sources' {
 
+        # ARRANGE
+        $expectedOrderCount = 2
+
+        # ACT
         New-ContentCatalogue -Sources @('sources') -Kinds @('Base', 'Built') | Out-Null
 
-        Should -Invoke Set-ContentOwnerOrder -ParameterFilter { "$Sources" -eq 'sources' } -Times 2 -Exactly
+        # ASSERT
+        Should -Invoke Set-ContentOwnerOrder -ParameterFilter { "$Sources" -eq 'sources' } `
+            -Times $expectedOrderCount -Exactly
     }
 
     It 'sums what every kind read, the base kinds too, and returns what each skipped and replaced' {
 
-        $catalogue = New-ContentCatalogue -Sources @() -Kinds @('Built', 'Other')
+        # ARRANGE
+        $expectedContentFileCount = 30
+        $expectedSpreadsheetCount = 6
+        $expectedSkippedPaths = @('Base\bad', 'Built\bad', 'Other\bad')
+        $expectedReplacedSpreadsheets = @('Base.csv', 'Built.csv', 'Other.csv')
 
-        $catalogue.ContentFileCount | Should -Be 30
-        $catalogue.SpreadsheetCount | Should -Be 6
-        $catalogue.SkippedFiles.Path | Should -Be @('Base\bad', 'Built\bad', 'Other\bad')
-        $catalogue.Replacements.Spreadsheet | Should -Be @('Base.csv', 'Built.csv', 'Other.csv')
+        # ACT
+        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built', 'Other')
+
+        # ASSERT
+        $actualCatalogue.ContentFileCount | Should -Be $expectedContentFileCount
+        $actualCatalogue.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
+        $actualCatalogue.SkippedFiles.Path | Should -Be $expectedSkippedPaths
+        $actualCatalogue.Replacements.Spreadsheet | Should -Be $expectedReplacedSpreadsheets
     }
 }

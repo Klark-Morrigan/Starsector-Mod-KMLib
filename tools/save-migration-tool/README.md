@@ -104,14 +104,18 @@ Loading the library takes about half a second.
 | [`formats/`](formats/) | Console table views for rows with too many columns for PowerShell's default table |
 | [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, the name of the process-wide slot it remembers the last writer in, and `Write-TextFile`, which writes a script's output to a file |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
-| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns an object prints as a table, every mod list's included |
-| [`lib/content-catalogue/`](lib/content-catalogue/) | The kinds of content a save names by ID, where the game defines each, and reading the IDs the install defines with the mods behind them |
+| [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns an object prints as a table |
+| [`lib/content/`](lib/content/) | The kinds of content a save names by ID, which a failed load's missing content and the catalogue share |
+| [`lib/content-catalogue/`](lib/content-catalogue/) | Building the catalogue of the IDs the install defines with the mods behind them, and writing it out by ID or by owner |
+| [`lib/content-catalogue/definitions/`](lib/content-catalogue/definitions/) | Where the game defines each kind of content, and what it takes as defining an ID |
+| [`lib/content-catalogue/owner-index/`](lib/content-catalogue/owner-index/) | The index of each ID's owners: adding to it, merging two and ordering the owners as the game searches them |
+| [`lib/content-catalogue/readers/`](lib/content-catalogue/readers/) | Listing the folders the game reads data from, finding each file's copies, and reading the IDs they define |
 | [`lib/data-file/`](lib/data-file/) | Reading a data file's text, JSON and spreadsheets as the game does |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
-| [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read |
+| [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read, and the owner the game's own classes and content go under |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
 | [`lib/mod-drift/`](lib/mod-drift/) | Comparing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
-| [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads |
+| [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads, and the columns every mod list prints as |
 | [`lib/mod-version/`](lib/mod-version/) | Reading mod versions as text and as the parts the game compares |
 | [`lib/save-descriptor/`](lib/save-descriptor/) | Finding a save's `descriptor.xml` and reading its mod lists |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
@@ -621,7 +625,7 @@ Two of the game's rules are not followed:
   and drops core skins and variants of hulls it lacks.
   The catalogue reads every install as one that is not a total conversion.
 
-[`lib/content-catalogue/Get-ContentDefinitions.ps1`](lib/content-catalogue/Get-ContentDefinitions.ps1)
+[`lib/content-catalogue/definitions/Get-ContentDefinitions.ps1`](lib/content-catalogue/definitions/Get-ContentDefinitions.ps1)
 holds this table and these rules.
 
 ### How the game combines copies

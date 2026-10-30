@@ -2,13 +2,13 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\class-index"
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
     . "$PSScriptRoot\..\..\helpers\New-TestFile.ps1"
-    . "$libRoot\Get-CoreOwnerName.ps1"
-    . "$libRoot\New-ClassOwnerIndex.ps1"
-    . "$libRoot\Select-JarClassNames.ps1"
-    . "$libRoot\..\mod-roster\Get-ModIdComparer.ps1"
+    . "$libRoot\class-index\New-ClassOwnerIndex.ps1"
+    . "$libRoot\class-index\Select-JarClassNames.ps1"
+    . "$libRoot\install\Get-CoreOwnerName.ps1"
+    . "$libRoot\mod-roster\Get-ModIdComparer.ps1"
 
     function script:New-Source {
         # One owner and its JARs, as the index takes them.

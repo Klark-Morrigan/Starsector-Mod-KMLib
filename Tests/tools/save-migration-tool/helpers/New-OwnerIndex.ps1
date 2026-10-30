@@ -1,4 +1,4 @@
-. "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\New-ContentOwnerIndex.ps1"
+. "$PSScriptRoot\..\..\..\..\tools\save-migration-tool\lib\content-catalogue\owner-index\New-ContentOwnerIndex.ps1"
 
 # Builds an owner index, the dictionary of ID to owners the content catalogue passes around, from a hashtable.
 function New-OwnerIndex {

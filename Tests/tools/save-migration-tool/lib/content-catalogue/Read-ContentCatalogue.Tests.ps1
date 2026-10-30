@@ -8,7 +8,7 @@ BeforeAll {
     . "$libRoot\Write-DiagnosticLine.ps1"
     . "$libRoot\console\Format-ConsoleNumber.ps1"
     . "$libRoot\console\Format-ConsoleText.ps1"
-    . "$libRoot\content-catalogue\Get-ContentSources.ps1"
+    . "$libRoot\content-catalogue\readers\Get-ContentSources.ps1"
     . "$libRoot\content-catalogue\New-ContentCatalogue.ps1"
     . "$libRoot\content-catalogue\Read-ContentCatalogue.ps1"
 }
@@ -41,11 +41,16 @@ Describe 'Read-ContentCatalogue' {
 
     It 'catalogues the asked kinds from the roster''s sources, and returns each kind''s owners and the sources' {
 
-        $catalogue = Read-ContentCatalogue -StarsectorRoot 'C:\Games' -Roster @('one mod') `
+        # ARRANGE
+        $expectedSources = @('alpha source', 'core source')
+
+        # ACT
+        $actualCatalogue = Read-ContentCatalogue -StarsectorRoot 'C:\Games' -Roster @('one mod') `
             -Kinds @('Hull', 'Hullmod') -DiagnosticSource 'Test'
 
-        [object]::ReferenceEquals($catalogue.OwnersByKind, $script:OwnersByKind) | Should -BeTrue
-        $catalogue.Sources | Should -Be @('alpha source', 'core source')
+        # ASSERT
+        [object]::ReferenceEquals($actualCatalogue.OwnersByKind, $script:OwnersByKind) | Should -BeTrue
+        $actualCatalogue.Sources | Should -Be $expectedSources
 
         Should -Invoke Get-ContentSources -ParameterFilter {
             $StarsectorRoot -eq 'C:\Games' -and "$Roster" -eq 'one mod'
@@ -57,17 +62,25 @@ Describe 'Read-ContentCatalogue' {
 
     It 'says what it catalogues, each file it skipped, each replaced spreadsheet and what each kind holds' {
 
+        # ARRANGE
+        $expectedStart = (
+            "Test: cataloguing Hull, Hullmod from 1 mods and the game's own data, in the game's search order")
+        $expectedSkip = 'Test: skipped C:\mods\alpha\data\hulls\bad.ship: broken'
+        $expectedReplacement = 'Test: alpha replaces data/hulls/ship_data.csv, so no other copy of it is read'
+        $expectedSummary = (
+            'Test: read 120 content files and 4 spreadsheets in * ms, skipping 1; ' +
+            'defined: 2 Hull, 1 Hullmod, 1 of them built by the game at startup')
+        $expectedCount = 4
+
+        # ACT
         Read-ContentCatalogue -StarsectorRoot 'C:\Games' -Roster @('one mod') -Kinds @('Hull', 'Hullmod') `
             -DiagnosticSource 'Test' | Out-Null
 
-        $script:Diagnostics[0] | Should -Be (
-            "Test: cataloguing Hull, Hullmod from 1 mods and the game's own data, in the game's search order")
-        $script:Diagnostics[1] | Should -Be 'Test: skipped C:\mods\alpha\data\hulls\bad.ship: broken'
-        $script:Diagnostics[2] | Should -Be (
-            'Test: alpha replaces data/hulls/ship_data.csv, so no other copy of it is read')
-        $script:Diagnostics[3] | Should -BeLike (
-            'Test: read 120 content files and 4 spreadsheets in * ms, skipping 1; ' +
-            'defined: 2 Hull, 1 Hullmod, 1 of them built by the game at startup')
-        $script:Diagnostics.Count | Should -Be 4
+        # ASSERT
+        $script:Diagnostics[0] | Should -Be $expectedStart
+        $script:Diagnostics[1] | Should -Be $expectedSkip
+        $script:Diagnostics[2] | Should -Be $expectedReplacement
+        $script:Diagnostics[3] | Should -BeLike $expectedSummary
+        $script:Diagnostics.Count | Should -Be $expectedCount
     }
 }

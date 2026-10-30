@@ -10,7 +10,7 @@ BeforeAll {
     . "$libRoot\mod-drift\Compare-SaveModRoster.ps1"
     . "$libRoot\mod-drift\Format-ModDriftCounts.ps1"
     . "$libRoot\mod-drift\Read-SaveModDrift.ps1"
-    . "$libRoot\save-descriptor\Format-DroppedModSummary.ps1"
+    . "$libRoot\mod-drift\Format-DroppedModSummary.ps1"
     . "$libRoot\save-descriptor\Get-SaveDescriptorPath.ps1"
     . "$libRoot\save-descriptor\Read-SaveModList.ps1"
     . "$libRoot\xml\Get-XmlChildText.ps1"

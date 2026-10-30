@@ -2,12 +2,12 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\class-index"
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib"
 
-    . "$libRoot\Get-CoreOwnerName.ps1"
-    . "$libRoot\New-ClassOwnerIndex.ps1"
-    . "$libRoot\New-InstallClassOwnerIndex.ps1"
-    . "$libRoot\Read-CoreClasspath.ps1"
+    . "$libRoot\class-index\New-ClassOwnerIndex.ps1"
+    . "$libRoot\class-index\New-InstallClassOwnerIndex.ps1"
+    . "$libRoot\class-index\Read-CoreClasspath.ps1"
+    . "$libRoot\install\Get-CoreOwnerName.ps1"
 }
 
 Describe 'New-InstallClassOwnerIndex' {
