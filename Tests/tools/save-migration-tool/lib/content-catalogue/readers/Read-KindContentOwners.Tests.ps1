@@ -164,20 +164,17 @@ Describe 'Read-KindContentOwners' {
         Read-Kind -Parts $parts | Out-Null
 
         # ASSERT
-        Should `
-            -Invoke Read-ContentFileOwners `
+        Should -Invoke Read-ContentFileOwners `
             -ParameterFilter { [object]::ReferenceEquals($Cache, $expectedCache) } `
             -Times 1 `
             -Exactly
 
-        Should `
-            -Invoke Read-SpreadsheetOwners `
+        Should -Invoke Read-SpreadsheetOwners `
             -ParameterFilter { [object]::ReferenceEquals($Cache, $expectedCache) } `
             -Times 1 `
             -Exactly
 
-        Should `
-            -Invoke Read-KeyedFileOwners `
+        Should -Invoke Read-KeyedFileOwners `
             -ParameterFilter { [object]::ReferenceEquals($Cache, $expectedCache) } `
             -Times 1 `
             -Exactly
