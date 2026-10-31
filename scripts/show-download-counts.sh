@@ -94,8 +94,8 @@ log_output_value "nexus-mod-id" "${nexus_mod_id}"
 log_output_value "nexus-file-name" "${label}"
 log_output_value "nexus-locale" "${default_locale}"
 
-# The Nexus file name and locale are the label and the default locale, as the
-# workflow passes them.
+# The Nexus file name and locale are the label and the default locale, as
+# publish-download-badges.yml passes them; a change to one belongs in the other.
 "${common_automation_root}/scripts/show-download-counts.sh" \
     --repository "${repository}" \
     --asset-name-regex "${asset_name_regex}" \

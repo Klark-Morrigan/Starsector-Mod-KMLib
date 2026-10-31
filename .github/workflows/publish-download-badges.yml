@@ -83,6 +83,8 @@ jobs:
       # Nexus is read only when the template states a modNexusId. A Nexus page
       # can host several mods' files, so only those named after the mod's
       # folder count. Nexus hosts the default locale's build.
+      # scripts/show-download-counts.sh maps the inputs the same way for its dry
+      # run; a change to one belongs in the other.
       - name: Publish download badges
         uses: Klark-Morrigan/Common-Automation/.github/actions/publish-download-badges@master
         with:

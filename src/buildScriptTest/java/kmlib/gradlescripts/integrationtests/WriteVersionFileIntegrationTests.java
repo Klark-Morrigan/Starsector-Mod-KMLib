@@ -46,13 +46,16 @@ final class WriteVersionFileIntegrationTests {
 
     private static final String MOD_INFO_TEXT = "{\"id\":\"kmu\",\"version\":\"1.0.0\"}";
 
-    // The statement a case runs: whether the task exists, and the names of the files it reads.
+    // The statement a case runs: whether the task exists, the names of the files it reads - the
+    // mod's own apart from the scripts - and what the jar waits on.
     private static final String PRINT_REGISTRATION = String.join(
         "\n",
         "def writeVersionFileTask = tasks.findByName('writeVersionFile')",
         "println \"registered: ${writeVersionFileTask != null}\"",
         "if (writeVersionFileTask != null) {",
-        "    println \"inputs: ${writeVersionFileTask.inputs.files.files*.name.sort()}\"",
+        "    def inputNames = writeVersionFileTask.inputs.files.files*.name.sort()",
+        "    println \"mod inputs: ${inputNames.findAll { !it.endsWith('.sh') }}\"",
+        "    println \"script inputs: ${inputNames.findAll { it.endsWith('.sh') }}\"",
         "    println \"jar depends: ${tasks.jar.taskDependencies.getDependencies(tasks.jar)*.name}\"",
         "}");
 
@@ -93,56 +96,103 @@ final class WriteVersionFileIntegrationTests {
     @Nested
     final class RegisterWriteVersionFile {
 
-        /** Committing the template is the opt-in; a mod publishing no update information gets no task. */
+        // Committing the template is the opt-in; a mod publishing no update information gets no task.
         @Test
         void registersNoTaskWithoutATemplate(@TempDir Path workspace) throws IOException {
 
+            // ARRANGE
             var projectDirectory = writeConsumerProject(workspace);
 
             Files.writeString(projectDirectory.resolve(MOD_INFO_FILE_NAME), MOD_INFO_TEXT);
 
-            assertThat(runHelp(projectDirectory))
-                .contains("registered: false");
+            var expectedLine = "registered: false";
+
+            // ACT
+            var actualOutput = runHelp(projectDirectory);
+
+            // ASSERT
+            assertThat(actualOutput)
+                .contains(expectedLine);
         }
 
         @Test
         void declaresModInfoJsonAsItsMetadataWhenNoBaseIsCommitted(@TempDir Path workspace) throws IOException {
 
+            // ARRANGE
             var projectDirectory = writeConsumerProject(workspace);
 
             Files.writeString(projectDirectory.resolve(MOD_INFO_FILE_NAME), MOD_INFO_TEXT);
             Files.writeString(projectDirectory.resolve(VERSION_FILE_TEMPLATE_NAME), "{}");
 
-            assertThat(runHelp(projectDirectory))
-                .contains("inputs: [fill_version_file_template.sh, kmu.version.template, localisation.sh, mod_info.json, "
-                    + "mod_info.sh]");
+            var expectedLine = "mod inputs: [kmu.version.template, mod_info.json]";
+
+            // ACT
+            var actualOutput = runHelp(projectDirectory);
+
+            // ASSERT
+            assertThat(actualOutput)
+                .contains(expectedLine);
         }
 
         @Test
         void declaresTheBaseAsItsMetadataWhenOneIsCommitted(@TempDir Path workspace) throws IOException {
 
+            // ARRANGE
             var projectDirectory = writeConsumerProject(workspace);
 
             Files.writeString(projectDirectory.resolve(MOD_INFO_FILE_NAME), MOD_INFO_TEXT);
             Files.writeString(projectDirectory.resolve(MOD_INFO_BASE_FILE_NAME), MOD_INFO_TEXT);
             Files.writeString(projectDirectory.resolve(VERSION_FILE_TEMPLATE_NAME), "{}");
 
-            assertThat(runHelp(projectDirectory))
-                .contains("inputs: [fill_version_file_template.sh, kmu.version.template, localisation.sh, "
-                    + "mod_info.base.json, mod_info.sh]");
+            var expectedLine = "mod inputs: [kmu.version.template, mod_info.base.json]";
+
+            // ACT
+            var actualOutput = runHelp(projectDirectory);
+
+            // ASSERT
+            assertThat(actualOutput)
+                .contains(expectedLine);
         }
 
-        /** Refreshing a dev install is what building the jar is, so the version file comes with it. */
+        // An edit to the script, one of its steps or a lib file it sources has to rerun the task.
         @Test
-        void runsAheadOfJar(@TempDir Path workspace) throws IOException {
+        void declaresTheScriptItsStepsAndTheSharedLibAsInputs(@TempDir Path workspace) throws IOException {
 
+            // ARRANGE
             var projectDirectory = writeConsumerProject(workspace);
 
             Files.writeString(projectDirectory.resolve(MOD_INFO_FILE_NAME), MOD_INFO_TEXT);
             Files.writeString(projectDirectory.resolve(VERSION_FILE_TEMPLATE_NAME), "{}");
 
-            assertThat(runHelp(projectDirectory))
-                .containsPattern("jar depends: \\[.*writeVersionFile.*\\]");
+            var expectedScriptInputPattern = "script inputs: \\[.*fill_version_file_template\\.sh.*"
+                + "mod_info_derive_zip_name\\.sh.*read_origin_repository\\.sh.*resolve_master_version_file\\.sh.*\\]";
+
+            // ACT
+            var actualOutput = runHelp(projectDirectory);
+
+            // ASSERT
+            assertThat(actualOutput)
+                .containsPattern(expectedScriptInputPattern);
+        }
+
+        // Refreshing a dev install is what building the jar is, so the version file comes with it.
+        @Test
+        void runsAheadOfJar(@TempDir Path workspace) throws IOException {
+
+            // ARRANGE
+            var projectDirectory = writeConsumerProject(workspace);
+
+            Files.writeString(projectDirectory.resolve(MOD_INFO_FILE_NAME), MOD_INFO_TEXT);
+            Files.writeString(projectDirectory.resolve(VERSION_FILE_TEMPLATE_NAME), "{}");
+
+            var expectedDependencyPattern = "jar depends: \\[.*writeVersionFile.*\\]";
+
+            // ACT
+            var actualOutput = runHelp(projectDirectory);
+
+            // ASSERT
+            assertThat(actualOutput)
+                .containsPattern(expectedDependencyPattern);
         }
     }
 }

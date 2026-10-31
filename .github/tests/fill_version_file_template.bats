@@ -212,6 +212,8 @@ EOF
     downloadUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/$ZIP_NAME"
     expectedLines=(
         "Reading mod_info.json."
+        "Using zip name $ZIP_NAME, as given."
+        "Using repository Klark-Morrigan/Starsector-Mod-KMU, from GITHUB_REPOSITORY."
         "Wrote $OUTPUT_FILE from kmu.version.template, version 1.2.3:"
         "  masterVersionFile: https://example.invalid/master/kmu.version"
         "  directDownloadURL: $downloadUrl"
@@ -688,6 +690,22 @@ EOF
     [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
 }
 
+@test "logs a derived zip name with the jar it came from" {
+
+    # ARRANGE
+    write_mod_info "kmu" "Fixture Mod" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
+    cd "$WORK_DIR"
+
+    expectedLog="Using zip name DerivedName-1.2.3.zip, derived from jars/DerivedName.jar."
+
+    # ACT
+    run --separate-stderr env OUTPUT_PATH="$OUTPUT_FILE" bash "$SCRIPT"
+
+    # ASSERT
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"$expectedLog"* ]]
+}
+
 # The release states the name of the asset it is about to upload, and that
 # name wins: the URL has to point at what is published, not at what the
 # jar implies.
@@ -744,6 +762,22 @@ EOF
     [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
 }
 
+@test "logs a repository read from the origin remote" {
+
+    # ARRANGE
+    init_git_origin "https://github.com/Klark-Morrigan/Starsector-Mod-KMU.git"
+    cd "$WORK_DIR"
+
+    expectedLog="Using repository Klark-Morrigan/Starsector-Mod-KMU, from the origin remote."
+
+    # ACT
+    run --separate-stderr env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"$expectedLog"* ]]
+}
+
 @test "reads an ssh origin remote the same way as an https one" {
 
     # ARRANGE
@@ -786,7 +820,7 @@ EOF
     # ARRANGE
     cd "$WORK_DIR"
 
-    expectedError="<owner>/<repo>"
+    expectedError="has no origin remote to read the repository from"
 
     # ACT
     run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
@@ -797,13 +831,15 @@ EOF
     [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
-@test "fails when the origin remote names no owner" {
+# The download URL is built on github.com, so an origin anywhere else would
+# point an install at a repository that is not there.
+@test "fails when the origin remote is not a GitHub repository" {
 
     # ARRANGE
     init_git_origin "a-local-clone"
     cd "$WORK_DIR"
 
-    expectedError="cannot read <owner>/<repo> out of the origin remote"
+    expectedError="origin 'a-local-clone' of $WORK_DIR is not a GitHub repository"
 
     # ACT
     run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"

@@ -32,8 +32,13 @@ ACTIONS_WITH_OUTPUTS=(
 
 ACTIONS_DIR_NAME="actions"
 
-# The shared lib holding the only writers of $GITHUB_OUTPUT.
+# The shared lib holding the only writers of $GITHUB_OUTPUT, and the files under
+# it that write, each holding one writer.
 GITHUB_OUTPUT_LIB_NAME="_lib/github_output.sh"
+GITHUB_OUTPUT_WRITER_FILES=(
+    "_lib/github_output/write_github_output.sh"
+    "_lib/github_output/write_multiline_output.sh"
+)
 
 # Echoes the keys a script writes to $GITHUB_OUTPUT, one per line, sorted.
 # Every key goes through a `write_github_output "key" ...` or
@@ -79,13 +84,28 @@ report() {
     echo "$1" >&2
 }
 
+# Each action is its own arrange, act and assert, in turn.
 @test "every action declares an output for each key its script emits" {
 
     for action in "${ACTIONS_WITH_OUTPUTS[@]}"; do
 
+        # ARRANGE
         actionPath="$ACTIONS_DIR/$action/action.yml"
         scriptPath="$(derive_script_path "$ACTIONS_DIR" "$action")"
 
+        # ACT
+        emitted=""
+        referenced=""
+
+        if [ -f "$scriptPath" ]; then
+            emitted="$(read_emitted_keys "$scriptPath")"
+        fi
+
+        if [ -f "$actionPath" ]; then
+            referenced="$(read_referenced_keys "$actionPath")"
+        fi
+
+        # ASSERT
         if [ ! -f "$actionPath" ]; then
             report "no action.yml for '$action'"
             return 1
@@ -95,9 +115,6 @@ report() {
             report "no script for '$action' at $scriptPath"
             return 1
         fi
-
-        emitted="$(read_emitted_keys "$scriptPath")"
-        referenced="$(read_referenced_keys "$actionPath")"
 
         # Non-empty on both sides first: a silently-broken extraction above
         # would otherwise compare two empty sets and pass every case.
@@ -119,26 +136,34 @@ report() {
     done
 }
 
+# Without this the test above passes by omission: a new action arrives
+# with its own outputs and nothing checks its two halves agree.
 @test "the covered action list names every action declaring outputs" {
 
-    # Without this the test above passes by omission: a new action arrives
-    # with its own outputs and nothing checks its two halves agree.
-    declared="$(cd "$ACTIONS_DIR" && grep -l '^outputs:' -- */action.yml \
+    # ARRANGE
+    expectedActions="$(printf '%s\n' "${ACTIONS_WITH_OUTPUTS[@]}" | sort)"
+
+    # ACT
+    actualActions="$(cd "$ACTIONS_DIR" && grep -l '^outputs:' -- */action.yml \
         | sed -E 's#/action\.yml$##' | sort)"
 
-    covered="$(printf '%s\n' "${ACTIONS_WITH_OUTPUTS[@]}" | sort)"
-
-    [ "$declared" = "$covered" ]
+    # ASSERT
+    [ "$actualActions" = "$expectedActions" ]
 }
 
+# A key written by hand is neither logged nor seen by the first test.
 @test "no script writes \$GITHUB_OUTPUT but the shared lib" {
 
-    # A key written by hand is neither logged nor seen by the first test.
-    writers="$(cd "$ACTIONS_DIR" && grep -lE '>>[[:space:]]*"?\$\{?GITHUB_OUTPUT' -r --include='*.sh' . \
+    # ARRANGE
+    expectedWriters="$(printf '%s\n' "${GITHUB_OUTPUT_WRITER_FILES[@]}" | sort)"
+
+    # ACT
+    actualWriters="$(cd "$ACTIONS_DIR" && grep -lE '>>[[:space:]]*"?\$\{?GITHUB_OUTPUT' -r --include='*.sh' . \
         | sed 's#^\./##' | sort)"
 
-    if [ "$writers" != "$GITHUB_OUTPUT_LIB_NAME" ]; then
-        report "scripts writing \$GITHUB_OUTPUT: [$(echo "$writers" | tr '\n' ' ')]"
+    # ASSERT
+    if [ "$actualWriters" != "$expectedWriters" ]; then
+        report "scripts writing \$GITHUB_OUTPUT: [$(echo "$actualWriters" | tr '\n' ' ')]"
         report "write each output through $GITHUB_OUTPUT_LIB_NAME instead"
         return 1
     fi

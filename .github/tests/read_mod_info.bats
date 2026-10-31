@@ -356,6 +356,27 @@ EOF
     assert_github_output_lines "${expectedLines[@]}"
 }
 
+# Named here, at the file holding the typo, rather than a step later at the
+# Nexus fetch.
+@test "fails naming the template when its Nexus mod id is not a whole number" {
+
+    # ARRANGE
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
+    printf '{ "masterVersionFile": "https://example.invalid/kmu.version", "modNexusId": "16O" }\n' \
+        > "$WORK_DIR/kmu.version.template"
+
+    cd "$WORK_DIR"
+
+    expectedError="read_mod_info: kmu.version.template modNexusId '16O' is not a whole number"
+
+    # ACT
+    run bash "$SCRIPT"
+
+    # ASSERT
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"$expectedError"* ]]
+}
+
 @test "emits an empty Nexus mod id when no version template is committed" {
 
     # ARRANGE

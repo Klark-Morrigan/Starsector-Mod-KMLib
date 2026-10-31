@@ -15,6 +15,9 @@
 // modInfo and modInfoFile are the metadata they read once for every task script.
 
 def versionFileName = "${modInfo.id}.version"
+
+// The shell lib's mod_info_derive_version_template_name states this name for the
+// scripts. Restated here because a Gradle build cannot call it; the two must agree.
 def versionFileTemplateName = "${versionFileName}.template"
 
 // Committing the template IS the opt-in to publishing update information, so it is
@@ -27,14 +30,14 @@ if (file(versionFileTemplateName).isFile()) {
     // Only the KMLib checkout holds these scripts, and every other consumer would
     // otherwise have to restate an absolute path into it.
     def actionsDirectory = new File(project.ext.kmlibCheckoutDirectory, '.github/actions')
-    def fillVersionFileScript = new File(actionsDirectory,
-        'fill-version-file-template/scripts/fill_version_file_template.sh')
+    def fillVersionFileScriptsDirectory = new File(actionsDirectory, 'fill-version-file-template/scripts')
+    def fillVersionFileScript = new File(fillVersionFileScriptsDirectory, 'fill_version_file_template.sh')
 
-    // Sourced by the script above for the shared metadata and bundle helpers, so
-    // they are as much inputs as the script is: undeclared, an edit to a helper
-    // would leave the task up to date over a file the new code writes differently.
-    def modInfoLibraryScript = new File(actionsDirectory, '_lib/mod_info.sh')
-    def localisationLibraryScript = new File(actionsDirectory, '_lib/localisation.sh')
+    // The script's own steps and the shared lib it sources are as much inputs as
+    // the script is: undeclared, an edit to one would leave the task up to date
+    // over a file the new code writes differently. Both directories whole, so a
+    // file the script starts sourcing is an input with no edit here.
+    def sharedLibraryDirectory = new File(actionsDirectory, '_lib')
 
     // Forward slashes because this one is handed to bash, which reads a Windows
     // backslash as an escape. The input declarations below take the File as it is.
@@ -131,9 +134,8 @@ if (file(versionFileTemplateName).isFile()) {
         // writing and reading one file with no order between them.
         inputs.file modInfoFile
         inputs.file "${projectDir}/${versionFileTemplateName}"
-        inputs.file fillVersionFileScript
-        inputs.file modInfoLibraryScript
-        inputs.file localisationLibraryScript
+        inputs.dir fillVersionFileScriptsDirectory
+        inputs.dir sharedLibraryDirectory
 
         inputs.property 'originRemoteUrl', originRemoteUrl
         outputs.file "${projectDir}/${versionFileName}"

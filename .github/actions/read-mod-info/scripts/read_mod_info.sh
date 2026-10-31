@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Reads the mod's metadata from the caller checkout's working directory -
 # mod_info.base.json when committed, else mod_info.json, by the shared lib's
-# rule - and emits the values a mod's CI and release pipeline needs. Callers
-# pass nothing: whatever varies between mods is either stated in that file or
-# follows from it by a convention this script defines.
+# rule - and the Nexus Mods page its <mod-id>.version.template states, then
+# emits the values a mod's CI, release and badge pipelines need. Callers pass
+# nothing: whatever varies between mods is either stated in those two files or
+# follows from them by a convention this script defines.
 #
 # Writes one "key=value" line per output to $GITHUB_OUTPUT, and logs each to
-# stderr with the file it read. The outputs block of ../action.yml states what
+# stderr with the files it read. The outputs block of ../action.yml states what
 # each key holds.
 set -euo pipefail
 
@@ -32,6 +33,13 @@ COMMON_JAVA_REPO="Klark-Morrigan/Common-Java"
 COMMON_JAVA_PATH="Common-Java"
 KMLIB_REPO="Klark-Morrigan/Starsector-Mod-KMLib"
 KMLIB_PATH="Starsector-Mod-KMLib"
+
+# Nexus Mods' id for Starsector, the game every mod's page sits under. Nexus
+# addresses a page by the game and the mod id together.
+NEXUS_GAME_ID="2672"
+
+# A Nexus Mods id is a page number.
+NEXUS_MOD_ID_REGEX='^[0-9]+$'
 
 mod_info_read_release_fields
 
@@ -78,6 +86,13 @@ NEXUS_MOD_ID=""
 if [[ -f "${VERSION_TEMPLATE_FILE}" ]]; then
   echo "Reading ${VERSION_TEMPLATE_FILE}." >&2
   NEXUS_MOD_ID=$(jq -r '.modNexusId // ""' "${VERSION_TEMPLATE_FILE}")
+
+  # Checked here, where the file can be named: otherwise a typo fails only at
+  # the Nexus fetch, a step later and in another repository's action.
+  if [[ -n "${NEXUS_MOD_ID}" ]] && ! [[ "${NEXUS_MOD_ID}" =~ ${NEXUS_MOD_ID_REGEX} ]]; then
+    echo "${SCRIPT_NAME}: ${VERSION_TEMPLATE_FILE} modNexusId '${NEXUS_MOD_ID}' is not a whole number" >&2
+    exit 1
+  fi
 else
   echo "No ${VERSION_TEMPLATE_FILE}, so no Nexus mod id." >&2
 fi
