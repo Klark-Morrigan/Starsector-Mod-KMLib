@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../json.sh, not on its own: defines json_require_array.
 
+# Set by the script sourcing the lib; defaulted so a failure is still named.
+SCRIPT_NAME="${SCRIPT_NAME:-json}"
+
 # Fails the run unless the given text is a JSON array, naming it by the label.
 #
 # An input arriving from another job is a string until parsed, and a reading

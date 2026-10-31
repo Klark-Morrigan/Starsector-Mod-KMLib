@@ -12,21 +12,20 @@
 #
 # The log goes to stderr, where the runner shows it, and the output file stays
 # as the runner reads it.
+#
+# Each shellcheck source path is written from the repository root, for the
+# reason mod_info.sh gives.
 
 SCRIPT_NAME="${SCRIPT_NAME:-github_output}"
 
-# shellcheck source-path=SCRIPTDIR
-# shellcheck source=log_output_value.sh
+# shellcheck source=.github/actions/_lib/log_output_value.sh
 source "${BASH_SOURCE[0]%/*}/log_output_value.sh"
 
-# shellcheck source-path=SCRIPTDIR
-# shellcheck source=github_output/draw_output_delimiter.sh
+# shellcheck source=.github/actions/_lib/github_output/draw_output_delimiter.sh
 source "${BASH_SOURCE[0]%/*}/github_output/draw_output_delimiter.sh"
 
-# shellcheck source-path=SCRIPTDIR
-# shellcheck source=github_output/write_github_output.sh
+# shellcheck source=.github/actions/_lib/github_output/write_github_output.sh
 source "${BASH_SOURCE[0]%/*}/github_output/write_github_output.sh"
 
-# shellcheck source-path=SCRIPTDIR
-# shellcheck source=github_output/write_multiline_output.sh
+# shellcheck source=.github/actions/_lib/github_output/write_multiline_output.sh
 source "${BASH_SOURCE[0]%/*}/github_output/write_multiline_output.sh"

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../mod_info.sh, not on its own: defines mod_info_has_dependency.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/mod_info_constants.sh"
+
 # Echoes "true" when mod_info.json declares a dependency with the given id,
 # "false" otherwise.
 #

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../mod_info.sh, not on its own: defines mod_info_read_release_fields.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/mod_info_constants.sh"
+
 # Locates the metadata file and reads the three fields every release file name
 # follows from into MOD_ID, VERSION and JAR_SOURCE. Fails the run on the first
 # one missing, so no caller emits a malformed name like "dist/null/".

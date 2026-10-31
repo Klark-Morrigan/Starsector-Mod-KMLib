@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced by ../fill_version_file_template.sh, not on its own: defines resolve_master_version_file.
 
+# shellcheck source=.github/actions/_lib/mod_info.sh
+source "${BASH_SOURCE[0]%/*}/../../../_lib/mod_info.sh"
+
 # Echoes the address an install polls for this file: the template's
 # masterVersionFile, or for a locale that locale's copy beside it.
 #   resolve_master_version_file <template file> <mod id> <locale>
@@ -19,7 +22,7 @@
 resolve_master_version_file() {
 
     local templateFile="${1}" modId="${2}" locale="${3}"
-    local masterVersionFile unlocalisedFileName
+    local masterVersionFile unlocalisedFileName localisedFileName
 
     masterVersionFile="$(jq -r '.masterVersionFile' "${templateFile}")" || return 1
 
@@ -43,5 +46,7 @@ resolve_master_version_file() {
         return 1
     fi
 
-    printf '%s\n' "${masterVersionFile%/*}/$(mod_info_derive_version_file_name "${modId}" "${locale}")"
+    localisedFileName="$(mod_info_derive_version_file_name "${modId}" "${locale}")"
+
+    printf '%s\n' "${masterVersionFile%/*}/${localisedFileName}"
 }

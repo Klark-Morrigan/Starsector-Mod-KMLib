@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../mod_info.sh, not on its own: defines mod_info_derive_version_file_name.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/mod_info_constants.sh"
+
 # Emits the VersionChecker file name for a mod id and, for a mod releasing
 # per locale, the locale's tag.
 #

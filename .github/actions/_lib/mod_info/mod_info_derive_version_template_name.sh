@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../mod_info.sh, not on its own: defines mod_info_derive_version_template_name.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/mod_info_constants.sh"
+
 # Emits the name of the VersionChecker template a mod commits, for a mod id.
 #
 # Here rather than in the script filling it because more than one script reads
@@ -11,6 +14,9 @@
 mod_info_derive_version_template_name() {
 
     local modId="${1}"
+    local versionFileName
 
-    printf '%s\n' "$(mod_info_derive_version_file_name "${modId}")${VERSION_TEMPLATE_SUFFIX}"
+    versionFileName="$(mod_info_derive_version_file_name "${modId}")"
+
+    printf '%s\n' "${versionFileName}${VERSION_TEMPLATE_SUFFIX}"
 }

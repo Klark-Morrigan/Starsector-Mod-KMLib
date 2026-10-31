@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced by ../fill_version_file_template.sh, not on its own: defines fill_template_tokens.
 
+# Set by the script sourcing this file; defaulted so a failure is still named.
+SCRIPT_NAME="${SCRIPT_NAME:-fill_version_file_template}"
+
 # Matches any {{...}} left in the filled file. Deliberately broader than the
 # token list: an unknown token is a mistake in the template, and it has to be
 # caught here because nothing downstream reads this file until a player's

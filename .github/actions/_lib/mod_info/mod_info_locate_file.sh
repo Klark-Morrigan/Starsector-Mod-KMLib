@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../mod_info.sh, not on its own: defines mod_info_locate_file.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/mod_info_constants.sh"
+
 # Points MOD_INFO_FILE at the file holding the mod's metadata in the working
 # directory, which is the caller's checkout root when a composite action
 # invokes these scripts: the committed base when there is one, else

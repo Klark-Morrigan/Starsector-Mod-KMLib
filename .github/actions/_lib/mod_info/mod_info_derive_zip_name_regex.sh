@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced through ../mod_info.sh, not on its own: defines mod_info_derive_zip_name_regex.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/mod_info_constants.sh"
+
 # Emits the regex a whole release zip name matches for a jars[0] value,
 # whatever its version and locale, so a release listing can be narrowed to the
 # mod's zips and away from its version files.

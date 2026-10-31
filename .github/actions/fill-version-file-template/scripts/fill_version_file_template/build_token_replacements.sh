@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced by ../fill_version_file_template.sh, not on its own: defines build_token_replacements.
 
+# shellcheck source=.github/actions/_lib/mod_info/mod_info_constants.sh
+source "${BASH_SOURCE[0]%/*}/../../../_lib/mod_info/mod_info_constants.sh"
+
 # Echoes the JSON object mapping each template token to the value it stands
 # for. Fails when the version does not split into three numeric parts.
 #   build_token_replacements <mod name> <version> <game version> <direct download url>

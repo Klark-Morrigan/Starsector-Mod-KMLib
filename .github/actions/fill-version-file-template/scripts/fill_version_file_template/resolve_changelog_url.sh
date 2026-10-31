@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced by ../fill_version_file_template.sh, not on its own: defines resolve_changelog_url.
 
+# shellcheck source=.github/actions/_lib/localisation.sh
+source "${BASH_SOURCE[0]%/*}/../../../_lib/localisation.sh"
+
 # Echoes the changelog address the filled file states: the template's, or for
 # a translated locale the translation beside it. Empty when the template
 # states none, so the template keeps owning its shape.

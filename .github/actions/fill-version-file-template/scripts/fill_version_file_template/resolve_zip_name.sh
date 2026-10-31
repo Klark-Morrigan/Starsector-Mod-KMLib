@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Sourced by ../fill_version_file_template.sh, not on its own: defines resolve_zip_name.
 
+# shellcheck source=.github/actions/_lib/mod_info.sh
+source "${BASH_SOURCE[0]%/*}/../../../_lib/mod_info.sh"
+
 # Echoes the name of the zip the download URL points at, and logs whether it
 # was given or derived.
 #   resolve_zip_name <given zip name> <version> <locale>
