@@ -118,117 +118,174 @@ read_section() {
 
 @test "derives the inputs from the given mod root" {
 
+    # ARRANGE
+    expectedFlags="$(build_expected_flags en)"
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [ "${output}" = "$(build_expected_flags en)" ]
+    [ "${output}" = "${expectedFlags}" ]
 }
 
 # KMLib checks its own badges with no argument.
 @test "defaults to its own repository's root" {
 
+    # ARRANGE
     write_mod_info_file "${STAND_IN_KMLIB}" "fixture" "1.2.3" "jars/Fixture.jar"
     write_manifest_file "${STAND_IN_KMLIB}" "${ENGLISH_MANIFEST}"
 
     init_mod_repo "${STAND_IN_KMLIB}" "https://github.com/${REPOSITORY}.git"
+    expectedFlags="$(build_expected_flags en)"
+
+    # ACT
     show_download_counts
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [ "${output}" = "$(build_expected_flags en)" ]
+    [ "${output}" = "${expectedFlags}" ]
 }
 
 # The workflow passes read-locales' empty default through unchanged, and so
 # does this script: the action counts such a mod under no locale.
 @test "hands on an empty default locale for a mod without a manifest" {
 
+    # ARRANGE
     rm -rf "${MOD_ROOT}/localisation"
+    expectedFlags="$(build_expected_flags "")"
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [ "${output}" = "$(build_expected_flags "")" ]
+    [ "${output}" = "${expectedFlags}" ]
 }
 
 # The dry run reads Nexus exactly when a scheduled run would.
 @test "hands on the Nexus mod id the version template states" {
 
+    # ARRANGE
     write_version_template "${MOD_ROOT}" 160
+    expectedFlags="$(build_expected_flags en 160)"
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [ "${output}" = "$(build_expected_flags en 160)" ]
+    [ "${output}" = "${expectedFlags}" ]
 }
 
 @test "fails on an origin that is not GitHub, before the dry run" {
 
+    # ARRANGE
     git -C "${MOD_ROOT}" remote set-url origin "https://example.com/${REPOSITORY}.git"
+    expectedError="show-download-counts: origin 'https://example.com/${REPOSITORY}.git'"
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -ne 0 ]
-    [[ "${stderr}" == *"show-download-counts: origin 'https://example.com/${REPOSITORY}.git'"* ]]
+    [[ "${stderr}" == *"${expectedError}"* ]]
     [ -z "${output}" ]
 }
 
 # The subshell each read script runs in must not swallow its failure.
 @test "stops before the dry run when a read script fails" {
 
+    # ARRANGE
     rm "${MOD_ROOT}/mod_info.json"
+    expectedError="neither mod_info.base.json nor mod_info.json found"
+    unexpectedHeading="## Inputs"
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -ne 0 ]
-    [[ "${stderr}" == *"neither mod_info.base.json nor mod_info.json found"* ]]
-    [[ "${stderr}" != *"## Inputs"* ]]
+    [[ "${stderr}" == *"${expectedError}"* ]]
+    [[ "${stderr}" != *"${unexpectedHeading}"* ]]
     [ -z "${output}" ]
 }
 
 @test "logs the mod's and KMLib's checkouts under a heading" {
 
+    # ARRANGE
+    expectedCheckouts="checkout of ${MOD_ROOT}
+checkout of ${STAND_IN_KMLIB}"
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [ "$(read_section "Checkouts")" = "checkout of ${MOD_ROOT}
-checkout of ${STAND_IN_KMLIB}" ]
+    [ "$(read_section "Checkouts")" = "${expectedCheckouts}" ]
 }
 
 @test "logs one checkout when the mod is KMLib itself" {
 
+    # ARRANGE
     write_mod_info_file "${STAND_IN_KMLIB}" "fixture" "1.2.3" "jars/Fixture.jar"
 
     init_mod_repo "${STAND_IN_KMLIB}" "https://github.com/${REPOSITORY}.git"
+    expectedCheckouts="checkout of ${STAND_IN_KMLIB}"
+
+    # ACT
     show_download_counts
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [ "$(read_section "Checkouts")" = "checkout of ${STAND_IN_KMLIB}" ]
+    [ "$(read_section "Checkouts")" = "${expectedCheckouts}" ]
 }
 
 @test "heads each read script's log with its name" {
 
+    # ARRANGE
+    expectedModInfoLogStart="Reading mod_info.json."
+    expectedLocalesLogStart="Reading localisation/manifest.json."
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [[ "$(read_section "read_mod_info")" == "Reading mod_info.json."* ]]
-    [[ "$(read_section "read_locales")" == "Reading localisation/manifest.json."* ]]
+    [[ "$(read_section "read_mod_info")" == "${expectedModInfoLogStart}"* ]]
+    [[ "$(read_section "read_locales")" == "${expectedLocalesLogStart}"* ]]
 }
 
 @test "logs each input it derived under a heading" {
 
-    show_download_counts "${MOD_ROOT}"
-
-    [ "${status}" -eq 0 ]
-    [ "$(read_section "Inputs")" = "repository: ${REPOSITORY}
+    # ARRANGE
+    expectedInputs="repository: ${REPOSITORY}
 asset-name-regex: ${EXPECTED_ASSET_NAME_REGEX}
 default-locale: en
 label: Fixture
 nexus-game-id: 2672
 nexus-mod-id:
 nexus-file-name: Fixture
-nexus-locale: en" ]
+nexus-locale: en"
+
+    # ACT
+    show_download_counts "${MOD_ROOT}"
+
+    # ASSERT
+    [ "${status}" -eq 0 ]
+    [ "$(read_section "Inputs")" = "${expectedInputs}" ]
 }
 
 @test "logs an empty input as its name alone" {
 
+    # ARRANGE
     rm -rf "${MOD_ROOT}/localisation"
+    expectedLine=$'\ndefault-locale:\n'
+
+    # ACT
     show_download_counts "${MOD_ROOT}"
 
+    # ASSERT
     [ "${status}" -eq 0 ]
-    [[ "$(read_section "Inputs")" == *$'\ndefault-locale:\n'* ]]
+    [[ "$(read_section "Inputs")" == *"${expectedLine}"* ]]
 }
