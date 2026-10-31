@@ -30,61 +30,131 @@ Describe 'New-ModDriftRow' {
 
     It 'reads a mod at the same version text on both sides as unchanged, with no level' {
 
-        $row = New-ModDriftRow -Saved (New-Mod 'Alpha' '1.0') -Installed (New-Mod 'Alpha' '1.0')
+        # ARRANGE
+        $saved = New-Mod 'Alpha' '1.0'
+        $installed = New-Mod 'Alpha' '1.0'
 
-        $row.Change | Should -Be 'UNCH'
-        $row.Level | Should -BeNullOrEmpty
+        $expectedChange = 'UNCH'
+
+        # ACT
+        $actualRow = New-ModDriftRow -Saved $saved -Installed $installed
+
+        # ASSERT
+        $actualRow.Change | Should -Be $expectedChange
+        $actualRow.Level | Should -BeNullOrEmpty
         Should -Invoke Get-VersionChangeLevel -Times 0
     }
 
     It 'reads a mod whose version text differs as changed, ranked installed against saved' {
 
-        $row = New-ModDriftRow -Saved (New-Mod 'Alpha' '1.0') -Installed (New-Mod 'Alpha' '1.1')
+        # ARRANGE
+        $saved = New-Mod 'Alpha' '1.0'
+        $installed = New-Mod 'Alpha' '1.1'
 
-        $row.Id | Should -Be 'alpha'
-        $row.SavedVersion | Should -Be '1.0'
-        $row.InstalledVersion | Should -Be '1.1'
-        $row.Change | Should -Be 'CHG'
-        $row.Level | Should -Be 'level of parts of 1.1 against parts of 1.0'
+        $expectedId = 'alpha'
+        $expectedSavedVersion = '1.0'
+        $expectedInstalledVersion = '1.1'
+        $expectedChange = 'CHG'
+        $expectedLevel = 'level of parts of 1.1 against parts of 1.0'
+
+        # ACT
+        $actualRow = New-ModDriftRow -Saved $saved -Installed $installed
+
+        # ASSERT
+        $actualRow.Id | Should -Be $expectedId
+        $actualRow.SavedVersion | Should -Be $expectedSavedVersion
+        $actualRow.InstalledVersion | Should -Be $expectedInstalledVersion
+        $actualRow.Change | Should -Be $expectedChange
+        $actualRow.Level | Should -Be $expectedLevel
     }
 
     # Version text is what a person sees; a rebuild the game reads as the same version can still ship other content.
     It 'reads version text that differs only in case as changed' {
-        (New-ModDriftRow -Saved (New-Mod 'Alpha' '1.0b') -Installed (New-Mod 'Alpha' '1.0B')).Change | Should -Be 'CHG'
+
+        # ARRANGE
+        $saved = New-Mod 'Alpha' '1.0b'
+        $installed = New-Mod 'Alpha' '1.0B'
+
+        $expectedChange = 'CHG'
+
+        # ACT
+        $actualRow = New-ModDriftRow -Saved $saved -Installed $installed
+
+        # ASSERT
+        $actualRow.Change | Should -Be $expectedChange
     }
 
     It 'reads a mod only the save has as missing, with its saved version' {
 
-        $row = New-ModDriftRow -Saved (New-Mod 'Alpha' '1.0') -Installed $null
+        # ARRANGE
+        $saved = New-Mod 'Alpha' '1.0'
 
-        $row.Change | Should -Be 'MISS'
-        $row.SavedVersion | Should -Be '1.0'
-        $row.InstalledVersion | Should -BeNullOrEmpty
-        $row.Name | Should -Be 'Alpha'
+        $expectedChange = 'MISS'
+        $expectedSavedVersion = '1.0'
+        $expectedName = 'Alpha'
+
+        # ACT
+        $actualRow = New-ModDriftRow -Saved $saved -Installed $null
+
+        # ASSERT
+        $actualRow.Change | Should -Be $expectedChange
+        $actualRow.SavedVersion | Should -Be $expectedSavedVersion
+        $actualRow.InstalledVersion | Should -BeNullOrEmpty
+        $actualRow.Name | Should -Be $expectedName
     }
 
     It 'reads a mod only the install has as added, with its installed version and name' {
 
-        $row = New-ModDriftRow -Saved $null -Installed (New-Mod 'Alpha Installed' '1.1')
+        # ARRANGE
+        $installed = New-Mod 'Alpha Installed' '1.1'
 
-        $row.Id | Should -Be 'alpha'
-        $row.Change | Should -Be 'ADD'
-        $row.SavedVersion | Should -BeNullOrEmpty
-        $row.InstalledVersion | Should -Be '1.1'
-        $row.Name | Should -Be 'Alpha Installed'
+        $expectedId = 'alpha'
+        $expectedChange = 'ADD'
+        $expectedInstalledVersion = '1.1'
+        $expectedName = 'Alpha Installed'
+
+        # ACT
+        $actualRow = New-ModDriftRow -Saved $null -Installed $installed
+
+        # ASSERT
+        $actualRow.Id | Should -Be $expectedId
+        $actualRow.Change | Should -Be $expectedChange
+        $actualRow.SavedVersion | Should -BeNullOrEmpty
+        $actualRow.InstalledVersion | Should -Be $expectedInstalledVersion
+        $actualRow.Name | Should -Be $expectedName
     }
 
     It 'names the mod as the save wrote it, else as installed' {
 
-        (New-ModDriftRow -Saved (New-Mod ' Saved' '1.0') -Installed (New-Mod 'Installed' '1.0')).Name |
-            Should -Be ' Saved'
-        (New-ModDriftRow -Saved (New-Mod '' '1.0') -Installed (New-Mod 'Installed' '1.0')).Name |
-            Should -Be 'Installed'
+        # ARRANGE
+        $savedWithName = New-Mod ' Saved' '1.0'
+        $savedWithoutName = New-Mod '' '1.0'
+        $installed = New-Mod 'Installed' '1.0'
+
+        $expectedSavedName = ' Saved'
+        $expectedInstalledName = 'Installed'
+
+        # ACT
+        $actualSavedNameRow = New-ModDriftRow -Saved $savedWithName -Installed $installed
+        $actualInstalledNameRow = New-ModDriftRow -Saved $savedWithoutName -Installed $installed
+
+        # ASSERT
+        $actualSavedNameRow.Name | Should -Be $expectedSavedName
+        $actualInstalledNameRow.Name | Should -Be $expectedInstalledName
     }
 
     # formats\ModDriftRow.format.ps1xml selects the rows by this name, to print them as a table.
     It 'carries the type name the drift table view selects' {
-        (New-ModDriftRow -Saved (New-Mod 'Alpha' '1.0') -Installed $null).PSObject.TypeNames[0] |
-            Should -Be 'SaveMigrationTool.ModDriftRow'
+
+        # ARRANGE
+        $saved = New-Mod 'Alpha' '1.0'
+
+        $expectedTypeName = 'SaveMigrationTool.ModDriftRow'
+
+        # ACT
+        $actualRow = New-ModDriftRow -Saved $saved -Installed $null
+
+        # ASSERT
+        $actualRow.PSObject.TypeNames[0] | Should -Be $expectedTypeName
     }
 }

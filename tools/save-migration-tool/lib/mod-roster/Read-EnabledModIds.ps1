@@ -22,15 +22,20 @@ function Read-EnabledModIds {
 
     try {
 
-        # Read through the property, not Get-JsonPropertyValue: returning an empty list from a function unrolls it
-        # to null, and an install with no mod enabled holds exactly that.
-        $enabledProperty = (ConvertFrom-StarsectorJson -Path $enabledFile).PSObject.Properties[$enabledModsPropertyName]
+        $enabledMods = ConvertFrom-StarsectorJson -Path $enabledFile
 
-        if ($null -eq $enabledProperty) {
+        # Index the list, not Get-JsonPropertyValue: returning an empty list from a function unrolls it to null,
+        # and an install with no mod enabled holds exactly that.
+        $isListHeld = $enabledMods -is [System.Collections.IDictionary] -and
+            $enabledMods.Contains($enabledModsPropertyName)
+
+        if (-not $isListHeld) {
             throw "it holds no $enabledModsPropertyName list"
         }
 
-        return [pscustomobject]@{ Ids = @($enabledProperty.Value | Where-Object { $_ }); IsListRead = $true }
+        $ids = @($enabledMods[$enabledModsPropertyName] | Where-Object { $_ })
+
+        return [pscustomobject]@{ Ids = $ids; IsListRead = $true }
 
     } catch {
 

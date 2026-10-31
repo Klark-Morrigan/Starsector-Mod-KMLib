@@ -30,11 +30,18 @@ Describe 'Read-LoadAttempt' {
 
     It 'reads every file, in order, into one scan, and returns its attempts, traces and each file''s read' {
 
-        $read = Read-LoadAttempt -LogFiles @('a.log.1', 'a.log') -SaveBaseDirectory 'C:\core'
+        # ARRANGE
+        $expectedAttempts = @('a.log.1 in C:\core', 'a.log in C:\core')
+        $expectedTraces = 'traces'
+        $expectedFileReads = @('a.log.1', 'a.log')
 
-        $read.Attempts | Should -Be @('a.log.1 in C:\core', 'a.log in C:\core')
-        $read.TraceLinesByAttempt['marker'] | Should -Be 'traces'
-        $read.FileReads.LogFile | Should -Be @('a.log.1', 'a.log')
+        # ACT
+        $actualRead = Read-LoadAttempt -LogFiles @('a.log.1', 'a.log') -SaveBaseDirectory 'C:\core'
+
+        # ASSERT
+        $actualRead.Attempts | Should -Be $expectedAttempts
+        $actualRead.TraceLinesByAttempt['marker'] | Should -Be $expectedTraces
+        $actualRead.FileReads.LogFile | Should -Be $expectedFileReads
 
         Should -Invoke New-LoadLogScan -Times 1 -Exactly
     }

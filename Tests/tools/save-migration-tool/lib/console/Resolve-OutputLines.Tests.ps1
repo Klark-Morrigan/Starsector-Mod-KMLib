@@ -13,6 +13,14 @@ Describe 'Resolve-OutputLines' {
     }
 
     It 'resolves each line, blank ones included, as stdout takes it' {
-        Resolve-OutputLines -Lines @('', 'one', 'two') | Should -Be @('[Output]', '[Output]one', '[Output]two')
+
+        # ARRANGE
+        $expectedLines = @('[Output]', '[Output]one', '[Output]two')
+
+        # ACT
+        $actualLines = Resolve-OutputLines -Lines @('', 'one', 'two')
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 }

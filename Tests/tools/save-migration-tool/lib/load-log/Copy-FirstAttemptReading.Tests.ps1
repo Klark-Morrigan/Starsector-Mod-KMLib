@@ -2,30 +2,63 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
-    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log\Copy-FirstAttemptReading.ps1"
+    $libRoot = "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\load-log"
+
+    . "$libRoot\Copy-FirstAttemptReading.ps1"
+    . "$libRoot\New-FailureReading.ps1"
+
+    function script:New-Reading {
+        # A load or attempt holding the readings the mocked New-FailureReading names, and a field it does not.
+        param(
+            [string] $Cause,
+            [string] $Missing,
+            [string] $Other
+        )
+
+        return [pscustomobject]@{ Cause = $Cause; Missing = $Missing; Other = $Other }
+    }
 }
 
 Describe 'Copy-FirstAttemptReading' {
 
-    It 'gives the load its first attempt''s cause, missing content and chain, not a retry''s' {
+    BeforeEach {
+        Mock New-FailureReading { [ordered]@{ Cause = $null; Missing = $null } }
+    }
 
-        $load = [pscustomobject]@{
-            CauseType   = $null
-            Cause       = $null
-            Missing     = $null
-            ObjectChain = @()
-            Attempts    = @(
-                [pscustomobject]@{ CauseType = 'T1'; Cause = 'first'; Missing = 'm1'; ObjectChain = @('c1') }
-                [pscustomobject]@{ CauseType = 'T2'; Cause = 'second'; Missing = 'm2'; ObjectChain = @('c2') }
-            )
-        }
+    # The first attempt read campaign.xml, so its failure is the one the player met.
+    It 'gives the load its first attempt''s readings, not a retry''s' {
 
-        $result = Copy-FirstAttemptReading -Load $load
+        # ARRANGE
+        $load = New-Reading
+        $load | Add-Member -NotePropertyName 'Attempts' -NotePropertyValue @(
+            (New-Reading -Cause 'first' -Missing 'first missing')
+            (New-Reading -Cause 'retry' -Missing 'retry missing')
+        )
 
-        $result | Should -Be $load
-        $load.CauseType | Should -Be 'T1'
-        $load.Cause | Should -Be 'first'
-        $load.Missing | Should -Be 'm1'
-        $load.ObjectChain | Should -Be @('c1')
+        $expectedCause = 'first'
+        $expectedMissing = 'first missing'
+
+        # ACT
+        $actualLoad = Copy-FirstAttemptReading -Load $load
+
+        # ASSERT
+        $actualLoad | Should -Be $load
+        $actualLoad.Cause | Should -Be $expectedCause
+        $actualLoad.Missing | Should -Be $expectedMissing
+    }
+
+    It 'copies only the readings New-FailureReading names' {
+
+        # ARRANGE
+        $load = New-Reading -Other 'the load''s own'
+        $load | Add-Member -NotePropertyName 'Attempts' -NotePropertyValue @(New-Reading -Other 'the attempt''s own')
+
+        $expectedOther = 'the load''s own'
+
+        # ACT
+        $actualLoad = Copy-FirstAttemptReading -Load $load
+
+        # ASSERT
+        $actualLoad.Other | Should -Be $expectedOther
     }
 }

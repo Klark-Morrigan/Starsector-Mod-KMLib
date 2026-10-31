@@ -9,22 +9,44 @@ Describe 'Find-MatchingLineIndex' {
 
     It 'finds every line holding the text, in order, a repeated line at each of its places' {
 
+        # ARRANGE
         $lines = @('a Loader line', 'other', 'a Loader line', 'Loader again')
 
-        Find-MatchingLineIndex -Lines $lines -Text 'Loader' | Should -Be @(0, 2, 3)
+        $expectedIndexes = @(0, 2, 3)
+
+        # ACT
+        $actualIndexes = Find-MatchingLineIndex -Lines $lines -Text 'Loader'
+
+        # ASSERT
+        $actualIndexes | Should -Be $expectedIndexes
     }
 
     It 'matches case-sensitively, and the text as plain text rather than a pattern' {
 
+        # ARRANGE
         $lines = @('a.loader', 'aXLoader', 'a.Loader')
 
-        Find-MatchingLineIndex -Lines $lines -Text 'a.Loader' | Should -Be @(2)
+        $expectedIndexes = @(2)
+
+        # ACT
+        $actualIndexes = Find-MatchingLineIndex -Lines $lines -Text 'a.Loader'
+
+        # ASSERT
+        $actualIndexes | Should -Be $expectedIndexes
     }
 
     It 'finds nothing in <Description>' -ForEach @(
         @{ Description = 'lines without the text'; Lines = @('one', 'two') }
         @{ Description = 'no lines'; Lines = @() }
     ) {
-        @(Find-MatchingLineIndex -Lines $Lines -Text 'Loader').Count | Should -Be 0
+
+        # ARRANGE
+        $expectedCount = 0
+
+        # ACT
+        $actualIndexes = @(Find-MatchingLineIndex -Lines $Lines -Text 'Loader')
+
+        # ASSERT
+        $actualIndexes.Count | Should -Be $expectedCount
     }
 }

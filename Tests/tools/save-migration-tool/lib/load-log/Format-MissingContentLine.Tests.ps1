@@ -15,28 +15,50 @@ Describe 'Format-MissingContentLine' {
     }
 
     It 'says when the cause names no missing content' {
-        Format-MissingContentLine -Load ([pscustomobject]@{ SaveFolder = 'save_A'; Missing = $null }) |
-            Should -Be 'the cause names no missing content'
+
+        # ARRANGE
+        $load = [pscustomobject]@{ SaveFolder = 'save_A'; Missing = $null }
+
+        $expectedLine = 'the cause names no missing content'
+
+        # ACT
+        $actualLine = Format-MissingContentLine -Load $load
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 
     It 'names the kind and ID' {
 
+        # ARRANGE
         $load = [pscustomobject]@{
             SaveFolder = 'save_A'
             Missing    = [pscustomobject]@{ Kind = 'Weapon'; Id = 'gun'; ReportedId = 'gun'; SpecClass = $null }
         }
 
-        Format-MissingContentLine -Load $load | Should -Be 'missing Weapon <Content>gun'
+        $expectedLine = 'missing Weapon <Content>gun'
+
+        # ACT
+        $actualLine = Format-MissingContentLine -Load $load
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 
     It 'adds the spec class and the reported ID when they say more' {
 
+        # ARRANGE
         $load = [pscustomobject]@{
             SaveFolder = 'save_A'
             Missing    = [pscustomobject]@{ Kind = 'Spec'; Id = 'item'; ReportedId = 'item_named'; SpecClass = 'a.B' }
         }
 
-        Format-MissingContentLine -Load $load |
-            Should -Be 'missing Spec <Content>item of spec class <Code>a.B, named as <Content>item_named'
+        $expectedLine = 'missing Spec <Content>item of spec class <Code>a.B, named as <Content>item_named'
+
+        # ACT
+        $actualLine = Format-MissingContentLine -Load $load
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 }

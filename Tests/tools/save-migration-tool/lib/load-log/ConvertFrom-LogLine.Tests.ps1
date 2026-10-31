@@ -13,12 +13,18 @@ Describe 'ConvertFrom-LogLine' {
 
     It 'reads the level and message of a line from the logger' {
 
+        # ARRANGE
         $line = "1200 [Thread-3] ERROR $script:Logger  - Failed calling method"
 
-        $logLine = ConvertFrom-LogLine -Line $line -LoggerName $script:Logger
+        $expectedLevel = 'ERROR'
+        $expectedMessage = 'Failed calling method'
 
-        $logLine.Level | Should -Be 'ERROR'
-        $logLine.Message | Should -Be 'Failed calling method'
+        # ACT
+        $actualLogLine = ConvertFrom-LogLine -Line $line -LoggerName $script:Logger
+
+        # ASSERT
+        $actualLogLine.Level | Should -Be $expectedLevel
+        $actualLogLine.Message | Should -Be $expectedMessage
     }
 
     It 'returns null for <Description>' -ForEach @(
@@ -29,6 +35,11 @@ Describe 'ConvertFrom-LogLine' {
         @{ Description = 'a line with no timestamp'
             Line = '[Thread-3] INFO  com.fs.starfarer.campaign.save.CampaignGameManager  - x' }
     ) {
-        ConvertFrom-LogLine -Line $Line -LoggerName $script:Logger | Should -BeNullOrEmpty
+
+        # ACT
+        $actualLogLine = ConvertFrom-LogLine -Line $Line -LoggerName $script:Logger
+
+        # ASSERT
+        $actualLogLine | Should -BeNullOrEmpty
     }
 }

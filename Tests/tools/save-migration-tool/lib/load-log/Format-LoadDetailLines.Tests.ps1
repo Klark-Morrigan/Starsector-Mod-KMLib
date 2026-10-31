@@ -6,9 +6,8 @@ BeforeAll {
 
     . "$libRoot\Format-AttemptLines.ps1"
     . "$libRoot\Format-CauseLines.ps1"
-    . "$libRoot\Format-MissingContentLine.ps1"
+    . "$libRoot\Format-LoadReadingLines.ps1"
     . "$libRoot\Format-ModClassLines.ps1"
-    . "$libRoot\Format-ObjectChainLines.ps1"
     . "$libRoot\Format-LoadDetailLines.ps1"
 }
 
@@ -17,14 +16,14 @@ Describe 'Format-LoadDetailLines' {
     BeforeEach {
 
         Mock Format-CauseLines { @('<type>', '<cause>') }
-        Mock Format-MissingContentLine { '<missing>' }
-        Mock Format-ObjectChainLines { @('<chain counts>', '  <chain nearest>') }
+        Mock Format-LoadReadingLines { @('<missing>', '<chain counts>', '  <chain nearest>') }
         Mock Format-AttemptLines { @('<attempts>', '  <attempt>') }
         Mock Format-ModClassLines { @('<mod classes>', '  <mod class>') }
     }
 
     It 'indents each part under the load: the cause, its readings, the attempts and the mod classes' {
 
+        # ARRANGE
         $load = [pscustomobject]@{
             CauseType   = 'T'
             Cause       = 'gone'
@@ -32,7 +31,7 @@ Describe 'Format-LoadDetailLines' {
             Attempts    = @('first', 'second')
         }
 
-        Format-LoadDetailLines -Load $load | Should -Be @(
+        $expectedLines = @(
             '  Cause:'
             '    <type>'
             '    <cause>'
@@ -44,18 +43,29 @@ Describe 'Format-LoadDetailLines' {
             '  <mod classes>'
             '    <mod class>'
         )
+
+        # ACT
+        $actualLines = Format-LoadDetailLines -Load $load
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 
-    It 'leaves out the cause and chain of a load that has none' {
+    It 'leaves out the cause of a load that has none' {
 
+        # ARRANGE
+        Mock Format-LoadReadingLines { }
         Mock Format-AttemptLines { }
         Mock Format-ModClassLines { }
 
         $load = [pscustomobject]@{ CauseType = $null; ObjectChain = @(); Attempts = @('only') }
+        $expectedCount = 0
 
-        @(Format-LoadDetailLines -Load $load).Count | Should -Be 0
+        # ACT
+        $actualLines = @(Format-LoadDetailLines -Load $load)
 
-        Should -Invoke Format-MissingContentLine -Times 0
-        Should -Invoke Format-ObjectChainLines -Times 0
+        # ASSERT
+        $actualLines.Count | Should -Be $expectedCount
+        Should -Invoke Format-CauseLines -Times 0
     }
 }

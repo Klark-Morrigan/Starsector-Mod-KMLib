@@ -13,6 +13,14 @@ Describe 'Format-ConsoleNumber' {
     }
 
     It 'paints a number in the number role' {
-        Format-ConsoleNumber 378 | Should -Be '<Number>378'
+
+        # ARRANGE
+        $expectedText = '<Number>378'
+
+        # ACT
+        $actualText = Format-ConsoleNumber 378
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 }

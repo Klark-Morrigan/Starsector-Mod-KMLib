@@ -17,6 +17,7 @@ Describe 'Add-ObjectChainOwner' {
 
     It 'adds each class in each attempt''s chain its owners' {
 
+        # ARRANGE
         $load = [pscustomobject]@{
             Attempts = @(
                 [pscustomobject]@{ ObjectChain = @(
@@ -27,23 +28,36 @@ Describe 'Add-ObjectChainOwner' {
             )
         }
 
-        $result = Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass
+        $expectedFirstChainClasses = @('a.Mod', 'a.Engine')
+        $expectedFirstOwners = @('alpha', 'beta')
+        $expectedSecondOwners = @('vanilla')
 
-        $result.Attempts[0].ObjectChain.Class | Should -Be @('a.Mod', 'a.Engine')
-        $result.Attempts[0].ObjectChain[0].Owners | Should -Be @('alpha', 'beta')
-        , $result.Attempts[1].ObjectChain[0].Owners | Should -BeOfType [object[]]
-        $result.Attempts[1].ObjectChain[0].Owners | Should -Be @('vanilla')
+        # ACT
+        $actualLoad = Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass
+
+        # ASSERT
+        $actualLoad.Attempts[0].ObjectChain.Class | Should -Be $expectedFirstChainClasses
+        $actualLoad.Attempts[0].ObjectChain[0].Owners | Should -Be $expectedFirstOwners
+        , $actualLoad.Attempts[1].ObjectChain[0].Owners | Should -BeOfType [object[]]
+        $actualLoad.Attempts[1].ObjectChain[0].Owners | Should -Be $expectedSecondOwners
     }
 
     It 'gives a class no indexed JAR holds no owners' {
 
+        # ARRANGE
         $link = [pscustomobject]@{ Depth = 2; Class = 'java.util.ArrayList' }
         $load = [pscustomobject]@{ Attempts = @([pscustomobject]@{ ObjectChain = @($link) }) }
 
-        $owned = (Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass).Attempts[0].ObjectChain[0]
+        $expectedDepth = 2
+        $expectedOwnerCount = 0
 
-        $owned.Depth | Should -Be 2
-        , $owned.Owners | Should -BeOfType [object[]]
-        $owned.Owners.Count | Should -Be 0
+        # ACT
+        $actualLoad = Add-ObjectChainOwner -Load $load -OwnersByClass $script:OwnersByClass
+
+        # ASSERT
+        $actualLink = $actualLoad.Attempts[0].ObjectChain[0]
+        $actualLink.Depth | Should -Be $expectedDepth
+        , $actualLink.Owners | Should -BeOfType [object[]]
+        $actualLink.Owners.Count | Should -Be $expectedOwnerCount
     }
 }

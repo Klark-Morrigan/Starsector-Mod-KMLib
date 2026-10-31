@@ -16,14 +16,32 @@ Describe 'Get-XmlChildText' {
     }
 
     It 'returns the text of the first child of that name' {
-        Get-XmlChildText -Element $script:Spec -Name 'id' | Should -Be 'alpha'
+
+        # ARRANGE
+        $expectedText = 'alpha'
+
+        # ACT
+        $actualText = Get-XmlChildText -Element $script:Spec -Name 'id'
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'returns null for an empty child' {
-        Get-XmlChildText -Element $script:Spec -Name 'patch' | Should -BeNullOrEmpty
+
+        # ACT
+        $actualText = Get-XmlChildText -Element $script:Spec -Name 'patch'
+
+        # ASSERT
+        $actualText | Should -BeNullOrEmpty
     }
 
     It 'returns null for no child of that name' {
-        Get-XmlChildText -Element $script:Spec -Name 'name' | Should -BeNullOrEmpty
+
+        # ACT
+        $actualText = Get-XmlChildText -Element $script:Spec -Name 'name'
+
+        # ASSERT
+        $actualText | Should -BeNullOrEmpty
     }
 }

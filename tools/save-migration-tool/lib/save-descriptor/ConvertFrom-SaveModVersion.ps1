@@ -16,7 +16,7 @@ function ConvertFrom-SaveModVersion {
         return $text
     }
 
-    $parts = [pscustomobject]@{
+    $parts = [ordered]@{
         major = Get-XmlChildText -Element $VersionInfo -Name 'major'
         minor = Get-XmlChildText -Element $VersionInfo -Name 'minor'
         patch = Get-XmlChildText -Element $VersionInfo -Name 'patch'

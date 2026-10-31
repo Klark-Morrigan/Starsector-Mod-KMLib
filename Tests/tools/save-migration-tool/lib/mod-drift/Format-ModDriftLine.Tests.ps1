@@ -43,22 +43,58 @@ Describe 'Format-ModDriftLine' {
     }
 
     It 'says a changed mod with both versions and the level of its change' {
-        Format-ModDriftLine -Row (New-Row -Change 'CHG') |
-            Should -Be '<Mod>Alpha (<Mod>alpha): v1.0 -> v1.1, phrase for level-of-alpha'
+
+        # ARRANGE
+        $row = New-Row -Change 'CHG'
+
+        $expectedLine = '<Mod>Alpha (<Mod>alpha): v1.0 -> v1.1, phrase for level-of-alpha'
+
+        # ACT
+        $actualLine = Format-ModDriftLine -Row $row
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 
     It 'says a missing mod in red, with the version the save holds' {
-        Format-ModDriftLine -Row (New-Row -Change 'MISS') |
-            Should -Be '<Mod>Alpha (<Mod>alpha): <Error>missing, saved at v1.0'
+
+        # ARRANGE
+        $row = New-Row -Change 'MISS'
+
+        $expectedLine = '<Mod>Alpha (<Mod>alpha): <Error>missing, saved at v1.0'
+
+        # ACT
+        $actualLine = Format-ModDriftLine -Row $row
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 
     It 'says an added mod in amber, with the installed version' {
-        Format-ModDriftLine -Row (New-Row -Change 'ADD') |
-            Should -Be '<Mod>Alpha (<Mod>alpha): <Warning>added, installed at v1.1'
+
+        # ARRANGE
+        $row = New-Row -Change 'ADD'
+
+        $expectedLine = '<Mod>Alpha (<Mod>alpha): <Warning>added, installed at v1.1'
+
+        # ACT
+        $actualLine = Format-ModDriftLine -Row $row
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 
     It 'names a mod with no name by its ID alone' {
-        Format-ModDriftLine -Row (New-Row -Change 'MISS' -Name '') |
-            Should -Be '<Mod>alpha: <Error>missing, saved at v1.0'
+
+        # ARRANGE
+        $row = New-Row -Change 'MISS' -Name ''
+
+        $expectedLine = '<Mod>alpha: <Error>missing, saved at v1.0'
+
+        # ACT
+        $actualLine = Format-ModDriftLine -Row $row
+
+        # ASSERT
+        $actualLine | Should -Be $expectedLine
     }
 }

@@ -7,10 +7,9 @@ function Copy-FirstAttemptReading {
 
     $firstAttempt = $Load.Attempts[0]
 
-    $Load.CauseType = $firstAttempt.CauseType
-    $Load.Cause = $firstAttempt.Cause
-    $Load.Missing = $firstAttempt.Missing
-    $Load.ObjectChain = $firstAttempt.ObjectChain
+    foreach ($readingName in (New-FailureReading).Keys) {
+        $Load.$readingName = $firstAttempt.$readingName
+    }
 
     return $Load
 }

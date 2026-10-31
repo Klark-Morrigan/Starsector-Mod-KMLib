@@ -22,6 +22,7 @@ Describe 'Format-ModDriftLines' {
 
     It 'counts every row, then lists the changed, the missing and the added in turn, each in its order' {
 
+        # ARRANGE
         $rows = @(
             [pscustomobject]@{ Id = 'a'; Change = 'ADD' }
             [pscustomobject]@{ Id = 'b'; Change = 'UNCH' }
@@ -30,19 +31,32 @@ Describe 'Format-ModDriftLines' {
             [pscustomobject]@{ Id = 'e'; Change = 'CHG' }
         )
 
-        Format-ModDriftLines -Rows $rows | Should -Be @(
+        $expectedLines = @(
             'Mod drift against the install: counts of 5'
             '  d CHG'
             '  e CHG'
             '  c MISS'
             '  a ADD'
         )
+
+        # ACT
+        $actualLines = Format-ModDriftLines -Rows $rows
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 
     It 'writes the count line alone when no mod differs' {
 
+        # ARRANGE
         $rows = @([pscustomobject]@{ Id = 'b'; Change = 'UNCH' })
 
-        Format-ModDriftLines -Rows $rows | Should -Be @('Mod drift against the install: counts of 1')
+        $expectedLines = @('Mod drift against the install: counts of 1')
+
+        # ACT
+        $actualLines = Format-ModDriftLines -Rows $rows
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 }

@@ -9,18 +9,34 @@ Describe 'ConvertFrom-XStreamClassLine' {
 
     It 'reads the failed object''s class at depth 0' {
 
-        $link = ConvertFrom-XStreamClassLine -Line 'class               : com.fs.starfarer.loading.specs.Spec'
+        # ARRANGE
+        $line = 'class               : com.fs.starfarer.loading.specs.Spec'
 
-        $link.Depth | Should -Be 0
-        $link.Class | Should -Be 'com.fs.starfarer.loading.specs.Spec'
+        $expectedDepth = 0
+        $expectedClass = 'com.fs.starfarer.loading.specs.Spec'
+
+        # ACT
+        $actualLink = ConvertFrom-XStreamClassLine -Line $line
+
+        # ASSERT
+        $actualLink.Depth | Should -Be $expectedDepth
+        $actualLink.Class | Should -Be $expectedClass
     }
 
     It 'reads a container''s class at its depth, nested class names included' {
 
-        $link = ConvertFrom-XStreamClassLine -Line 'class[18]           : com.fs.RouteManager$RouteData'
+        # ARRANGE
+        $line = 'class[18]           : com.fs.RouteManager$RouteData'
 
-        $link.Depth | Should -Be 18
-        $link.Class | Should -Be 'com.fs.RouteManager$RouteData'
+        $expectedDepth = 18
+        $expectedClass = 'com.fs.RouteManager$RouteData'
+
+        # ACT
+        $actualLink = ConvertFrom-XStreamClassLine -Line $line
+
+        # ASSERT
+        $actualLink.Depth | Should -Be $expectedDepth
+        $actualLink.Class | Should -Be $expectedClass
     }
 
     It 'returns null for <Description>' -ForEach @(
@@ -29,6 +45,11 @@ Describe 'ConvertFrom-XStreamClassLine' {
         @{ Description = 'a stack frame'; Line = "`tat com.fs.starfarer.campaign.save.Manager.load(Unknown Source)" }
         @{ Description = 'the block''s end'; Line = '-------------------------------' }
     ) {
-        ConvertFrom-XStreamClassLine -Line $Line | Should -BeNullOrEmpty
+
+        # ACT
+        $actualLink = ConvertFrom-XStreamClassLine -Line $Line
+
+        # ASSERT
+        $actualLink | Should -BeNullOrEmpty
     }
 }

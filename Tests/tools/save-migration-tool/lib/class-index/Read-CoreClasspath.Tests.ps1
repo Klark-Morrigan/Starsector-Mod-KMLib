@@ -33,25 +33,36 @@ Describe 'Read-CoreClasspath' {
 
     It 'reads each classpath entry as a full path under starsector-core, with no problem' {
 
+        # ARRANGE
         $root = New-Install -Name 'vanilla' -Vmparams (
             'java.exe -Xms1536m -classpath janino.jar;starfarer.api.jar;starfarer_obf.jar -Dsetting=x')
 
-        $classpath = Read-CoreClasspath -StarsectorRoot $root
-
-        $classpath.Jars | Should -Be @(
+        $expectedJars = @(
             "$root\starsector-core\janino.jar"
             "$root\starsector-core\starfarer.api.jar"
             "$root\starsector-core\starfarer_obf.jar"
         )
 
-        $classpath.Problem | Should -BeNullOrEmpty
+        # ACT
+        $actualClasspath = Read-CoreClasspath -StarsectorRoot $root
+
+        # ASSERT
+        $actualClasspath.Jars | Should -Be $expectedJars
+        $actualClasspath.Problem | Should -BeNullOrEmpty
     }
 
     It 'skips the empty entry a trailing separator leaves' {
 
+        # ARRANGE
         $root = New-Install -Name 'trailing' -Vmparams '-classpath json.jar;'
 
-        (Read-CoreClasspath -StarsectorRoot $root).Jars | Should -Be @("$root\starsector-core\json.jar")
+        $expectedJars = @("$root\starsector-core\json.jar")
+
+        # ACT
+        $actualClasspath = Read-CoreClasspath -StarsectorRoot $root
+
+        # ASSERT
+        $actualClasspath.Jars | Should -Be $expectedJars
     }
 
     It 'reads no JARs, and says why, when <Description>' -ForEach @(
@@ -59,11 +70,17 @@ Describe 'Read-CoreClasspath' {
         @{ Description = 'vmparams names no classpath'; Name = 'noClasspath'; Vmparams = 'java.exe -Xms1536m'
             Problem = 'names no classpath' }
     ) {
+
+        # ARRANGE
         $root = New-Install -Name $Name -Vmparams $Vmparams
 
-        $classpath = Read-CoreClasspath -StarsectorRoot $root
+        $expectedProblem = "$root\vmparams $Problem"
 
-        $classpath.Jars.Count | Should -Be 0
-        $classpath.Problem | Should -Be "$root\vmparams $Problem"
+        # ACT
+        $actualClasspath = Read-CoreClasspath -StarsectorRoot $root
+
+        # ASSERT
+        $actualClasspath.Jars.Count | Should -Be 0
+        $actualClasspath.Problem | Should -Be $expectedProblem
     }
 }

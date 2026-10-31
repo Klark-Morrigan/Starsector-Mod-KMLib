@@ -69,19 +69,16 @@ $modDriftProblem = $null
 
 if ($SaveFolder) {
 
-    $descriptorPath = Get-SaveDescriptorPath -StarsectorRoot $StarsectorRoot -SaveFolder $SaveFolder
+    $drift = Read-SaveModDrift `
+        -StarsectorRoot $StarsectorRoot `
+        -SaveFolder $SaveFolder `
+        -Roster $roster `
+        -DiagnosticSource $DiagnosticSource
 
-    # A save deleted or renamed since its load still has a load worth reporting.
-    if (Test-Path -LiteralPath $descriptorPath -PathType Leaf) {
+    $modDrift = $drift.Rows
+    $modDriftProblem = $drift.Problem
 
-        $drift = Read-SaveModDrift -DescriptorPath $descriptorPath -Roster $roster -DiagnosticSource $DiagnosticSource
-        $modDrift = $drift.Rows
-        $modDriftProblem = $drift.Problem
-
-    } else {
-        $modDriftProblem = "descriptor not found: $descriptorPath"
-    }
-
+    # A save deleted or renamed since its load still has a load worth reporting, so a problem only goes in the report.
     if ($modDriftProblem) {
         Write-DiagnosticLine -Source $DiagnosticSource -Message "comparing no mods: $modDriftProblem"
     }

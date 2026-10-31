@@ -9,17 +9,25 @@ Describe 'New-LoadLogScan' {
 
     It 'starts with no attempt, no trace and nothing open' {
 
-        $scan = New-LoadLogScan -SaveBaseDirectory 'C:\Games\starsector-core'
+        # ARRANGE
+        $expectedSaveBaseDirectory = 'C:\Games\starsector-core'
+        $expectedAttemptCount = 0
+        $expectedTraceCount = 0
 
-        $scan.SaveBaseDirectory | Should -Be 'C:\Games\starsector-core'
-        $scan.Attempts.Count | Should -Be 0
-        $scan.TraceLinesByAttempt.Count | Should -Be 0
-        $scan.CurrentAttempt | Should -BeNullOrEmpty
-        $scan.TraceLines | Should -BeNullOrEmpty
+        # ACT
+        $actualScan = New-LoadLogScan -SaveBaseDirectory 'C:\Games\starsector-core'
+
+        # ASSERT
+        $actualScan.SaveBaseDirectory | Should -Be $expectedSaveBaseDirectory
+        $actualScan.Attempts.Count | Should -Be $expectedAttemptCount
+        $actualScan.TraceLinesByAttempt.Count | Should -Be $expectedTraceCount
+        $actualScan.CurrentAttempt | Should -BeNullOrEmpty
+        $actualScan.TraceLines | Should -BeNullOrEmpty
     }
 
     It 'files traces by attempt reference, so two attempts with equal fields keep apart' {
 
+        # ARRANGE
         $scan = New-LoadLogScan -SaveBaseDirectory 'C:\'
         $first = [pscustomobject]@{ SavePath = 'C:\saves\a' }
         $second = [pscustomobject]@{ SavePath = 'C:\saves\a' }
@@ -27,6 +35,12 @@ Describe 'New-LoadLogScan' {
         $scan.TraceLinesByAttempt.Add($first, [System.Collections.Generic.List[string]]@('one'))
         $scan.TraceLinesByAttempt.Add($second, [System.Collections.Generic.List[string]]@('two'))
 
-        $scan.TraceLinesByAttempt[$second] | Should -Be @('two')
+        $expectedTraceLines = @('two')
+
+        # ACT
+        $actualTraceLines = $scan.TraceLinesByAttempt[$second]
+
+        # ASSERT
+        $actualTraceLines | Should -Be $expectedTraceLines
     }
 }

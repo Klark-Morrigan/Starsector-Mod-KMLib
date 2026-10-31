@@ -9,10 +9,26 @@ BeforeAll {
 Describe 'Test-ConsoleStreamRedirected' {
 
     It 'reports stdout as .NET sees it' {
-        Test-ConsoleStreamRedirected -Stream 'Output' | Should -Be ([Console]::IsOutputRedirected)
+
+        # ARRANGE
+        $expectedIsRedirected = [Console]::IsOutputRedirected
+
+        # ACT
+        $actualIsRedirected = Test-ConsoleStreamRedirected -Stream 'Output'
+
+        # ASSERT
+        $actualIsRedirected | Should -Be $expectedIsRedirected
     }
 
     It 'reports stderr as .NET sees it' {
-        Test-ConsoleStreamRedirected -Stream 'Error' | Should -Be ([Console]::IsErrorRedirected)
+
+        # ARRANGE
+        $expectedIsRedirected = [Console]::IsErrorRedirected
+
+        # ACT
+        $actualIsRedirected = Test-ConsoleStreamRedirected -Stream 'Error'
+
+        # ASSERT
+        $actualIsRedirected | Should -Be $expectedIsRedirected
     }
 }

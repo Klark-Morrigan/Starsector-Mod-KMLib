@@ -9,18 +9,30 @@ BeforeAll {
 Describe 'Assert-LoadOutcomeName' {
 
     BeforeEach {
+
         Mock Get-LoadOutcomeNames {
             [pscustomobject]@{ Loaded = 'Loaded'; Failed = 'Failed'; Unfinished = 'Unfinished' }
         }
     }
 
     It 'passes an outcome there is' {
-        { Assert-LoadOutcomeName -Outcome 'Failed' } | Should -Not -Throw
+
+        # ACT
+        $actualCall = { Assert-LoadOutcomeName -Outcome 'Failed' }
+
+        # ASSERT
+        $actualCall | Should -Not -Throw
     }
 
     It 'fails naming the outcomes there are, comparing by case' {
 
-        { Assert-LoadOutcomeName -Outcome 'failed' } |
-            Should -Throw 'no load outcome failed; the outcomes are Loaded, Failed, Unfinished'
+        # ARRANGE
+        $expectedMessage = 'no load outcome failed; the outcomes are Loaded, Failed, Unfinished'
+
+        # ACT
+        $actualError = { Assert-LoadOutcomeName -Outcome 'failed' } | Should -Throw -PassThru
+
+        # ASSERT
+        $actualError.Exception.Message | Should -Be $expectedMessage
     }
 }

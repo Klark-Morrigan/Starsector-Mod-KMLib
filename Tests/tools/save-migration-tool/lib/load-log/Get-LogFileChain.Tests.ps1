@@ -24,31 +24,45 @@ Describe 'Get-LogFileChain' {
 
     It 'returns the rotated logs highest number first, then the live log, comparing numbers numerically' {
 
+        # ARRANGE
         $folder = New-LogFolder -Name 'rotated' `
             -FileNames @('starsector.log', 'starsector.log.1', 'starsector.log.2', 'starsector.log.10')
 
-        $chain = Get-LogFileChain -Path (Join-Path $folder 'starsector.log')
+        $expectedNames = @('starsector.log.10', 'starsector.log.2', 'starsector.log.1', 'starsector.log')
 
-        $chain | ForEach-Object { Split-Path -Leaf $_ } |
-            Should -Be @('starsector.log.10', 'starsector.log.2', 'starsector.log.1', 'starsector.log')
+        # ACT
+        $actualChain = Get-LogFileChain -Path (Join-Path $folder 'starsector.log')
+
+        # ASSERT
+        $actualChain | ForEach-Object { Split-Path -Leaf $_ } | Should -Be $expectedNames
     }
 
     It 'skips files that are not a numbered rotation of the log' {
 
+        # ARRANGE
         $folder = New-LogFolder -Name 'unrelated' -FileNames @('starsector.log', 'starsector.log.bak', 'other.log.1')
 
-        $chain = Get-LogFileChain -Path (Join-Path $folder 'starsector.log')
+        $expectedNames = @('starsector.log')
 
-        $chain | ForEach-Object { Split-Path -Leaf $_ } | Should -Be @('starsector.log')
+        # ACT
+        $actualChain = Get-LogFileChain -Path (Join-Path $folder 'starsector.log')
+
+        # ASSERT
+        $actualChain | ForEach-Object { Split-Path -Leaf $_ } | Should -Be $expectedNames
     }
 
     It 'returns a lone log as a one-element array' {
 
+        # ARRANGE
         $folder = New-LogFolder -Name 'alone' -FileNames @('starsector.log')
 
-        $chain = Get-LogFileChain -Path (Join-Path $folder 'starsector.log')
+        $expectedCount = 1
 
-        ($chain -is [array]) | Should -BeTrue
-        $chain.Count | Should -Be 1
+        # ACT
+        $actualChain = Get-LogFileChain -Path (Join-Path $folder 'starsector.log')
+
+        # ASSERT
+        ($actualChain -is [array]) | Should -BeTrue
+        $actualChain.Count | Should -Be $expectedCount
     }
 }

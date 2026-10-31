@@ -42,15 +42,14 @@ function Group-LoadAttempt {
 
         $firstAttempt = $loadAttempts[0]
 
-        [pscustomobject]@{
-            SaveFolder  = Split-Path -Leaf $firstAttempt.SavePath
-            SavePath    = $firstAttempt.SavePath
-            Outcome     = $loadAttempts[$loadAttempts.Count - 1].Outcome
-            CauseType   = $null
-            Cause       = $null
-            Attempts    = $loadAttempts.ToArray()
-            Missing     = $null
-            ObjectChain = @()
-        }
+        [pscustomobject](
+            [ordered]@{
+                SaveFolder = Split-Path -Leaf $firstAttempt.SavePath
+                SavePath   = $firstAttempt.SavePath
+                Outcome    = $loadAttempts[$loadAttempts.Count - 1].Outcome
+            } +
+            (New-FailureReading) +
+            [ordered]@{ Attempts = $loadAttempts.ToArray() }
+        )
     }
 }

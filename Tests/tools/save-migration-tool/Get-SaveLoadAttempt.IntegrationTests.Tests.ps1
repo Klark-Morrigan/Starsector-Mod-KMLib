@@ -6,6 +6,7 @@
 # and its rotated siblings. The lines are trimmed copies of what 0.98a writes. No test reads a real log.
 # A case that resolves class owners copies its fixture under TestDrive and adds the JARs there,
 # so no binary file sits in the repository.
+# A context sharing one run makes it in BeforeAll; each case's act then reads its part of that run.
 
 BeforeAll {
 
@@ -60,7 +61,8 @@ BeforeAll {
             [string[]] $Classes
         )
 
-        $modInfo = "{ `"id`": `"$ModId`", `"version`": `"1.0`", `"jars`": [`"jars/$ModId.jar`"] }"
+        $modInfo = "{ `"id`": `"$ModId`", `"name`": `"$ModId`", `"description`": `"`", `"version`": `"1.0`", " +
+            "`"jars`": [`"jars/$ModId.jar`"] }"
         $modFolder = New-TestMod -StarsectorRoot $Root -Folder $ModId -ModInfo $modInfo
 
         New-TestJar -Path (Join-Path $modFolder "jars\$ModId.jar") -ClassNames $Classes | Out-Null
@@ -97,7 +99,8 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             # A JAR no zip reader opens is skipped, and the other mods still resolve.
             $brokenFolder = New-TestMod -StarsectorRoot $script:FixtureRoot -Folder 'broken' `
-                -ModInfo '{ "id": "broken", "version": "1.0", "jars": ["jars/broken.jar"] }'
+                -ModInfo ('{ "id": "broken", "name": "Broken", "description": "", "version": "1.0", ' +
+                    '"jars": ["jars/broken.jar"] }')
             New-Item -ItemType Directory -Path (Join-Path $brokenFolder 'jars') | Out-Null
             [System.IO.File]::WriteAllText((Join-Path $brokenFolder 'jars\broken.jar'), 'not a zip')
 
@@ -105,52 +108,93 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 '{ "enabledMods": ["aotd_theory_of_toolbox", "starlords", "nexerelin", "broken"] }')
 
             $script:Run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }
-            $script:Loads = @($script:Run.Output)
         }
 
         It 'lists each load once, newest first' {
 
-            $script:Loads.Count | Should -Be 2
-            $script:Loads[0].Cause | Should -Be 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
-            $script:Loads[1].Cause | Should -Be 'Weapon spec [tania_boomerang_launcher] not found!'
+            # ARRANGE
+            $expectedCauses = @(
+                'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
+                'Weapon spec [tania_boomerang_launcher] not found!'
+            )
+
+            # ACT
+            $actualLoads = @($script:Run.Output)
+
+            # ASSERT
+            $actualLoads.Cause | Should -Be $expectedCauses
         }
 
         It 'groups the retries under their load, each in the log file and line it starts on' {
 
-            $attempts = $script:Loads[0].Attempts
+            # ARRANGE
+            $expectedSources = @('campaign', 'campaign.bak', 'campaign.inprogress')
+            $expectedOutcomes = @('Failed', 'Failed', 'Failed')
+            $expectedLogFiles = @('starsector.log.1', 'starsector.log', 'starsector.log')
+            $expectedLogLines = @(2, 7, 15)
 
-            $attempts.Source | Should -Be @('campaign', 'campaign.bak', 'campaign.inprogress')
-            $attempts.Outcome | Should -Be @('Failed', 'Failed', 'Failed')
-            $attempts.LogFile | ForEach-Object { Split-Path -Leaf $_ } |
-                Should -Be @('starsector.log.1', 'starsector.log', 'starsector.log')
-            $attempts.LogLine | Should -Be @(2, 7, 15)
+            # ACT
+            $actualAttempts = @($script:Run.Output)[0].Attempts
+
+            # ASSERT
+            $actualAttempts.Source | Should -Be $expectedSources
+            $actualAttempts.Outcome | Should -Be $expectedOutcomes
+            $actualAttempts.LogFile | ForEach-Object { Split-Path -Leaf $_ } | Should -Be $expectedLogFiles
+            $actualAttempts.LogLine | Should -Be $expectedLogLines
         }
 
         It 'reads the root cause past a stack frame of the loader class' {
 
-            $script:Loads[1].CauseType | Should -Be 'java.lang.RuntimeException'
-            $script:Loads[0].Attempts[2].CauseType | Should -Be 'java.io.FileNotFoundException'
+            # ARRANGE
+            $expectedOlderCauseType = 'java.lang.RuntimeException'
+            $expectedRetryCauseType = 'java.io.FileNotFoundException'
+
+            # ACT
+            $actualLoads = @($script:Run.Output)
+
+            # ASSERT
+            $actualLoads[1].CauseType | Should -Be $expectedOlderCauseType
+            $actualLoads[0].Attempts[2].CauseType | Should -Be $expectedRetryCauseType
         }
 
         It 'reads the missing content of each load and each retry' {
 
-            $script:Loads[0].Missing.Id | Should -Be 'BSC_Buffalo_Mk3'
-            $script:Loads[0].Missing.ReportedId | Should -Be 'BSC_Buffalo_Mk3_default_D'
-            $script:Loads[0].Attempts[1].Missing.Id | Should -Be 'BSC_Hammerhead_MK2'
-            $script:Loads[0].Attempts[2].Missing | Should -BeNullOrEmpty
-            $script:Loads[1].Missing.Kind | Should -Be 'Weapon'
+            # ARRANGE
+            $expectedNewestId = 'BSC_Buffalo_Mk3'
+            $expectedNewestReportedId = 'BSC_Buffalo_Mk3_default_D'
+            $expectedRetryId = 'BSC_Hammerhead_MK2'
+            $expectedOlderKind = 'Weapon'
+
+            # ACT
+            $actualLoads = @($script:Run.Output)
+
+            # ASSERT
+            $actualLoads[0].Missing.Id | Should -Be $expectedNewestId
+            $actualLoads[0].Missing.ReportedId | Should -Be $expectedNewestReportedId
+            $actualLoads[0].Attempts[1].Missing.Id | Should -Be $expectedRetryId
+            $actualLoads[0].Attempts[2].Missing | Should -BeNullOrEmpty
+            $actualLoads[1].Missing.Kind | Should -Be $expectedOlderKind
         }
 
         It 'names the save folder and resolves its path' {
 
-            $script:Loads[1].SaveFolder | Should -Be 'save_Alpha_1'
-            $script:Loads[1].SavePath | Should -Be 'C:\Games\Starsector\saves\save_Alpha_1'
+            # ARRANGE
+            $expectedSaveFolder = 'save_Alpha_1'
+            $expectedSavePath = 'C:\Games\Starsector\saves\save_Alpha_1'
+
+            # ACT
+            $actualLoad = @($script:Run.Output)[1]
+
+            # ASSERT
+            $actualLoad.SaveFolder | Should -Be $expectedSaveFolder
+            $actualLoad.SavePath | Should -Be $expectedSavePath
         }
 
         It 'reads the object chain from the first debugging block, innermost first' {
 
-            $script:Loads[0].ObjectChain.Depth | Should -Be @(0, 1, 2, 3, 4, 5)
-            $script:Loads[0].ObjectChain.Class | Should -Be @(
+            # ARRANGE
+            $expectedDepths = @(0, 1, 2, 3, 4, 5)
+            $expectedClasses = @(
                 'com.fs.starfarer.loading.specs.HullVariantSpec'
                 'com.fs.starfarer.campaign.fleet.FleetMember'
                 'java.util.ArrayList'
@@ -158,33 +202,57 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                 'starlords.person.Lord'
                 'com.fs.starfarer.campaign.CampaignEngine'
             )
+
+            # ACT
+            $actualChain = @($script:Run.Output)[0].ObjectChain
+
+            # ASSERT
+            $actualChain.Depth | Should -Be $expectedDepths
+            $actualChain.Class | Should -Be $expectedClasses
         }
 
         It 'names the owners of each class in the chain: vanilla, a mod, several, or none' {
 
-            $chain = $script:Loads[0].ObjectChain
+            # ARRANGE
+            $expectedCoreOwners = @('vanilla')
+            $expectedUnownedCount = 0
+            $expectedModOwners = @('aotd_theory_of_toolbox')
+            $expectedSharedOwners = @('nexerelin', 'starlords')
 
-            $chain[0].Owners | Should -Be @('vanilla')
-            @($chain[2].Owners).Count | Should -Be 0
-            $chain[3].Owners | Should -Be @('aotd_theory_of_toolbox')
-            $chain[4].Owners | Should -Be @('nexerelin', 'starlords')
-            $chain[5].Owners | Should -Be @('vanilla')
+            # ACT
+            $actualChain = @($script:Run.Output)[0].ObjectChain
+
+            # ASSERT
+            $actualChain[0].Owners | Should -Be $expectedCoreOwners
+            @($actualChain[2].Owners).Count | Should -Be $expectedUnownedCount
+            $actualChain[3].Owners | Should -Be $expectedModOwners
+            $actualChain[4].Owners | Should -Be $expectedSharedOwners
+            $actualChain[5].Owners | Should -Be $expectedCoreOwners
         }
 
         It 'skips a JAR no zip reader opens, naming it and the reason' {
 
+            # ARRANGE
             $brokenJar = "$script:FixtureRoot\mods\broken\jars\broken.jar"
+            $expectedSkipPattern = "Get-SaveLoadAttempt: skipped JAR ${brokenJar}: ?*"
+            $expectedSkipCount = 1
 
-            @($script:Run.Diagnostics -like "Get-SaveLoadAttempt: skipped JAR ${brokenJar}: ?*").Count | Should -Be 1
+            # ACT
+            $actualSkipLines = @($script:Run.Diagnostics -like $expectedSkipPattern)
+
+            # ASSERT
+            $actualSkipLines.Count | Should -Be $expectedSkipCount
         }
 
         It 'logs what it read and decided to stderr, blank lines parting scripts and each load''s readings' {
 
+            # ARRANGE
             $logFolder = "$script:FixtureRoot\starsector-core"
-            $diagnostics = Format-StableDiagnostics $script:Run.Diagnostics |
-                Where-Object { $_ -notlike '*broken.jar*' }
 
-            $diagnostics | Should -Be @(
+            # A load's later readings sit under its first, past the script name and the save folder.
+            $readingIndent = ' ' * 'Get-SaveLoadAttempt: save_Alpha_1: '.Length
+
+            $expectedDiagnostics = @(
                 'Get-SaveLoadAttempt: reading 3 log files, oldest first'
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.2: 44 lines, 3 load attempts start here"
                 "Get-SaveLoadAttempt: read $logFolder\starsector.log.1: 31 lines, 1 load attempts start here"
@@ -200,67 +268,91 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                     'owners found for 5 classes, more than one mod for 1, mod copies of core classes dropped for 1')
                 ''
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Hull BSC_Buffalo_Mk3, named as BSC_Buffalo_Mk3_default_D'
-                'Get-SaveLoadAttempt: save_Alpha_1: object chain length 6, mod classes 2,'
-                ((' ' * 'Get-SaveLoadAttempt: '.Length) + '  nearest ' +
+                "${readingIndent}object chain length 6, mod classes 2,"
+                ("${readingIndent}  nearest " +
                     'data.kaysaar.aotd.tot.scripts.submarket.nex.AoTDxNexBlackMarketPlugin (aotd_theory_of_toolbox) ' +
                     'at depth 3')
                 ''
                 'Get-SaveLoadAttempt: save_Alpha_1: missing Weapon tania_boomerang_launcher'
-                'Get-SaveLoadAttempt: save_Alpha_1: object chain length 1, mod classes 0'
+                "${readingIndent}object chain length 1, mod classes 0"
             )
+
+            # ACT
+            $actualDiagnostics = Format-StableDiagnostics $script:Run.Diagnostics |
+                Where-Object { $_ -notlike '*broken.jar*' }
+
+            # ASSERT
+            $actualDiagnostics | Should -Be $expectedDiagnostics
         }
 
         It 'prints the same loads as JSON with -AsJson, the missing content and chain of every attempt included' {
 
-            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; AsJson = $true }
-            $loads = @(($run.Output -join "`n") | ConvertFrom-Json)
+            # ARRANGE
+            $expectedCount = 2
+            $expectedRetrySource = 'campaign.bak'
+            $expectedRetryLogLine = 7
+            $expectedRetryMissingId = 'BSC_Hammerhead_MK2'
+            $expectedReportedId = 'BSC_Buffalo_Mk3_default_D'
+            $expectedSharedOwners = @('nexerelin', 'starlords')
+            $expectedWarningCount = 0
 
-            $loads.Count | Should -Be 2
-            $loads[0].Attempts[1].Source | Should -Be 'campaign.bak'
-            $loads[0].Attempts[1].LogLine | Should -Be 7
-            $loads[0].Attempts[1].Missing.Id | Should -Be 'BSC_Hammerhead_MK2'
-            $loads[0].Missing.ReportedId | Should -Be 'BSC_Buffalo_Mk3_default_D'
-            $loads[0].Attempts[0].ObjectChain[4].Owners | Should -Be @('nexerelin', 'starlords')
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; AsJson = $true }
 
-            $run.Warnings.Count | Should -Be 0
+            # ASSERT
+            $actualLoads = @(($actualRun.Output -join "`n") | ConvertFrom-Json)
+
+            $actualLoads.Count | Should -Be $expectedCount
+            $actualLoads[0].Attempts[1].Source | Should -Be $expectedRetrySource
+            $actualLoads[0].Attempts[1].LogLine | Should -Be $expectedRetryLogLine
+            $actualLoads[0].Attempts[1].Missing.Id | Should -Be $expectedRetryMissingId
+            $actualLoads[0].Missing.ReportedId | Should -Be $expectedReportedId
+            $actualLoads[0].Attempts[0].ObjectChain[4].Owners | Should -Be $expectedSharedOwners
+            $actualRun.Warnings.Count | Should -Be $expectedWarningCount
         }
 
         It 'lists only the newest failed load with -Outcome Failed -Newest, resolving owners for its chain alone' {
 
-            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; Outcome = 'Failed'; Newest = $true }
+            # ARRANGE
+            $expectedCauses = @('Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!')
+            $expectedGroupedLine = 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
+                'listing 1 newest first: ending Failed, the newest only'
+            $expectedResolvingLine = 'Get-SaveLoadAttempt: resolving the owners of 6 object chain classes ' +
+                "from the install at $script:FixtureRoot"
+            $expectedReadingCount = 1
 
-            @($run.Output).Cause | Should -Be @('Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!')
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{
+                StarsectorRoot = $script:FixtureRoot
+                Outcome        = 'Failed'
+                Newest         = $true
+            }
 
-            $run.Diagnostics | Should -Contain (
-                'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
-                'listing 1 newest first: ending Failed, the newest only')
-
-            $run.Diagnostics | Should -Contain (
-                'Get-SaveLoadAttempt: resolving the owners of 6 object chain classes ' +
-                "from the install at $script:FixtureRoot")
-
-            @($run.Diagnostics -like '*save_Alpha_1: missing*').Count | Should -Be 1
+            # ASSERT
+            @($actualRun.Output).Cause | Should -Be $expectedCauses
+            $actualRun.Diagnostics | Should -Contain $expectedGroupedLine
+            $actualRun.Diagnostics | Should -Contain $expectedResolvingLine
+            @($actualRun.Diagnostics -like '*save_Alpha_1: missing*').Count | Should -Be $expectedReadingCount
         }
 
         It 'lists only the loads of the save named by -SaveFolder, resolving no owners when there are none' {
 
-            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; SaveFolder = 'save_Other_9' }
+            # ARRANGE
+            $expectedCount = 0
+            $expectedLine = 'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners'
 
-            @($run.Output).Count | Should -Be 0
-            $run.Diagnostics | Should -Contain (
-                'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners')
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; SaveFolder = 'save_Other_9' }
+
+            # ASSERT
+            $actualRun.Output.Count | Should -Be $expectedCount
+            $actualRun.Diagnostics | Should -Contain $expectedLine
         }
 
         It 'writes the newest failure as text with -AsText: its readings, its retries and its mod classes' {
 
-            $run = Invoke-SaveLoadAttempt @{
-                StarsectorRoot = $script:FixtureRoot
-                Outcome        = 'Failed'
-                Newest         = $true
-                AsText         = $true
-            }
-
-            $run.Output | Should -Be @(
+            # ARRANGE
+            $expectedOutput = @(
                 ''
                 'save_Alpha_1: Failed'
                 '  Cause:'
@@ -289,37 +381,68 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
                     '(aotd_theory_of_toolbox)')
                 '    depth 4: starlords.person.Lord (nexerelin, starlords)'
             )
+
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{
+                StarsectorRoot = $script:FixtureRoot
+                Outcome        = 'Failed'
+                Newest         = $true
+                AsText         = $true
+            }
+
+            # ASSERT
+            $actualRun.Output | Should -Be $expectedOutput
         }
 
         # A caller that read the roster for its own use hands it over, so the install's mods are read once.
         It 'resolves owners against a roster given with -Roster, reading no mods folder' {
 
+            # ARRANGE
             $roster = @([pscustomobject]@{ Id = 'given'; Jars = @(); Status = 'parsed' })
-            $run = Invoke-SaveLoadAttempt @{
+            $expectedRosterReadCount = 0
+            $expectedJarReadCount = 1
+
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{
                 StarsectorRoot = $script:FixtureRoot
                 Outcome        = 'Failed'
                 Newest         = $true
                 Roster         = $roster
             }
 
-            @($run.Diagnostics -like '*mod folders under*').Count | Should -Be 0
-            @($run.Diagnostics -like 'Get-SaveLoadAttempt: read 0 JARs of 1 mods and *').Count | Should -Be 1
+            # ASSERT
+            @($actualRun.Diagnostics -like '*mod folders under*').Count | Should -Be $expectedRosterReadCount
+            @($actualRun.Diagnostics -like 'Get-SaveLoadAttempt: read 0 JARs of 1 mods and *').Count |
+                Should -Be $expectedJarReadCount
         }
 
         It 'refuses -AsJson and -AsText together' {
 
-            { Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; AsJson = $true; AsText = $true } } |
-                Should -Throw '-AsJson and -AsText each choose the output; pass one'
+            # ARRANGE
+            $expectedMessage = '-AsJson and -AsText each choose the output; pass one'
+
+            # ACT
+            $actualError = {
+                Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot; AsJson = $true; AsText = $true }
+            } | Should -Throw -PassThru
+
+            # ASSERT
+            $actualError.Exception.Message | Should -Be $expectedMessage
         }
 
         It 'reads the same loads from a log named by -LogPath' {
 
-            $run = Invoke-SaveLoadAttempt @{ LogPath = "$script:FixtureRoot\starsector-core\starsector.log" }
-
-            @($run.Output).Cause | Should -Be @(
+            # ARRANGE
+            $expectedCauses = @(
                 'Ship hull spec [BSC_Buffalo_Mk3_default_D] not found!'
                 'Weapon spec [tania_boomerang_launcher] not found!'
             )
+
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{ LogPath = "$script:FixtureRoot\starsector-core\starsector.log" }
+
+            # ASSERT
+            @($actualRun.Output).Cause | Should -Be $expectedCauses
         }
     }
 
@@ -329,31 +452,58 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
             $script:FixtureRoot = Get-FixtureRoot 'recovered-from-bak'
             $script:Run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }
-            $script:Loads = @($script:Run.Output)
         }
 
         It 'reports the load as loaded, with the cause the save failed on' {
 
-            $script:Loads.Count | Should -Be 1
-            $script:Loads[0].Outcome | Should -Be 'Loaded'
-            $script:Loads[0].Attempts.Source | Should -Be @('campaign', 'campaign.bak')
-            $script:Loads[0].CauseType | Should -Be 'com.thoughtworks.xstream.mapper.CannotResolveClassException'
+            # ARRANGE
+            $expectedCount = 1
+            $expectedOutcome = 'Loaded'
+            $expectedSources = @('campaign', 'campaign.bak')
+            $expectedCauseType = 'com.thoughtworks.xstream.mapper.CannotResolveClassException'
+
+            # ACT
+            $actualLoads = @($script:Run.Output)
+
+            # ASSERT
+            $actualLoads.Count | Should -Be $expectedCount
+            $actualLoads[0].Outcome | Should -Be $expectedOutcome
+            $actualLoads[0].Attempts.Source | Should -Be $expectedSources
+            $actualLoads[0].CauseType | Should -Be $expectedCauseType
         }
 
         It 'reads the unresolved class as missing content' {
 
-            $script:Loads[0].Missing.Kind | Should -Be 'Class'
-            $script:Loads[0].Missing.Id | Should -Be 'data.scripts.removed.GoneScript'
+            # ARRANGE
+            $expectedKind = 'Class'
+            $expectedId = 'data.scripts.removed.GoneScript'
+
+            # ACT
+            $actualMissing = @($script:Run.Output)[0].Missing
+
+            # ASSERT
+            $actualMissing.Kind | Should -Be $expectedKind
+            $actualMissing.Id | Should -Be $expectedId
         }
 
-        It 'reads the chain, and warns that mod classes stay without owners when the install holds no mods folder' {
+        # The game's own classes need no mods folder, so they are still looked up.
+        It 'reads the chain, and warns that it lists no mods when the install holds no mods folder' {
 
-            $script:Loads[0].ObjectChain.Class | Should -Be @('data.scripts.removed.GoneScript')
-            @($script:Loads[0].ObjectChain[0].Owners).Count | Should -Be 0
-            $script:Run.Warnings | Should -Be @(
-                "no mods folder in the log's install, $script:FixtureRoot; mod classes stay without owners"
+            # ARRANGE
+            $expectedClasses = @('data.scripts.removed.GoneScript')
+            $expectedOwnerCount = 0
+            $expectedWarnings = @(
+                "mods directory not found, listing no mods: $script:FixtureRoot\mods"
                 "$script:FixtureRoot\vmparams not found; vanilla classes stay without owners"
             )
+
+            # ACT
+            $actualChain = @($script:Run.Output)[0].ObjectChain
+
+            # ASSERT
+            $actualChain.Class | Should -Be $expectedClasses
+            @($actualChain[0].Owners).Count | Should -Be $expectedOwnerCount
+            $script:Run.Warnings | Should -Be $expectedWarnings
         }
     }
 
@@ -361,16 +511,22 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
         It 'indexes the mods, and warns why vanilla classes stay without owners' {
 
+            # ARRANGE
             $root = Copy-FixtureRoot 'recovered-from-bak'
 
             Add-ModJar -Root $root -ModId 'gone_mod' -Classes @('data.scripts.removed.GoneScript')
             [System.IO.File]::WriteAllText((Join-Path $root 'mods\enabled_mods.json'),
                 '{ "enabledMods": ["gone_mod"] }')
 
-            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $root }
+            $expectedOwners = @('gone_mod')
+            $expectedWarnings = @("$root\vmparams not found; vanilla classes stay without owners")
 
-            @($run.Output)[0].ObjectChain[0].Owners | Should -Be @('gone_mod')
-            $run.Warnings | Should -Be @("$root\vmparams not found; vanilla classes stay without owners")
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{ StarsectorRoot = $root }
+
+            # ASSERT
+            @($actualRun.Output)[0].ObjectChain[0].Owners | Should -Be $expectedOwners
+            $actualRun.Warnings | Should -Be $expectedWarnings
         }
     }
 
@@ -379,29 +535,51 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
         BeforeAll {
 
             $script:FixtureRoot = Get-FixtureRoot 'loaded-then-unfinished'
-            $script:Loads = @((Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }).Output)
+            $script:Run = Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }
         }
 
         It 'reports the cut-off load first, as unfinished' {
 
-            $script:Loads[0].SaveFolder | Should -Be 'save_Gamma_3'
-            $script:Loads[0].Outcome | Should -Be 'Unfinished'
+            # ARRANGE
+            $expectedSaveFolder = 'save_Gamma_3'
+            $expectedOutcome = 'Unfinished'
+
+            # ACT
+            $actualLoad = @($script:Run.Output)[0]
+
+            # ASSERT
+            $actualLoad.SaveFolder | Should -Be $expectedSaveFolder
+            $actualLoad.Outcome | Should -Be $expectedOutcome
         }
 
         It 'reports the clean load with no cause, its relative path resolved against the log folder' {
 
-            $script:Loads[1].Outcome | Should -Be 'Loaded'
-            $script:Loads[1].Cause | Should -BeNullOrEmpty
-            $script:Loads[1].Missing | Should -BeNullOrEmpty
-            $script:Loads[1].ObjectChain.Count | Should -Be 0
-            $script:Loads[1].SavePath | Should -Be "$script:FixtureRoot\saves\save_Beta_2"
+            # ARRANGE
+            $expectedOutcome = 'Loaded'
+            $expectedChainCount = 0
+            $expectedSavePath = "$script:FixtureRoot\saves\save_Beta_2"
+
+            # ACT
+            $actualLoad = @($script:Run.Output)[1]
+
+            # ASSERT
+            $actualLoad.Outcome | Should -Be $expectedOutcome
+            $actualLoad.Cause | Should -BeNullOrEmpty
+            $actualLoad.Missing | Should -BeNullOrEmpty
+            $actualLoad.ObjectChain.Count | Should -Be $expectedChainCount
+            $actualLoad.SavePath | Should -Be $expectedSavePath
         }
 
         It 'resolves no class owners when no failure names a chain' {
 
-            (Invoke-SaveLoadAttempt @{ StarsectorRoot = $script:FixtureRoot }).Diagnostics |
-                Should -Contain (
-                    'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners')
+            # ARRANGE
+            $expectedLine = 'Get-SaveLoadAttempt: no listed failure names an object chain; resolving no class owners'
+
+            # ACT
+            $actualDiagnostics = $script:Run.Diagnostics
+
+            # ASSERT
+            $actualDiagnostics | Should -Contain $expectedLine
         }
     }
 
@@ -409,12 +587,16 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
         It 'prints an empty JSON list and says it found nothing' {
 
-            $run = Invoke-SaveLoadAttempt @{ StarsectorRoot = (Get-FixtureRoot 'no-loads'); AsJson = $true }
+            # ARRANGE
+            $expectedOutput = '[]'
+            $expectedLine = 'Get-SaveLoadAttempt: grouped 0 attempts into 0 loads, 0 failed; listing them newest first'
 
-            $run.Output | Should -Be '[]'
-            $run.Diagnostics |
-                Should -Contain (
-                    'Get-SaveLoadAttempt: grouped 0 attempts into 0 loads, 0 failed; listing them newest first')
+            # ACT
+            $actualRun = Invoke-SaveLoadAttempt @{ StarsectorRoot = (Get-FixtureRoot 'no-loads'); AsJson = $true }
+
+            # ASSERT
+            $actualRun.Output | Should -Be $expectedOutput
+            $actualRun.Diagnostics | Should -Contain $expectedLine
         }
     }
 
@@ -422,18 +604,30 @@ Describe 'Get-SaveLoadAttempt.IntegrationTests' {
 
         It 'fails naming the path' {
 
+            # ARRANGE
             $missingLog = Join-Path $TestDrive 'starsector.log'
+            $expectedMessage = "log not found: $missingLog"
 
-            { Invoke-SaveLoadAttempt @{ LogPath = $missingLog } } | Should -Throw "log not found: $missingLog"
+            # ACT
+            $actualError = { Invoke-SaveLoadAttempt @{ LogPath = $missingLog } } | Should -Throw -PassThru
+
+            # ASSERT
+            $actualError.Exception.Message | Should -Be $expectedMessage
         }
 
         # The outcome is checked first, so a typo fails before a log of a million lines is read.
         It 'fails on a mistyped -Outcome before looking for the log' {
 
+            # ARRANGE
             $missingLog = Join-Path $TestDrive 'starsector.log'
+            $expectedMessage = 'no load outcome failed; the outcomes are Loaded, Failed, Unfinished'
 
-            { Invoke-SaveLoadAttempt @{ LogPath = $missingLog; Outcome = 'failed' } } |
-                Should -Throw 'no load outcome failed; the outcomes are Loaded, Failed, Unfinished'
+            # ACT
+            $actualError = { Invoke-SaveLoadAttempt @{ LogPath = $missingLog; Outcome = 'failed' } } |
+                Should -Throw -PassThru
+
+            # ASSERT
+            $actualError.Exception.Message | Should -Be $expectedMessage
         }
     }
 }

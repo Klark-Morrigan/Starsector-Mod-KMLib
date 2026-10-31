@@ -148,17 +148,20 @@ $loads = @($loads | ForEach-Object {
 })
 
 # Each load's readings are a block of their own, parted from the lines around them and from the next load's.
-foreach ($load in $loads | Where-Object { $_.CauseType }) {
+# Its later lines sit under its first, past the save folder that names the load.
+foreach ($load in $loads) {
 
-    $save = Format-ConsoleText -Role 'Path' -Text $load.SaveFolder
-    $missingReading = "${save}: $(Format-MissingContentLine -Load $load)"
+    $readingLines = @(Format-LoadReadingLines -Load $load)
 
-    Write-DiagnosticLine -Source $DiagnosticSource -Message $missingReading -IsBlockStart
-
-    if ($load.ObjectChain.Count -gt 0) {
-        Write-DiagnosticLine -Source $DiagnosticSource -Message (
-            "${save}: $((Format-ObjectChainLines -Load $load) -join "`n")")
+    if ($readingLines.Count -eq 0) {
+        continue
     }
+
+    $savePrefix = "$($load.SaveFolder): "
+    $save = Format-ConsoleText -Role 'Path' -Text $load.SaveFolder
+    $readings = $readingLines -join "`n$(' ' * $savePrefix.Length)"
+
+    Write-DiagnosticLine -Source $DiagnosticSource -Message "${save}: $readings" -IsBlockStart
 }
 
 if ($AsJson) {

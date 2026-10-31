@@ -13,7 +13,14 @@ Describe 'Get-SaveDescriptorPath' {
     }
 
     It 'names the descriptor in the save''s folder under saves' {
-        Get-SaveDescriptorPath -StarsectorRoot 'C:\Games\Starsector' -SaveFolder 'save_A_1' |
-            Should -Be 'C:\Games\Starsector\saves\save_A_1\descriptor.xml'
+
+        # ARRANGE
+        $expectedPath = 'C:\Games\Starsector\saves\save_A_1\descriptor.xml'
+
+        # ACT
+        $actualPath = Get-SaveDescriptorPath -StarsectorRoot 'C:\Games\Starsector' -SaveFolder 'save_A_1'
+
+        # ASSERT
+        $actualPath | Should -Be $expectedPath
     }
 }

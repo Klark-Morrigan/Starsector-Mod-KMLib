@@ -24,6 +24,7 @@ Describe 'Format-AttemptLines' {
 
     It 'nests under each attempt''s source how it ended, where it starts, and its cause when it has one' {
 
+        # ARRANGE
         $attempts = @(
             [pscustomobject]@{
                 Source = 'campaign'; Outcome = 'Failed'; LogFile = 'C:\logs\starsector.log.1'; LogLine = 12
@@ -35,7 +36,7 @@ Describe 'Format-AttemptLines' {
             }
         )
 
-        Format-AttemptLines -Attempts $attempts | Should -Be @(
+        $expectedLines = @(
             'Attempts, in order:'
             '  <Path>campaign:'
             '    <Failed> at <Path>starsector.log.1:<Number>12'
@@ -44,12 +45,25 @@ Describe 'Format-AttemptLines' {
             '  <Path>campaign.bak:'
             '    <Loaded> at <Path>starsector.log:<Number>3'
         )
+
+        # ACT
+        $actualLines = Format-AttemptLines -Attempts $attempts
+
+        # ASSERT
+        $actualLines | Should -Be $expectedLines
     }
 
     It 'writes nothing for a load tried once' {
 
+        # ARRANGE
         $attempts = @([pscustomobject]@{ Source = 'campaign'; Outcome = 'Failed'; CauseType = 'T'; Cause = 'gone' })
 
-        @(Format-AttemptLines -Attempts $attempts).Count | Should -Be 0
+        $expectedCount = 0
+
+        # ACT
+        $actualLines = @(Format-AttemptLines -Attempts $attempts)
+
+        # ASSERT
+        $actualLines.Count | Should -Be $expectedCount
     }
 }

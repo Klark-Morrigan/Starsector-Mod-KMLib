@@ -18,9 +18,10 @@ function Format-ObjectChainLines {
     # The chain runs innermost first, so the first mod link is the nearest.
     $nearest = $modLinks[0]
     $class = Format-ConsoleText -Role 'Code' -Text $nearest.Class
+    $owners = Format-ConsoleList -Role 'Mod' -Values $nearest.Owners
 
     return @(
         "$counts,"
-        "  nearest $class ($(Format-OwnerList -Owners $nearest.Owners)) at depth $(Format-ConsoleNumber $nearest.Depth)"
+        "  nearest $class ($owners) at depth $(Format-ConsoleNumber $nearest.Depth)"
     )
 }

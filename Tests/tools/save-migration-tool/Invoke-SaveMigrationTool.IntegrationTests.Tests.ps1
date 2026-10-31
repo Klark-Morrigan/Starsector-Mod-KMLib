@@ -5,6 +5,7 @@
 # Each case copies a log fixture under TestDrive and adds the saved-mod-list fixture's descriptor as the failed save's,
 # and its mods\ folder as the install's, so one install holds a failed load, its save and the mods the save drifted
 # from. No test reads a real install.
+# A context sharing one run makes it in BeforeAll; each case's act then reads its part of that run.
 
 BeforeAll {
 
@@ -59,7 +60,8 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
 
         It 'reports the newest failed load with its retries, then how its save''s mods drifted' {
 
-            $script:Run.Output | Should -Be @(
+            # ARRANGE
+            $expectedOutput = @(
                 ''
                 'Save: save_Alpha_1'
                 'Newest load: Failed'
@@ -88,47 +90,125 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 '  Gamma (gamma): missing, saved at 2025-03-29'
                 '  Delta (delta): added, installed at 0.9.1'
             )
+
+            # ACT
+            $actualOutput = $script:Run.Output
+
+            # ASSERT
+            $actualOutput | Should -Be $expectedOutput
         }
 
         It 'logs which save it chose and what it wrote, beside what the parts it runs log' {
 
-            $script:Run.Diagnostics |
-                Should -Contain 'Invoke-SaveMigrationTool: diagnosing the save of the newest failed load, save_Alpha_1'
+            # ARRANGE
+            $expectedChoiceLine = 'Invoke-SaveMigrationTool: ' +
+                'diagnosing the save of the newest failed load, save_Alpha_1'
+            $expectedGroupedLine = 'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
+                'listing 1 newest first: ending Failed, the newest only'
+            $expectedComparedPattern = 'Invoke-SaveMigrationTool: compared them with 3 installed mods*'
+            $expectedComparedCount = 1
+            $expectedLastLine = 'Invoke-SaveMigrationTool: writing the report as text, with 4 mod drift rows'
 
-            $script:Run.Diagnostics | Should -Contain (
-                'Get-SaveLoadAttempt: grouped 6 attempts into 2 loads, 2 failed; ' +
-                'listing 1 newest first: ending Failed, the newest only')
+            # ACT
+            $actualDiagnostics = $script:Run.Diagnostics
 
-            @($script:Run.Diagnostics -like 'Invoke-SaveMigrationTool: compared them with 3 installed mods*').Count |
-                Should -Be 1
-
-            $script:Run.Diagnostics[-1] |
-                Should -Be 'Invoke-SaveMigrationTool: writing the report as text, with 4 mod drift rows'
+            # ASSERT
+            $actualDiagnostics | Should -Contain $expectedChoiceLine
+            $actualDiagnostics | Should -Contain $expectedGroupedLine
+            @($actualDiagnostics -like $expectedComparedPattern).Count | Should -Be $expectedComparedCount
+            $actualDiagnostics[-1] | Should -Be $expectedLastLine
         }
 
         # Both parts need the installed mods, and each read costs seconds on a large install.
         It 'reads the installed mods once' {
-            @($script:Run.Diagnostics -like '*mod folders under*').Count | Should -Be 1
+
+            # ARRANGE
+            $expectedReadCount = 1
+
+            # ACT
+            $actualReadLines = @($script:Run.Diagnostics -like '*mod folders under*')
+
+            # ASSERT
+            $actualReadLines.Count | Should -Be $expectedReadCount
         }
 
         It 'prints the report object as JSON with -AsJson' {
 
-            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; AsJson = $true }
-            $report = $run.Output -join "`n" | ConvertFrom-Json
+            # ARRANGE
+            $expectedSaveFolder = 'save_Alpha_1'
+            $expectedMissingId = 'BSC_Buffalo_Mk3'
+            $expectedDriftIds = @('alpha', 'beta', 'gamma', 'delta')
+            $expectedDriftChanges = @('Unchanged', 'Changed', 'Missing', 'Added')
 
-            $report.SaveFolder | Should -Be 'save_Alpha_1'
-            $report.Load.Missing.Id | Should -Be 'BSC_Buffalo_Mk3'
-            $report.ModDrift.Id | Should -Be @('alpha', 'beta', 'gamma', 'delta')
-            $report.ModDrift.Change | Should -Be @('Unchanged', 'Changed', 'Missing', 'Added')
-            $report.ModDriftProblem | Should -BeNullOrEmpty
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; AsJson = $true }
+
+            # ASSERT
+            $actualReport = $actualRun.Output -join "`n" | ConvertFrom-Json
+
+            $actualReport.SaveFolder | Should -Be $expectedSaveFolder
+            $actualReport.Load.Missing.Id | Should -Be $expectedMissingId
+            $actualReport.ModDrift.Id | Should -Be $expectedDriftIds
+            $actualReport.ModDrift.Change | Should -Be $expectedDriftChanges
+            $actualReport.ModDriftProblem | Should -BeNullOrEmpty
         }
 
         It 'diagnoses a save named with -SaveFolder whose newest load failed' {
 
-            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
+            # ARRANGE
+            $expectedHeading = @('Save: save_Alpha_1', 'Newest load: Failed')
+            $expectedChoiceLine = 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
 
-            $run.Output[1..2] | Should -Be @('Save: save_Alpha_1', 'Newest load: Failed')
-            $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
+
+            # ASSERT
+            $actualRun.Output[1..2] | Should -Be $expectedHeading
+            $actualRun.Diagnostics | Should -Contain $expectedChoiceLine
+        }
+    }
+
+    # The game loads no mods from an install with no mods folder, so every mod the save names is missing.
+    Context 'an install with no mods folder' {
+
+        BeforeAll {
+
+            $script:Root = New-DiagnosisInstall -Name 'noMods' -LogFixture 'two-failed-loads'
+
+            Remove-Item -LiteralPath (Join-Path $script:Root 'mods') -Recurse
+
+            $script:Run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; AsJson = $true }
+        }
+
+        It 'reports the load, and every saved mod as missing' {
+
+            # ARRANGE
+            $expectedSaveFolder = 'save_Alpha_1'
+            $expectedMissingId = 'BSC_Buffalo_Mk3'
+            $expectedDriftIds = @('alpha', 'beta', 'gamma')
+            $expectedDriftChanges = @('Missing', 'Missing', 'Missing')
+
+            # ACT
+            $actualReport = $script:Run.Output -join "`n" | ConvertFrom-Json
+
+            # ASSERT
+            $actualReport.SaveFolder | Should -Be $expectedSaveFolder
+            $actualReport.Load.Missing.Id | Should -Be $expectedMissingId
+            $actualReport.ModDrift.Id | Should -Be $expectedDriftIds
+            $actualReport.ModDrift.Change | Should -Be $expectedDriftChanges
+        }
+
+        It 'warns once that it lists no mods' {
+
+            # ARRANGE
+            $expectedWarning = "mods directory not found, listing no mods: $script:Root\mods"
+            $expectedWarningCount = 1
+
+            # ACT
+            $actualWarnings = @($script:Run.Warnings -eq $expectedWarning)
+
+            # ASSERT
+            $actualWarnings.Count | Should -Be $expectedWarningCount
         }
     }
 
@@ -137,42 +217,66 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
         # The load's diagnosis is worth reporting though the save cannot be compared.
         It 'reports the load, and says the mods were not compared and why' {
 
+            # ARRANGE
             $root = New-DiagnosisInstall -Name 'saveGone' -LogFixture 'two-failed-loads'
             $descriptorPath = Join-Path $root 'saves\save_Alpha_1\descriptor.xml'
 
             Remove-Item -LiteralPath $descriptorPath
 
-            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $root }
+            $expectedLoadLine = 'Newest load: Failed'
+            $expectedDriftLine = "Mod drift against the install: not compared, descriptor not found: $descriptorPath"
+            $expectedProblemLine = "Invoke-SaveMigrationTool: comparing no mods: descriptor not found: $descriptorPath"
 
-            $run.Output[2] | Should -Be 'Newest load: Failed'
-            $run.Output[-1] |
-                Should -Be "Mod drift against the install: not compared, descriptor not found: $descriptorPath"
-            $run.Diagnostics |
-                Should -Contain "Invoke-SaveMigrationTool: comparing no mods: descriptor not found: $descriptorPath"
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.Output[2] | Should -Be $expectedLoadLine
+            $actualRun.Output[-1] | Should -Be $expectedDriftLine
+            $actualRun.Diagnostics | Should -Contain $expectedProblemLine
         }
     }
 
     Context 'a failed load whose descriptor lists no enabled mods' {
 
-        # Counting nothing as "0 changed" would read as a save that matches the install.
-        It 'says the mods were not compared and why, in text and in JSON' {
+        BeforeAll {
 
-            $root = New-DiagnosisInstall -Name 'noList' -LogFixture 'two-failed-loads'
-            $descriptorPath = Join-Path $root 'saves\save_Alpha_1\descriptor.xml'
+            $script:Root = New-DiagnosisInstall -Name 'noList' -LogFixture 'two-failed-loads'
+            $script:DescriptorPath = Join-Path $script:Root 'saves\save_Alpha_1\descriptor.xml'
 
             $descriptorText = "<?xml version=`"1.0`" ?>`n<SaveGameData z=`"1`">`n" +
                 "<gameVersion>0.98a-RC8</gameVersion>`n</SaveGameData>`n"
 
-            [System.IO.File]::WriteAllText($descriptorPath, $descriptorText)
+            [System.IO.File]::WriteAllText($script:DescriptorPath, $descriptorText)
+        }
 
-            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $root }
-            $jsonRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $root; AsJson = $true }
-            $report = $jsonRun.Output -join "`n" | ConvertFrom-Json
-            $problem = "the descriptor lists no enabled mods: $descriptorPath"
+        # Counting nothing as "0 changed" would read as a save that matches the install.
+        It 'says in text that the mods were not compared and why' {
 
-            $run.Output[-1] | Should -Be "Mod drift against the install: not compared, $problem"
-            $report.ModDrift | Should -BeNullOrEmpty
-            $report.ModDriftProblem | Should -Be $problem
+            # ARRANGE
+            $expectedDriftLine = 'Mod drift against the install: not compared, ' +
+                "the descriptor lists no enabled mods: $script:DescriptorPath"
+
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
+
+            # ASSERT
+            $actualRun.Output[-1] | Should -Be $expectedDriftLine
+        }
+
+        It 'says in JSON that the mods were not compared and why' {
+
+            # ARRANGE
+            $expectedProblem = "the descriptor lists no enabled mods: $script:DescriptorPath"
+
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; AsJson = $true }
+
+            # ASSERT
+            $actualReport = $actualRun.Output -join "`n" | ConvertFrom-Json
+
+            $actualReport.ModDrift | Should -BeNullOrEmpty
+            $actualReport.ModDriftProblem | Should -Be $expectedProblem
         }
     }
 
@@ -184,20 +288,25 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
 
         It 'says no save is diagnosed' {
 
-            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
-
-            $run.Output | Should -Be @(
+            # ARRANGE
+            $expectedOutput = @(
                 ''
                 'No load failed in the logs, so no save is diagnosed. Name one with -SaveFolder.'
             )
-            $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: no load failed, so no save is diagnosed'
+            $expectedLine = 'Invoke-SaveMigrationTool: no load failed, so no save is diagnosed'
+
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root }
+
+            # ASSERT
+            $actualRun.Output | Should -Be $expectedOutput
+            $actualRun.Diagnostics | Should -Contain $expectedLine
         }
 
         It 'diagnoses a save named with -SaveFolder, though the logs hold no load of it' {
 
-            $run = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
-
-            $run.Output | Should -Be @(
+            # ARRANGE
+            $expectedOutput = @(
                 ''
                 'Save: save_Alpha_1'
                 'Newest load: none in the logs'
@@ -207,11 +316,17 @@ Describe 'Invoke-SaveMigrationTool.IntegrationTests' {
                 '  Gamma (gamma): missing, saved at 2025-03-29'
                 '  Delta (delta): added, installed at 0.9.1'
             )
+            $expectedChoiceLine = 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
+            $expectedGroupedLine = 'Get-SaveLoadAttempt: grouped 2 attempts into 1 loads, 0 failed; ' +
+                'listing 0 newest first: of save save_Alpha_1, the newest only'
 
-            $run.Diagnostics | Should -Contain 'Invoke-SaveMigrationTool: diagnosing save_Alpha_1, as asked'
-            $run.Diagnostics | Should -Contain (
-                'Get-SaveLoadAttempt: grouped 2 attempts into 1 loads, 0 failed; ' +
-                'listing 0 newest first: of save save_Alpha_1, the newest only')
+            # ACT
+            $actualRun = Invoke-SaveMigrationTool @{ StarsectorRoot = $script:Root; SaveFolder = 'save_Alpha_1' }
+
+            # ASSERT
+            $actualRun.Output | Should -Be $expectedOutput
+            $actualRun.Diagnostics | Should -Contain $expectedChoiceLine
+            $actualRun.Diagnostics | Should -Contain $expectedGroupedLine
         }
     }
 }

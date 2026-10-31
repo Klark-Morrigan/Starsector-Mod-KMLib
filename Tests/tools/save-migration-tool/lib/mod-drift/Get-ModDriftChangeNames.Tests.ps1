@@ -9,11 +9,19 @@ Describe 'Get-ModDriftChangeNames' {
 
     It 'names the four ways a mod differs between a save and the install' {
 
-        $changes = Get-ModDriftChangeNames
+        # ARRANGE
+        $expectedUnchanged = 'Unchanged'
+        $expectedChanged = 'Changed'
+        $expectedMissing = 'Missing'
+        $expectedAdded = 'Added'
 
-        $changes.Unchanged | Should -Be 'Unchanged'
-        $changes.Changed | Should -Be 'Changed'
-        $changes.Missing | Should -Be 'Missing'
-        $changes.Added | Should -Be 'Added'
+        # ACT
+        $actualChanges = Get-ModDriftChangeNames
+
+        # ASSERT
+        $actualChanges.Unchanged | Should -Be $expectedUnchanged
+        $actualChanges.Changed | Should -Be $expectedChanged
+        $actualChanges.Missing | Should -Be $expectedMissing
+        $actualChanges.Added | Should -Be $expectedAdded
     }
 }

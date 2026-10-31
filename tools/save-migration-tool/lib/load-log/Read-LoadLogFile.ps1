@@ -56,16 +56,17 @@ function Read-LoadLogFile {
 
         if ($start.Success) {
 
-            $Scan.CurrentAttempt = [pscustomobject]@{
-                SavePath    = [System.IO.Path]::GetFullPath($start.Groups['path'].Value, $Scan.SaveBaseDirectory)
-                Outcome     = $outcomes.Unfinished
-                CauseType   = $null
-                Cause       = $null
-                Missing     = $null
-                ObjectChain = @()
-                LogFile     = $LogFile
-                LogLine     = $index + 1
-            }
+            $Scan.CurrentAttempt = [pscustomobject](
+                [ordered]@{
+                    SavePath = [System.IO.Path]::GetFullPath($start.Groups['path'].Value, $Scan.SaveBaseDirectory)
+                    Outcome  = $outcomes.Unfinished
+                } +
+                (New-FailureReading) +
+                [ordered]@{
+                    LogFile = $LogFile
+                    LogLine = $index + 1
+                }
+            )
 
             $Scan.Attempts.Add($Scan.CurrentAttempt)
             continue

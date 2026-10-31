@@ -28,35 +28,55 @@ Describe 'Read-SaveModList' {
 
     It 'reads each entry of the named list, in order, passing the index on' {
 
-        $mods = Read-SaveModList -SaveData $script:SaveData -ListName 'allModsEverEnabled' -IdIndex $script:IdIndex
+        # ARRANGE
+        $listName = 'allModsEverEnabled'
 
-        $mods.Id | Should -Be @('mod-z2', 'mod-z3')
+        $expectedIds = @('mod-z2', 'mod-z3')
 
+        # ACT
+        $actualMods = Read-SaveModList -SaveData $script:SaveData -ListName $listName -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMods.Id | Should -Be $expectedIds
         Should -Invoke ConvertFrom-EnabledModData -ParameterFilter { $IdIndex['marker'] -eq 'passed through' } -Times 2
     }
 
     It 'follows the list itself through a back-pointer' {
 
+        # ARRANGE
         $document = [System.Xml.XmlDocument]::new()
         $document.LoadXml('<SaveGameData><enabledMods ref="4"/></SaveGameData>')
 
         Mock Resolve-XStreamReference { $script:SaveData.SelectSingleNode('enabledMods') }
 
-        (Read-SaveModList -SaveData $document.DocumentElement -ListName 'enabledMods' -IdIndex @{}).Id |
-            Should -Be @('mod-z5')
+        $expectedIds = @('mod-z5')
+
+        # ACT
+        $actualMods = Read-SaveModList -SaveData $document.DocumentElement -ListName 'enabledMods' -IdIndex @{}
+
+        # ASSERT
+        $actualMods.Id | Should -Be $expectedIds
     }
 
     It 'returns an empty list for a list with no entries' {
 
-        $mods = Read-SaveModList -SaveData $script:SaveData -ListName 'emptyList' -IdIndex $script:IdIndex
+        # ARRANGE
+        $expectedCount = 0
 
-        $null -eq $mods | Should -BeFalse
-        $mods.Count | Should -Be 0
+        # ACT
+        $actualMods = Read-SaveModList -SaveData $script:SaveData -ListName 'emptyList' -IdIndex $script:IdIndex
+
+        # ASSERT
+        $null -eq $actualMods | Should -BeFalse
+        $actualMods.Count | Should -Be $expectedCount
     }
 
     It 'returns null when the descriptor has no such list' {
 
-        Read-SaveModList -SaveData $script:SaveData -ListName 'missingList' -IdIndex $script:IdIndex |
-            Should -BeNullOrEmpty
+        # ACT
+        $actualMods = Read-SaveModList -SaveData $script:SaveData -ListName 'missingList' -IdIndex $script:IdIndex
+
+        # ASSERT
+        $actualMods | Should -BeNullOrEmpty
     }
 }

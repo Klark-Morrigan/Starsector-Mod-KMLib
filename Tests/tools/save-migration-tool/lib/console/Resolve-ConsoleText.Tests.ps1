@@ -26,31 +26,60 @@ Describe 'Resolve-ConsoleText' {
         @{ StreamName = 'Output' }
         @{ StreamName = 'Error' }
     ) {
+
+        # ARRANGE
         Mock Test-ConsoleStreamRedirected { $false }
 
-        Resolve-ConsoleText -Text $script:Painted -Stream $StreamName | Should -Be $script:Painted
+        $expectedText = "read `e[97ma.log`e[0m in `e[38;2;255;190;70m3 ms`e[0m"
+
+        # ACT
+        $actualText = Resolve-ConsoleText -Text $script:Painted -Stream $StreamName
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
         Should -Invoke Test-ConsoleStreamRedirected -ParameterFilter { $Stream -eq $StreamName } -Times 1 -Exactly
     }
 
     It 'strips every SGR sequence from a redirected stream' {
 
+        # ARRANGE
         Mock Test-ConsoleStreamRedirected { $true }
 
-        Resolve-ConsoleText -Text $script:Painted -Stream 'Error' | Should -Be 'read a.log in 3 ms'
+        $expectedText = 'read a.log in 3 ms'
+
+        # ACT
+        $actualText = Resolve-ConsoleText -Text $script:Painted -Stream 'Error'
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'strips the colour on a console when NO_COLOR is set' {
 
+        # ARRANGE
         Mock Test-ConsoleStreamRedirected { $false }
         $env:NO_COLOR = '1'
 
-        Resolve-ConsoleText -Text $script:Painted -Stream 'Output' | Should -Be 'read a.log in 3 ms'
+        $expectedText = 'read a.log in 3 ms'
+
+        # ACT
+        $actualText = Resolve-ConsoleText -Text $script:Painted -Stream 'Output'
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 
     It 'leaves text with no colour as it is' {
 
+        # ARRANGE
         Mock Test-ConsoleStreamRedirected { $true }
 
-        Resolve-ConsoleText -Text 'plain [text]' -Stream 'Output' | Should -Be 'plain [text]'
+        $expectedText = 'plain [text]'
+
+        # ACT
+        $actualText = Resolve-ConsoleText -Text 'plain [text]' -Stream 'Output'
+
+        # ASSERT
+        $actualText | Should -Be $expectedText
     }
 }

@@ -2,6 +2,7 @@
 # Folder names are not a usable key: the same mod ships as both "bmo" and "Building Menu Overhaul-2.1.0".
 # mod_info.json's "id" is the identity and "version" the recency; enabled_mods.json says which IDs the game loads.
 # Disabled mods and superseded copies stay on disk; the roster only leaves them out.
+# An install with no mods folder loads no mods, so its roster is empty, with a warning.
 # Says on stderr what it read and decided, under the caller's script name.
 function Read-ModRoster {
 
@@ -19,7 +20,10 @@ function Read-ModRoster {
     $modsRoot = Join-Path $StarsectorRoot (Get-InstallPathNames).ModsFolder
 
     if (-not (Test-Path -LiteralPath $modsRoot -PathType Container)) {
-        throw "mods directory not found: $modsRoot"
+
+        Write-Warning "mods directory not found, listing no mods: $modsRoot"
+
+        return
     }
 
     # Every path the roster reports is relative to this one, so it is resolved once, whatever form it was given in.
@@ -29,7 +33,7 @@ function Read-ModRoster {
     $isEveryModListed = $IncludeDisabled -or -not $enabled.IsListRead
     $enabledSet = [System.Collections.Generic.HashSet[string]]::new(
         [string[]] $enabled.Ids,
-        [System.StringComparer]::OrdinalIgnoreCase)
+        (Get-ModIdComparer))
 
     $candidates = Read-ModFolderCandidates -ModsRoot $modsRoot -DiagnosticSource $DiagnosticSource
     $parsedStatus = (Get-ModStatusNames).Parsed
@@ -47,9 +51,9 @@ function Read-ModRoster {
             $winnerCopy = Format-ModCopy -Candidate $winner
             $loserCopy = Format-ModCopy -Candidate $loser
             $modId = Format-ConsoleText -Role 'Mod' -Text $modGroup.Id
-            $tieNote = Format-TieNote -Winner $winner -Loser $loser
 
-            Write-DiagnosticLine -Source $DiagnosticSource -Message "${modId}: $winnerCopy wins over $loserCopy$tieNote"
+            Write-DiagnosticLine -Source $DiagnosticSource -Message (
+                "${modId}: $winnerCopy wins over $loserCopy, coming first in folder order")
         }
 
         # Unparsed entries bypass the enabled filter: their ID is unknown, so the

@@ -21,6 +21,14 @@ Describe 'Format-VersionChangeLevel' {
         @{ Level = 'MIN'; Phrase = '<Warning>minor change' }
         @{ Level = 'PAT'; Phrase = 'patch change' }
     ) {
-        Format-VersionChangeLevel -Level $Level | Should -Be $Phrase
+
+        # ARRANGE
+        $expectedPhrase = $Phrase
+
+        # ACT
+        $actualPhrase = Format-VersionChangeLevel -Level $Level
+
+        # ASSERT
+        $actualPhrase | Should -Be $expectedPhrase
     }
 }

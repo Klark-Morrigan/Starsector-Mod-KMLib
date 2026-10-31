@@ -794,7 +794,7 @@ Sharing the tail is the point:
 two items a player cannot tell apart break the same way under every mode,
 and the by-ID key keeps a fully-level pair from reshuffling as the sort re-runs each frame.
 
-[`RevisionMemo`](widgets/lists/RevisionMemo.java) is where a consumer holds the resolved list between frames,
+[`RevisionMemo`](../../memo/RevisionMemo.java) is where a consumer holds the resolved list between frames,
 since a body is built twice a frame (render and hit-test)
 and a picker list is typically a full pass over whatever the consumer scores its items from.
 What belongs in the revision is the caller's judgement,

@@ -1,24 +1,46 @@
-# Groups roster candidates by mod ID, and picks the copy the game loads in each: the highest version.
-# Superseded holds the other copies, highest first.
-# Copies whose version numbers tie are ordered by the version as written, highest first, so 1.5b beats 1.5a.
-# Copies at the very same version are ordered by folder name, so the same install always picks the same winner.
+# Groups roster candidates by mod ID, and picks the copy the game loads in each: the first in folder order.
+# The game keeps the first copy of an ID it reads and drops the rest, whatever their versions.
+# Superseded holds the other copies, in folder order.
+# The game skips a copy whose mod_info.json it cannot read, so an unparsed copy never claims an ID:
+# it stands alone, under its folder name.
+# Groups come out in ID order for a person to read; only Get-ModIdComparer decides which copies share one.
 function Group-ModCandidate {
 
     param([object[]] $Candidates)
 
-    $highestNumbersFirst = @{ Expression = 'SortKey'; Descending = $true }
-    $highestTextFirst = @{ Expression = { Format-ModVersion -Version $_.Version }; Descending = $true }
-    $folderNameOrder = @{ Expression = { $_.Folder.Name }; Descending = $false }
-    $copyOrder = @($highestNumbersFirst, $highestTextFirst, $folderNameOrder)
+    $parsedStatus = (Get-ModStatusNames).Parsed
+    $copyGroups = [System.Collections.Generic.List[System.Collections.Generic.List[object]]]::new()
+    $parsedCopiesById = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[object]]]::new(
+        (Get-ModIdComparer))
 
-    foreach ($group in ($Candidates | Group-Object -Property Id)) {
+    foreach ($candidate in $Candidates) {
 
-        $ordered = @($group.Group | Sort-Object -Property $copyOrder -Stable)
+        $isParsed = $candidate.Status -eq $parsedStatus
 
-        [pscustomobject]@{
-            Id         = $group.Name
-            Winner     = $ordered[0]
-            Superseded = @($ordered | Select-Object -Skip 1)
+        if ($isParsed -and $parsedCopiesById.ContainsKey($candidate.Id)) {
+
+            $parsedCopiesById[$candidate.Id].Add($candidate)
+            continue
+        }
+
+        $copies = [System.Collections.Generic.List[object]]::new()
+
+        $copies.Add($candidate)
+        $copyGroups.Add($copies)
+
+        if ($isParsed) {
+            $parsedCopiesById[$candidate.Id] = $copies
         }
     }
+
+    $groups = foreach ($copies in $copyGroups) {
+
+        [pscustomobject]@{
+            Id         = $copies[0].Id
+            Winner     = $copies[0]
+            Superseded = @($copies | Select-Object -Skip 1)
+        }
+    }
+
+    return $groups | Sort-Object -Property Id -CaseSensitive -Stable
 }

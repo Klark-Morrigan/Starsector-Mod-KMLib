@@ -16,11 +16,13 @@ function Add-FailureReading {
         }
 
         $failure = ConvertFrom-FailureTrace -Lines $TraceLinesByAttempt[$attempt].ToArray()
+        $missing = Get-MissingContent -CauseType $failure.CauseType -Cause $failure.Cause
 
-        $attempt.CauseType = $failure.CauseType
-        $attempt.Cause = $failure.Cause
-        $attempt.ObjectChain = $failure.ObjectChain
-        $attempt.Missing = Get-MissingContent -CauseType $failure.CauseType -Cause $failure.Cause
+        $failure | Add-Member -NotePropertyName 'Missing' -NotePropertyValue $missing
+
+        foreach ($readingName in (New-FailureReading).Keys) {
+            $attempt.$readingName = $failure.$readingName
+        }
     }
 
     return $Load

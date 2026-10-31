@@ -9,10 +9,17 @@ Describe 'Get-LoadOutcomeNames' {
 
     It 'names the three outcomes a load attempt ends in' {
 
-        $outcomes = Get-LoadOutcomeNames
+        # ARRANGE
+        $expectedLoaded = 'Loaded'
+        $expectedFailed = 'Failed'
+        $expectedUnfinished = 'Unfinished'
 
-        $outcomes.Loaded | Should -Be 'Loaded'
-        $outcomes.Failed | Should -Be 'Failed'
-        $outcomes.Unfinished | Should -Be 'Unfinished'
+        # ACT
+        $actualOutcomes = Get-LoadOutcomeNames
+
+        # ASSERT
+        $actualOutcomes.Loaded | Should -Be $expectedLoaded
+        $actualOutcomes.Failed | Should -Be $expectedFailed
+        $actualOutcomes.Unfinished | Should -Be $expectedUnfinished
     }
 }
