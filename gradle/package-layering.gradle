@@ -17,7 +17,7 @@
 // a single 'under: kmlib' edge would shut kmlib.mods off from the very mods its
 // adapters exist to adapt. A new top-level tree has to be added here to be
 // covered - the list is the rule.
-def treesClosedToOptionalMods = ['kmlib.animation', 'kmlib.collections',
+def treesClosedToOptionalMods = ['kmlib.animation', 'kmlib.cache', 'kmlib.collections',
     'kmlib.colour', 'kmlib.extensions', 'kmlib.gradlescripts', 'kmlib.input',
     'kmlib.logging', 'kmlib.math', 'kmlib.opengl', 'kmlib.profiling',
     'kmlib.settings', 'kmlib.starsector', 'kmlib.testbootstrap',

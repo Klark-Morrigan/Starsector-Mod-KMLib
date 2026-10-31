@@ -1,4 +1,4 @@
-package kmlib.starsector.ui.widgets.lists;
+package kmlib.cache.memo;
 
 import kmlib.testfixtures.starsector.ui.widgets.lists.Anomaly;
 
@@ -37,56 +37,71 @@ final class RevisionMemoTests {
     // than suppressed at every call site.
     @SuppressWarnings("unchecked")
     private static Supplier<List<Anomaly>> supplierReturning(List<Anomaly> value) {
+
         Supplier<List<Anomaly>> supplierMock = mock(Supplier.class);
-        when(supplierMock.get()).thenReturn(value);
+
+        when(supplierMock.get())
+            .thenReturn(value);
+
         return supplierMock;
     }
 
     @Nested
     class ResolveValue {
 
+        // One walk feeds both calls: the second reads the memo rather than re-resolving.
         @Test
         void walksTheSupplierOnceThenServesTheMemoForTheSameInputs() {
 
+            // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
-            var first = memo.resolveValue(SCOPE_ID, 7, supplierMock);
-            var second = memo.resolveValue(SCOPE_ID, 7, supplierMock);
+            // ACT
+            var actualFirst = memo.resolveValue(SCOPE_ID, 7, supplierMock);
+            var actualSecond = memo.resolveValue(SCOPE_ID, 7, supplierMock);
 
-            assertThat(first)
+            // ASSERT
+            assertThat(actualFirst)
                 .isEqualTo(ANOMALIES);
-            assertThat(second)
+            assertThat(actualSecond)
                 .isEqualTo(ANOMALIES);
 
-            // One walk feeds both calls: the second reads the memo rather than re-resolving.
             verify(
                 supplierMock,
                 times(1)).get();
         }
 
+        // A moved revision is the caller saying something the value depends on changed, so the
+        // memo is stale and must re-resolve.
         @Test
         void recomputesWhenTheRevisionMoves() {
-            // A moved revision is the caller saying something the value depends on changed, so the
-            // memo is stale and must re-resolve.
+
+            // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
+            // ACT
             memo.resolveValue(SCOPE_ID, 0, supplierMock);
             memo.resolveValue(SCOPE_ID, 1, supplierMock);
 
+            // ASSERT
             verify(
                 supplierMock,
                 times(2)).get();
         }
 
+        // Two scopes hold different values, so a switch between them must re-resolve rather than
+        // serve the scope the memo happens to hold.
         @Test
         void recomputesForADifferentScope() {
-            // Two scopes hold different values, so a switch between them must re-resolve rather than
-            // serve the scope the memo happens to hold.
+
+            // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
+            // ACT
             memo.resolveValue(SCOPE_ID, 0, supplierMock);
             memo.resolveValue("other", 0, supplierMock);
 
+            // ASSERT
             verify(
                 supplierMock,
                 times(2)).get();
@@ -96,32 +111,43 @@ final class RevisionMemoTests {
     @Nested
     class DiscardValue {
 
+        // What a released holder's discard has to leave behind: nothing. The scope and the
+        // revision are exactly as they were - a holder going away moves neither - so the walk
+        // has to be forced by the discard or not at all.
         @Test
         void walksTheSupplierAgainUnderTheKeyItHadServed() {
-            // What a released holder's discard has to leave behind: nothing. The scope and the
-            // revision are exactly as they were - a holder going away moves neither - so the walk
-            // has to be forced by the discard or not at all.
+
+            // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
             memo.resolveValue(SCOPE_ID, 0, supplierMock);
+
+            // ACT
             memo.discardValue();
             memo.resolveValue(SCOPE_ID, 0, supplierMock);
 
+            // ASSERT
             verify(
                 supplierMock,
                 times(2)).get();
         }
 
+        // The memo stays usable after a discard rather than being spent: a consumer that
+        // discards and then resolves reads the new walk's value, not an empty answer.
         @Test
         void servesTheFreshWalkAfterwards() {
-            // The memo stays usable after a discard rather than being spent: a consumer that
-            // discards and then resolves reads the new walk's value, not an empty answer.
+
+            // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
             memo.resolveValue(SCOPE_ID, 0, supplierMock);
             memo.discardValue();
 
-            assertThat(memo.resolveValue(SCOPE_ID, 0, supplierMock))
+            // ACT
+            var actualValue = memo.resolveValue(SCOPE_ID, 0, supplierMock);
+
+            // ASSERT
+            assertThat(actualValue)
                 .isEqualTo(ANOMALIES);
         }
     }

@@ -215,7 +215,7 @@ A counter composes (many sources fold into one number),
 survives being read by several consumers at different cadences,
 and cannot be cleared by whichever consumer happens to look first.
 
-[`RevisionMemo`](../../src/main/java/kmlib/memo/RevisionMemo.java)
+[`RevisionMemo`](../../src/main/java/kmlib/cache/memo/RevisionMemo.java)
 is the other half of that convention,
 and it is a primitive rather than a cache of this library's own for the same reason:
 the consumer supplies both the revision and the walk,
@@ -226,6 +226,21 @@ so a value belonging to something that comes and goes is held in a memo per such
 and `discardValue` is what releasing one calls.
 A holder going away moves no revision,
 which is why that discard exists rather than being inferable from the key.
+
+[`IdentityMemo`](../../src/main/java/kmlib/cache/memo/IdentityMemo.java)
+is the same primitive for state that has no counter:
+a value derived from an object that is replaced rather than edited,
+such as a build's draw lists.
+The object itself is the key,
+compared by identity,
+so a new instance is what forces the derivation
+and the per-frame check is one reference compare.
+It holds one entry,
+because each holder asks after one key at a time.
+Its lifetime is the holder's too,
+but it has no discard:
+it keeps its last key reachable until the next ask,
+yet never serves that key's value to any other instance.
 
 ## What is deliberately not cached
 

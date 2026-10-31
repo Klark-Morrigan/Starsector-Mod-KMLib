@@ -81,6 +81,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
 - **`HighlightedParagraph.createUniformlyHighlightedParagraph(String, Color, String...)`**：所有片段共用同一种高亮颜色的段落。
 - **`HighlightedTextPanelMock`**（位于 `kmlib.testfixtures.starsector.ui.label`）：保留每个加入其中的高亮段落的对话框文本面板，使其高亮可以被检查，如同 `HighlightedTooltipMock` 之于提示框。
+- **`IdentityMemo`**（位于 `kmlib.cache.memo`）：缓存最近一次由某个对象得出的值，调用方交来同一实例时直接返回，因此由整体替换而非修改的对象得出的值，每帧只需按对象身份比较一次。
 - **`InteractionDialogMock`**（位于 `kmlib.testfixtures.starsector.dialogs`）：交互对话框的替身，其每个面板各由一个替身应答，交互目标由用例指定。
 - **`InteractionTargets.findTargetPlanet(InteractionDialogAPI)`**：对话框所对应的行星；没有对话框或交互目标，或交互目标不是行星时为空。
 - **`InteractionTargets.readTargetId(InteractionDialogAPI)`**（位于 `kmlib.starsector.dialogs`）：对话框所对应实体的 ID；没有对话框或交互目标时为 null。
@@ -204,6 +205,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | 它返回的是 `RingStretch`，与路径上其他读取路段的方法的名称一致。 |
 | 位于 `kmlib.starsector.scripts` 中的 `SectorScripts` 和 `InstalledTransientScript` | 位于 `kmlib.starsector.scripts.everyframe` 中的同名类 | 游戏所说的脚本指两样东西：数据文件所指的任何类，由 `ScriptClasses` 构建；以及星域上的逐帧脚本，由这两个类注册。 |
 | `StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(PlanetAPI, float)` | `PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` | `kmlib.starsector.fleet` 中统一为一种命名形式。该检查读取传入的星域，从不读取 `Global`，并可测量任何带半径的实体。 |
+| 位于 `kmlib.starsector.ui.widgets.lists` 中的 `RevisionMemo` | 位于 `kmlib.cache.memo` 中的同名类 | 它可以缓存任何值，而不只是列表，并与 `IdentityMemo` 放在一起。 |
 
 </details>
 
