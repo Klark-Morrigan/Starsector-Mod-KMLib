@@ -19,7 +19,7 @@
 // covered - the list is the rule.
 def treesClosedToOptionalMods = ['kmlib.animation', 'kmlib.collections',
     'kmlib.colour', 'kmlib.extensions', 'kmlib.gradlescripts', 'kmlib.input',
-    'kmlib.logging', 'kmlib.math', 'kmlib.opengl', 'kmlib.profiling',
+    'kmlib.logging', 'kmlib.math', 'kmlib.memo', 'kmlib.opengl', 'kmlib.profiling',
     'kmlib.settings', 'kmlib.starsector', 'kmlib.testbootstrap',
     'kmlib.testfixtures', 'kmlib.text', 'kmlib.time']
 

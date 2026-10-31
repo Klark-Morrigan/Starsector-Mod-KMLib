@@ -1,14 +1,17 @@
-package kmlib.starsector.ui.widgets.lists;
+package kmlib.memo;
 
 import java.util.function.Supplier;
 
 /**
- * Memoises one picker's resolved value - typically its list of selectable items - so a per-frame
- * body build reads a cache instead of re-resolving it. A panel body is built twice a frame (the
- * render and the hit-test passes) and a picker list is typically a full pass over whatever the
- * consumer scores its items from, so without a memo that pass would run several times a frame. The
- * caller says which revision the value depends on; it is rebuilt only when that revision moves and
- * the per-frame path is otherwise an int compare.
+ * Memoises one value resolved from live state - typically a picker's list of selectable items - so
+ * a per-frame body build reads a cache instead of re-resolving it. A panel body is built twice a
+ * frame (the render and the hit-test passes) and a picker list is typically a full pass over
+ * whatever the consumer scores its items from, so without a memo that pass would run several times
+ * a frame. The caller says which revision the value depends on; it is rebuilt only when that
+ * revision moves and the per-frame path is otherwise an int compare.
+ *
+ * <p>For a value derived from an object that is replaced rather than edited, where the object
+ * itself is the key, {@link IdentityMemo} is the shape.
  *
  * <p>What belongs in the revision is the caller's judgement, and it is the whole of the invalidation
  * contract: whatever the resolved value reads and can change without moving the revision will lag

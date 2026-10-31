@@ -360,6 +360,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | extend (an interface extending another), implementer | 继承, 实现方 | the usual computing words; 方, a party to something, as in 调用方, the caller |
 | final class (one nothing may extend) | 不可继承的类 | said plainly rather than left as the keyword |
 | float (a Java `float`) | 浮点数 | the usual computing word |
+| identity (two references being one object, compared without reading its contents) | 对象身份 | 对象, an object, with 身份, who something is: the object itself, not what it holds |
 | ideographic space (U+3000) | 全角空格 | what a Chinese typist calls it; not the literal 表意空格 |
 | import, compose | 导入, 组合 | the usual computing words for a package naming another and for putting parts together |
 | instance, static (one object made and handed out, against state held by the class itself) | 实例, 静态 | the usual computing words for both |

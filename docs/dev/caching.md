@@ -227,6 +227,17 @@ and `discardValue` is what releasing one calls.
 A holder going away moves no revision,
 which is why that discard exists rather than being inferable from the key.
 
+[`IdentityMemo`](../../src/main/java/kmlib/memo/IdentityMemo.java)
+is the same primitive for state that has no counter:
+a value derived from an object that is replaced rather than edited,
+such as a build's draw lists.
+The object itself is the key,
+compared by identity,
+so a new instance is what forces the derivation
+and the per-frame check is one reference compare.
+It holds one entry,
+because each holder asks after one key at a time.
+
 ## What is deliberately not cached
 
 The Starsector-facing wrappers -
