@@ -1,4 +1,4 @@
-package kmlib.memo;
+package kmlib.cache.memo;
 
 import java.util.function.Function;
 
