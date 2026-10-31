@@ -215,7 +215,7 @@ A counter composes (many sources fold into one number),
 survives being read by several consumers at different cadences,
 and cannot be cleared by whichever consumer happens to look first.
 
-[`RevisionMemo`](../../src/main/java/kmlib/starsector/ui/widgets/lists/RevisionMemo.java)
+[`RevisionMemo`](../../src/main/java/kmlib/memo/RevisionMemo.java)
 is the other half of that convention,
 and it is a primitive rather than a cache of this library's own for the same reason:
 the consumer supplies both the revision and the walk,
