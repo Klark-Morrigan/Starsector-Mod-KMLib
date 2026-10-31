@@ -37,8 +37,12 @@ final class RevisionMemoTests {
     // than suppressed at every call site.
     @SuppressWarnings("unchecked")
     private static Supplier<List<Anomaly>> supplierReturning(List<Anomaly> value) {
+
         Supplier<List<Anomaly>> supplierMock = mock(Supplier.class);
-        when(supplierMock.get()).thenReturn(value);
+
+        when(supplierMock.get())
+            .thenReturn(value);
+
         return supplierMock;
     }
 

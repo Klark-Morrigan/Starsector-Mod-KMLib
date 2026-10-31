@@ -237,6 +237,10 @@ so a new instance is what forces the derivation
 and the per-frame check is one reference compare.
 It holds one entry,
 because each holder asks after one key at a time.
+Its lifetime is the holder's too,
+but it has no discard:
+it keeps its last key reachable until the next ask,
+yet never serves that key's value to any other instance.
 
 ## What is deliberately not cached
 
