@@ -1235,6 +1235,10 @@ its `outputs:` block is the statement of that convention:
   where that KMLib is published.
   The latter is emitted from the same constant the sibling checkout set is built from,
   so the release a pin is checked against is the repository the build compiles it against.
+- `nexus-mod-id`,
+  the Nexus Mods page the `<mod-id>.version.template` states as `modNexusId`,
+  or nothing when the template states none or the mod commits no template.
+  `nexus-game-id` beside it is Starsector's ID on Nexus Mods, `2672`.
 
 **[read-locales](.github/actions/read-locales/action.yml)** reads the caller's `localisation/manifest.json`
 and emits its `locales` -
@@ -1499,6 +1503,12 @@ An unsuffixed zip counts under the default locale of the caller's `localisation/
 read through `read-locales`.
 A mod without a manifest keeps no locales,
 so it gets one count per release, under no locale.
+A `modNexusId` in the caller's `<mod-id>.version.template` turns Nexus on:
+the files on that page named after the mod's folder count too,
+under the default locale, added to the release whose tag equals their version.
+A page can host several mods' files,
+which is why only the folder's name counts.
+Without the key, Nexus is not read.
 Only the publishing job holds `contents: write`,
 and a caller has to grant the same,
 since a reusable workflow's permissions are capped by its caller.
