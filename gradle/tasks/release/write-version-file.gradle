@@ -117,12 +117,13 @@ if (file(versionFileTemplateName).isFile()) {
         description = ("Fills ${versionFileName} from ${versionFileTemplateName}, so a checkout "
             + 'used as a dev install reports its version to VersionChecker.')
 
-        // The script reads the metadata and the template from its mod-root
-        // argument, which defaults to the working directory, and resolves the output
-        // path from where the caller stands. Standing in the project directory is
-        // what makes the plain names below - no mod-root argument, an output path of
-        // one filename - land on the consumer's own checkout.
+        // The script reads the metadata and the template from its mod root, which
+        // defaults to the working directory, and resolves the output path from where
+        // the caller stands. Standing in the project directory is what makes the plain
+        // names below - no mod root, an output path of one filename - land on the
+        // consumer's own checkout.
         workingDir projectDir
+        environment 'OUTPUT_PATH', versionFileName
 
         // The file the script reads the metadata from, which for a mod keeping
         // locales is the committed base: the generated mod_info.json is another
@@ -141,8 +142,7 @@ if (file(versionFileTemplateName).isFile()) {
         // can fail - happens only for a build that actually generates the file.
         doFirst {
             commandLine resolveBashExecutablePath(),
-                fillVersionFileScriptPath,
-                versionFileName
+                fillVersionFileScriptPath
         }
     }
 

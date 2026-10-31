@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fills a mod's committed VersionChecker template from mod_info.json and
-# writes the result to the path given as an argument.
+# writes the result to the path OUTPUT_PATH names.
 #
 # A mod publishes the same version number in three places: mod_info.json,
 # the .version file it ships, and the .version file served as the release
@@ -8,9 +8,13 @@
 # at release time keeps the number stated once, in the file the game itself
 # reads, instead of in three that drift apart the moment one is forgotten.
 #
-# Usage: fill_version_file_template.sh <output-path> [zip-name] [mod-root] [locale]
+# Inputs are read from the environment, each described where it is read below:
+#   OUTPUT_PATH  Required.
+#   ZIP_NAME     Default: derived from mod_info.json .jars[0]
+#   MOD_ROOT     Default: .
+#   LOCALE       Default: none
 #
-# Reads from the mod root, which defaults to the working directory:
+# Reads from the mod root:
 #   mod_info.base.json, else mod_info.json
 #                              - .id, .name, .version, .gameVersion, and
 #                                .jars[0] when no zip name is given
@@ -52,11 +56,6 @@ source "${LIB_DIR}/mod_info.sh"
 # shellcheck source=../../_lib/localisation.sh
 source "${LIB_DIR}/localisation.sh"
 
-# The suffix keeps the committed template distinct from the generated
-# <mod-id>.version: a dev install symlinks the repo into mods/, and a
-# committed file under the generated name would have version_files.csv
-# point VersionChecker at quoted tokens instead of numbers.
-TEMPLATE_EXTENSION=".version.template"
 GITHUB_BASE_URL="https://github.com"
 RELEASE_DOWNLOAD_PATH="releases/download"
 
@@ -66,27 +65,27 @@ RELEASE_DOWNLOAD_PATH="releases/download"
 # player's update checker does.
 TOKEN_REGEX='\{\{[^}]*\}\}'
 
-OUTPUT_PATH="${1:?output path argument required}"
+OUTPUT_PATH="${OUTPUT_PATH:?${SCRIPT_NAME}: OUTPUT_PATH is required}"
 # Optional because only a release has a zip name to state. The pipeline
 # passes read-mod-info's output, so the name in the download URL and the
 # name of the asset actually uploaded are one string rather than two
 # derivations that agree until one changes. A caller with no such name -
 # the local build - leaves it empty and gets the same derivation, taken
 # from the shared lib both sides read it from.
-ZIP_NAME="${2:-}"
+ZIP_NAME="${ZIP_NAME:-}"
 # Directory holding mod_info.json and the template. Optional because a
 # caller already standing in the mod root - which is every caller running
 # against a plain checkout - has nothing to say. The release pipeline is the
 # exception: it checks the mod out one level down so the sibling repos can
 # sit beside it, and Actions permits no working-directory on a `uses:` step.
-MOD_ROOT="${3:-.}"
+MOD_ROOT="${MOD_ROOT:-.}"
 # The locale tag of the build this file ships in, for a mod releasing one zip
 # per locale. Optional because a mod keeping no locales releases one zip under
 # no tag, and a local build fills the file for whichever locale it holds. Set,
 # it names that locale's zip in the download URL, that locale's copy of this
 # file as the master, and that locale's changelog, so an install polls the copy
 # whose download link leads back to its own language and reads its changes in it.
-LOCALE_TAG="${4:-}"
+LOCALE="${LOCALE:-}"
 
 # Kept before the move below, so the output path resolves against the
 # directory the caller stated it from.
@@ -114,12 +113,12 @@ if [[ -z "${ZIP_NAME}" ]]; then
   # would fail mods that publish no jar at all.
   mod_info_require_fields "jars[0]:${JAR_SOURCE}"
 
-  ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${LOCALE_TAG}")
+  ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${LOCALE}")
 fi
 
 # The template is named after the mod id, so no caller has to state a
 # path that mod_info.json already determines.
-TEMPLATE_FILE="${MOD_ID}${TEMPLATE_EXTENSION}"
+TEMPLATE_FILE=$(mod_info_derive_version_template_name "${MOD_ID}")
 
 if [[ ! -f "${TEMPLATE_FILE}" ]]; then
 
@@ -181,18 +180,18 @@ fi
 # unlocalised name - leads to a locale's copy by swapping its last segment. An
 # address ending in another name is a place this release does not publish
 # locale copies to, so the run fails rather than point an install at nothing.
-if [[ -n "${LOCALE_TAG}" ]]; then
+if [[ -n "${LOCALE}" ]]; then
 
   UNLOCALISED_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
 
   if [[ "${MASTER_VERSION_FILE##*/}" != "${UNLOCALISED_VERSION_FILE_NAME}" ]]; then
 
     echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} masterVersionFile '${MASTER_VERSION_FILE}' does not end in" \
-         "${UNLOCALISED_VERSION_FILE_NAME}, so it names no copy for locale ${LOCALE_TAG}" >&2
+         "${UNLOCALISED_VERSION_FILE_NAME}, so it names no copy for locale ${LOCALE}" >&2
     exit 1
   fi
 
-  MASTER_VERSION_FILE="${MASTER_VERSION_FILE%/*}/$(mod_info_derive_version_file_name "${MOD_ID}" "${LOCALE_TAG}")"
+  MASTER_VERSION_FILE="${MASTER_VERSION_FILE%/*}/$(mod_info_derive_version_file_name "${MOD_ID}" "${LOCALE}")"
 fi
 
 # A translated locale's zip carries that locale's changelog in place of the root
@@ -204,16 +203,16 @@ fi
 # relative to the mod root.
 CHANGELOG_URL=$(jq -r '.changelogURL // ""' "${TEMPLATE_FILE}")
 
-if [[ -n "${LOCALE_TAG}" && -n "${CHANGELOG_URL}" && -f "${LOCALISATION_CHANGELOG_FILE}" \
+if [[ -n "${LOCALE}" && -n "${CHANGELOG_URL}" && -f "${LOCALISATION_CHANGELOG_FILE}" \
       && -f "${LOCALISATION_MANIFEST_FILE}" ]]; then
 
   DEFAULT_LOCALE_TAG=$(jq -r '.defaultLocale // ""' "${LOCALISATION_MANIFEST_FILE}")
 
-  if [[ "${LOCALE_TAG}" != "${DEFAULT_LOCALE_TAG}" ]]; then
+  if [[ "${LOCALE}" != "${DEFAULT_LOCALE_TAG}" ]]; then
 
     # Required here as the packaging requires it: a translated locale without its
     # changelog was never tested, and its zip fails to package for the same reason.
-    TRANSLATED_CHANGELOG_FILE="$(localisation_require_translated_changelog "${LOCALE_TAG}")"
+    TRANSLATED_CHANGELOG_FILE="$(localisation_require_translated_changelog "${LOCALE}")"
 
     # An address ending in another name is left as written rather than failed: it
     # still leads to the root changelog, which is degraded rather than broken.
@@ -221,7 +220,7 @@ if [[ -n "${LOCALE_TAG}" && -n "${CHANGELOG_URL}" && -f "${LOCALISATION_CHANGELO
       CHANGELOG_URL="${CHANGELOG_URL%/*}/${TRANSLATED_CHANGELOG_FILE}"
     else
       echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} changelogURL '${CHANGELOG_URL}' does not end in" \
-           "${LOCALISATION_CHANGELOG_FILE}, so locale ${LOCALE_TAG} keeps it rather than naming" \
+           "${LOCALISATION_CHANGELOG_FILE}, so locale ${LOCALE} keeps it rather than naming" \
            "${TRANSLATED_CHANGELOG_FILE}" >&2
     fi
   fi

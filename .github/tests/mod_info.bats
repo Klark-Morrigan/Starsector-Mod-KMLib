@@ -439,6 +439,14 @@ capture_zip_name_locale() {
     [ "$output" = "kmu-zh-hans.version" ]
 }
 
+@test "mod_info_derive_version_template_name names the template after the unlocalised version file" {
+
+    run_in_lib "read_mod_info" "mod_info_derive_version_template_name 'kmu'"
+
+    [ "$status" -eq 0 ]
+    [ "$output" = "kmu.version.template" ]
+}
+
 @test "mod_info_format_locale_suffix emits nothing for no tag" {
 
     run_in_lib "read_mod_info" "mod_info_format_locale_suffix ''"

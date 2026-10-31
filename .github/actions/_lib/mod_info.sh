@@ -51,6 +51,12 @@ JAR_EXTENSION=".jar"
 ZIP_EXTENSION=".zip"
 VERSION_FILE_EXTENSION=".version"
 
+# The suffix keeps the committed template distinct from the generated
+# <mod-id>.version: a dev install symlinks the repo into mods/, and a
+# committed file under the generated name would have version_files.csv
+# point VersionChecker at quoted tokens instead of numbers.
+VERSION_TEMPLATE_SUFFIX=".template"
+
 # Joins the folder name and the version in a release zip name.
 ZIP_NAME_VERSION_SEPARATOR="-"
 
@@ -248,6 +254,19 @@ mod_info_derive_version_file_name() {
   localeSuffix=$(mod_info_format_locale_suffix "${localeTag}")
 
   printf '%s\n' "${modId}${localeSuffix}${VERSION_FILE_EXTENSION}"
+}
+
+# Emits the name of the VersionChecker template a mod commits, for a mod id.
+#
+# Here rather than in the script filling it because more than one script reads
+# the template: the fill substitutes its tokens, and read_mod_info reads the
+# Nexus mod id it states. Named after the unlocalised version file, since one
+# template fills every locale's copy.
+mod_info_derive_version_template_name() {
+
+  local modId="${1}"
+
+  printf '%s\n' "$(mod_info_derive_version_file_name "${modId}")${VERSION_TEMPLATE_SUFFIX}"
 }
 
 # Emits the suffix a locale's release files carry, or nothing for no tag -

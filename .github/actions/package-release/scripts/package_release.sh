@@ -174,8 +174,11 @@ package_locale() {
   assemble_payload "${localeTag}"
 
   # The zip name is passed rather than left to the script to derive, so the
-  # download URL and the asset written below are one string.
-  bash "${FILL_VERSION_FILE_SCRIPT}" "${DIST_DIR}/${PAYLOAD_VERSION_FILE_NAME}" "${zipName}" "." "${localeTag}"
+  # download URL and the asset written below are one string. The mod root is
+  # stated though this script already stands in it: the caller's own MOD_ROOT
+  # is still exported, and the fill would otherwise move into it a second time.
+  OUTPUT_PATH="${DIST_DIR}/${PAYLOAD_VERSION_FILE_NAME}" ZIP_NAME="${zipName}" MOD_ROOT="." LOCALE="${localeTag}" \
+    bash "${FILL_VERSION_FILE_SCRIPT}"
   cp "${DIST_DIR}/${PAYLOAD_VERSION_FILE_NAME}" "${OUTPUT_DIR}/${assetVersionFileName}"
 
   # From inside dist, so the zip holds the mod folder at its root - the shape a

@@ -106,7 +106,7 @@ read_generated() {
 @test "substitutes every token from mod_info.json" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated '.modName')" = "Klark Morrigan's Universe" ]
@@ -119,7 +119,7 @@ read_generated() {
 @test "substitutes the version components as JSON numbers, not strings" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -134,7 +134,7 @@ read_generated() {
 @test "leaves values that are not tokens untouched" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu.version" ]
@@ -150,7 +150,7 @@ read_generated() {
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -163,7 +163,7 @@ EOF
 @test "builds the download URL from the publishing repo, version, and zip name" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -175,7 +175,7 @@ EOF
 @test "logs the file it read and the file it wrote, with the addresses it filled in" {
 
     cd "$WORK_DIR"
-    run --separate-stderr bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run --separate-stderr env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     downloadUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/$ZIP_NAME"
     expectedLines=(
@@ -197,7 +197,7 @@ EOF
     write_template "kmlib"
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMLib-0.1.0.zip"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMLib-0.1.0.zip" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmlib.version" ]
@@ -213,7 +213,7 @@ EOF
     mv "$WORK_DIR/mod_info.json" "$WORK_DIR/kmu.version.template" "$WORK_DIR/checkout/"
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "checkout"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" MOD_ROOT="checkout" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ -f "$WORK_DIR/$OUTPUT_FILE" ]
@@ -224,7 +224,7 @@ EOF
 @test "fails when the mod root does not exist" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "absent"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" MOD_ROOT="absent" bash "$SCRIPT"
 
     # Named as the wrong directory rather than reported as a missing
     # mod_info.json, which is the same symptom from a different cause.
@@ -235,7 +235,7 @@ EOF
 @test "creates the output directory when it does not exist" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "dist/KMU/$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="dist/KMU/$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ -f "$WORK_DIR/dist/KMU/$OUTPUT_FILE" ]
@@ -249,7 +249,7 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
 
@@ -263,7 +263,7 @@ EOF
 
     rm "$WORK_DIR/kmu.version.template"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"template kmu.version.template not found"* ]]
@@ -274,7 +274,7 @@ EOF
 { "modName": "{{modName}}" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"missing required field 'masterVersionFile'"* ]]
@@ -284,7 +284,7 @@ EOF
 
     write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3a" "0.98a-RC8"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"does not split into three numeric parts"* ]]
@@ -295,7 +295,7 @@ EOF
 { "id": "kmu", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"missing required field 'name'"* ]]
@@ -306,7 +306,7 @@ EOF
 { "id": "kmu", "name": "Klark Morrigan's Universe", "version": "1.2.3" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"missing required field 'gameVersion'"* ]]
@@ -317,7 +317,7 @@ EOF
 { "name": "Klark Morrigan's Universe", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     # The id is what names the template, so an absent one would otherwise
     # be reported as a missing ".version" file rather than as the real fault.
@@ -329,7 +329,7 @@ EOF
 
     rm "$WORK_DIR/mod_info.json"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"neither mod_info.base.json nor mod_info.json found"* ]]
@@ -340,7 +340,7 @@ EOF
 { "id": "kmu", "name": "Klark Morrigan's Universe", "version": "2.0.0", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated '.modVersion.major')" = "2" ]
@@ -349,7 +349,7 @@ EOF
 @test "names a locale's zip in the download URL when the name is derived" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" LOCALE="zh-hans" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -361,7 +361,7 @@ EOF
 @test "names a locale's own copy as the master version file" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -373,7 +373,7 @@ EOF
 @test "leaves the master version file as the template states it with no locale" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "." ""
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" LOCALE="" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu.version" ]
@@ -387,7 +387,7 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" LOCALE="zh-hans" bash "$SCRIPT"
 
     # There is no locale copy to point at beside a file this release does not
     # publish, and an install polling a guessed address would never update.
@@ -402,7 +402,7 @@ EOF
     write_translated_changelog "zh-hans"
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -417,7 +417,7 @@ EOF
     write_translated_changelog "zh-hans"
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-en.zip" "." "en"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-en.zip" LOCALE="en" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated '.changelogURL')" = "https://example.invalid/CHANGELOG.md" ]
@@ -430,7 +430,7 @@ EOF
 
     rm "$WORK_DIR/CHANGELOG.md"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
 
     # The zip then carries no changelog to translate, so the template's address stands.
     [ "$status" -eq 0 ]
@@ -449,7 +449,7 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [ "$(read_generated 'has("changelogURL")')" = "false" ]
@@ -464,7 +464,7 @@ EOF
         > "$WORK_DIR/template.json"
     mv "$WORK_DIR/template.json" "$WORK_DIR/kmu.version.template"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
 
     # The root changelog is still a true answer, so the release goes ahead on it.
     [ "$status" -eq 0 ]
@@ -476,7 +476,7 @@ EOF
 
     write_localisation "en"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
 
     # Its zip fails to package for the same reason, and the parity suite would
     # have failed the checkout first.
@@ -485,13 +485,13 @@ EOF
     [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
-@test "fails when no output path is given" {
+@test "fails naming OUTPUT_PATH when no output path is given" {
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT"
+    run env -u OUTPUT_PATH bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
-    [[ "$output" == *"output path argument required"* ]]
+    [[ "$output" == *"fill_version_file_template: OUTPUT_PATH is required"* ]]
 }
 
 @test "derives the zip name from mod_info.json when none is given" {
@@ -501,7 +501,7 @@ EOF
     write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
 
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE"
+    run env OUTPUT_PATH="$OUTPUT_FILE" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/DerivedName-1.2.3.zip"
@@ -512,7 +512,7 @@ EOF
 
     write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -528,7 +528,7 @@ EOF
 { "id": "kmu", "name": "Klark Morrigan's Universe", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE"
+    run env OUTPUT_PATH="$OUTPUT_FILE" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"missing required field 'jars[0]'"* ]]
@@ -542,7 +542,7 @@ EOF
     # A local build has no Actions runtime to export the variable, and the
     # checkout's own remote is the only answer that cannot name a repository
     # this clone does not push to.
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -555,7 +555,7 @@ EOF
 
     init_git_origin "git@github.com:Klark-Morrigan/Starsector-Mod-KMU.git"
     cd "$WORK_DIR"
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -571,7 +571,7 @@ EOF
 
     # A release runs against a checkout whose remote is whatever the runner
     # cloned; the variable is what states which repository is publishing.
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
     [[ "$(read_generated '.directDownloadURL')" == *"/Klark-Morrigan/Starsector-Mod-KMU/"* ]]
@@ -584,7 +584,7 @@ EOF
     # The download URL has no third source, and a run outside both Actions and
     # a checkout is exactly where it would otherwise be built against an empty
     # owner/repo.
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"<owner>/<repo>"* ]]
@@ -595,7 +595,7 @@ EOF
 
     init_git_origin "a-local-clone"
     cd "$WORK_DIR"
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"cannot read <owner>/<repo> out of the origin remote"* ]]
@@ -605,7 +605,7 @@ EOF
 
     write_mod_info "kmu" "Klark Morrigan's Universe" "1.02.3" "0.98a-RC8"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     [ "$status" -eq 0 ]
 
@@ -624,7 +624,7 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     # Substitution is by whole value, which is what lets a token carry a
     # non-string type. A partial one cannot be honoured, so it is refused
@@ -646,7 +646,7 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
 
     # Substituting through jq rather than sed is what keeps a name like this
     # from breaking the JSON it lands in.
