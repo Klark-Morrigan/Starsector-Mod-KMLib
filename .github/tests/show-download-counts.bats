@@ -84,14 +84,27 @@ show_download_counts() {
     run --separate-stderr "${STAND_IN_SCRIPT}" "$@"
 }
 
-# Prints the flags the dry run should be handed, given the default locale.
+# Prints the flags the dry run should be handed, given the default locale and
+# the Nexus mod id.
 build_expected_flags() {
 
     printf '%s\n' \
         --repository "${REPOSITORY}" \
         --asset-name-regex "${EXPECTED_ASSET_NAME_REGEX}" \
         --default-locale "$1" \
-        --label "Fixture"
+        --label "Fixture" \
+        --nexus-game-id "2672" \
+        --nexus-mod-id "${2:-}" \
+        --nexus-file-name "Fixture" \
+        --nexus-locale "$1"
+}
+
+# Writes a version template stating the given Nexus mod id into the mod root.
+#   write_version_template <dir> <nexus mod id>
+write_version_template() {
+
+    printf '{ "masterVersionFile": "https://example.invalid/fixture.version", "modNexusId": %s }\n' "$2" \
+        > "$1/fixture.version.template"
 }
 
 # Prints the stderr lines between the given heading and the next one.
@@ -133,6 +146,16 @@ read_section() {
 
     [ "${status}" -eq 0 ]
     [ "${output}" = "$(build_expected_flags "")" ]
+}
+
+# The dry run reads Nexus exactly when a scheduled run would.
+@test "hands on the Nexus mod id the version template states" {
+
+    write_version_template "${MOD_ROOT}" 160
+    show_download_counts "${MOD_ROOT}"
+
+    [ "${status}" -eq 0 ]
+    [ "${output}" = "$(build_expected_flags en 160)" ]
 }
 
 @test "fails on an origin that is not GitHub, before the dry run" {
@@ -194,7 +217,11 @@ checkout of ${STAND_IN_KMLIB}" ]
     [ "$(read_section "Inputs")" = "repository: ${REPOSITORY}
 asset-name-regex: ${EXPECTED_ASSET_NAME_REGEX}
 default-locale: en
-label: Fixture" ]
+label: Fixture
+nexus-game-id: 2672
+nexus-mod-id:
+nexus-file-name: Fixture
+nexus-locale: en" ]
 }
 
 @test "logs an empty input as its name alone" {

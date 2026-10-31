@@ -65,6 +65,15 @@ outputs:
       none - the case for KMLib releasing itself. Empty is the signal to skip
       both the release-exists check and the release-body link that consume it.
     value: ${{ steps.read.outputs.kmlib-dependency-version }}
+  nexus-game-id:
+    description: "Nexus Mods' id for Starsector, which every mod's page sits under."
+    value: ${{ steps.read.outputs.nexus-game-id }}
+  nexus-mod-id:
+    description: >-
+      Id of the Nexus Mods page hosting the mod's files, from the
+      <mod-id>.version.template's modNexusId. Empty when the template states
+      none or the mod commits no template - the mod is not on Nexus.
+    value: ${{ steps.read.outputs.nexus-mod-id }}
   kmlib-repo:
     description: >-
       Repository publishing KMLib, emitted from the same constant the sibling

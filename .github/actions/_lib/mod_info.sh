@@ -76,6 +76,10 @@ ZIP_NAME_LOCALE_GROUP="locale"
 # reached only one of them would leave the pipeline quietly half-right.
 KMLIB_MOD_ID="kmlib"
 
+# Nexus Mods' id for Starsector, the game every mod's page sits under. Nexus
+# addresses a page by the game and the mod id together.
+NEXUS_GAME_ID="2672"
+
 # Moves into the given mod root, the directory holding the mod's metadata.
 # Fails the run naming that directory when it is not there.
 #

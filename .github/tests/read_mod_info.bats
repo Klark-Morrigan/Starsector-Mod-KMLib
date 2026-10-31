@@ -180,7 +180,7 @@ read_output_value() {
 
     [ "$status" -eq 0 ]
     [ "$(grep -c '^sibling-checkouts=' "$GITHUB_OUTPUT")" -eq 1 ]
-    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 12 ]
+    [ "$(wc -l < "$GITHUB_OUTPUT")" -eq 14 ]
 }
 
 @test "emits the KMLib repository the sibling checkout set names" {
@@ -263,6 +263,48 @@ EOF
     grep -qx "kmlib-dependency-version=1.0.0" "$GITHUB_OUTPUT"
 }
 
+@test "emits the Nexus mod id the version template states" {
+
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
+    printf '{ "masterVersionFile": "https://example.invalid/kmu.version", "modNexusId": 160 }\n' \
+        > "$WORK_DIR/kmu.version.template"
+
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+
+    grep -qx "nexus-mod-id=160"                  "$GITHUB_OUTPUT"
+    grep -qx "nexus-game-id=2672"                "$GITHUB_OUTPUT"
+}
+
+# A template without the key is a mod not on Nexus, and the action skips it.
+@test "emits an empty Nexus mod id when the version template states none" {
+
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
+    printf '{ "masterVersionFile": "https://example.invalid/kmu.version" }\n' > "$WORK_DIR/kmu.version.template"
+
+    cd "$WORK_DIR"
+    run bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+
+    grep -qx "nexus-mod-id="                     "$GITHUB_OUTPUT"
+}
+
+@test "emits an empty Nexus mod id when no version template is committed" {
+
+    write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
+
+    cd "$WORK_DIR"
+    run --separate-stderr bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+
+    grep -qx "nexus-mod-id="                     "$GITHUB_OUTPUT"
+    [[ "$stderr" == *"No kmu.version.template, so no Nexus mod id."* ]]
+}
+
 @test "reads the base over a generated mod_info.json" {
 
     write_mod_info_file "$WORK_DIR" "kmu" "0.1.0" "jars/KMU.jar"
@@ -285,6 +327,7 @@ EOF
 @test "logs the file it read and every key it emits, with its value" {
 
     write_mod_info_with_kmlib "kmu" "0.1.0" "jars/KMU.jar" "1.0.0"
+    printf '{ "modNexusId": 160 }\n' > "$WORK_DIR/kmu.version.template"
 
     cd "$WORK_DIR"
     run --separate-stderr bash "$SCRIPT"
@@ -294,6 +337,7 @@ EOF
 
     expectedLines=(
         "Reading mod_info.json."
+        "Reading kmu.version.template."
         "mod-id: kmu"
         "version: 0.1.0"
         "runner-label: kmu-runner"
@@ -305,6 +349,8 @@ EOF
         "jar-source: jars/KMU.jar"
         "sibling-checkouts: $siblings"
         "kmlib-dependency-version: 1.0.0"
+        "nexus-game-id: 2672"
+        "nexus-mod-id: 160"
         "kmlib-repo: Klark-Morrigan/Starsector-Mod-KMLib"
     )
 

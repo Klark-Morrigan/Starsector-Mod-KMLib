@@ -9,8 +9,10 @@
 # of the local ref.
 #
 # Only what is Starsector-specific lives here: which assets count and what the
-# badge is called, read from the caller's metadata by read-mod-info, and which
-# locale an unsuffixed zip counts under, read from its manifest by read-locales.
+# badge is called, read from the caller's metadata by read-mod-info, which
+# locale an unsuffixed zip counts under, read from its manifest by read-locales,
+# and which Nexus page also counts, read from its version template's modNexusId
+# by read-mod-info, which also states Starsector's game id on Nexus.
 # Counting, rendering and publishing belong to Common-Automation's
 # publish-download-badges action, which knows nothing of mods.
 name: publish-download-badges
@@ -77,9 +79,17 @@ jobs:
       # The write token reaches this action at @master, so whatever merges
       # there runs with write access to the caller's repository. That is the
       # trust mod-release.yml already extends to create-github-release.
+      #
+      # Nexus is read only when the template states a modNexusId. A Nexus page
+      # can host several mods' files, so only those named after the mod's
+      # folder count. Nexus hosts the default locale's build.
       - name: Publish download badges
         uses: Klark-Morrigan/Common-Automation/.github/actions/publish-download-badges@master
         with:
           asset-name-regex: ${{ steps.read.outputs.zip-name-regex }}
           default-locale: ${{ steps.locales.outputs.default-locale }}
           label: ${{ steps.read.outputs.mod-folder-name }}
+          nexus-game-id: ${{ steps.read.outputs.nexus-game-id }}
+          nexus-mod-id: ${{ steps.read.outputs.nexus-mod-id }}
+          nexus-file-name: ${{ steps.read.outputs.mod-folder-name }}
+          nexus-locale: ${{ steps.locales.outputs.default-locale }}

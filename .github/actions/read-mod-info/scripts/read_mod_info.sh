@@ -67,6 +67,21 @@ fi
 # well-formed is not asked here; validate-versioning owns that rule.
 KMLIB_DEPENDENCY_VERSION=$(mod_info_read_dependency_version "${KMLIB_MOD_ID}")
 
+# The Nexus page hosting the mod's files, as the VersionChecker template states
+# it for update links. Read from there rather than stated again, so the page a
+# player is sent to and the page the download badges count are one id. Empty
+# when the template states none, or when the mod commits no template: either
+# way the mod is not on Nexus.
+VERSION_TEMPLATE_FILE=$(mod_info_derive_version_template_name "${MOD_ID}")
+NEXUS_MOD_ID=""
+
+if [[ -f "${VERSION_TEMPLATE_FILE}" ]]; then
+  echo "Reading ${VERSION_TEMPLATE_FILE}." >&2
+  NEXUS_MOD_ID=$(jq -r '.modNexusId // ""' "${VERSION_TEMPLATE_FILE}")
+else
+  echo "No ${VERSION_TEMPLATE_FILE}, so no Nexus mod id." >&2
+fi
+
 # Built with jq rather than by string concatenation so the emitted array is
 # valid JSON whatever the constants above hold - the consuming workflows decode
 # it with fromJSON / jq.
@@ -93,6 +108,8 @@ write_github_output "version-file-name" "${VERSION_FILE_NAME}"
 write_github_output "jar-source" "${JAR_SOURCE}"
 write_github_output "sibling-checkouts" "${SIBLING_CHECKOUTS}"
 write_github_output "kmlib-dependency-version" "${KMLIB_DEPENDENCY_VERSION}"
+write_github_output "nexus-game-id" "${NEXUS_GAME_ID}"
+write_github_output "nexus-mod-id" "${NEXUS_MOD_ID}"
 # Emitted from the same constant the sibling clone above is built from, so
 # the repository a release is checked against cannot drift from the one the
 # build actually compiles the mod against.
