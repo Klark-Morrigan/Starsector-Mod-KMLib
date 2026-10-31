@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fills a mod's committed VersionChecker template from mod_info.json and
-# writes the result to the path given as an argument.
+# writes the result to the path OUTPUT_PATH names.
 #
 # A mod publishes the same version number in three places: mod_info.json,
 # the .version file it ships, and the .version file served as the release
@@ -8,9 +8,13 @@
 # at release time keeps the number stated once, in the file the game itself
 # reads, instead of in three that drift apart the moment one is forgotten.
 #
-# Usage: fill_version_file_template.sh <output-path> [zip-name] [mod-root] [locale]
+# Inputs are read from the environment, each described where it is read below:
+#   OUTPUT_PATH  Required.
+#   ZIP_NAME     Default: derived from mod_info.json .jars[0]
+#   MOD_ROOT     Default: .
+#   LOCALE       Default: none
 #
-# Reads from the mod root, which defaults to the working directory:
+# Reads from the mod root:
 #   mod_info.base.json, else mod_info.json
 #                              - .id, .name, .version, .gameVersion, and
 #                                .jars[0] when no zip name is given
@@ -38,12 +42,17 @@
 # token surviving substitution fails the run, so a typo in a template
 # ships nothing rather than shipping a literal "{{modName}}" to players.
 #
-# Logs the file it writes, with the addresses it filled in.
+# Each step is a function of its own under fill_version_file_template/, so this
+# file reads as their order. Logs the zip name and the repository it chose and
+# where each came from, then the file it writes with the addresses it filled in.
 set -euo pipefail
 
 SCRIPT_NAME="fill_version_file_template"
 
-LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/_lib"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STEPS_DIR="${SCRIPT_DIR}/fill_version_file_template"
+LIB_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)/_lib"
+
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../_lib/mod_info.sh
 source "${LIB_DIR}/mod_info.sh"
@@ -52,41 +61,54 @@ source "${LIB_DIR}/mod_info.sh"
 # shellcheck source=../../_lib/localisation.sh
 source "${LIB_DIR}/localisation.sh"
 
-# The suffix keeps the committed template distinct from the generated
-# <mod-id>.version: a dev install symlinks the repo into mods/, and a
-# committed file under the generated name would have version_files.csv
-# point VersionChecker at quoted tokens instead of numbers.
-TEMPLATE_EXTENSION=".version.template"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../_lib/read_origin_repository.sh
+source "${LIB_DIR}/read_origin_repository.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=fill_version_file_template/build_token_replacements.sh
+source "${STEPS_DIR}/build_token_replacements.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=fill_version_file_template/fill_template_tokens.sh
+source "${STEPS_DIR}/fill_template_tokens.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=fill_version_file_template/read_publishing_repository.sh
+source "${STEPS_DIR}/read_publishing_repository.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=fill_version_file_template/resolve_changelog_url.sh
+source "${STEPS_DIR}/resolve_changelog_url.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=fill_version_file_template/resolve_master_version_file.sh
+source "${STEPS_DIR}/resolve_master_version_file.sh"
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=fill_version_file_template/resolve_zip_name.sh
+source "${STEPS_DIR}/resolve_zip_name.sh"
+
 GITHUB_BASE_URL="https://github.com"
 RELEASE_DOWNLOAD_PATH="releases/download"
 
-# Matches any {{...}} left in the filled file. Deliberately broader than the
-# token list above: an unknown token is a mistake in the template, and it has
-# to be caught here because nothing downstream reads this file until a
-# player's update checker does.
-TOKEN_REGEX='\{\{[^}]*\}\}'
-
-OUTPUT_PATH="${1:?output path argument required}"
-# Optional because only a release has a zip name to state. The pipeline
-# passes read-mod-info's output, so the name in the download URL and the
-# name of the asset actually uploaded are one string rather than two
-# derivations that agree until one changes. A caller with no such name -
-# the local build - leaves it empty and gets the same derivation, taken
-# from the shared lib both sides read it from.
-ZIP_NAME="${2:-}"
+OUTPUT_PATH="${OUTPUT_PATH:?${SCRIPT_NAME}: OUTPUT_PATH is required}"
+# Optional because only a release has a zip name to state; resolve_zip_name
+# says what an empty one gets.
+ZIP_NAME="${ZIP_NAME:-}"
 # Directory holding mod_info.json and the template. Optional because a
 # caller already standing in the mod root - which is every caller running
 # against a plain checkout - has nothing to say. The release pipeline is the
 # exception: it checks the mod out one level down so the sibling repos can
 # sit beside it, and Actions permits no working-directory on a `uses:` step.
-MOD_ROOT="${3:-.}"
+MOD_ROOT="${MOD_ROOT:-.}"
 # The locale tag of the build this file ships in, for a mod releasing one zip
 # per locale. Optional because a mod keeping no locales releases one zip under
 # no tag, and a local build fills the file for whichever locale it holds. Set,
 # it names that locale's zip in the download URL, that locale's copy of this
 # file as the master, and that locale's changelog, so an install polls the copy
 # whose download link leads back to its own language and reads its changes in it.
-LOCALE_TAG="${4:-}"
+LOCALE="${LOCALE:-}"
 
 # Kept before the move below, so the output path resolves against the
 # directory the caller stated it from.
@@ -105,192 +127,26 @@ GAME_VERSION=$(jq -r '.gameVersion' "${MOD_INFO_FILE}")
 mod_info_require_fields "id:${MOD_ID}" "name:${MOD_NAME}" "version:${VERSION}" \
                         "gameVersion:${GAME_VERSION}"
 
-if [[ -z "${ZIP_NAME}" ]]; then
-
-  JAR_SOURCE=$(jq -r '.jars[0]' "${MOD_INFO_FILE}")
-
-  # Required only on this path: a caller that stated the zip name needs no
-  # jar to work it out from, and refusing one for a field it never reads
-  # would fail mods that publish no jar at all.
-  mod_info_require_fields "jars[0]:${JAR_SOURCE}"
-
-  ZIP_NAME=$(mod_info_derive_zip_name "${JAR_SOURCE}" "${VERSION}" "${LOCALE_TAG}")
-fi
+ZIP_NAME=$(resolve_zip_name "${ZIP_NAME}" "${VERSION}" "${LOCALE}")
 
 # The template is named after the mod id, so no caller has to state a
 # path that mod_info.json already determines.
-TEMPLATE_FILE="${MOD_ID}${TEMPLATE_EXTENSION}"
+TEMPLATE_FILE=$(mod_info_derive_version_template_name "${MOD_ID}")
 
 if [[ ! -f "${TEMPLATE_FILE}" ]]; then
-
-  echo "${SCRIPT_NAME}: template ${TEMPLATE_FILE} not found in ${PWD}" >&2
-  exit 1
-fi
-
-# Half of the download URL is the publishing repository. The Actions runtime
-# exports it, so a release states nothing; a local build has no such variable
-# and the checkout's own origin remote is the honest answer, because a URL
-# built from anything else would point at a repository this clone does not
-# push to. Read here, inside the mod root, so the remote consulted is the
-# mod's own rather than that of whatever checkout the caller stood in.
-REPOSITORY="${GITHUB_REPOSITORY:-}"
-
-if [[ -z "${REPOSITORY}" ]]; then
-
-  if ! ORIGIN_REMOTE_URL=$(git remote get-url origin 2>/dev/null); then
-
-    echo "${SCRIPT_NAME}: GITHUB_REPOSITORY is unset and ${PWD} has no origin" \
-         "remote to read <owner>/<repo> from" >&2
+    echo "${SCRIPT_NAME}: template ${TEMPLATE_FILE} not found in ${PWD}" >&2
     exit 1
-  fi
-
-  # https://host/owner/repo(.git) and git@host:owner/repo(.git) differ only in
-  # what separates the host from the owner, so both are read by taking the last
-  # two segments and treating ":" as another separator.
-  ORIGIN_REMOTE_URL="${ORIGIN_REMOTE_URL%.git}"
-
-  if [[ "${ORIGIN_REMOTE_URL}" != */* ]]; then
-
-    echo "${SCRIPT_NAME}: cannot read <owner>/<repo> out of the origin remote" \
-         "'${ORIGIN_REMOTE_URL}'" >&2
-    exit 1
-  fi
-
-  REPOSITORY_NAME="${ORIGIN_REMOTE_URL##*/}"
-  REPOSITORY_OWNER="${ORIGIN_REMOTE_URL%/*}"
-  REPOSITORY_OWNER="${REPOSITORY_OWNER##*[:/]}"
-  REPOSITORY="${REPOSITORY_OWNER}/${REPOSITORY_NAME}"
 fi
 
-# Where a mod serves its master copy is a policy choice rather than
-# something a release can work out - a release asset, a raw branch path, or
-# a host that is not GitHub at all are all valid answers - so the template
-# states it. Checked because without an address to poll, the generated file
-# is inert, and nothing downstream reads it until a player's update checker
-# does.
-MASTER_VERSION_FILE=$(jq -r '.masterVersionFile' "${TEMPLATE_FILE}")
-
-if [[ -z "${MASTER_VERSION_FILE}" ]] || [[ "${MASTER_VERSION_FILE}" == "null" ]]; then
-
-  echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} is missing required field 'masterVersionFile'" >&2
-  exit 1
-fi
-
-# A localised release serves each locale's copy of this file as a release
-# asset beside the unlocalised one, so the template's address - written for the
-# unlocalised name - leads to a locale's copy by swapping its last segment. An
-# address ending in another name is a place this release does not publish
-# locale copies to, so the run fails rather than point an install at nothing.
-if [[ -n "${LOCALE_TAG}" ]]; then
-
-  UNLOCALISED_VERSION_FILE_NAME=$(mod_info_derive_version_file_name "${MOD_ID}")
-
-  if [[ "${MASTER_VERSION_FILE##*/}" != "${UNLOCALISED_VERSION_FILE_NAME}" ]]; then
-
-    echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} masterVersionFile '${MASTER_VERSION_FILE}' does not end in" \
-         "${UNLOCALISED_VERSION_FILE_NAME}, so it names no copy for locale ${LOCALE_TAG}" >&2
-    exit 1
-  fi
-
-  MASTER_VERSION_FILE="${MASTER_VERSION_FILE%/*}/$(mod_info_derive_version_file_name "${MOD_ID}" "${LOCALE_TAG}")"
-fi
-
-# A translated locale's zip carries that locale's changelog in place of the root
-# one, so its changelog address follows: the template's, written for the root
-# changelog, has its last segment swapped for the translation's path beside it.
-# The default locale, a mod keeping no root changelog and a template stating no
-# address keep the template's - the same cases in which the zip keeps the root
-# changelog. Read before the move back to the caller, as the bundle paths are
-# relative to the mod root.
-CHANGELOG_URL=$(jq -r '.changelogURL // ""' "${TEMPLATE_FILE}")
-
-if [[ -n "${LOCALE_TAG}" && -n "${CHANGELOG_URL}" && -f "${LOCALISATION_CHANGELOG_FILE}" \
-      && -f "${LOCALISATION_MANIFEST_FILE}" ]]; then
-
-  DEFAULT_LOCALE_TAG=$(jq -r '.defaultLocale // ""' "${LOCALISATION_MANIFEST_FILE}")
-
-  if [[ "${LOCALE_TAG}" != "${DEFAULT_LOCALE_TAG}" ]]; then
-
-    # Required here as the packaging requires it: a translated locale without its
-    # changelog was never tested, and its zip fails to package for the same reason.
-    TRANSLATED_CHANGELOG_FILE="$(localisation_require_translated_changelog "${LOCALE_TAG}")"
-
-    # An address ending in another name is left as written rather than failed: it
-    # still leads to the root changelog, which is degraded rather than broken.
-    if [[ "${CHANGELOG_URL##*/}" == "${LOCALISATION_CHANGELOG_FILE}" ]]; then
-      CHANGELOG_URL="${CHANGELOG_URL%/*}/${TRANSLATED_CHANGELOG_FILE}"
-    else
-      echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} changelogURL '${CHANGELOG_URL}' does not end in" \
-           "${LOCALISATION_CHANGELOG_FILE}, so locale ${LOCALE_TAG} keeps it rather than naming" \
-           "${TRANSLATED_CHANGELOG_FILE}" >&2
-    fi
-  fi
-fi
-
-if ! [[ "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
-
-  echo "${SCRIPT_NAME}: version '${VERSION}' does not split into three numeric parts (MAJOR.MINOR.PATCH)" >&2
-  exit 1
-fi
-
-IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION}"
-
-# Base-10 arithmetic canonicalises each part before it is emitted as a JSON
-# number: "01" is a legal thing to write in a version string but not legal
-# JSON, and update checkers compare these components numerically.
-MAJOR=$((10#${MAJOR}))
-MINOR=$((10#${MINOR}))
-PATCH=$((10#${PATCH}))
+REPOSITORY=$(read_publishing_repository)
+MASTER_VERSION_FILE=$(resolve_master_version_file "${TEMPLATE_FILE}" "${MOD_ID}" "${LOCALE}")
+CHANGELOG_URL=$(resolve_changelog_url "${TEMPLATE_FILE}" "${LOCALE}")
 
 # The release tag is the bare version, matching what mod-release.yml pushes.
 DIRECT_DOWNLOAD_URL="${GITHUB_BASE_URL}/${REPOSITORY}/${RELEASE_DOWNLOAD_PATH}/${VERSION}/${ZIP_NAME}"
 
-# Built as JSON rather than as sed expressions so each token carries its own
-# type - the version components substitute as numbers, everything else as
-# strings - and so a mod name holding quotes or backslashes is escaped
-# rather than breaking the file it lands in.
-REPLACEMENTS=$(jq -n \
-  --arg modName "${MOD_NAME}" \
-  --argjson major "${MAJOR}" \
-  --argjson minor "${MINOR}" \
-  --argjson patch "${PATCH}" \
-  --arg starsectorVersion "${GAME_VERSION}" \
-  --arg directDownloadURL "${DIRECT_DOWNLOAD_URL}" \
-  '{ "{{modName}}": $modName,
-     "{{major}}": $major,
-     "{{minor}}": $minor,
-     "{{patch}}": $patch,
-     "{{starsectorVersion}}": $starsectorVersion,
-     "{{directDownloadURL}}": $directDownloadURL }')
-
-# walk() reaches nested values (modVersion's components) without this script
-# knowing the template's shape, which is what keeps the shape the mod's
-# to state. The visited value is bound to $value first because the "." in a
-# piped expression would otherwise refer to $replacements, not to it. The
-# master and changelog addresses are written back as resolved above, which for
-# an unlocalised file are the template's own. The changelog address is written
-# only where the template states one, so the template keeps owning its shape.
-GENERATED=$(jq --argjson replacements "${REPLACEMENTS}" \
-  --arg masterVersionFile "${MASTER_VERSION_FILE}" \
-  --arg changelogUrl "${CHANGELOG_URL}" \
-  'walk(. as $value
-        | if ($value | type) == "string" and ($replacements | has($value))
-          then $replacements[$value]
-          else $value
-          end)
-   | .masterVersionFile = $masterVersionFile
-   | if $changelogUrl != "" then .changelogURL = $changelogUrl else . end' \
-  "${TEMPLATE_FILE}")
-
-UNREPLACED=$(jq -r --arg tokenRegex "${TOKEN_REGEX}" \
-  '[.. | strings | select(test($tokenRegex))] | unique | join(", ")' \
-  <<< "${GENERATED}")
-
-if [[ -n "${UNREPLACED}" ]]; then
-
-  echo "${SCRIPT_NAME}: ${TEMPLATE_FILE} has unreplaced token(s): ${UNREPLACED}" >&2
-  exit 1
-fi
+REPLACEMENTS=$(build_token_replacements "${MOD_NAME}" "${VERSION}" "${GAME_VERSION}" "${DIRECT_DOWNLOAD_URL}")
+GENERATED=$(fill_template_tokens "${TEMPLATE_FILE}" "${REPLACEMENTS}" "${MASTER_VERSION_FILE}" "${CHANGELOG_URL}")
 
 # Back to where the caller stood, because that is what the output path was
 # written against. Everything above needed the mod root; nothing below does.
@@ -308,5 +164,5 @@ echo "  masterVersionFile: ${MASTER_VERSION_FILE}" >&2
 echo "  directDownloadURL: ${DIRECT_DOWNLOAD_URL}" >&2
 
 if [[ -n "${CHANGELOG_URL}" ]]; then
-  echo "  changelogURL: ${CHANGELOG_URL}" >&2
+    echo "  changelogURL: ${CHANGELOG_URL}" >&2
 fi

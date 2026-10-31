@@ -1,5 +1,6 @@
 {
   "masterVersionFile": "https://github.com/Klark-Morrigan/Starsector-Mod-KMLib/releases/latest/download/kmlib.version",
+  "modNexusId": 160,
   "modName": "{{modName}}",
   "modVersion":
   {

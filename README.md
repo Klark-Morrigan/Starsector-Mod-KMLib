@@ -290,6 +290,7 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
 - [`actions/fill-version-file-template/`](.github/actions/fill-version-file-template/) -
   fills the caller's committed `<mod-id>.version.template` from its metadata,
   producing the VersionChecker file for the release being cut.
+  Each step is a function of its own under `scripts/fill_version_file_template/`.
 - [`actions/package-release/`](.github/actions/package-release/) -
   packages a built mod into its release assets,
   one zip and one version file per locale.
@@ -300,6 +301,9 @@ see [Reusable CI / release actions](#reusable-ci--release-actions):
   sourced by the scripts reading that metadata.
 - [`actions/_lib/json.sh`](.github/actions/_lib/json.sh) -
   the JSON reads the locale scripts share.
+  It, `mod_info.sh` and `github_output.sh` each load one function per file
+  from the folder of their own name beside them,
+  so a script sources one file.
 - [`actions/_lib/localisation.sh`](.github/actions/_lib/localisation.sh) -
   where a mod keeps its locale bundles and its translated changelogs.
 - [`actions/_lib/github_output.sh`](.github/actions/_lib/github_output.sh) -
@@ -1235,6 +1239,11 @@ its `outputs:` block is the statement of that convention:
   where that KMLib is published.
   The latter is emitted from the same constant the sibling checkout set is built from,
   so the release a pin is checked against is the repository the build compiles it against.
+- `nexus-mod-id`,
+  the Nexus Mods page the `<mod-id>.version.template` states as `modNexusId`,
+  or nothing when the template states none or the mod commits no template.
+  A `modNexusId` that is not a whole number fails the read, naming the template.
+  `nexus-game-id` beside it is Starsector's ID on Nexus Mods, `2672`.
 
 **[read-locales](.github/actions/read-locales/action.yml)** reads the caller's `localisation/manifest.json`
 and emits its `locales` -
@@ -1408,7 +1417,9 @@ so no version number is restated by hand outside that file.
 Four of these actions read the caller's metadata and a fifth names release files,
 so which file holds the metadata, what shape its fields take and what follows from them live once in
 [_lib/mod_info.sh](.github/actions/_lib/mod_info.sh),
-which they source:
+which they source.
+It holds the constants and loads each function from its own file under `_lib/mod_info/`.
+Between them they hold:
 the base-over-launcher-file rule,
 the SemVer shape,
 the "this field is present" check,
@@ -1499,6 +1510,12 @@ An unsuffixed zip counts under the default locale of the caller's `localisation/
 read through `read-locales`.
 A mod without a manifest keeps no locales,
 so it gets one count per release, under no locale.
+A `modNexusId` in the caller's `<mod-id>.version.template` turns Nexus on:
+the files on that page named after the mod's folder count too,
+under the default locale, added to the release whose tag equals their version.
+A page can host several mods' files,
+which is why only the folder's name counts.
+Without the key, Nexus is not read.
 Only the publishing job holds `contents: write`,
 and a caller has to grant the same,
 since a reusable workflow's permissions are capped by its caller.

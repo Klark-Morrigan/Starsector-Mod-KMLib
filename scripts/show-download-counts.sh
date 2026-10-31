@@ -81,15 +81,27 @@ repository="$(read_origin_repository "${mod_root}")"
 asset_name_regex="$(read_github_output "${outputs_file}" "zip-name-regex")"
 default_locale="$(read_github_output "${outputs_file}" "default-locale")"
 label="$(read_github_output "${outputs_file}" "mod-folder-name")"
+nexus_game_id="$(read_github_output "${outputs_file}" "nexus-game-id")"
+nexus_mod_id="$(read_github_output "${outputs_file}" "nexus-mod-id")"
 
 print_section_heading "Inputs" >&2
 log_output_value "repository" "${repository}"
 log_output_value "asset-name-regex" "${asset_name_regex}"
 log_output_value "default-locale" "${default_locale}"
 log_output_value "label" "${label}"
+log_output_value "nexus-game-id" "${nexus_game_id}"
+log_output_value "nexus-mod-id" "${nexus_mod_id}"
+log_output_value "nexus-file-name" "${label}"
+log_output_value "nexus-locale" "${default_locale}"
 
+# The Nexus file name and locale are the label and the default locale, as
+# publish-download-badges.yml passes them; a change to one belongs in the other.
 "${common_automation_root}/scripts/show-download-counts.sh" \
     --repository "${repository}" \
     --asset-name-regex "${asset_name_regex}" \
     --default-locale "${default_locale}" \
-    --label "${label}"
+    --label "${label}" \
+    --nexus-game-id "${nexus_game_id}" \
+    --nexus-mod-id "${nexus_mod_id}" \
+    --nexus-file-name "${label}" \
+    --nexus-locale "${default_locale}"

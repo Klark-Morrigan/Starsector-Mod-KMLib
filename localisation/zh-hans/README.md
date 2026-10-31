@@ -462,6 +462,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | download count | 下载量 | |
 | endpoint file (the data a shields badge reads) | 端点文件 | 端点, endpoint, as shields names the service; shields itself stays in English |
+| Nexus Mods, page (a mod's page there), game ID (the game a page sits under) | Nexus Mods, 页面, 游戏 ID | the site's name stays in English; 页面, a web page; ID kept Latin as the mod ID is |
 | package (build the release zip) | 打包 | the usual word |
 | poll (an update checker asking for a version file) | 轮询 | the usual computing word |
 | release (a published version) | 发布版本 | |
@@ -488,6 +489,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | --- | --- | --- |
 | bundle | 语言包 | |
 | core localisation | 核心本地化 | the Chinese localisation as a project is 中文本地化 |
+| default locale (the one a manifest names first) | 默认语言区域 | 默认, default, before the locale row's 语言区域 |
 | English copy (the English a console text carries after its translation) | 英文副本 | 英文, English, with 副本, a copy, as in 检出副本, a checkout |
 | locale | 语言区域 | |
 | locale tag (such as `zh-hans`) | 语言区域标签 | 标签, tag |

@@ -2,9 +2,9 @@
 # Writes a script's step outputs, in one place: every key written is also
 # logged, so a run's log shows each value one step handed the next.
 #
-# Sourced, not executed: defines write_github_output and
-# write_multiline_output. Failures report through the sourcing script's own
-# SCRIPT_NAME.
+# Sourced, not executed: loads write_github_output and write_multiline_output,
+# one function per file under github_output/, so a script sources one file.
+# Failures report through the sourcing script's own SCRIPT_NAME.
 #
 # Every value is logged as written. A secret has to be masked with
 # ::add-mask:: before it is written, since Actions masks only the secrets it
@@ -12,72 +12,20 @@
 #
 # The log goes to stderr, where the runner shows it, and the output file stays
 # as the runner reads it.
-
-# GITHUB_OUTPUT is exported by the Actions runtime, not assigned here.
-# shellcheck disable=SC2154
+#
+# Each shellcheck source path is written from the repository root, for the
+# reason mod_info.sh gives.
 
 SCRIPT_NAME="${SCRIPT_NAME:-github_output}"
 
-# shellcheck source-path=SCRIPTDIR
-# shellcheck source=log_output_value.sh
+# shellcheck source=.github/actions/_lib/log_output_value.sh
 source "${BASH_SOURCE[0]%/*}/log_output_value.sh"
 
-# Appends "key=value" to $GITHUB_OUTPUT and logs it through log_output_value.
-#   write_github_output <key> <value>
-#
-# A value spanning lines fails the run, naming the key: in this form its
-# second line would be read as a key of its own. write_multiline_output takes
-# such a value.
-write_github_output() {
+# shellcheck source=.github/actions/_lib/github_output/draw_output_delimiter.sh
+source "${BASH_SOURCE[0]%/*}/github_output/draw_output_delimiter.sh"
 
-  local outputKey="${1}" outputValue="${2}"
+# shellcheck source=.github/actions/_lib/github_output/write_github_output.sh
+source "${BASH_SOURCE[0]%/*}/github_output/write_github_output.sh"
 
-  if [[ "${outputValue}" == *$'\n'* ]]; then
-    echo "${SCRIPT_NAME}: output '${outputKey}' spans more than one line; write it with write_multiline_output" >&2
-    exit 1
-  fi
-
-  echo "${outputKey}=${outputValue}" >> "${GITHUB_OUTPUT}"
-  log_output_value "${outputKey}" "${outputValue}"
-}
-
-# Appends one output in the multi-line form - "key<<delimiter", the value,
-# then the delimiter alone - and logs it as "key:" with the value's lines
-# indented beneath, a blank line left blank.
-#   write_multiline_output <key> <value>
-#
-# The delimiter is random and drawn again while the value holds it, so no line
-# of the value can end it early.
-write_multiline_output() {
-
-  local outputKey="${1}" outputValue="${2}" delimiter valueLine
-  delimiter="$(draw_output_delimiter)"
-
-  while [[ "${outputValue}" == *"${delimiter}"* ]]; do
-    delimiter="$(draw_output_delimiter)"
-  done
-
-  {
-    echo "${outputKey}<<${delimiter}"
-    printf '%s\n' "${outputValue}"
-    echo "${delimiter}"
-  } >> "${GITHUB_OUTPUT}"
-
-  echo "${outputKey}:" >&2
-
-  if [[ -n "${outputValue}" ]]; then
-    while IFS= read -r valueLine; do
-      echo "${valueLine:+  ${valueLine}}"
-    done <<< "${outputValue}" >&2
-  fi
-}
-
-# Echoes a heredoc delimiter no one could have written by chance.
-draw_output_delimiter() {
-
-  local randomHex
-  randomHex="$(od -An -N8 -tx1 /dev/urandom)"
-  randomHex="${randomHex//[[:space:]]/}"
-
-  printf 'EOF_%s' "${randomHex}"
-}
+# shellcheck source=.github/actions/_lib/github_output/write_multiline_output.sh
+source "${BASH_SOURCE[0]%/*}/github_output/write_multiline_output.sh"

@@ -26,7 +26,7 @@ setup() {
     export GITHUB_REPOSITORY="Klark-Morrigan/Starsector-Mod-KMU"
 
     # The well-formed pair, so each case below states only what it varies.
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8"
+    write_mod_info "kmu" "Fixture Mod" "1.2.3" "0.98a-RC8"
     write_template "kmu"
 }
 
@@ -105,43 +105,69 @@ read_generated() {
 
 @test "substitutes every token from mod_info.json" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedModName="Fixture Mod"
+    expectedStarsectorVersion="0.98a-RC8"
+    expectedMajor="1"
+    expectedMinor="2"
+    expectedPatch="3"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.modName')" = "Klark Morrigan's Universe" ]
-    [ "$(read_generated '.starsectorVersion')" = "0.98a-RC8" ]
-    [ "$(read_generated '.modVersion.major')" = "1" ]
-    [ "$(read_generated '.modVersion.minor')" = "2" ]
-    [ "$(read_generated '.modVersion.patch')" = "3" ]
+    [ "$(read_generated '.modName')" = "$expectedModName" ]
+    [ "$(read_generated '.starsectorVersion')" = "$expectedStarsectorVersion" ]
+    [ "$(read_generated '.modVersion.major')" = "$expectedMajor" ]
+    [ "$(read_generated '.modVersion.minor')" = "$expectedMinor" ]
+    [ "$(read_generated '.modVersion.patch')" = "$expectedPatch" ]
 }
 
+# The template writes these as quoted tokens because JSON has no
+# other way to write one. VersionChecker compares them numerically, so
+# coming out as numbers rather than quoted digits is the contract.
 @test "substitutes the version components as JSON numbers, not strings" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedType="number"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    # The template writes these as quoted tokens because JSON has no
-    # other way to write one. VersionChecker compares them numerically, so
-    # coming out as numbers rather than quoted digits is the contract.
-    [ "$(read_generated '.modVersion.major | type')" = "number" ]
-    [ "$(read_generated '.modVersion.minor | type')" = "number" ]
-    [ "$(read_generated '.modVersion.patch | type')" = "number" ]
+    [ "$(read_generated '.modVersion.major | type')" = "$expectedType" ]
+    [ "$(read_generated '.modVersion.minor | type')" = "$expectedType" ]
+    [ "$(read_generated '.modVersion.patch | type')" = "$expectedType" ]
 }
 
 @test "leaves values that are not tokens untouched" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedMasterVersionFile="https://example.invalid/master/kmu.version"
+    expectedChangelogUrl="https://example.invalid/CHANGELOG.md"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu.version" ]
-    [ "$(read_generated '.changelogURL')" = "https://example.invalid/CHANGELOG.md" ]
+    [ "$(read_generated '.masterVersionFile')" = "$expectedMasterVersionFile" ]
+    [ "$(read_generated '.changelogURL')" = "$expectedChangelogUrl" ]
 }
 
+# The template states the published shape; a mod adding a forum
+# thread id or any other VersionChecker field needs no change here.
 @test "carries keys this script knows nothing about" {
+
+    # ARRANGE
     cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
@@ -150,42 +176,54 @@ read_generated() {
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedThreadId="12345"
+    expectedThreadIdType="number"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    # The template states the published shape; a mod adding a forum
-    # thread id or any other VersionChecker field needs no change here.
-    [ "$(read_generated '.modThreadId')" = "12345" ]
-    [ "$(read_generated '.modThreadId | type')" = "number" ]
+    [ "$(read_generated '.modThreadId')" = "$expectedThreadId" ]
+    [ "$(read_generated '.modThreadId | type')" = "$expectedThreadIdType" ]
 }
 
 @test "builds the download URL from the publishing repo, version, and zip name" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
-
-    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+    [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
 }
 
 @test "logs the file it read and the file it wrote, with the addresses it filled in" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run --separate-stderr bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
     downloadUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/$ZIP_NAME"
     expectedLines=(
         "Reading mod_info.json."
+        "Using zip name $ZIP_NAME, as given."
+        "Using repository Klark-Morrigan/Starsector-Mod-KMU, from GITHUB_REPOSITORY."
         "Wrote $OUTPUT_FILE from kmu.version.template, version 1.2.3:"
         "  masterVersionFile: https://example.invalid/master/kmu.version"
         "  directDownloadURL: $downloadUrl"
         "  changelogURL: https://example.invalid/CHANGELOG.md"
     )
 
+    # ACT
+    run --separate-stderr env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
     [ "$stderr" = "$(printf '%s\n' "${expectedLines[@]}")" ]
     [ "$output" = "" ]
@@ -193,55 +231,79 @@ EOF
 
 @test "finds the template by mod id, not by a fixed name" {
 
-    write_mod_info "kmlib" "Klark Morrigan's Library" "0.1.0" "0.98a-RC8"
+    # ARRANGE
+    write_mod_info "kmlib" "Fixture Library" "0.1.0" "0.98a-RC8"
     write_template "kmlib"
-
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMLib-0.1.0.zip"
 
+    expectedMasterVersionFile="https://example.invalid/master/kmlib.version"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMLib-0.1.0.zip" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmlib.version" ]
+    [ "$(read_generated '.masterVersionFile')" = "$expectedMasterVersionFile" ]
 }
 
+# The release pipeline's shape: the mod checked out one level down, the
+# caller standing above it. Both paths below are stated the way that
+# caller states them - the template found under the mod root, the output
+# written relative to the caller, not to the root it was read from.
 @test "reads the mod root given to it, and writes from where the caller stands" {
 
-    # The release pipeline's shape: the mod checked out one level down, the
-    # caller standing above it. Both paths below are stated the way that
-    # caller states them - the template found under the mod root, the output
-    # written relative to the caller, not to the root it was read from.
+    # ARRANGE
     mkdir -p "$WORK_DIR/checkout"
     mv "$WORK_DIR/mod_info.json" "$WORK_DIR/kmu.version.template" "$WORK_DIR/checkout/"
-
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "checkout"
 
+    expectedModName="Fixture Mod"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" MOD_ROOT="checkout" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
     [ -f "$WORK_DIR/$OUTPUT_FILE" ]
     [ ! -f "$WORK_DIR/checkout/$OUTPUT_FILE" ]
-    [ "$(read_generated '.modName')" = "Klark Morrigan's Universe" ]
+    [ "$(read_generated '.modName')" = "$expectedModName" ]
 }
 
+# Named as the wrong directory rather than reported as a missing
+# mod_info.json, which is the same symptom from a different cause.
 @test "fails when the mod root does not exist" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "absent"
 
-    # Named as the wrong directory rather than reported as a missing
-    # mod_info.json, which is the same symptom from a different cause.
+    expectedError="mod root absent not found"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" MOD_ROOT="absent" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"mod root absent not found"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "creates the output directory when it does not exist" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "dist/KMU/$OUTPUT_FILE" "$ZIP_NAME"
 
+    # ACT
+    run env OUTPUT_PATH="dist/KMU/$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
     [ -f "$WORK_DIR/dist/KMU/$OUTPUT_FILE" ]
 }
 
+# A mistyped token would otherwise ship the literal braces to players,
+# since nothing reads this file until an update checker does.
 @test "fails on a token this script does not substitute" {
+
+    # ARRANGE
     cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
@@ -249,137 +311,210 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="unreplaced token(s): {{modname}}"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-
-    # A mistyped token would otherwise ship the literal braces to players,
-    # since nothing reads this file until an update checker does.
-    [[ "$output" == *"unreplaced token(s): {{modname}}"* ]]
+    [[ "$output" == *"$expectedError"* ]]
     [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
 @test "fails when the template is absent" {
 
+    # ARRANGE
     rm "$WORK_DIR/kmu.version.template"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="template kmu.version.template not found"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"template kmu.version.template not found"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "fails when the template is missing masterVersionFile" {
+
+    # ARRANGE
     cat > "$WORK_DIR/kmu.version.template" <<EOF
 { "modName": "{{modName}}" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="missing required field 'masterVersionFile'"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'masterVersionFile'"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "fails when the version does not split into three numeric parts" {
 
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3a" "0.98a-RC8"
+    # ARRANGE
+    write_mod_info "kmu" "Fixture Mod" "1.2.3a" "0.98a-RC8"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="does not split into three numeric parts"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"does not split into three numeric parts"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "fails when mod_info.json is missing .name" {
+
+    # ARRANGE
     cat > "$WORK_DIR/mod_info.json" <<EOF
 { "id": "kmu", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="missing required field 'name'"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'name'"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "fails when mod_info.json is missing .gameVersion" {
+
+    # ARRANGE
     cat > "$WORK_DIR/mod_info.json" <<EOF
-{ "id": "kmu", "name": "Klark Morrigan's Universe", "version": "1.2.3" }
+{ "id": "kmu", "name": "Fixture Mod", "version": "1.2.3" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="missing required field 'gameVersion'"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'gameVersion'"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
+# The id is what names the template, so an absent one would otherwise
+# be reported as a missing ".version" file rather than as the real fault.
 @test "fails when mod_info.json is missing .id" {
+
+    # ARRANGE
     cat > "$WORK_DIR/mod_info.json" <<EOF
-{ "name": "Klark Morrigan's Universe", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
+{ "name": "Fixture Mod", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
-    # The id is what names the template, so an absent one would otherwise
-    # be reported as a missing ".version" file rather than as the real fault.
+    expectedError="missing required field 'id'"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'id'"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "fails when no metadata file is present" {
 
+    # ARRANGE
     rm "$WORK_DIR/mod_info.json"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="neither mod_info.base.json nor mod_info.json found"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"neither mod_info.base.json nor mod_info.json found"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
 @test "reads the version from the base over a generated mod_info.json" {
+
+    # ARRANGE
     cat > "$WORK_DIR/mod_info.base.json" <<EOF
-{ "id": "kmu", "name": "Klark Morrigan's Universe", "version": "2.0.0", "gameVersion": "0.98a-RC8" }
+{ "id": "kmu", "name": "Fixture Mod", "version": "2.0.0", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedMajor="2"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.modVersion.major')" = "2" ]
+    [ "$(read_generated '.modVersion.major')" = "$expectedMajor" ]
 }
 
 @test "names a locale's zip in the download URL when the name is derived" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "" "." "zh-hans"
 
+    expectedUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3-zh-hans.zip"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3-zh-hans.zip"
-
-    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+    [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
 }
 
+# An install of this locale polls the copy whose download link leads back
+# to its own language, not the default locale's.
 @test "names a locale's own copy as the master version file" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
 
+    expectedMasterVersionFile="https://example.invalid/master/kmu-zh-hans.version"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    # An install of this locale polls the copy whose download link leads back
-    # to its own language, not the default locale's.
-    [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu-zh-hans.version" ]
+    [ "$(read_generated '.masterVersionFile')" = "$expectedMasterVersionFile" ]
 }
 
 @test "leaves the master version file as the template states it with no locale" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "." ""
 
+    expectedMasterVersionFile="https://example.invalid/master/kmu.version"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" LOCALE="" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.masterVersionFile')" = "https://example.invalid/master/kmu.version" ]
+    [ "$(read_generated '.masterVersionFile')" = "$expectedMasterVersionFile" ]
 }
 
+# There is no locale copy to point at beside a file this release does not
+# publish, and an install polling a guessed address would never update.
 @test "fails for a locale when the master version file names another file" {
+
+    # ARRANGE
     cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/elsewhere.json",
@@ -387,58 +522,77 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME" "." "zh-hans"
 
-    # There is no locale copy to point at beside a file this release does not
-    # publish, and an install polling a guessed address would never update.
+    expectedError="does not end in kmu.version, so it names no copy for locale zh-hans"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"does not end in kmu.version, so it names no copy for locale zh-hans"* ]]
+    [[ "$output" == *"$expectedError"* ]]
     [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
+# The zip carries the translation in place of the root changelog, so the
+# address an update checker shows leads to the same file.
 @test "names a translated locale's own changelog" {
 
+    # ARRANGE
     write_localisation "en"
     write_translated_changelog "zh-hans"
-
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
 
+    expectedChangelogUrl="https://example.invalid/localisation/zh-hans/CHANGELOG.md"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    # The zip carries the translation in place of the root changelog, so the
-    # address an update checker shows leads to the same file.
-    [ "$(read_generated '.changelogURL')" = "https://example.invalid/localisation/zh-hans/CHANGELOG.md" ]
+    [ "$(read_generated '.changelogURL')" = "$expectedChangelogUrl" ]
 }
 
 @test "keeps the root changelog for the default locale" {
 
+    # ARRANGE
     write_localisation "en"
     write_translated_changelog "zh-hans"
-
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-en.zip" "." "en"
 
+    expectedChangelogUrl="https://example.invalid/CHANGELOG.md"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-en.zip" LOCALE="en" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.changelogURL')" = "https://example.invalid/CHANGELOG.md" ]
+    [ "$(read_generated '.changelogURL')" = "$expectedChangelogUrl" ]
 }
 
+# The zip then carries no changelog to translate, so the template's address stands.
 @test "keeps the root changelog for a mod keeping none" {
 
+    # ARRANGE
     write_localisation "en"
     write_translated_changelog "zh-hans"
 
     rm "$WORK_DIR/CHANGELOG.md"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
 
-    # The zip then carries no changelog to translate, so the template's address stands.
+    expectedChangelogUrl="https://example.invalid/CHANGELOG.md"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.changelogURL')" = "https://example.invalid/CHANGELOG.md" ]
+    [ "$(read_generated '.changelogURL')" = "$expectedChangelogUrl" ]
 }
 
 @test "adds no changelog address the template does not state" {
 
+    # ARRANGE
     write_localisation "en"
     write_translated_changelog "zh-hans"
 
@@ -449,14 +603,21 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
 
+    expectedHasChangelogUrl="false"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated 'has("changelogURL")')" = "false" ]
+    [ "$(read_generated 'has("changelogURL")')" = "$expectedHasChangelogUrl" ]
 }
 
+# The root changelog is still a true answer, so the release goes ahead on it.
 @test "warns and keeps a changelog address naming another file" {
 
+    # ARRANGE
     write_localisation "en"
     write_translated_changelog "zh-hans"
 
@@ -464,159 +625,256 @@ EOF
         > "$WORK_DIR/template.json"
     mv "$WORK_DIR/template.json" "$WORK_DIR/kmu.version.template"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
 
-    # The root changelog is still a true answer, so the release goes ahead on it.
+    expectedWarning="changelogURL 'https://example.invalid/NEWS.md' does not end in CHANGELOG.md"
+    expectedChangelogUrl="https://example.invalid/NEWS.md"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [[ "$output" == *"changelogURL 'https://example.invalid/NEWS.md' does not end in CHANGELOG.md"* ]]
-    [ "$(read_generated '.changelogURL')" = "https://example.invalid/NEWS.md" ]
+    [[ "$output" == *"$expectedWarning"* ]]
+    [ "$(read_generated '.changelogURL')" = "$expectedChangelogUrl" ]
 }
 
+# Its zip fails to package for the same reason, and the parity suite would
+# have failed the checkout first.
 @test "fails for a translated locale holding no changelog" {
 
+    # ARRANGE
     write_localisation "en"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "KMU-1.2.3-zh-hans.zip" "." "zh-hans"
 
-    # Its zip fails to package for the same reason, and the parity suite would
-    # have failed the checkout first.
+    expectedError="locale zh-hans has no localisation/zh-hans/CHANGELOG.md"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="KMU-1.2.3-zh-hans.zip" LOCALE="zh-hans" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"locale zh-hans has no localisation/zh-hans/CHANGELOG.md"* ]]
+    [[ "$output" == *"$expectedError"* ]]
     [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
-@test "fails when no output path is given" {
+@test "fails naming OUTPUT_PATH when no output path is given" {
 
+    # ARRANGE
     cd "$WORK_DIR"
-    run bash "$SCRIPT"
 
+    expectedError="fill_version_file_template: OUTPUT_PATH is required"
+
+    # ACT
+    run env -u OUTPUT_PATH bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"output path argument required"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
+# The local build has no read-mod-info output to pass, so the name comes
+# from the jar the mod ships, by the rule the release reads it by.
 @test "derives the zip name from mod_info.json when none is given" {
 
-    # The local build has no read-mod-info output to pass, so the name comes
-    # from the jar the mod ships, by the rule the release reads it by.
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
-
+    # ARRANGE
+    write_mod_info "kmu" "Fixture Mod" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE"
 
+    expectedUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/DerivedName-1.2.3.zip"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/DerivedName-1.2.3.zip"
-    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+    [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
 }
 
+@test "logs a derived zip name with the jar it came from" {
+
+    # ARRANGE
+    write_mod_info "kmu" "Fixture Mod" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
+    cd "$WORK_DIR"
+
+    expectedLog="Using zip name DerivedName-1.2.3.zip, derived from jars/DerivedName.jar."
+
+    # ACT
+    run --separate-stderr env OUTPUT_PATH="$OUTPUT_FILE" bash "$SCRIPT"
+
+    # ASSERT
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"$expectedLog"* ]]
+}
+
+# The release states the name of the asset it is about to upload, and that
+# name wins: the URL has to point at what is published, not at what the
+# jar implies.
 @test "prefers the zip name it is given over the one it would derive" {
 
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
+    # ARRANGE
+    write_mod_info "kmu" "Fixture Mod" "1.2.3" "0.98a-RC8" "jars/DerivedName.jar"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedUrlEnd="/KMU-1.2.3.zip"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    # The release states the name of the asset it is about to upload, and that
-    # name wins: the URL has to point at what is published, not at what the
-    # jar implies.
-    [[ "$(read_generated '.directDownloadURL')" == *"/KMU-1.2.3.zip" ]]
+    [[ "$(read_generated '.directDownloadURL')" == *"$expectedUrlEnd" ]]
 }
 
 @test "fails when no zip name is given and mod_info.json lists no jar" {
 
+    # ARRANGE
     cat > "$WORK_DIR/mod_info.json" <<EOF
-{ "id": "kmu", "name": "Klark Morrigan's Universe", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
+{ "id": "kmu", "name": "Fixture Mod", "version": "1.2.3", "gameVersion": "0.98a-RC8" }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE"
 
+    expectedError="missing required field 'jars[0]'"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"missing required field 'jars[0]'"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
+# A local build has no Actions runtime to export the variable, and the
+# checkout's own remote is the only answer that cannot name a repository
+# this clone does not push to.
 @test "reads the publishing repository from the origin remote when GITHUB_REPOSITORY is unset" {
 
+    # ARRANGE
     init_git_origin "https://github.com/Klark-Morrigan/Starsector-Mod-KMU.git"
     cd "$WORK_DIR"
 
-    # A local build has no Actions runtime to export the variable, and the
-    # checkout's own remote is the only answer that cannot name a repository
-    # this clone does not push to.
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    expectedUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
 
+    # ACT
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
+    [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
+}
 
-    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
+@test "logs a repository read from the origin remote" {
 
-    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+    # ARRANGE
+    init_git_origin "https://github.com/Klark-Morrigan/Starsector-Mod-KMU.git"
+    cd "$WORK_DIR"
+
+    expectedLog="Using repository Klark-Morrigan/Starsector-Mod-KMU, from the origin remote."
+
+    # ACT
+    run --separate-stderr env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"$expectedLog"* ]]
 }
 
 @test "reads an ssh origin remote the same way as an https one" {
 
+    # ARRANGE
     init_git_origin "git@github.com:Klark-Morrigan/Starsector-Mod-KMU.git"
     cd "$WORK_DIR"
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedUrl="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
+
+    # ACT
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    expected="https://github.com/Klark-Morrigan/Starsector-Mod-KMU/releases/download/1.2.3/KMU-1.2.3.zip"
-
-    [ "$(read_generated '.directDownloadURL')" = "$expected" ]
+    [ "$(read_generated '.directDownloadURL')" = "$expectedUrl" ]
 }
 
+# A release runs against a checkout whose remote is whatever the runner
+# cloned; the variable is what states which repository is publishing.
 @test "prefers GITHUB_REPOSITORY over the origin remote" {
 
+    # ARRANGE
     init_git_origin "https://github.com/someone-else/a-fork.git"
     cd "$WORK_DIR"
 
-    # A release runs against a checkout whose remote is whatever the runner
-    # cloned; the variable is what states which repository is publishing.
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    expectedRepositoryPath="/Klark-Morrigan/Starsector-Mod-KMU/"
 
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [[ "$(read_generated '.directDownloadURL')" == *"/Klark-Morrigan/Starsector-Mod-KMU/"* ]]
+    [[ "$(read_generated '.directDownloadURL')" == *"$expectedRepositoryPath"* ]]
 }
 
+# The download URL has no third source, and a run outside both Actions and
+# a checkout is exactly where it would otherwise be built against an empty
+# owner/repo.
 @test "fails when GITHUB_REPOSITORY is unset and there is no origin remote" {
 
+    # ARRANGE
     cd "$WORK_DIR"
 
-    # The download URL has no third source, and a run outside both Actions and
-    # a checkout is exactly where it would otherwise be built against an empty
-    # owner/repo.
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
+    expectedError="has no origin remote to read the repository from"
 
+    # ACT
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"<owner>/<repo>"* ]]
+    [[ "$output" == *"$expectedError"* ]]
     [ ! -f "$WORK_DIR/$OUTPUT_FILE" ]
 }
 
-@test "fails when the origin remote names no owner" {
+# The download URL is built on github.com, so an origin anywhere else would
+# point an install at a repository that is not there.
+@test "fails when the origin remote is not a GitHub repository" {
 
+    # ARRANGE
     init_git_origin "a-local-clone"
     cd "$WORK_DIR"
-    run env -u GITHUB_REPOSITORY bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedError="origin 'a-local-clone' of $WORK_DIR is not a GitHub repository"
+
+    # ACT
+    run env -u GITHUB_REPOSITORY OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"cannot read <owner>/<repo> out of the origin remote"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
+# "02" is a legal thing to write in a version string but not legal JSON,
+# so the component is canonicalised rather than emitted verbatim.
 @test "drops leading zeros from a version component" {
 
-    write_mod_info "kmu" "Klark Morrigan's Universe" "1.02.3" "0.98a-RC8"
+    # ARRANGE
+    write_mod_info "kmu" "Fixture Mod" "1.02.3" "0.98a-RC8"
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
+    expectedMinor="2"
+    expectedMinorType="number"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-
-    # "02" is a legal thing to write in a version string but not legal JSON,
-    # so the component is canonicalised rather than emitted verbatim.
-    [ "$(read_generated '.modVersion.minor')" = "2" ]
-    [ "$(read_generated '.modVersion.minor | type')" = "number" ]
+    [ "$(read_generated '.modVersion.minor')" = "$expectedMinor" ]
+    [ "$(read_generated '.modVersion.minor | type')" = "$expectedMinorType" ]
 }
 
+# Substitution is by whole value, which is what lets a token carry a
+# non-string type. A partial one cannot be honoured, so it is refused
+# rather than left in place for a player to read.
 @test "fails on a token embedded in a longer value" {
 
+    # ARRANGE
     cat > "$WORK_DIR/kmu.version.template" <<EOF
 {
   "masterVersionFile": "https://example.invalid/master/kmu.version",
@@ -624,17 +882,22 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
-    # Substitution is by whole value, which is what lets a token carry a
-    # non-string type. A partial one cannot be honoured, so it is refused
-    # rather than left in place for a player to read.
+    expectedError="unreplaced token(s): KMU v{{major}}"
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -ne 0 ]
-    [[ "$output" == *"unreplaced token(s): KMU v{{major}}"* ]]
+    [[ "$output" == *"$expectedError"* ]]
 }
 
+# Substituting through jq rather than sed is what keeps a name like this
+# from breaking the JSON it lands in.
 @test "escapes a mod name holding quotes and backslashes" {
 
+    # ARRANGE
     # Written literally rather than through write_mod_info, whose heredoc
     # expands its arguments - the point here is the exact bytes in the file.
     cat > "$WORK_DIR/mod_info.json" <<'EOF'
@@ -646,10 +909,13 @@ EOF
 }
 EOF
     cd "$WORK_DIR"
-    run bash "$SCRIPT" "$OUTPUT_FILE" "$ZIP_NAME"
 
-    # Substituting through jq rather than sed is what keeps a name like this
-    # from breaking the JSON it lands in.
+    expectedModName='He said "hi" C:\x'
+
+    # ACT
+    run env OUTPUT_PATH="$OUTPUT_FILE" ZIP_NAME="$ZIP_NAME" bash "$SCRIPT"
+
+    # ASSERT
     [ "$status" -eq 0 ]
-    [ "$(read_generated '.modName')" = 'He said "hi" C:\x' ]
+    [ "$(read_generated '.modName')" = "$expectedModName" ]
 }

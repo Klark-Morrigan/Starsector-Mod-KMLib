@@ -72,9 +72,7 @@ runs:
         OUTPUT_PATH: ${{ inputs.output-path }}
         ZIP_NAME: ${{ inputs.zip-name }}
         MOD_ROOT: ${{ inputs.mod-root }}
-        LOCALE_TAG: ${{ inputs.locale }}
+        LOCALE: ${{ inputs.locale }}
       # GITHUB_ACTION_PATH points at this action's directory regardless of
       # the caller's working directory, so the script path is stable.
-      run: |
-        "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh" \
-          "${OUTPUT_PATH}" "${ZIP_NAME}" "${MOD_ROOT}" "${LOCALE_TAG}"
+      run: "$GITHUB_ACTION_PATH/scripts/fill_version_file_template.sh"
