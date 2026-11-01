@@ -125,6 +125,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `isPointInsideAnyRing(List, double, double)`：是否有任何一个环单独包含该点，而不是对所有环做奇偶计数。
   - `orientRing(List, boolean)`：按逆时针或顺时针方向绕行的环的副本。
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**：一组范围被限制在一个外围环之内后的轮廓；环为 null 时不作限制。
+- **`RevisionStamp`**（位于 `kmlib.cache.memo`）：一次读取所依据的有序修订号，按内容比较，因此两次不同的读取永远不会被判为相同。`of(int...)` 构建一个修订号戳，`EMPTY` 是不采样任何实时数据的读取的修订号戳，`append(RevisionStamp)` 把某个来源的修订号戳接在调用方自己的之后。
 - **`RingPath`** 一次调用遍历多个路段：
   - `collectStretchPoints(List)`：每个路段各为一条折线，包含它在其中转折的拐角。
   - `collectSpansEndToEnd(double, double[])`：从一个弧长位置起首尾相接地铺设给定长度的各个跨度，每个跨度从前一个结束处开始。
@@ -205,7 +206,8 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | 它返回的是 `RingStretch`，与路径上其他读取路段的方法的名称一致。 |
 | 位于 `kmlib.starsector.scripts` 中的 `SectorScripts` 和 `InstalledTransientScript` | 位于 `kmlib.starsector.scripts.everyframe` 中的同名类 | 游戏所说的脚本指两样东西：数据文件所指的任何类，由 `ScriptClasses` 构建；以及星域上的逐帧脚本，由这两个类注册。 |
 | `StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(PlanetAPI, float)` | `PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` | `kmlib.starsector.fleet` 中统一为一种命名形式。该检查读取传入的星域，从不读取 `Global`，并可测量任何带半径的实体。 |
-| 位于 `kmlib.starsector.ui.widgets.lists` 中的 `RevisionMemo` | 位于 `kmlib.cache.memo` 中的同名类 | 它可以缓存任何值，而不只是列表，并与 `IdentityMemo` 放在一起。 |
+| 位于 `kmlib.starsector.ui.widgets.lists` 中的 `RevisionMemo`，其 `resolveValue(String, int, Supplier)` 以一个整数为键 | 位于 `kmlib.cache.memo` 中的同名类，其 `resolveValue(String, RevisionStamp, Supplier)` 以一个修订号戳为键 | 它可以缓存任何值，而不只是列表，并与 `IdentityMemo` 放在一起。把几个修订号合并成一个整数，可能与另一次读取相同，从而返回过时的值。 |
+| 位于 `kmlib.math.hashing` 中的 `Fingerprints` | 已移除。改为以 `RevisionStamp` 交出修订号。 | 它把修订号合并成一个整数，而两次不同的读取可能合并成同一个整数。 |
 
 </details>
 

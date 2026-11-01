@@ -202,26 +202,30 @@ which is the failure the process-lifetime caches above are structurally incapabl
 No cache or memo here needs invalidating -
 the caches cannot go stale and the memos do not live long enough to -
 but the library owns the primitive consumers invalidate *with*:
-[`Fingerprints.compute(IntSupplier...)`](../../src/main/java/kmlib/math/hashing/Fingerprints.java)
-folds N monotonic revision counters into one order-sensitive int.
-A consumer keeps the fingerprint its cached state was built against
+[`RevisionStamp`](../../src/main/java/kmlib/cache/memo/RevisionStamp.java)
+holds the monotonic revision counters a reading was taken under, in order,
+and compares them by content.
+A consumer keeps the stamp its cached state was built against
 and rebuilds when the current one differs,
-so a cache with many independent inputs still costs one int compare per frame to check.
+so a cache with several independent inputs costs a compare of a few ints per frame to check.
+The counters are kept whole rather than folded into one int,
+because a fold maps two different readings to one number now and then,
+and a cache comparing folds would skip the rebuild exactly then.
 
 The convention it assumes:
 a producer of live state exposes a counter it bumps on change,
 never a boolean "dirty" flag.
-A counter composes (many sources fold into one number),
+A counter composes (many sources join into one stamp),
 survives being read by several consumers at different cadences,
 and cannot be cleared by whichever consumer happens to look first.
 
 [`RevisionMemo`](../../src/main/java/kmlib/cache/memo/RevisionMemo.java)
 is the other half of that convention,
 and it is a primitive rather than a cache of this library's own for the same reason:
-the consumer supplies both the revision and the walk,
+the consumer supplies both the stamp and the walk,
 so what is held and when it goes stale is entirely the consumer's declaration.
 Its lifetime is the consumer's too -
-it keys on the scope and the revision and nothing else,
+it keys on the scope and the stamp and nothing else,
 so a value belonging to something that comes and goes is held in a memo per such thing,
 and `discardValue` is what releasing one calls.
 A holder going away moves no revision,

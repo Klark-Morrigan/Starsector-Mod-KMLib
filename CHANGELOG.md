@@ -125,6 +125,7 @@ The reusable release workflow extracts the section matching the released version
   - `isPointInsideAnyRing(List, double, double)`: whether any one ring holds the point, rather than an even-odd count across them.
   - `orientRing(List, boolean)`: a copy of a ring wound counter-clockwise or clockwise.
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
+- **`RevisionStamp`** in `kmlib.cache.memo`: the ordered revisions a reading was taken under, compared by content, so two readings that differ never compare equal. `of(int...)` builds one, `EMPTY` is the stamp of a reading that samples nothing live, and `append(RevisionStamp)` joins a source's stamp after a caller's own.
 - **`RingPath`** walks several stretches in one call:
   - `collectStretchPoints(List)`: each stretch as a polyline, the corners it turns at included.
   - `collectSpansEndToEnd(double, double[])`: spans of the given lengths laid end to end from one arc length, each opening where the one before it closed.
@@ -205,7 +206,8 @@ The reusable release workflow extracts the section matching the released version
 | `RingPath.findClearArcs(List)` | `findClearStretches(List)` | It answers `RingStretch`es, as the path's other stretch reads name them. |
 | `SectorScripts` and `InstalledTransientScript` in `kmlib.starsector.scripts` | The same, in `kmlib.starsector.scripts.everyframe` | The game says script for two things: any class a data file names, which `ScriptClasses` builds, and a per-frame script on a sector, which these two register. |
 | `StarsectorPlayerFleetProximity.isPlayerFleetInOrbitOf(PlanetAPI, float)` | `PlayerFleetOrbit.isPlayerFleetInOrbitOf(SectorAPI, SectorEntityToken, float)` | One naming shape across `kmlib.starsector.fleet`. The check reads the sector it is handed, never `Global`, and measures any entity with a radius. |
-| `RevisionMemo` in `kmlib.starsector.ui.widgets.lists` | The same, in `kmlib.cache.memo` | It memoises any value, not only a list, and sits beside `IdentityMemo`. |
+| `RevisionMemo` in `kmlib.starsector.ui.widgets.lists`, its `resolveValue(String, int, Supplier)` keyed on one int | The same, in `kmlib.cache.memo`, its `resolveValue(String, RevisionStamp, Supplier)` keyed on a stamp | It memoises any value, not only a list, and sits beside `IdentityMemo`. Several revisions folded into one int can match a different reading and serve a stale value. |
+| `Fingerprints` in `kmlib.math.hashing` | Removed. Hand over the revisions as a `RevisionStamp`. | It folded revisions into one int, and two different readings could fold to the same one. |
 
 </details>
 

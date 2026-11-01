@@ -797,9 +797,9 @@ and the by-ID key keeps a fully-level pair from reshuffling as the sort re-runs 
 [`RevisionMemo`](../../cache/memo/RevisionMemo.java) is where a consumer holds the resolved list between frames,
 since a body is built twice a frame (render and hit-test)
 and a picker list is typically a full pass over whatever the consumer scores its items from.
-What belongs in the revision is the caller's judgement,
+What belongs in the revisions is the caller's judgement,
 and how long a memo lives is the consumer's:
-it keys on the scope and the revision alone,
+it keys on the scope and the revisions alone,
 so a list belonging to something that comes
 and goes is held in a memo per such thing and discarded with it.
 
