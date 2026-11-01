@@ -1,5 +1,6 @@
 package kmlib.cache.memo;
 
+import kmlib.cache.revisions.RevisionStamp;
 import kmlib.testfixtures.starsector.ui.widgets.lists.Anomaly;
 
 import org.junit.jupiter.api.Nested;

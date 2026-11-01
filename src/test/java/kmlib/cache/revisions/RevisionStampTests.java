@@ -1,4 +1,4 @@
-package kmlib.cache.memo;
+package kmlib.cache.revisions;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,7 @@
 package kmlib.cache.memo;
 
+import kmlib.cache.revisions.RevisionStamp;
+
 import java.util.function.Supplier;
 
 /**

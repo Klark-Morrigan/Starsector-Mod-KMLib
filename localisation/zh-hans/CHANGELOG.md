@@ -125,7 +125,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `isPointInsideAnyRing(List, double, double)`：是否有任何一个环单独包含该点，而不是对所有环做奇偶计数。
   - `orientRing(List, boolean)`：按逆时针或顺时针方向绕行的环的副本。
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**：一组范围被限制在一个外围环之内后的轮廓；环为 null 时不作限制。
-- **`RevisionStamp`**（位于 `kmlib.cache.memo`）：一次读取所依据的有序修订号，按内容比较，因此两次不同的读取永远不会被判为相同。`of(int...)` 构建一个修订号戳，`EMPTY` 是不采样任何实时数据的读取的修订号戳，`append(RevisionStamp)` 把某个来源的修订号戳接在调用方自己的之后。
+- **`RevisionStamp`**（位于 `kmlib.cache.revisions`）：一次读取所依据的有序修订号，按内容比较，因此两次不同的读取永远不会被判为相同。`of(int...)` 构建一个修订号戳，`EMPTY` 是不采样任何实时数据的读取的修订号戳，`append(RevisionStamp)` 把某个来源的修订号戳接在调用方自己的之后。
 - **`RingPath`** 一次调用遍历多个路段：
   - `collectStretchPoints(List)`：每个路段各为一条折线，包含它在其中转折的拐角。
   - `collectSpansEndToEnd(double, double[])`：从一个弧长位置起首尾相接地铺设给定长度的各个跨度，每个跨度从前一个结束处开始。

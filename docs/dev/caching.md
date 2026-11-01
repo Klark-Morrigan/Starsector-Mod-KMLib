@@ -202,7 +202,7 @@ which is the failure the process-lifetime caches above are structurally incapabl
 No cache or memo here needs invalidating -
 the caches cannot go stale and the memos do not live long enough to -
 but the library owns the primitive consumers invalidate *with*:
-[`RevisionStamp`](../../src/main/java/kmlib/cache/memo/RevisionStamp.java)
+[`RevisionStamp`](../../src/main/java/kmlib/cache/revisions/RevisionStamp.java)
 holds the monotonic revision counters a reading was taken under, in order,
 and compares them by content.
 A consumer keeps the stamp its cached state was built against

@@ -1,4 +1,4 @@
-package kmlib.cache.memo;
+package kmlib.cache.revisions;
 
 import java.util.Arrays;
 
@@ -13,6 +13,9 @@ import java.util.Arrays;
  * <p>Order is part of the content, and so is length. A caller joining a stamp of fixed length to
  * one whose length varies {@linkplain #append appends} the variable one last: two stamps split
  * from one sequence at different points would otherwise join to equal stamps.
+ *
+ * <p>A holder keeping one value resolved under a stamp takes {@link kmlib.cache.memo.RevisionMemo};
+ * a holder deciding something else off it, such as whether to rebuild, compares stamps itself.
  */
 public final class RevisionStamp {
 

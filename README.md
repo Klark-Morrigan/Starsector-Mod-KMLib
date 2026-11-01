@@ -341,8 +341,10 @@ No Starsector API on the signature.
   [KMLib Animation](src/main/java/kmlib/animation/README.md).
 - [`cache/memo/`](src/main/java/kmlib/cache/memo/) -
   single-entry memos a consumer holds a derived value in,
-  keyed on the revisions it was read under or on the object it was derived from,
-  and the stamp those revisions are compared by.
+  keyed on the revisions it was read under or on the object it was derived from.
+- [`cache/revisions/`](src/main/java/kmlib/cache/revisions/) -
+  the stamp of the revisions a reading was taken under,
+  compared by content so two different readings never match.
 - [`collections/`](src/main/java/kmlib/collections/) -
   small Collection and Map helpers.
 - [`colour/`](src/main/java/kmlib/colour/) -

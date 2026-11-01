@@ -125,7 +125,7 @@ The reusable release workflow extracts the section matching the released version
   - `isPointInsideAnyRing(List, double, double)`: whether any one ring holds the point, rather than an even-odd count across them.
   - `orientRing(List, boolean)`: a copy of a ring wound counter-clockwise or clockwise.
 - **`PolygonTessellator.tessellateToBoundaryLoopsWithinLoop(List, float[])`**: the outlines of a set of extents clamped to one enclosing loop, or unclamped for a null loop.
-- **`RevisionStamp`** in `kmlib.cache.memo`: the ordered revisions a reading was taken under, compared by content, so two readings that differ never compare equal. `of(int...)` builds one, `EMPTY` is the stamp of a reading that samples nothing live, and `append(RevisionStamp)` joins a source's stamp after a caller's own.
+- **`RevisionStamp`** in `kmlib.cache.revisions`: the ordered revisions a reading was taken under, compared by content, so two readings that differ never compare equal. `of(int...)` builds one, `EMPTY` is the stamp of a reading that samples nothing live, and `append(RevisionStamp)` joins a source's stamp after a caller's own.
 - **`RingPath`** walks several stretches in one call:
   - `collectStretchPoints(List)`: each stretch as a polyline, the corners it turns at included.
   - `collectSpansEndToEnd(double, double[])`: spans of the given lengths laid end to end from one arc length, each opening where the one before it closed.
