@@ -1,8 +1,6 @@
 package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.colour.ColourPair;
 
@@ -16,55 +14,48 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the neutral-colour resolver: it forwards the neutral faction's own base
- * UI colour when present, and falls back to a mid grey whenever the sector or
- * its neutral faction is absent (the two null gaps the vanilla lifecycle opens).
- * Also pins the faction palette resolver, the same fallback shape applied
- * to a faction's bright/dark pair instead of the neutral faction's single shade,
- * and its fallback-free twin, which answers null where the other answers grey.
+ * Pins the base-colour resolver: it forwards the faction's own base UI colour, and falls back to a
+ * mid grey for an absent faction. Also pins the faction palette resolver, the same fallback shape
+ * applied to a faction's bright/dark pair, and its fallback-free twin, which answers null where the
+ * other answers grey.
  */
 class FactionColoursTests {
 
-    private static final Color NEUTRAL_BASE = new Color(150, 150, 150);
-
     @Nested
-    class ResolveNeutralColour {
+    class ResolveBaseColour {
 
         @Test
-        void returnsNeutralFactionBaseColour() {
+        void returnsTheFactionsBaseColour() {
 
-            var neutralMock = mock(FactionAPI.class);
+            // ARRANGE
+            var expectedColour = new Color(150, 150, 150);
 
-            when(neutralMock.getBaseUIColor())
-                .thenReturn(NEUTRAL_BASE);
+            var factionMock = mock(FactionAPI.class);
 
-            var sectorMock = mock(SectorAPI.class);
+            when(factionMock.getBaseUIColor())
+                .thenReturn(new Color(150, 150, 150));
 
-            when(sectorMock.getFaction(Factions.NEUTRAL))
-                .thenReturn(neutralMock);
+            // ACT
+            var actualColour = FactionColours.resolveBaseColour(factionMock);
 
-            assertThat(FactionColours.resolveNeutralColour(sectorMock))
-                .isEqualTo(NEUTRAL_BASE);
+            // ASSERT
+            assertThat(actualColour)
+                .isEqualTo(expectedColour);
         }
 
+        // A faction gone from the sector, or a sector built without it, looks up as null.
         @Test
-        void fallsBackToGreyForNullSector() {
+        void fallsBackToGreyForNullFaction() {
 
-            assertThat(FactionColours.resolveNeutralColour(null))
-                .isEqualTo(Color.GRAY);
-        }
+            // ARRANGE
+            var expectedColour = Color.GRAY;
 
-        @Test
-        void fallsBackToGreyWhenNeutralFactionAbsent() {
-            // A sector with no "neutral" faction (a bare double, or a stripped
-            // modded launcher) must not NPE - the grey fallback stands in.
-            var sectorMock = mock(SectorAPI.class);
+            // ACT
+            var actualColour = FactionColours.resolveBaseColour(null);
 
-            when(sectorMock.getFaction(Factions.NEUTRAL))
-                .thenReturn(null);
-
-            assertThat(FactionColours.resolveNeutralColour(sectorMock))
-                .isEqualTo(Color.GRAY);
+            // ASSERT
+            assertThat(actualColour)
+                .isEqualTo(expectedColour);
         }
     }
 
@@ -74,15 +65,29 @@ class FactionColoursTests {
         @Test
         void returnsTheFactionsBrightAndDarkColours() {
 
-            assertThat(FactionColours.resolvePalette(mockFactionPainted()))
-                .isEqualTo(new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60)));
+            // ARRANGE
+            var expectedPalette = new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60));
+
+            // ACT
+            var actualPalette = FactionColours.resolvePalette(mockFactionPainted());
+
+            // ASSERT
+            assertThat(actualPalette)
+                .isEqualTo(expectedPalette);
         }
 
         @Test
         void fallsBackToGreyPairForNullFaction() {
 
-            assertThat(FactionColours.resolvePalette(null))
-                .isEqualTo(new ColourPair(Color.GRAY, Color.GRAY));
+            // ARRANGE
+            var expectedPalette = new ColourPair(Color.GRAY, Color.GRAY);
+
+            // ACT
+            var actualPalette = FactionColours.resolvePalette(null);
+
+            // ASSERT
+            assertThat(actualPalette)
+                .isEqualTo(expectedPalette);
         }
     }
 
@@ -92,14 +97,25 @@ class FactionColoursTests {
         @Test
         void returnsTheFactionsBrightAndDarkColours() {
 
-            assertThat(FactionColours.findPalette(mockFactionPainted()))
-                .isEqualTo(new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60)));
+            // ARRANGE
+            var expectedPalette = new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60));
+
+            // ACT
+            var actualPalette = FactionColours.findPalette(mockFactionPainted());
+
+            // ASSERT
+            assertThat(actualPalette)
+                .isEqualTo(expectedPalette);
         }
 
         @Test
         void returnsNullForNullFaction() {
 
-            assertThat(FactionColours.findPalette(null))
+            // ACT
+            var actualPalette = FactionColours.findPalette(null);
+
+            // ASSERT
+            assertThat(actualPalette)
                 .isNull();
         }
     }

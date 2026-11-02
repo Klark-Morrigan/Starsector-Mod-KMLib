@@ -185,6 +185,7 @@ The reusable release workflow extracts the section matching the released version
 | `StarsectorPlayerFactionResolver.resolveDisplayName(FactionAPI, String)` | `FactionNames.resolveDisplayName(SectorAPI, FactionAPI, String)` | It holds back only the player faction's name, until the sector records it as set up. |
 | `FactionNames.listEveryName(SectorAPI)` | `SectorFactions.listFactionNames(SectorAPI)` | `FactionNames` reads one faction, and `SectorFactions` holds the sector-wide reads. |
 | `StarsectorFactionColours.findPalette(SectorAPI, String)` and `resolvePalette(SectorAPI, String)` | `FactionColours.findPalette(FactionAPI)` and `resolvePalette(FactionAPI)`. Look the faction up with `SectorFactions.findFaction(SectorAPI, String)`. | The ID lookup lives in `SectorFactions` alone. |
+| `StarsectorFactionColours.resolveNeutralColour(SectorAPI)` | `FactionColours.resolveBaseColour(FactionAPI)`, handed what `SectorFactions.findFaction(SectorAPI, String)` finds for `Factions.NEUTRAL` | Every read in `FactionColours` takes the faction, and the ID lookup lives in `SectorFactions` alone. |
 | `FactionPalette` in `kmlib.starsector.factions` | `ColourPair` in `kmlib.colour` | Relation shades fill it too, so it is not a faction's. |
 | `RelationExtremes.resolveBest(Collection)` and `resolveWorst(Collection)` | `resolveBestRelation(Collection)` and `resolveWorstRelation(Collection)` | The names say what they resolve. |
 | `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | The caller decides which settings are read. |

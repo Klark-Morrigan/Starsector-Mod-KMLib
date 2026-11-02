@@ -185,6 +185,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `StarsectorPlayerFactionResolver.resolveDisplayName(FactionAPI, String)` | `FactionNames.resolveDisplayName(SectorAPI, FactionAPI, String)` | 它只在星域记录玩家势力已设立之前隐去玩家势力的名称。 |
 | `FactionNames.listEveryName(SectorAPI)` | `SectorFactions.listFactionNames(SectorAPI)` | `FactionNames` 读取单个势力，`SectorFactions` 承担整个星域范围的读取。 |
 | `StarsectorFactionColours.findPalette(SectorAPI, String)` 和 `resolvePalette(SectorAPI, String)` | `FactionColours.findPalette(FactionAPI)` 和 `resolvePalette(FactionAPI)`。用 `SectorFactions.findFaction(SectorAPI, String)` 查找势力。 | 按 ID 查找只存在于 `SectorFactions` 中。 |
+| `StarsectorFactionColours.resolveNeutralColour(SectorAPI)` | `FactionColours.resolveBaseColour(FactionAPI)`，传入 `SectorFactions.findFaction(SectorAPI, String)` 为 `Factions.NEUTRAL` 找到的势力 | `FactionColours` 的每个读取都接受势力本身，按 ID 查找只存在于 `SectorFactions` 中。 |
 | 位于 `kmlib.starsector.factions` 中的 `FactionPalette` | 位于 `kmlib.colour` 中的 `ColourPair` | 关系色调也会填入它，因此它并不专属于势力。 |
 | `RelationExtremes.resolveBest(Collection)` 和 `resolveWorst(Collection)` | `resolveBestRelation(Collection)` 和 `resolveWorstRelation(Collection)` | 名称说明它们解析的是什么。 |
 | `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | 由调用方决定读取哪份设置。 |
