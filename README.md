@@ -1,5 +1,8 @@
 # Klark Morrigan's Library (KMLib)
 
+<!-- No inline logo, unlike the forum post's badge: it makes the URL too long for GitHub's image proxy (HTTP 414). -->
+![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FKlark-Morrigan%2FStarsector-Mod-KMLib%2Fbadges%2Fdownloads.json&style=for-the-badge&label=downloads)
+
 Starsector library/dependency mod that hosts reusable(feature-agnostic) code,
 and primarily serves other KM mod series members
 (e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)).
