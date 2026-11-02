@@ -6,7 +6,7 @@ import com.fs.starfarer.api.loading.FighterWingSpecAPI;
 import com.fs.starfarer.api.loading.WeaponSpecAPI;
 
 import java.util.Optional;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  * Spec lookups that answer an unknown ID with nothing rather than an exception.
@@ -29,7 +29,7 @@ public final class StarsectorSpecs {
      */
     public static Optional<FighterWingSpecAPI> findFighterWingSpec(SettingsAPI settings, String wingId) {
 
-        return findSpec(() -> settings.getFighterWingSpec(wingId));
+        return findSpec(settings::getFighterWingSpec, wingId);
     }
 
     /**
@@ -41,7 +41,7 @@ public final class StarsectorSpecs {
      */
     public static Optional<ShipHullSpecAPI> findHullSpec(SettingsAPI settings, String hullId) {
 
-        return findSpec(() -> settings.getHullSpec(hullId));
+        return findSpec(settings::getHullSpec, hullId);
     }
 
     /**
@@ -53,14 +53,15 @@ public final class StarsectorSpecs {
      */
     public static Optional<WeaponSpecAPI> findWeaponSpec(SettingsAPI settings, String weaponId) {
 
-        return findSpec(() -> settings.getWeaponSpec(weaponId));
+        return findSpec(settings::getWeaponSpec, weaponId);
     }
 
-    // The lookup is a map read behind the throw, so the exception can only mean the ID is unknown.
-    private static <T> Optional<T> findSpec(Supplier<T> lookup) {
+    // The lookup is a map read behind the throw, so the exception can only mean the ID is unknown. A bound method
+    // reference resolves its receiver before the try, so a null settings throws at the caller instead of reading as one.
+    private static <T> Optional<T> findSpec(Function<String, T> lookup, String specId) {
 
         try {
-            return Optional.ofNullable(lookup.get());
+            return Optional.ofNullable(lookup.apply(specId));
 
         } catch (RuntimeException unknownId) {
             return Optional.empty();

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +37,10 @@ final class StarsectorSpecsTests {
         @Test
         void returnsNothingWhenTheLookupAnswersNull() {
 
+            // ARRANGE
+            when(settingsMock.getFighterWingSpec(UNKNOWN_ID))
+                .thenReturn(null);
+
             // ACT
             var actualSpec = StarsectorSpecs.findFighterWingSpec(settingsMock, UNKNOWN_ID);
 
@@ -59,6 +64,21 @@ final class StarsectorSpecsTests {
             // ASSERT
             assertThat(actualSpec)
                 .containsSame(expectedSpecMock);
+        }
+
+        // A null settings is the caller's bug, so it must not read as an unknown ID.
+        @Test
+        void throwsWhenTheSettingsAreNull() {
+
+            // ARRANGE
+            SettingsAPI nullSettings = null;
+
+            // ACT
+            var actualFailure = catchThrowable(() -> StarsectorSpecs.findFighterWingSpec(nullSettings, "talon_wing"));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -97,6 +117,21 @@ final class StarsectorSpecsTests {
             assertThat(actualSpec)
                 .containsSame(expectedSpecMock);
         }
+
+        // A null settings is the caller's bug, so it must not read as an unknown ID.
+        @Test
+        void throwsWhenTheSettingsAreNull() {
+
+            // ARRANGE
+            SettingsAPI nullSettings = null;
+
+            // ACT
+            var actualFailure = catchThrowable(() -> StarsectorSpecs.findHullSpec(nullSettings, "wolf"));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(NullPointerException.class);
+        }
     }
 
     @Nested
@@ -133,6 +168,21 @@ final class StarsectorSpecsTests {
             // ASSERT
             assertThat(actualSpec)
                 .containsSame(expectedSpecMock);
+        }
+
+        // A null settings is the caller's bug, so it must not read as an unknown ID.
+        @Test
+        void throwsWhenTheSettingsAreNull() {
+
+            // ARRANGE
+            SettingsAPI nullSettings = null;
+
+            // ACT
+            var actualFailure = catchThrowable(() -> StarsectorSpecs.findWeaponSpec(nullSettings, "lightmortar"));
+
+            // ASSERT
+            assertThat(actualFailure)
+                .isInstanceOf(NullPointerException.class);
         }
     }
 }
