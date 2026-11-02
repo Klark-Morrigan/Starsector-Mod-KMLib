@@ -339,6 +339,12 @@ No Starsector API on the signature.
   without being alternatives,
   is in
   [KMLib Animation](src/main/java/kmlib/animation/README.md).
+- [`cache/memo/`](src/main/java/kmlib/cache/memo/) -
+  single-entry memos a consumer holds a derived value in,
+  keyed on the revisions it was read under or on the object it was derived from.
+- [`cache/revisions/`](src/main/java/kmlib/cache/revisions/) -
+  the stamp of the revisions a reading was taken under,
+  compared by content so two different readings never match.
 - [`collections/`](src/main/java/kmlib/collections/) -
   small Collection and Map helpers.
 - [`colour/`](src/main/java/kmlib/colour/) -
@@ -374,8 +380,7 @@ No Starsector API on the signature.
   See
   [2D shapes and polygon passes](src/main/java/kmlib/math/geometry/README.md).
 - [`math/hashing/`](src/main/java/kmlib/math/hashing/) -
-  avalanche bit mixing,
-  multi-part content fingerprints,
+  avalanche bit mixing
   and the fixed share of the unit range a name holds.
 - [`math/motion/`](src/main/java/kmlib/math/motion/) -
   which keyed positions moved between two observations,
@@ -1119,8 +1124,7 @@ How the tiers meet is in
   direction and column-count model it ranks and wraps by,
   the item seam it draws rows from,
   the ranking a sort mode builds from its metrics,
-  with name and ID breaking every tie,
-  and the memo a consumer holds its list in -
+  with name and ID breaking every tie -
   holding no store of its own.
 - [`starsector/ui/widgets/scroll/`](src/main/java/kmlib/starsector/ui/widgets/scroll/) -
   scroll offset state and scrollbar geometry.

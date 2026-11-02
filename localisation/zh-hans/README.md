@@ -387,6 +387,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | register (a store of records kept under one key) | 登记表 | from 登记, to record, with 表, a table |
 | relay (a listener passing events on) | 转发器 | 转发, to pass on |
 | revision (a number that moves when content changes) | 修订号 | 修订, a revision, with 号, its number |
+| revision stamp (the revisions a reading was taken under, kept whole), fold (revisions into one int) | 修订号戳, 合并 | 修订号, a revision, with 戳, a stamp; 合并, to combine, kept apart from 折叠, a loop an inset folds into |
 | sampling (one read of a live value) | 采样 | the usual word for taking one reading of something that changes |
 | script (a PowerShell file run from a terminal) | 脚本 | the usual computing word |
 | script (a class the game builds from a name a data file gives, or one run every frame on a sector) | 脚本 | the usual computing word; one word for both, as the game has one for both |

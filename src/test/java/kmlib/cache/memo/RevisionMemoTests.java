@@ -1,5 +1,6 @@
 package kmlib.cache.memo;
 
+import kmlib.cache.revisions.RevisionStamp;
 import kmlib.testfixtures.starsector.ui.widgets.lists.Anomaly;
 
 import org.junit.jupiter.api.Nested;
@@ -15,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the picker memo: it walks the caller's supplier once for a given scope and revision and
+ * Pins the picker memo: it walks the caller's supplier once for a given scope and revisions and
  * serves that value until one of them changes, so a per-frame body build does not re-resolve it, and
  * a discard leaves nothing to serve. Run over a list of the {@link Anomaly} fixture, the shape a
  * picker actually memoises, since the memo names nothing about what it holds. Each test uses its own
@@ -49,7 +50,9 @@ final class RevisionMemoTests {
     @Nested
     class ResolveValue {
 
-        // One walk feeds both calls: the second reads the memo rather than re-resolving.
+        // One walk feeds both calls: the second reads the memo rather than re-resolving. Each call
+        // hands over a stamp of its own, as a caller sampling every frame does, so the stamps match
+        // by content rather than by instance.
         @Test
         void walksTheSupplierOnceThenServesTheMemoForTheSameInputs() {
 
@@ -57,8 +60,8 @@ final class RevisionMemoTests {
             var supplierMock = supplierReturning(ANOMALIES);
 
             // ACT
-            var actualFirst = memo.resolveValue(SCOPE_ID, 7, supplierMock);
-            var actualSecond = memo.resolveValue(SCOPE_ID, 7, supplierMock);
+            var actualFirst = memo.resolveValue(SCOPE_ID, RevisionStamp.of(7), supplierMock);
+            var actualSecond = memo.resolveValue(SCOPE_ID, RevisionStamp.of(7), supplierMock);
 
             // ASSERT
             assertThat(actualFirst)
@@ -80,8 +83,8 @@ final class RevisionMemoTests {
             var supplierMock = supplierReturning(ANOMALIES);
 
             // ACT
-            memo.resolveValue(SCOPE_ID, 0, supplierMock);
-            memo.resolveValue(SCOPE_ID, 1, supplierMock);
+            memo.resolveValue(SCOPE_ID, RevisionStamp.of(0), supplierMock);
+            memo.resolveValue(SCOPE_ID, RevisionStamp.of(1), supplierMock);
 
             // ASSERT
             verify(
@@ -98,8 +101,8 @@ final class RevisionMemoTests {
             var supplierMock = supplierReturning(ANOMALIES);
 
             // ACT
-            memo.resolveValue(SCOPE_ID, 0, supplierMock);
-            memo.resolveValue("other", 0, supplierMock);
+            memo.resolveValue(SCOPE_ID, RevisionStamp.of(0), supplierMock);
+            memo.resolveValue("other", RevisionStamp.of(0), supplierMock);
 
             // ASSERT
             verify(
@@ -112,7 +115,7 @@ final class RevisionMemoTests {
     class DiscardValue {
 
         // What a released holder's discard has to leave behind: nothing. The scope and the
-        // revision are exactly as they were - a holder going away moves neither - so the walk
+        // revisions are exactly as they were - a holder going away moves neither - so the walk
         // has to be forced by the discard or not at all.
         @Test
         void walksTheSupplierAgainUnderTheKeyItHadServed() {
@@ -120,11 +123,11 @@ final class RevisionMemoTests {
             // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
-            memo.resolveValue(SCOPE_ID, 0, supplierMock);
+            memo.resolveValue(SCOPE_ID, RevisionStamp.of(0), supplierMock);
 
             // ACT
             memo.discardValue();
-            memo.resolveValue(SCOPE_ID, 0, supplierMock);
+            memo.resolveValue(SCOPE_ID, RevisionStamp.of(0), supplierMock);
 
             // ASSERT
             verify(
@@ -140,11 +143,11 @@ final class RevisionMemoTests {
             // ARRANGE
             var supplierMock = supplierReturning(ANOMALIES);
 
-            memo.resolveValue(SCOPE_ID, 0, supplierMock);
+            memo.resolveValue(SCOPE_ID, RevisionStamp.of(0), supplierMock);
             memo.discardValue();
 
             // ACT
-            var actualValue = memo.resolveValue(SCOPE_ID, 0, supplierMock);
+            var actualValue = memo.resolveValue(SCOPE_ID, RevisionStamp.of(0), supplierMock);
 
             // ASSERT
             assertThat(actualValue)
