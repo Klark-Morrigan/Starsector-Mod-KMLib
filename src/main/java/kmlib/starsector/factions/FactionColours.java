@@ -5,7 +5,6 @@ import com.fs.starfarer.api.campaign.FactionAPI;
 import kmlib.colour.ColourPair;
 
 import java.awt.Color;
-import java.util.Objects;
 
 /**
  * Reads a faction's authored UI palette, confining the {@code FactionAPI} colour lookups to one place.
@@ -42,19 +41,6 @@ public final class FactionColours {
         return faction == null
             ? null
             : new ColourPair(faction.getBrightUIColor(), faction.getDarkUIColor());
-    }
-
-    /**
-     * Whether a faction still paints in a pair {@link #findPalette} read off it earlier - for a caller
-     * asking every frame whether shades it painted in have moved.
-     *
-     * @param faction the faction to read; null paints in no pair
-     * @param palette the pair to compare against, or null for the absent faction's answer
-     * @return whether {@link #findPalette} would answer an equal pair; true when both are null
-     */
-    public static boolean hasPalette(FactionAPI faction, ColourPair palette) {
-
-        return Objects.equals(findPalette(faction), palette);
     }
 
     /**

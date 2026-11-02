@@ -515,7 +515,6 @@ A version heading is never translated; see [translating the changelog](#translat
 | highlight colour | 高亮颜色 | |
 | line height, glyph, fallback glyph | 行高, 字形, 后备字形 | |
 | pad (the gap a tooltip row is laid with), tooltip | 间距, 提示框 | 间距, the distance between (see the hatch row); 提示框, a prompt box |
-| pair, shades (a faction's two UI colours, worn together) | 配色 | as in vanilla's 界面配色, a set of colours worn together |
 | map label (a name drawn on the map) | 星图标签 | vanilla's 星图 with 标签, label |
 | modal panel, host screen, claim (input) | 面板, 宿主屏幕, 占用 | 面板, a panel; 宿主, host; 占用, to take up |
 | dialog (one the game raises), prompt (a confirmation a core screen raises) | 对话框, 提示窗口 | 提示, a prompt, with 窗口, a window; 对话框, vanilla's word (see the vanilla Dialog row) |
