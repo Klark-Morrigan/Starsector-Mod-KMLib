@@ -1,8 +1,6 @@
 package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.colour.ColourPair;
 
@@ -15,13 +13,18 @@ import java.util.Objects;
  * <p>Distinct from {@link kmlib.starsector.ui.colour.StarsectorUiColour}, which
  * re-exposes the engine's global palette <em>slots</em> ({@code Misc} shades):
  * this reads a specific faction's own colour. A faction can be absent - an ID the sector no longer
- * knows looks up as null through {@link SectorFactions#findFaction} - so each read comes in a
- * defaulting form that answers grey and a nullable form that answers nothing.
+ * knows looks up as null through {@link SectorFactions#findFaction} - so every read says what an
+ * absent faction answers. The pair read comes in two forms: a defaulting one that answers grey, and a
+ * nullable one that answers nothing.
  */
 public final class FactionColours {
-    // Fallback when the neutral faction cannot be read (it always exists in
-    // vanilla); a mid grey so whatever is painted in it still reads as unowned.
-    private static final Color NEUTRAL_FALLBACK_COLOUR = Color.GRAY;
+
+    // What an absent faction is painted in: a mid grey, so whatever is drawn in it still reads as unowned.
+    private static final Color ABSENT_FACTION_COLOUR = Color.GRAY;
+
+    private static final ColourPair ABSENT_FACTION_PALETTE = new ColourPair(
+        ABSENT_FACTION_COLOUR,
+        ABSENT_FACTION_COLOUR);
 
     private FactionColours() {
     }
@@ -42,39 +45,30 @@ public final class FactionColours {
     }
 
     /**
-     * Whether a faction still paints in a pair read off it earlier, answered as {@link #findPalette}
-     * would without building a pair - for a caller asking every frame whether shades it painted in
-     * have moved.
+     * Whether a faction still paints in a pair {@link #findPalette} read off it earlier - for a caller
+     * asking every frame whether shades it painted in have moved.
      *
      * @param faction the faction to read; null paints in no pair
      * @param palette the pair to compare against, or null for the absent faction's answer
-     * @return whether {@link #findPalette} would answer an equal pair, or null for both
+     * @return whether {@link #findPalette} would answer an equal pair; true when both are null
      */
     public static boolean hasPalette(FactionAPI faction, ColourPair palette) {
 
-        if (faction == null || palette == null) {
-            return faction == null && palette == null;
-        }
-
-        return Objects.equals(faction.getBrightUIColor(), palette.primaryColour())
-            && Objects.equals(faction.getDarkUIColor(), palette.secondaryColour());
+        return Objects.equals(findPalette(faction), palette);
     }
 
     /**
-     * Resolves the neutral faction's base UI colour - the shade unowned space
-     * (uninhabited and decivilised) is drawn in, so it reads consistently.
+     * Resolves a faction's base UI colour - the one shade that stands for the faction where a single
+     * colour is drawn. The neutral faction's is the shade unowned space is drawn in.
      *
-     * @param sector the sector to read; null falls back to a mid grey
-     * @return the neutral faction's base UI colour, or a grey fallback when the
-     *         sector or its neutral faction is absent
+     * @param faction the faction to read; null falls back to a mid grey
+     * @return the faction's base UI colour, or a grey fallback when the faction is absent
      */
-    public static Color resolveNeutralColour(SectorAPI sector) {
+    public static Color resolveBaseColour(FactionAPI faction) {
 
-        var neutral = SectorFactions.findFaction(sector, Factions.NEUTRAL);
-
-        return neutral == null
-            ? NEUTRAL_FALLBACK_COLOUR
-            : neutral.getBaseUIColor();
+        return faction == null
+            ? ABSENT_FACTION_COLOUR
+            : faction.getBaseUIColor();
     }
 
     /**
@@ -90,7 +84,7 @@ public final class FactionColours {
 
         var palette = findPalette(faction);
         return palette == null
-            ? new ColourPair(NEUTRAL_FALLBACK_COLOUR, NEUTRAL_FALLBACK_COLOUR)
+            ? ABSENT_FACTION_PALETTE
             : palette;
     }
 }

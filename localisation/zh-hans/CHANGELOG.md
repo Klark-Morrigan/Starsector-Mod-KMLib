@@ -71,7 +71,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`EconomyIterations.isLastIterationOfMonth(SettingsAPI, int)`**（位于 `kmlib.starsector.economy`）：某次经济步进是否为当月最后一次，即游戏结算并支付当月收支之前的那一步。
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**：天体轨道焦点链最远端的天体；天体不绕任何天体运行时为 null。
 - **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按种类分支的读取方使用。
-- **`FactionColours.hasPalette(FactionAPI, ColourPair)`**：势力是否仍以先前从它读取的配色绘制，结果与 `findPalette(FactionAPI)` 相同，但不构造新的配色，供每帧都要询问已绘制的配色是否改变的调用方使用。
+- **`FactionColours.hasPalette(FactionAPI, ColourPair)`**：势力是否仍以先前从它读取的配色绘制，结果与 `findPalette(FactionAPI)` 相同，供每帧都要询问已绘制的配色是否改变的调用方使用。
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的舰船插件。
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
@@ -186,6 +186,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 | `StarsectorPlayerFactionResolver.resolveDisplayName(FactionAPI, String)` | `FactionNames.resolveDisplayName(SectorAPI, FactionAPI, String)` | 它只在星域记录玩家势力已设立之前隐去玩家势力的名称。 |
 | `FactionNames.listEveryName(SectorAPI)` | `SectorFactions.listFactionNames(SectorAPI)` | `FactionNames` 读取单个势力，`SectorFactions` 承担整个星域范围的读取。 |
 | `StarsectorFactionColours.findPalette(SectorAPI, String)` 和 `resolvePalette(SectorAPI, String)` | `FactionColours.findPalette(FactionAPI)` 和 `resolvePalette(FactionAPI)`。用 `SectorFactions.findFaction(SectorAPI, String)` 查找势力。 | 按 ID 查找只存在于 `SectorFactions` 中。 |
+| `StarsectorFactionColours.resolveNeutralColour(SectorAPI)` | `FactionColours.resolveBaseColour(FactionAPI)`，传入 `SectorFactions.findFaction(SectorAPI, String)` 为 `Factions.NEUTRAL` 找到的势力 | `FactionColours` 的每个读取都接受势力本身，按 ID 查找只存在于 `SectorFactions` 中。 |
 | 位于 `kmlib.starsector.factions` 中的 `FactionPalette` | 位于 `kmlib.colour` 中的 `ColourPair` | 关系色调也会填入它，因此它并不专属于势力。 |
 | `RelationExtremes.resolveBest(Collection)` 和 `resolveWorst(Collection)` | `resolveBestRelation(Collection)` 和 `resolveWorstRelation(Collection)` | 名称说明它们解析的是什么。 |
 | `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | 由调用方决定读取哪份设置。 |

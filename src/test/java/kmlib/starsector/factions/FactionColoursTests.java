@@ -1,8 +1,6 @@
 package kmlib.starsector.factions;
 
 import com.fs.starfarer.api.campaign.FactionAPI;
-import com.fs.starfarer.api.campaign.SectorAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Factions;
 
 import kmlib.colour.ColourPair;
 
@@ -16,77 +14,47 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Pins the neutral-colour resolver: it forwards the neutral faction's own base
- * UI colour when present, and falls back to a mid grey whenever the sector or
- * its neutral faction is absent (the two null gaps the vanilla lifecycle opens).
- * Also pins the faction palette resolver, the same fallback shape applied
- * to a faction's bright/dark pair instead of the neutral faction's single shade,
- * its fallback-free twin, which answers null where the other answers grey,
- * and the comparison that answers as the twin would without building a pair.
+ * Pins the base-colour resolver: it forwards the faction's own base UI colour, and falls back to a
+ * mid grey for an absent faction. Also pins the faction palette resolver, the same fallback shape
+ * applied to a faction's bright/dark pair, its fallback-free twin, which answers null where the other
+ * answers grey, and the comparison that answers as the twin would.
  */
 class FactionColoursTests {
-
-    private static final Color NEUTRAL_BASE = new Color(150, 150, 150);
 
     // The shades mockFactionPainted authors, bright then dark.
     private static final ColourPair PAINTED_PALETTE = new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60));
 
     @Nested
-    class ResolveNeutralColour {
+    class ResolveBaseColour {
 
         @Test
-        void returnsNeutralFactionBaseColour() {
+        void returnsTheFactionsBaseColour() {
 
             // ARRANGE
-            var expectedColour = NEUTRAL_BASE;
+            var expectedColour = new Color(150, 150, 150);
 
-            var neutralMock = mock(FactionAPI.class);
+            var factionMock = mock(FactionAPI.class);
 
-            when(neutralMock.getBaseUIColor())
-                .thenReturn(NEUTRAL_BASE);
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getFaction(Factions.NEUTRAL))
-                .thenReturn(neutralMock);
+            when(factionMock.getBaseUIColor())
+                .thenReturn(new Color(150, 150, 150));
 
             // ACT
-            var actualColour = FactionColours.resolveNeutralColour(sectorMock);
+            var actualColour = FactionColours.resolveBaseColour(factionMock);
 
             // ASSERT
             assertThat(actualColour)
                 .isEqualTo(expectedColour);
         }
 
+        // A faction gone from the sector, or a sector built without it, looks up as null.
         @Test
-        void fallsBackToGreyForNullSector() {
+        void fallsBackToGreyForNullFaction() {
 
             // ARRANGE
             var expectedColour = Color.GRAY;
 
             // ACT
-            var actualColour = FactionColours.resolveNeutralColour(null);
-
-            // ASSERT
-            assertThat(actualColour)
-                .isEqualTo(expectedColour);
-        }
-
-        // A sector with no "neutral" faction (a bare double, or a stripped
-        // modded launcher) must not NPE - the grey fallback stands in.
-        @Test
-        void fallsBackToGreyWhenNeutralFactionAbsent() {
-
-            // ARRANGE
-            var expectedColour = Color.GRAY;
-
-            var sectorMock = mock(SectorAPI.class);
-
-            when(sectorMock.getFaction(Factions.NEUTRAL))
-                .thenReturn(null);
-
-            // ACT
-            var actualColour = FactionColours.resolveNeutralColour(sectorMock);
+            var actualColour = FactionColours.resolveBaseColour(null);
 
             // ASSERT
             assertThat(actualColour)

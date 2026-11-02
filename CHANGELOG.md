@@ -71,7 +71,7 @@ The reusable release workflow extracts the section matching the released version
 - **`EconomyIterations.isLastIterationOfMonth(SettingsAPI, int)`** in `kmlib.starsector.economy`: whether an economy tick is the month's last, the step that runs just before the game totals and pays the month.
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**: the body at the far end of a body's orbit-focus chain, null where it orbits nothing.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
-- **`FactionColours.hasPalette(FactionAPI, ColourPair)`**: whether a faction still paints in a pair read off it earlier, answered as `findPalette(FactionAPI)` would without building a pair, for a caller asking every frame whether shades it painted in have moved.
+- **`FactionColours.hasPalette(FactionAPI, ColourPair)`**: whether a faction still paints in a pair read off it earlier, answered as `findPalette(FactionAPI)` would, for a caller asking every frame whether shades it painted in have moved.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
@@ -186,6 +186,7 @@ The reusable release workflow extracts the section matching the released version
 | `StarsectorPlayerFactionResolver.resolveDisplayName(FactionAPI, String)` | `FactionNames.resolveDisplayName(SectorAPI, FactionAPI, String)` | It holds back only the player faction's name, until the sector records it as set up. |
 | `FactionNames.listEveryName(SectorAPI)` | `SectorFactions.listFactionNames(SectorAPI)` | `FactionNames` reads one faction, and `SectorFactions` holds the sector-wide reads. |
 | `StarsectorFactionColours.findPalette(SectorAPI, String)` and `resolvePalette(SectorAPI, String)` | `FactionColours.findPalette(FactionAPI)` and `resolvePalette(FactionAPI)`. Look the faction up with `SectorFactions.findFaction(SectorAPI, String)`. | The ID lookup lives in `SectorFactions` alone. |
+| `StarsectorFactionColours.resolveNeutralColour(SectorAPI)` | `FactionColours.resolveBaseColour(FactionAPI)`, handed what `SectorFactions.findFaction(SectorAPI, String)` finds for `Factions.NEUTRAL` | Every read in `FactionColours` takes the faction, and the ID lookup lives in `SectorFactions` alone. |
 | `FactionPalette` in `kmlib.starsector.factions` | `ColourPair` in `kmlib.colour` | Relation shades fill it too, so it is not a faction's. |
 | `RelationExtremes.resolveBest(Collection)` and `resolveWorst(Collection)` | `resolveBestRelation(Collection)` and `resolveWorstRelation(Collection)` | The names say what they resolve. |
 | `FactionSourceMods.readSourcesByFactionId()` | `readSourcesByFactionId(SettingsAPI)` | The caller decides which settings are read. |
