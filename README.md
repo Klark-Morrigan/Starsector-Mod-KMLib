@@ -1,5 +1,8 @@
 # Klark Morrigan's Library (KMLib)
 
+<!-- No inline logo, unlike the forum post's badge: it makes the URL too long for GitHub's image proxy (HTTP 414). -->
+![Downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FKlark-Morrigan%2FStarsector-Mod-KMLib%2Fbadges%2Fdownloads.json&style=for-the-badge&label=downloads)
+
 Starsector library/dependency mod that hosts reusable(feature-agnostic) code,
 and primarily serves other KM mod series members
 (e.g. [KMU](https://github.com/Klark-Morrigan/Starsector-Mod-KMU)).
@@ -870,6 +873,10 @@ No Starsector API on the signature.
   Every read answers nothing rather than throwing wherever there is nothing to ask,
   a caller wanting a mod's name or version being one composing a report -
   and a report that threw while naming who it was about would lose the report.
+- [`starsector/specs/`](src/main/java/kmlib/starsector/specs/) -
+  hull,
+  weapon and fighter wing spec lookups that answer an ID no loaded mod registers with nothing,
+  where the game throws for some and returns null for others.
 - [`starsector/spreadsheets/`](src/main/java/kmlib/starsector/spreadsheets/) -
   the rows of a spreadsheet the game has merged:
   the data rows, with the blank-ID spacers and `#` comments the merger hands back left out,
