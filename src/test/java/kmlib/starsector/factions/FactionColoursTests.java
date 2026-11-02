@@ -21,17 +21,24 @@ import static org.mockito.Mockito.when;
  * its neutral faction is absent (the two null gaps the vanilla lifecycle opens).
  * Also pins the faction palette resolver, the same fallback shape applied
  * to a faction's bright/dark pair instead of the neutral faction's single shade,
- * and its fallback-free twin, which answers null where the other answers grey.
+ * its fallback-free twin, which answers null where the other answers grey,
+ * and the comparison that answers as the twin would without building a pair.
  */
 class FactionColoursTests {
 
     private static final Color NEUTRAL_BASE = new Color(150, 150, 150);
+
+    // The shades mockFactionPainted authors, bright then dark.
+    private static final ColourPair PAINTED_PALETTE = new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60));
 
     @Nested
     class ResolveNeutralColour {
 
         @Test
         void returnsNeutralFactionBaseColour() {
+
+            // ARRANGE
+            var expectedColour = NEUTRAL_BASE;
 
             var neutralMock = mock(FactionAPI.class);
 
@@ -43,28 +50,47 @@ class FactionColoursTests {
             when(sectorMock.getFaction(Factions.NEUTRAL))
                 .thenReturn(neutralMock);
 
-            assertThat(FactionColours.resolveNeutralColour(sectorMock))
-                .isEqualTo(NEUTRAL_BASE);
+            // ACT
+            var actualColour = FactionColours.resolveNeutralColour(sectorMock);
+
+            // ASSERT
+            assertThat(actualColour)
+                .isEqualTo(expectedColour);
         }
 
         @Test
         void fallsBackToGreyForNullSector() {
 
-            assertThat(FactionColours.resolveNeutralColour(null))
-                .isEqualTo(Color.GRAY);
+            // ARRANGE
+            var expectedColour = Color.GRAY;
+
+            // ACT
+            var actualColour = FactionColours.resolveNeutralColour(null);
+
+            // ASSERT
+            assertThat(actualColour)
+                .isEqualTo(expectedColour);
         }
 
+        // A sector with no "neutral" faction (a bare double, or a stripped
+        // modded launcher) must not NPE - the grey fallback stands in.
         @Test
         void fallsBackToGreyWhenNeutralFactionAbsent() {
-            // A sector with no "neutral" faction (a bare double, or a stripped
-            // modded launcher) must not NPE - the grey fallback stands in.
+
+            // ARRANGE
+            var expectedColour = Color.GRAY;
+
             var sectorMock = mock(SectorAPI.class);
 
             when(sectorMock.getFaction(Factions.NEUTRAL))
                 .thenReturn(null);
 
-            assertThat(FactionColours.resolveNeutralColour(sectorMock))
-                .isEqualTo(Color.GRAY);
+            // ACT
+            var actualColour = FactionColours.resolveNeutralColour(sectorMock);
+
+            // ASSERT
+            assertThat(actualColour)
+                .isEqualTo(expectedColour);
         }
     }
 
@@ -74,15 +100,29 @@ class FactionColoursTests {
         @Test
         void returnsTheFactionsBrightAndDarkColours() {
 
-            assertThat(FactionColours.resolvePalette(mockFactionPainted()))
-                .isEqualTo(new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60)));
+            // ARRANGE
+            var expectedPalette = new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60));
+
+            // ACT
+            var actualPalette = FactionColours.resolvePalette(mockFactionPainted());
+
+            // ASSERT
+            assertThat(actualPalette)
+                .isEqualTo(expectedPalette);
         }
 
         @Test
         void fallsBackToGreyPairForNullFaction() {
 
-            assertThat(FactionColours.resolvePalette(null))
-                .isEqualTo(new ColourPair(Color.GRAY, Color.GRAY));
+            // ARRANGE
+            var expectedPalette = new ColourPair(Color.GRAY, Color.GRAY);
+
+            // ACT
+            var actualPalette = FactionColours.resolvePalette(null);
+
+            // ASSERT
+            assertThat(actualPalette)
+                .isEqualTo(expectedPalette);
         }
     }
 
@@ -92,15 +132,109 @@ class FactionColoursTests {
         @Test
         void returnsTheFactionsBrightAndDarkColours() {
 
-            assertThat(FactionColours.findPalette(mockFactionPainted()))
-                .isEqualTo(new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60)));
+            // ARRANGE
+            var expectedPalette = new ColourPair(new Color(10, 20, 30), new Color(40, 50, 60));
+
+            // ACT
+            var actualPalette = FactionColours.findPalette(mockFactionPainted());
+
+            // ASSERT
+            assertThat(actualPalette)
+                .isEqualTo(expectedPalette);
         }
 
         @Test
         void returnsNullForNullFaction() {
 
-            assertThat(FactionColours.findPalette(null))
+            // ACT
+            var actualPalette = FactionColours.findPalette(null);
+
+            // ASSERT
+            assertThat(actualPalette)
                 .isNull();
+        }
+    }
+
+    @Nested
+    class HasPalette {
+
+        // The pair the faction was read in earlier, still authored on it.
+        @Test
+        void isTrueForThePairTheFactionIsPaintedIn() {
+
+            // ACT
+            var actualHasPalette = FactionColours.hasPalette(mockFactionPainted(), PAINTED_PALETTE);
+
+            // ASSERT
+            assertThat(actualHasPalette)
+                .isTrue();
+        }
+
+        // A recolour of either shade alone moves the pair.
+        @Test
+        void isFalseWhenOneShadeMoved() {
+
+            // ARRANGE
+            var movedPalette = new ColourPair(new Color(10, 20, 30), new Color(99, 50, 60));
+
+            // ACT
+            var actualHasPalette = FactionColours.hasPalette(mockFactionPainted(), movedPalette);
+
+            // ASSERT
+            assertThat(actualHasPalette)
+                .isFalse();
+        }
+
+        // Bright is primary and dark secondary, so the same two shades the other way round are
+        // another pair.
+        @Test
+        void isFalseForTheShadesSwapped() {
+
+            // ARRANGE
+            var swappedPalette = new ColourPair(new Color(40, 50, 60), new Color(10, 20, 30));
+
+            // ACT
+            var actualHasPalette = FactionColours.hasPalette(mockFactionPainted(), swappedPalette);
+
+            // ASSERT
+            assertThat(actualHasPalette)
+                .isFalse();
+        }
+
+        // findPalette answers null for an absent faction, so null is the pair it still paints in.
+        @Test
+        void isTrueForNoPairAndNoFaction() {
+
+            // ACT
+            var actualHasPalette = FactionColours.hasPalette(null, null);
+
+            // ASSERT
+            assertThat(actualHasPalette)
+                .isTrue();
+        }
+
+        // A faction gone since its pair was read no longer paints in it.
+        @Test
+        void isFalseForAPairAndNoFaction() {
+
+            // ACT
+            var actualHasPalette = FactionColours.hasPalette(null, PAINTED_PALETTE);
+
+            // ASSERT
+            assertThat(actualHasPalette)
+                .isFalse();
+        }
+
+        // A faction that appeared since it was read as absent now paints in a pair.
+        @Test
+        void isFalseForNoPairAndAFaction() {
+
+            // ACT
+            var actualHasPalette = FactionColours.hasPalette(mockFactionPainted(), null);
+
+            // ASSERT
+            assertThat(actualHasPalette)
+                .isFalse();
         }
     }
 

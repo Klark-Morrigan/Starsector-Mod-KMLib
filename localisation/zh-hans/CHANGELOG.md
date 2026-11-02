@@ -71,6 +71,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`EconomyIterations.isLastIterationOfMonth(SettingsAPI, int)`**（位于 `kmlib.starsector.economy`）：某次经济步进是否为当月最后一次，即游戏结算并支付当月收支之前的那一步。
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**：天体轨道焦点链最远端的天体；天体不绕任何天体运行时为 null。
 - **`FactionClaimStanding.isWeighed()`**：争夺是否为该势力权衡过某个市场，供只需按种类分支的读取方使用。
+- **`FactionColours.hasPalette(FactionAPI, ColourPair)`**：势力是否仍以先前从它读取的配色绘制，结果与 `findPalette(FactionAPI)` 相同，但不构造新的配色，供每帧都要询问已绘制的配色是否改变的调用方使用。
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**：势力是否已掌握一件物品所传授的全部内容：蓝图提供的一切，或船体插件物品对应的舰船插件。
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。

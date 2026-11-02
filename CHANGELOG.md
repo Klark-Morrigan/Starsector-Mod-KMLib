@@ -71,6 +71,7 @@ The reusable release workflow extracts the section matching the released version
 - **`EconomyIterations.isLastIterationOfMonth(SettingsAPI, int)`** in `kmlib.starsector.economy`: whether an economy tick is the month's last, the step that runs just before the game totals and pays the month.
 - **`EntityOrbits.findOutermostFocus(SectorEntityToken)`**: the body at the far end of a body's orbit-focus chain, null where it orbits nothing.
 - **`FactionClaimStanding.isWeighed()`**: whether the contest weighed a market for the faction, for a reader that only branches on the kind.
+- **`FactionColours.hasPalette(FactionAPI, ColourPair)`**: whether a faction still paints in a pair read off it earlier, answered as `findPalette(FactionAPI)` would without building a pair, for a caller asking every frame whether shades it painted in have moved.
 - **`FactionKnowledge.isEverythingTaughtKnown(FactionAPI, SpecialItemPlugin)`**: whether a faction already knows everything an item teaches: all a blueprint provides, or a modspec's hullmod.
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
