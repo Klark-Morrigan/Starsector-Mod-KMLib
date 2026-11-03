@@ -33,9 +33,9 @@ import static org.mockito.Mockito.when;
  * second observation overwriting the first, nor a reconciliation removing an entry.
  *
  * <p>The observations are synthetic, and so is the codec that writes them. A codec borrowed from a
- * real family would pin that family's fields in a suite about bytes and lifecycle. What the synthetic one does carry is the shape the store's convention
- * describes - a fixed field first, a free-form one running to the end - so the cases that turn on
- * that convention exercise it rather than describe it.
+ * real family would pin that family's fields in a suite about bytes and lifecycle. What the synthetic
+ * one does carry is the shape the store's convention describes - a fixed field first, a free-form one
+ * running to the end - so the cases that turn on that convention exercise it rather than describe it.
  */
 final class ObservationStoreTests {
 

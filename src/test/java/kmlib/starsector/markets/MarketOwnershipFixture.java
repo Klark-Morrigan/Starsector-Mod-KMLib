@@ -52,9 +52,9 @@ import static org.mockito.Mockito.withSettings;
  *
  * <p>The siblings that are not separate are the ones posing an operation that <em>ends</em> in an
  * ownership change, since such an operation poses a market that changes hands:
- * {@link kmlib.starsector.markets.colonisation.MarketColonisationFixture} composes the wirings below rather than stubbing its own, and
- * {@link kmlib.starsector.markets.ownership.MarketTransferFixture} hangs what an outgoing owner leaves behind on the colonies built
- * here.
+ * {@link kmlib.starsector.markets.colonisation.MarketColonisationFixture} composes the wirings below
+ * rather than stubbing its own, and {@link kmlib.starsector.markets.ownership.MarketTransferFixture}
+ * hangs what an outgoing owner leaves behind on the colonies built here.
  */
 public final class MarketOwnershipFixture {
 

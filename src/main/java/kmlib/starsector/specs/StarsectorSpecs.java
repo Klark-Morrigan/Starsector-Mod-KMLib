@@ -56,8 +56,9 @@ public final class StarsectorSpecs {
         return findSpec(settings::getWeaponSpec, weaponId);
     }
 
-    // The lookup is a map read behind the throw, so the exception can only mean the ID is unknown. A bound method
-    // reference resolves its receiver before the try, so a null settings throws at the caller instead of reading as one.
+    // The lookup is a map read behind the throw, so the exception can only mean the ID is unknown.
+    // A bound method reference resolves its receiver before the try, so a null settings throws at the caller
+    // instead of reading as one.
     private static <T> Optional<T> findSpec(Function<String, T> lookup, String specId) {
 
         try {

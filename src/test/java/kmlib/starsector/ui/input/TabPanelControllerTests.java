@@ -45,8 +45,9 @@ import static org.assertj.core.api.Assertions.within;
  * place under the pointer rather than the widget a rebuild puts there - and for the collapse handle, the
  * docked gate that resolver carries - silencing the tabs while
  * leaving the handle live - the click pulse a press on a tab starts, and the blink a bound key's press runs
- * on the look channel beside the hover it shares that channel with. It also pins what the panel answers those moments with: which sounds, at which moments,
- * and - the point of that seam - taken from the look the panel wears rather than named in its own code.
+ * on the look channel beside the hover it shares that channel with. It also pins what the panel answers
+ * those moments with: which sounds, at which moments, and - the point of that seam - taken from the look
+ * the panel wears rather than named in its own code.
  * The pointer routing and the scroll delegation run against live input events and are
  * exercised in-engine, as is the cursor read the per-frame advance opens with - which is why the advance and
  * the press are pinned through the point that read would have returned rather than through a display there
