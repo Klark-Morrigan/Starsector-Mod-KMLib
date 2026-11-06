@@ -146,6 +146,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `computeOffsetSegment(double)`：侧向平移后的线段；距离为正时移向左侧，为负时移向右侧。
   - `computeLaneDividers(double, int)`：把以该线段为中心线的带状区域分成等宽分道的分隔线。
   - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位（以弧度表示）、具有给定长度的线段。`computeCentre()` 和 `computeDirectionRadians()` 读回这两者。
+- **`ShownMapTab.isSectorMapTab(Object)`**：某个核心标签页是否为 `M` 界面的星图，无论它是否为当前打开的标签页。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StarsectorSpecs`**（位于 `kmlib.starsector.specs`）：`findHullSpec(SettingsAPI, String)`、`findWeaponSpec(SettingsAPI, String)` 与 `findFighterWingSpec(SettingsAPI, String)`；没有已加载的 Mod 提供该 ID 时为空。游戏对未知的船体或武器 ID 会抛出异常，对未知的战机联队则返回 null。

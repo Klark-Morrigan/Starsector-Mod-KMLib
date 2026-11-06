@@ -146,6 +146,7 @@ The reusable release workflow extracts the section matching the released version
   - `computeOffsetSegment(double)`: the segment moved sideways, to its left for a positive distance and its right for a negative one.
   - `computeLaneDividers(double, int)`: the lines splitting the band the segment is the centreline of into lanes of equal girth.
   - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing in radians. `computeCentre()` and `computeDirectionRadians()` read both back.
+- **`ShownMapTab.isSectorMapTab(Object)`**: whether a core tab is the `M` screen's map, whether or not it is the tab that is up.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StarsectorSpecs`** in `kmlib.starsector.specs`: `findHullSpec(SettingsAPI, String)`, `findWeaponSpec(SettingsAPI, String)` and `findFighterWingSpec(SettingsAPI, String)`, empty for an ID no loaded mod registers. The game throws for an unknown hull or weapon ID and returns null for an unknown wing.
