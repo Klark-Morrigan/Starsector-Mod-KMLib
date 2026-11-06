@@ -157,7 +157,7 @@ public final class VanillaIntelScreenView
     }
 
     /**
-     * Whether a core tab holds an intel screen whose map visor is lit, whether or not it is the tab
+     * What the map visor of an intel screen below a core tab is doing, whether or not it is the tab
      * that is up - for a tab still fading out after the player left it.
      *
      * <p>The lit rule applies to such a tab unchanged. Closing a tab fades the wrapper it sits in and
@@ -168,13 +168,15 @@ public final class VanillaIntelScreenView
      * tabs asked about hold none, so finding none is no news here.
      *
      * @param tab a core tab, or null
-     * @return whether an events panel below it has a lit visor
+     * @return the visor's state, {@link MapVisorState#NOT_SHOWING} where the tab holds no events panel
+     *         or its visor is dark
      */
-    public boolean isMapVisorLitBelow(Object tab) {
+    public MapVisorState readMapVisorStateBelow(Object tab) {
 
         var intelPanel = findEventsPanelIn(tab, MAX_PANEL_SEARCH_DEPTH);
-        return intelPanel != null
-            && readLitMapVisorOf(intelPanel) != null;
+        return classifyMapVisorState(intelPanel == null
+            ? null
+            : readLitMapVisorOf(intelPanel));
     }
 
     @Override
