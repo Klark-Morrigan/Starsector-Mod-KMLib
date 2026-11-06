@@ -153,18 +153,7 @@ public final class VanillaIntelScreenView
 
         // The one walk both signals are taken off, which is the whole of why this is published
         // beside the reads that answer them one at a time.
-        var intelPanel = resolveIntelPanel();
-        var mapWidget = intelPanel == null
-            ? null
-            : readLitMapVisorOf(intelPanel);
-
-        if (mapWidget == null) {
-            return MapVisorState.NOT_SHOWING;
-        }
-
-        return isStarscapeModeOnIn(mapWidget)
-            ? MapVisorState.SHOWING_IN_STARSCAPE_MODE
-            : MapVisorState.SHOWING_WITH_STARSCAPE_OFF;
+        return classifyMapVisorState(getMapVisorWidget());
     }
 
     /**
@@ -394,6 +383,18 @@ public final class VanillaIntelScreenView
         return mapWidget.getPosition() == null
             ? null
             : mapWidget;
+    }
+
+    // What a lit visor, or none, says of the visor's state: the presence and the filter off one widget.
+    private static MapVisorState classifyMapVisorState(UIComponentAPI litMapWidget) {
+
+        if (litMapWidget == null) {
+            return MapVisorState.NOT_SHOWING;
+        }
+
+        return isStarscapeModeOnIn(litMapWidget)
+            ? MapVisorState.SHOWING_IN_STARSCAPE_MODE
+            : MapVisorState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
     // Whether the map inside the visor has its starscape filter on and is showing hyperspace.
