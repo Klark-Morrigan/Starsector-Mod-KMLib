@@ -526,6 +526,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出, to fade in and fade out; 节奏, rhythm |
 | fade out (alone, as a closing screen does) | 淡出 | the second half of 淡入淡出 |
 | map visor (the intel screen's embedded map preview) | 地图视窗 | 地图, a map, with 视窗, a viewing window; the visor has no name a player sees |
+| presence read (whether a map is showing or drawn), drawn, showing | 存在性读取, 正在绘制, 显示 | 存在性, presence, with 读取, a read; 正在绘制, being drawn, kept apart from 显示, shown, as the drawn and showing reads are |
 | close key (a key that closes a panel) | 关闭键 | 关闭, close, with 键, key |
 | public API | 公共 API | 公共, public, as in 公共契约, a public contract; API stays in Latin letters |
 | paragraph | 段落 | |

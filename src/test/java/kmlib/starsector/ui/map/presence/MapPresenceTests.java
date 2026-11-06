@@ -1,11 +1,16 @@
 package kmlib.starsector.ui.map.presence;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CampaignUIAPI;
+import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.ui.intel.IntelScreenView;
 import kmlib.starsector.ui.intel.MapVisorState;
+import kmlib.testfixtures.starsector.StubbedGlobalLogger;
+import kmlib.testfixtures.starsector.compatibility.GameReachRecordFixture;
 import kmlib.testfixtures.starsector.ui.intel.IntelScreenViewFake;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,10 +18,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 /**
@@ -26,8 +35,9 @@ import static org.mockito.Mockito.withSettings;
  * negation; the look-aware pair each decline the other's screen; and the any-look read takes both
  * screens plus the one neither of them can classify, the map showing with a filter it cannot read.
  *
- * <p>The drawn read is pinned against the showing one over the tabs still fading out: a closing map
- * counts as drawn and never as showing, and a closing tab holding no lit map counts as neither.
+ * <p>The drawn reads are pinned against the showing ones over the tabs still fading out: a closing map
+ * counts as drawn and never as showing, a closing tab holding no lit map counts as neither, and the
+ * Starscape drawn read takes a closing map only in Starscape mode.
  */
 class MapPresenceTests {
 
@@ -35,9 +45,11 @@ class MapPresenceTests {
 
     private IntelScreenViewFake intelScreenViewFake;
 
-    // The tabs still fading out, and those among them whose visor the intel read finds lit.
+    // The tabs still fading out, what the intel read finds below each, and what the closed sector
+    // map's persisted state classifies to.
     private List<Object> closingTabs;
-    private List<Object> litVisorTabs;
+    private Map<Object, MapVisorState> visorStatesBelowTabs;
+    private SectorMapState closingSectorMapState;
 
     @BeforeEach
     void setUp() {
@@ -45,7 +57,8 @@ class MapPresenceTests {
         intelScreenViewFake = new IntelScreenViewFake();
 
         closingTabs = new ArrayList<>();
-        litVisorTabs = new ArrayList<>();
+        visorStatesBelowTabs = new IdentityHashMap<>();
+        closingSectorMapState = SectorMapState.NOT_SHOWING;
     }
 
     @Nested
@@ -177,6 +190,7 @@ class MapPresenceTests {
 
             // ARRANGE
             closingTabs.add(createSectorMapTabMock());
+            closingSectorMapState = SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
 
             var presence = buildPresence(SectorMapState.NOT_SHOWING);
 
@@ -195,7 +209,7 @@ class MapPresenceTests {
             var closingIntelTab = new Object();
 
             closingTabs.add(closingIntelTab);
-            litVisorTabs.add(closingIntelTab);
+            visorStatesBelowTabs.put(closingIntelTab, MapVisorState.SHOWING_WITH_STARSCAPE_OFF);
 
             var presence = buildPresence(SectorMapState.NOT_SHOWING);
 
@@ -232,6 +246,7 @@ class MapPresenceTests {
 
             // ARRANGE
             closingTabs.add(createSectorMapTabMock());
+            closingSectorMapState = SectorMapState.SHOWING_IN_STARSCAPE_MODE;
 
             var presence = buildPresence(SectorMapState.NOT_SHOWING);
 
@@ -243,6 +258,23 @@ class MapPresenceTests {
                 .isTrue();
         }
 
+        // The closed map was on a star system, which this read declines as the showing one does.
+        @Test
+        void isFalseForAClosingSectorMapLeftOnAStarSystem() {
+
+            // ARRANGE
+            closingTabs.add(createSectorMapTabMock());
+
+            var presence = buildPresence(SectorMapState.NOT_SHOWING);
+
+            // ACT
+            var actualDrawn = presence.isAnyVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isFalse();
+        }
+
         @Test
         void isTrueForAClosingIntelTabWithItsVisorLit() {
 
@@ -250,7 +282,7 @@ class MapPresenceTests {
             var closingIntelTab = new Object();
 
             closingTabs.add(closingIntelTab);
-            litVisorTabs.add(closingIntelTab);
+            visorStatesBelowTabs.put(closingIntelTab, MapVisorState.SHOWING_IN_STARSCAPE_MODE);
 
             var presence = buildPresence(SectorMapState.NOT_SHOWING);
 
@@ -321,12 +353,13 @@ class MapPresenceTests {
             // ARRANGE
             var presence = new MapPresence(
                 () -> SectorMapState.SHOWING_WITH_STARSCAPE_OFF,
+                () -> closingSectorMapState,
                 intelScreenViewFake,
                 () -> {
                     throw new AssertionError(
                         "the closing tabs were read with a map showing");
                 },
-                litVisorTabs::contains);
+                MapPresenceTests.this::readVisorStateBelow);
 
             // ACT
             var actualDrawn = presence.isAnyVanillaMapDrawn();
@@ -334,6 +367,141 @@ class MapPresenceTests {
             // ASSERT
             assertThat(actualDrawn)
                 .isTrue();
+        }
+
+        // The live binding fails every read closed. A campaign UI offering no core hop breaks both
+        // the intel walk and the closing-tab read, and a render pass asking must not end the frame.
+        @Test
+        void answersNoMapThroughTheLiveBindingWhereTheCoreUiCannotBeReached() {
+
+            // ARRANGE
+            var reachRecord = new GameReachRecordFixture();
+            var sectorMock = mock(SectorAPI.class);
+
+            when(sectorMock.getCampaignUI())
+                .thenReturn(mock(CampaignUIAPI.class));
+
+            try (var globalMock = StubbedGlobalLogger.openGlobalAnsweringLoggers()) {
+
+                globalMock
+                    .when(Global::getSector)
+                    .thenReturn(sectorMock);
+
+                var presence = new MapPresence(reachRecord.getReporter());
+
+                // ACT
+                var actualThrown = catchThrowable(presence::isAnyVanillaMapDrawn);
+                var actualDrawn = presence.isAnyVanillaMapDrawn();
+
+                // ASSERT
+                assertThat(actualThrown)
+                    .isNull();
+                assertThat(actualDrawn)
+                    .isFalse();
+            }
+        }
+    }
+
+    @Nested
+    class IsStarscapeVanillaMapDrawn {
+
+        @Test
+        void isTrueWhileAStarscapeMapIsShowing() {
+
+            // ARRANGE
+            var presence = buildPresence(SectorMapState.SHOWING_IN_STARSCAPE_MODE);
+
+            // ACT
+            var actualDrawn = presence.isStarscapeVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isTrue();
+        }
+
+        // The Starscape surfaces stand aside unless this holds, so a closing Starscape map is what
+        // keeps them drawing through its fade.
+        @Test
+        void isTrueForAClosingSectorMapInStarscapeMode() {
+
+            // ARRANGE
+            closingTabs.add(createSectorMapTabMock());
+            closingSectorMapState = SectorMapState.SHOWING_IN_STARSCAPE_MODE;
+
+            var presence = buildPresence(SectorMapState.NOT_SHOWING);
+
+            // ACT
+            var actualDrawn = presence.isStarscapeVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isTrue();
+        }
+
+        @Test
+        void isTrueForAClosingIntelTabWhoseVisorIsInStarscapeMode() {
+
+            // ARRANGE
+            var closingIntelTab = new Object();
+
+            closingTabs.add(closingIntelTab);
+            visorStatesBelowTabs.put(closingIntelTab, MapVisorState.SHOWING_IN_STARSCAPE_MODE);
+
+            var presence = buildPresence(SectorMapState.NOT_SHOWING);
+
+            // ACT
+            var actualDrawn = presence.isStarscapeVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isTrue();
+        }
+
+        @Test
+        void isFalseForAClosingSchematicSectorMap() {
+
+            // ARRANGE
+            closingTabs.add(createSectorMapTabMock());
+            closingSectorMapState = SectorMapState.SHOWING_WITH_STARSCAPE_OFF;
+
+            var presence = buildPresence(SectorMapState.NOT_SHOWING);
+
+            // ACT
+            var actualDrawn = presence.isStarscapeVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isFalse();
+        }
+
+        @Test
+        void isFalseForAClosingIntelTabOnAnotherSubTab() {
+
+            // ARRANGE
+            closingTabs.add(new Object());
+
+            var presence = buildPresence(SectorMapState.NOT_SHOWING);
+
+            // ACT
+            var actualDrawn = presence.isStarscapeVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isFalse();
+        }
+
+        @Test
+        void isFalseWithNoMapShowingAndNoTabClosing() {
+
+            // ARRANGE
+            var presence = buildPresence(SectorMapState.NOT_SHOWING);
+
+            // ACT
+            var actualDrawn = presence.isStarscapeVanillaMapDrawn();
+
+            // ASSERT
+            assertThat(actualDrawn)
+                .isFalse();
         }
     }
 
@@ -558,9 +726,10 @@ class MapPresenceTests {
 
             var presence = new MapPresence(
                 () -> SectorMapState.NOT_SHOWING,
+                () -> closingSectorMapState,
                 intelScreenFake,
                 () -> closingTabs,
-                litVisorTabs::contains);
+                MapPresenceTests.this::readVisorStateBelow);
 
             // ACT
             var actualShowing = presence.isStarscapeVanillaMapShowing();
@@ -572,15 +741,21 @@ class MapPresenceTests {
     }
 
     // The sector read is a plain supplier here rather than the live static, so each case names the
-    // state its screen is in and the intel fake carries the rest. The closing tabs and the visor test
-    // over them read the lists each case fills.
+    // state its screen is in and the intel fake carries the rest. The closing-tab ports read the
+    // fields each case fills.
     private MapPresence buildPresence(SectorMapState sectorMapState) {
 
         return new MapPresence(
             () -> sectorMapState,
+            () -> closingSectorMapState,
             intelScreenViewFake,
             () -> closingTabs,
-            litVisorTabs::contains);
+            this::readVisorStateBelow);
+    }
+
+    // A tab no case gave a visor reads as the live read answers a tab holding no events panel.
+    private MapVisorState readVisorStateBelow(Object tab) {
+        return visorStatesBelowTabs.getOrDefault(tab, MapVisorState.NOT_SHOWING);
     }
 
     // The M screen's tab is both a map and a laid-out component; a double has to be both for the

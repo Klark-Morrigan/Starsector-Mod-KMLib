@@ -77,7 +77,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
-- **`ForeignMapPassWarning`**（位于 `kmlib.starsector.ui.map.probes`）：星图渲染钩子在没有原版星图正在绘制时运行（玩家离开后仍在淡出的星图也算作正在绘制），每次游戏期间警告一次，并在调用方自己的消息后附上嵌入星图的宿主和该渲染流程的调用栈。
+- **`ForeignMapPassWarning`**（位于 `kmlib.starsector.ui.map.probes`）：星图渲染钩子在没有原版星图正在绘制时运行（玩家离开后仍在淡出的星图也算作正在绘制），每次游戏期间警告一次，并在调用方自己的消息后附上嵌入星图的宿主和该渲染通道的调用栈。存在性读取在每个渲染通道中传入，因此调用方在同一帧的其他地方询问时可共用一个答案。
 - **`GlLineHatchStroke`**（位于 `kmlib.opengl.hatch`）：以 GL 线条描画的斜线段，线宽按图样间距的比例设定，因此在任何缩放下都保持一致。
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
@@ -101,7 +101,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`LocaleParity` 以默认语言区域核对控制台指令表**：`findConsoleCommandRowMismatches()` 找出某个语言区域缺少或多出的指令，`findConsoleCommandBehaviourMismatches()` 找出类、语法或标签不同的指令，因为只有帮助文字需要翻译。`findAllMismatches()` 会运行这两项检查；未指定核心本地化的语言区域，其帮助文字限于 Latin-1。`LocaleBundle.readConsoleCommands()` 读取单个语言区域的指令表。
 - **`LocaleParity` 以默认语言区域核对控制台文字的英文副本**：`findConsoleHelpEnglishCopyMismatches()` 检查指令表的帮助文字，`findConsoleStringEnglishCopyMismatches()` 检查每个 `console_` 字符串，找出含有 Latin-1 以外字符却没有英文副本的译文，以及副本与默认语言区域不同的译文。`findAllMismatches()` 会运行这两项检查，`findFormatArgumentMismatches()` 只比较控制台字符串的译文部分。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
-- **`MapPresence.isAnyVanillaMapDrawn()`**：是否有原版星图正在绘制，包括玩家离开后仍在淡出的星图。它回答与绘制有关的问题，`isAnyVanillaMapShowing()` 则回答与输入有关的问题，因为正在关闭的星图不接收任何输入。
+- **`MapPresence` 的绘制读取**：是否有原版星图正在绘制，包括玩家离开后仍在淡出的星图。它们回答与绘制有关的问题，显示读取则回答与输入有关的问题，因为正在关闭的星图不接收任何输入。
+  - `isAnyVanillaMapDrawn()`：任一外观。
+  - `isStarscapeVanillaMapDrawn()`：星景模式下。
+- **`MapPresence(GameReachReporter, VanillaIntelScreenView)`**：基于调用方已持有的情报信息面板视图进行实时读取，因此同时直接读取情报信息面板的 Mod 只保留一个视图，其每条警告也只说一次。
 - **`MarketSubmarkets.findSubmarket(MarketAPI, String)`** 与 **`findSubmarketCargo(MarketAPI, String)`**：市场的某个子市场，以及其中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
   - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。

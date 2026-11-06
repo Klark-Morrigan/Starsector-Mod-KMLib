@@ -8,58 +8,41 @@ import kmlib.starsector.ui.intel.VanillaIntelScreenView;
 import kmlib.starsector.ui.map.probes.ShownMapTab;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Answers what the game is showing a map on, over both hosts that can be showing one: the full
- * sector map, and the intel screen's embedded map preview (its "map visor"). Each host keeps its own
- * Starscape filter, so every question here is a disjunction over the two, and code reached through a
- * hook that is not told which host invoked it asks once here instead of repeating an OR that a third
- * host would have to be added to in each caller.
+ * Answers whether the game is showing a map, over both hosts that can show one: the full sector map,
+ * and the intel screen's embedded map preview (its "map visor"). Code reached through a hook that is
+ * not told which host invoked it asks here, instead of repeating an OR over the hosts in each caller.
  *
- * <p>Three reads rather than one with a mode argument, because they are three states the game is
- * actually in and not three settings of one: a screen showing no map at all leaves all three false,
- * so none is derivable as another's negation. They share one object because they share their two
- * sources - separate classes per read would build a second binding to the same live widget tree, and
- * a caller wanting two answers would pay for the walk behind them twice.
+ * <p>Showing and drawn are two questions. The core UI stops naming a tab as current before it stops
+ * drawing it, so a map the player has just left is still on screen for the length of its fade. The
+ * drawn reads count that map and answer the questions about painting, such as whether a render pass
+ * belongs to a vanilla map. The showing reads do not count it and answer the questions about input,
+ * since a closing map takes none.
  *
- * <p>{@link #isAnyVanillaMapShowing()} is the cheapest of the three and not merely their disjunction: no
- * filter is read on either host, because the filter chooses which look a showing map wears and never
- * whether one is showing. So it resolves a step earlier than the look-aware pair, asking each host
- * one question where they ask two.
+ * <p>Each read is a state the game is in, not a setting of one: a screen with no map leaves every read
+ * false, so none is another's negation. The any-look reads ask no filter, which chooses how a map
+ * looks and never whether it is there.
  *
- * <p>{@link #isAnyVanillaMapDrawn()} widens the any-look read for one gap the game leaves. The core UI
- * stops naming a tab as current before it stops drawing it, so a map the player has just left is
- * still on screen for the length of its fade while the showing reads say it is gone. Drawn answers
- * the questions about painting, such as whether a render pass belongs to a vanilla map. Showing
- * answers the questions about input, since a closing map takes none.
+ * <p>Host-blind is what these answers are for and the limit of their use: each says such a map is on
+ * screen, never which host has it. A question about one host is answered by reading that host.
  *
- * <p>Host-blind is what these answers are for and the limit of what they can be used for: each says
- * such a map is somewhere on screen, never which host is showing it. A question about one host -
- * whether to draw into that host, or where - is answered by reading that host instead.
- *
- * <p>Both sources arrive as injected ports - the sector map as a supplier of its
- * {@link SectorMapState}, the intel screen as {@link IntelScreenView} - because the live readings
- * are statics and game-only widget walks that nothing outside a running game can stand up. The
- * sector side arrives as that one enumerated state rather than as a boolean per question, so no
- * caller can describe a map that is absent and filtered at once. The intel side answers the
- * look-aware pair with a state of the same shape and for the same reason, with one more behind it:
- * its two signals are read off a walk down the live widget tree, so asking them separately would
- * take that walk twice to describe one frame. The closing tabs and the visor test applied to them
- * arrive as ports for the same reason. Every port fails closed, so an unreadable host reports no map.
- *
- * <p>The visor's filter cannot be read against its presence in any case. The preview's panel
- * survives a switch to the sibling sub-tabs that share the intel tab, so its filter state still
- * reads either way while no visor is on screen at all - which is why the intel side's states carry
- * the presence within them rather than leaving a caller to pair two answers.
+ * <p>Every source arrives as a port, since the live reads walk a widget tree that only a running game
+ * has. Each host answers in one enumerated state, presence and filter together, so no caller can pose
+ * a map that is absent and filtered at once - which matters on the intel screen, whose filter still
+ * reads while a sibling sub-tab hides the visor. Every port fails closed, so an unreadable host
+ * reports no map.
  */
 public final class MapPresence {
 
     private final IntelScreenView intelScreen;
     private final Supplier<SectorMapState> readSectorMapState;
+    private final Supplier<SectorMapState> readClosingSectorMapState;
     private final Supplier<List<Object>> readClosingTabs;
-    private final Predicate<Object> isMapVisorLitBelow;
+    private final Function<Object, MapVisorState> readMapVisorStateBelow;
 
     /**
      * Reads the live sector map and the live intel screen - the pairing a running game gets.
@@ -72,56 +55,57 @@ public final class MapPresence {
         this(reporter, new VanillaIntelScreenView(reporter));
     }
 
-    private MapPresence(GameReachReporter reporter, VanillaIntelScreenView intelScreen) {
+    /**
+     * Reads the live sector map and the live intel screen through a view the caller already holds,
+     * so a mod reading the intel screen directly as well keeps one view and its warnings once.
+     *
+     * @param reporter    where a failed read of the sector map is filed, for the mod gating on the
+     *                    answers
+     * @param intelScreen the live intel screen view, filing its own failures under its own reporter
+     */
+    public MapPresence(GameReachReporter reporter, VanillaIntelScreenView intelScreen) {
         this(
             () -> CampaignMapView.resolveSectorMapState(reporter),
+            () -> CampaignMapView.resolveClosingSectorMapState(reporter),
             intelScreen,
             MapPresence::readClosingTabsOrNone,
-            intelScreen::isMapVisorLitBelow);
+            intelScreen::readMapVisorStateBelow);
     }
 
     MapPresence(
             Supplier<SectorMapState> readSectorMapState,
+            Supplier<SectorMapState> readClosingSectorMapState,
             IntelScreenView intelScreen,
             Supplier<List<Object>> readClosingTabs,
-            Predicate<Object> isMapVisorLitBelow) {
+            Function<Object, MapVisorState> readMapVisorStateBelow) {
 
         this.readSectorMapState = readSectorMapState;
+        this.readClosingSectorMapState = readClosingSectorMapState;
         this.intelScreen = intelScreen;
         this.readClosingTabs = readClosingTabs;
-        this.isMapVisorLitBelow = isMapVisorLitBelow;
+        this.readMapVisorStateBelow = readMapVisorStateBelow;
     }
 
     /**
-     * Whether a vanilla map is being painted: one showing, or one inside a tab the player has just
-     * left, still fading out.
-     *
-     * <p>The game stops naming a tab as current before it stops drawing it, so for that fade every
-     * other read here answers no map while one is on screen. Ask this for a question about painting,
-     * such as whether a render pass belongs to a vanilla map. Ask {@link #isAnyVanillaMapShowing()} for
-     * a question about input, since a closing map takes none and nothing should resolve against it.
-     *
-     * <p>A closing map counts whichever sub-view it was left on. The sub-view decides what that map
-     * draws, and a caller asking about a pass is already inside the draw it chose.
-     *
-     * @return whether a map is showing on either host, or a closing tab holds the sector map or an
-     *         intel screen with its visor lit
+     * @return whether either host is drawing a map, either look: one showing, or one in a tab the
+     *         player has just left, still fading out
      */
     public boolean isAnyVanillaMapDrawn() {
 
-        if (isAnyVanillaMapShowing()) {
-            return true;
-        }
+        return isAnyVanillaMapShowing()
+            || isClosingMapIn(SectorMapState::isShowing, visorState -> visorState != MapVisorState.NOT_SHOWING);
+    }
 
-        for (var closingTab : readClosingTabs.get()) {
+    /**
+     * @return whether either host is drawing a map in Starscape mode: one showing, or one in a tab the
+     *         player has just left, still fading out
+     */
+    public boolean isStarscapeVanillaMapDrawn() {
 
-            // Each test is the one its own read already applies to the tab that is up.
-            if (ShownMapTab.isSectorMapTab(closingTab) || isMapVisorLitBelow.test(closingTab)) {
-                return true;
-            }
-        }
-
-        return false;
+        return isStarscapeVanillaMapShowing()
+            || isClosingMapIn(
+                sectorMapState -> sectorMapState == SectorMapState.SHOWING_IN_STARSCAPE_MODE,
+                visorState -> visorState == MapVisorState.SHOWING_IN_STARSCAPE_MODE);
     }
 
     /**
@@ -161,6 +145,27 @@ public final class MapPresence {
             return true;
         }
         return intelScreen.readMapVisorState() == MapVisorState.SHOWING_IN_STARSCAPE_MODE;
+    }
+
+    // Whether a tab still fading out holds a map in a state the caller accepts. A closing sector map
+    // is classified off the persisted UI data the closed map left behind, and a closing intel screen
+    // off its own visor, each by the read that classifies the tab that is up.
+    private boolean isClosingMapIn(
+            Predicate<SectorMapState> isSectorMapStateAccepted,
+            Predicate<MapVisorState> isVisorStateAccepted) {
+
+        for (var closingTab : readClosingTabs.get()) {
+
+            var isAccepted = ShownMapTab.isSectorMapTab(closingTab)
+                ? isSectorMapStateAccepted.test(readClosingSectorMapState.get())
+                : isVisorStateAccepted.test(readMapVisorStateBelow.apply(closingTab));
+
+            if (isAccepted) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // The closing tabs, or none where the core UI cannot be reached. Fails closed like both host

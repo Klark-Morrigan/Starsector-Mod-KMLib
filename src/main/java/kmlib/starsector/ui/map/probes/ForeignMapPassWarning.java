@@ -63,11 +63,6 @@ public final class ForeignMapPassWarning {
     // only inside one.
     private final Supplier<String> describeEmbeddedMapHosts;
 
-    // Whether a map is being drawn at all, as a supplied read rather than one composed here: the
-    // hosts a map can be drawn on are not this class's knowledge, and a supplied read is the
-    // caller's to answer without this class holding a widget tree to walk.
-    private final BooleanSupplier isAnyVanillaMapDrawn;
-
     // The caller's own words for the pass, before the host trace is appended.
     private final String noVanillaMapWarningLead;
 
@@ -77,25 +72,21 @@ public final class ForeignMapPassWarning {
     private final SessionWarning warning;
 
     /**
-     * @param isAnyVanillaMapDrawn      whether any vanilla map widget site is being drawn, a closing
-     *                                  one included, as {@code MapPresence#isAnyVanillaMapDrawn} answers it
      * @param describeEmbeddedMapHosts  what the live tree holds around any map embedded outside those
      *                                  sites, as {@link EmbeddedMapHostTrace#describeEmbeddedMapHosts}
      *                                  answers it - asked only when a line is owed, being a full tree walk
      * @param logger                    the calling surface's own logger, so the line is attributed to the
      *                                  surface that was drawn rather than to this reporter
-     * @param noVanillaMapWarningLead   what the line says about the surface drawn with no site showing;
+     * @param noVanillaMapWarningLead   what the line says about the surface drawn with no site drawn;
      *                                  the host trace, or that the tree could not be walked, follows it
-     * @param unreadablePresenceWarning what the line says when whether a map is showing could not be read
+     * @param unreadablePresenceWarning what the line says when whether a map is drawn could not be read
      */
     public ForeignMapPassWarning(
-            BooleanSupplier isAnyVanillaMapDrawn,
             Supplier<String> describeEmbeddedMapHosts,
             Logger logger,
             String noVanillaMapWarningLead,
             String unreadablePresenceWarning) {
 
-        this.isAnyVanillaMapDrawn = isAnyVanillaMapDrawn;
         this.describeEmbeddedMapHosts = describeEmbeddedMapHosts;
         this.noVanillaMapWarningLead = noVanillaMapWarningLead;
         this.unreadablePresenceWarning = unreadablePresenceWarning;
@@ -107,11 +98,18 @@ public final class ForeignMapPassWarning {
      *
      * <p>Call at the top of a render pass, before anything is resolved or drawn, so the stack is the one
      * that actually reached the surface.
+     *
+     * <p>The read is handed in per pass rather than held, so a caller asking it elsewhere in the same
+     * frame can hand over the answer it already settled instead of a second walk.
+     *
+     * @param isAnyVanillaMapDrawn whether any vanilla map widget site is being drawn, a closing one
+     *                             included, as {@code MapPresence#isAnyVanillaMapDrawn} answers it; asked
+     *                             only while the line is still owed
      */
-    public void warnOnceIfNoVanillaMapIsDrawn() {
+    public void warnOnceIfNoVanillaMapIsDrawn(BooleanSupplier isAnyVanillaMapDrawn) {
 
         // Asked before the read, not after, because the read is the expensive half: with the line
-        // already said there is nothing a widget walk could tell us that would be printed.
+        // already said there is nothing a widget walk could tell that would be printed.
         if (warning.hasWarnedThisSession()) {
             return;
         }
