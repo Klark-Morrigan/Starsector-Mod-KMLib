@@ -524,6 +524,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | interaction target (the entity a dialog is open on) | 交互目标 | the vanilla Interaction and Target rows joined; kept apart from 目标版本, a targeted version |
 | plugin (the class the game runs a feature through), hand off (a dialog to a plugin), start (a plugin) | 插件, 移交, 启动 | 插件, something plugged in. Vanilla shows players no plugin in this sense, and reads a bare 插件 as a hullmod (see the Hullmod row), so an entry names the kind where it is not plain: 对话框插件, 插件类. 移交, to transfer; 启动 as vanilla starts the game, a system or an ability |
 | fade in and out, pace (of a fade) | 淡入淡出, 节奏 | 淡入淡出, to fade in and fade out; 节奏, rhythm |
+| fade out (alone, as a closing screen does) | 淡出 | the second half of 淡入淡出 |
 | map visor (the intel screen's embedded map preview) | 地图视窗 | 地图, a map, with 视窗, a viewing window; the visor has no name a player sees |
 | close key (a key that closes a panel) | 关闭键 | 关闭, close, with 键, key |
 | public API | 公共 API | 公共, public, as in 公共契约, a public contract; API stays in Latin letters |

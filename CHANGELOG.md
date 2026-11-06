@@ -53,6 +53,7 @@ The reusable release workflow extracts the section matching the released version
 - **`AllianceRecord.findLeadFactionId()`**: the member that leads the alliance, empty where it has no members.
 - **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
+- **`CampaignMapView.resolveClosingSectorMapState(GameReachReporter)`**: the state the sector map was left in, for its tab still fading out after the player left it.
 - **`ClaimBreakdownReaderSource`** in `kmlib.starsector.systems.claims`: a `ClaimReaderSource` whose readers also explain the claims they read, so one source serves a map's fills and the box explaining them.
 - **`ClaimDecreeReader`** in `kmlib.starsector.systems.claims`: the faction a system's claiming-faction flag imposes, one memory read with no colony walk. `StarSystems::readDecreedFactionId` is the vanilla binding.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.

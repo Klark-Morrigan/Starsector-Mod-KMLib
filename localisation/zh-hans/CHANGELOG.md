@@ -53,6 +53,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`AllianceRecord.findLeadFactionId()`**：联盟的盟主；联盟没有成员时为空。
 - **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台指令。子类指定自己的指令名、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
+- **`CampaignMapView.resolveClosingSectorMapState(GameReachReporter)`**：星图被关闭时所处的状态，用于玩家离开后仍在淡出的星图面板。
 - **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的悬停框。
 - **`ClaimDecreeReader`**（位于 `kmlib.starsector.systems.claims`）：星系的宣称势力标记所强加的势力，只需一次记忆读取，无需遍历殖民地。`StarSystems::readDecreedFactionId` 是原版绑定。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
