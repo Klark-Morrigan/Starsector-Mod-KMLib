@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -48,18 +49,21 @@ final class ForeignMapPassWarningTests {
     private static final String UNREADABLE_PRESENCE = "Overlay could not read whether a map is on screen.";
 
     @Nested
-    class WarnOnceIfNoVanillaMapIsShowing {
+    class WarnOnceIfNoVanillaMapIsDrawn {
 
+        // The throwable is the caller's stack, which is the only thing in the line that answers
+        // the question the line is raised to ask.
         @Test
         void reportsThePassWithItsStackWhenNoMapIsOnScreen() {
 
+            // ARRANGE
             var loggerMock = mock(Logger.class);
+            var warning = buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock);
 
-            buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock)
-                .warnOnceIfNoVanillaMapIsShowing();
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
 
-            // The throwable is the caller's stack, which is the only thing in the line that answers
-            // the question the line is raised to ask.
+            // ASSERT
             verify(loggerMock)
                 .warn(any(), any(Throwable.class));
         }
@@ -67,114 +71,149 @@ final class ForeignMapPassWarningTests {
         @Test
         void leadsWithTheCallersWordsAndFollowsWithTheHostTrace() {
 
-            var loggerMock = mock(Logger.class);
-
-            buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock)
-                .warnOnceIfNoVanillaMapIsShowing();
-
-            verify(loggerMock)
-                .warn(eq("Overlay drawn with no map on screen; mapHosts=[]"), any(Throwable.class));
-        }
-
-        @Test
-        void staysQuietWhileAMapIsShowing() {
-            // The ordinary case, and by far the common one: this runs on every frame the sector map
-            // paints, so a line here would be written sixty times a second on a working setup.
-            var loggerMock = mock(Logger.class);
-
-            buildWarning(() -> true, () -> NO_HOSTS_FOUND, loggerMock)
-                .warnOnceIfNoVanillaMapIsShowing();
-
-            verifyNoInteractions(loggerMock);
-        }
-
-        @Test
-        void reportsOneForeignPassOnlyOnce() {
-            // It sits in a per-frame path, and a foreign pass is foreign on every frame it runs, so
-            // an unlatched report would bury the log rather than inform it.
+            // ARRANGE
             var loggerMock = mock(Logger.class);
             var warning = buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock);
 
-            warning.warnOnceIfNoVanillaMapIsShowing();
-            warning.warnOnceIfNoVanillaMapIsShowing();
-            warning.warnOnceIfNoVanillaMapIsShowing();
+            var expectedLine = "Overlay drawn with no map on screen; mapHosts=[]";
 
-            verify(loggerMock, times(1))
-                .warn(any(), any(Throwable.class));
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            // ASSERT
+            verify(loggerMock)
+                .warn(eq(expectedLine), any(Throwable.class));
         }
 
+        // The ordinary case, and by far the common one: this runs on every frame the sector map
+        // paints, so a line here would be written sixty times a second on a working setup.
         @Test
-        void stopsAskingOnceTheMapIsShownAgain() {
-            // The latch is on having spoken, not on the state that prompted it: a pass that is
-            // foreign once and a map that opens afterwards must not re-arm the line, or every
-            // switch back and forth would add another copy of it.
+        void staysQuietWhileAMapIsDrawn() {
+
+            // ARRANGE
             var loggerMock = mock(Logger.class);
-            var isMapShowing = new boolean[] {false};
-            var warning = buildWarning(() -> isMapShowing[0], () -> NO_HOSTS_FOUND, loggerMock);
+            var warning = buildWarning(() -> true, () -> NO_HOSTS_FOUND, loggerMock);
 
-            warning.warnOnceIfNoVanillaMapIsShowing();
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
 
-            isMapShowing[0] = true;
-            warning.warnOnceIfNoVanillaMapIsShowing();
+            // ASSERT
+            verifyNoInteractions(loggerMock);
+        }
 
-            isMapShowing[0] = false;
-            warning.warnOnceIfNoVanillaMapIsShowing();
+        // It sits in a per-frame path, and a foreign pass is foreign on every frame it runs, so
+        // an unlatched report would bury the log rather than inform it.
+        @Test
+        void reportsOneForeignPassOnlyOnce() {
 
+            // ARRANGE
+            var loggerMock = mock(Logger.class);
+            var warning = buildWarning(() -> false, () -> NO_HOSTS_FOUND, loggerMock);
+
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            // ASSERT
             verify(loggerMock, times(1))
                 .warn(any(), any(Throwable.class));
         }
 
+        // The latch is on having spoken, not on the state that prompted it: a pass that is
+        // foreign once and a map that opens afterwards must not re-arm the line, or every
+        // switch back and forth would add another copy of it.
+        @Test
+        void stopsAskingOnceTheMapIsDrawnAgain() {
+
+            // ARRANGE
+            var loggerMock = mock(Logger.class);
+            var isMapDrawn = new boolean[] {false};
+            var warning = buildWarning(() -> isMapDrawn[0], () -> NO_HOSTS_FOUND, loggerMock);
+
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            isMapDrawn[0] = true;
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            isMapDrawn[0] = false;
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            // ASSERT
+            verify(loggerMock, times(1))
+                .warn(any(), any(Throwable.class));
+        }
+
+        // The point of the whole line. The stack cannot name an owner - the mod builds its
+        // widget once and the engine renders it every frame after - so if the tree read does
+        // not reach the message, the warning costs a walk and answers nothing.
         @Test
         void carriesTheModOwnedClassesIntoTheLine() {
-            // The point of the whole line. The stack cannot name an owner - the mod builds its
-            // widget once and the engine renders it every frame after - so if the tree read does
-            // not reach the message, the warning costs a walk and answers nothing.
+
+            // ARRANGE
             var loggerMock = mock(Logger.class);
+            var warning = buildWarning(() -> false, () -> MOD_OWNED_HOST_FOUND, loggerMock);
 
-            buildWarning(() -> false, () -> MOD_OWNED_HOST_FOUND, loggerMock)
-                .warnOnceIfNoVanillaMapIsShowing();
+            var expectedOwner = "org.example.mod.NavTooltipPlugin";
 
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            // ASSERT
             verify(loggerMock)
-                .warn(contains("org.example.mod.NavTooltipPlugin"), any(Throwable.class));
+                .warn(contains(expectedOwner), any(Throwable.class));
         }
 
+        // A null read must not read as "walked the tree and found nobody", which would send a
+        // reader looking for a mod that the walk never had a chance to see.
         @Test
         void saysSoWhenTheTreeCouldNotBeWalked() {
-            // A null read must not read as "walked the tree and found nobody", which would send a
-            // reader looking for a mod that the walk never had a chance to see.
+
+            // ARRANGE
             var loggerMock = mock(Logger.class);
+            var warning = buildWarning(() -> false, () -> null, loggerMock);
 
-            buildWarning(() -> false, () -> null, loggerMock)
-                .warnOnceIfNoVanillaMapIsShowing();
+            var expectedLine = "Overlay drawn with no map on screen; the tree could not be walked";
 
+            // ACT
+            warning.warnOnceIfNoVanillaMapIsDrawn();
+
+            // ASSERT
             verify(loggerMock)
-                .warn(
-                    eq("Overlay drawn with no map on screen; the tree could not be walked"),
-                    any(Throwable.class));
+                .warn(eq(expectedLine), any(Throwable.class));
         }
 
+        // The walk is a full sweep of the core UI, and this runs on every frame the map paints.
+        // Asking for it before knowing a line is owed would pay for it sixty times a second on
+        // a working setup.
         @Test
-        void doesNotWalkTheTreeWhileAMapIsShowing() {
-            // The walk is a full sweep of the core UI, and this runs on every frame the map paints.
-            // Asking for it before knowing a line is owed would pay for it sixty times a second on
-            // a working setup.
+        void doesNotWalkTheTreeWhileAMapIsDrawn() {
+
+            // ARRANGE
             var loggerMock = mock(Logger.class);
-            var treeWalkOnShowingMap = buildWarning(
+            var treeWalkOnDrawnMap = buildWarning(
                 () -> true,
                 () -> {
                     throw new AssertionError("walked the tree with a map on screen");
                 },
                 loggerMock);
 
-            assertThatCode(treeWalkOnShowingMap::warnOnceIfNoVanillaMapIsShowing)
-                .doesNotThrowAnyException();
+            // ACT
+            var actualThrown = catchThrowable(treeWalkOnDrawnMap::warnOnceIfNoVanillaMapIsDrawn);
+
+            // ASSERT
+            assertThat(actualThrown)
+                .isNull();
         }
 
+        // The read reaches into the live widget tree and into core classes. This is a report
+        // about the frame and not part of drawing one, so a read that cannot be made must cost
+        // the report alone - letting it out would take the overlay away over a log line.
         @Test
         void swallowsAPresenceReadThatThrows() {
-            // The read reaches into the live widget tree and into core classes. This is a report
-            // about the frame and not part of drawing one, so a read that cannot be made must cost
-            // the report alone - letting it out would take the overlay away over a log line.
+
+            // ARRANGE
             var loggerMock = mock(Logger.class);
             var warningOnBrokenRead = buildWarning(
                 () -> {
@@ -183,15 +222,21 @@ final class ForeignMapPassWarningTests {
                 () -> NO_HOSTS_FOUND,
                 loggerMock);
 
-            assertThatCode(warningOnBrokenRead::warnOnceIfNoVanillaMapIsShowing)
-                .doesNotThrowAnyException();
+            // ACT
+            var actualThrown = catchThrowable(warningOnBrokenRead::warnOnceIfNoVanillaMapIsDrawn);
+
+            // ASSERT
+            assertThat(actualThrown)
+                .isNull();
         }
 
+        // A read that broke once breaks every frame, so the failure spends the warning too. The
+        // reported throwable is the failure itself, which is what says which of the two lines
+        // this was.
         @Test
         void stopsRetryingAReadThatThrows() {
-            // A read that broke once breaks every frame, so the failure spends the warning too. The
-            // reported throwable is the failure itself, which is what says which of the two lines
-            // this was.
+
+            // ARRANGE
             var loggerMock = mock(Logger.class);
             var readFailure = new IllegalStateException("no widget tree");
             var warningOnBrokenRead = buildWarning(
@@ -201,9 +246,11 @@ final class ForeignMapPassWarningTests {
                 () -> NO_HOSTS_FOUND,
                 loggerMock);
 
-            warningOnBrokenRead.warnOnceIfNoVanillaMapIsShowing();
-            warningOnBrokenRead.warnOnceIfNoVanillaMapIsShowing();
+            // ACT
+            warningOnBrokenRead.warnOnceIfNoVanillaMapIsDrawn();
+            warningOnBrokenRead.warnOnceIfNoVanillaMapIsDrawn();
 
+            // ASSERT
             verify(loggerMock, times(1))
                 .warn(anyString(), any(Throwable.class));
             verify(loggerMock, never())
@@ -213,6 +260,7 @@ final class ForeignMapPassWarningTests {
         @Test
         void saysTheCallersWordsForAReadThatThrows() {
 
+            // ARRANGE
             var loggerMock = mock(Logger.class);
             var readFailure = new IllegalStateException("no widget tree");
             var warningOnBrokenRead = buildWarning(
@@ -222,20 +270,22 @@ final class ForeignMapPassWarningTests {
                 () -> NO_HOSTS_FOUND,
                 loggerMock);
 
-            warningOnBrokenRead.warnOnceIfNoVanillaMapIsShowing();
+            // ACT
+            warningOnBrokenRead.warnOnceIfNoVanillaMapIsDrawn();
 
+            // ASSERT
             verify(loggerMock)
                 .warn(UNREADABLE_PRESENCE, readFailure);
         }
     }
 
     private static ForeignMapPassWarning buildWarning(
-            BooleanSupplier isAnyVanillaMapShowing,
+            BooleanSupplier isAnyVanillaMapDrawn,
             Supplier<String> describeEmbeddedMapHosts,
             Logger logger) {
 
         return new ForeignMapPassWarning(
-            isAnyVanillaMapShowing,
+            isAnyVanillaMapDrawn,
             describeEmbeddedMapHosts,
             logger,
             NO_MAP_LEAD,

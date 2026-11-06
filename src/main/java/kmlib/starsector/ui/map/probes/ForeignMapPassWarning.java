@@ -9,7 +9,12 @@ import java.util.function.Supplier;
 
 /**
  * Says once a session that a surface drawn through the sector map's render hook was drawn while no
- * recognised vanilla map widget site - the sector map or the intel screen's map visor - was showing.
+ * recognised vanilla map widget site - the sector map or the intel screen's map visor - was being drawn.
+ *
+ * <p>Drawn, not showing: a map the player has just left goes on drawing while its tab fades out, after
+ * the game has stopped naming it as the tab that is up. Asked whether a map is showing, that fade reads
+ * as a pass with no map. Then every ordinary close would spend the once-a-session line, and a real
+ * foreign pass later that session would go unreported.
  *
  * <p>{@code renderOnMap} is the sector map's hook by contract, and a map overlay rests on that: a cursor
  * read inverts whichever transform the running pass has bound, and divides by the {@code factor} that
@@ -50,7 +55,7 @@ public final class ForeignMapPassWarning {
     private static final String LEAD_TO_HOSTS_SEPARATOR = "; ";
 
     // What the carried stack is labelled as in the log.
-    private static final String PASS_STACK_LABEL = "Stack of the pass that drew with no vanilla map site showing";
+    private static final String PASS_STACK_LABEL = "Stack of the pass that drew with no vanilla map site drawn";
 
     // What the live tree holds around any embedded map, or null when it could not be read. Supplied
     // rather than called for here, for the reason the presence read is: both walk a widget tree
@@ -58,10 +63,10 @@ public final class ForeignMapPassWarning {
     // only inside one.
     private final Supplier<String> describeEmbeddedMapHosts;
 
-    // Whether a map is on screen at all, as a supplied read rather than one composed here: the
-    // hosts a map can be showing on are not this class's knowledge, and a supplied read is the
+    // Whether a map is being drawn at all, as a supplied read rather than one composed here: the
+    // hosts a map can be drawn on are not this class's knowledge, and a supplied read is the
     // caller's to answer without this class holding a widget tree to walk.
-    private final BooleanSupplier isAnyVanillaMapShowing;
+    private final BooleanSupplier isAnyVanillaMapDrawn;
 
     // The caller's own words for the pass, before the host trace is appended.
     private final String noVanillaMapWarningLead;
@@ -72,7 +77,8 @@ public final class ForeignMapPassWarning {
     private final SessionWarning warning;
 
     /**
-     * @param isAnyVanillaMapShowing    whether any vanilla map widget site is showing
+     * @param isAnyVanillaMapDrawn      whether any vanilla map widget site is being drawn, a closing
+     *                                  one included, as {@code MapPresence#isAnyVanillaMapDrawn} answers it
      * @param describeEmbeddedMapHosts  what the live tree holds around any map embedded outside those
      *                                  sites, as {@link EmbeddedMapHostTrace#describeEmbeddedMapHosts}
      *                                  answers it - asked only when a line is owed, being a full tree walk
@@ -83,13 +89,13 @@ public final class ForeignMapPassWarning {
      * @param unreadablePresenceWarning what the line says when whether a map is showing could not be read
      */
     public ForeignMapPassWarning(
-            BooleanSupplier isAnyVanillaMapShowing,
+            BooleanSupplier isAnyVanillaMapDrawn,
             Supplier<String> describeEmbeddedMapHosts,
             Logger logger,
             String noVanillaMapWarningLead,
             String unreadablePresenceWarning) {
 
-        this.isAnyVanillaMapShowing = isAnyVanillaMapShowing;
+        this.isAnyVanillaMapDrawn = isAnyVanillaMapDrawn;
         this.describeEmbeddedMapHosts = describeEmbeddedMapHosts;
         this.noVanillaMapWarningLead = noVanillaMapWarningLead;
         this.unreadablePresenceWarning = unreadablePresenceWarning;
@@ -97,12 +103,12 @@ public final class ForeignMapPassWarning {
     }
 
     /**
-     * Reports this pass, if no map is on screen and nothing has been reported yet this session.
+     * Reports this pass, if no map is being drawn and nothing has been reported yet this session.
      *
      * <p>Call at the top of a render pass, before anything is resolved or drawn, so the stack is the one
      * that actually reached the surface.
      */
-    public void warnOnceIfNoVanillaMapIsShowing() {
+    public void warnOnceIfNoVanillaMapIsDrawn() {
 
         // Asked before the read, not after, because the read is the expensive half: with the line
         // already said there is nothing a widget walk could tell us that would be printed.
@@ -111,7 +117,7 @@ public final class ForeignMapPassWarning {
         }
 
         try {
-            if (isAnyVanillaMapShowing.getAsBoolean()) {
+            if (isAnyVanillaMapDrawn.getAsBoolean()) {
                 return;
             }
 
