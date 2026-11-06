@@ -17,15 +17,17 @@ import org.mockito.MockedStatic;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * Pins which of the core UI's children count as a tab still fading out: one whose wrapper has not
  * finished its fade, never one that has, and never the tab that is up, whose own wrapper holds it too.
+ * A child failing its hop is skipped, and a wrapper with no fader counts, as the showing read fails open.
  *
- * <p>Then the live read once, over a core UI a dialog stands up, to show it takes its children and its
- * current tab off the same core.
+ * <p>Then the live read, over a core UI a dialog stands up, to show it takes its children and its
+ * current tab off the same core, and that a broken reach raises rather than answering no tabs.
  */
 class ClosingCoreTabsTests {
 
@@ -113,6 +115,43 @@ class ClosingCoreTabsTests {
             assertThat(actualClosingTabs)
                 .containsExactly(closingTab);
         }
+
+        // A child that offers the hop and throws from it is one misbehaving widget, not a broken
+        // reach, and must not end the read for the tabs beside it.
+        @Test
+        void skipsAChildWhoseTabHopThrows() {
+
+            // ARRANGE
+            var closingTab = new Object();
+
+            var coreChildren = List.of(
+                new RefusingWrapperFake(),
+                TabWrapperFake.createFadingOut(closingTab));
+
+            // ACT
+            var actualClosingTabs = ClosingCoreTabs.readClosingTabsAmong(coreChildren, null);
+
+            // ASSERT
+            assertThat(actualClosingTabs)
+                .containsExactly(closingTab);
+        }
+
+        // The showing read fails open on a shape with no fader, so such a wrapper counts as still
+        // drawing. What that costs is a closing map read as drawn, never one read as gone.
+        @Test
+        void countsAWrapperOfferingNoFaderAsClosing() {
+
+            // ARRANGE
+            var closingTab = new Object();
+            var coreChildren = List.of(new FaderlessWrapperFake(closingTab));
+
+            // ACT
+            var actualClosingTabs = ClosingCoreTabs.readClosingTabsAmong(coreChildren, null);
+
+            // ASSERT
+            assertThat(actualClosingTabs)
+                .containsExactly(closingTab);
+        }
     }
 
     @Nested
@@ -179,6 +218,45 @@ class ClosingCoreTabsTests {
             // ASSERT
             assertThat(actualClosingTabs)
                 .containsExactly(closingTab);
+        }
+
+        // A campaign UI that offers no core hop is a broken reach, not an empty screen, and the
+        // read leaves what that means to its caller rather than answering no tabs.
+        @Test
+        void raisesWhereTheCampaignUiOffersNoCoreHop() {
+
+            // ARRANGE
+            when(sectorMock.getCampaignUI())
+                .thenReturn(mock(CampaignUIAPI.class));
+
+            // ACT
+            var actualThrown = catchThrowable(ClosingCoreTabs::readClosingTabs);
+
+            // ASSERT
+            assertThat(actualThrown)
+                .isNotNull();
+        }
+    }
+
+    // Stands for a widget that offers the tab hop and fails from inside it.
+    public static final class RefusingWrapperFake {
+
+        public Object getPanel() {
+            throw new IllegalStateException("A wrapper that refuses to hand out its tab.");
+        }
+    }
+
+    // Stands for a wrapper shape carrying no fader of its own.
+    public static final class FaderlessWrapperFake {
+
+        private final Object panel;
+
+        FaderlessWrapperFake(Object panel) {
+            this.panel = panel;
+        }
+
+        public Object getPanel() {
+            return panel;
         }
     }
 
