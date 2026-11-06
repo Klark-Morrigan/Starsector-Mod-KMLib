@@ -20,7 +20,8 @@ import java.util.Map;
  * by {@link SystemKey}, and which one the player is in.
  *
  * <p>Centralises the common "walk {@code getStarSystems()} and pull something off each" loops so
- * every caller shares one implementation rather than re-walking the system list each time. What a caller then asks of a system it holds is {@link StarSystems}'.
+ * every caller shares one implementation rather than re-walking the system list each time. What a
+ * caller then asks of a system it holds is {@link StarSystems}'.
  *
  * <p>Split from that class rather than kept beside it because the two are asked at different
  * moments: a pass resolves the sector's layout once and then asks about systems many times over.

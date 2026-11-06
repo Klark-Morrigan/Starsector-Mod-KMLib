@@ -52,11 +52,13 @@ public final class ShownMapTab {
     //
     // Files nothing: this answers for whichever caller asks, so it knows no mod to file under, and a
     // mod whose feature rests on the intel screen reads it through a view holding its own reporter.
-    private static final IntelScreenView INTEL_SCREEN = new VanillaIntelScreenView(GameReachReporter.UNREPORTED);
+    private static final IntelScreenView INTEL_SCREEN =
+        new VanillaIntelScreenView(GameReachReporter.UNREPORTED);
 
     // Says once per session that this recognition no longer fits, rather than on every frame a
     // caller asks.
-    private static final SessionWarning WARNING = RearmableWarnings.createRearmableWarning(LOG);
+    private static final SessionWarning WARNING =
+        RearmableWarnings.createRearmableWarning(LOG);
 
     private ShownMapTab() {
     }
@@ -70,6 +72,7 @@ public final class ShownMapTab {
      *                          caller applies its own policy to a genuinely broken reach
      */
     public static UIComponentAPI resolveShownMapTab() {
+
         var mapTab = resolveShownMapTab(CoreUiTree.resolveCurrentTab(), INTEL_SCREEN);
         if (mapTab == null) {
             warnOnceIfTheMapScreenIsUpAnyway();
@@ -92,6 +95,20 @@ public final class ShownMapTab {
     }
 
     /**
+     * Whether a core tab is the {@code M} screen's map, whether or not it is the tab that is up.
+     *
+     * @param tab a core tab, or null
+     * @return whether it is a {@link SectorMapAPI} laid out as a component
+     */
+    public static boolean isSectorMapTab(Object tab) {
+
+        // Both conditions are load-bearing: being a map is what makes it the right root, and being
+        // a component is what makes it measurable at all.
+        return tab instanceof SectorMapAPI
+            && tab instanceof UIComponentAPI;
+    }
+
+    /**
      * The fail-closed rule, over a reach supplied elsewhere.
      *
      * @param resolveShownMapTab the reach for the map tab on screen, which answers null where none
@@ -104,7 +121,7 @@ public final class ShownMapTab {
         try {
             return resolveShownMapTab.get() != null;
 
-        } catch (Throwable unreachableMapTab) {
+        } catch (Throwable exception) {
             return false;
         }
     }
@@ -117,10 +134,9 @@ public final class ShownMapTab {
      * @return the map widget among the two, or null when neither is one
      */
     static UIComponentAPI resolveShownMapTab(Object currentTab, IntelScreenView intelScreen) {
-        // Both conditions are load-bearing: being a map is what makes it the right root, and being
-        // a component is what makes it measurable at all.
-        if (currentTab instanceof SectorMapAPI && currentTab instanceof UIComponentAPI mapTab) {
-            return mapTab;
+
+        if (isSectorMapTab(currentTab)) {
+            return (UIComponentAPI) currentTab;
         }
         return intelScreen.getMapVisorWidget();
     }
@@ -135,6 +151,7 @@ public final class ShownMapTab {
     // showing one, the campaign's otherwise - so a disagreement between them is news rather than
     // the two looking at different trees.
     private static void warnOnceIfTheMapScreenIsUpAnyway() {
+
         // Tested before anything is read, so a session that has already said this costs a caller in
         // a render pass one field read per frame rather than a walk into the campaign UI.
         if (WARNING.hasWarnedThisSession()) {
@@ -143,6 +160,7 @@ public final class ShownMapTab {
         if (CampaignScreenView.resolveShownCoreTab() != CoreUITabId.MAP) {
             return;
         }
+
         WARNING.warnOnce(
             "The map screen is up but the current tab of the core UI in force is not a "
                 + "SectorMapAPI; rules about map-tab layout have no tab to root at while that "

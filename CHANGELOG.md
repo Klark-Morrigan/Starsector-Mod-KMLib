@@ -53,9 +53,11 @@ The reusable release workflow extracts the section matching the released version
 - **`AllianceRecord.findLeadFactionId()`**: the member that leads the alliance, empty where it has no members.
 - **`BaseProfilingReportCommand`** in `kmlib.mods.console.commands`: a console command writing the profiler's capture to the game log, or clearing it. A subclass names its command word, the label its notices carry and the `ProfileSection` its per-frame view divides by.
 - **`Bounds.computeUnionBounds(List)`**: the box a set of boxes fits inside.
+- **`CampaignMapView.resolveClosingSectorMapState(GameReachReporter)`**: the state the sector map was left in, for its tab still fading out after the player left it.
 - **`ClaimBreakdownReaderSource`** in `kmlib.starsector.systems.claims`: a `ClaimReaderSource` whose readers also explain the claims they read, so one source serves a map's fills and the box explaining them.
 - **`ClaimDecreeReader`** in `kmlib.starsector.systems.claims`: the faction a system's claiming-faction flag imposes, one memory read with no colony walk. `StarSystems::readDecreedFactionId` is the vanilla binding.
 - **`ClockedTraverseFraction`** in `kmlib.animation`: a `TraverseFraction` worked out from the time since it last turned, so nothing steps it per frame. A turn part-way sets off from where the traverse had reached.
+- **`ClosingCoreTabs`** in `kmlib.starsector.ui.coreui`: the tabs the core UI is still drawing after it stopped naming them. The game clears a closed screen as the current tab before its fade ends.
 - **`Colours.normaliseChannel(int)`**: one 0-255 colour channel as the 0..1 fraction GL takes.
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**: a commodity's `basePrice`, or its `demandClass` peer's where it carries none, empty where neither is positive.
 - **`CommodityMarketPrices`** in `kmlib.starsector.commodities`: what markets ask and pay for a commodity, a non-finite quote read as none.
@@ -75,7 +77,7 @@ The reusable release workflow extracts the section matching the released version
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**: a faction's display name, or its ID where `resolveDisplayName(SectorAPI, FactionAPI, String)` falls back.
 - **`FactionNames.resolveLabel(FactionAPI, String)`**: what a row naming one faction shows: its long name, or the ID it was asked about where it carries none.
 - **`FactionSetFriendliness`** in `kmlib.starsector.factions.relation`: whether one set of factions is friendly with another, every pair across them above neutral, with how many of either set fall short. `createForSector(SectorAPI)` binds it to that sector's relations.
-- **`ForeignMapPassWarning`** in `kmlib.starsector.ui.map.probes`: warns once a session when the sector map's render hook runs with no vanilla map on screen, appending the embedded-map hosts and the pass's stack to the caller's own message.
+- **`ForeignMapPassWarning`** in `kmlib.starsector.ui.map.probes`: warns once a session when the sector map's render hook runs with no vanilla map drawn, a map still fading out after the player left it counting as drawn, appending the embedded-map hosts and the pass's stack to the caller's own message. The presence read is handed in on each pass, so a caller asking it elsewhere in the frame shares one answer.
 - **`GlLineHatchStroke`** in `kmlib.opengl.hatch`: hatch segments stroked as GL lines, at a width set as a share of the pattern's spacing so it holds at every zoom.
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** and **`FLOATS_PER_TRIANGLE`**: the strides a triangle list is walked by, one triangle at a time.
 - **`HighlightedParagraph.addTo(MessageIntel)`**: the paragraph as one line of a campaign message.
@@ -99,6 +101,10 @@ The reusable release workflow extracts the section matching the released version
 - **`LocaleParity` holds a console command table to the default**: `findConsoleCommandRowMismatches()` finds a command a locale lacks or adds, and `findConsoleCommandBehaviourMismatches()` one whose class, syntax or tags differ, since only the help is translated. `findAllMismatches()` runs both, and a locale naming no core localisation has its help held to Latin-1. `LocaleBundle.readConsoleCommands()` reads one locale's table.
 - **`LocaleParity` holds a console text's English copy to the default**: `findConsoleHelpEnglishCopyMismatches()` over the command table's help, and `findConsoleStringEnglishCopyMismatches()` over every `console_` string, find a translation drawing past Latin-1 with no copy, or a copy differing from the default. `findAllMismatches()` runs both, and `findFormatArgumentMismatches()` compares a console string's translation alone.
 - **`LocationMarketListings`** in `kmlib.starsector.markets`: the markets in one place by listing, the economy's and the ones it does not list; `listPresentMarkets()` is both as one list. `LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` reads it with one read of the economy.
+- **`MapPresence` drawn reads**: whether a vanilla map is being painted, one still fading out after the player left it included. They answer questions about painting, and the showing reads the ones about input, since a closing map takes none.
+  - `isAnyVanillaMapDrawn()`: either look.
+  - `isStarscapeVanillaMapDrawn()`: in Starscape mode.
+- **`MapPresence(GameReachReporter, VanillaIntelScreenView)`**: the live reads over an intel screen view the caller already holds, so a mod reading the intel screen directly as well keeps one view and says each of its warnings once.
 - **`MarketSubmarkets.findSubmarket(MarketAPI, String)`** and **`findSubmarketCargo(MarketAPI, String)`**: one of a market's trading counters, and the goods at it, empty where the market has no such counter.
 - **`MarketTransferListener`** in `kmlib.starsector.listeners`: told when a colony changes hands, which vanilla fires no listener for.
   - Where Nexerelin is enabled, KMLib puts a relay on each loaded sector that passes Nexerelin's colony transfers on to these listeners, so a mod only registers its own.
@@ -144,6 +150,7 @@ The reusable release workflow extracts the section matching the released version
   - `computeOffsetSegment(double)`: the segment moved sideways, to its left for a positive distance and its right for a negative one.
   - `computeLaneDividers(double, int)`: the lines splitting the band the segment is the centreline of into lanes of equal girth.
   - `createCentredOn(double, double, double, double)`: the segment of a given length centred on a point, along a bearing in radians. `computeCentre()` and `computeDirectionRadians()` read both back.
+- **`ShownMapTab.isSectorMapTab(Object)`**: whether a core tab is the `M` screen's map, whether or not it is the tab that is up.
 - **`StarsectorFormat.formatTrimmedNumber(float)`**: a figure without trailing zeros, `2` rather than `2.0`, never in scientific notation.
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**: the player faction's ID once the sector records it as set up, else null.
 - **`StarsectorSpecs`** in `kmlib.starsector.specs`: `findHullSpec(SettingsAPI, String)`, `findWeaponSpec(SettingsAPI, String)` and `findFighterWingSpec(SettingsAPI, String)`, empty for an ID no loaded mod registers. The game throws for an unknown hull or weapon ID and returns null for an unknown wing.
@@ -156,6 +163,7 @@ The reusable release workflow extracts the section matching the released version
 - **`ToggledFeature`** in `kmlib.starsector.startup`: a feature a player switch stands up or takes back. `applyTo(SectorAPI)` applies it on a load, and `applyToIfSwitched(SectorAPI)` acts on a settings change only where this switch moved.
 - **`TooltipSpacing`** in `kmlib.starsector.ui.tooltip`: the pads vanilla lays its tooltips out on, `SMALL_PAD` and `OUTER_PAD`, and its in-tooltip `BUTTON_HEIGHT`.
 - **`UniformGrid`** in `kmlib.math.geometry`: a square-cell hash grid filing points, segments and bounds under every cell they touch. `listItemsNear(double, double, double)` and `listCandidatePairs()` answer each item or pair once, and `measureAdaptiveCellSide(Bounds, int)` sizes the cells to about one item each.
+- **`VanillaIntelScreenView.readMapVisorStateBelow(Object)`**: what the map visor of an intel screen below a core tab is doing, whether or not it is the tab that is up.
 - **`read-mod-info` emits `zip-name-regex`**: a regex that every release's zip name matches, whatever its version and locale, and no version file does. Its named group `locale` holds a localised zip's locale tag.
 - **`publish-download-badges.yml`**: a reusable workflow publishing a mod's download counts to its repository's `badges` branch as shields endpoint files. It counts the release zips, not the version files update checkers poll. A mod committing no `localisation/manifest.json` keeps no locales, and gets one count per release.
   - When the mod's `<mod-id>.version.template` states `modNexusId`, it also counts the files on that Nexus Mods page named after the mod's folder, under the default locale, each added to the release of the same version, so one page can host several mods. `read-mod-info` emits the page's ID as `nexus-mod-id`, and Starsector's game ID on Nexus Mods as `nexus-game-id`.

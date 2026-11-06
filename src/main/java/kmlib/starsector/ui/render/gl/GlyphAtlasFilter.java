@@ -23,8 +23,9 @@ import kmlib.starsector.ui.font.installed.LazyFontCache;
  *
  * <p>Fully unfiltered is not the aim, though, and cannot be dialled back by choosing a third filter: the
  * pipeline offers these two and nothing between them. So a pixel face is drawn twice - once hard, then the
- * interpolated pass over it at a weight - and the sharpness is where between the two the text lands. Hard alone reads harsher than the chrome around it; interpolated alone is what cost the
- * strokes their weight in the first place.
+ * interpolated pass over it at a weight - and the sharpness is where between the two the text lands. Hard
+ * alone reads harsher than the chrome around it; interpolated alone is what cost the strokes their weight
+ * in the first place.
  *
  * <p>GL passthrough, run only in-engine like the other draw helpers.
  */

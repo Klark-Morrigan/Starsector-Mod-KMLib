@@ -23,8 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the enum, which names both. That each is present in a shape LazyLib and the game both load, with the
  * smoothing the enum states for it. And that every face KM may ask for settles, walking down its family
  * to the install's own default, on one that draws text in the install's own language - which is the row
- * of question marks the walk exists to end, settled here against real atlases rather than posed ones. The text is the probe the lock states for the
- * language the install's marker names, so an edition of another script is probed in its own.
+ * of question marks the walk exists to end, settled here against real atlases rather than posed ones. The
+ * text is the probe the lock states for the language the install's marker names, so an edition of another
+ * script is probed in its own.
  *
  * <p>Walks the enum, never the fonts folder: an install running a localisation's dynamic-font pipeline
  * writes generated descriptors and a subfolder of its own into that folder, and a listing would take them

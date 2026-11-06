@@ -53,9 +53,11 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`AllianceRecord.findLeadFactionId()`**：联盟的盟主；联盟没有成员时为空。
 - **`BaseProfilingReportCommand`**（位于 `kmlib.mods.console.commands`）：把性能分析器的采集结果写入游戏日志或将其清空的控制台指令。子类指定自己的指令名、通知所带的标签，以及逐帧视图所除以的 `ProfileSection`。
 - **`Bounds.computeUnionBounds(List)`**：能容纳一组边界框的最小边界框。
+- **`CampaignMapView.resolveClosingSectorMapState(GameReachReporter)`**：星图被关闭时所处的状态，用于玩家离开后仍在淡出的星图面板。
 - **`ClaimBreakdownReaderSource`**（位于 `kmlib.starsector.systems.claims`）：一种 `ClaimReaderSource`，它打开的读取器还能解释所读取的宣称，因此一个来源即可同时服务星图的填充和解释填充的悬停框。
 - **`ClaimDecreeReader`**（位于 `kmlib.starsector.systems.claims`）：星系的宣称势力标记所强加的势力，只需一次记忆读取，无需遍历殖民地。`StarSystems::readDecreedFactionId` 是原版绑定。
 - **`ClockedTraverseFraction`**（位于 `kmlib.animation`）：按自上次转向以来经过的时间计算的 `TraverseFraction`，因此无需逐帧推进。中途转向时从过渡已到达的位置出发。
+- **`ClosingCoreTabs`**（位于 `kmlib.starsector.ui.coreui`）：游戏已不再将其列为当前面板、却仍在绘制的面板。游戏会在已关闭面板的淡出结束之前，就将其从当前面板中清除。
 - **`Colours.normaliseChannel(int)`**：把一个 0-255 的颜色通道换算为 GL 使用的 0..1 比例。
 - **`CommodityBasePrices.findBasePrice(SettingsAPI, String)`**：商品的 `basePrice`；商品本身没有时，取其 `demandClass` 同类商品的值；两者都不为正时为空。
 - **`CommodityMarketPrices`**（位于 `kmlib.starsector.commodities`）：各市场对一种商品的买入与卖出价格；非有限的报价视为没有报价。
@@ -75,7 +77,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`FactionNames.resolveDisplayNameOrId(SectorAPI, FactionAPI)`**：势力的显示名称；`resolveDisplayName(SectorAPI, FactionAPI, String)` 退回后备值时，改为显示其 ID。
 - **`FactionNames.resolveLabel(FactionAPI, String)`**：命名单个势力的行所显示的文字：该势力的长名称；势力没有长名称时，显示所查询的 ID。
 - **`FactionSetFriendliness`**（位于 `kmlib.starsector.factions.relation`）：一组势力是否对另一组友好，即两组之间的每一对都高于中立，以及每组中有多少势力未达到。`createForSector(SectorAPI)` 把它绑定到该星域的关系。
-- **`ForeignMapPassWarning`**（位于 `kmlib.starsector.ui.map.probes`）：星图渲染钩子在屏幕上没有原版星图时运行，每次游戏期间警告一次，并在调用方自己的消息后附上嵌入星图的宿主和该渲染流程的调用栈。
+- **`ForeignMapPassWarning`**（位于 `kmlib.starsector.ui.map.probes`）：星图渲染钩子在没有原版星图正在绘制时运行（玩家离开后仍在淡出的星图也算作正在绘制），每次游戏期间警告一次，并在调用方自己的消息后附上嵌入星图的宿主和该渲染通道的调用栈。存在性读取在每个渲染通道中传入，因此调用方在同一帧的其他地方询问时可共用一个答案。
 - **`GlLineHatchStroke`**（位于 `kmlib.opengl.hatch`）：以 GL 线条描画的斜线段，线宽按图样间距的比例设定，因此在任何缩放下都保持一致。
 - **`GlVertexRuns.VERTICES_PER_TRIANGLE`** 和 **`FLOATS_PER_TRIANGLE`**：逐个三角形遍历三角形列表时的步长。
 - **`HighlightedParagraph.addTo(MessageIntel)`**：把段落作为战役消息中的一行。
@@ -99,6 +101,10 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`LocaleParity` 以默认语言区域核对控制台指令表**：`findConsoleCommandRowMismatches()` 找出某个语言区域缺少或多出的指令，`findConsoleCommandBehaviourMismatches()` 找出类、语法或标签不同的指令，因为只有帮助文字需要翻译。`findAllMismatches()` 会运行这两项检查；未指定核心本地化的语言区域，其帮助文字限于 Latin-1。`LocaleBundle.readConsoleCommands()` 读取单个语言区域的指令表。
 - **`LocaleParity` 以默认语言区域核对控制台文字的英文副本**：`findConsoleHelpEnglishCopyMismatches()` 检查指令表的帮助文字，`findConsoleStringEnglishCopyMismatches()` 检查每个 `console_` 字符串，找出含有 Latin-1 以外字符却没有英文副本的译文，以及副本与默认语言区域不同的译文。`findAllMismatches()` 会运行这两项检查，`findFormatArgumentMismatches()` 只比较控制台字符串的译文部分。
 - **`LocationMarketListings`**（位于 `kmlib.starsector.markets`）：一个地点中的市场，按来源分列：经济系统列出的，以及经济系统未列出的；`listPresentMarkets()` 把两者合为一个列表。`LocationMarkets.readMarketListings(SectorAPI, LocationAPI)` 只读取一次经济系统即得到它。
+- **`MapPresence` 的绘制读取**：是否有原版星图正在绘制，包括玩家离开后仍在淡出的星图。它们回答与绘制有关的问题，显示读取则回答与输入有关的问题，因为正在关闭的星图不接收任何输入。
+  - `isAnyVanillaMapDrawn()`：任一外观。
+  - `isStarscapeVanillaMapDrawn()`：星景模式下。
+- **`MapPresence(GameReachReporter, VanillaIntelScreenView)`**：基于调用方已持有的情报信息面板视图进行实时读取，因此同时直接读取情报信息面板的 Mod 只保留一个视图，其每条警告也只说一次。
 - **`MarketSubmarkets.findSubmarket(MarketAPI, String)`** 与 **`findSubmarketCargo(MarketAPI, String)`**：市场的某个子市场，以及其中的货物；市场没有该子市场时为空。
 - **`MarketTransferListener`**（位于 `kmlib.starsector.listeners`）：在殖民地易手时得到通知，原版不为此触发任何监听器。
   - 启用 Nexerelin 时，KMLib 会在每次读取存档时于该星域上放置一个转发器，把 Nexerelin 的殖民地易手转告这些监听器，因此 Mod 只需注册自己的监听器。
@@ -144,6 +150,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
   - `computeOffsetSegment(double)`：侧向平移后的线段；距离为正时移向左侧，为负时移向右侧。
   - `computeLaneDividers(double, int)`：把以该线段为中心线的带状区域分成等宽分道的分隔线。
   - `createCentredOn(double, double, double, double)`：以某点为中心、沿给定方位（以弧度表示）、具有给定长度的线段。`computeCentre()` 和 `computeDirectionRadians()` 读回这两者。
+- **`ShownMapTab.isSectorMapTab(Object)`**：某个面板是否为 `M` 界面的星图，无论它是否为当前打开的面板。
 - **`StarsectorFormat.formatTrimmedNumber(float)`**：不带末尾零的数值，显示 `2` 而不是 `2.0`，且从不使用科学计数法。
 - **`StarsectorPlayerFactionResolver.findEstablishedPlayerFactionId(SectorAPI)`**：星域记录玩家势力已设立后，返回玩家势力的 ID，否则为 null。
 - **`StarsectorSpecs`**（位于 `kmlib.starsector.specs`）：`findHullSpec(SettingsAPI, String)`、`findWeaponSpec(SettingsAPI, String)` 与 `findFighterWingSpec(SettingsAPI, String)`；没有已加载的 Mod 提供该 ID 时为空。游戏对未知的船体或武器 ID 会抛出异常，对未知的战机联队则返回 null。
@@ -156,6 +163,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`ToggledFeature`**（位于 `kmlib.starsector.startup`）：由玩家开关建立或撤回的功能。`applyTo(SectorAPI)` 在载入时应用它，`applyToIfSwitched(SectorAPI)` 只在设置变更且正是这个开关改变时才动作。
 - **`TooltipSpacing`**（位于 `kmlib.starsector.ui.tooltip`）：原版排布提示框所用的间距 `SMALL_PAD` 与 `OUTER_PAD`，以及提示框内按钮的高度 `BUTTON_HEIGHT`。
 - **`UniformGrid`**（位于 `kmlib.math.geometry`）：正方形单元的哈希网格，把点、线段和边界框归入它们触及的每一个单元。`listItemsNear(double, double, double)` 和 `listCandidatePairs()` 对每个条目或每对条目只回答一次，`measureAdaptiveCellSide(Bounds, int)` 把单元大小定为大约每格一个条目。
+- **`VanillaIntelScreenView.readMapVisorStateBelow(Object)`**：某个面板下的情报信息面板中地图视窗的状态，无论它是否为当前打开的面板。
 - **`read-mod-info` 输出 `zip-name-regex`**：一个正则表达式，每个发布版本的压缩包名称都与之匹配，无论版本号和语言区域如何，而任何版本文件都不与之匹配。其命名分组 `locale` 存放本地化压缩包的语言区域标签。
 - **`publish-download-badges.yml`**：可复用工作流，把 Mod 的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。未提交 `localisation/manifest.json` 的 Mod 不区分语言区域，每个发布版本只有一个下载量。
   - 若 Mod 的 `<mod-id>.version.template` 写明了 `modNexusId`，它还会统计该 Nexus Mods 页面上以 Mod 文件夹命名的文件，计入默认语言区域，各自累加到版本相同的发布版本上，因此一个页面可以存放多个 Mod 的文件。`read-mod-info` 以 `nexus-mod-id` 输出该页面的 ID，以 `nexus-game-id` 输出 Starsector 在 Nexus Mods 上的游戏 ID。

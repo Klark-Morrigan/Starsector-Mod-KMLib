@@ -253,7 +253,7 @@ public final class CoreUiTree {
         var core = resolveActiveCoreUi();
         return core == null
             ? null
-            : invokeNoArg(core, GET_CURRENT_TAB_METHOD);
+            : readCurrentTabOf(core);
     }
 
     /**
@@ -278,6 +278,18 @@ public final class CoreUiTree {
         }
 
         return resolveActiveCore(sector.getCampaignUI());
+    }
+
+    /**
+     * The tab a core UI already in hand is showing, for a read that needs the core itself as well.
+     *
+     * @param core the core UI, as {@link #resolveActiveCoreUi()} answers it
+     * @return its current tab, or null when it shows none
+     * @throws RuntimeException when the hop is absent or fails outright
+     */
+    static Object readCurrentTabOf(Object core) {
+
+        return invokeNoArg(core, GET_CURRENT_TAB_METHOD);
     }
 
     // The core UI the screens are actually being drawn from. An interaction dialog stands up its

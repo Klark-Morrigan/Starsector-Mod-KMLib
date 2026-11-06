@@ -32,13 +32,14 @@ import static org.mockito.Mockito.when;
  * {@link VanillaIntelScreenView#readIntelSubtabBrightness}, which keeps a fader that no longer links
  * from ending the frame.
  *
- * <p>{@link VanillaIntelScreenView#getMapVisorWidget} and
- * {@link VanillaIntelScreenView#isMapStarscapeModeOn} are not unit-tested: both name the obfuscated
- * {@code EventsPanel}, whose dotted member names fail class-load under a verifying JVM (it only
- * loads under the game's non-verifying one), so not even their fail-closed branches can be entered
- * here and the walk itself is exercised in-game. {@link VanillaIntelScreenView#getMapVisorRect} is
- * out of reach with them, being derived from the widget read. Only that widget-fetching is out of
- * reach, which is why the rules applied around it are reachable on their own.
+ * <p>{@link VanillaIntelScreenView#getMapVisorWidget}, {@link VanillaIntelScreenView#isMapStarscapeModeOn}
+ * and {@link VanillaIntelScreenView#readMapVisorStateBelow} are not unit-tested: each names the
+ * obfuscated {@code EventsPanel}, whose dotted member names fail class-load under a verifying JVM (it
+ * only loads under the game's non-verifying one), so not even their fail-closed branches can be entered
+ * here and the walk itself is exercised in-game. {@link VanillaIntelScreenView#getMapVisorRect} and
+ * {@link VanillaIntelScreenView#readMapVisorState} are out of reach with them, being derived from the
+ * widget read. Only that widget-fetching is out of reach, which is why the rules applied around it are
+ * reachable on their own.
  */
 class VanillaIntelScreenViewTests {
 
@@ -70,170 +71,291 @@ class VanillaIntelScreenViewTests {
 
     @Nested
     class IsIntelTabOpen {
+
         @Test
         void isTrueWhenTheIntelTabIsActive() {
 
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var actualOpen = intelScreen.isIntelTabOpen();
+
+            // ASSERT
+            assertThat(actualOpen)
                 .isTrue();
         }
 
         @Test
         void isFalseWhenAnotherTabIsActive() {
 
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var actualOpen = intelScreen.isIntelTabOpen();
+
+            // ASSERT
+            assertThat(actualOpen)
                 .isFalse();
         }
 
         @Test
         void isFalseWhenTheSectorIsMissing() {
 
-            globalMock.when(Global::getSector)
+            // ARRANGE
+            globalMock
+                .when(Global::getSector)
                 .thenReturn(null);
 
-            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var actualOpen = intelScreen.isIntelTabOpen();
+
+            // ASSERT
+            assertThat(actualOpen)
                 .isFalse();
         }
 
         @Test
         void isFalseWhenTheCampaignUiIsMissing() {
+
+            // ARRANGE
             when(sectorMock.getCampaignUI())
                 .thenReturn(null);
 
-            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).isIntelTabOpen())
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var actualOpen = intelScreen.isIntelTabOpen();
+
+            // ASSERT
+            assertThat(actualOpen)
                 .isFalse();
         }
     }
 
     @Nested
     class IsMapVisorLit {
+
         // The game snaps both readings, so these are the values the live widgets actually carry.
         private static final float DARK = 0f;
         private static final float LIT = 1f;
 
         @Test
         void isTrueWhenTheIntelSubtabShowsAndThePreviewIsLit() {
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, LIT))
+
+            // ARRANGE
+            var intelSubtabBrightness = LIT;
+            var mapWidgetOpacity = LIT;
+
+            // ACT
+            var actualLit = VanillaIntelScreenView.isMapVisorLit(
+                intelSubtabBrightness,
+                mapWidgetOpacity);
+
+            // ASSERT
+            assertThat(actualLit)
                 .isTrue();
         }
 
+        // The Planets and Factions sub-tabs share the intel tab's container, and switching to one
+        // only fades the events panel out - its map widget stays at full opacity behind them. Reading
+        // that opacity alone therefore reports a visor that is not on screen, and the sidebar drew
+        // over those sub-tabs. The dark panel is what rules them out.
         @Test
         void isFalseWhenASiblingSubtabIsShowing() {
-            // The Planets and Factions sub-tabs share the intel tab's container, and switching to one
-            // only fades the events panel out - its map widget stays at full opacity behind them. Reading
-            // that opacity alone therefore reports a visor that is not on screen, and the sidebar drew
-            // over those sub-tabs. The dark panel is what rules them out.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, LIT))
+
+            // ARRANGE
+            var intelSubtabBrightness = DARK;
+            var mapWidgetOpacity = LIT;
+
+            // ACT
+            var actualLit = VanillaIntelScreenView.isMapVisorLit(
+                intelSubtabBrightness,
+                mapWidgetOpacity);
+
+            // ASSERT
+            assertThat(actualLit)
                 .isFalse();
         }
 
+        // The Intel sub-tab is showing, but a large-description item has blanked the preview, so
+        // there is a lit panel with no lit canvas inside it.
         @Test
         void isFalseWhenThePreviewIsBlanked() {
-            // The Intel sub-tab is showing, but a large-description item has blanked the preview, so
-            // there is a lit panel with no lit canvas inside it.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, DARK))
+
+            // ARRANGE
+            var intelSubtabBrightness = LIT;
+            var mapWidgetOpacity = DARK;
+
+            // ACT
+            var actualLit = VanillaIntelScreenView.isMapVisorLit(
+                intelSubtabBrightness,
+                mapWidgetOpacity);
+
+            // ASSERT
+            assertThat(actualLit)
                 .isFalse();
         }
 
         @Test
         void isFalseWhenNeitherReadingIsLit() {
-            assertThat(VanillaIntelScreenView.isMapVisorLit(DARK, DARK))
+
+            // ARRANGE
+            var intelSubtabBrightness = DARK;
+            var mapWidgetOpacity = DARK;
+
+            // ACT
+            var actualLit = VanillaIntelScreenView.isMapVisorLit(
+                intelSubtabBrightness,
+                mapWidgetOpacity);
+
+            // ASSERT
+            assertThat(actualLit)
                 .isFalse();
         }
 
+        // Nothing eases these readings today, so a mid value is only reachable if the game changes
+        // to fade them. The two thresholds differ - a panel counts as showing from halfway, while
+        // the preview has to be all but fully opaque - so each is pinned on its own, keeping a
+        // change to either from silently flipping the gate.
         @Test
         void pinsTheThresholdOfEachReading() {
-            // Nothing eases these readings today, so a mid value is only reachable if the game changes
-            // to fade them. The two thresholds differ - a panel counts as showing from halfway, while
-            // the preview has to be all but fully opaque - so each is pinned on its own, keeping a
-            // change to either from silently flipping the gate.
-            assertThat(VanillaIntelScreenView.isMapVisorLit(0.5f, LIT))
+
+            // ARRANGE
+            var halfwayBrightness = 0.5f;
+            var belowHalfwayBrightness = 0.49f;
+            var nearlyOpaque = 0.9f;
+            var belowNearlyOpaque = 0.89f;
+
+            // ACT
+            var actualLitAtHalfway = VanillaIntelScreenView.isMapVisorLit(halfwayBrightness, LIT);
+            var actualLitBelowHalfway = VanillaIntelScreenView.isMapVisorLit(belowHalfwayBrightness, LIT);
+            var actualLitNearlyOpaque = VanillaIntelScreenView.isMapVisorLit(LIT, nearlyOpaque);
+            var actualLitBelowNearlyOpaque = VanillaIntelScreenView.isMapVisorLit(LIT, belowNearlyOpaque);
+
+            // ASSERT
+            assertThat(actualLitAtHalfway)
                 .isTrue();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(0.49f, LIT))
+            assertThat(actualLitBelowHalfway)
                 .isFalse();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.9f))
+            assertThat(actualLitNearlyOpaque)
                 .isTrue();
-            assertThat(VanillaIntelScreenView.isMapVisorLit(LIT, 0.89f))
+            assertThat(actualLitBelowNearlyOpaque)
                 .isFalse();
         }
     }
 
     @Nested
     class WarnOnceAboutUnreachableIntelPanel {
+
+        // The case the warning exists for: the tab the panel lives on is up, so the walk had
+        // something to find and came back empty anyway. Without this line a game build that
+        // reshaped the intel tab would stop every intel-screen overlay in silence.
         @Test
         void warnsWhenTheIntelTabIsOpen() {
-            // The case the warning exists for: the tab the panel lives on is up, so the walk had
-            // something to find and came back empty anyway. Without this line a game build that
-            // reshaped the intel tab would stop every intel-screen overlay in silence.
-            when(campaignUiMock.getCurrentCoreTab())
-                .thenReturn(CoreUITabId.INTEL);
 
-            var capture = LogAppenderFake.captureLogOf(
-                VanillaIntelScreenView.class,
-                () -> new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel());
-
-            assertThat(capture.getMessages())
-                .hasSize(1);
-        }
-
-        @Test
-        void staysSilentWhenAnotherTabIsShowing() {
-            // The ordinary state on every other screen: the tab that is up holds no events panel, so
-            // an unreached panel is the expected answer rather than news.
-            when(campaignUiMock.getCurrentCoreTab())
-                .thenReturn(CoreUITabId.MAP);
-
-            var capture = LogAppenderFake.captureLogOf(
-                VanillaIntelScreenView.class,
-                () -> new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel());
-
-            assertThat(capture.getMessages())
-                .isEmpty();
-        }
-
-        @Test
-        void warnsOnlyOnceWhileTheReachKeepsFailing() {
-            // A visor read runs per frame, so a build this reach no longer fits would otherwise
-            // write the same line sixty times a second.
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
-                intelScreen.warnOnceAboutUnreachableIntelPanel();
-                intelScreen.warnOnceAboutUnreachableIntelPanel();
-            });
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                intelScreen::warnOnceAboutUnreachableIntelPanel);
 
+            // ASSERT
             assertThat(capture.getMessages())
                 .hasSize(1);
         }
 
+        // The ordinary state on every other screen: the tab that is up holds no events panel, so
+        // an unreached panel is the expected answer rather than news.
         @Test
-        void filesThePanelMissingWhereTheIntelTabIsOpen() {
-            // An open intel tab always holds the panel, so not finding it is never ordinary.
+        void staysSilentWhenAnotherTabIsShowing() {
+
+            // ARRANGE
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.MAP);
+
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                intelScreen::warnOnceAboutUnreachableIntelPanel);
+
+            // ASSERT
+            assertThat(capture.getMessages())
+                .isEmpty();
+        }
+
+        // A visor read runs per frame, so a build this reach no longer fits would otherwise
+        // write the same line sixty times a second.
+        @Test
+        void warnsOnlyOnceWhileTheReachKeepsFailing() {
+
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> {
+                    intelScreen.warnOnceAboutUnreachableIntelPanel();
+                    intelScreen.warnOnceAboutUnreachableIntelPanel();
+                });
+
+            // ASSERT
+            assertThat(capture.getMessages())
+                .hasSize(1);
+        }
+
+        // An open intel tab always holds the panel, so not finding it is never ordinary.
+        @Test
+        void filesThePanelMissingWhereTheIntelTabIsOpen() {
+
+            // ARRANGE
+            when(campaignUiMock.getCurrentCoreTab())
+                .thenReturn(CoreUITabId.INTEL);
+
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+            var expectedBrokenDetail = "EventsPanel below the intel tab";
+
+            // ACT
+            intelScreen.warnOnceAboutUnreachableIntelPanel();
+
+            // ASSERT
             assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
-                .isEqualTo("EventsPanel below the intel tab");
+                .isEqualTo(expectedBrokenDetail);
         }
 
         @Test
         void filesNothingWhereAnotherTabIsShowing() {
 
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreachableIntelPanel();
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
+            // ACT
+            intelScreen.warnOnceAboutUnreachableIntelPanel();
+
+            // ASSERT
             assertThat(reachRecord.hasReported())
                 .isFalse();
         }
@@ -242,71 +364,93 @@ class VanillaIntelScreenViewTests {
     @Nested
     class WarnOnceAboutUnreadableCoreUi {
 
+        // The cause is the whole of the diagnosis: the visor reads answer null either way, so
+        // without it a reach that failed outright looks exactly like a screen holding no intel
+        // panel. It is carried into the line because nothing else in the class records it.
         @Test
         void warnsWithTheCauseThatBrokeTheWalk() {
-            // The cause is the whole of the diagnosis: the visor reads answer null either way, so
-            // without it a reach that failed outright looks exactly like a screen holding no intel
-            // panel. It is carried into the line because nothing else in the class records it.
+
+            // ARRANGE
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             var unreadableTree = new IllegalStateException("A hop the core UI no longer offers.");
 
+            // ACT
             var capture = LogAppenderFake.captureLogOf(
                 VanillaIntelScreenView.class,
-                () -> new VanillaIntelScreenView(reachRecord.getReporter())
-                    .warnOnceAboutUnreadableCoreUi(unreadableTree));
+                () -> intelScreen.warnOnceAboutUnreadableCoreUi(unreadableTree));
 
+            // ASSERT
             assertThat(capture.getThrowables())
                 .containsExactly(unreadableTree);
         }
 
+        // Deliberately not read against which screen is up, unlike the unreachable-panel
+        // warning. The hops that fail here are ones the core UI offers whatever tab it shows,
+        // so a reach that cannot take them has stopped every read built on it, not the intel
+        // screen's alone.
         @Test
         void warnsWhateverTabIsShowing() {
-            // Deliberately not read against which screen is up, unlike the unreachable-panel
-            // warning. The hops that fail here are ones the core UI offers whatever tab it shows,
-            // so a reach that cannot take them has stopped every read built on it, not the intel
-            // screen's alone.
+
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.MAP);
 
-            var capture = LogAppenderFake.captureLogOf(
-                VanillaIntelScreenView.class,
-                () -> new VanillaIntelScreenView(reachRecord.getReporter())
-                    .warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach.")));
-
-            assertThat(capture.getThrowables())
-                .hasSize(1);
-        }
-
-        @Test
-        void warnsOnlyOnceWhileTheWalkKeepsFailing() {
-            // The walk runs per frame, so a reach that stopped working would otherwise write the
-            // same line, stack and all, sixty times a second.
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
-                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
-                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
-            });
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> intelScreen.warnOnceAboutUnreadableCoreUi(
+                    new IllegalStateException("A broken reach.")));
 
+            // ASSERT
             assertThat(capture.getThrowables())
                 .hasSize(1);
         }
 
+        // The walk runs per frame, so a reach that stopped working would otherwise write the
+        // same line, stack and all, sixty times a second.
+        @Test
+        void warnsOnlyOnceWhileTheWalkKeepsFailing() {
+
+            // ARRANGE
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> {
+                    intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+                    intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+                });
+
+            // ASSERT
+            assertThat(capture.getThrowables())
+                .hasSize(1);
+        }
+
+        // Two failures meaning different things, so neither one-shot may silence the other: a
+        // build that broke the reach after an empty walk had already been reported would
+        // otherwise say nothing about the thing that actually broke. Two lines, one of them
+        // carrying the walk's cause and the other none.
         @Test
         void warnsSeparatelyFromTheUnreachablePanelWarning() {
-            // Two failures meaning different things, so neither one-shot may silence the other: a
-            // build that broke the reach after an empty walk had already been reported would
-            // otherwise say nothing about the thing that actually broke.
+
+            // ARRANGE
             when(campaignUiMock.getCurrentCoreTab())
                 .thenReturn(CoreUITabId.INTEL);
 
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
-                intelScreen.warnOnceAboutUnreachableIntelPanel();
-                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
-            });
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> {
+                    intelScreen.warnOnceAboutUnreachableIntelPanel();
+                    intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+                });
 
-            // Two lines, one of them carrying the walk's cause and the other none.
+            // ASSERT
             assertThat(capture.getMessages())
                 .hasSize(2);
             assertThat(capture.getThrowables())
@@ -316,10 +460,14 @@ class VanillaIntelScreenViewTests {
         @Test
         void filesTheWalkWithTheCauseThatBrokeIt() {
 
+            // ARRANGE
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             var unreadableTree = new IllegalStateException("A hop the core UI no longer offers.");
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).warnOnceAboutUnreadableCoreUi(unreadableTree);
+            // ACT
+            intelScreen.warnOnceAboutUnreadableCoreUi(unreadableTree);
 
+            // ASSERT
             assertThat(reachRecord.takeReportedFailure().cause())
                 .isSameAs(unreadableTree);
         }
@@ -331,50 +479,75 @@ class VanillaIntelScreenViewTests {
         @Test
         void answersTheFadersBrightness() {
 
-            assertThat(new VanillaIntelScreenView(reachRecord.getReporter()).readIntelSubtabBrightness(() -> 0.75))
+            // ARRANGE
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+
+            // ACT
+            var actualBrightness = intelScreen.readIntelSubtabBrightness(() -> 0.75);
+
+            // ASSERT
+            assertThat(actualBrightness)
                 .isEqualTo(0.75f);
         }
 
+        // Read from render passes with no catch of their own, so a renamed fader has to come
+        // back as an unlit visor rather than end the frame.
         @Test
         void answersDarkWhereTheFaderNoLongerLinks() {
-            // Read from render passes with no catch of their own, so a renamed fader has to come
-            // back as an unlit visor rather than end the frame.
+
+            // ARRANGE
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            assertThat(intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember))
+            // ACT
+            var actualBrightness = intelScreen.readIntelSubtabBrightness(
+                CoreUiReachFailures::throwUnlinkedMember);
+
+            // ASSERT
+            assertThat(actualBrightness)
                 .isZero();
         }
 
         @Test
         void warnsOnceWithTheCauseWhileTheFaderKeepsFailingToLink() {
 
+            // ARRANGE
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
             var unlinkedFader = new NoSuchMethodError("getFader");
 
-            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
-                intelScreen.readIntelSubtabBrightness(() -> {
-                    throw unlinkedFader;
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> {
+                    intelScreen.readIntelSubtabBrightness(() -> {
+                        throw unlinkedFader;
+                    });
+                    intelScreen.readIntelSubtabBrightness(() -> {
+                        throw unlinkedFader;
+                    });
                 });
-                intelScreen.readIntelSubtabBrightness(() -> {
-                    throw unlinkedFader;
-                });
-            });
 
+            // ASSERT
             assertThat(capture.getThrowables())
                 .containsExactly(unlinkedFader);
         }
 
+        // A different member from any the walk takes, so a walk already reported broken must
+        // not silence news of the fader.
         @Test
         void warnsSeparatelyFromTheWalksWarnings() {
-            // A different member from any the walk takes, so a walk already reported broken must
-            // not silence news of the fader.
+
+            // ARRANGE
             var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
-            var capture = LogAppenderFake.captureLogOf(VanillaIntelScreenView.class, () -> {
-                intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
-                intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
-            });
+            // ACT
+            var capture = LogAppenderFake.captureLogOf(
+                VanillaIntelScreenView.class,
+                () -> {
+                    intelScreen.warnOnceAboutUnreadableCoreUi(new IllegalStateException("A broken reach."));
+                    intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+                });
 
+            // ASSERT
             assertThat(capture.getThrowables())
                 .hasSize(2);
         }
@@ -382,18 +555,28 @@ class VanillaIntelScreenViewTests {
         @Test
         void filesTheFaderThatNoLongerLinks() {
 
-            new VanillaIntelScreenView(reachRecord.getReporter())
-                .readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+            // ARRANGE
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
+            var expectedBrokenDetail = "EventsPanel.getFader";
 
+            // ACT
+            intelScreen.readIntelSubtabBrightness(CoreUiReachFailures::throwUnlinkedMember);
+
+            // ASSERT
             assertThat(reachRecord.takeReportedFailure().breakage().brokenDetail())
-                .isEqualTo("EventsPanel.getFader");
+                .isEqualTo(expectedBrokenDetail);
         }
 
         @Test
         void filesNothingForAFaderThatReads() {
 
-            new VanillaIntelScreenView(reachRecord.getReporter()).readIntelSubtabBrightness(() -> 0.75);
+            // ARRANGE
+            var intelScreen = new VanillaIntelScreenView(reachRecord.getReporter());
 
+            // ACT
+            intelScreen.readIntelSubtabBrightness(() -> 0.75);
+
+            // ASSERT
             assertThat(reachRecord.hasReported())
                 .isFalse();
         }

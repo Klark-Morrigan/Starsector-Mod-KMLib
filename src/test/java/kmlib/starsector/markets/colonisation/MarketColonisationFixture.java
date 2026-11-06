@@ -46,9 +46,10 @@ import static org.mockito.Mockito.when;
  * starts with. Industries are mutable here where the ownership fixture holds them fixed, founding
  * being the one operation that builds one.
  *
- * <p>Separate from {@link kmlib.testfixtures.starsector.markets.MarketStateFixture}, which poses the four combinations of the two flags
- * a colonisation-eligibility read asks about and nothing else - a market that cannot be mutated
- * says nothing about what founding did to it, and a colonisation case needs both.
+ * <p>Separate from {@link kmlib.testfixtures.starsector.markets.MarketStateFixture}, which poses the
+ * four combinations of the two flags a colonisation-eligibility read asks about and nothing else - a
+ * market that cannot be mutated says nothing about what founding did to it, and a colonisation case
+ * needs both.
  */
 public final class MarketColonisationFixture {
 

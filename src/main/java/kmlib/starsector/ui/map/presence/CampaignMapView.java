@@ -165,6 +165,26 @@ public final class CampaignMapView {
     }
 
     /**
+     * The state the sector map was left in, for a map tab still fading out after the player left it.
+     *
+     * <p>Classified as though the map were still the tab that is up. The persisted UI data the map tab
+     * binds to still describes the closed map, so its sub-view and filter read as they did while it
+     * was up.
+     *
+     * @param reporter where a failed read is filed, for the mod gating on the answer
+     * @return the state the closed map's signals classify to, or {@link SectorMapState#NOT_SHOWING}
+     *         when they cannot be read
+     */
+    public static SectorMapState resolveClosingSectorMapState(GameReachReporter reporter) {
+
+        if (Global.getSector() == null) {
+            return SectorMapState.NOT_SHOWING;
+        }
+
+        return classifySectorMapState(CoreUITabId.MAP, readMapUiSignals(reporter));
+    }
+
+    /**
      * The rule the live reads apply, over signals taken elsewhere.
      *
      * @param shownTab  the core tab that is up, or null where none could be read

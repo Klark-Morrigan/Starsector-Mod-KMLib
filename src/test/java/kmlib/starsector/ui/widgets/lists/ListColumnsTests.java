@@ -7,8 +7,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the column choice's surfaces: the frozen persistence keys a consumer's save round-trips
- * through, the column count each choice feeds the list geometry, and the count each segment draws. The keys are pinned as literals so a rename
- * that would silently reset every save's column choice fails here rather than shipping.
+ * through, the column count each choice feeds the list geometry, and the count each segment draws.
+ * The keys are pinned as literals so a rename that would silently reset every save's column choice
+ * fails here rather than shipping.
  */
 final class ListColumnsTests {
 
