@@ -157,6 +157,7 @@ KMLib 的所有重要变更都记录在此。格式遵循 [Keep a Changelog](htt
 - **`ToggledFeature`**（位于 `kmlib.starsector.startup`）：由玩家开关建立或撤回的功能。`applyTo(SectorAPI)` 在载入时应用它，`applyToIfSwitched(SectorAPI)` 只在设置变更且正是这个开关改变时才动作。
 - **`TooltipSpacing`**（位于 `kmlib.starsector.ui.tooltip`）：原版排布提示框所用的间距 `SMALL_PAD` 与 `OUTER_PAD`，以及提示框内按钮的高度 `BUTTON_HEIGHT`。
 - **`UniformGrid`**（位于 `kmlib.math.geometry`）：正方形单元的哈希网格，把点、线段和边界框归入它们触及的每一个单元。`listItemsNear(double, double, double)` 和 `listCandidatePairs()` 对每个条目或每对条目只回答一次，`measureAdaptiveCellSide(Bounds, int)` 把单元大小定为大约每格一个条目。
+- **`VanillaIntelScreenView.isMapVisorLitBelow(Object)`**：某个核心标签页下是否有地图视窗亮起的情报界面，无论它是否为当前打开的标签页。
 - **`read-mod-info` 输出 `zip-name-regex`**：一个正则表达式，每个发布版本的压缩包名称都与之匹配，无论版本号和语言区域如何，而任何版本文件都不与之匹配。其命名分组 `locale` 存放本地化压缩包的语言区域标签。
 - **`publish-download-badges.yml`**：可复用工作流，把 Mod 的下载量以 shields 端点文件的形式发布到其仓库的 `badges` 分支。只统计发布版本的压缩包，不统计更新检查器轮询的版本文件。未提交 `localisation/manifest.json` 的 Mod 不区分语言区域，每个发布版本只有一个下载量。
   - 若 Mod 的 `<mod-id>.version.template` 写明了 `modNexusId`，它还会统计该 Nexus Mods 页面上以 Mod 文件夹命名的文件，计入默认语言区域，各自累加到版本相同的发布版本上，因此一个页面可以存放多个 Mod 的文件。`read-mod-info` 以 `nexus-mod-id` 输出该页面的 ID，以 `nexus-game-id` 输出 Starsector 在 Nexus Mods 上的游戏 ID。

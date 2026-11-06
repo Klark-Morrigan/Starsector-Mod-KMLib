@@ -62,7 +62,8 @@ import java.util.function.DoubleSupplier;
  * of that mod's feature there. None is a state the intel screen is ordinarily in - the empty walk
  * counting only while the intel tab reads as open - so a report never stands for another screen.
  */
-public final class VanillaIntelScreenView implements IntelScreenView {
+public final class VanillaIntelScreenView
+        implements IntelScreenView {
 
     private static final Logger LOG = Global.getLogger(VanillaIntelScreenView.class);
 
@@ -166,6 +167,27 @@ public final class VanillaIntelScreenView implements IntelScreenView {
             : MapVisorState.SHOWING_WITH_STARSCAPE_OFF;
     }
 
+    /**
+     * Whether a core tab holds an intel screen whose map visor is lit, whether or not it is the tab
+     * that is up - for a tab still fading out after the player left it.
+     *
+     * <p>The lit rule applies to such a tab unchanged. Closing a tab fades the wrapper it sits in and
+     * leaves the events panel's own fader alone, so a visor lit as the player left stays lit through
+     * the fade, and one on another sub-tab stays dark.
+     *
+     * <p>Says nothing when the tab holds no events panel, unlike the reads of the tab that is up: most
+     * tabs asked about hold none, so finding none is no news here.
+     *
+     * @param tab a core tab, or null
+     * @return whether an events panel below it has a lit visor
+     */
+    public boolean isMapVisorLitBelow(Object tab) {
+
+        var intelPanel = findEventsPanelIn(tab, MAX_PANEL_SEARCH_DEPTH);
+        return intelPanel != null
+            && readLitMapVisorOf(intelPanel) != null;
+    }
+
     @Override
     public boolean isMapStarscapeModeOn() {
 
@@ -218,11 +240,14 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         if (unreachablePanelWarning.hasWarnedThisSession() || !isIntelTabOpen()) {
             return;
         }
+
         unreachablePanelWarning.warnOnce(
             "The intel tab is open but no EventsPanel was found below the core UI's current "
                 + "tab; intel-screen visor reads answer 'no visor' while that is so.");
 
-        reporter.recordReachFailure(FAILURE_SITE, "EventsPanel below the intel tab");
+        reporter.recordReachFailure(
+            FAILURE_SITE,
+            "EventsPanel below the intel tab");
     }
 
     // Names a walk that failed outright, as against one that simply found nothing. Not read against
@@ -241,7 +266,10 @@ public final class VanillaIntelScreenView implements IntelScreenView {
                 + "answer 'no visor' while that is so.",
             exception);
 
-        reporter.recordReachFailure(FAILURE_SITE, "the core UI's hops down to the tab that is up", exception);
+        reporter.recordReachFailure(
+            FAILURE_SITE,
+            "the core UI's hops down to the tab that is up",
+            exception);
     }
 
     // The events panel's brightness, or dark where the panel's fader no longer links.
@@ -263,7 +291,11 @@ public final class VanillaIntelScreenView implements IntelScreenView {
                     + "gated on; intel-screen visor reads answer 'no visor' while that is so.",
                 linkageError);
 
-            reporter.recordReachFailure(FAILURE_SITE, "EventsPanel.getFader", linkageError);
+            reporter.recordReachFailure(
+                FAILURE_SITE,
+                "EventsPanel.getFader",
+                linkageError);
+
             return UNREADABLE_BRIGHTNESS;
         }
     }
@@ -276,7 +308,9 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         EventsPanel intelPanel;
 
         try {
-            intelPanel = findEventsPanelIn(CoreUiTree.resolveCurrentTab(), MAX_PANEL_SEARCH_DEPTH);
+            intelPanel = findEventsPanelIn(
+                CoreUiTree.resolveCurrentTab(),
+                MAX_PANEL_SEARCH_DEPTH);
 
         } catch (Throwable exception) {
             // A hop that is absent or throws outright leaves the panel unreached, which is the same
@@ -345,7 +379,10 @@ public final class VanillaIntelScreenView implements IntelScreenView {
         // the call's descriptor reads the same in every build, which is the whole of what decides
         // whether a hop may be taken as a plain call. Handed over as a read rather than taken here,
         // so a build that dropped the member fails inside the boundary that contains it.
-        var intelSubtabBrightness = readIntelSubtabBrightness(() -> intelPanel.getFader().getBrightness());
+        var intelSubtabBrightness = readIntelSubtabBrightness(
+            () -> intelPanel
+                .getFader()
+                .getBrightness());
 
         if (!isMapVisorLit(intelSubtabBrightness, mapWidget.getOpacity())) {
             return null;
