@@ -1,6 +1,7 @@
 # Builds the catalogue of content IDs the install defines, per kind, each with the owners that define it:
 # the mod IDs, and the core owner for the game's own content, in the order the game searches them.
-# It holds the IDs the files define and those the game builds from them at startup.
+# It holds the IDs the files define and those the game builds from them at startup,
+# with how many of each kind's IDs the game builds.
 # Files and spreadsheets that do not parse are skipped and returned with the reason,
 # and each file or spreadsheet a mod replaces is returned with that mod.
 # A file several kinds read is returned once however many kinds replaced it, and once per reason they skipped it.
@@ -18,7 +19,9 @@ function New-ContentCatalogue {
     )
 
     $definitions = @(Get-ContentDefinitions)
-    $readKinds = [System.Collections.Generic.HashSet[string]]::new([string[]] $Kinds, [System.StringComparer]::Ordinal)
+    $readKinds = [System.Collections.Generic.HashSet[string]]::new(
+        [string[]] $Kinds,
+        [System.StringComparer]::Ordinal)
 
     foreach ($definition in $definitions) {
 
@@ -34,10 +37,15 @@ function New-ContentCatalogue {
     $cache = New-ParsedFileCache
     $ownersByReadKind = @{}
     $skippedFiles = [System.Collections.Generic.List[object]]::new()
-    $skipKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $replacements = [System.Collections.Generic.List[object]]::new()
-    $replacedPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $kindReads = [System.Collections.Generic.List[object]]::new()
+
+    $skipKeys = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::Ordinal)
+
+    $replacedPaths = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::Ordinal)
+
     $contentFileCount = 0
 
     foreach ($definition in $definitions) {
@@ -47,12 +55,15 @@ function New-ContentCatalogue {
         }
 
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-        $read = Read-KindContentOwners -Sources $Sources -Definition $definition -Cache $cache
+        $read = Read-KindContentOwners `
+            -Sources $Sources `
+            -Definition $definition `
+            -Cache $cache
 
         $kindReads.Add([pscustomobject]@{
-            Kind         = $definition.Kind
+            Kind = $definition.Kind
             Milliseconds = $stopwatch.ElapsedMilliseconds
-            IdCount      = $read.OwnersById.Count
+            IdCount = $read.OwnersById.Count
         })
 
         $ownersByReadKind[$definition.Kind] = $read.OwnersById
@@ -82,7 +93,7 @@ function New-ContentCatalogue {
     }
 
     $ownersByKind = [ordered]@{}
-    $generatedCount = 0
+    $generatedCountByKind = @{}
 
     foreach ($definition in $definitions) {
 
@@ -91,24 +102,31 @@ function New-ContentCatalogue {
         }
 
         $kindOwners = $ownersByReadKind[$definition.Kind]
+        $generatedCountByKind[$definition.Kind] = 0
 
         foreach ($rule in $definition.Generated) {
 
-            $generatedCount += Add-GeneratedContent -OwnersById $kindOwners -Rule $rule `
-                -BaseIds $definedIdsByKind[$rule.FromKind] -BaseOwners $ownersByReadKind[$rule.FromKind]
+            $generatedCountByKind[$definition.Kind] += Add-GeneratedContent `
+                -OwnersById $kindOwners `
+                -Rule $rule `
+                -BaseIds $definedIdsByKind[$rule.FromKind] `
+                -BaseOwners $ownersByReadKind[$rule.FromKind]
         }
 
-        Set-ContentOwnerOrder -OwnersById $kindOwners -Sources $Sources
+        Set-ContentOwnerOrder `
+            -OwnersById $kindOwners `
+            -Sources $Sources
+
         $ownersByKind[$definition.Kind] = $kindOwners
     }
 
     return [pscustomobject]@{
-        OwnersByKind     = $ownersByKind
-        GeneratedCount   = $generatedCount
+        OwnersByKind = $ownersByKind
+        GeneratedCountByKind = $generatedCountByKind
         ContentFileCount = $contentFileCount + $cache.JsonByPath.Count
         SpreadsheetCount = $cache.SpreadsheetsByKey.Count
-        SkippedFiles     = $skippedFiles.ToArray()
-        Replacements     = $replacements.ToArray()
-        KindReads        = $kindReads.ToArray()
+        SkippedFiles = $skippedFiles.ToArray()
+        Replacements = $replacements.ToArray()
+        KindReads = $kindReads.ToArray()
     }
 }

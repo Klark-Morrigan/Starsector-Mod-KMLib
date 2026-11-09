@@ -8,10 +8,8 @@ function Get-SaveDescriptorPath {
         [string] $SaveFolder
     )
 
-    $pathNames = Get-InstallPathNames
-
-    return Join-Path `
-        -Path $StarsectorRoot `
-        -ChildPath $pathNames.SavesFolder `
-        -AdditionalChildPath $SaveFolder, $pathNames.DescriptorFile
+    return Get-SaveFilePath `
+        -StarsectorRoot $StarsectorRoot `
+        -SaveFolder $SaveFolder `
+        -FileName (Get-InstallPathNames).DescriptorFile
 }

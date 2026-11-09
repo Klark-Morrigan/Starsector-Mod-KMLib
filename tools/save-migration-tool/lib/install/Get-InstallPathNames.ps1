@@ -3,13 +3,14 @@
 function Get-InstallPathNames {
 
     return [pscustomobject]@{
-        CoreFolder      = 'starsector-core'
-        LogFile         = 'starsector.log'
-        VmparamsFile    = 'vmparams'
-        ModsFolder      = 'mods'
+        CoreFolder = 'starsector-core'
+        LogFile = 'starsector.log'
+        VmparamsFile = 'vmparams'
+        ModsFolder = 'mods'
         EnabledModsFile = 'enabled_mods.json'
-        ModInfoFile     = 'mod_info.json'
-        SavesFolder     = 'saves'
-        DescriptorFile  = 'descriptor.xml'
+        ModInfoFile = 'mod_info.json'
+        SavesFolder = 'saves'
+        DescriptorFile = 'descriptor.xml'
+        CampaignFile = 'campaign.xml'
     }
 }

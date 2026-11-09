@@ -24,7 +24,11 @@ the release zip does not carry them.
   - [Where the game defines each kind](#where-the-game-defines-each-kind)
   - [How the game combines copies](#how-the-game-combines-copies)
   - [How the game reads a spreadsheet](#how-the-game-reads-a-spreadsheet)
+  - [The catalogue cache](#the-catalogue-cache)
   - [Catalogue output](#catalogue-output)
+- [Find-SaveBrokenReferences.ps1](#find-savebrokenreferencesps1)
+  - [Where a save names content](#where-a-save-names-content)
+  - [Broken reference output](#broken-reference-output)
 - [Get-ModRoster.ps1](#get-modrosterps1)
   - [How the game reads its JSON](#how-the-game-reads-its-json)
 - [Tests](#tests)
@@ -37,6 +41,7 @@ the release zip does not carry them.
 | [`Get-SaveLoadAttempt.ps1`](Get-SaveLoadAttempt.ps1) | Which saves the game's logs show loaded, why a load failed, and which mods' objects the failure sat in |
 | [`Get-SaveModDrift.ps1`](Get-SaveModDrift.ps1) | How the mods a save was last written with differ from the installed ones: changed, missing, added |
 | [`Get-ContentCatalogue.ps1`](Get-ContentCatalogue.ps1) | Which content IDs the install defines, of every kind the game keeps by ID, and which mods define each |
+| [`Find-SaveBrokenReferences.ps1`](Find-SaveBrokenReferences.ps1) | Which content IDs a save names that no installed mod defines any more, and how often it names each |
 | [`Get-ModRoster.ps1`](Get-ModRoster.ps1) | Which installed folder the game loads for each enabled mod ID, at which version |
 
 `Invoke-SaveMigrationTool.ps1` is the one to run.
@@ -50,8 +55,8 @@ wherever the writing script changes, as when one script runs another,
 and before each load's readings.
 A reading too long for one line continues on the next, indented under its first.
 A library function that reads or decides writes under the name of the script that called it.
-`Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1`, `Get-SaveModDrift.ps1` and `Get-ContentCatalogue.ps1`
-print their data as JSON with `-AsJson`;
+`Invoke-SaveMigrationTool.ps1`, `Get-SaveLoadAttempt.ps1`, `Get-SaveModDrift.ps1`, `Get-ContentCatalogue.ps1`
+and `Find-SaveBrokenReferences.ps1` print their data as JSON with `-AsJson`;
 `Get-ModRoster.ps1` returns objects for another script to consume.
 `Get-SaveLoadAttempt.ps1 -AsText` writes its loads as text for a person,
 since PowerShell lays out its nested objects as unreadable lists.
@@ -99,10 +104,19 @@ A script one script runs sees its caller's functions already,
 so the loader leaves a marker and loads nothing for every script that caller runs.
 Loading the library takes about half a second.
 
+One piece is C#: [`lib/save-references/SaveReferenceScanner.cs`](lib/save-references/SaveReferenceScanner.cs),
+which reads a save in one pass.
+PowerShell spends microseconds on every call,
+so a read loop over a save's millions of elements takes a minute or more;
+compiled, the pass takes seconds.
+`Read-SaveReferences` compiles it with `Add-Type` on its first call in a session, in about half a second.
+What it reads stays in PowerShell, in `Get-SaveReferenceSites`.
+
 | Folder | Holds |
 | --- | --- |
 | [`formats/`](formats/) | Console table views for rows with too many columns for PowerShell's default table |
 | [`lib/`](lib/) | The library loader, `Write-DiagnosticLine`, which every script logs through, the name of the process-wide slot it remembers the last writer in, and `Write-TextFile`, which writes a script's output to a file |
+| [`lib/catalogue-cache/`](lib/catalogue-cache/) | The install's cache folder, and [keeping each catalogued kind there](#the-catalogue-cache): its key, reading and writing its entry, and telling a stale one apart |
 | [`lib/class-index/`](lib/class-index/) | Finding which mods' JARs, or the game's own, hold a class |
 | [`lib/console/`](lib/console/) | The [colour](#colour) of each kind of value, stripping it where a stream is not a console, and the columns an object prints as a table |
 | [`lib/content/`](lib/content/) | The kinds of content a save names by ID, which a failed load's missing content and the catalogue share |
@@ -112,12 +126,13 @@ Loading the library takes about half a second.
 | [`lib/content-catalogue/readers/`](lib/content-catalogue/readers/) | Listing the folders the game reads data from, finding each file's copies, and reading the IDs they define |
 | [`lib/data-file/`](lib/data-file/) | Reading a data file's text, JSON and spreadsheets as the game does |
 | [`lib/diagnosis/`](lib/diagnosis/) | Writing `Invoke-SaveMigrationTool.ps1`'s report as text |
-| [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read, and the owner the game's own classes and content go under |
+| [`lib/install/`](lib/install/) | The names of the install's folders and files the scripts read, the path of a save's file, and the owner the game's own classes and content go under |
 | [`lib/load-log/`](lib/load-log/) | Reading save load attempts out of `starsector.log`, keeping the loads asked for, reading their causes, and writing them as text |
 | [`lib/mod-drift/`](lib/mod-drift/) | Comparing a save's mods with the installed ones, ranking each version change, and writing the drift as text |
 | [`lib/mod-roster/`](lib/mod-roster/) | Reading a `mods\` folder into the roster the game loads, and the columns every mod list prints as |
 | [`lib/mod-version/`](lib/mod-version/) | Reading mod versions as text and as the parts the game compares |
 | [`lib/save-descriptor/`](lib/save-descriptor/) | Finding a save's `descriptor.xml` and reading its mod lists |
+| [`lib/save-references/`](lib/save-references/) | [Where a save names content](#where-a-save-names-content), reading every ID named there in one pass, and keeping those the catalogue lacks |
 | [`lib/xml/`](lib/xml/) | Loading XML safely, and following the back-pointers XStream writes |
 
 ## Invoke-SaveMigrationTool.ps1
@@ -532,9 +547,11 @@ A mistyped kind fails before any file is read.
 every file of the asked kinds is still read,
 since any file could define a matching ID.
 `-Roster` hands over the installed mods from a caller that has read them already.
+`-Rebuild` reads every asked kind from the files, whatever [the cache](#the-catalogue-cache) holds.
 
 A full run on an install of 400 mods reads about 47,000 content files and 2,300 spreadsheets,
-and takes about a minute.
+and takes one to several minutes, by how busy the machine is.
+A run the cache serves takes seconds.
 Each spreadsheet and JSON file keyed by ID is parsed once, and counted once,
 however many kinds read it:
 `sounds.json` holds both sounds and music sets,
@@ -688,6 +705,36 @@ neither stricter nor looser:
   stops the game at startup.
   The catalogue skips that copy instead and names it on stderr.
 
+### The catalogue cache
+
+Each kind's catalogue is written to a cache,
+and a later run reads a kind from the files again only when its entry is stale.
+The cache sits under `%LOCALAPPDATA%\KMLib\save-migration-tool\cache\`, outside the install,
+in one folder per install, named by a hash of the install's path,
+since one machine can hold several installs.
+A kind's entry is `catalogue\<kind>.owners.json`, its IDs and their owners,
+and `catalogue\<kind>.key.json`, written last, so a run stopped part-way leaves no key beside half-written owners.
+
+A kind's key has three parts:
+
+- **The catalogue's code**: a hash of every file under `lib/catalogue-cache/`, `lib/content/`,
+  `lib/content-catalogue/`, `lib/data-file/` and `lib/install/`,
+  so a change to how the catalogue reads is never served a result read the old way.
+- **The mods**: each source's ID, version, folder and replaced paths, in the game's search order.
+- **The data files**: the path, length and last write time of every copy of every file the kind reads,
+  and of those the kinds it is built from read,
+  since a variant the game builds from a hull changes with the hull's files.
+  The files are listed as the catalogue finds them,
+  so a file added to a folder the game lists changes the key too.
+  Listing and stamping them takes a few seconds on a large install.
+
+A missing entry, an entry that does not parse, or any part that differs reads the kind again and rewrites it.
+Stderr says which kinds came from the cache, and why each other kind was read:
+not cached yet, which part changed, or a rebuild asked for.
+The cache is per kind, so a run for a few kinds and a run for all of them share it.
+A cache per mod would not work:
+merges and replacements cross mods, so no key of one mod can tell what changed.
+
 ### Catalogue output
 
 One row per defined ID,
@@ -725,13 +772,107 @@ On a console an entry prints as a table row of its owner, version, name and ID c
 
 Stderr names what reading the installed mods found, unless `-Roster` handed them over,
 the kinds catalogued and from how many mods,
-the copies skipped, one line per reason they do not parse, naming the first few,
+how many data files the cache keys cover and how long checking them took,
+the kinds the cache served and why each other kind was read.
+For the kinds read, it names the copies skipped, one line per reason they do not parse, naming the first few,
 each file a mod replaces,
 how many content files and spreadsheets were read and how long that took,
-how many IDs each kind holds and how many of them the game builds,
 the five kinds slowest to read, with how long each took,
+and the kinds written to the cache.
+Then it names how many IDs each kind holds and how many of them the game builds,
 how many of them the filters kept, and under how many owners when grouped,
 and the file written, when `-OutFile` names one.
+
+## Find-SaveBrokenReferences.ps1
+
+Lists the content IDs a save names that no installed mod defines any more,
+with how often the save names each, and where.
+It reads the save's `campaign.xml` once,
+and looks each ID up in the [catalogue](#get-contentcatalogueps1) of the kinds a save names by ID,
+which [the cache](#the-catalogue-cache) serves after the first run.
+
+```powershell
+pwsh -NoProfile -File Find-SaveBrokenReferences.ps1 -StarsectorRoot <install> -SaveFolder <save folder>
+pwsh -NoProfile -File Find-SaveBrokenReferences.ps1 -StarsectorRoot <install> -SaveFolder <save folder> -AsJson
+```
+
+`-SaveFolder` is the save's folder name under `saves\`, as `Get-SaveLoadAttempt.ps1` reports it.
+A save with no `campaign.xml` fails before the catalogue is read, naming the path.
+`-Rebuild` reads every catalogued kind from the files, as `Get-ContentCatalogue.ps1 -Rebuild` does,
+and `-Roster` hands over the installed mods from a caller that has read them already.
+
+A save of 300 MB, about eight million elements, reads in about five seconds;
+a run the cache serves takes about fifteen.
+The first run on an install catalogues the kinds, which takes minutes.
+
+### Where a save names content
+
+XStream names each element after its field, or after the class's short alias,
+and the game aliases its own classes:
+`FMmbr` is a fleet member, `CIStack` a cargo stack, `SpID` a special item, `MCon` a market condition, `Plnt` a planet.
+An element may also carry `cl`, the class of the value it holds,
+and a site matches that class as it matches the element's name.
+The scan reads the sites where the game's own classes write an ID.
+A mod's classes write IDs in fields of their own choosing, which no table can know, so their fields are not read.
+
+| Kind | Sites |
+| --- | --- |
+| `Hull` | A variant's `hId`, on `savedVariant` or `HullVariantSpec`; the factions' `knownShips`, `priorityShips`, `shipsWhenImporting` and `overriddenHulls`; a `ship_bp` blueprint's data |
+| `Weapon` | A `WEAPONS` cargo stack; a variant's slot map `wpn`, the second `<st>` of each entry; the factions' `knownWeapons` and `priorityWeapons`; a `weapon_bp` blueprint's data |
+| `FighterWing` | A `FIGHTER_CHIP` cargo stack; a variant's `wng`; the factions' `knownFighters` and `priorityFighters`; a `fighter_bp` blueprint's data |
+| `Hullmod` | A variant's `hM`, `pM`, `sMods`, `sModdedBuiltIns` and `suM`; the factions' `knownHullMods` and `priorityHullMods`; a `modspec` item's data |
+| `Industry` | The `id` of each element under a market's `industries`; the factions' `knownIndustries`; an `industry_bp` blueprint's data |
+| `MarketCondition` | `MCon`'s `i`; a market's `cond`, `surveyed` and `suppressedConditions` |
+| `Commodity` | A `RESOURCES` cargo stack; the factions' `illegal` |
+| `SpecialItem` | `SpID`'s `i`, and the `i` of an industry's installed `special` |
+| `Submarket` | `Submarket`'s `s` |
+| `Faction` | A person's `fid`, on whatever element holds the person; `Faction`'s `id`; `Market`'s `factionId` |
+| `Personality` | A person's `pid` |
+| `Skill` | The keys of the JSON object in a person's `stats/s`; `OSGRec`'s `s` |
+| `Ability` | `AbilitySlot`'s `abilityId` |
+| `CustomEntity` | `f5` of the JSON object in `CCEnt`'s `j1`, where the game packs width, height, radius, sheet cell X and Y, and type |
+| `Planet` | `Plnt`'s `type` |
+| `Terrain` | `CampaignTerrain`'s `type` |
+
+A cargo stack names its content in its first child, `<d cl="st">`, by the stack's `t`.
+A list holds one `<st>` per ID.
+
+The faction manager's relations, `FMRelation`, are left out:
+Nexerelin seeds relations with factions that may never have been installed,
+so a faction they name says nothing of what the save uses.
+Variants and classes are not read yet.
+
+A d-hull is listed by its own ID, `<hull>_default_D`, beside its hull,
+as the game looks the exact ID up.
+A JSON value a site cannot read is skipped, and a warning says how many each site held.
+
+[`lib/save-references/Get-SaveReferenceSites.ps1`](lib/save-references/Get-SaveReferenceSites.ps1)
+holds the sites.
+
+### Broken reference output
+
+One row per missing ID,
+by kind in the catalogue's order, then by ID, code unit by code unit:
+
+| Field | Meaning |
+| --- | --- |
+| `Kind` | One of the kinds in the [table above](#where-a-save-names-content) |
+| `Id` | The ID as the save names it |
+| `UseCount` | How many times the save names it |
+| `Sites` | The uses at each site, by the site's name, the busiest first |
+
+A site's name writes its path as the save does,
+so a search of the file finds it:
+`wpn/e/st[2]` is the second `<st>` of an entry of `wpn`,
+`CIStack[t=WEAPONS]/d` the first child of a weapon stack,
+`savedVariant@hId` an attribute,
+`stats/s{keys}` the keys of a JSON object.
+
+Stderr names what reading the installed mods found, unless `-Roster` handed them over,
+what the catalogue read or took from the cache,
+how many elements of the save were read and how long that took,
+how many IDs the save names and how often,
+and how many of those IDs are not defined, by kind.
 
 ## Get-ModRoster.ps1
 
@@ -831,6 +972,16 @@ and one replacing `planets.json` and a game faction, that path written with back
 The game's own data holds a case of each other kind of source:
 skills from both spreadsheets and a description keyed by two columns.
 The replacing `planets.json` holds an entry that is not an object.
+Its last cases run against the cache the earlier ones filled, and change a file's stamp to make one kind stale.
+[`Find-SaveBrokenReferences.IntegrationTests.Tests.ps1`](../../Tests/tools/save-migration-tool/Find-SaveBrokenReferences.IntegrationTests.Tests.ps1)
+builds an install of the game's own data and one mod, beside saves shaped as 0.98a writes `campaign.xml`:
+one naming a removed mod's hull, d-hull, weapon, hullmod and faction at several sites,
+one naming only defined content, and one holding a JSON value the game would not write.
+Both suites point `LOCALAPPDATA` at a temporary folder of their own,
+since Pester removes what a context adds to the suite's temporary drive when the context ends.
+
+`Read-SaveReferences`'s unit suite reads small `campaign.xml` files written by each case,
+since its pass runs in compiled code that no mock reaches.
 
 [`helpers/`](../../Tests/tools/save-migration-tool/helpers/) holds what the suites share:
 running a script with its stderr and warnings captured, blank lines kept,
@@ -840,7 +991,7 @@ and filling and writing the owner index the content catalogue passes around.
 Every suite runs under `Set-StrictMode -Version Latest`, as the scripts do,
 so a read the scripts would fail on fails in the suites too.
 
-No test reads a real install, log or save.
+No test reads a real install, log or save, or writes to the real cache.
 
 The tests live under the repository's top-level `Tests\`, mirroring this folder,
 because the shared PowerShell CI only discovers `*.Tests.ps1` files there.

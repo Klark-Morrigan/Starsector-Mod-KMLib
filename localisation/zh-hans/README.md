@@ -344,6 +344,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | build (an instance of a class a data file names) | 构建 | the usual computing word |
 | cache, memo (a value kept to save working it out again) | 缓存 | the usual computing word |
 | caller | 调用方 | |
+| catalogue (the list of content IDs an install defines) | 内容目录 | 内容, content, with 目录, a catalogue or index |
 | class, syntax, tags, help (the columns of a console command table) | 类, 语法, 标签, 帮助文字 | the usual computing words; 帮助文字, help text, so the column reads as words rather than as the help command |
 | class name | 类名 | 类, a class, with 名, name |
 | command word (what a console command is typed as) | 指令名 | 指令, as for a console command, with 名, name; Console Commands' thread uses it in `help <指令名>` |
@@ -437,6 +438,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | descriptor (a save's `descriptor.xml`) | 描述文件 | 描述, to describe, with 文件, file: the small file that describes the save |
 | diagnose (a save, end to end) | 诊断 | the usual word for finding what is wrong |
 | folder (such as `mods`), warning (one a script prints) | 文件夹, 警告 | 文件夹, the usual Windows word; 警告 as the WARN row of the log levels |
+| group (list items together under what they share, such as a reason) | 分组 | the usual computing word, as in the named group row's 命名分组 |
 | installed (a mod the install loads) | 已安装 | 已, already, with 安装, to install |
 | JAR, declared JAR (one a mod's `mod_info.json` lists) | JAR, 声明的 JAR | JAR stays in English, as the game JARs' names do in this file; 声明, the usual computing word for declaring |
 | level (of a version change) | 变更级别 | 变更, a change, with 级别, level |
