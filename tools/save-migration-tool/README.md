@@ -939,8 +939,12 @@ Every file is read as the game reads its data files, neither stricter nor looser
 - org.json accepts trailing commas and single-quoted strings, and ConvertFrom-Json accepts them as they are.
 - org.json takes more that ConvertFrom-Json refuses, and the reader repairs it,
   only when the file fails without the repair, since a repair can corrupt a file that needed none:
-  - an unquoted value, kept as text unless it is `true`, `false` or `null` in any case, or a number Java parses,
-    so `0.5f`, `049` and `True` all load;
+  - an unquoted value, read as org.json reads it:
+    `true`, `false` and `null` in any case,
+    `0x` and hexadecimal digits as a whole number,
+    a number Java parses as a number,
+    and anything else as text,
+    so `True` is a boolean, `049` is 49, `0x1F` is 31 and `0.5f` is 0.5;
   - `;` between entries, and `=` or `=>` between a key and its value;
   - text after the root value, which org.json never reads.
 - org.json keeps keys that differ only in case apart.

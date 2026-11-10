@@ -15,17 +15,26 @@ BeforeAll {
     . "$PSScriptRoot\helpers\New-TestMod.ps1"
 
     # Tests\ mirrors the repo, so the script sits at the same relative path under the repo root.
-    $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
+    $repoRoot = [System.IO.Path]::GetFullPath(
+        (Join-Path $PSScriptRoot '..\..\..'))
 
-    $script:ScriptPath = Join-Path $repoRoot 'tools\save-migration-tool\Get-SaveModDrift.ps1'
-    $script:FixtureRoot = Join-Path $PSScriptRoot 'fixtures\saved-mod-list'
+    $script:ScriptPath = Join-Path `
+        $repoRoot `
+        'tools\save-migration-tool\Get-SaveModDrift.ps1'
+
+    $script:FixtureRoot = Join-Path `
+        $PSScriptRoot `
+        'fixtures\saved-mod-list'
+
     $script:FixtureSave = 'save_TestCaptain_1'
 
     function script:Invoke-SaveModDrift {
         # Runs the script on the given arguments; the drift rows are the run's Output.
         param([hashtable] $Arguments)
 
-        return Invoke-ScriptCapturingOutput -ScriptPath $script:ScriptPath -Arguments $Arguments
+        return Invoke-ScriptCapturingOutput `
+            -ScriptPath $script:ScriptPath `
+            -Arguments $Arguments
     }
 
     function script:New-DescriptorInstall {
@@ -36,14 +45,30 @@ BeforeAll {
             [string] $SaveDataBody
         )
 
-        $root = Join-Path $TestDrive $Name
-        $saveFolder = Join-Path $root 'saves\save_Test'
+        $root = Join-Path `
+            $TestDrive `
+            $Name
 
-        New-Item -ItemType Directory -Path $saveFolder -Force | Out-Null
-        New-Item -ItemType Directory -Path (Join-Path $root 'mods') -Force | Out-Null
+        $saveFolder = Join-Path `
+            $root `
+            'saves\save_Test'
+
+        New-Item `
+            -ItemType Directory `
+            -Path $saveFolder `
+            -Force |
+            Out-Null
+
+        New-Item `
+            -ItemType Directory `
+            -Path (Join-Path $root 'mods') `
+            -Force |
+            Out-Null
 
         [System.IO.File]::WriteAllText(
-            (Join-Path $saveFolder 'descriptor.xml'),
+            (Join-Path `
+                $saveFolder `
+                'descriptor.xml'),
             "<?xml version=`"1.0`" ?>`n<SaveGameData z=`"1`">`n$SaveDataBody`n</SaveGameData>`n")
 
         return $root
@@ -58,7 +83,7 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
 
             $script:Run = Invoke-SaveModDrift @{
                 StarsectorRoot = $script:FixtureRoot
-                SaveFolder     = $script:FixtureSave
+                SaveFolder = $script:FixtureSave
             }
 
             $script:RowsById = @{}
@@ -71,7 +96,11 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
         It 'lists the save''s mods in the descriptor''s order, following each back-pointer, then the added' {
 
             # ARRANGE
-            $expectedIds = @('alpha', 'beta', 'gamma', 'delta')
+            $expectedIds = @(
+                'alpha',
+                'beta',
+                'gamma',
+                'delta')
 
             # ACT
             $actualIds = $script:Run.Output.Id
@@ -91,10 +120,21 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $actualAlpha = $script:RowsById['alpha']
 
             # ASSERT
-            $actualAlpha.Change | Should -Be $expectedChange
-            $actualAlpha.SavedVersion | Should -Be $expectedSavedVersion
-            $actualAlpha.InstalledVersion | Should -Be $expectedInstalledVersion
-            $actualAlpha.Level | Should -BeNullOrEmpty
+            $actualAlpha.
+                Change |
+                Should -Be $expectedChange
+
+            $actualAlpha.
+                SavedVersion |
+                Should -Be $expectedSavedVersion
+
+            $actualAlpha.
+                InstalledVersion |
+                Should -Be $expectedInstalledVersion
+
+            $actualAlpha.
+                Level |
+                Should -BeNullOrEmpty
         }
 
         It 'ranks a changed mod by the save''s version parts, not its version text' {
@@ -109,10 +149,21 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $actualBeta = $script:RowsById['beta']
 
             # ASSERT
-            $actualBeta.Change | Should -Be $expectedChange
-            $actualBeta.SavedVersion | Should -Be $expectedSavedVersion
-            $actualBeta.InstalledVersion | Should -Be $expectedInstalledVersion
-            $actualBeta.Level | Should -Be $expectedLevel
+            $actualBeta.
+                Change |
+                Should -Be $expectedChange
+
+            $actualBeta.
+                SavedVersion |
+                Should -Be $expectedSavedVersion
+
+            $actualBeta.
+                InstalledVersion |
+                Should -Be $expectedInstalledVersion
+
+            $actualBeta.
+                Level |
+                Should -Be $expectedLevel
         }
 
         It 'reads a mod the install lacks as missing, with the version the save holds' {
@@ -125,9 +176,17 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $actualGamma = $script:RowsById['gamma']
 
             # ASSERT
-            $actualGamma.Change | Should -Be $expectedChange
-            $actualGamma.SavedVersion | Should -Be $expectedSavedVersion
-            $actualGamma.InstalledVersion | Should -BeNullOrEmpty
+            $actualGamma.
+                Change |
+                Should -Be $expectedChange
+
+            $actualGamma.
+                SavedVersion |
+                Should -Be $expectedSavedVersion
+
+            $actualGamma.
+                InstalledVersion |
+                Should -BeNullOrEmpty
         }
 
         It 'reads an installed mod the save lacks as added, with its installed version and name' {
@@ -141,9 +200,17 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $actualDelta = $script:RowsById['delta']
 
             # ASSERT
-            $actualDelta.Change | Should -Be $expectedChange
-            $actualDelta.InstalledVersion | Should -Be $expectedInstalledVersion
-            $actualDelta.Name | Should -Be $expectedName
+            $actualDelta.
+                Change |
+                Should -Be $expectedChange
+
+            $actualDelta.
+                InstalledVersion |
+                Should -Be $expectedInstalledVersion
+
+            $actualDelta.
+                Name |
+                Should -Be $expectedName
         }
 
         # The installed mod_info.json names alpha "Alpha"; the save's leading space shows which side won.
@@ -188,7 +255,11 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             $expectedBetaRowPattern = '^beta\s+1\.14\.1aa\s+1\.15\.0\s+Changed\s+Minor\s+Beta$'
 
             # ACT
-            $actualLines = @($script:Run.Output | Out-String -Width 200) -split "`r?`n" | Where-Object { $_.Trim() }
+            $actualLines = @($script:Run.
+                Output |
+                Out-String -Width 200) `
+                -split "`r?`n" |
+                Where-Object { $_.Trim() }
 
             # ASSERT
             $actualLines[0] | Should -Match $expectedHeaderPattern
@@ -212,20 +283,37 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             # ARRANGE
             $arguments = @{
                 StarsectorRoot = $script:FixtureRoot
-                SaveFolder     = $script:FixtureSave
-                AsJson         = $true
+                SaveFolder = $script:FixtureSave
+                AsJson = $true
             }
-            $expectedIds = @('alpha', 'beta', 'gamma', 'delta')
-            $expectedChanges = @('Unchanged', 'Changed', 'Missing', 'Added')
+            $expectedIds = @(
+                'alpha',
+                'beta',
+                'gamma',
+                'delta')
+
+            $expectedChanges = @(
+                'Unchanged',
+                'Changed',
+                'Missing',
+                'Added')
 
             # ACT
             $actualRun = Invoke-SaveModDrift $arguments
 
             # ASSERT
-            $actualRows = $actualRun.Output -join "`n" | ConvertFrom-Json
+            $actualRows = $actualRun.
+                Output `
+                -join "`n" |
+                ConvertFrom-Json
 
-            $actualRows.Id | Should -Be $expectedIds
-            $actualRows.Change | Should -Be $expectedChanges
+            $actualRows.
+                Id |
+                Should -Be $expectedIds
+
+            $actualRows.
+                Change |
+                Should -Be $expectedChanges
         }
     }
 
@@ -234,21 +322,84 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
         It 'reads every installed mod as added' {
 
             # ARRANGE
-            $root = New-DescriptorInstall -Name 'emptyList' -SaveDataBody '<enabledMods z="2"></enabledMods>'
+            $root = New-DescriptorInstall `
+                -Name 'emptyList' `
+                -SaveDataBody '<enabledMods z="2"></enabledMods>'
 
-            New-TestMod -StarsectorRoot $root -Folder 'Alpha' `
-                -ModInfo '{ "id": "alpha", "name": "Alpha", "description": "", "version": "1.0" }' | Out-Null
-            [System.IO.File]::WriteAllText((Join-Path $root 'mods\enabled_mods.json'), '{ "enabledMods": ["alpha"] }')
+            New-TestMod `
+                -StarsectorRoot $root `
+                -Folder 'Alpha' `
+                -ModInfo '{ "id": "alpha", "name": "Alpha", "description": "", "version": "1.0" }' |
+                Out-Null
+
+            [System.IO.File]::WriteAllText(
+                (Join-Path $root 'mods\enabled_mods.json'),
+                '{ "enabledMods": ["alpha"] }')
 
             $expectedIds = @('alpha')
             $expectedChanges = @('Added')
 
             # ACT
-            $actualRun = Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' }
+            $actualRun = Invoke-SaveModDrift @{
+                StarsectorRoot = $root;
+                SaveFolder = 'save_Test' }
 
             # ASSERT
-            $actualRun.Output.Id | Should -Be $expectedIds
-            $actualRun.Output.Change | Should -Be $expectedChanges
+            $actualRun.
+                Output.
+                Id |
+                Should -Be $expectedIds
+
+            $actualRun.
+                Output.
+                Change |
+                Should -Be $expectedChanges
+        }
+    }
+
+    # 049 is no JSON number, so the file is read through org.json's leniencies, which read it as 49.
+    Context 'a mod_info.json whose version part is written with a leading zero' {
+
+        It 'reads the mod as unchanged against the save''s 49' {
+
+            # ARRANGE
+            $root = New-DescriptorInstall `
+                -Name 'leadingZero' `
+                -SaveDataBody (
+                    '<enabledMods z="2"><EnabledModData z="3"><spec z="4"><id>alpha</id><name>Alpha</name>' +
+                    '<versionInfo z="5"><major>49</major><minor>0</minor><patch>0</patch>' +
+                    '<minorIsRC>false</minorIsRC></versionInfo><dirName>Alpha</dirName></spec></EnabledModData>' +
+                    '</enabledMods>')
+
+            New-TestMod `
+                -StarsectorRoot $root `
+                -Folder 'Alpha' `
+                -ModInfo (
+                    '{ "id": "alpha", "name": "Alpha", "description": "", ' +
+                    '"version": { "major": 049, "minor": 0, "patch": 0 } }') |
+                Out-Null
+            [System.IO.File]::WriteAllText(
+                (Join-Path $root 'mods\enabled_mods.json'),
+                '{ "enabledMods": ["alpha"] }')
+
+            $expectedChange = 'Unchanged'
+            $expectedInstalledVersion = '49.0.0'
+
+            # ACT
+            $actualRun = Invoke-SaveModDrift @{
+                StarsectorRoot = $root;
+                SaveFolder = 'save_Test' }
+
+            # ASSERT
+            $actualRun.
+                Output.
+                Change |
+                Should -Be $expectedChange
+
+            $actualRun.
+                Output.
+                InstalledVersion |
+                Should -Be $expectedInstalledVersion
         }
     }
 
@@ -257,17 +408,28 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
         It 'reports no drift, and warns naming the descriptor' {
 
             # ARRANGE
-            $root = New-DescriptorInstall -Name 'noList' -SaveDataBody '<gameVersion>0.98a-RC8</gameVersion>'
+            $root = New-DescriptorInstall `
+                -Name 'noList' `
+                -SaveDataBody '<gameVersion>0.98a-RC8</gameVersion>'
+
             $expectedCount = 0
             $expectedWarning =
                 "the descriptor lists no enabled mods: $root\saves\save_Test\descriptor.xml; no drift is reported"
 
             # ACT
-            $actualRun = Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' }
+            $actualRun = Invoke-SaveModDrift @{
+                StarsectorRoot = $root;
+                SaveFolder = 'save_Test' }
 
             # ASSERT
-            $actualRun.Output.Count | Should -Be $expectedCount
-            $actualRun.Warnings | Should -Contain $expectedWarning
+            $actualRun.
+                Output.
+                Count |
+                Should -Be $expectedCount
+
+            $actualRun.
+                Warnings |
+                Should -Contain $expectedWarning
         }
     }
 
@@ -276,16 +438,24 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
         It 'fails naming the back-pointer' {
 
             # ARRANGE
-            $root = New-DescriptorInstall -Name 'danglingRef' -SaveDataBody (
-                '<enabledMods z="2"><EnabledModData z="3"><spec ref="9"></spec></EnabledModData></enabledMods>')
+            $root = New-DescriptorInstall `
+                -Name 'danglingRef' `
+                -SaveDataBody (
+                    '<enabledMods z="2"><EnabledModData z="3"><spec ref="9"></spec></EnabledModData></enabledMods>')
+
             $expectedMessage = '<spec ref="9"> points at no object: no element has z="9"'
 
             # ACT
-            $actualError = { Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' } } |
+            $actualError = { Invoke-SaveModDrift @{
+                    StarsectorRoot = $root;
+                    SaveFolder = 'save_Test' } } |
                 Should -Throw -PassThru
 
             # ASSERT
-            $actualError.Exception.Message | Should -Be $expectedMessage
+            $actualError.
+                Exception.
+                Message |
+                Should -Be $expectedMessage
         }
     }
 
@@ -296,18 +466,39 @@ Describe 'Get-SaveModDrift.IntegrationTests' {
             # ARRANGE
             $root = Join-Path $TestDrive 'noDescriptor'
 
-            New-Item -ItemType Directory -Path (Join-Path $root 'saves\save_Test') -Force | Out-Null
-            New-Item -ItemType Directory -Path (Join-Path $root 'mods') -Force | Out-Null
+            New-Item `
+                -ItemType Directory `
+                -Path (Join-Path `
+                    $root `
+                    'saves\save_Test') `
+                -Force |
+                Out-Null
+
+            New-Item `
+                -ItemType Directory `
+                -Path (Join-Path `
+                    $root `
+                    'mods') `
+                -Force |
+                Out-Null
 
             $expectedCount = 0
             $expectedWarning = "descriptor not found: $root\saves\save_Test\descriptor.xml; no drift is reported"
 
             # ACT
-            $actualRun = Invoke-SaveModDrift @{ StarsectorRoot = $root; SaveFolder = 'save_Test' }
+            $actualRun = Invoke-SaveModDrift @{
+                StarsectorRoot = $root;
+                SaveFolder = 'save_Test' }
 
             # ASSERT
-            $actualRun.Output.Count | Should -Be $expectedCount
-            $actualRun.Warnings | Should -Contain $expectedWarning
+            $actualRun.
+                Output.
+                Count |
+                Should -Be $expectedCount
+
+            $actualRun.
+                Warnings |
+                Should -Contain $expectedWarning
         }
     }
 }
