@@ -11,7 +11,7 @@ function Repair-JsonLeniency {
 
     param([string] $Text)
 
-    $stringPattern = '"(?:[^"\\]|\\.)*"|''(?:[^''\\]|\\.)*'''
+    $stringPattern = Get-JsonStringPattern
 
     # org.json skips and trims every character up to a space, not .NET's \s: a no-break space is part of a value.
     $blankClass = '\x00-\x20'

@@ -78,6 +78,20 @@ Describe 'Remove-JsonComment' {
             Should -BeExactly $expectedText
     }
 
+    It 'keeps a # inside a string and strips the comment after it on the same line' {
+
+        # ARRANGE
+        $expectedText = '"a#b", '
+
+        # ACT
+        $actualText = Remove-JsonComment `
+            -Text '"a#b", # c'
+
+        # ASSERT
+        $actualText |
+            Should -BeExactly $expectedText
+    }
+
     It 'keeps a # after an even number of escaped quotes, since every quote flips the string' {
 
         # ARRANGE

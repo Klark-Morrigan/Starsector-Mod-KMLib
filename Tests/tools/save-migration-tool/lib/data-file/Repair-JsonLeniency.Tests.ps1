@@ -3,6 +3,7 @@ BeforeAll {
     Set-StrictMode -Version Latest
 
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertTo-JsonValueText.ps1"
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Get-JsonStringPattern.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Repair-JsonLeniency.ps1"
 }
 
@@ -12,6 +13,9 @@ Describe 'Repair-JsonLeniency' {
 
         # Angle brackets mark what the value reader wrote, and the text it was handed.
         Mock ConvertTo-JsonValueText { "<$Text>" }
+
+        # A stand-in string pattern without escapes, which Get-JsonStringPattern's own suite covers.
+        Mock Get-JsonStringPattern { '"[^"]*"|''[^'']*''' }
     }
 
     It 'writes the unquoted value of <Raw> as the value reader writes it, trimmed' -ForEach @(
