@@ -49,17 +49,10 @@ function Read-ModCandidate {
 
         Write-Warning "No mod read from $modInfoFileName, keeping in roster: $($Folder.Name) ($problem)"
 
-        return [pscustomobject]@{
-            Id = $Folder.Name
-            Name = $null
-            Version = $null
-            Jars = @()
-            ModPlugin = $null
-            SortString = $null
-            ReplacedPaths = @()
-            Folder = $Folder
-            Status = $statuses.Unparsed
-        }
+        return New-ModCandidate `
+            -Id $Folder.Name `
+            -Folder $Folder `
+            -Status $statuses.Unparsed
     }
 
     $modId = Get-JsonPropertyValue `
@@ -80,31 +73,31 @@ function Read-ModCandidate {
                     [System.StringComparison]::Ordinal)
     })
 
-    return [pscustomobject]@{
+    $name = Get-JsonPropertyValue `
+        -Object $info `
+        -Name 'name'
 
-        Id = [string] $modId
+    $jars = @(Get-JsonPropertyValue `
+        -Object $info `
+        -Name 'jars' |
+        Where-Object { $_ })
 
-        Name = Get-JsonPropertyValue `
-            -Object $info `
-            -Name 'name'
+    $modPlugin = Get-JsonPropertyValue `
+        -Object $info `
+        -Name 'modPlugin'
 
-        Version = $version
+    $sortString = Get-JsonPropertyValue `
+        -Object $info `
+        -Name 'sortString'
 
-        Jars = @(Get-JsonPropertyValue `
-            -Object $info `
-            -Name 'jars' |
-            Where-Object { $_ })
-
-        ModPlugin = Get-JsonPropertyValue `
-            -Object $info `
-            -Name 'modPlugin'
-
-        SortString = Get-JsonPropertyValue `
-            -Object $info `
-            -Name 'sortString'
-
-        ReplacedPaths = $replacedPaths
-        Folder = $Folder
-        Status = $statuses.Parsed
-    }
+    return New-ModCandidate `
+        -Id ([string] $modId) `
+        -Name $name `
+        -Version $version `
+        -Jars $jars `
+        -ModPlugin $modPlugin `
+        -SortString $sortString `
+        -ReplacedPaths $replacedPaths `
+        -Folder $Folder `
+        -Status $statuses.Parsed
 }

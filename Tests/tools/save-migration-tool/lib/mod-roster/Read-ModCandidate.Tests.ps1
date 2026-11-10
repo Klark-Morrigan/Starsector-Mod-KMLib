@@ -9,6 +9,7 @@ BeforeAll {
     . "$libRoot\data-file\Get-JsonPropertyValue.ps1"
     . "$libRoot\mod-roster\Find-ModInfoProblem.ps1"
     . "$libRoot\mod-roster\Get-ModStatusNames.ps1"
+    . "$libRoot\mod-roster\New-ModCandidate.ps1"
     . "$libRoot\mod-roster\Read-ModCandidate.ps1"
     . "$libRoot\install\Get-InstallPathNames.ps1"
 
