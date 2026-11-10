@@ -895,8 +895,14 @@ pwsh -NoProfile -File Get-ModRoster.ps1 -StarsectorRoot <install> -IncludeDisabl
 - An install with no `mods\` folder loads no mods,
   so the roster is empty, with a warning naming the path.
   Every script still runs on such an install.
-- `enabled_mods.json` decides what loads.
-  A missing or unreadable one warns and lists every mod.
+- `enabled_mods.json` decides what loads, read as the game reads it.
+  A missing or unparsable one, or one with no `enabledMods` list, loads no mods,
+  so the roster lists none, with a warning:
+  a broken list can be why a save fails, and listing every mod would hide it.
+  An empty entry, as in `["a",,"b"]`, ends the list, and the game loads only the IDs before it.
+  A literal `null` ends it here too, as the parser cannot tell it from an empty entry;
+  the game reads it as the ID `null` and goes on.
+  `-IncludeDisabled` still lists every installed mod.
 - A folder with no `mod_info.json` is not a mod; stderr names each one skipped.
 - The game skips a `mod_info.json` it cannot read:
   one nothing can parse, one missing `id`, `name` or `description`,

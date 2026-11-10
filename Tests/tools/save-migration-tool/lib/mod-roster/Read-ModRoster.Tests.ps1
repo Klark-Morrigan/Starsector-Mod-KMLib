@@ -26,9 +26,14 @@ BeforeAll {
             [object[]] $Superseded = @()
         )
 
-        $winner = [pscustomobject]@{ Id = $Id; Status = $Status }
+        $winner = [pscustomobject]@{
+            Id = $Id;
+            Status = $Status }
 
-        return [pscustomobject]@{ Id = $Id; Winner = $winner; Superseded = $Superseded }
+        return [pscustomobject]@{
+            Id = $Id;
+            Winner = $winner;
+            Superseded = $Superseded }
     }
 }
 
@@ -39,77 +44,126 @@ Describe 'Read-ModRoster' {
         $script:InstallRoot = Join-Path $TestDrive 'install'
         $script:Diagnostics = [System.Collections.Generic.List[string]]::new()
 
-        New-Item -ItemType Directory -Path (Join-Path $script:InstallRoot 'mods') -Force | Out-Null
+        New-Item `
+            -ItemType Directory `
+            -Path (Join-Path $script:InstallRoot 'mods') `
+            -Force |
+            Out-Null
 
-        Mock Write-DiagnosticLine { $script:Diagnostics.Add("${Source}: $Message") }
+        Mock Write-DiagnosticLine {
+            $script:Diagnostics.Add("${Source}: $Message") }
+
         Mock Format-ConsoleText { $Text }
         Mock Format-ConsoleNumber { "$Number" }
-        Mock Get-InstallPathNames { [pscustomobject]@{ ModsFolder = 'mods' } }
+
+        Mock Get-InstallPathNames { [pscustomobject]@{
+            ModsFolder = 'mods' } }
+
         Mock Get-ModIdComparer { [System.StringComparer]::Ordinal }
-        Mock Get-ModStatusNames { [pscustomobject]@{ Parsed = 'P'; Unparsed = 'U' } }
-        Mock Get-UnparsedModCount { @($Roster | Where-Object { $_.Id -eq 'Broken Mod' }).Count }
-        Mock Read-EnabledModIds { [pscustomobject]@{ Ids = @('alpha'); IsListRead = $true } }
-        Mock Read-ModFolderCandidates { ,@('candidate one', 'candidate two', 'candidate three') }
+
+        Mock Get-ModStatusNames { [pscustomobject]@{
+            Parsed = 'P';
+            Unparsed = 'U' } }
+
+        Mock Get-UnparsedModCount { @($Roster |
+            Where-Object { $_.Id -eq 'Broken Mod' }).
+            Count }
+
+        Mock Read-EnabledModIds { [pscustomobject]@{
+            Ids = @('alpha') } }
+
+        Mock Read-ModFolderCandidates { ,@(
+            'candidate one',
+            'candidate two',
+            'candidate three') }
+
         Mock Format-ModCopy { "copy of $($Candidate.Id)" }
-        Mock ConvertTo-RosterEntry { [pscustomobject]@{ Id = $ModGroup.Id } }
+
+        Mock ConvertTo-RosterEntry { [pscustomobject]@{
+            Id = $ModGroup.Id } }
+
         Mock Group-ModCandidate {
             New-Group -Id 'alpha' -Superseded @([pscustomobject]@{ Id = 'alpha-old' })
             New-Group -Id 'beta'
-            New-Group -Id 'Broken Mod' -Status 'U'
-        }
+            New-Group -Id 'Broken Mod' -Status 'U' }
     }
 
     It 'lists the enabled mods, and keeps an unparsed one whatever the enabled list says' {
 
         # ARRANGE
-        $expectedIds = @('alpha', 'Broken Mod')
+        $expectedIds = @(
+            'alpha',
+            'Broken Mod')
 
         # ACT
-        $actualRoster = Read-ModRoster -StarsectorRoot $script:InstallRoot -DiagnosticSource 'Test'
+        $actualRoster = Read-ModRoster `
+            -StarsectorRoot $script:InstallRoot `
+            -DiagnosticSource 'Test'
 
         # ASSERT
-        $actualRoster.Id | Should -Be $expectedIds
+        $actualRoster.
+            Id |
+            Should -Be $expectedIds
     }
 
     # The game enables only the mod whose ID enabled_mods.json spells exactly.
     It 'matches enabled IDs by the mod ID comparer' {
 
         # ARRANGE
-        Mock Read-EnabledModIds { [pscustomobject]@{ Ids = @('Alpha'); IsListRead = $true } }
+        Mock Read-EnabledModIds { [pscustomobject]@{
+            Ids = @('Alpha') } }
 
         $expectedIds = @('Broken Mod')
 
         # ACT
-        $actualRoster = Read-ModRoster -StarsectorRoot $script:InstallRoot -DiagnosticSource 'Test'
+        $actualRoster = Read-ModRoster `
+            -StarsectorRoot $script:InstallRoot `
+            -DiagnosticSource 'Test'
 
         # ASSERT
-        $actualRoster.Id | Should -Be $expectedIds
+        $actualRoster.
+            Id |
+            Should -Be $expectedIds
     }
 
     It 'lists every mod with -IncludeDisabled' {
 
         # ARRANGE
-        $expectedIds = @('alpha', 'beta', 'Broken Mod')
+        $expectedIds = @(
+            'alpha',
+            'beta',
+            'Broken Mod')
 
         # ACT
-        $actualRoster = Read-ModRoster -StarsectorRoot $script:InstallRoot -IncludeDisabled -DiagnosticSource 'Test'
+        $actualRoster = Read-ModRoster `
+            -StarsectorRoot $script:InstallRoot `
+            -IncludeDisabled `
+            -DiagnosticSource 'Test'
 
         # ASSERT
-        $actualRoster.Id | Should -Be $expectedIds
+        $actualRoster.
+            Id |
+            Should -Be $expectedIds
     }
 
-    It 'lists every mod when enabled_mods.json gave no list' {
+    # A missing or broken enabled_mods.json gives no IDs, and the game then loads no mods.
+    It 'lists only the unparsed mods when enabled_mods.json gave no IDs' {
 
         # ARRANGE
-        Mock Read-EnabledModIds { [pscustomobject]@{ Ids = @(); IsListRead = $false } }
+        Mock Read-EnabledModIds { [pscustomobject]@{
+            Ids = @() } }
 
-        $expectedIds = @('alpha', 'beta', 'Broken Mod')
+        $expectedIds = @('Broken Mod')
 
         # ACT
-        $actualRoster = Read-ModRoster -StarsectorRoot $script:InstallRoot -DiagnosticSource 'Test'
+        $actualRoster = Read-ModRoster `
+            -StarsectorRoot $script:InstallRoot `
+            -DiagnosticSource 'Test'
 
         # ASSERT
-        $actualRoster.Id | Should -Be $expectedIds
+        $actualRoster.
+            Id |
+            Should -Be $expectedIds
     }
 
     It 'names each copy a winner beat, then what it read and decided, under the caller''s name' {
@@ -122,10 +176,14 @@ Describe 'Read-ModRoster' {
         )
 
         # ACT
-        Read-ModRoster -StarsectorRoot $script:InstallRoot -DiagnosticSource 'Test' | Out-Null
+        Read-ModRoster `
+            -StarsectorRoot $script:InstallRoot `
+            -DiagnosticSource 'Test' |
+            Out-Null
 
         # ASSERT
-        $script:Diagnostics | Should -Be $expectedDiagnostics
+        $script:Diagnostics |
+            Should -Be $expectedDiagnostics
     }
 
     # The game loads no mods from an install with no mods folder, and its own content still reads.
@@ -137,12 +195,22 @@ Describe 'Read-ModRoster' {
         $expectedWarnings = @("mods directory not found, listing no mods: $bareRoot\mods")
 
         # ACT
-        $actualRoster = @(Read-ModRoster -StarsectorRoot $bareRoot -DiagnosticSource 'Test' `
-            -WarningVariable actualWarnings -WarningAction SilentlyContinue)
+        $actualRoster = @(Read-ModRoster `
+            -StarsectorRoot $bareRoot `
+            -DiagnosticSource 'Test' `
+            -WarningVariable actualWarnings `
+            -WarningAction SilentlyContinue)
 
         # ASSERT
-        $actualRoster.Count | Should -Be $expectedCount
-        @($actualWarnings | ForEach-Object { "$_" }) | Should -Be $expectedWarnings
-        Should -Invoke Read-ModFolderCandidates -Times 0
+        $actualRoster.
+            Count |
+            Should -Be $expectedCount
+
+        @($actualWarnings |
+            ForEach-Object { "$_" }) |
+            Should -Be $expectedWarnings
+
+        Should -Invoke Read-ModFolderCandidates `
+            -Times 0
     }
 }

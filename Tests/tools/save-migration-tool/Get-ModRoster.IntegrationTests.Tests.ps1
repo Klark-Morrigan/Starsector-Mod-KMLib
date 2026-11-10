@@ -17,7 +17,9 @@ BeforeAll {
     $repoRoot = [System.IO.Path]::GetFullPath(
         (Join-Path $PSScriptRoot '..\..\..'))
 
-    $script:ScriptPath = Join-Path $repoRoot 'tools\save-migration-tool\Get-ModRoster.ps1'
+    $script:ScriptPath = Join-Path `
+        $repoRoot `
+        'tools\save-migration-tool\Get-ModRoster.ps1'
 
     function script:New-ModInstall {
         <#
@@ -627,19 +629,104 @@ Describe 'Get-ModRoster.IntegrationTests' {
         }
     }
 
+    # The game loads no mods when enabled_mods.json is missing or broken, so the roster lists none.
     Context 'an install with no usable enabled_mods.json' {
 
-        It 'treats every mod as enabled when the file is missing, and warns' {
+        It 'lists no mods when the file is missing, and warns' {
 
             # ARRANGE
             $root = New-ModInstall `
                 -Name 'noEnabledFile' `
                 -ModInfoByFolder @{
+                    'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
+
+            $expectedCount = 0
+            $expectedWarnings = @('enabled_mods.json not found, so the game loads no mods.')
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{
+                StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.
+                Output.
+                Count |
+                Should -Be $expectedCount
+
+            $actualRun.
+                Warnings |
+                Should -Be $expectedWarnings
+        }
+
+        It 'lists no mods when the file holds no list, and warns' {
+
+            # ARRANGE
+            $root = New-ModInstall `
+                -Name 'noEnabledList' `
+                -EnabledModsJson '{ "mods": [] }' `
+                -ModInfoByFolder @{
+                    'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
+
+            $expectedCount = 0
+            $expectedWarnings = @(
+                'enabled_mods.json unparseable, so the game loads no mods: it holds no enabledMods list' )
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{
+                StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.
+                Output.
+                Count |
+                Should -Be $expectedCount
+
+            $actualRun.
+                Warnings |
+                Should -Be $expectedWarnings
+        }
+
+        It 'lists no mods when the file does not parse, and warns why' {
+
+            # ARRANGE
+            $root = New-ModInstall `
+                -Name 'unparsableEnabledFile' `
+                -EnabledModsJson '{ "enabledMods": ["a"' `
+                -ModInfoByFolder @{ 'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
+
+            $expectedCount = 0
+            $expectedWarningPattern = (
+                'enabled_mods.json unparseable, so the game loads no mods: ' +
+                "not valid JSON, even with org.json's leniencies repaired: *enabled_mods.json*")
+
+            # ACT
+            $actualRun = Invoke-ModRoster @{
+                StarsectorRoot = $root }
+
+            # ASSERT
+            $actualRun.
+                Output.
+                Count |
+                Should -Be $expectedCount
+
+            $actualRun.
+                Warnings |
+                Should -BeLike $expectedWarningPattern
+        }
+
+        It 'lists only the mods before an empty entry, and warns naming its position' {
+
+            # ARRANGE
+            $root = New-ModInstall `
+                -Name 'partReadEnabledFile' `
+                -EnabledModsJson '{ "enabledMods": ["a",,"b"] }' `
+                -ModInfoByFolder @{
                     'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }'
-                }
+                    'b' = '{ "id": "b", "name": "B", "description": "", "version": "1" }' }
 
             $expectedIds = @('a')
-            $expectedWarnings = @('enabled_mods.json not found, treating all mods as enabled.')
+            $expectedWarnings = @(
+                'enabled_mods.json has an empty entry at position 2, so the game loads only the IDs before it.')
 
             # ACT
             $actualRun = Invoke-ModRoster @{
@@ -656,27 +743,27 @@ Describe 'Get-ModRoster.IntegrationTests' {
                 Should -Be $expectedWarnings
         }
 
-        It 'treats every mod as enabled when the file holds no list, and warns' {
+        It 'lists every mod with -IncludeDisabled, and still warns' {
 
             # ARRANGE
             $root = New-ModInstall `
-                -Name 'noEnabledList' `
-                -EnabledModsJson '{ "mods": [] }' `
-                -ModInfoByFolder @{ 'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
+                -Name 'noEnabledFileIncludeDisabled' `
+                -ModInfoByFolder @{
+                    'a' = '{ "id": "a", "name": "A", "description": "", "version": "1" }' }
 
             $expectedIds = @('a')
-            $expectedWarnings = @(
-                'enabled_mods.json unparseable, treating all mods as enabled: it holds no enabledMods list'
-            )
+            $expectedWarnings = @('enabled_mods.json not found, so the game loads no mods.')
 
             # ACT
             $actualRun = Invoke-ModRoster @{
-                StarsectorRoot = $root }
+                StarsectorRoot  = $root
+                IncludeDisabled = $true }
 
             # ASSERT
             $actualRun.
                 Output.
-                Id | Should -Be $expectedIds
+                Id |
+                Should -Be $expectedIds
 
             $actualRun.
                 Warnings |

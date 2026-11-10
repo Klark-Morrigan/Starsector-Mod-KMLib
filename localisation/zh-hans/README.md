@@ -446,12 +446,13 @@ A version heading is never translated; see [translating the changelog](#translat
 | load (of a save), failed load, retry (vanilla loading the save again from another file) | 读取, 读取失败, 重试 | 读取 as the vanilla Save row's 读取最近的存档; 重试, the usual computing word |
 | major, minor, patch (the level of a version change) | 主版本, 次版本, 修订 | as the Chinese text of Semantic Versioning names MAJOR, MINOR and PATCH (主版本号, 次版本号, 修订号), without 号, number |
 | merge (the game combining the copies of one file), replace outright (a file a mod lists under `replace`) | 合并, 整体替换 | 合并, the usual word for combining; 整体, as a whole, before 替换, to replace |
+| missing (a file the game looks for, such as `enabled_mods.json`) | 缺失 | as the missing content row, without 内容 |
 | missing content (an ID a save holds and no installed mod defines) | 缺失内容 | 缺失, missing, with 内容, content |
 | mod class (a class a mod's JAR holds) | Mod 类 | Mod stays in Latin (see the [mod](#mods) row); 类, a Java class |
 | narrow (a list, by a filter) | 缩小 | to make smaller, as a filter makes a list |
 | newest first (the order a list runs in) | 最新的在前 | 最新, newest, with 在前, in front |
 | object chain (the objects a failed object sat in, innermost first) | 对象链 | 对象, object, as the JSON row's 对象数组, with 链, chain |
-| parse (a `mod_info.json`, as the game reads it) | 解析 | as the parser row's 解析器, without 器, a thing that does a job |
+| parse (a `mod_info.json` or `enabled_mods.json`, as the game reads it) | 解析 | as the parser row's 解析器, without 器, a thing that does a job |
 | Save Migration Tool (SMT) | 存档迁移工具（SMT） | 迁移, to migrate, for a save carried across mod versions; the abbreviation stays in English |
 | skip (a copy the game cannot read, and so does not load), required (a `mod_info.json` field the game cannot do without) | 跳过, 必需 | 跳过, to pass over, the plain word; 必需, needed, the plain word |
 | sort string (a `mod_info.json`'s `sortString`) | 排序字符串 | 排序 as the sort mode row of [Lists and sorting](#lists-and-sorting), with 字符串 as the string ID row |
