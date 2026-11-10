@@ -4,6 +4,7 @@
 # The game stops at an empty entry, as in ["a",,"b"], and keeps the IDs before it.
 # ConvertFrom-Json reads a literal null as it reads an empty entry, so a null stops the read here too,
 # where the game reads it as the ID "null" and goes on.
+# The IDs come back one by one, so a caller collects them with @(...): no IDs then reads as an empty list, not null.
 function Read-EnabledModIds {
 
     [CmdletBinding()]
@@ -11,7 +12,6 @@ function Read-EnabledModIds {
 
     $enabledModsFileName = (Get-InstallPathNames).EnabledModsFile
     $enabledModsPropertyName = 'enabledMods'
-    $noIds = [pscustomobject]@{ Ids = @() }
 
     $enabledFile = Join-Path `
         $ModsRoot `
@@ -22,7 +22,7 @@ function Read-EnabledModIds {
             -PathType Leaf)) {
 
         Write-Warning "$enabledModsFileName not found, so the game loads no mods."
-        return $noIds
+        return
     }
 
     try {
@@ -43,8 +43,8 @@ function Read-EnabledModIds {
 
     } catch {
 
-        Write-Warning "$enabledModsFileName unparseable, so the game loads no mods: $($_.Exception.Message)"
-        return $noIds
+        Write-Warning "$enabledModsFileName unparsable, so the game loads no mods: $($_.Exception.Message)"
+        return
     }
 
     $ids = [System.Collections.Generic.List[string]]::new()
@@ -68,5 +68,5 @@ function Read-EnabledModIds {
         }
     }
 
-    return [pscustomobject]@{ Ids = $ids.ToArray() }
+    return $ids.ToArray()
 }

@@ -54,12 +54,11 @@ Describe 'Read-EnabledModIds' {
         $expectedIds = @('alpha', 'beta')
 
         # ACT
-        $actualEnabled = Read-EnabledModIds `
-            -ModsRoot $modsRoot
+        $actualIds = @(Read-EnabledModIds `
+            -ModsRoot $modsRoot)
 
         # ASSERT
-        $actualEnabled.
-            Ids |
+        $actualIds |
             Should -Be $expectedIds
     }
 
@@ -78,14 +77,13 @@ Describe 'Read-EnabledModIds' {
         $expectedWarningCount = 0
 
         # ACT
-        $actualEnabled = Read-EnabledModIds `
+        $actualIds = @(Read-EnabledModIds `
             -ModsRoot $modsRoot `
             -WarningVariable actualWarnings `
-            -WarningAction SilentlyContinue
+            -WarningAction SilentlyContinue)
 
         # ASSERT
-        $actualEnabled.
-            Ids.
+        $actualIds.
             Count |
             Should -Be $expectedIdCount
 
@@ -110,14 +108,13 @@ Describe 'Read-EnabledModIds' {
             'enabled_mods.json has an empty entry at position 2, so the game loads only the IDs before it.')
 
         # ACT
-        $actualEnabled = Read-EnabledModIds `
+        $actualIds = @(Read-EnabledModIds `
             -ModsRoot $modsRoot `
             -WarningVariable actualWarnings `
-            -WarningAction SilentlyContinue
+            -WarningAction SilentlyContinue)
 
         # ASSERT
-        $actualEnabled.
-            Ids |
+        $actualIds |
             Should -Be $expectedIds
 
         $actualWarnings |
@@ -129,23 +126,23 @@ Describe 'Read-EnabledModIds' {
         @{
             Description = 'the file holds no list';
             Reader = { [ordered]@{ mods = @() } }
-            Warning = 'enabled_mods.json unparseable, so the game loads no mods: it holds no enabledMods list' }
+            Warning = 'enabled_mods.json unparsable, so the game loads no mods: it holds no enabledMods list' }
         @{ # An [ordered] literal matches keys case-blind, where the parser's hashtables do not.
             Description = 'the list key differs in case'
             Reader = { '{ "EnabledMods": ["alpha"] }' | ConvertFrom-Json -AsHashtable }
-            Warning = 'enabled_mods.json unparseable, so the game loads no mods: it holds no enabledMods list' }
+            Warning = 'enabled_mods.json unparsable, so the game loads no mods: it holds no enabledMods list' }
         @{ # The game reads the list with getJSONArray, which throws on a lone string.
             Description = 'the list is one string';
             Reader = { [ordered]@{ enabledMods = 'alpha' } }
-            Warning = 'enabled_mods.json unparseable, so the game loads no mods: it holds no enabledMods list' }
+            Warning = 'enabled_mods.json unparsable, so the game loads no mods: it holds no enabledMods list' }
         @{
             Description = 'the root is not an object';
             Reader = { , @('alpha') }
-            Warning = 'enabled_mods.json unparseable, so the game loads no mods: it holds no enabledMods list' }
+            Warning = 'enabled_mods.json unparsable, so the game loads no mods: it holds no enabledMods list' }
         @{
             Description = 'the file does not parse';
             Reader = { throw 'bad json' }
-            Warning = 'enabled_mods.json unparseable, so the game loads no mods: bad json' }
+            Warning = 'enabled_mods.json unparsable, so the game loads no mods: bad json' }
     ) {
 
         # ARRANGE
@@ -159,14 +156,13 @@ Describe 'Read-EnabledModIds' {
         $expectedWarnings = @($Warning)
 
         # ACT
-        $actualEnabled = Read-EnabledModIds `
+        $actualIds = @(Read-EnabledModIds `
             -ModsRoot $modsRoot `
             -WarningVariable actualWarnings `
-            -WarningAction SilentlyContinue
+            -WarningAction SilentlyContinue)
 
         # ASSERT
-        $actualEnabled.
-            Ids.
+        $actualIds.
             Count |
             Should -Be $expectedIdCount
 
@@ -183,14 +179,13 @@ Describe 'Read-EnabledModIds' {
         $expectedWarnings = @('enabled_mods.json not found, so the game loads no mods.')
 
         # ACT
-        $actualEnabled = Read-EnabledModIds `
+        $actualIds = @(Read-EnabledModIds `
             -ModsRoot $modsRoot `
             -WarningVariable actualWarnings `
-            -WarningAction SilentlyContinue
+            -WarningAction SilentlyContinue)
 
         # ASSERT
-        $actualEnabled.
-            Ids.
+        $actualIds.
             Count |
             Should -Be $expectedIdCount
 

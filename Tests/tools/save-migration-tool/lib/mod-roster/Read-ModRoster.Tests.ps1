@@ -69,8 +69,7 @@ Describe 'Read-ModRoster' {
             Where-Object { $_.Id -eq 'Broken Mod' }).
             Count }
 
-        Mock Read-EnabledModIds { [pscustomobject]@{
-            Ids = @('alpha') } }
+        Mock Read-EnabledModIds { 'alpha' }
 
         Mock Read-ModFolderCandidates { ,@(
             'candidate one',
@@ -110,8 +109,7 @@ Describe 'Read-ModRoster' {
     It 'matches enabled IDs by the mod ID comparer' {
 
         # ARRANGE
-        Mock Read-EnabledModIds { [pscustomobject]@{
-            Ids = @('Alpha') } }
+        Mock Read-EnabledModIds { 'Alpha' }
 
         $expectedIds = @('Broken Mod')
 
@@ -150,8 +148,7 @@ Describe 'Read-ModRoster' {
     It 'lists only the unparsed mods when enabled_mods.json gave no IDs' {
 
         # ARRANGE
-        Mock Read-EnabledModIds { [pscustomobject]@{
-            Ids = @() } }
+        Mock Read-EnabledModIds { }
 
         $expectedIds = @('Broken Mod')
 

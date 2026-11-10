@@ -669,7 +669,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             $expectedCount = 0
             $expectedWarnings = @(
-                'enabled_mods.json unparseable, so the game loads no mods: it holds no enabledMods list' )
+                'enabled_mods.json unparsable, so the game loads no mods: it holds no enabledMods list' )
 
             # ACT
             $actualRun = Invoke-ModRoster @{
@@ -696,7 +696,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
 
             $expectedCount = 0
             $expectedWarningPattern = (
-                'enabled_mods.json unparseable, so the game loads no mods: ' +
+                'enabled_mods.json unparsable, so the game loads no mods: ' +
                 "not valid JSON, even with org.json's leniencies repaired: *enabled_mods.json*")
 
             # ACT

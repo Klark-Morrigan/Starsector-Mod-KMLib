@@ -34,10 +34,10 @@ function Read-ModRoster {
         -LiteralPath $StarsectorRoot).
         Path
 
-    $enabled = Read-EnabledModIds -ModsRoot $modsRoot
+    $enabledIds = @(Read-EnabledModIds -ModsRoot $modsRoot)
 
     $enabledSet = [System.Collections.Generic.HashSet[string]]::new(
-        [string[]] $enabled.Ids,
+        [string[]] $enabledIds,
         (Get-ModIdComparer))
 
     $candidates = Read-ModFolderCandidates `
@@ -92,7 +92,7 @@ function Read-ModRoster {
         -Message (
             "read $(Format-ConsoleNumber $candidates.Count) mod folders " +
             "under $(Format-ConsoleText -Role 'Path' -Text $modsRoot) " +
-            "and $(Format-ConsoleNumber $enabled.Ids.Count) enabled IDs; " +
+            "and $(Format-ConsoleNumber $enabledIds.Count) enabled IDs; " +
             "listing $(Format-ConsoleNumber $roster.Count) mods ($(Format-ConsoleNumber $unparsedCount) unparsed), " +
             "skipping $(Format-ConsoleNumber $disabledCount) disabled " +
             "and $(Format-ConsoleNumber $supersededCount) superseded copies")
