@@ -142,7 +142,7 @@ Describe 'Get-ModRoster.IntegrationTests' {
             $actualLines = @($script:Run.
                 Output |
                 Out-String -Width 200) `
-                -split "`r?`n" | =
+                -split "`r?`n" |
                 Where-Object { $_.Trim() }
 
             # ASSERT
