@@ -64,8 +64,8 @@ function Repair-JsonLeniency {
             return $match.Value
         }
 
-        return $match.Groups['lead'].Value
-            + (ConvertTo-JsonValueText -Text $match.Groups['value'].Value)
+        return $match.Groups['lead'].Value +
+            (ConvertTo-JsonValueText -Text $match.Groups['value'].Value)
     }
 
     # Separators are rewritten first, so a value after = or ; has the : or , its pattern looks for.

@@ -29,8 +29,8 @@ function ConvertFrom-JavaDoubleText {
         $Text,
         $hexadecimalPattern)
 
-    $significandDigits = $hexadecimal.Groups['whole'].Value
-        + $hexadecimal.Groups['fraction'].Value
+    $significandDigits = $hexadecimal.Groups['whole'].Value +
+        $hexadecimal.Groups['fraction'].Value
 
     if (-not $hexadecimal.Success `
             -or $significandDigits.Length -eq 0) {
