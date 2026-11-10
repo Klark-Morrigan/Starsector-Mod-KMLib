@@ -911,6 +911,7 @@ Each entry carries `Id`, `Version`,
 `VersionInfo` (the `Major`, `Minor`, `Patch` and `MinorIsRC` the game [compares versions by](#how-versions-compare)),
 `Name`, `Folder`, `RelativePath` (under the install root),
 `Jars` (the JARs `mod_info.json` declares, as full paths),
+`ModPlugin` (the class `mod_info.json` names as the mod's plugin, or null),
 `SortString` and `ReplacedPaths` (what decides [how the game reads the mod's data](#how-the-game-combines-copies),
 as `mod_info.json` writes them, less a replaced `settings.json`, which the game ignores),
 `Status` (`parsed` or `unparsed`) and `SupersededCount`.

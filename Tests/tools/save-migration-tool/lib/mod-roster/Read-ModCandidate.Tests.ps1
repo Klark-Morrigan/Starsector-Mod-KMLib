@@ -19,10 +19,16 @@ BeforeAll {
             [switch] $HasNoModInfo
         )
 
-        $folder = New-Item -ItemType Directory -Path (Join-Path $TestDrive $Name) -Force
+        $folder = New-Item `
+            -ItemType Directory `
+            -Path (Join-Path $TestDrive $Name) `
+            -Force
 
         if (-not $HasNoModInfo) {
-            New-TestFile -Name "$Name\mod_info.json" | Out-Null
+
+            New-TestFile `
+                -Name "$Name\mod_info.json" |
+                Out-Null
         }
 
         return $folder
@@ -33,14 +39,19 @@ Describe 'Read-ModCandidate' {
 
     BeforeEach {
 
-        Mock Get-ModStatusNames { [pscustomobject]@{ Parsed = 'P'; Unparsed = 'U' } }
+        Mock Get-ModStatusNames { [pscustomobject]@{
+            Parsed = 'P';
+            Unparsed = 'U' } }
+
         Mock Get-InstallPathNames { [pscustomobject]@{ ModInfoFile = 'mod_info.json' } }
         Mock Find-ModInfoProblem { $null }
 
         # The parser hands back ordered hashtables, so the fake looks the key up in one.
         Mock Get-JsonPropertyValue {
 
-            if ($null -ne $Object -and $Object.Contains($Name)) {
+            if ($null -ne $Object `
+                    -and $Object.Contains($Name)) {
+
                 $Object[$Name]
             }
         }
@@ -49,7 +60,10 @@ Describe 'Read-ModCandidate' {
     It 'reads the ID, name and version of a parsed mod_info.json' {
 
         # ARRANGE
-        Mock ConvertFrom-StarsectorJson { [ordered]@{ id = 'alpha'; name = ' Alpha'; version = '1.2' } }
+        Mock ConvertFrom-StarsectorJson { [ordered]@{
+            id = 'alpha';
+            name = ' Alpha';
+            version = '1.2' } }
 
         $folder = New-ModFolder -Name 'Alpha-1.2'
         $expectedId = 'alpha'
@@ -64,20 +78,58 @@ Describe 'Read-ModCandidate' {
         $actualCandidate = Read-ModCandidate -Folder $folder
 
         # ASSERT
-        $actualCandidate.Id | Should -Be $expectedId
-        $actualCandidate.Name | Should -Be $expectedName
-        $actualCandidate.Version | Should -Be $expectedVersion
-        $actualCandidate.Status | Should -Be $expectedStatus
-        $actualCandidate.Folder.FullName | Should -Be $expectedFolder
-        $actualCandidate.Jars.Count | Should -Be $expectedJarCount
-        $actualCandidate.SortString | Should -BeNullOrEmpty
-        $actualCandidate.ReplacedPaths.Count | Should -Be $expectedReplacedPathCount
+        $actualCandidate.Id |
+            Should -Be $expectedId
+
+        $actualCandidate.Name |
+            Should -Be $expectedName
+
+        $actualCandidate.Version |
+            Should -Be $expectedVersion
+
+        $actualCandidate.Status |
+            Should -Be $expectedStatus
+
+        $actualCandidate.Folder.FullName |
+            Should -Be $expectedFolder
+
+        $actualCandidate.Jars.Count |
+            Should -Be $expectedJarCount
+
+        $actualCandidate.ModPlugin |
+            Should -BeNullOrEmpty
+
+        $actualCandidate.SortString |
+            Should -BeNullOrEmpty
+
+        $actualCandidate.ReplacedPaths.Count |
+            Should -Be $expectedReplacedPathCount
+    }
+
+    It 'reads the class the mod names as its mod plugin' {
+
+        # ARRANGE
+        Mock ConvertFrom-StarsectorJson { [ordered]@{
+            id = 'alpha';
+            modPlugin = 'data.scripts.AlphaModPlugin' } }
+
+        $folder = New-ModFolder -Name 'Alpha-plugin'
+        $expectedModPlugin = 'data.scripts.AlphaModPlugin'
+
+        # ACT
+        $actualCandidate = Read-ModCandidate -Folder $folder
+
+        # ASSERT
+        $actualCandidate.ModPlugin |
+            Should -Be $expectedModPlugin
     }
 
     It 'reads the text the game sorts the mod by' {
 
         # ARRANGE
-        Mock ConvertFrom-StarsectorJson { [ordered]@{ id = 'alpha'; sortString = 'zz last' } }
+        Mock ConvertFrom-StarsectorJson { [ordered]@{
+            id = 'alpha';
+            sortString = 'zz last' } }
 
         $folder = New-ModFolder -Name 'Alpha-sort'
         $expectedSortString = 'zz last'
@@ -86,7 +138,8 @@ Describe 'Read-ModCandidate' {
         $actualCandidate = Read-ModCandidate -Folder $folder
 
         # ASSERT
-        $actualCandidate.SortString | Should -Be $expectedSortString
+        $actualCandidate.SortString |
+            Should -Be $expectedSortString
     }
 
     # The game ignores a replaced settings.json, whichever folder it names.
@@ -94,46 +147,71 @@ Describe 'Read-ModCandidate' {
 
         # ARRANGE
         Mock ConvertFrom-StarsectorJson {
+
             [ordered]@{
-                id      = 'alpha'
-                replace = @('data/hulls/ship_data.csv', '', 'data/config/settings.json', 'data\weapons\a.wpn')
+                id = 'alpha'
+                replace = @(
+                    'data/hulls/ship_data.csv',
+                    '',
+                    'data/config/settings.json',
+                    'data\weapons\a.wpn')
             }
         }
 
         $folder = New-ModFolder -Name 'Alpha-replace'
-        $expectedReplacedPaths = @('data/hulls/ship_data.csv', 'data\weapons\a.wpn')
+
+        $expectedReplacedPaths = @(
+            'data/hulls/ship_data.csv',
+            'data\weapons\a.wpn')
 
         # ACT
         $actualCandidate = Read-ModCandidate -Folder $folder
 
         # ASSERT
-        $actualCandidate.ReplacedPaths | Should -Be $expectedReplacedPaths
+        $actualCandidate.ReplacedPaths |
+            Should -Be $expectedReplacedPaths
     }
 
     It 'keeps the JARs mod_info.json declares, as it writes them' {
 
         # ARRANGE
         Mock ConvertFrom-StarsectorJson {
-            [ordered]@{ id = 'alpha'; jars = @('jars/alpha.jar', '', 'jars/lib.jar') }
+
+            [ordered]@{
+                id = 'alpha';
+                jars = @(
+                    'jars/alpha.jar',
+                    '',
+                    'jars/lib.jar') }
         }
 
         $folder = New-ModFolder -Name 'Alpha-jars'
-        $expectedJars = @('jars/alpha.jar', 'jars/lib.jar')
+
+        $expectedJars = @(
+            'jars/alpha.jar',
+            'jars/lib.jar')
 
         # ACT
         $actualCandidate = Read-ModCandidate -Folder $folder
 
         # ASSERT
-        $actualCandidate.Jars | Should -Be $expectedJars
+        $actualCandidate.Jars |
+            Should -Be $expectedJars
     }
 
     # A filter that hides a real mod is worse than no filter, because nothing signals that it happened.
     # The game skips such a copy, so keeping it under its folder name stops it claiming the mod's ID.
     It 'keeps <Description> under its folder name, warning why' -ForEach @(
-        @{ Description = 'a file nothing parses'; Reader = { throw 'no repair produced valid JSON' }
-            Problem = { $null }; Reason = 'no repair produced valid JSON' }
-        @{ Description = 'a file the game throws on'; Reader = { [ordered]@{ id = 'alpha'; name = 'Alpha' } }
-            Problem = { 'no "description" field' }; Reason = 'no "description" field' }
+        @{
+            Description = 'a file nothing parses';
+            Reader = { throw 'no repair produced valid JSON' }
+            Problem = { $null };
+            Reason = 'no repair produced valid JSON' }
+        @{
+            Description = 'a file the game throws on';
+            Reader = { [ordered]@{ id = 'alpha'; name = 'Alpha' } }
+            Problem = { 'no "description" field' };
+            Reason = 'no "description" field' }
     ) {
 
         # ARRANGE
@@ -149,26 +227,48 @@ Describe 'Read-ModCandidate' {
         $expectedWarnings = @("No mod read from mod_info.json, keeping in roster: $folderName ($Reason)")
 
         # ACT
-        $actualCandidate = Read-ModCandidate -Folder $folder `
-            -WarningVariable actualWarnings -WarningAction SilentlyContinue
+        $actualCandidate = Read-ModCandidate `
+            -Folder $folder `
+            -WarningVariable actualWarnings `
+            -WarningAction SilentlyContinue
 
         # ASSERT
-        $actualCandidate.Id | Should -Be $expectedId
-        $actualCandidate.Name | Should -BeNullOrEmpty
-        $actualCandidate.Status | Should -Be $expectedStatus
-        $actualCandidate.Jars.Count | Should -Be $expectedJarCount
-        $actualCandidate.SortString | Should -BeNullOrEmpty
-        $actualCandidate.ReplacedPaths.Count | Should -Be $expectedReplacedPathCount
-        $actualWarnings | ForEach-Object { "$_" } | Should -Be $expectedWarnings
+        $actualCandidate.Id |
+            Should -Be $expectedId
+
+        $actualCandidate.Name |
+            Should -BeNullOrEmpty
+
+        $actualCandidate.Status |
+            Should -Be $expectedStatus
+
+        $actualCandidate.Jars.Count |
+            Should -Be $expectedJarCount
+
+        $actualCandidate.ModPlugin |
+            Should -BeNullOrEmpty
+
+        $actualCandidate.SortString |
+            Should -BeNullOrEmpty
+
+        $actualCandidate.ReplacedPaths.Count |
+            Should -Be $expectedReplacedPathCount
+
+        $actualWarnings |
+            ForEach-Object { "$_" } |
+            Should -Be $expectedWarnings
     }
 
     It 'returns null for a folder with no mod_info.json' {
 
         # ARRANGE
-        $folder = New-ModFolder -Name 'loose-assets' -HasNoModInfo
+        $folder = New-ModFolder `
+            -Name 'loose-assets' `
+            -HasNoModInfo
 
         # ACT
-        $actualCandidate = Read-ModCandidate -Folder $folder
+        $actualCandidate = Read-ModCandidate `
+            -Folder $folder
 
         # ASSERT
         $actualCandidate | Should -BeNullOrEmpty
