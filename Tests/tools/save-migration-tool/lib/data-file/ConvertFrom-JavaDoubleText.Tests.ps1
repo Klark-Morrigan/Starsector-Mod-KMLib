@@ -2,10 +2,18 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-HexadecimalDigits.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-JavaDoubleText.ps1"
 }
 
 Describe 'ConvertFrom-JavaDoubleText' {
+
+    BeforeEach {
+
+        # The significand's digits read as zero unless a case says otherwise.
+        Mock ConvertFrom-HexadecimalDigits {
+            [System.Numerics.BigInteger]::Zero }
+    }
 
     It 'reads the decimal <Raw> as <Expected>' -ForEach @(
         @{ Raw = '0.5f'; Expected = 0.5 }
@@ -31,31 +39,47 @@ Describe 'ConvertFrom-JavaDoubleText' {
         $actualDouble | Should -Be $expectedDouble
     }
 
-    It 'reads the hexadecimal <Raw> as <Expected>' -ForEach @(
-        @{ Raw = '0x1.8p1'; Expected = 3.0 }
-        @{ Raw = '-0X1P-2'; Expected = -0.25 }
-        @{ Raw = '0x.8p1'; Expected = 1.0 }
-        @{ Raw = '+0x1Ep1f'; Expected = 60.0 }
-        @{ Raw = '0x10.p0'; Expected = 16.0 }
+    # The significand's digits are read whole and scaled back by four bits per digit after the point.
+    It 'reads the hexadecimal <Raw> as <Expected>, from the significand digits <Digits>' -ForEach @(
+        @{ Raw = '0x1.8p1'; Digits = '18'; Significand = 24; Expected = 3.0 }
+        @{ Raw = '-0X1P-2'; Digits = '1'; Significand = 1; Expected = -0.25 }
+        @{ Raw = '0x.8p1'; Digits = '8'; Significand = 8; Expected = 1.0 }
+        @{ Raw = '+0x1Ep1f'; Digits = '1E'; Significand = 30; Expected = 60.0 }
+        @{ Raw = '0x10.p0'; Digits = '10'; Significand = 16; Expected = 16.0 }
     ) {
 
         # ARRANGE
+        $significand = [System.Numerics.BigInteger] $Significand
+        Mock ConvertFrom-HexadecimalDigits { $significand }
+
+        $expectedDigits = $Digits
         $expectedDouble = $Expected
 
         # ACT
         $actualDouble = ConvertFrom-JavaDoubleText -Text $Raw
 
         # ASSERT
-        $actualDouble | Should -BeOfType [double]
-        $actualDouble | Should -Be $expectedDouble
+        $actualDouble |
+            Should -BeOfType [double]
+
+        $actualDouble |
+            Should -Be $expectedDouble
+
+        Should -Invoke ConvertFrom-HexadecimalDigits `
+            -ParameterFilter { $Digits -ceq $expectedDigits } `
+            -Times 1 `
+            -Exactly
     }
 
     It 'reads <Raw>, too large for a double, as infinity' -ForEach @(
-        @{ Raw = '1e999' }
-        @{ Raw = '0x1p99999999999' }
+        @{ Raw = '1e999'; Significand = 0 }
+        @{ Raw = '0x1p99999999999'; Significand = 1 }
     ) {
 
         # ARRANGE
+        $significand = [System.Numerics.BigInteger] $Significand
+        Mock ConvertFrom-HexadecimalDigits { $significand }
+
         $expectedDouble = [double]::PositiveInfinity
 
         # ACT
@@ -98,10 +122,18 @@ Describe 'ConvertFrom-JavaDoubleText' {
         @{ Raw = 'Infinity' }
     ) {
 
+        # ARRANGE
+        $expectedDigitReadCount = 0
+
         # ACT
         $actualDouble = ConvertFrom-JavaDoubleText -Text $Raw
 
         # ASSERT
-        $actualDouble | Should -BeNullOrEmpty
+        $actualDouble |
+            Should -BeNullOrEmpty
+
+        Should -Invoke ConvertFrom-HexadecimalDigits `
+            -Times $expectedDigitReadCount `
+            -Exactly
     }
 }

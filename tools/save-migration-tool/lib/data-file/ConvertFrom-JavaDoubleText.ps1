@@ -38,18 +38,16 @@ function ConvertFrom-JavaDoubleText {
         return
     }
 
-    # The leading 0 keeps the significand positive: AllowHexSpecifier reads a high first digit as a sign bit.
-    $significand = [System.Numerics.BigInteger]::Parse(
-        "0$significandDigits",
-        [Globalization.NumberStyles]::AllowHexSpecifier,
-        $culture)
+    $significand = ConvertFrom-HexadecimalDigits `
+        -Digits $significandDigits
 
     $exponent = [Math]::Clamp(
         [double] $hexadecimal.Groups['exponent'].Value,
         -$exponentLimit,
         $exponentLimit)
 
-    $scale = [int] $exponent - $hexadecimalDigitBits * $hexadecimal.Groups['fraction'].Value.Length
+    $scale = [int] $exponent - $hexadecimalDigitBits *
+        $hexadecimal.Groups['fraction'].Value.Length
 
     $magnitude = [Math]::ScaleB(
         [double] $significand,

@@ -51,6 +51,54 @@ Describe 'Repair-JsonLeniency' {
         $actualText | Should -Be $expectedText
     }
 
+    # org.json skips and trims every character up to a space, control characters included.
+    It 'skips the control characters around a value, as blanks' {
+
+        # ARRANGE
+        $expectedText = "[`u{1}<x>`t, <y>`u{1F}]"
+
+        # ACT
+        $actualText = Repair-JsonLeniency -Text "[`u{1}x`t, y`u{1F}]"
+
+        # ASSERT
+        $actualText |
+            Should -Be $expectedText
+    }
+
+    # org.json ends the value at the tab, then fails on the text after it, so no value is read.
+    It 'reads no value split by a control character' {
+
+        # ARRANGE
+        $text = "{ `"a`": two`twords }"
+        $expectedText = $text
+        $expectedReadCount = 0
+
+        # ACT
+        $actualText = Repair-JsonLeniency -Text $text
+
+        # ASSERT
+        $actualText |
+            Should -Be $expectedText
+
+        Should -Invoke ConvertTo-JsonValueText `
+            -Times $expectedReadCount `
+            -Exactly
+    }
+
+    # A no-break space is above a space, so org.json keeps it in the value where .NET's \s would trim it.
+    It 'keeps a no-break space in the value' {
+
+        # ARRANGE
+        $expectedText = "{ `"a`": <`u{A0}x`u{A0}> }"
+
+        # ACT
+        $actualText = Repair-JsonLeniency -Text "{ `"a`": `u{A0}x`u{A0} }"
+
+        # ASSERT
+        $actualText |
+            Should -Be $expectedText
+    }
+
     It 'hands the value reader no string, key or bracket' {
 
         # ARRANGE

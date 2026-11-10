@@ -34,11 +34,10 @@ function ConvertTo-JsonValueText {
 
     if ($hexadecimal.Success) {
 
-        # The leading 0 keeps the value positive: AllowHexSpecifier reads a high first digit as a sign bit.
-        $magnitude = [System.Numerics.BigInteger]::Parse(
-            "0$($hexadecimal.Groups['digits'].Value)",
-            [Globalization.NumberStyles]::AllowHexSpecifier,
-            $culture)
+        $magnitude = ConvertFrom-HexadecimalDigits `
+            -Digits $hexadecimal.
+                Groups['digits'].
+                Value
 
         $integer = if ($hexadecimal.Groups['sign'].Value -ceq '-') {
             -$magnitude

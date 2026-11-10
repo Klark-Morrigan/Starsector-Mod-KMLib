@@ -2,6 +2,7 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-HexadecimalDigits.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertFrom-JavaDoubleText.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\ConvertTo-JsonValueText.ps1"
 }
@@ -12,6 +13,9 @@ Describe 'ConvertTo-JsonValueText' {
 
         # Java refuses the text unless a case says otherwise.
         Mock ConvertFrom-JavaDoubleText { }
+
+        Mock ConvertFrom-HexadecimalDigits {
+            [System.Numerics.BigInteger]::Zero }
     }
 
     It 'writes <Raw> as the lowercase literal' -ForEach @(
@@ -31,28 +35,60 @@ Describe 'ConvertTo-JsonValueText' {
         $actualText | Should -Be $expectedText
     }
 
-    It 'writes the hexadecimal <Raw> as the int <Expected>' -ForEach @(
-        @{ Raw = '0x1F'; Expected = '31' }
-        @{ Raw = '0X-1f'; Expected = '-31' }
-        @{ Raw = '0x+10'; Expected = '16' }
-        @{ Raw = '0x7FFFFFFF'; Expected = '2147483647' }
-        @{ Raw = '0x-80000000'; Expected = '-2147483648' }
+    It 'writes the hexadecimal <Raw> as the int <Expected>, its sign applied to the digits read' -ForEach @(
+        @{
+            Raw = '0x1F';
+            Digits = '1F';
+            Magnitude = 31L;
+            Expected = '31' }
+        @{
+            Raw = '0X-1f';
+            Digits = '1f';
+            Magnitude = 31L;
+            Expected = '-31' }
+        @{
+            Raw = '0x+10';
+            Digits = '10';
+            Magnitude = 16L;
+            Expected = '16' }
+        @{
+            Raw = '0x7FFFFFFF';
+            Digits = '7FFFFFFF';
+            Magnitude = 2147483647L;
+            Expected = '2147483647' }
+        @{
+            Raw = '0x-80000000';
+            Digits = '80000000';
+            Magnitude = 2147483648L;
+            Expected = '-2147483648' }
     ) {
 
         # ARRANGE
+        $magnitude = [System.Numerics.BigInteger] $Magnitude
+        Mock ConvertFrom-HexadecimalDigits { $magnitude }
+
+        $expectedDigits = $Digits
         $expectedText = $Expected
 
         # ACT
         $actualText = ConvertTo-JsonValueText -Text $Raw
 
         # ASSERT
-        $actualText | Should -Be $expectedText
+        $actualText |
+            Should -Be $expectedText
+
+        Should -Invoke ConvertFrom-HexadecimalDigits `
+            -ParameterFilter { $Digits -ceq $expectedDigits } `
+            -Times 1 `
+            -Exactly
     }
 
     # 0x1E holds an E, so it would be read as a double if the int did not come first.
     It 'reads a hexadecimal int holding an E as the int, not as a double' {
 
         # ARRANGE
+        Mock ConvertFrom-HexadecimalDigits { [System.Numerics.BigInteger] 30 }
+
         $expectedText = '30'
         $expectedDoubleReadCount = 0
 
@@ -69,19 +105,38 @@ Describe 'ConvertTo-JsonValueText' {
     }
 
     # Java's int parse fails, and with no . e or E the long parse fails on the x.
-    It 'writes the hexadecimal <Raw>, which no int holds, as text' -ForEach @(
-        @{ Raw = '0x80000000'; Expected = '"0x80000000"' }
-        @{ Raw = '0x1G'; Expected = '"0x1G"' }
-    ) {
+    It 'writes hexadecimal digits no int holds as text' {
 
         # ARRANGE
-        $expectedText = $Expected
+        Mock ConvertFrom-HexadecimalDigits {
+            [System.Numerics.BigInteger] 2147483648L }
+
+        $expectedText = '"0x80000000"'
 
         # ACT
-        $actualText = ConvertTo-JsonValueText -Text $Raw
+        $actualText = ConvertTo-JsonValueText -Text '0x80000000'
 
         # ASSERT
-        $actualText | Should -Be $expectedText
+        $actualText |
+            Should -Be $expectedText
+    }
+
+    It 'writes 0x before a digit that is not hexadecimal as text, reading no digits' {
+
+        # ARRANGE
+        $expectedText = '"0x1G"'
+        $expectedDigitReadCount = 0
+
+        # ACT
+        $actualText = ConvertTo-JsonValueText -Text '0x1G'
+
+        # ASSERT
+        $actualText |
+            Should -Be $expectedText
+
+        Should -Invoke ConvertFrom-HexadecimalDigits `
+            -Times $expectedDigitReadCount `
+            -Exactly
     }
 
     It 'writes <Raw> as the long <Expected>' -ForEach @(
