@@ -1,31 +1,32 @@
 # Strips # comments the way the game's LoadingUtils does before org.json parses a file.
 # Matching that exactly keeps a file the game rejects from parsing here.
 # Neither // nor /* */ is a comment to the game, so both stay.
-# The game drops every carriage return, keeping only the line feed.
+# The game drops every carriage return as it reads a file, before the strip runs,
+# so a carriage return ends no string and no comment.
 #
-# The game resets its string and comment state at each line break, so each line is read on its own,
-# and only a line holding a # needs reading character by character.
+# The game's rule holds within a line: a # outside a string runs to the line's end,
+# and a string runs from a quote to the next quote or the line's end.
+# A backslash escapes nothing, since the game flips its in-string flag on every quote.
+# One regex replace reads the whole text, because a loop over its characters in PowerShell is many times slower.
 function Remove-JsonComment {
 
     param([string] $Text)
 
-    $lineFeed = "`n"
-    $carriageReturn = "`r"
+    $textWithoutReturns = $Text.Replace("`r", '')
 
-    if (-not $Text.Contains('#')) {
-        return $Text.Replace($carriageReturn, '')
+    if (-not $textWithoutReturns.Contains('#')) {
+        return $textWithoutReturns
     }
 
-    $lines = $Text.Split($lineFeed)
+    $stringPattern = '"[^"\n]*"?'
+    $outsideStringPattern = '[^"#\n]+'
 
-    for ($index = 0; $index -lt $lines.Count; $index++) {
+    # The kept part is atomic: backing off the end of an unclosed string would take a # inside it for a comment,
+    # where the game keeps it.
+    $keptPattern = "(?<kept>(?>(?:$outsideStringPattern|$stringPattern)*))"
 
-        $lines[$index] = if ($lines[$index].Contains('#')) {
-            Remove-JsonLineComment -Line $lines[$index]
-        } else {
-            $lines[$index].Replace($carriageReturn, '')
-        }
-    }
-
-    return $lines -join $lineFeed
+    return [regex]::Replace(
+        $textWithoutReturns,
+        "(?m)^$keptPattern#[^\n]*",
+        '${kept}')
 }

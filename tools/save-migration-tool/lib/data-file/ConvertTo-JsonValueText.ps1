@@ -35,9 +35,9 @@ function ConvertTo-JsonValueText {
     if ($hexadecimal.Success) {
 
         $magnitude = ConvertFrom-HexadecimalDigits `
-            -Digits $hexadecimal.
+            -Digits ($hexadecimal.
                 Groups['digits'].
-                Value
+                Value)
 
         $integer = if ($hexadecimal.Groups['sign'].Value -ceq '-') {
             -$magnitude

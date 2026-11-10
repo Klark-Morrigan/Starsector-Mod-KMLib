@@ -932,7 +932,9 @@ Every file is read as the game reads its data files, neither stricter nor looser
 - A `#` outside a string starts a comment that runs to the end of its line.
   The game tracks strings by flipping on every `"`, escaped or not, and forgets an open string at each line break;
   the reader does the same, so a `#` after an odd number of `\"` is a comment here too.
-  Only a line holding a `#` is read character by character, so a file with none costs a single pass.
+  The game drops every carriage return before the strip, and so does the reader,
+  so a carriage return ends no string and no comment.
+  A file holding no `#` skips the strip.
 - `//` and `/* */` are not comments to the game, and a file holding one outside a string fails to parse.
   ConvertFrom-Json would skip them, so the reader looks for them itself.
 - A file opening with a byte order mark fails, as it does in the game.

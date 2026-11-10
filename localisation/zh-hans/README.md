@@ -481,6 +481,7 @@ A version heading is never translated; see [translating the changelog](#translat
 | English | 简体中文 | Note |
 | --- | --- | --- |
 | boolean (a JSON value) | 布尔值 | the usual computing word |
+| comment (`#` in a data file), strip (a comment) | 注释, 剥离 | 注释, the usual computing word; 剥离, peel away, for removing a comment before the file is parsed |
 | data file | 数据文件 | a CSV or JSON a mod ships |
 | field, member (of `mod_info.json`) | 字段, 成员 | 字段 for what a player reads; 成员 for a JSON object's member, the usual computing word |
 | key (of a JSON object), differ only in case | 键, 仅大小写不同 | 键, the usual computing word; 大小写, upper and lower case, inside 仅...不同, differing only in |
