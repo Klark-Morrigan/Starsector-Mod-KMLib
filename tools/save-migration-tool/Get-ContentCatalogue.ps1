@@ -9,6 +9,7 @@
     market conditions, industries, special items, commodities, abilities and submarkets.
     It adds the d-hulls and empty hull variants the game builds from them.
     An ID a save names and this list lacks is content no installed mod provides any more.
+    Each kind is kept in a cache under %LOCALAPPDATA%, and read again only when the mods or its files change.
     Stdout carries one row per defined ID, or one entry per owner with -GroupByOwner.
     What the script read and decided goes to stderr.
     The README beside this script explains which files define each kind.
@@ -43,6 +44,9 @@ param(
     # Write the JSON to this file instead of stdout. A full list outruns a console's scrollback.
     [string] $OutFile,
 
+    # Read every kind from the files, whatever the cache holds, and cache it afresh.
+    [switch] $Rebuild,
+
     # The install's enabled mods, as Get-ModRoster.ps1 lists them, from a caller that has read them already.
     [object[]] $Roster
 )
@@ -60,7 +64,8 @@ if (-not $PSBoundParameters.ContainsKey('Kind')) {
     $Kind = $cataloguedKinds
 }
 
-$unknownKinds = @($Kind | Where-Object { $_ -cnotin $cataloguedKinds })
+$unknownKinds = @($Kind |
+    Where-Object { $_ -cnotin $cataloguedKinds })
 
 # A mistyped kind would read every file of the others and then list nothing of it.
 if ($unknownKinds.Count -gt 0) {
@@ -68,38 +73,61 @@ if ($unknownKinds.Count -gt 0) {
 }
 
 if (-not $PSBoundParameters.ContainsKey('Roster')) {
-    $Roster = @(Read-ModRoster -StarsectorRoot $StarsectorRoot -DiagnosticSource $DiagnosticSource)
+
+    $Roster = @(Read-ModRoster `
+        -StarsectorRoot $StarsectorRoot `
+        -DiagnosticSource $DiagnosticSource)
 }
 
-$catalogue = Read-ContentCatalogue -StarsectorRoot $StarsectorRoot -Roster $Roster -Kinds $Kind `
+$catalogue = Read-ContentCatalogue `
+    -StarsectorRoot $StarsectorRoot `
+    -Roster $Roster `
+    -Kinds $Kind `
+    -IsRebuildForced:$Rebuild `
     -DiagnosticSource $DiagnosticSource
 
-$definedCount = ($catalogue.OwnersByKind.Values | ForEach-Object Count | Measure-Object -Sum).Sum
-$rows = @(ConvertTo-CatalogueRows -OwnersByKind $catalogue.OwnersByKind -IdPatterns $Id)
+$definedCount = ($catalogue.OwnersByKind.Values |
+    ForEach-Object Count |
+    Measure-Object -Sum).
+    Sum
+
+$rows = @(ConvertTo-CatalogueRows `
+    -OwnersByKind $catalogue.OwnersByKind `
+    -IdPatterns $Id)
 
 $listing = "listing $(Format-ConsoleNumber $rows.Count) of $(Format-ConsoleNumber $definedCount) defined IDs"
 
 if ($GroupByOwner) {
 
-    $rows = @(Group-ContentByOwner -Rows $rows -Sources $catalogue.Sources)
+    $rows = @(Group-ContentByOwner `
+        -Rows $rows `
+        -Sources $catalogue.Sources)
+
     $listing += " under $(Format-ConsoleNumber $rows.Count) owners"
 }
 
-Write-DiagnosticLine -Source $DiagnosticSource -Message $listing
+Write-DiagnosticLine `
+    -Source $DiagnosticSource `
+    -Message $listing
 
 if (-not $OutFile -and -not $AsJson) {
     $rows
 
 } else {
 
-    $json = ConvertTo-Json -InputObject $rows -Depth (Get-CatalogueJsonDepth)
+    $json = ConvertTo-Json `
+        -InputObject $rows `
+        -Depth (Get-CatalogueJsonDepth)
 
     if ($OutFile) {
 
-        $outPath = Write-TextFile -Path $OutFile -Text $json
+        $outPath = Write-TextFile `
+            -Path $OutFile `
+            -Text $json
 
-        Write-DiagnosticLine -Source $DiagnosticSource -Message (
-            "wrote the JSON to $(Format-ConsoleText -Role 'Path' -Text $outPath)")
+        Write-DiagnosticLine `
+            -Source $DiagnosticSource `
+            -Message ("wrote the JSON to $(Format-ConsoleText -Role 'Path' -Text $outPath)")
 
     } else {
         $json

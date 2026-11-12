@@ -94,20 +94,37 @@ Describe 'New-ContentCatalogue' {
         # ARRANGE
         $expectedKinds = @('Built')
         $expectedBuiltOwners = 'Built-id=m added_from_base=m added_from_self=m'
+
         $expectedGenerated = @(
             '_from_base: Base-id owned as Base-id'
-            '_from_self: Built-id owned as Built-id+added_from_base'
-        )
+            '_from_self: Built-id owned as Built-id+added_from_base')
+
+        $expectedGeneratedCountKinds = @('Built')
         $expectedGeneratedCount = 2
 
         # ACT
-        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built')
+        $actualCatalogue = New-ContentCatalogue `
+            -Sources @() `
+            -Kinds @('Built')
 
         # ASSERT
-        @($actualCatalogue.OwnersByKind.Keys) | Should -Be $expectedKinds
-        Format-OwnerIndex -OwnersById $actualCatalogue.OwnersByKind['Built'] | Should -Be $expectedBuiltOwners
-        $script:Generated | Should -Be $expectedGenerated
-        $actualCatalogue.GeneratedCount | Should -Be $expectedGeneratedCount
+        @($actualCatalogue.OwnersByKind.Keys) |
+            Should -Be $expectedKinds
+
+        Format-OwnerIndex `
+            -OwnersById $actualCatalogue.OwnersByKind['Built'] |
+            Should -Be $expectedBuiltOwners
+
+        $script:Generated |
+            Should -Be $expectedGenerated
+
+        @($actualCatalogue.
+            GeneratedCountByKind.Keys) |
+            Should -Be $expectedGeneratedCountKinds
+
+        $actualCatalogue.
+            GeneratedCountByKind['Built'] |
+            Should -Be $expectedGeneratedCount
     }
 
     It 'reads every kind with one cache for the run' {
@@ -118,13 +135,22 @@ Describe 'New-ContentCatalogue' {
         $expectedCache = $script:Cache
 
         # ACT
-        New-ContentCatalogue -Sources @() -Kinds @('Base', 'Other') | Out-Null
+        New-ContentCatalogue `
+            -Sources @() `
+            -Kinds @('Base', 'Other') |
+            Out-Null
 
         # ASSERT
-        Should -Invoke New-ParsedFileCache -Times $expectedNewCacheCount -Exactly
-        Should -Invoke Read-KindContentOwners -Times $expectedReadCount -Exactly -ParameterFilter {
-            [object]::ReferenceEquals($Cache, $expectedCache)
-        }
+        Should -Invoke New-ParsedFileCache `
+            -Times $expectedNewCacheCount `
+            -Exactly
+
+        Should -Invoke Read-KindContentOwners `
+            -Times $expectedReadCount `
+            -Exactly `
+            -ParameterFilter {
+                [object]::ReferenceEquals($Cache, $expectedCache)
+            }
     }
 
     It 'orders each asked kind''s owners by the sources' {
@@ -133,10 +159,14 @@ Describe 'New-ContentCatalogue' {
         $expectedOrderCount = 2
 
         # ACT
-        New-ContentCatalogue -Sources @('sources') -Kinds @('Base', 'Built') | Out-Null
+        New-ContentCatalogue `
+            -Sources @('sources') `
+            -Kinds @('Base', 'Built') |
+            Out-Null
 
         # ASSERT
-        Should -Invoke Set-ContentOwnerOrder -ParameterFilter { "$Sources" -eq 'sources' } `
+        Should -Invoke Set-ContentOwnerOrder `
+            -ParameterFilter { "$Sources" -eq 'sources' } `
             -Times $expectedOrderCount -Exactly
     }
 
@@ -146,17 +176,34 @@ Describe 'New-ContentCatalogue' {
         # ARRANGE
         $expectedContentFileCount = 31
         $expectedSpreadsheetCount = 3
-        $expectedSkippedPaths = @('Base\bad', 'Built\bad', 'Other\bad')
-        $expectedReplacedPaths = @('Base.csv', 'Built.csv', 'Other.csv')
+
+        $expectedSkippedPaths = @(
+            'Base\bad',
+            'Built\bad',
+            'Other\bad')
+
+        $expectedReplacedPaths = @(
+            'Base.csv',
+            'Built.csv',
+            'Other.csv')
 
         # ACT
-        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built', 'Other')
+        $actualCatalogue = New-ContentCatalogue `
+            -Sources @() `
+            -Kinds @('Built', 'Other')
 
         # ASSERT
-        $actualCatalogue.ContentFileCount | Should -Be $expectedContentFileCount
-        $actualCatalogue.SpreadsheetCount | Should -Be $expectedSpreadsheetCount
-        $actualCatalogue.SkippedFiles.Path | Should -Be $expectedSkippedPaths
-        $actualCatalogue.Replacements.Path | Should -Be $expectedReplacedPaths
+        $actualCatalogue.ContentFileCount |
+            Should -Be $expectedContentFileCount
+
+        $actualCatalogue.SpreadsheetCount |
+            Should -Be $expectedSpreadsheetCount
+
+        $actualCatalogue.SkippedFiles.Path |
+            Should -Be $expectedSkippedPaths
+
+        $actualCatalogue.Replacements.Path |
+            Should -Be $expectedReplacedPaths
     }
 
     # sounds.json holds both sounds and music sets, so two kinds read it, and it would be named twice.
@@ -172,40 +219,82 @@ Describe 'New-ContentCatalogue' {
             }
 
             [pscustomobject]@{
-                OwnersById       = New-OwnerIndex @{}
+
+                OwnersById = New-OwnerIndex @{}
                 ContentFileCount = 0
-                SkippedFiles     = @([pscustomobject]@{ Path = 'shared.csv'; Reason = $reason })
-                Replacements     = @([pscustomobject]@{ Path = 'shared.json'; Owner = 'm' })
+
+                SkippedFiles = @([pscustomobject]@{
+                    Path = 'shared.csv';
+                    Reason = $reason })
+
+                Replacements = @([pscustomobject]@{
+                    Path = 'shared.json';
+                    Owner = 'm' })
             }
         }
 
-        $expectedSkippedReasons = @('broken', 'missing a column')
+        $expectedSkippedReasons = @(
+            'broken',
+            'missing a column')
+
         $expectedReplacedPaths = @('shared.json')
 
         # ACT
-        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Base', 'Built', 'Other')
+        $actualCatalogue = New-ContentCatalogue `
+            -Sources @() `
+            -Kinds @(
+                'Base',
+                'Built',
+                'Other')
 
         # ASSERT
-        $actualCatalogue.SkippedFiles.Reason | Should -Be $expectedSkippedReasons
-        $actualCatalogue.Replacements.Path | Should -Be $expectedReplacedPaths
+        $actualCatalogue.
+            SkippedFiles.
+            Reason |
+            Should -Be $expectedSkippedReasons
+
+        $actualCatalogue.
+            Replacements.
+            Path |
+            Should -Be $expectedReplacedPaths
     }
 
     It 'returns each kind read, the base kinds too, with how many IDs its files define and how long it took' {
 
         # ARRANGE
-        $expectedKinds = @('Base', 'Built')
+        $expectedKinds = @(
+            'Base',
+            'Built')
+
         $expectedIdCounts = @(1, 1)
 
         # A stopwatch's elapsed milliseconds, whose value no run repeats.
         $expectedTimeType = [long]
 
         # ACT
-        $actualCatalogue = New-ContentCatalogue -Sources @() -Kinds @('Built')
+        $actualCatalogue = New-ContentCatalogue `
+            -Sources @() `
+            -Kinds @('Built')
 
         # ASSERT
-        $actualCatalogue.KindReads.Kind | Should -Be $expectedKinds
-        $actualCatalogue.KindReads.IdCount | Should -Be $expectedIdCounts
-        $actualCatalogue.KindReads[0].Milliseconds | Should -BeOfType $expectedTimeType
-        $actualCatalogue.KindReads[1].Milliseconds | Should -BeOfType $expectedTimeType
+        $actualCatalogue.
+            KindReads.
+            Kind |
+            Should -Be $expectedKinds
+
+        $actualCatalogue.
+            KindReads.
+            IdCount |
+            Should -Be $expectedIdCounts
+
+        $actualCatalogue.
+            KindReads[0].
+            Milliseconds |
+            Should -BeOfType $expectedTimeType
+
+        $actualCatalogue.
+            KindReads[1].
+            Milliseconds |
+            Should -BeOfType $expectedTimeType
     }
 }

@@ -2,15 +2,22 @@ BeforeAll {
 
     Set-StrictMode -Version Latest
 
+    . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Get-JsonStringPattern.ps1"
     . "$PSScriptRoot\..\..\..\..\..\tools\save-migration-tool\lib\data-file\Test-JsonSlashComment.ps1"
 }
 
 Describe 'Test-JsonSlashComment' {
 
+    BeforeEach {
+
+        # A stand-in string pattern without escapes, which Get-JsonStringPattern's own suite covers.
+        Mock Get-JsonStringPattern { '"[^"]*"|''[^'']*''' }
+    }
+
     It 'finds <Description>' -ForEach @(
         @{ Description = 'a // comment'; Text = "{ `"id`": `"a`" // note`n}" }
         @{ Description = 'a /* */ comment'; Text = '{ /* note */ "id": "a" }' }
-        @{ Description = 'a comment after a string holding an escaped quote'; Text = '{ "a": "say \"x\"" // note }' }
+        @{ Description = 'a comment after a string'; Text = '{ "a": "b" } // note' }
     ) {
 
         # ARRANGE

@@ -14,21 +14,28 @@ Describe 'ConvertTo-RosterEntry' {
 
         Mock Format-ModVersion { "formatted-$Version" }
         Mock ConvertTo-VersionInfo { "parts-$Version" }
+
         Mock Add-ModDefaultDisplay {
-            $Mod | Add-Member -NotePropertyName 'Display' -NotePropertyValue 'added' -PassThru
+            $Mod | Add-Member `
+                -NotePropertyName 'Display' `
+                -NotePropertyValue 'added' `
+                -PassThru
         }
 
         $script:ModGroup = [pscustomobject]@{
-            Winner     = [pscustomobject]@{
-                Id            = 'alpha'
-                Name          = 'Alpha'
-                Version       = '1.2'
-                Jars          = @('jars/alpha.jar', 'jars\..\lib.jar')
-                SortString    = 'aa alpha'
+
+            Winner = [pscustomobject]@{
+                Id = 'alpha'
+                Name = 'Alpha'
+                Version = '1.2'
+                Jars = @('jars/alpha.jar', 'jars\..\lib.jar')
+                ModPlugin = 'data.scripts.AlphaModPlugin'
+                SortString = 'aa alpha'
                 ReplacedPaths = @('data/hulls/ship_data.csv')
-                Folder        = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
-                Status        = 'parsed'
+                Folder = [System.IO.DirectoryInfo]::new('C:\Games\Starsector\mods\Alpha-1.2')
+                Status = 'parsed'
             }
+
             Superseded = @('older copy')
         }
     }
@@ -46,31 +53,57 @@ Describe 'ConvertTo-RosterEntry' {
         $expectedSupersededCount = 1
 
         # ACT
-        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+        $actualEntry = ConvertTo-RosterEntry `
+            -ModGroup $script:ModGroup `
+            -StarsectorRoot 'C:\Games\Starsector'
 
         # ASSERT
-        $actualEntry.Id | Should -Be $expectedId
-        $actualEntry.Name | Should -Be $expectedName
-        $actualEntry.Version | Should -Be $expectedVersion
-        $actualEntry.VersionInfo | Should -Be $expectedVersionInfo
-        $actualEntry.Display | Should -Be $expectedDisplay
-        $actualEntry.Folder | Should -Be $expectedFolder
-        $actualEntry.Status | Should -Be $expectedStatus
-        $actualEntry.SupersededCount | Should -Be $expectedSupersededCount
+        $actualEntry.Id |
+            Should -Be $expectedId
+
+        $actualEntry.Name |
+            Should -Be $expectedName
+
+        $actualEntry.Version |
+            Should -Be $expectedVersion
+
+        $actualEntry.VersionInfo |
+            Should -Be $expectedVersionInfo
+
+        $actualEntry.Display |
+            Should -Be $expectedDisplay
+
+        $actualEntry.Folder |
+            Should -Be $expectedFolder
+
+        $actualEntry.Status |
+            Should -Be $expectedStatus
+
+        $actualEntry.SupersededCount |
+            Should -Be $expectedSupersededCount
     }
 
-    It 'keeps the sort string and the replaced paths as mod_info.json writes them' {
+    It 'keeps the mod plugin, the sort string and the replaced paths as mod_info.json writes them' {
 
         # ARRANGE
+        $expectedModPlugin = 'data.scripts.AlphaModPlugin'
         $expectedSortString = 'aa alpha'
         $expectedReplacedPaths = @('data/hulls/ship_data.csv')
 
         # ACT
-        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+        $actualEntry = ConvertTo-RosterEntry `
+            -ModGroup $script:ModGroup `
+            -StarsectorRoot 'C:\Games\Starsector'
 
         # ASSERT
-        $actualEntry.SortString | Should -Be $expectedSortString
-        $actualEntry.ReplacedPaths | Should -Be $expectedReplacedPaths
+        $actualEntry.ModPlugin |
+            Should -Be $expectedModPlugin
+
+        $actualEntry.SortString |
+            Should -Be $expectedSortString
+
+        $actualEntry.ReplacedPaths |
+            Should -Be $expectedReplacedPaths
     }
 
     It 'resolves each declared JAR against the mod''s folder' {
@@ -82,7 +115,9 @@ Describe 'ConvertTo-RosterEntry' {
         )
 
         # ACT
-        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot 'C:\Games\Starsector'
+        $actualEntry = ConvertTo-RosterEntry `
+            -ModGroup $script:ModGroup `
+            -StarsectorRoot 'C:\Games\Starsector'
 
         # ASSERT
         $actualEntry.Jars | Should -Be $expectedJars
@@ -98,9 +133,12 @@ Describe 'ConvertTo-RosterEntry' {
         $expectedRelativePath = 'mods\Alpha-1.2'
 
         # ACT
-        $actualEntry = ConvertTo-RosterEntry -ModGroup $script:ModGroup -StarsectorRoot $Root
+        $actualEntry = ConvertTo-RosterEntry `
+            -ModGroup $script:ModGroup `
+            -StarsectorRoot $Root
 
         # ASSERT
-        $actualEntry.RelativePath | Should -Be $expectedRelativePath
+        $actualEntry.RelativePath |
+            Should -Be $expectedRelativePath
     }
 }

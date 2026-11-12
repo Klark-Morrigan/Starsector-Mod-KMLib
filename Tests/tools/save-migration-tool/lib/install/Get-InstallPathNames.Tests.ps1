@@ -18,18 +18,37 @@ Describe 'Get-InstallPathNames' {
         $expectedModInfoFile = 'mod_info.json'
         $expectedSavesFolder = 'saves'
         $expectedDescriptorFile = 'descriptor.xml'
+        $expectedCampaignFile = 'campaign.xml'
 
         # ACT
         $actualNames = Get-InstallPathNames
 
         # ASSERT
-        $actualNames.CoreFolder | Should -Be $expectedCoreFolder
-        $actualNames.LogFile | Should -Be $expectedLogFile
-        $actualNames.VmparamsFile | Should -Be $expectedVmparamsFile
-        $actualNames.ModsFolder | Should -Be $expectedModsFolder
-        $actualNames.EnabledModsFile | Should -Be $expectedEnabledModsFile
-        $actualNames.ModInfoFile | Should -Be $expectedModInfoFile
-        $actualNames.SavesFolder | Should -Be $expectedSavesFolder
-        $actualNames.DescriptorFile | Should -Be $expectedDescriptorFile
+        $actualNames.CoreFolder |
+            Should -Be $expectedCoreFolder
+
+        $actualNames.LogFile |
+            Should -Be $expectedLogFile
+
+        $actualNames.VmparamsFile |
+            Should -Be $expectedVmparamsFile
+
+        $actualNames.ModsFolder |
+            Should -Be $expectedModsFolder
+
+        $actualNames.EnabledModsFile |
+            Should -Be $expectedEnabledModsFile
+
+        $actualNames.ModInfoFile |
+            Should -Be $expectedModInfoFile
+
+        $actualNames.SavesFolder |
+            Should -Be $expectedSavesFolder
+
+        $actualNames.DescriptorFile |
+            Should -Be $expectedDescriptorFile
+
+        $actualNames.CampaignFile |
+            Should -Be $expectedCampaignFile
     }
 }
