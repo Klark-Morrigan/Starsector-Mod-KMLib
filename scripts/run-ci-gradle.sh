@@ -2,7 +2,7 @@
 # Runs this repo's Gradle build/test locally, mirroring the gradle job of
 # ci-gradle.yml (which delegates to Common-Java's reusable _ci-gradle
 # workflow). Thin shim to Common-Java's run-ci-gradle.sh entry, pointed at
-# this repo via COMMON_JAVA_TARGET_REPO. Pass tasks as arguments to override
+# this repo via CONSUMER_REPO_PATH. Pass tasks as arguments to override
 # the default, which is the task list ci-gradle.yml runs. Every argument
 # reaches Gradle as given, so a mod keeping locale bundles builds one by
 # naming it: `run-ci-gradle.sh test jar -Plocale=zh-hans`. Common-Java is
@@ -26,4 +26,4 @@ if [[ "$#" -eq 0 ]]; then
     set -- "${CI_GRADLE_TASKS[@]}"
 fi
 
-COMMON_JAVA_TARGET_REPO="${repo_root}" exec "${common_java_root}/scripts/run-ci-gradle.sh" "$@"
+CONSUMER_REPO_PATH="${repo_root}" exec "${common_java_root}/scripts/run-ci-gradle.sh" "$@"
