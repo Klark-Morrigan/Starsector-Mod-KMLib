@@ -4,6 +4,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
+import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.starsector.compatibility.GameReachReporter;
@@ -580,6 +581,46 @@ class MapFilterToggleTests {
         @Override
         public PositionAPI getPosition() {
             return new PositionFake(ROOMY_ROW_BOX);
+        }
+
+        @Override
+        public float getX() {
+            return ROOMY_ROW_BOX.x();
+        }
+
+        @Override
+        public float getY() {
+            return ROOMY_ROW_BOX.y();
+        }
+
+        @Override
+        public float getWidth() {
+            return ROOMY_ROW_BOX.width();
+        }
+
+        @Override
+        public float getHeight() {
+            return ROOMY_ROW_BOX.height();
+        }
+
+        @Override
+        public void focusLost() {
+            throw new UnsupportedOperationException(NOT_A_ROW);
+        }
+
+        @Override
+        public UIPanelAPI getParent() {
+            throw new UnsupportedOperationException(NOT_A_ROW);
+        }
+
+        @Override
+        public void setParent2(UIPanelAPI parent) {
+            throw new UnsupportedOperationException(NOT_A_ROW);
+        }
+
+        @Override
+        public void setPosition2(PositionAPI position) {
+            throw new UnsupportedOperationException(NOT_A_ROW);
         }
 
         @Override

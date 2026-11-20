@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Shared mod-root fixtures for the suites of scripts that read a mod's
 # metadata or its localisation manifest. Sourced - never run - so it carries
-# no tests itself and is skipped by the recursive *.bats runner.
+# no tests itself, and it is not a *.bats file, so no bats run takes it for a
+# suite.
 
 # Writes a mod_info.json naming the given id, version and jar into the
 # directory, creating it.

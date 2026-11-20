@@ -3,6 +3,7 @@ package kmlib.testfixtures.starsector.ui.map.controls;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.testfixtures.starsector.ui.label.ButtonLabelFake;
@@ -326,6 +327,54 @@ public final class MapFilterButtonFake implements ButtonAPI {
 
     @Override
     public void unhighlight() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    // A second way to bind a key, which the game's filter row does not use: modelled keys are the ones
+    // setShortcut binds, and a fixture guessing what the other form shows would let a subject pass on
+    // the guess.
+    @Override
+    public void setShortcutNoHighlight(int keycode) {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public void focusLost() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public float getX() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public float getY() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public float getWidth() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public float getHeight() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public UIPanelAPI getParent() {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public void setParent2(UIPanelAPI parent) {
+        throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
+    }
+
+    @Override
+    public void setPosition2(PositionAPI position) {
         throw new UnsupportedOperationException(NOT_A_ROW_BUTTON);
     }
 }

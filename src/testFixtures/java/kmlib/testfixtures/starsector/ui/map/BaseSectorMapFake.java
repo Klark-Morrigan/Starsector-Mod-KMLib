@@ -5,8 +5,10 @@ import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.impl.campaign.procgen.Constellation;
 import com.fs.starfarer.api.ui.SectorMapAPI;
 
+import java.awt.Color;
+
 /**
- * The half of a sector map that no fixture stands for: the two entity lookups the published
+ * The half of a sector map that no fixture stands for: the entity lookups and pings the published
  * interface requires and nothing driven against a map takes. Published as a fixture variant so both KMLib's and
  * consuming mods' tests build maps that answer the same way.
  *
@@ -28,5 +30,15 @@ public abstract class BaseSectorMapFake implements SectorMapAPI {
     @Override
     public final SectorEntityToken getIntelIconEntity(IntelInfoPlugin intel) {
         throw new UnsupportedOperationException("A sector map fixture holds no entities.");
+    }
+
+    @Override
+    public final void addPing(SectorEntityToken entity, Color color, float maxRange, int pingCount) {
+        throw new UnsupportedOperationException("A sector map fixture draws no pings.");
+    }
+
+    @Override
+    public final void addPing(SectorEntityToken entity, Color color, float maxRange, int pingCount, float interval) {
+        throw new UnsupportedOperationException("A sector map fixture draws no pings.");
     }
 }

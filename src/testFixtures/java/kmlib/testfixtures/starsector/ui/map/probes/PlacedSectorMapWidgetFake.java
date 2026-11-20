@@ -3,6 +3,7 @@ package kmlib.testfixtures.starsector.ui.map.probes;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
+import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import kmlib.testfixtures.starsector.ui.coreui.CoreUiWidgetFake;
 import kmlib.testfixtures.starsector.ui.map.BaseSectorMapFake;
@@ -68,5 +69,45 @@ public final class PlacedSectorMapWidgetFake extends BaseSectorMapFake implement
     @Override
     public void render(float alphaMult) {
         widgetFake.render(alphaMult);
+    }
+
+    @Override
+    public float getX() {
+        return widgetFake.getX();
+    }
+
+    @Override
+    public float getY() {
+        return widgetFake.getY();
+    }
+
+    @Override
+    public float getWidth() {
+        return widgetFake.getWidth();
+    }
+
+    @Override
+    public float getHeight() {
+        return widgetFake.getHeight();
+    }
+
+    @Override
+    public void focusLost() {
+        widgetFake.focusLost();
+    }
+
+    @Override
+    public UIPanelAPI getParent() {
+        return widgetFake.getParent();
+    }
+
+    @Override
+    public void setParent2(UIPanelAPI parent) {
+        widgetFake.setParent2(parent);
+    }
+
+    @Override
+    public void setPosition2(PositionAPI position) {
+        widgetFake.setPosition2(position);
     }
 }
