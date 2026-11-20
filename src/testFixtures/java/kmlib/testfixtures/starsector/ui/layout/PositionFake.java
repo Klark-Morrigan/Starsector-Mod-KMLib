@@ -211,4 +211,82 @@ public final class PositionFake implements PositionAPI {
     public void setSuspendRecompute(boolean isSuspended) {
         throw new UnsupportedOperationException(NOT_A_LAYOUT);
     }
+
+    @Override
+    public void recompute() {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void setHeight(float height) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void setWidth(float width) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void setRoundCoordinates(boolean isRounding) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void add2(PositionAPI child) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void remove2(PositionAPI child) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void clearChildren() {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public PositionAPI getParent() {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public PositionAPI setParent2(PositionAPI parent) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void setWithSortRecurvsive(boolean isSorted) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public boolean intersects2(PositionAPI other) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public void overlap2(PositionAPI other) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public PositionAPI setOffset(float offsetX, float offsetY) {
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
+
+    @Override
+    public PositionAPI relativeTo2(
+            UIComponentAPI base,
+            float baseAlignX,
+            float baseAlignY,
+            float ownAlignX,
+            float ownAlignY,
+            float alignOffsetX,
+            float alignOffsetY) {
+
+        throw new UnsupportedOperationException(NOT_A_LAYOUT);
+    }
 }

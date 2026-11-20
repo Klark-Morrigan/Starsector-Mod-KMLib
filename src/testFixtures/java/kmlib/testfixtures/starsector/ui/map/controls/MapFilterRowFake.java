@@ -3,6 +3,7 @@ package kmlib.testfixtures.starsector.ui.map.controls;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
+import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
@@ -142,6 +143,26 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
     }
 
     @Override
+    public float getX() {
+        return positionFake.getX();
+    }
+
+    @Override
+    public float getY() {
+        return positionFake.getY();
+    }
+
+    @Override
+    public float getWidth() {
+        return positionFake.getWidth();
+    }
+
+    @Override
+    public float getHeight() {
+        return positionFake.getHeight();
+    }
+
+    @Override
     public void actionPerformed(Object action, Object component) {
         clickCount++;
     }
@@ -168,6 +189,26 @@ public final class MapFilterRowFake implements MapFilterActionListenerFake, UICo
 
     @Override
     public void setOpacity(float opacity) {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public void focusLost() {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public UIPanelAPI getParent() {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public void setParent2(UIPanelAPI parent) {
+        throw new UnsupportedOperationException(NOT_A_ROW);
+    }
+
+    @Override
+    public void setPosition2(PositionAPI position) {
         throw new UnsupportedOperationException(NOT_A_ROW);
     }
 

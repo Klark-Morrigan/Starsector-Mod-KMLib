@@ -1,8 +1,10 @@
 package kmlib.testfixtures.starsector.ui.label;
 
+import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
+import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import java.awt.Color;
 import java.util.Arrays;
@@ -202,6 +204,86 @@ public final class ButtonLabelFake implements LabelAPI {
 
     @Override
     public void unitalicize() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public Color getBackgroundColor() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void setBackgroundColor(Color colour) {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public Color getAdditiveColor() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void setAdditiveColor(Color colour) {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public boolean isBlinking() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void stopBlinking() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void blink(float frequency, float duration) {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void processInput(List<InputEventAPI> events) {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void focusLost() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public float getX() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public float getY() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public float getWidth() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public float getHeight() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public UIPanelAPI getParent() {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void setParent2(UIPanelAPI parent) {
+        throw new UnsupportedOperationException(NOT_DRAWN_HERE);
+    }
+
+    @Override
+    public void setPosition2(PositionAPI position) {
         throw new UnsupportedOperationException(NOT_DRAWN_HERE);
     }
 }

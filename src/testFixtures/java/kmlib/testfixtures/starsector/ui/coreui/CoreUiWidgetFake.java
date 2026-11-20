@@ -3,6 +3,7 @@ package kmlib.testfixtures.starsector.ui.coreui;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
+import com.fs.starfarer.api.ui.UIPanelAPI;
 
 import java.util.List;
 
@@ -49,6 +50,26 @@ public final class CoreUiWidgetFake implements UIComponentAPI {
         return position;
     }
 
+    @Override
+    public float getX() {
+        return readPlacedPosition().getX();
+    }
+
+    @Override
+    public float getY() {
+        return readPlacedPosition().getY();
+    }
+
+    @Override
+    public float getWidth() {
+        return readPlacedPosition().getWidth();
+    }
+
+    @Override
+    public float getHeight() {
+        return readPlacedPosition().getHeight();
+    }
+
     /**
      * Puts the widget somewhere else, for a case about a widget that moves - a panel sliding on or
      * off screen, which is a state some rules exist entirely to read.
@@ -81,5 +102,35 @@ public final class CoreUiWidgetFake implements UIComponentAPI {
     @Override
     public void render(float alphaMult) {
         throw new UnsupportedOperationException("A fixture for tree walks does not render.");
+    }
+
+    @Override
+    public void focusLost() {
+        throw new UnsupportedOperationException("A fixture for tree walks takes no focus.");
+    }
+
+    @Override
+    public UIPanelAPI getParent() {
+        throw new UnsupportedOperationException("A fixture for tree walks is walked down into, never up.");
+    }
+
+    @Override
+    public void setParent2(UIPanelAPI parent) {
+        throw new UnsupportedOperationException("A fixture for tree walks is never reparented.");
+    }
+
+    @Override
+    public void setPosition2(PositionAPI position) {
+        throw new UnsupportedOperationException("A fixture for tree walks moves through moveWidgetTo.");
+    }
+
+    // A widget built with no position has no box to measure, which is the state a never-placed map is
+    // in; asking it for one is the subject's mistake, so it fails by name rather than as a null read.
+    private PositionAPI readPlacedPosition() {
+
+        if (position == null) {
+            throw new IllegalStateException("A fixture widget that was never placed has no box to measure.");
+        }
+        return position;
     }
 }

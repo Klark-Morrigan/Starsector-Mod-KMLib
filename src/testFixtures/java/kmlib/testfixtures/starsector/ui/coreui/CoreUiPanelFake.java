@@ -4,6 +4,7 @@ import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.api.ui.UIPanelAPI;
+import com.fs.starfarer.api.util.FaderUtil;
 
 import kmlib.math.geometry.Rectangle;
 import kmlib.testfixtures.starsector.ui.layout.PositionFake;
@@ -33,6 +34,9 @@ public final class CoreUiPanelFake implements UIPanelAPI {
 
     private static final String NOT_A_SCREEN =
         "A fixture for attaching to a panel does not draw one or route input to it.";
+
+    private static final String NOT_MODELLED =
+        "A fixture for attaching to a panel models adding, removing and raising children, and nothing else.";
 
     // Any box at all, so a caller with something to position has a position to move. See above.
     private static final Rectangle PLACEHOLDER_BOX = new Rectangle(0f, 0f, 1f, 1f);
@@ -112,9 +116,73 @@ public final class CoreUiPanelFake implements UIPanelAPI {
         throw new UnsupportedOperationException(NOT_A_SCREEN);
     }
 
+    /**
+     * @return the children still standing, in a list of the caller's own - the engine's copy being one the
+     *         caller may change without touching the panel
+     */
+    @Override
+    public List<UIComponentAPI> getChildrenCopy2() {
+        return new ArrayList<>(getStandingComponents());
+    }
+
+    @Override
+    public UIComponentAPI wrapAndAdd(UIComponentAPI component, FaderUtil fader) {
+        throw new UnsupportedOperationException(NOT_MODELLED);
+    }
+
+    @Override
+    public PositionAPI createPosition() {
+        throw new UnsupportedOperationException(NOT_MODELLED);
+    }
+
+    @Override
+    public void clearChildren() {
+        throw new UnsupportedOperationException(NOT_MODELLED);
+    }
+
     @Override
     public PositionAPI getPosition() {
         return new PositionFake(PLACEHOLDER_BOX);
+    }
+
+    @Override
+    public float getX() {
+        return PLACEHOLDER_BOX.x();
+    }
+
+    @Override
+    public float getY() {
+        return PLACEHOLDER_BOX.y();
+    }
+
+    @Override
+    public float getWidth() {
+        return PLACEHOLDER_BOX.width();
+    }
+
+    @Override
+    public float getHeight() {
+        return PLACEHOLDER_BOX.height();
+    }
+
+    @Override
+    public UIPanelAPI getParent() {
+        throw new UnsupportedOperationException(NOT_MODELLED);
+    }
+
+    @Override
+    public void setParent2(UIPanelAPI parent) {
+        throw new UnsupportedOperationException(NOT_MODELLED);
+    }
+
+    @Override
+    public void setPosition2(PositionAPI position) {
+        throw new UnsupportedOperationException(NOT_MODELLED);
+    }
+
+    @Override
+    public void focusLost() {
+        throw new UnsupportedOperationException(NOT_A_SCREEN);
     }
 
     @Override
