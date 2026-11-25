@@ -231,6 +231,12 @@ all with a `.sh` and a `.bat` face:
   the counts and figures a badge run would publish,
   publishing nothing.
   See [Reusable CI / release actions](#reusable-ci--release-actions).
+- `install-lwjgl-linux-natives <folder>` -
+  puts LWJGL's Linux natives,
+  checked against pinned hashes,
+  into a folder:
+  the native a Linux machine running the test suite needs.
+  See [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md#versions-this-was-verified-against).
 
 Tools run from a checkout,
 never shipped in the release zip:

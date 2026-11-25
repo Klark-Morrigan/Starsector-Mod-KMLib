@@ -49,8 +49,16 @@ on `kmlib-runner` -
 comes from the official LWJGL artefact:
 [`lwjgl-platform-2.9.3-natives-linux.jar`](https://repo1.maven.org/maven2/org/lwjgl/lwjgl/lwjgl-platform/2.9.3/lwjgl-platform-2.9.3-natives-linux.jar),
 SHA-1 `b1eafe80093381c56415731e1d64279e6140bcd0`.
-It is kept at `starsector-core\native\linux\` beside the Windows natives,
+The suite looks for it at `starsector-core/native/linux/` under the install it runs against,
 the layout the Linux game uses.
+[`scripts/install-lwjgl-linux-natives.sh <folder>`](../../scripts/install-lwjgl-linux-natives.sh) puts it into a folder:
+it checks the jar against that SHA-1 and every native in it against a pinned SHA-256,
+and writes nothing unless all of them match.
+On a Windows machine that feeds a Linux runner,
+keep the folder outside the game install,
+which a reinstall would wipe;
+the game itself never reads it,
+since every launcher points LWJGL at `native\windows`.
 It links against `libX11`, `libXext`, `libXcursor`, `libXrandr`, `libXxf86vm` and the JDK's `libjawt`,
 and `libjawt` in turn against the JDK's `libawt_xawt`,
 which adds `libXrender`, `libXtst` and `libXi`.
