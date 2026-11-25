@@ -2065,7 +2065,7 @@ adding a matrix read,
 or diagnosing an overlay that misbehaves only for some players.
 Consuming mods link there rather than restating it.
 
-[docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is the worked
+[Halke1986/starsector-render#11](https://github.com/Halke1986/starsector-render/issues/11) is the worked
 example:
 through Fast Rendering `v0.9.0` the bridge serves no buffer-taking `glGetFloat`,
 so reading `GL_MODELVIEW_MATRIX` throws mid-render
