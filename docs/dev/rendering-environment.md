@@ -425,7 +425,10 @@ with the two transformers named `ConstantFileTransformer` and `BytecodeFileTrans
 On `v0.9.6rc1` `fr.bat` also passed `-javaagent:PatchLibAgent.jar` when that file was present,
 so a PatchLib-based mod and Fast Rendering coexisted as two ordinary agents on the same JVM.
 By `v1.0.2` `fr.bat` only runs `java @fr.vmparams`,
-and `fr.vmparams` names no second agent.
+and `fr.vmparams` names no second agent,
+yet PatchLib still runs beside Fast Rendering:
+a `v1.0.4rc1` session logs it installing patch sites while the mods load.
+So a PatchLib patch and a Fast Rendering rewrite can still land on the same class.
 
 Through `v0.7.7` the patch was a system classloader instead,
 `com.genir.renderer.loaders.AppClassLoader`,
@@ -550,7 +553,9 @@ Unconditional and at load,
 rather than left to the one binding that reports its own choice
 (`ModelviewMatrixReaders.selectForActiveRenderer`, at INFO):
 that line appears only in a session that read the map transform for a hover,
-and it names the reader it picked rather than the renderer it picked it for.
+and it names the consuming mod and the reader it picked rather than the renderer it picked it for.
+KMLib logs at WARN unless its LunaLib log-level setting is set to INFO or below,
+so neither line is in a log by default.
 
 ### It tracks the modelview on the CPU
 
