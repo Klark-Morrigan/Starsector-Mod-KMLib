@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+#
 # Auto-fixes what this repo's commits need fixing: the executable bit on staged
 # files that must carry it, and trailing whitespace in staged Markdown and Gradle
 # scripts.
 #
 # Which fixes a commit gets, and the order they run in, live in
-# Common-Automation's .github/lib/run-pre-commit-fixes.sh (sibling checkout),
+# Common-Automation's .github/lib/fixes/run-pre-commit-fixes.sh (sibling checkout),
 # shared so every repo in the family fixes a commit the same way. What stays
 # here is only what this repo alone knows: where its siblings are, and which
 # tier it belongs to.
@@ -15,7 +16,7 @@ set -euo pipefail
 
 hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${hook_dir}/.." && pwd)"
-shared_fixes="${repo_root}/../Common-Automation/.github/lib/run-pre-commit-fixes.sh"
+shared_fixes="${repo_root}/../Common-Automation/.github/lib/fixes/run-pre-commit-fixes.sh"
 jvm_tier_lib="${repo_root}/../Common-Java/.github/lib"
 
 # Skipped rather than fatal when the sibling is not checked out. These fixes
@@ -32,13 +33,8 @@ source "${shared_fixes}"
 
 # The JVM tier's declarations - the paths that must carry +x, and .gradle as a
 # text type to trim - read from the Common-Java checkout this mod already
-# builds against. Each is honoured when present and ignored when not; an
-# absent +x set leaves the engine on its family-wide *.sh rule.
-if [[ -f "${jvm_tier_lib}/executable-paths.sh" ]]; then
-    # shellcheck source=/dev/null
-    source "${jvm_tier_lib}/executable-paths.sh"
-fi
-
+# builds against. Each is honoured when present and skipped when not, leaving
+# the family-wide sets alone.
 run_pre_commit_fixes \
-    "${EXECUTABLE_PATHSPEC_REGEX:-}" \
+    "${jvm_tier_lib}/executable-paths.sh" \
     "${jvm_tier_lib}/trimmed-file-types.sh"

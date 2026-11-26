@@ -231,6 +231,12 @@ all with a `.sh` and a `.bat` face:
   the counts and figures a badge run would publish,
   publishing nothing.
   See [Reusable CI / release actions](#reusable-ci--release-actions).
+- `install-lwjgl-linux-natives <folder>` -
+  puts LWJGL's Linux natives,
+  checked against pinned hashes,
+  into a folder:
+  the native a Linux machine running the test suite needs.
+  See [docs/dev/rendering-environment.md](docs/dev/rendering-environment.md#versions-this-was-verified-against).
 
 Tools run from a checkout,
 never shipped in the release zip:
@@ -2065,7 +2071,7 @@ adding a matrix read,
 or diagnosing an overlay that misbehaves only for some players.
 Consuming mods link there rather than restating it.
 
-[docs/dev/issues/genir-glgetfloat.md](docs/dev/issues/genir-glgetfloat.md) is the worked
+[Halke1986/starsector-render#11](https://github.com/Halke1986/starsector-render/issues/11) is the worked
 example:
 through Fast Rendering `v0.9.0` the bridge serves no buffer-taking `glGetFloat`,
 so reading `GL_MODELVIEW_MATRIX` throws mid-render

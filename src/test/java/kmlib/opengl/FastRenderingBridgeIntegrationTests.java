@@ -7,26 +7,30 @@ import org.junit.jupiter.api.Test;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
-import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.FloatBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
- * Holds the installed Fast Rendering to the three things KM takes from it: that its agent rewrites a mod's
+ * Holds the installed Fast Rendering to the things KM takes from it: that its agent rewrites a mod's
  * {@code GL11} onto a class detection recognises, that the class it rewrites to answers
- * {@code glGetFloat(GL_MODELVIEW_MATRIX)} with the matrix the calls before it built, and that its version
- * class still reads.
+ * {@code glGetFloat(GL_MODELVIEW_MATRIX)} with the matrix the calls before it built, that the same class
+ * refuses display lists, which would move that matrix out of the read's sight, and that its version class
+ * still reads.
  *
- * <p>Drives the real {@code fr.jar} and {@code fr.agent.jar} the build puts on the test runtime, by name
- * through method handles, so nothing here compiles against either. The bridge class is the one the agent's
- * own rewrite table names, so the read is taken where a rewritten mod takes it.
+ * <p>Drives the real {@code fr.jar} the build puts on the test runtime, by name through method handles, so
+ * nothing here compiles against it. The bridge class is the one the agent's own rewrite table names, so the
+ * read is taken where a rewritten mod takes it. The table is built as the agent builds it at launch: through
+ * the loader that carries the ASM its analysis of the game's classes needs, over the game jars the build also
+ * puts on the test runtime.
  *
  * <p>The bridge answers the read from a copy of the matrix it keeps on the calling thread, so no window or GL
  * context is needed. Setting the bridge up still loads LWJGL's native library, from the install's
@@ -46,8 +50,15 @@ final class FastRenderingBridgeIntegrationTests {
     private static final String CONTEXT_CLASS_NAME = "com.genir.renderer.bridge.context.Context";
     private static final String EXECUTOR_CLASS_NAME = "com.genir.renderer.bridge.context.executor.Executor";
 
-    // The agent's rewrite tables, and the one it applies to a mod's classes.
-    private static final String TRANSFORMATIONS_CLASS_NAME = "com.genir.renderer.agent.Transformations";
+    // The loader the agent runs its transformations under, and the ASM jars inside fr.jar it carries.
+    private static final String EMBEDDED_JAR_CLASS_LOADER_CLASS_NAME = "com.genir.renderer.agent.EmbeddedJarClassLoader";
+    private static final String[] AGENT_EMBEDDED_JAR_NAMES = {"asm-9.1.jar", "asm-tree-9.1.jar"};
+
+    // The agent's analysis of the game's classes, its rewrite tables built from it, and the table it applies
+    // to a mod's classes.
+    private static final String SYMBOLS_CLASS_NAME = "com.genir.renderer.agent.transformations.symbols.Symbols";
+    private static final String TRANSFORMATIONS_CLASS_NAME =
+        "com.genir.renderer.agent.transformations.symbols.Transformations";
     private static final String MOD_REWRITE_TABLE_NAME = "opengl";
     private static final String LWJGL_GL11_INTERNAL_NAME = "org/lwjgl/opengl/GL11";
 
@@ -67,14 +78,21 @@ final class FastRenderingBridgeIntegrationTests {
     private static MethodHandle popMatrix;
     private static MethodHandle translate;
     private static MethodHandle getFloat;
+    private static MethodHandle newList;
+    private static MethodHandle callList;
 
     // The bridge's main context, created once: the bridge holds it in a static, one per process.
     private static Object bridgeContext;
 
     @BeforeAll
-    static void createBridgeContext() throws Throwable {
+    static void createBridgeContext()
+            throws Throwable {
 
-        System.setProperty(LWJGL_LIBRARY_PATH_PROPERTY, resolveNativesDirectory().getAbsolutePath());
+        System.setProperty(
+            LWJGL_LIBRARY_PATH_PROPERTY,
+            resolveNativesDirectory()
+                .toAbsolutePath()
+                .toString());
 
         bridgeGlClassName = readModRewriteTable()
             .get(LWJGL_GL11_INTERNAL_NAME)
@@ -88,17 +106,23 @@ final class FastRenderingBridgeIntegrationTests {
         popMatrix = findVoidStatic(bridgeGl, "glPopMatrix");
         translate = findVoidStatic(bridgeGl, "glTranslatef", float.class, float.class, float.class);
         getFloat = findVoidStatic(bridgeGl, "glGetFloat", int.class, FloatBuffer.class);
+        newList = findVoidStatic(bridgeGl, "glNewList", int.class, int.class);
+        callList = findVoidStatic(bridgeGl, "glCallList", int.class);
 
         var contextManagerClass = loadBridgeClass(CONTEXT_MANAGER_CLASS_NAME);
         var contextClass = loadBridgeClass(CONTEXT_CLASS_NAME);
 
         bridgeContext = PUBLIC_LOOKUP
-            .findStatic(contextManagerClass, "createMainContext", MethodType.methodType(contextClass))
+            .findStatic(
+                contextManagerClass,
+                "createMainContext",
+                MethodType.methodType(contextClass))
             .invoke();
     }
 
     @AfterAll
-    static void removeBridgeContext() throws Throwable {
+    static void removeBridgeContext()
+            throws Throwable {
 
         if (bridgeContext == null) {
             return;
@@ -113,23 +137,36 @@ final class FastRenderingBridgeIntegrationTests {
             .invoke(bridgeContext);
 
         PUBLIC_LOOKUP
-            .findVirtual(executorClass, "shutdown", MethodType.methodType(void.class))
+            .findVirtual(
+                executorClass,
+                "shutdown",
+                MethodType.methodType(void.class))
             .invoke(executor);
 
         PUBLIC_LOOKUP
-            .findStatic(contextManagerClass, "removeMainContext", MethodType.methodType(contextClass))
+            .findStatic(
+                contextManagerClass,
+                "removeMainContext",
+                MethodType.methodType(contextClass))
             .invoke();
     }
 
     @Nested
     class IsBridgeClassName {
 
+        // The detection's whole job: a class the agent rewrites to must read as the bridge, or every caller is
+        // routed as if on the stock renderer.
         @Test
         void recognisesTheClassTheAgentRewritesAModsGl11To() {
 
-            // The detection's whole job: a class the agent rewrites to must read as the bridge, or every
-            // caller is routed as if on the stock renderer.
-            assertThat(FastRendering.isBridgeClassName(bridgeGlClassName))
+            // ARRANGE
+            var rewriteTargetName = bridgeGlClassName;
+
+            // ACT
+            var actualIsBridge = FastRendering.isBridgeClassName(rewriteTargetName);
+
+            // ASSERT
+            assertThat(actualIsBridge)
                 .isTrue();
         }
     }
@@ -138,47 +175,107 @@ final class FastRenderingBridgeIntegrationTests {
     class GlGetFloat {
 
         @Test
-        void answersTheModelviewTheCallsBeforeItBuiltInColumnMajorOrder() throws Throwable {
+        void answersTheModelviewTheCallsBeforeItBuiltInColumnMajorOrder()
+                throws Throwable {
 
+            // ARRANGE
             matrixMode.invoke(GL11.GL_MODELVIEW);
             loadIdentity.invoke();
-            pushMatrix.invoke();
             translate.invoke(PAN_X, PAN_Y, 0f);
 
-            assertThat(readModelview())
-                .containsExactly(
-                    1f, 0f, 0f, 0f,
-                    0f, 1f, 0f, 0f,
-                    0f, 0f, 1f, 0f,
-                    PAN_X, PAN_Y, 0f, 1f);
+            var expectedModelview = new float[] {
+                1f, 0f, 0f, 0f,
+                0f, 1f, 0f, 0f,
+                0f, 0f, 1f, 0f,
+                PAN_X, PAN_Y, 0f, 1f};
 
-            popMatrix.invoke();
+            // ACT
+            var actualModelview = readModelview();
+
+            // ASSERT
+            assertThat(actualModelview)
+                .containsExactly(expectedModelview);
         }
 
         @Test
-        void answersTheModelviewAPopRestored() throws Throwable {
+        void answersTheModelviewAPopRestored()
+                throws Throwable {
 
+            // ARRANGE
             matrixMode.invoke(GL11.GL_MODELVIEW);
             loadIdentity.invoke();
             pushMatrix.invoke();
             translate.invoke(PAN_X, PAN_Y, 0f);
             popMatrix.invoke();
 
-            assertThat(readModelview())
-                .containsExactly(
-                    1f, 0f, 0f, 0f,
-                    0f, 1f, 0f, 0f,
-                    0f, 0f, 1f, 0f,
-                    0f, 0f, 0f, 1f);
+            var expectedModelview = new float[] {
+                1f, 0f, 0f, 0f,
+                0f, 1f, 0f, 0f,
+                0f, 0f, 1f, 0f,
+                0f, 0f, 0f, 1f};
+
+            // ACT
+            var actualModelview = readModelview();
+
+            // ASSERT
+            assertThat(actualModelview)
+                .containsExactly(expectedModelview);
         }
 
+        // The refusal KM's guarded reader is built around, kept as the shape a guard catches.
         @Test
         void refusesTheProjectionMatrix() {
 
-            // The refusal KM's guarded reader is built around, kept as the shape a guard catches.
+            // ARRANGE
             var matrixBuffer = BufferUtils.createFloatBuffer(GlMatrix.FLOAT_COUNT);
 
-            assertThatThrownBy(() -> getFloat.invoke(GL11.GL_PROJECTION_MATRIX, matrixBuffer))
+            // ACT
+            var actualError = catchThrowable(() ->
+                getFloat.invoke(GL11.GL_PROJECTION_MATRIX, matrixBuffer));
+
+            // ASSERT
+            assertThat(actualError)
+                .isInstanceOf(UnsupportedOperationException.class);
+        }
+    }
+
+    // A display list replayed on the render thread would move the modelview where the calling thread's copy
+    // cannot follow, and the read above would answer a matrix the drawing no longer uses, with nothing thrown.
+    // The bridge refusing lists is what keeps that copy complete.
+    @Nested
+    class GlNewList {
+
+        @Test
+        void refusesToCompileAList() {
+
+            // ARRANGE
+            var listName = 1;
+
+            // ACT
+            var actualError = catchThrowable(() ->
+                newList.invoke(listName, GL11.GL_COMPILE));
+
+            // ASSERT
+            assertThat(actualError)
+                .isInstanceOf(UnsupportedOperationException.class);
+        }
+    }
+
+    // The other half of the same guarantee: no list can be replayed either.
+    @Nested
+    class GlCallList {
+
+        @Test
+        void refusesToCallAList() {
+
+            // ARRANGE
+            var listName = 1;
+
+            // ACT
+            var actualError = catchThrowable(() -> callList.invoke(listName));
+
+            // ASSERT
+            assertThat(actualError)
                 .isInstanceOf(UnsupportedOperationException.class);
         }
     }
@@ -189,8 +286,15 @@ final class FastRenderingBridgeIntegrationTests {
         @Test
         void readsAReleaseOffTheInstalledJar() {
 
-            assertThat(FastRendering.readInstalledVersion())
-                .startsWith("v");
+            // ARRANGE
+            var expectedReleasePrefix = "v";
+
+            // ACT
+            var actualVersion = FastRendering.readInstalledVersion();
+
+            // ASSERT
+            assertThat(actualVersion)
+                .startsWith(expectedReleasePrefix);
         }
     }
 
@@ -207,17 +311,62 @@ final class FastRenderingBridgeIntegrationTests {
         return matrix;
     }
 
-    // The table the agent applies to a mod's classes: LWJGL's internal names to the bridge's.
+    // The table the agent applies to a mod's classes: LWJGL's internal names to the bridge's. The agent holds
+    // it on the instance it builds at launch, from its analysis of the game's classes, so it is built the same
+    // way here.
     @SuppressWarnings("unchecked")
-    private static Map<String, String> readModRewriteTable() throws Throwable {
+    private static Map<String, String> readModRewriteTable()
+            throws Throwable {
+
+        var embeddedJarClassLoaderClass = loadBridgeClass(EMBEDDED_JAR_CLASS_LOADER_CLASS_NAME);
+
+        var agentLoader = (ClassLoader) PUBLIC_LOOKUP
+            .findConstructor(
+                embeddedJarClassLoaderClass,
+                MethodType.methodType(
+                    void.class,
+                    ClassLoader.class,
+                    String[].class))
+            .asFixedArity()
+            .invoke(
+                embeddedJarClassLoaderClass.getClassLoader(),
+                AGENT_EMBEDDED_JAR_NAMES);
+
+        var symbolsClass = loadBridgeClass(
+            SYMBOLS_CLASS_NAME,
+            agentLoader);
+
+        var transformationsClass = loadBridgeClass(
+            TRANSFORMATIONS_CLASS_NAME,
+            agentLoader);
+
+        var symbols = PUBLIC_LOOKUP
+            .findConstructor(
+                symbolsClass,
+                MethodType.methodType(void.class))
+            .invoke();
+
+        var transformations = PUBLIC_LOOKUP
+            .findConstructor(
+                transformationsClass,
+                MethodType.methodType(
+                    void.class,
+                    symbolsClass))
+            .invoke(symbols);
 
         return (Map<String, String>) PUBLIC_LOOKUP
-            .findStaticGetter(loadBridgeClass(TRANSFORMATIONS_CLASS_NAME), MOD_REWRITE_TABLE_NAME, Map.class)
-            .invoke();
+            .findGetter(
+                transformationsClass,
+                MOD_REWRITE_TABLE_NAME,
+                Map.class)
+            .invoke(transformations);
     }
 
-    private static MethodHandle findVoidStatic(Class<?> owner, String name, Class<?>... parameterTypes)
-            throws ReflectiveOperationException {
+    private static MethodHandle findVoidStatic(
+            Class<?> owner,
+            String name,
+            Class<?>... parameterTypes)
+                throws ReflectiveOperationException {
 
         return PUBLIC_LOOKUP.findStatic(
             owner,
@@ -227,21 +376,35 @@ final class FastRenderingBridgeIntegrationTests {
 
     private static Class<?> loadBridgeClass(String className) {
 
+        return loadBridgeClass(
+            className,
+            FastRenderingBridgeIntegrationTests
+                .class
+                .getClassLoader());
+    }
+
+    private static Class<?> loadBridgeClass(String className, ClassLoader loader) {
+
         try {
-            return Class.forName(className);
+            return Class.forName(
+                className,
+                true,
+                loader);
 
         } catch (ClassNotFoundException missing) {
 
             throw new IllegalStateException(
-                "No " + className + " on the test runtime. This suite needs the install's starsector-core/fr.jar"
-                    + " and fr.agent.jar, from a Fast-Rendering-patched install.",
+                "No " + className + " on the test runtime. This suite needs the install's starsector-core/fr.jar,"
+                    + " from a Fast-Rendering-patched install.",
                 missing);
         }
     }
 
-    private static File resolveNativesDirectory() {
+    private static Path resolveNativesDirectory() {
 
-        var osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        var osName = System
+            .getProperty("os.name")
+            .toLowerCase(Locale.ROOT);
 
         String platformFolder;
 
@@ -255,14 +418,17 @@ final class FastRenderingBridgeIntegrationTests {
             throw new IllegalStateException("No LWJGL native folder is known for " + osName + ".");
         }
 
-        var nativesDirectory = new File(
+        var nativesDirectory = Path.of(
             System.getProperty(STARSECTOR_ROOT_PROPERTY),
-            "starsector-core" + File.separator + "native" + File.separator + platformFolder);
+            "starsector-core",
+            "native",
+            platformFolder);
 
-        if (!nativesDirectory.isDirectory()) {
+        if (!Files.isDirectory(nativesDirectory)) {
 
             throw new IllegalStateException(
-                "No LWJGL natives at " + nativesDirectory + ". Setting the bridge up loads LWJGL's native library;"
+                "No LWJGL natives at " + nativesDirectory + "."
+                    + " Setting the bridge up loads LWJGL's native library;"
                     + " see docs/dev/rendering-environment.md for where the Linux one comes from.");
         }
 
